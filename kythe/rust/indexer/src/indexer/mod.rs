@@ -14,6 +14,7 @@
 
 pub mod analyzers;
 pub mod entries;
+pub mod offset;
 pub mod save_analysis;
 
 use crate::error::KytheError;
@@ -44,7 +45,7 @@ impl<'a> KytheIndexer<'a> {
         let mut generator = UnitAnalyzer::new(unit, self.writer, root_dir);
 
         // First, create file nodes for all of the source files in the CompilationUnit
-        generator.emit_file_nodes()?;
+        generator.handle_files()?;
 
         // Then, index all of the crates from the save_analysis
         let analyzed_crates = save_analysis::load_analysis(&root_dir.join("analysis"));

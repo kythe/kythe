@@ -16,13 +16,14 @@ use crate::error::KytheError;
 use crate::writer::KytheWriter;
 
 use super::entries::EntryEmitter;
+use super::offset::OffsetIndex;
 
 use analysis_rust_proto::CompilationUnit;
 use rls_analysis::Crate;
 use rls_data::{Def, DefKind};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Read;
+use std::ffi::OsStr;
+use std::fs;
 use std::path::{Path, PathBuf};
 use storage_rust_proto::*;
 
@@ -33,6 +34,7 @@ pub struct UnitAnalyzer<'a> {
     emitter: EntryEmitter<'a>,
     root_dir: &'a PathBuf,
     file_vnames: HashMap<String, VName>,
+    offset_index: OffsetIndex,
 }
 
 /// A data structure to analyze and index individual crates
@@ -42,6 +44,13 @@ pub struct CrateAnalyzer<'a, 'b> {
     unit_vname: &'b VName,
     krate: Crate,
     krate_ids: HashMap<u32, String>,
+    krate_vname: VName,
+    // Stores the parent of a child definition so that a childof edge can be emitted when the
+    // child's definition is analyzed
+    children_ids: HashMap<rls_data::Id, VName>,
+    // Stores VNames for emitted definitions based on definition Id
+    definition_vnames: HashMap<rls_data::Id, VName>,
+    offset_index: &'b OffsetIndex,
 }
 
 impl<'a> UnitAnalyzer<'a> {
@@ -64,11 +73,19 @@ impl<'a> UnitAnalyzer<'a> {
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(&unit.get_v_name());
-        Self { unit, unit_storage_vname, emitter: EntryEmitter::new(writer), root_dir, file_vnames }
+        Self {
+            unit,
+            unit_storage_vname,
+            emitter: EntryEmitter::new(writer),
+            root_dir,
+            file_vnames,
+            offset_index: OffsetIndex::default(),
+        }
     }
 
-    /// Emits file nodes for all of the source files in a CompilationUnit
-    pub fn emit_file_nodes(&mut self) -> Result<(), KytheError> {
+    /// Emits file nodes for all of the source files in a CompilationUnit and
+    /// generate the OffsetIndex
+    pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
         for source_file in self.unit.get_source_file() {
             let vname = self.get_file_vname(source_file)?;
@@ -81,12 +98,13 @@ impl<'a> UnitAnalyzer<'a> {
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
-            let mut file = File::open(self.root_dir.join(Path::new(&source_file)))?;
-            let mut file_contents: Vec<u8> = Vec::new();
-            file.read_to_end(&mut file_contents)?;
+            let file_contents = fs::read_to_string(self.root_dir.join(Path::new(&source_file)))?;
+
+            // Add the file to the OffsetIndex
+            self.offset_index.add_file(&source_file, &file_contents);
 
             // Create text fact
-            self.emitter.emit_node(&vname, "/kythe/text", file_contents)?;
+            self.emitter.emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -98,6 +116,7 @@ impl<'a> UnitAnalyzer<'a> {
             &self.file_vnames,
             &self.unit_storage_vname,
             krate,
+            &self.offset_index,
         );
         crate_analyzer.emit_crate_nodes()?;
         crate_analyzer.emit_definitions()?;
@@ -128,8 +147,19 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         file_vnames: &'b HashMap<String, VName>,
         unit_vname: &'b VName,
         krate: Crate,
+        offset_index: &'b OffsetIndex,
     ) -> Self {
-        Self { emitter, file_vnames, krate, unit_vname, krate_ids: HashMap::new() }
+        Self {
+            emitter,
+            file_vnames,
+            krate,
+            unit_vname,
+            krate_ids: HashMap::new(),
+            krate_vname: VName::new(),
+            children_ids: HashMap::new(),
+            definition_vnames: HashMap::new(),
+            offset_index,
+        }
     }
 
     /// Generates and emits package nodes for the main crate and external crates
@@ -147,6 +177,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let krate_id = &krate_prelude.crate_id;
         let krate_signature = format!("{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1);
         let krate_vname = self.generate_crate_vname(&krate_signature);
+        self.krate_vname = krate_vname.clone();
         self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_signature);
 
@@ -191,52 +222,108 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             self.emit_definition_node(&def_vname, &def)?;
         }
 
+        // Normally you'd want to have a catch-all here where you emit childof edges
+        // that may have been missed if the child's definition came before the parent's
+        // definition. However, it is possible for the parent's children to contain an
+        // Id that doesn't appear in the list of definitions (?) so we handle the "child
+        // before parent" case in `emit_definition_node` and clear the HashMap
+        // here to drop the orphans and save memory.
+        self.children_ids.clear();
+
+        for (child_id, parent_vname) in self.children_ids.iter() {
+            let child_vname = self.definition_vnames.remove(child_id).ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get vname for child {:?} when emitting childof edge",
+                    child_id
+                ))
+            })?;
+            self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
+        }
+
         Ok(())
     }
 
     /// Emit all of the Kythe graph nodes and edges, including anchors for the
     /// definition using the provided VName
     fn emit_definition_node(&mut self, def_vname: &VName, def: &Def) -> Result<(), KytheError> {
-        let mut facts: HashMap<&str, Vec<u8>> = HashMap::new();
+        // Track children to emit childof nodes later
+        for child in def.children.iter() {
+            if let Some(child_vname) = self.definition_vnames.get(child) {
+                // The child definition has already been visited and we can emit the childof
+                // edge now
+                self.emitter.emit_edge(child_vname, def_vname, "/kythe/edge/childof")?;
+            } else {
+                self.children_ids.insert(*child, def_vname.clone());
+            }
+        }
 
-        // Generate the facts to be emitted
-        // TODO(Arm1stice): Remove once more definitions are added to the match
-        // statement
-        #[allow(clippy::single_match)]
+        // Check if the current definition is a child of another node and remove the
+        // entry if it existed
+        if let Some(parent_vname) = self.children_ids.remove(&def.id) {
+            self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
+        }
+
+        // Store the definition's VName so it can be referenced by its id later
+        self.definition_vnames.insert(def.id, def_vname.clone());
+
+        // (fact_name, fact_value)
+        let mut facts: Vec<(&str, &[u8])> = Vec::new();
+
+        // Generate the facts to be emitted and emit some edges as necessary
         match def.kind {
             DefKind::Function => {
-                facts.insert("/kythe/node/kind", b"function".to_vec());
-                facts.insert("/kythe/complete", b"definition".to_vec());
+                facts.push(("/kythe/node/kind", b"function"));
+                facts.push(("/kythe/complete", b"definition"));
+            }
+            DefKind::Mod => {
+                facts.push(("/kythe/node/kind", b"record"));
+                facts.push(("/kythe/subkind", b"module"));
+                facts.push(("/kythe/complete", b"definition"));
+                // Emit the childof edge on the crate if this is the main module
+                if def.qualname == "::" {
+                    self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+                }
             }
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
 
         // Emit nodes for all fact/value pairs
-        for (fact_name, fact_value) in &facts {
-            self.emitter.emit_node(def_vname, fact_name, fact_value.clone())?;
+        for (fact_name, fact_value) in facts.iter() {
+            self.emitter.emit_node(def_vname, fact_name, fact_value.to_vec())?;
         }
+
+        // Calculate the byte_start and byte_end using the OffsetIndex
+        let byte_start = self
+            .offset_index
+            .get_byte_offset(def_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get starting offset for definition {:?}",
+                    def.id
+                ))
+            })?;
+        let byte_end = self
+            .offset_index
+            .get_byte_offset(def_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get ending offset for definition {:?}",
+                    def.id
+                ))
+            })?;
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
-        // If the definition is a Mod, place the anchor at the first byte only,
-        // otherwise use the entire span
-        // TODO(Arm1stice): Improve this mechanism to be more accurate for modules
-        // defined inside of files
-        if def.kind == DefKind::Mod {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_start + 1,
-            )?;
+        // Module definitions need special logic if they are implicit
+        if def.kind == DefKind::Mod && self.is_module_implicit(def) {
+            // Emit a 0-length anchor and defines edge at the top of the file
+            self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+            self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
         } else {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_end,
-            )?;
+            self.emitter.emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
         }
 
         // If documentation isn't "" also generate a documents node
@@ -265,6 +352,48 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         crate_v_name.set_signature(signature.to_string());
         crate_v_name.set_language("rust".to_string());
         crate_v_name
+    }
+
+    /// Given a definition for a module, returns the byte span
+    /// for the module definition
+    ///
+    /// # Notes:
+    /// If the definition provided isn't for a module, `false` is returned.
+    /// If the span file name is called `mod.rs` but there is no parent
+    /// directory, `false` is returned.
+    fn is_module_implicit(&self, def: &Def) -> bool {
+        // Ensure that this defition is for a module
+        if def.kind != DefKind::Mod {
+            return false;
+        }
+
+        // Check if this is the primary module of the crate. If so, the module starts at
+        // the top of the file
+        if def.qualname == "::" {
+            return true;
+        }
+
+        let file_path = def.span.file_name.clone();
+
+        // The name we expect if the module definition is the file itself
+        let expected_name: String;
+
+        // If the file name is mod.rs, then the expected name is the directory name
+        if Some(OsStr::new("mod.rs")) == file_path.file_name() {
+            if let Some(parent_directory) = file_path.parent() {
+                expected_name = parent_directory.file_name().unwrap().to_str().unwrap().to_string();
+            } else {
+                // This should only happen if there is something wrong with the file path we
+                // were provided in the CompilationUnit
+                return false;
+            }
+        } else {
+            // Get the file name without the extension and convert to a string
+            expected_name = file_path.file_stem().unwrap().to_str().unwrap().to_string();
+        }
+
+        // If the names match, the module definition is implicit
+        def.name == expected_name
     }
 }
 
