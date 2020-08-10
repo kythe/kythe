@@ -271,6 +271,31 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // Generate the facts to be emitted and emit some edges as necessary
         match def.kind {
+            DefKind::Enum => {
+                facts.push(("/kythe/node/kind", b"sum"));
+                facts.push(("/kythe/complete", b"definition"));
+                facts.push(("/kythe/subkind", b"enum"));
+            }
+            DefKind::Field => {
+                // TODO: Determine how to emit `typed` edges for field based on the `value` on
+                // the definition
+                facts.push(("/kythe/node/kind", b"variable"));
+                facts.push(("/kythe/complete", b"definition"));
+                facts.push(("/kythe/subkind", b"field"));
+
+                if let Some(parent_id) = def.parent {
+                    // Field definitions come after their parent's definitions so their VName should
+                    // be in the list of VNames
+                    let parent_vname = self.definition_vnames.get(&parent_id).ok_or_else(|| {
+                        KytheError::IndexerError(format!(
+                            "Failed to get vname for parent of definition {:?}",
+                            def.id
+                        ))
+                    })?;
+                    // Emit the childof edge between this node and the parent
+                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
+                }
+            }
             DefKind::Function => {
                 facts.push(("/kythe/node/kind", b"function"));
                 facts.push(("/kythe/complete", b"definition"));
@@ -282,6 +307,26 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // Emit the childof edge on the crate if this is the main module
                 if def.qualname == "::" {
                     self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+                }
+            }
+            // Struct inside an enum
+            DefKind::StructVariant => {
+                facts.push(("/kythe/node/kind", b"record"));
+                facts.push(("/kythe/complete", b"definition"));
+                facts.push(("/kythe/subkind", b"structvariant"));
+            }
+            // Tuple inside an enum. Has 0 or more parameters and includes constants
+            DefKind::TupleVariant => {
+                // Check if this is a constant inside of an enum
+                if def.qualname.ends_with(&def.value) {
+                    // TODO: Determine how to get the value of the constant.
+                    // Currently might not be possible using the data from the
+                    // save_analysis
+                    facts.push(("/kythe/node/kind", b"constant"));
+                } else {
+                    facts.push(("/kythe/node/kind", b"record"));
+                    facts.push(("/kythe/complete", b"definition"));
+                    facts.push(("/kythe/subkind", b"tuplevariant"));
                 }
             }
             // TODO(Arm1stice): Support other types of definitions
