@@ -76,6 +76,11 @@ rust_indexer_test(
 )
 
 rust_indexer_test(
+    name = "enum_test",
+    srcs = ["testdata/enum.rs"],
+)
+
+rust_indexer_test(
     name = "function_test",
     srcs = ["testdata/function.rs"],
 )
