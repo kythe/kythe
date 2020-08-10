@@ -89,3 +89,33 @@ rust_indexer_test(
     name = "modules_test",
     srcs = glob(["testdata/modules/*"]),
 )
+
+rust_indexer_test(
+    name = "struct_test",
+    srcs = ["testdata/struct.rs"],
+)
+
+rust_indexer_test(
+    name = "tbuiltin_test",
+    srcs = ["testdata/tbuiltin.rs"],
+)
+
+rust_indexer_test(
+    name = "trait_test",
+    srcs = ["testdata/trait.rs"],
+)
+
+rust_indexer_test(
+    name = "type_test",
+    srcs = ["testdata/type.rs"],
+)
+
+rust_indexer_test(
+    name = "union_test",
+    srcs = ["testdata/union.rs"],
+)
+
+rust_indexer_test(
+    name = "variable_test",
+    srcs = ["testdata/variable.rs"],
+)

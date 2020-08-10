@@ -569,17 +569,22 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
                 }
             }
+<<<<<<< HEAD
+=======
             DefKind::Struct => {
                 facts.push(("/kythe/node/kind", b"record"));
                 facts.push(("/kythe/complete", b"definition"));
                 facts.push(("/kythe/subkind", b"struct"));
             }
+>>>>>>> rust-indexer-structs
             // Struct inside an enum
             DefKind::StructVariant => {
                 facts.push(("/kythe/node/kind", b"record"));
                 facts.push(("/kythe/complete", b"definition"));
                 facts.push(("/kythe/subkind", b"structvariant"));
             }
+<<<<<<< HEAD
+=======
             DefKind::Trait => {
                 facts.push(("/kythe/node/kind", b"interface"));
 
@@ -588,6 +593,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     self.trait_children.insert(*child, def.id);
                 }
             }
+>>>>>>> rust-indexer-structs
             // Tuple inside an enum. Has 0 or more parameters and includes constants
             DefKind::TupleVariant => {
                 // Check if this is a constant inside of an enum
@@ -602,6 +608,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     facts.push(("/kythe/subkind", b"tuplevariant"));
                 }
             }
+<<<<<<< HEAD
+=======
             DefKind::Type => {
                 facts.push(("/kythe/node/kind", b"talias"));
 
@@ -616,6 +624,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 facts.push(("/kythe/complete", b"definition"));
                 facts.push(("/kythe/subkind", b"union"));
             }
+>>>>>>> rust-indexer-structs
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
