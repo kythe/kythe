@@ -1,1 +1,1 @@
-fn _file_test_fn(){}
+fn _file_test_fn() {}

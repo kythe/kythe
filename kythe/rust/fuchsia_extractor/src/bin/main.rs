@@ -16,8 +16,9 @@
 
 //! A Fuchsia OS compilation extractor.
 //!
-//! This is a purpose-built compilation extractor to be used on the [Fuchsia OS][fxos]
-//! source code.  Please refer to the accompanying `README.md` file for usage details.
+//! This is a purpose-built compilation extractor to be used on the [Fuchsia
+//! OS][fxos] source code.  Please refer to the accompanying `README.md` file
+//! for usage details.
 //!
 //! [fxos]: https://fuchsia.dev
 
@@ -41,9 +42,9 @@ use {
 const SOURCE_CORPUS_NAME: &'static str = "";
 const RLIBS_CORPUS_NAME: &'static str = "rlibs";
 
-/// Reads the entire directory pointed at by `dir`.  The returned result contains only names of
-/// regular files found.  The names must match `pattern`.  If `recursive` is set, any directories
-/// found will be recursed into.
+/// Reads the entire directory pointed at by `dir`.  The returned result
+/// contains only names of regular files found.  The names must match `pattern`.
+/// If `recursive` is set, any directories found will be recursed into.
 fn read_dir(dir: &Path, recursive: bool, pattern: &Regex) -> Result<Vec<PathBuf>> {
     let mut files: Vec<PathBuf> = vec![];
     let contents = fs::read_dir(&dir)
@@ -102,9 +103,10 @@ fn get_unique_filename(file: &PathBuf, output_dir: &PathBuf) -> Result<PathBuf> 
     Ok(output_filename)
 }
 
-/// Canonicalizes the appearances of "." and ".." in the given path.  The effect is similar to
-/// [std::fs::canonicalize], except no symlink resolution is applied.  For this canonicalization
-/// to make sense, the supplied path must be absolute.
+/// Canonicalizes the appearances of "." and ".." in the given path.  The effect
+/// is similar to [std::fs::canonicalize], except no symlink resolution is
+/// applied.  For this canonicalization to make sense, the supplied path must be
+/// absolute.
 fn partial_canonicalize_path(path: &PathBuf) -> Result<PathBuf> {
     if !path.is_absolute() {
         return Err(anyhow::anyhow!(
@@ -132,10 +134,11 @@ fn partial_canonicalize_path(path: &PathBuf) -> Result<PathBuf> {
     Ok(result)
 }
 
-/// Creates a VName for the given file.  The file name is rebased so that it contains no
-/// references to parent, but has its path name relative to the based dir of the specific corpus
-/// root.  The base_dir is expected to be one of the ancestor directories of `file_name`, or an
-/// error will be reported. `base_dir` does not need to be canonicalized, i.e. may contain `..`.
+/// Creates a VName for the given file.  The file name is rebased so that it
+/// contains no references to parent, but has its path name relative to the
+/// based dir of the specific corpus root.  The base_dir is expected to be one
+/// of the ancestor directories of `file_name`, or an error will be reported.
+/// `base_dir` does not need to be canonicalized, i.e. may contain `..`.
 fn make_vname(
     file_name: &PathBuf,
     corpus: &str,
@@ -161,10 +164,9 @@ fn make_vname(
     vname.set_language(language.to_string());
     vname.set_corpus(corpus.to_string());
     vname.set_root(root.to_string());
-    let rel_path_str = rel_path.to_str().ok_or(anyhow::anyhow!(
-        "make_vname: could not convert to UTF-8: {:?}",
-        &rel_path
-    ))?;
+    let rel_path_str = rel_path
+        .to_str()
+        .ok_or(anyhow::anyhow!("make_vname: could not convert to UTF-8: {:?}", &rel_path))?;
     if let Some(_) = rel_path_str.find("../") {
         return Err(anyhow::anyhow!(
             concat!(concat!(
@@ -181,9 +183,10 @@ fn make_vname(
     Ok(vname)
 }
 
-/// Creates a CompilationUnit_FileInput from the supplied parts.  The creation may fail if the
-/// file path is not UTF-8 clean. `file_name` is the relative path to add to file
-/// input, `base_dir` is the directory where compilation ran.
+/// Creates a CompilationUnit_FileInput from the supplied parts.  The creation
+/// may fail if the file path is not UTF-8 clean. `file_name` is the relative
+/// path to add to file input, `base_dir` is the directory where compilation
+/// ran.
 fn make_file_input(
     vname: VName,
     file_name: &PathBuf,
@@ -196,10 +199,7 @@ fn make_file_input(
     file_info.set_path(
         file_name
             .to_str()
-            .ok_or(anyhow::anyhow!(
-                "make_file_input: could not convert to UTF-8: {:?}",
-                file_name
-            ))?
+            .ok_or(anyhow::anyhow!("make_file_input: could not convert to UTF-8: {:?}", file_name))?
             .to_string(),
     );
     file_info.set_digest(digest.to_string());
@@ -239,10 +239,7 @@ fn get_crate_name(prelude: &rls_data::CratePreludeData) -> String {
 /// Gets the path to the crate root directory from the prelude.
 fn get_crate_directory(prelude: &rls_data::CratePreludeData) -> PathBuf {
     let root_path = PathBuf::from(&prelude.crate_root);
-    root_path
-        .parent()
-        .unwrap_or(&PathBuf::from(""))
-        .to_path_buf()
+    root_path.parent().unwrap_or(&PathBuf::from("")).to_path_buf()
 }
 
 /// Populates a single input into the Writer.
@@ -310,36 +307,29 @@ fn process_file(
 
     // Add the JSON file to the archive.
     let save_analysis_contents = fs::read(&file).with_context(|| {
-        format!(
-            "process_file: while reading save analysis for storage: {:?}",
-            &file
-        )
+        format!("process_file: while reading save analysis for storage: {:?}", &file)
     })?;
     let save_analysis_digest = archive
         .write_file(&save_analysis_contents)
         .with_context(|| format!("while saving save analysis for storage: {:?}", &file))?;
     file_inputs.push(make_file_input(
-        make_vname(
-            file,
-            &options.corpus_name,
-            "save-analysis",
-            &options.base_dir,
-            "rust",
-        )?,
+        make_vname(file, &options.corpus_name, "save-analysis", &options.base_dir, "rust")?,
         file,
         &options.base_dir,
         &save_analysis_digest,
     )?);
 
     // Add all arguments.
-    let compilation = analysis.compilation.as_ref().ok_or(anyhow::anyhow!(
-        "process_file: analysis JSON file has no compilation section"
-    ))?;
+    let compilation = analysis
+        .compilation
+        .as_ref()
+        .ok_or(anyhow::anyhow!("process_file: analysis JSON file has no compilation section"))?;
     let arguments: Vec<String> = compilation.arguments.clone();
 
-    let prelude = analysis.prelude.as_ref().ok_or(anyhow::anyhow!(
-        "process_file: analysis JSON file has no prelude section"
-    ))?;
+    let prelude = analysis
+        .prelude
+        .as_ref()
+        .ok_or(anyhow::anyhow!("process_file: analysis JSON file has no prelude section"))?;
     let crate_name = get_crate_name(&prelude);
 
     let mut required_inputs: Vec<String> = vec![];
@@ -348,10 +338,7 @@ fn process_file(
     let crate_root_directory = get_crate_directory(&prelude);
     let crate_root_directory = &options.base_dir.join(crate_root_directory);
     let rust_files = read_dir(&crate_root_directory, true, &MATCH_RUST).with_context(|| {
-        format!(
-            "process_file: while reading crate root: {:?}",
-            &crate_root_directory
-        )
+        format!("process_file: while reading crate root: {:?}", &crate_root_directory)
     })?;
 
     // The assumption is that the directory is 2 levels above base_dir, which
@@ -401,10 +388,7 @@ fn process_file(
     compilation_unit.set_output_key(compilation_output_path.to_string_lossy().to_string());
 
     let abs_base_dir = fs::canonicalize(&options.base_dir).with_context(|| {
-        format!(
-            "process_file: while trying to find absolute path of {:?}",
-            &options.base_dir
-        )
+        format!("process_file: while trying to find absolute path of {:?}", &options.base_dir)
     })?;
     compilation_unit.set_working_directory(abs_base_dir.to_string_lossy().to_string());
 
@@ -415,27 +399,22 @@ fn process_file(
     indexed_compilation.set_unit(compilation_unit);
     indexed_compilation.set_index(index);
     archive.write_unit(&indexed_compilation).with_context(|| {
-        format!(
-            "process_file: while writing compilation unit for crate: {:?}",
-            &crate_name
-        )
+        format!("process_file: while writing compilation unit for crate: {:?}", &crate_name)
     })?;
     let output_filename = output_dir.join(kzip_filename);
     println!("returning filename: {:?}", &output_filename);
     Ok(output_filename)
 }
 
-/// Processes each save-analysis file in turn, extracting useful information from it.
+/// Processes each save-analysis file in turn, extracting useful information
+/// from it.
 fn process_files(files: &[PathBuf], options: &Options) -> Result<Vec<PathBuf>> {
     let mut kzips: Vec<PathBuf> = vec![];
     for file_name in files {
         let file = fs::File::open(&file_name)
             .with_context(|| format!("process_files: while opening file: {:?}", &file_name))?;
         let analysis: rls_data::Analysis = serde_json::from_reader(file).with_context(|| {
-            format!(
-                "process_files: while parsing save-analysis JSON from file: {:?}",
-                &file_name
-            )
+            format!("process_files: while parsing save-analysis JSON from file: {:?}", &file_name)
         })?;
         let kzip = process_file(&file_name, &options.output_dir, &analysis, options)
             .with_context(|| format!("process_files: while processing file: {:?}", &file_name))?;
@@ -449,9 +428,10 @@ fn make_relative_to(path: &impl AsRef<Path>, parent: &impl AsRef<Path>) -> Resul
     let mut src_components = path.as_ref().components().peekable();
     let mut dest_components = parent.as_ref().components().peekable();
 
-    // Start from the canonical paths of source and destination.  Remove the maximal shared prefix.
-    // Then assemble the final path from (1) the remaining path components of dest, replaced by
-    // "..", and then remaining path components of source.
+    // Start from the canonical paths of source and destination.  Remove the maximal
+    // shared prefix. Then assemble the final path from (1) the remaining path
+    // components of dest, replaced by "..", and then remaining path components
+    // of source.
     loop {
         let src = src_components.peek();
         let dest = dest_components.peek();
@@ -484,16 +464,17 @@ struct Options {
     base_dir: PathBuf,
     /// The directory to which to write the kzip file outputs.
     output_dir: PathBuf,
-    /// The comma-separated revisions string, used to fill out the indexed compilation
-    /// protocol buffer field called `index`.
+    /// The comma-separated revisions string, used to fill out the indexed
+    /// compilation protocol buffer field called `index`.
     revisions: Vec<String>,
 }
 
 fn main() -> Result<()> {
-    // We'd rather use a crate that parses the program arguments directly into the `Options`
-    // struct.  However, for some weird reason our dependencies can not be so aligned to get any
-    // such crate to compile, even including a newer version of `clap`, which supports this kind of
-    // parsing.  So we parse like this.
+    // We'd rather use a crate that parses the program arguments directly into the
+    // `Options` struct.  However, for some weird reason our dependencies can
+    // not be so aligned to get any such crate to compile, even including a
+    // newer version of `clap`, which supports this kind of parsing.  So we
+    // parse like this.
     let matches = clap_app!{
         fuchsia_extractor =>
             (about: "A Kythe compilation extractor binary specifically made for the Fuchsia repository.")
@@ -506,7 +487,8 @@ fn main() -> Result<()> {
             (@arg REVISIONS: --revisions +takes_value "Comma-separated list of revisions for IndexedCompilation.index")
     }.get_matches();
 
-    // Clap version that we use has no direct parsing to options, so we do it this way.
+    // Clap version that we use has no direct parsing to options, so we do it this
+    // way.
     let files_from_dirs = read_save_analysis_dir(matches.value_of("INPUT_DIR"))
         .with_context(|| format!("while reading input directories"))?;
     let explicit_files = matches
@@ -515,10 +497,8 @@ fn main() -> Result<()> {
         .split(",")
         .map(|e| e.into())
         .collect::<Vec<PathBuf>>();
-    let all_files: Vec<PathBuf> = files_from_dirs
-        .into_iter()
-        .chain(explicit_files.into_iter())
-        .collect();
+    let all_files: Vec<PathBuf> =
+        files_from_dirs.into_iter().chain(explicit_files.into_iter()).collect();
     let output_dir: PathBuf = matches.value_of("OUTPUT_DIR").unwrap().into();
     let corpus_name = matches
         .value_of("CORPUS")
@@ -549,9 +529,10 @@ fn main() -> Result<()> {
 mod testing {
     use {super::*, std::collections::HashSet, std::fs, std::io::Read};
 
-    /// Rebases the given `relative_path`, such that it is relative to `rebase_dir`.
-    /// For example, "./foo/bar/file.txt", relative to "./foo" is "bar/file.txt".  But,
-    /// relative to "./baz" is "../foo/bar/file.txt". `rebase_dir` must be a directory.  Both paths
+    /// Rebases the given `relative_path`, such that it is relative to
+    /// `rebase_dir`. For example, "./foo/bar/file.txt", relative to "./foo"
+    /// is "bar/file.txt".  But, relative to "./baz" is
+    /// "../foo/bar/file.txt". `rebase_dir` must be a directory.  Both paths
     /// must exist on the filesystem.
     fn rebase_path(
         relative_path: impl AsRef<Path>,
@@ -574,8 +555,8 @@ mod testing {
     /// Gets Bazel's sharded temporary directory.  This is better than using the
     /// tempdir package or a similar solution, since adding `--sandbox_debug`
     /// flag to bazel will *not* remove the temporary directory, which is hugely
-    /// useful for debugging.  In addition, this will play nice with remote builds
-    /// and sandboxes.
+    /// useful for debugging.  In addition, this will play nice with remote
+    /// builds and sandboxes.
     fn get_bazel_temp_dir() -> PathBuf {
         let temp_dir = PathBuf::from(std::env::var("TEST_TMPDIR").expect("temp dir is available"));
         let temp_dir = std::fs::canonicalize(&temp_dir).unwrap();
@@ -680,10 +661,7 @@ mod testing {
             "some-other-thing=barrlib",
         ];
         let result = extract_rlibs(&args);
-        assert_eq!(
-            vec!["foo.rlib", "dir1/dir2/foo-something.rlib", "bar.rlib",],
-            result
-        );
+        assert_eq!(vec!["foo.rlib", "dir1/dir2/foo-something.rlib", "bar.rlib",], result);
     }
 
     #[test]
@@ -773,14 +751,10 @@ mod testing {
     }
 
     fn unzip_compilation_unit(zip_path: impl AsRef<Path>) -> IndexedCompilation {
-        let file = fs::File::open(&zip_path.as_ref()).expect(&format!(
-            "could not open zip file: {:?}",
-            &zip_path.as_ref()
-        ));
-        let mut zip = zip::ZipArchive::new(file).expect(&format!(
-            "could not create zip file handle: {:?}",
-            &zip_path.as_ref()
-        ));
+        let file = fs::File::open(&zip_path.as_ref())
+            .expect(&format!("could not open zip file: {:?}", &zip_path.as_ref()));
+        let mut zip = zip::ZipArchive::new(file)
+            .expect(&format!("could not create zip file handle: {:?}", &zip_path.as_ref()));
         for i in 0..zip.len() {
             let mut file = zip.by_index(i).unwrap();
             if !file.is_file() || !file.name().starts_with("root/pbunits/") {

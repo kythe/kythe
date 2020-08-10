@@ -1,1 +1,1 @@
-fn _lib_test_fn(){}
+fn _lib_test_fn() {}
