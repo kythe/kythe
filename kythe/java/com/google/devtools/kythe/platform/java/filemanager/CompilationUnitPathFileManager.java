@@ -357,6 +357,8 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
               .toAbsolutePath();
       Path systemRoot = Files.createDirectory(temporaryDirectory.resolve("system"));
       try (Stream<Path> stream = Files.walk(sys.resolve("lib"))) {
+        // While this is ugly, it's safer in general than converting to a one-shot Iterable
+        // using ::iterator.
         Iterator<Path> it = stream.iterator();
         while (it.hasNext()) {
           Path path = it.next();
