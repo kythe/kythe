@@ -464,12 +464,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // Generate the facts to be emitted and emit some edges as necessary
         match def.kind {
-<<<<<<< HEAD
-=======
             DefKind::Const | DefKind::Static => {
                 facts.push(("/kythe/node/kind", b"constant"));
             }
->>>>>>> rust-indexer-structs
             DefKind::Enum => {
                 facts.push(("/kythe/node/kind", b"sum"));
                 facts.push(("/kythe/complete", b"definition"));
