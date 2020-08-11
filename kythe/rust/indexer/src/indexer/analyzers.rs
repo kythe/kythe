@@ -21,7 +21,7 @@ use super::offset::OffsetIndex;
 use analysis_rust_proto::CompilationUnit;
 use rls_analysis::Crate;
 use rls_data::{Def, DefKind};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -67,15 +67,6 @@ pub struct CrateAnalyzer<'a, 'b> {
     offset_index: &'b OffsetIndex,
     // An index for mapping a method's definition Id to what it is implementing
     method_index: HashMap<rls_data::Id, MethodImpl>,
-    // A temporary map from a method definition Id to the trait the method is in
-    trait_children: HashMap<rls_data::Id, rls_data::Id>,
-    // A map from a tuple of (trait definition Id, method name) to the method's VName. Used to
-    // create `overrides` edges
-    trait_methods: HashMap<(rls_data::Id, String), VName>,
-    // A HashSet of definition ids for incomplete variable definitions
-    // TODO: Remove dead_code override once references are implemented
-    #[allow(dead_code)]
-    incomplete_definitions: HashSet<rls_data::Id>,
     // A map from type names to their vnames
     type_vnames: HashMap<String, VName>,
 }
@@ -238,9 +229,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             definition_vnames: HashMap::new(),
             offset_index,
             method_index: HashMap::new(),
-            trait_children: HashMap::new(),
-            trait_methods: HashMap::new(),
-            incomplete_definitions: HashSet::new(),
             type_vnames,
         }
     }
@@ -527,8 +515,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 facts.push(("/kythe/node/kind", b"function"));
                 facts.push(("/kythe/complete", b"definition"));
 
-                // If the if-statement logic passes, this is a method on a struct. Otherwise, it
-                // is a method on a trait
+                // If the if-statement logic passes, this is a method on a struct and we emit a
+                // "childof" edge. Otherwise, it is a method on a trait and we
+                // ignore it
                 if let Some(method_impl) = self.method_index.remove(&def.id) {
                     // Get the vname of the parent struct
                     // Need to have the option variable to avoid multiple borrows on "self".
@@ -541,8 +530,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         // krate disambiguator and index to create the signature. Usually this
                         // occurs if the save_analysis feeds us data that isn't part of our crate.
                         let mut vname = self.krate_vname.clone();
-                        let disambiguator =
-                            self.krate_ids.get(&method_impl.struct_target.krate).ok_or_else(|| {
+                        let disambiguator = self
+                            .krate_ids
+                            .get(&method_impl.struct_target.krate)
+                            .ok_or_else(|| {
                                 KytheError::IndexerError(format!(
                                     "Can't find parent vname for method {:?} (\"{}\")",
                                     def.id, def.name
@@ -556,14 +547,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     };
                     // Emit a childof edge to the parent struct
                     self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
-                } else {
-                    // Remove the method from the temporary trait_children HashMap and add to the
-                    // trait_methods HashMap
-                    let trait_id = self.trait_children.remove(&def.id)
-                        .ok_or_else(|| KytheError::IndexerError(
-                            format!("Method {:?} is part of a trait but is not present in self.trait_children", def.id)
-                    ))?;
-                    self.trait_methods.insert((trait_id, def.name.to_string()), def_vname.clone());
                 }
             }
             DefKind::Mod => {
@@ -588,11 +571,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             DefKind::Trait => {
                 facts.push(("/kythe/node/kind", b"interface"));
-
-                // Add the child methods of the trait to the trait_children HashMap
-                for child in def.children.iter() {
-                    self.trait_children.insert(*child, def.id);
-                }
             }
             // Tuple inside an enum. Has 0 or more parameters and includes constants
             DefKind::TupleVariant => {
