@@ -20,3 +20,5 @@ impl TestStruct {
     //- TestFn childof Struct
     fn _test() {}
 }
+
+fn main(){}
