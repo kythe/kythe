@@ -119,3 +119,8 @@ rust_indexer_test(
     name = "variable_test",
     srcs = ["testdata/variable.rs"],
 )
+
+rust_indexer_test(
+    name = "xrefs_test",
+    srcs = ["testdata/xrefs.rs"],
+)

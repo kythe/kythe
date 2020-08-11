@@ -158,7 +158,7 @@ impl<'a> UnitAnalyzer<'a> {
         crate_analyzer.emit_tbuiltin_nodes()?;
         crate_analyzer.process_implementations()?;
         crate_analyzer.emit_definitions()?;
-        // TODO(Arm1stice): Emit references and implementations
+        crate_analyzer.emit_xrefs()?;
         Ok(())
     }
 
@@ -671,6 +671,70 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             self.emitter.emit_edge(&doc_vname, def_vname, "/kythe/edge/documents")?;
         }
 
+        Ok(())
+    }
+
+    /// Emit the Kythe edges for cross references in this crate
+    pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
+        // We must clone to avoid double borrowing "self"
+        let analysis = self.krate.analysis.clone();
+
+        let mut template_vname = self.krate_vname.clone();
+        template_vname.set_language("rust".to_string());
+        let krate_signature = template_vname.get_signature();
+
+        for reference in &analysis.refs {
+            let mut reference_vname = template_vname.clone();
+            let span = &reference.span;
+            reference_vname.set_path(span.file_name.to_str().unwrap().to_string());
+
+            // Get byte span
+            let start_byte_option = self.offset_index.get_byte_offset(
+                span.file_name.to_str().unwrap(),
+                span.line_start.0,
+                span.column_start.0,
+            );
+
+            // If the start byte is none, then the save_analysis is giving information about
+            // standard library files and we should skip
+            if start_byte_option.is_none() {
+                continue;
+            }
+
+            let start_byte = start_byte_option.unwrap();
+            let end_byte = self
+                .offset_index
+                .get_byte_offset(
+                    span.file_name.to_str().unwrap(),
+                    span.line_end.0,
+                    span.column_end.0,
+                )
+                .ok_or_else(|| {
+                    KytheError::IndexerError(format!(
+                        "Failed to get ending offset for reference {:?}",
+                        reference
+                    ))
+                })?;
+
+            // Create signature based on span
+            reference_vname
+                .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
+
+            // Create VName being referenced
+            let disambiguators = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get krate disambiguator for reference {:?}",
+                    reference
+                ))
+            })?;
+
+            let mut target_vname = reference_vname.clone();
+            target_vname
+                .set_signature(format!("{}_def_{}", disambiguators, reference.ref_id.index));
+            target_vname.set_language("rust".to_string());
+
+            self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
+        }
         Ok(())
     }
 }
