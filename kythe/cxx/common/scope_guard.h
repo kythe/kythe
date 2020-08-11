@@ -24,10 +24,10 @@ namespace kythe {
 /// \brief A move-only RAII object that calls a stored cleanup functor when
 /// destroyed.
 template <typename F>
-class ScopeGuard {
+class [[nodiscard]] ScopeGuard {
  public:
-  explicit ScopeGuard(F&& Fn) : Fn(std::forward<F>(Fn)) {}
-  ScopeGuard(ScopeGuard&& O) : Released(O.Released), Fn(std::move(O.Fn)) {
+  explicit ScopeGuard(F && Fn) : Fn(std::forward<F>(Fn)) {}
+  ScopeGuard(ScopeGuard && O) : Released(O.Released), Fn(std::move(O.Fn)) {
     O.Released = true;
   }
   ~ScopeGuard() {
