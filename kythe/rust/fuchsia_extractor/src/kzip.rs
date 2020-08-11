@@ -120,8 +120,8 @@ impl Writer {
         const CAPACITY: usize = 200;
         let mut buf: Vec<u8> = vec![0; CAPACITY];
         let mut resulting_buffer_size: sys::size_t = 0;
-        let content = unit.write_to_bytes()
-            .with_context(|| "kzip::write_unit: while writing protobuf")?;
+        let content =
+            unit.write_to_bytes().with_context(|| "kzip::write_unit: while writing protobuf")?;
         let status = unsafe {
             sys::KzipWriter_WriteUnit(
                 self.rep.as_ptr(),
@@ -134,8 +134,10 @@ impl Writer {
         };
         if status != 0 {
             return Err(anyhow::anyhow!(
-                    "kzip::write_unit: error code: {}, while writing {} bytes",
-                    status, content.len()));
+                "kzip::write_unit: error code: {}, while writing {} bytes",
+                status,
+                content.len()
+            ));
         }
         // This should always be a UTF-8 clean string since it's a digest.
         buf.resize(resulting_buffer_size as usize, 0);
