@@ -26,8 +26,8 @@ namespace kythe {
 template <typename F>
 class [[nodiscard]] ScopeGuard {
  public:
-  explicit ScopeGuard(F && Fn) : Fn(std::forward<F>(Fn)) {}
-  ScopeGuard(ScopeGuard && O) : Released(O.Released), Fn(std::move(O.Fn)) {
+  explicit ScopeGuard(F&& Fn) : Fn(std::forward<F>(Fn)) {}
+  ScopeGuard(ScopeGuard&& O) : Released(O.Released), Fn(std::move(O.Fn)) {
     O.Released = true;
   }
   ~ScopeGuard() {
