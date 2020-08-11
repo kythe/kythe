@@ -560,65 +560,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     self.trait_methods.insert((trait_id, def.name.to_string()), def_vname.clone());
                 }
             }
-            DefKind::Local => {
-                // If the variable is a closure, emit that it is a function
-                if def.value.contains("closure@") {
-                    facts.push(("/kythe/node/kind", b"function"));
-                    facts.push(("/kythe/complete", b"definition"));
-                } else {
-                    facts.push(("/kythe/node/kind", b"variable"));
-                    facts.push(("/kythe/subkind", b"local"));
-                }
-
-                // TODO: Find a way to determine if a variable is only being
-                // declared. The save_analysis uses different index offsets for
-                // difference classes of local variables. One class is for
-                // mutable variables, one is for immutable variables, and one is
-                // for declarations. However these aren't static offsets, they
-                // are based on how many classes were previously seen. The first
-                // class that is seen has an offset of ~2147483647, the second
-                // has an offset of ~1073741827, and the third has an offset of
-                // ~3221225471.
-            }
-            DefKind::Method => {
-                // TODO: Handle parameters, emit a defines edge on the entire definition span of
-                // the method
-                facts.push(("/kythe/node/kind", b"function"));
-                facts.push(("/kythe/complete", b"definition"));
-
-                // If the if-statement logic passes, this is a method on a struct. Otherwise, it
-                // is a method on a trait
-                if let Some(method_impl) = self.method_index.remove(&def.id) {
-                    // Emit a childof edge to the parent struct
-                    let parent_vname = self
-                        .definition_vnames
-                        .get(&method_impl.struct_target)
-                        .ok_or_else(|| {
-                            KytheError::IndexerError(format!(
-                                "Failed to vname for parent {:?} of method {:?}",
-                                method_impl.struct_target, def.id,
-                            ))
-                        })?;
-                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
-
-                    // If this method of part of a trait implementation, emit an overrides edge
-                    if let Some(trait_id) = &method_impl.trait_target {
-                        let method_vname = self.trait_methods.get(&(*trait_id, def.name.to_string()))
-                        .ok_or_else(|| KytheError::IndexerError(
-                                format!("Method {:?} is implementing a trait method {} but the method's vname can't be found in self.trait_methods", def.id, def.name)
-                        ))?;
-                        self.emitter.emit_edge(def_vname, method_vname, "/kythe/edge/overrides")?;
-                    }
-                } else {
-                    // Remove the method from the temporary trait_children HashMap and add to the
-                    // trait_methods HashMap
-                    let trait_id = self.trait_children.remove(&def.id)
-                        .ok_or_else(|| KytheError::IndexerError(
-                            format!("Method {:?} is part of a trait but is not present in self.trait_children", def.id)
-                    ))?;
-                    self.trait_methods.insert((trait_id, def.name.to_string()), def_vname.clone());
-                }
-            }
             DefKind::Mod => {
                 facts.push(("/kythe/node/kind", b"record"));
                 facts.push(("/kythe/subkind", b"module"));
