@@ -14,7 +14,7 @@ fn main() {
     //- Local.subkind local
     let _test_variable = 0;
 
-    // TODO: Identify declaractions and emit an ".complete = imcomplete" fact
+    // TODO: Identify declaractions and emit an ".complete = incomplete" fact
     //- @_test_declaration defines/binding Decl
     //- Decl.node/kind variable
     //- Decl.subkind local

@@ -329,8 +329,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     // The struct being implemented on
                     let struct_target = relation.from;
                     // The optional trait being implemented on
+                    // The save_analysis file will have the krate and index be maxint if the
+                    // implementation is not on a trait.
+                    let max_int = 4294967295;
                     let trait_target =
-                        if relation.to.krate != 4294967295 { Some(relation.to) } else { None };
+                        if relation.to.krate != max_int { Some(relation.to) } else { None };
                     method_index.insert(*child, MethodImpl { struct_target, trait_target });
                 }
             }
