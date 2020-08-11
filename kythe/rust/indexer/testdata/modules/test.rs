@@ -7,8 +7,8 @@
 //- TestMod.complete definition
 //- TestMod childof ImplicitMod
 
-//- @nothing defines/binding NothingFn
+//- @_nothing defines/binding NothingFn
 //- NothingFn childof TestMod
-fn nothing() {
+fn _nothing() {
     ()
 }

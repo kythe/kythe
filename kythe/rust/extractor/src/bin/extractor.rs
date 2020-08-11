@@ -47,6 +47,7 @@ fn main() -> Result<()> {
     let kzip_file = File::create(&config.output_path)
         .with_context(|| format!("Failed to create kzip file at path {:?}", config.output_path))?;
     let mut kzip = ZipWriter::new(kzip_file);
+    kzip.add_directory("root/", FileOptions::default())?;
 
     // Get KYTHE_CORPUS variable
     let corpus = std::env::var("KYTHE_CORPUS")

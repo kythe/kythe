@@ -1,10 +1,10 @@
 // Verifies that structs are properly handled by the indexer
 
-//- @TestStruct defines/binding Struct
+//- @_TestStruct defines/binding Struct
 //- Struct.node/kind record
 //- Struct.complete definition
 //- Struct.subkind struct
-struct TestStruct {
+struct _TestStruct {
     //- @test_field defines/binding StructField
     //- StructField childof Struct
     //- StructField.node/kind variable
@@ -13,10 +13,12 @@ struct TestStruct {
     test_field: String,
 }
 
-impl TestStruct {
+impl _TestStruct {
     //- @_test defines/binding TestFn
     //- TestFn.node/kind function
     //- TestFn.complete definition
     //- TestFn childof Struct
     fn _test() {}
 }
+
+fn main(){}

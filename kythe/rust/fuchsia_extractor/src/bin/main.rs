@@ -62,7 +62,8 @@ fn read_dir(dir: &Path, recursive: bool, pattern: &Regex) -> Result<Vec<PathBuf>
             files.extend(recurse);
         } else {
             let path = f.path();
-            if pattern.is_match(&path.to_string_lossy().to_string()) {
+            let path_str = &path.to_string_lossy().to_string();
+            if pattern.is_match(&path_str) && path_str != "" {
                 files.push(path);
             }
         }
@@ -164,9 +165,10 @@ fn make_vname(
     vname.set_language(language.to_string());
     vname.set_corpus(corpus.to_string());
     vname.set_root(root.to_string());
-    let rel_path_str = rel_path
-        .to_str()
-        .ok_or(anyhow::anyhow!("make_vname: could not convert to UTF-8: {:?}", &rel_path))?;
+    let rel_path_str = rel_path.to_str().ok_or(anyhow::anyhow!(
+        "make_vname: could not convert to UTF-8: {:?}",
+        &rel_path
+    ))?;
     if let Some(_) = rel_path_str.find("../") {
         return Err(anyhow::anyhow!(
             concat!(concat!(
@@ -199,7 +201,10 @@ fn make_file_input(
     file_info.set_path(
         file_name
             .to_str()
-            .ok_or(anyhow::anyhow!("make_file_input: could not convert to UTF-8: {:?}", file_name))?
+            .ok_or(anyhow::anyhow!(
+                "make_file_input: could not convert to UTF-8: {:?}",
+                file_name
+            ))?
             .to_string(),
     );
     file_info.set_digest(digest.to_string());
@@ -239,7 +244,10 @@ fn get_crate_name(prelude: &rls_data::CratePreludeData) -> String {
 /// Gets the path to the crate root directory from the prelude.
 fn get_crate_directory(prelude: &rls_data::CratePreludeData) -> PathBuf {
     let root_path = PathBuf::from(&prelude.crate_root);
-    root_path.parent().unwrap_or(&PathBuf::from("")).to_path_buf()
+    root_path
+        .parent()
+        .unwrap_or(&PathBuf::from(""))
+        .to_path_buf()
 }
 
 /// Populates a single input into the Writer.
@@ -294,12 +302,27 @@ fn process_file(
     analysis: &rls_data::Analysis,
     options: &Options,
 ) -> Result<PathBuf> {
-    println!("process_file: processing {:?}", file);
     let file_relative_to_input = make_relative_to(&file, &options.base_dir)?;
     let kzip_filename = get_unique_filename(&file_relative_to_input, output_dir)?;
 
-    let mut archive = kzip::Writer::try_new(&kzip_filename, kzip::Encoding::Proto)
-        .with_context(|| format!("process_file: while creating archive: {:?}", &kzip_filename))?;
+    if Path::new(&kzip_filename).exists() {
+        return Err(anyhow::anyhow!(
+            concat!(
+                "process_file: archive already exists when processing file",
+                ":\n\t{:?}, skipping archive:\n\t{:?}"
+            ),
+            &file,
+            &kzip_filename
+        ));
+    }
+
+    let mut archive =
+        kzip::Writer::try_new(&kzip_filename, kzip::Encoding::Proto).with_context(|| {
+            format!(
+                "process_file: while creating archive:\n\t{:?}\nfrom file: \n\t{:?}",
+                &kzip_filename, file
+            )
+        })?;
 
     let mut compilation_unit = CompilationUnit::new();
 
@@ -307,29 +330,36 @@ fn process_file(
 
     // Add the JSON file to the archive.
     let save_analysis_contents = fs::read(&file).with_context(|| {
-        format!("process_file: while reading save analysis for storage: {:?}", &file)
+        format!(
+            "process_file: while reading save analysis for storage: {:?}",
+            &file
+        )
     })?;
     let save_analysis_digest = archive
         .write_file(&save_analysis_contents)
         .with_context(|| format!("while saving save analysis for storage: {:?}", &file))?;
     file_inputs.push(make_file_input(
-        make_vname(file, &options.corpus_name, "save-analysis", &options.base_dir, "rust")?,
+        make_vname(
+            file,
+            &options.corpus_name,
+            "save-analysis",
+            &options.base_dir,
+            "rust",
+        )?,
         file,
         &options.base_dir,
         &save_analysis_digest,
     )?);
 
     // Add all arguments.
-    let compilation = analysis
-        .compilation
-        .as_ref()
-        .ok_or(anyhow::anyhow!("process_file: analysis JSON file has no compilation section"))?;
+    let compilation = analysis.compilation.as_ref().ok_or(anyhow::anyhow!(
+        "process_file: analysis JSON file has no compilation section"
+    ))?;
     let arguments: Vec<String> = compilation.arguments.clone();
 
-    let prelude = analysis
-        .prelude
-        .as_ref()
-        .ok_or(anyhow::anyhow!("process_file: analysis JSON file has no prelude section"))?;
+    let prelude = analysis.prelude.as_ref().ok_or(anyhow::anyhow!(
+        "process_file: analysis JSON file has no prelude section"
+    ))?;
     let crate_name = get_crate_name(&prelude);
 
     let mut required_inputs: Vec<String> = vec![];
@@ -338,7 +368,10 @@ fn process_file(
     let crate_root_directory = get_crate_directory(&prelude);
     let crate_root_directory = &options.base_dir.join(crate_root_directory);
     let rust_files = read_dir(&crate_root_directory, true, &MATCH_RUST).with_context(|| {
-        format!("process_file: while reading crate root: {:?}", &crate_root_directory)
+        format!(
+            "process_file: while reading crate root: {:?}",
+            &crate_root_directory
+        )
     })?;
 
     // The assumption is that the directory is 2 levels above base_dir, which
@@ -388,7 +421,10 @@ fn process_file(
     compilation_unit.set_output_key(compilation_output_path.to_string_lossy().to_string());
 
     let abs_base_dir = fs::canonicalize(&options.base_dir).with_context(|| {
-        format!("process_file: while trying to find absolute path of {:?}", &options.base_dir)
+        format!(
+            "process_file: while trying to find absolute path of {:?}",
+            &options.base_dir
+        )
     })?;
     compilation_unit.set_working_directory(abs_base_dir.to_string_lossy().to_string());
 
@@ -399,26 +435,59 @@ fn process_file(
     indexed_compilation.set_unit(compilation_unit);
     indexed_compilation.set_index(index);
     archive.write_unit(&indexed_compilation).with_context(|| {
-        format!("process_file: while writing compilation unit for crate: {:?}", &crate_name)
+        format!(
+            "process_file: while writing compilation unit for crate: {:?}",
+            &crate_name
+        )
     })?;
     let output_filename = output_dir.join(kzip_filename);
-    println!("returning filename: {:?}", &output_filename);
     Ok(output_filename)
 }
 
-/// Processes each save-analysis file in turn, extracting useful information
-/// from it.
+/// Allows us to attach error context to a single file in case it is malformed,
+/// so that we can safely skip its further processing without tanking the entire
+/// extractor process.
+///
+/// For some reason the large save-analysis files that the compiler produces are
+/// malformed in certain cases, so for the time being we want the ability to
+/// skip over them safely.
+fn lenient_process_file(file_name: &PathBuf, options: &Options) -> Result<PathBuf> {
+    let file = fs::File::open(&file_name)
+        .with_context(|| format!("process_files: while opening file: {:?}", &file_name))?;
+    let analysis: rls_data::Analysis = serde_json::from_reader(file).with_context(|| {
+        format!(
+            "lenient_process_files: while parsing save-analysis JSON from file: {:?}",
+            &file_name
+        )
+    })?;
+    process_file(&file_name, &options.output_dir, &analysis, options).with_context(|| {
+        format!(
+            "lenient_process_files: while processing file:\n\t{:?}",
+            &file_name
+        )
+    })
+}
+
+/// Processes each save-analysis file in turn, extracting useful information from it.
 fn process_files(files: &[PathBuf], options: &Options) -> Result<Vec<PathBuf>> {
     let mut kzips: Vec<PathBuf> = vec![];
     for file_name in files {
-        let file = fs::File::open(&file_name)
-            .with_context(|| format!("process_files: while opening file: {:?}", &file_name))?;
-        let analysis: rls_data::Analysis = serde_json::from_reader(file).with_context(|| {
-            format!("process_files: while parsing save-analysis JSON from file: {:?}", &file_name)
-        })?;
-        let kzip = process_file(&file_name, &options.output_dir, &analysis, options)
-            .with_context(|| format!("process_files: while processing file: {:?}", &file_name))?;
-        kzips.push(kzip);
+        if !options.quiet {
+            println!("\nprocess_files: processing {:?}", &file_name);
+        }
+        let kzip = lenient_process_file(&file_name, &options);
+        match kzip {
+            Err(ref e) => eprintln!("process_files: found error: {:?}", e),
+            Ok(pb) => {
+                if !options.quiet {
+                    println!("process_files: `- made archive:\n\t{:?}", pb);
+                }
+                kzips.push(pb);
+            }
+        }
+        if !options.quiet {
+            println!("\n");
+        }
     }
     Ok(kzips)
 }
@@ -467,6 +536,8 @@ struct Options {
     /// The comma-separated revisions string, used to fill out the indexed
     /// compilation protocol buffer field called `index`.
     revisions: Vec<String>,
+    /// If set, no non-error log messages are printed.
+    quiet: bool,
 }
 
 fn main() -> Result<()> {
@@ -479,6 +550,7 @@ fn main() -> Result<()> {
         fuchsia_extractor =>
             (about: "A Kythe compilation extractor binary specifically made for the Fuchsia repository.")
             (@arg BASE_DIR: --basedir +takes_value "The directory from which the build was made, default '.'")
+            (@arg QUIET: --quiet "If set, no non-error messages are logged")
             (@arg INPUT_DIR: --inputdir +takes_value "The directory containing save analysis files")
             (@arg INPUT: --inputfiles +takes_value "A comma-separated list of specific save-analysis files to read")
             (@arg OUTPUT_DIR: --output +takes_value +required "(required) The directory to save output kzips into; the directory must exist")
@@ -497,8 +569,10 @@ fn main() -> Result<()> {
         .split(",")
         .map(|e| e.into())
         .collect::<Vec<PathBuf>>();
-    let all_files: Vec<PathBuf> =
-        files_from_dirs.into_iter().chain(explicit_files.into_iter()).collect();
+    let all_files: Vec<PathBuf> = files_from_dirs
+        .into_iter()
+        .chain(explicit_files.into_iter())
+        .collect();
     let output_dir: PathBuf = matches.value_of("OUTPUT_DIR").unwrap().into();
     let corpus_name = matches
         .value_of("CORPUS")
@@ -513,6 +587,7 @@ fn main() -> Result<()> {
         .split(",")
         .map(|e| e.into())
         .collect::<Vec<String>>();
+    let quiet = matches.is_present("QUIET");
 
     let options = Options {
         corpus_name: corpus_name.to_string(),
@@ -520,6 +595,7 @@ fn main() -> Result<()> {
         base_dir,
         output_dir,
         revisions,
+        quiet,
     };
     process_files(&all_files, &options).with_context(|| "while reading save-analysis files")?;
     Ok(())
@@ -661,7 +737,10 @@ mod testing {
             "some-other-thing=barrlib",
         ];
         let result = extract_rlibs(&args);
-        assert_eq!(vec!["foo.rlib", "dir1/dir2/foo-something.rlib", "bar.rlib",], result);
+        assert_eq!(
+            vec!["foo.rlib", "dir1/dir2/foo-something.rlib", "bar.rlib",],
+            result
+        );
     }
 
     #[test]
@@ -751,10 +830,14 @@ mod testing {
     }
 
     fn unzip_compilation_unit(zip_path: impl AsRef<Path>) -> IndexedCompilation {
-        let file = fs::File::open(&zip_path.as_ref())
-            .expect(&format!("could not open zip file: {:?}", &zip_path.as_ref()));
-        let mut zip = zip::ZipArchive::new(file)
-            .expect(&format!("could not create zip file handle: {:?}", &zip_path.as_ref()));
+        let file = fs::File::open(&zip_path.as_ref()).expect(&format!(
+            "could not open zip file: {:?}",
+            &zip_path.as_ref()
+        ));
+        let mut zip = zip::ZipArchive::new(file).expect(&format!(
+            "could not create zip file handle: {:?}",
+            &zip_path.as_ref()
+        ));
         for i in 0..zip.len() {
             let mut file = zip.by_index(i).unwrap();
             if !file.is_file() || !file.name().starts_with("root/pbunits/") {
@@ -786,6 +869,7 @@ mod testing {
             base_dir: data_dir.join("out/terminal.x64"),
             output_dir: temp_dir.clone(),
             revisions: vec!["revision1".into()],
+            quiet: true,
         };
         let all_files: Vec<PathBuf> =
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
