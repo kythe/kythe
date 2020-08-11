@@ -15,7 +15,6 @@ struct TestStruct {}
 impl TestTrait for TestStruct {
     //- @test_method defines/binding ImplMethod
     //- ImplMethod childof Struct
-    //- ImplMethod overrides TestMethod
     fn test_method() {}
 }
 
