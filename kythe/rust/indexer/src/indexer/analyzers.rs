@@ -530,26 +530,32 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // If the if-statement logic passes, this is a method on a struct. Otherwise, it
                 // is a method on a trait
                 if let Some(method_impl) = self.method_index.remove(&def.id) {
+                    // Get the vname of the parent struct
+                    // Need to have the option variable to avoid multiple borrows on "self".
+                    let parent_vname_option =
+                        self.definition_vnames.get(&method_impl.struct_target);
+                    let parent_vname = if let Some(vname) = parent_vname_option {
+                        vname.clone()
+                    } else {
+                        // Create a default VName based on the krate's vname and use the target's
+                        // krate disambiguator and index to create the signature. Usually this
+                        // occurs if the save_analysis feeds us data that isn't part of our crate.
+                        let mut vname = self.krate_vname.clone();
+                        let disambiguator =
+                            self.krate_ids.get(&method_impl.struct_target.krate).ok_or_else(|| {
+                                KytheError::IndexerError(format!(
+                                    "Can't find parent vname for method {:?} (\"{}\")",
+                                    def.id, def.name
+                                ))
+                            })?;
+                        vname.set_signature(format!(
+                            "{}_def_{}",
+                            disambiguator, &method_impl.struct_target.index
+                        ));
+                        vname
+                    };
                     // Emit a childof edge to the parent struct
-                    let parent_vname = self
-                        .definition_vnames
-                        .get(&method_impl.struct_target)
-                        .ok_or_else(|| {
-                            KytheError::IndexerError(format!(
-                                "Failed to vname for parent {:?} of method {:?}",
-                                method_impl.struct_target, def.id,
-                            ))
-                        })?;
-                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
-
-                    // If this method of part of a trait implementation, emit an overrides edge
-                    if let Some(trait_id) = &method_impl.trait_target {
-                        let method_vname = self.trait_methods.get(&(*trait_id, def.name.to_string()))
-                        .ok_or_else(|| KytheError::IndexerError(
-                                format!("Method {:?} is implementing a trait method {} but the method's vname can't be found in self.trait_methods", def.id, def.name)
-                        ))?;
-                        self.emitter.emit_edge(def_vname, method_vname, "/kythe/edge/overrides")?;
-                    }
+                    self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
                 } else {
                     // Remove the method from the temporary trait_children HashMap and add to the
                     // trait_methods HashMap
