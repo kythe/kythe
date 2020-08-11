@@ -47,7 +47,10 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = ["tests/testkzip.kzip", "tests/testanalysis.json"],
+    data = [
+        "tests/testanalysis.json",
+        "tests/testkzip.kzip",
+    ],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
