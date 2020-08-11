@@ -158,7 +158,7 @@ impl<'a> UnitAnalyzer<'a> {
         crate_analyzer.emit_tbuiltin_nodes()?;
         crate_analyzer.process_implementations()?;
         crate_analyzer.emit_definitions()?;
-        // TODO(Arm1stice): Emit references and implementations
+        crate_analyzer.emit_xrefs()?;
         Ok(())
     }
 
@@ -560,6 +560,65 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     self.trait_methods.insert((trait_id, def.name.to_string()), def_vname.clone());
                 }
             }
+            DefKind::Local => {
+                // If the variable is a closure, emit that it is a function
+                if def.value.contains("closure@") {
+                    facts.push(("/kythe/node/kind", b"function"));
+                    facts.push(("/kythe/complete", b"definition"));
+                } else {
+                    facts.push(("/kythe/node/kind", b"variable"));
+                    facts.push(("/kythe/subkind", b"local"));
+                }
+
+                // TODO: Find a way to determine if a variable is only being
+                // declared. The save_analysis uses different index offsets for
+                // difference classes of local variables. One class is for
+                // mutable variables, one is for immutable variables, and one is
+                // for declarations. However these aren't static offsets, they
+                // are based on how many classes were previously seen. The first
+                // class that is seen has an offset of ~2147483647, the second
+                // has an offset of ~1073741827, and the third has an offset of
+                // ~3221225471.
+            }
+            DefKind::Method => {
+                // TODO: Handle parameters, emit a defines edge on the entire definition span of
+                // the method
+                facts.push(("/kythe/node/kind", b"function"));
+                facts.push(("/kythe/complete", b"definition"));
+
+                // If the if-statement logic passes, this is a method on a struct. Otherwise, it
+                // is a method on a trait
+                if let Some(method_impl) = self.method_index.remove(&def.id) {
+                    // Emit a childof edge to the parent struct
+                    let parent_vname = self
+                        .definition_vnames
+                        .get(&method_impl.struct_target)
+                        .ok_or_else(|| {
+                            KytheError::IndexerError(format!(
+                                "Failed to vname for parent {:?} of method {:?}",
+                                method_impl.struct_target, def.id,
+                            ))
+                        })?;
+                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
+
+                    // If this method of part of a trait implementation, emit an overrides edge
+                    if let Some(trait_id) = &method_impl.trait_target {
+                        let method_vname = self.trait_methods.get(&(*trait_id, def.name.to_string()))
+                        .ok_or_else(|| KytheError::IndexerError(
+                                format!("Method {:?} is implementing a trait method {} but the method's vname can't be found in self.trait_methods", def.id, def.name)
+                        ))?;
+                        self.emitter.emit_edge(def_vname, method_vname, "/kythe/edge/overrides")?;
+                    }
+                } else {
+                    // Remove the method from the temporary trait_children HashMap and add to the
+                    // trait_methods HashMap
+                    let trait_id = self.trait_children.remove(&def.id)
+                        .ok_or_else(|| KytheError::IndexerError(
+                            format!("Method {:?} is part of a trait but is not present in self.trait_children", def.id)
+                    ))?;
+                    self.trait_methods.insert((trait_id, def.name.to_string()), def_vname.clone());
+                }
+            }
             DefKind::Mod => {
                 facts.push(("/kythe/node/kind", b"record"));
                 facts.push(("/kythe/subkind", b"module"));
@@ -674,6 +733,70 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             self.emitter.emit_edge(&doc_vname, def_vname, "/kythe/edge/documents")?;
         }
 
+        Ok(())
+    }
+
+    /// Emit the Kythe edges for cross references in this crate
+    pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
+        // We must clone to avoid double borrowing "self"
+        let analysis = self.krate.analysis.clone();
+
+        let mut template_vname = self.krate_vname.clone();
+        template_vname.set_language("rust".to_string());
+        let krate_signature = template_vname.get_signature();
+
+        for reference in &analysis.refs {
+            let mut reference_vname = template_vname.clone();
+            let span = &reference.span;
+            reference_vname.set_path(span.file_name.to_str().unwrap().to_string());
+
+            // Get byte span
+            let start_byte_option = self.offset_index.get_byte_offset(
+                span.file_name.to_str().unwrap(),
+                span.line_start.0,
+                span.column_start.0,
+            );
+
+            // If the start byte is none, then the save_analysis is giving information about
+            // standard library files and we should skip
+            if start_byte_option.is_none() {
+                continue;
+            }
+
+            let start_byte = start_byte_option.unwrap();
+            let end_byte = self
+                .offset_index
+                .get_byte_offset(
+                    span.file_name.to_str().unwrap(),
+                    span.line_end.0,
+                    span.column_end.0,
+                )
+                .ok_or_else(|| {
+                    KytheError::IndexerError(format!(
+                        "Failed to get ending offset for reference {:?}",
+                        reference
+                    ))
+                })?;
+
+            // Create signature based on span
+            reference_vname
+                .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
+
+            // Create VName being referenced
+            let disambiguators = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get krate disambiguator for reference {:?}",
+                    reference
+                ))
+            })?;
+
+            let mut target_vname = reference_vname.clone();
+            target_vname
+                .set_signature(format!("{}_def_{}", disambiguators, reference.ref_id.index));
+            target_vname.set_language("rust".to_string());
+
+            self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
+        }
         Ok(())
     }
 }
