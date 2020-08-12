@@ -74,10 +74,18 @@ fn main() -> Result<()> {
     let source_files: Vec<String> =
         matches.value_of("src_files").unwrap().split(',').map(String::from).collect();
     let crate_name = matches.value_of("crate_name").unwrap();
+    let main_source_file = if source_files.len() == 1 {
+        &source_files[0]
+    } else {
+        &source_files[source_files
+            .iter()
+            .position(|file_path| file_path.contains(&"main.rs") || file_path.contains(&"lib.rs"))
+            .unwrap()]
+    };
     let arguments: Vec<String> = vec![
         "--".to_string(),
         // Only the main source file gets passed to the compiler
-        source_files[0].to_string(),
+        main_source_file.to_string(),
         format!("-L{}", matches.value_of("sysroot").unwrap()),
         format!("--codegen=linker={}", matches.value_of("linker").unwrap()),
         format!("--crate-name={}", crate_name),

@@ -393,11 +393,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 })?;
 
             // Generate node based on definition type
-            let mut def_vname = file_vname.clone();
+            let mut def_vname = self.krate_vname.clone();
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
-            self.emit_definition_node(&def_vname, &def)?;
+            self.emit_definition_node(&def_vname, &def, &file_vname)?;
         }
 
         // Normally you'd want to have a catch-all here where you emit childof edges
@@ -423,7 +423,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Emit all of the Kythe graph nodes and edges, including anchors for the
     /// definition using the provided VName
-    fn emit_definition_node(&mut self, def_vname: &VName, def: &Def) -> Result<(), KytheError> {
+    fn emit_definition_node(&mut self, def_vname: &VName, def: &Def, file_vname: &VName) -> Result<(), KytheError> {
         // For Fields, we always emit childof edges to their
         // parent because TupleVariant definitions don't have their fields as children.
         // Structs and Unions have their fields listed as children so the facts would
@@ -612,7 +612,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Calculate the byte_start and byte_end using the OffsetIndex
         let byte_start = self
             .offset_index
-            .get_byte_offset(def_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .get_byte_offset(file_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get starting offset for definition {:?}",
@@ -621,7 +621,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(def_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .get_byte_offset(file_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for definition {:?}",
@@ -715,7 +715,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 ))
             })?;
 
-            let mut target_vname = reference_vname.clone();
+            let mut target_vname = template_vname.clone();
             target_vname
                 .set_signature(format!("{}_def_{}", disambiguators, reference.ref_id.index));
             target_vname.set_language("rust".to_string());

@@ -125,5 +125,5 @@ rust_indexer_test(
 
 rust_indexer_test(
     name = "xrefs_test",
-    srcs = ["testdata/xrefs.rs"],
+    srcs = glob(["testdata/xrefs/*.rs"]),
 )
