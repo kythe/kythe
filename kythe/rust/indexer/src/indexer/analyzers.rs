@@ -239,6 +239,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let mut crate_v_name = self.unit_vname.clone();
         crate_v_name.set_signature(signature.to_string());
         crate_v_name.set_language("rust".to_string());
+        crate_v_name.clear_path();
         crate_v_name
     }
 
@@ -384,16 +385,16 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     def.qualname, def.id.krate
                 ))}
             )?;
-            let file_vname =
-                self.file_vnames.get(def.span.file_name.to_str().unwrap()).ok_or_else(|| {
-                    KytheError::IndexerError(format!(
-                        "Failed to get VName for file {:?} for definition {}",
-                        def.span.file_name, def.qualname
-                    ))
-                })?;
+            // Check for "./" at the beginning and remove it
+            let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
+
+            // save_analysis sometimes references files that we have as file nodes
+            if file_vname.is_none() {
+                continue;
+            }
 
             // Generate node based on definition type
-            let mut def_vname = self.krate_vname.clone();
+            let mut def_vname = file_vname.unwrap().clone();
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
