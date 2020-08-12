@@ -398,7 +398,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
-            self.emit_definition_node(&def_vname, &def, &file_vname)?;
+            def_vname.clear_path();
+            self.emit_definition_node(&def_vname, &def, &file_vname.unwrap())?;
         }
 
         // Normally you'd want to have a catch-all here where you emit childof edges
@@ -637,6 +638,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
+        anchor_vname.set_path(file_vname.get_path().to_string());
+
         // Module definitions need special logic if they are implicit
         if def.kind == DefKind::Mod && self.is_module_implicit(def) {
             // Emit a 0-length anchor and defines edge at the top of the file
