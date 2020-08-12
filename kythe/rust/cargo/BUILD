@@ -49,6 +49,11 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "rayon",
+    actual = "@raze__rayon__1_3_1//:rayon",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "regex",
     actual = "@raze__regex__1_3_9//:regex",
     tags = ["cargo-raze"],

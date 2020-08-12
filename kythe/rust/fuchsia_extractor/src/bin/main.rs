@@ -529,25 +529,35 @@ fn lenient_process_file(file_name: &PathBuf, options: &Options) -> Result<PathBu
 /// Processes each save-analysis file in turn, extracting useful information
 /// from it.
 fn process_files(files: &[PathBuf], options: &Options) -> Result<Vec<PathBuf>> {
-    let mut kzips: Vec<PathBuf> = vec![];
-    for file_name in files {
-        if !options.quiet {
-            println!("\nprocess_files: processing {:?}", &file_name);
-        }
-        let kzip = lenient_process_file(&file_name, &options);
-        match kzip {
-            Err(ref e) => eprintln!("process_files: found error: {:?}", e),
-            Ok(pb) => {
-                if !options.quiet {
-                    println!("process_files: `- made archive:\n\t{:?}", pb);
-                }
-                kzips.push(pb);
-            }
-        }
-        if !options.quiet {
-            println!("\n");
-        }
+    use rayon::prelude::*;
+
+    if !options.quiet {
+        println!("process_files: {} files to process.", files.len());
     }
+    let mut kzips = files
+        .par_iter()
+        .map(|ref file_name| -> Result<PathBuf> {
+            if !options.quiet {
+                println!("\nprocess_files: processing {:?}", &file_name);
+            }
+            let kzip = lenient_process_file(&file_name, &options).with_context(|| format!("process_file: found error"));
+            match kzip {
+                Err(ref e) =>  {
+                    eprintln!("process_files: found error: {:?}", e);
+                },
+                Ok(ref pb) => {
+                    if !options.quiet {
+                        println!("process_files: made archive:\n\t{:?}", pb);
+                    }
+                },
+            }
+            kzip
+        })
+        .filter(|e| e.is_ok())
+        .map(|e| e.unwrap()) // All `e` are Ok(_) values here.
+        .collect::<Vec<PathBuf>>();
+    // Ensure that the output sequence is stable.
+    kzips.sort();
     Ok(kzips)
 }
 
