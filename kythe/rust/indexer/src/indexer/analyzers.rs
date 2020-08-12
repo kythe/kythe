@@ -394,7 +394,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
 
             // Generate node based on definition type
-            let mut def_vname = file_vname.unwrap().clone();
+            let mut def_vname = self.krate_vname.clone();
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
