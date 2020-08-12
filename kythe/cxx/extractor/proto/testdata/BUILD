@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":proto_extractor_test.bzl", "extractor_golden_test")
 
 extractor_golden_test(
@@ -92,4 +93,9 @@ sh_binary(
     name = "kzip_diff_test",
     srcs = ["kzip_diff_test.sh"],
     visibility = ["//kythe/cxx/extractor/textproto/testdata:__subpackages__"],
+)
+
+bzl_library(
+    name = "proto_extractor_test_bzl",
+    srcs = ["proto_extractor_test.bzl"],
 )

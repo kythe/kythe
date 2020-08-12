@@ -7,9 +7,6 @@ build --strategy=TypeScriptCompile=sandboxed,local
 # Compatibility flags to avoid regressions.
 build --incompatible_disallow_empty_glob
 
-# Required for build_bazel_rules_nodejs
-common --experimental_allow_incremental_repository_updates
-
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
 

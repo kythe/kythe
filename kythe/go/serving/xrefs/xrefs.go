@@ -260,7 +260,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	var patcher *span.Patcher
 	if len(req.DirtyBuffer) > 0 {
-		patcher = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
+		patcher, err = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "error patching decorations for %s: %v", req.Location.Ticket, err)
+		}
 	}
 
 	// The span with which to constrain the set of returned anchor references.

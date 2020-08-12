@@ -132,7 +132,10 @@ func TestPatcher(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		p := NewPatcher([]byte(test.oldText), []byte(test.newText))
+		p, err := NewPatcher([]byte(test.oldText), []byte(test.newText))
+		if err != nil {
+			t.Fatal(err)
+		}
 		if len(test.oldSpans) != len(test.newSpans) {
 			t.Fatalf("Invalid test: {%v}", test)
 		}

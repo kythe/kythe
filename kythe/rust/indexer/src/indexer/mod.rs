@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod analyzers;
+pub mod entries;
+pub mod offset;
+pub mod save_analysis;
+
 use crate::error::KytheError;
 use crate::writer::KytheWriter;
 
 use analysis_rust_proto::*;
+use analyzers::UnitAnalyzer;
 use std::path::PathBuf;
 
 /// A data structure for indexing CompilationUnits
@@ -36,7 +42,19 @@ impl<'a> KytheIndexer<'a> {
         unit: &CompilationUnit,
         root_dir: &PathBuf,
     ) -> Result<(), KytheError> {
-        // TODO(Arm1stice): Implement indexing the CompilationUnit
+        let mut generator = UnitAnalyzer::new(unit, self.writer, root_dir);
+
+        // First, create file nodes for all of the source files in the CompilationUnit
+        generator.handle_files()?;
+
+        // Then, index all of the crates from the save_analysis
+        let analyzed_crates = save_analysis::load_analysis(&root_dir.join("analysis"));
+        for krate in analyzed_crates {
+            generator.index_crate(krate)?;
+        }
+
+        // We must flush the writer each time to ensure that all entries get written
+        self.writer.flush()?;
         Ok(())
     }
 }

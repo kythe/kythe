@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_extractor_test.bzl", "textproto_extractor_golden_test")
 
 textproto_extractor_golden_test(
@@ -104,4 +105,9 @@ textproto_extractor_golden_test(
         "kythe/cxx/extractor/textproto/testdata/subdir",
     ],
     deps = ["subdir/subdir.proto"],
+)
+
+bzl_library(
+    name = "textproto_extractor_test_bzl",
+    srcs = ["textproto_extractor_test.bzl"],
 )

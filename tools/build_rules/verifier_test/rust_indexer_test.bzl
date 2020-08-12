@@ -14,13 +14,10 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_library")
 load("//kythe/go/indexer:testdata/go_indexer_test.bzl", "go_verifier_test")
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheEntries",
-    "kythe_integration_test",
-    "verifier_test",
 )
 
 def _rust_extract_impl(ctx):
@@ -32,7 +29,7 @@ def _rust_extract_impl(ctx):
     )
     linker_path = cc_common.get_tool_for_action(
         feature_configuration = cc_features,
-        action_name = "c++-link-executable"
+        action_name = "c++-link-executable",
     )
 
     # Rust toolchain
@@ -46,12 +43,12 @@ def _rust_extract_impl(ctx):
     ctx.actions.run(
         executable = xa_maker,
         arguments = [
-        "--src_files=%s" % ",".join([f.path for f in ctx.files.srcs]),
-        "--output=%s" % extra_action_file.path,
-        "--owner=%s" % ctx.label.name,
-        "--crate_name=%s" % ctx.attr.crate_name,
-        "--sysroot=%s" % paths.dirname(rust_lib[0].path),
-        "--linker=%s" % linker_path
+            "--src_files=%s" % ",".join([f.path for f in ctx.files.srcs]),
+            "--output=%s" % extra_action_file.path,
+            "--owner=%s" % ctx.label.name,
+            "--crate_name=%s" % ctx.attr.crate_name,
+            "--sysroot=%s" % paths.dirname(rust_lib[0].path),
+            "--linker=%s" % linker_path,
         ],
         outputs = [extra_action_file],
     )
@@ -70,7 +67,7 @@ def _rust_extract_impl(ctx):
         env = {
             "KYTHE_CORPUS": "test_corpus",
             "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
-        }
+        },
     )
 
     return struct(kzip = output)
@@ -109,7 +106,7 @@ rust_extract = rule(
     },
     outputs = {"kzip": "%{name}.kzip"},
     fragments = ["cpp"],
-    toolchains = ["@io_bazel_rules_rust//rust:toolchain"]
+    toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )
 
 def _rust_entries_impl(ctx):
@@ -191,15 +188,14 @@ def _rust_indexer(
     return entries
 
 def rust_indexer_test(
-    name,
-    srcs,
-    size = None,
-    tags = None,
-    log_entries = False,
-    has_marked_source = False,
-    emit_anchor_scopes = False,
-    allow_duplicates = False):
-
+        name,
+        srcs,
+        size = None,
+        tags = None,
+        log_entries = False,
+        has_marked_source = False,
+        emit_anchor_scopes = False,
+        allow_duplicates = False):
     # Generate entries using the Rust indexer
     entries = _rust_indexer(
         name = name,

@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
 import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,10 +38,8 @@ final class SystemExploder {
 
   // Copies the system modules from the specified --system directory to the outputPath.
   public static void copySystemModules(String systemDir, Path outputPath) throws IOException {
-    try (Stream<Path> paths = walkSystemModules(systemDir)) {
-      for (Path path : (Iterable<Path>) paths::iterator) {
-        Files.copy(path, outputPath.resolve(path.subpath(0, path.getNameCount()).toString()));
-      }
+    for (Path path : walkSystemModules(systemDir)) {
+      Files.copy(path, outputPath.resolve(path.subpath(0, path.getNameCount()).toString()));
     }
   }
 
@@ -50,7 +49,7 @@ final class SystemExploder {
 
   // Returns a stream of paths from the specified --system directory, beginning with the appropriate
   // modules subdirectory.
-  public static Stream<Path> walkSystemModules(String systemDir) throws IOException {
+  public static ImmutableList<Path> walkSystemModules(String systemDir) throws IOException {
     StandardJavaFileManager fileManager =
         ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null);
     fileManager.handleOption("--system", Iterators.singletonIterator(systemDir));
@@ -66,29 +65,27 @@ final class SystemExploder {
     return new ForwardingStandardJavaFileManager(fileManager) {};
   }
 
-  private static Stream<Path> walkSystemModules(ForwardingStandardJavaFileManager fileManager)
-      throws IOException {
+  private static ImmutableList<Path> walkSystemModules(
+      ForwardingStandardJavaFileManager fileManager) throws IOException {
     JavaFileManager.Location systemLocation = StandardLocation.valueOf("SYSTEM_MODULES");
-    boolean started = false;
     ImmutableList.Builder<Path> modules = new ImmutableList.Builder<>();
     for (Set<JavaFileManager.Location> locs : fileManager.listLocationsForModules(systemLocation)) {
       for (JavaFileManager.Location loc : locs) {
         for (Path dir : fileManager.getLocationAsPaths(loc)) {
           try (Stream<Path> stream = Files.walk(dir)) {
-            for (Path path : (Iterable<Path>) stream::iterator) {
-              // Ensure that we include the top-level "modules" directory.
-              if (!started) {
-                started = true;
-                modules.add(path.getParent());
-              }
-              modules.add(path);
-            }
+            Streams.mapWithIndex(
+                    stream,
+                    (path, i) ->
+                        // Ensure that we include the top-level "modules" directory.
+                        i == 0 ? Stream.of(path.getParent(), path) : Stream.of(path))
+                .flatMap(x -> x)
+                .forEachOrdered(modules::add);
           }
         }
       }
     }
     // TODO(shahms): make this a lazy stream.
-    return modules.build().stream();
+    return modules.build();
   }
 
   public static void main(String[] args) {
@@ -107,11 +104,8 @@ final class SystemExploder {
 
   private static void dumpSystemPaths(ForwardingStandardJavaFileManager fileManager)
       throws IOException {
-    try (Stream<Path> paths = walkSystemModules(fileManager)) {
-      for (Path path : (Iterable<Path>) paths::iterator) {
-        System.err.println(
-            (path.isAbsolute() ? path.subpath(0, path.getNameCount()) : path).toString());
-      }
+    for (Path path : walkSystemModules(fileManager)) {
+      System.err.println(path.isAbsolute() ? path.subpath(0, path.getNameCount()) : path);
     }
   }
 

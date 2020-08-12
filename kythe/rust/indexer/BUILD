@@ -17,6 +17,8 @@ rust_library(
         "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:zip",
+        "//kythe/rust/cargo:rls_analysis",
+        "//kythe/rust/cargo:rls_data",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -45,7 +47,10 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = ["tests/testkzip.kzip"],
+    data = [
+        "tests/testanalysis.json",
+        "tests/testkzip.kzip",
+    ],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
@@ -64,6 +69,61 @@ rust_clippy(
 )
 
 rust_indexer_test(
-    name = "verifier_macro_test",
-    srcs = ["testdata/basic.rs"],
+    name = "anchors_test",
+    srcs = ["testdata/anchors.rs"],
+)
+
+rust_indexer_test(
+    name = "comment_test",
+    srcs = ["testdata/comment.rs"],
+)
+
+rust_indexer_test(
+    name = "enum_test",
+    srcs = ["testdata/enum.rs"],
+)
+
+rust_indexer_test(
+    name = "function_test",
+    srcs = ["testdata/function.rs"],
+)
+
+rust_indexer_test(
+    name = "modules_test",
+    srcs = glob(["testdata/modules/*"]),
+)
+
+rust_indexer_test(
+    name = "struct_test",
+    srcs = ["testdata/struct.rs"],
+)
+
+rust_indexer_test(
+    name = "tbuiltin_test",
+    srcs = ["testdata/tbuiltin.rs"],
+)
+
+rust_indexer_test(
+    name = "trait_test",
+    srcs = ["testdata/trait.rs"],
+)
+
+rust_indexer_test(
+    name = "type_test",
+    srcs = ["testdata/type.rs"],
+)
+
+rust_indexer_test(
+    name = "union_test",
+    srcs = ["testdata/union.rs"],
+)
+
+rust_indexer_test(
+    name = "variable_test",
+    srcs = ["testdata/variable.rs"],
+)
+
+rust_indexer_test(
+    name = "xrefs_test",
+    srcs = ["testdata/xrefs.rs"],
 )

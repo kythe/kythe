@@ -25,6 +25,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
@@ -591,6 +592,14 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     MarkedSource* marked_source_node,
     const clang::ClassTemplateSpecializationDecl* decl) {
+  // While we try to figure out which template arguments are defaults, silence
+  // diagnostics from the typechecker.
+  clang::IgnoringDiagConsumer consumer;
+  auto* diags = &cache_->source_manager().getDiagnostics();
+  auto guard = MakeScopeGuard(
+      [diags = diags, client = diags->getClient(),
+       owned = diags->ownsClient()] { diags->setClient(client, owned); });
+  diags->setClient(&consumer, false);
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
   auto cached_default = cache_->first_default_template_argument()->find(decl);
@@ -658,6 +667,10 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
           break;
         }
       }
+      // Integral template arguments cause an assert failure inside clang.
+      if (template_args.get(noprint).getKind() ==
+          clang::TemplateArgument::Integral)
+        break;
       add_template_argument(template_args.get(noprint));
     }
     (*cache_->first_default_template_argument())[decl] = noprint;

@@ -47,6 +47,7 @@ fn main() -> Result<()> {
     let kzip_file = File::create(&config.output_path)
         .with_context(|| format!("Failed to create kzip file at path {:?}", config.output_path))?;
     let mut kzip = ZipWriter::new(kzip_file);
+    kzip.add_directory("root/", FileOptions::default())?;
 
     // Get KYTHE_CORPUS variable
     let corpus = std::env::var("KYTHE_CORPUS")
@@ -80,8 +81,9 @@ fn main() -> Result<()> {
     let indexed_compilation = create_indexed_compilation(
         rust_source_files,
         build_target_arguments,
-        build_output_path.to_string(),
+        &build_output_path,
         required_input,
+        &corpus,
     );
     let mut indexed_compilation_bytes: Vec<u8> = Vec::new();
     indexed_compilation
@@ -89,7 +91,7 @@ fn main() -> Result<()> {
         .with_context(|| "Failed to serialize IndexedCompilation to bytes".to_string())?;
     let indexed_compilation_digest = sha256digest(&indexed_compilation_bytes);
     kzip_add_file(
-        format!("pbunits/{}", indexed_compilation_digest),
+        format!("root/pbunits/{}", indexed_compilation_digest),
         &indexed_compilation_bytes,
         &mut kzip,
     )?;
@@ -133,20 +135,21 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
 fn create_indexed_compilation(
     source_files: Vec<String>,
     arguments: Vec<String>,
-    build_output_path: String,
+    build_output_path: &str,
     required_input: Vec<CompilationUnit_FileInput>,
+    corpus: &str,
 ) -> IndexedCompilation {
     let mut compilation_unit = CompilationUnit::new();
 
     let mut vname = VName::new();
     // TODO(Arm1stice): Determine proper Corpus/Root/Path for VName
-    vname.set_corpus("kythe".into());
+    vname.set_corpus(corpus.to_string());
     vname.set_language("rust".into());
     compilation_unit.set_v_name(vname);
     compilation_unit.set_source_file(protobuf::RepeatedField::from_vec(source_files));
     compilation_unit.set_argument(protobuf::RepeatedField::from_vec(arguments));
     compilation_unit.set_required_input(protobuf::RepeatedField::from_vec(required_input));
-    compilation_unit.set_output_key(build_output_path);
+    compilation_unit.set_output_key(build_output_path.to_string());
 
     let mut indexed_compilation = IndexedCompilation::new();
     indexed_compilation.set_unit(compilation_unit);
@@ -180,7 +183,7 @@ fn kzip_add_required_input(
         .read_to_end(&mut source_file_contents)
         .with_context(|| format!("Failed read file {:?}", file_path_string))?;
     let digest = sha256digest(&source_file_contents);
-    kzip_add_file(format!("files/{}", digest), &source_file_contents, zip_writer)?;
+    kzip_add_file(format!("root/files/{}", digest), &source_file_contents, zip_writer)?;
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
