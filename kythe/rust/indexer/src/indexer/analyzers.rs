@@ -424,7 +424,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Emit all of the Kythe graph nodes and edges, including anchors for the
     /// definition using the provided VName
-    fn emit_definition_node(&mut self, def_vname: &VName, def: &Def, file_vname: &VName) -> Result<(), KytheError> {
+    fn emit_definition_node(
+        &mut self,
+        def_vname: &VName,
+        def: &Def,
+        file_vname: &VName,
+    ) -> Result<(), KytheError> {
         // For Fields, we always emit childof edges to their
         // parent because TupleVariant definitions don't have their fields as children.
         // Structs and Unions have their fields listed as children so the facts would
