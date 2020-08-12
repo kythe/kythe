@@ -215,7 +215,7 @@ fn kzip_add_file(
         .start_file(&file_name, FileOptions::default())
         .with_context(|| format!("Failed create file in kzip: {:?}", file_name))?;
     zip_writer
-        .write(file_bytes)
+        .write_all(file_bytes)
         .with_context(|| format!("Failed write file contents to kzip: {:?}", file_name))?;
     Ok(())
 }
