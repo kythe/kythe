@@ -239,6 +239,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let mut crate_v_name = self.unit_vname.clone();
         crate_v_name.set_signature(signature.to_string());
         crate_v_name.set_language("rust".to_string());
+        crate_v_name.clear_path();
         crate_v_name
     }
 
@@ -384,20 +385,21 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     def.qualname, def.id.krate
                 ))}
             )?;
-            let file_vname =
-                self.file_vnames.get(def.span.file_name.to_str().unwrap()).ok_or_else(|| {
-                    KytheError::IndexerError(format!(
-                        "Failed to get VName for file {:?} for definition {}",
-                        def.span.file_name, def.qualname
-                    ))
-                })?;
+            // Check for "./" at the beginning and remove it
+            let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
+
+            // save_analysis sometimes references files that we have as file nodes
+            if file_vname.is_none() {
+                continue;
+            }
 
             // Generate node based on definition type
-            let mut def_vname = file_vname.clone();
+            let mut def_vname = self.krate_vname.clone();
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
-            self.emit_definition_node(&def_vname, &def)?;
+            def_vname.clear_path();
+            self.emit_definition_node(&def_vname, &def, &file_vname.unwrap())?;
         }
 
         // Normally you'd want to have a catch-all here where you emit childof edges
@@ -423,7 +425,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Emit all of the Kythe graph nodes and edges, including anchors for the
     /// definition using the provided VName
-    fn emit_definition_node(&mut self, def_vname: &VName, def: &Def) -> Result<(), KytheError> {
+    fn emit_definition_node(
+        &mut self,
+        def_vname: &VName,
+        def: &Def,
+        file_vname: &VName,
+    ) -> Result<(), KytheError> {
         // For Fields, we always emit childof edges to their
         // parent because TupleVariant definitions don't have their fields as children.
         // Structs and Unions have their fields listed as children so the facts would
@@ -612,7 +619,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Calculate the byte_start and byte_end using the OffsetIndex
         let byte_start = self
             .offset_index
-            .get_byte_offset(def_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .get_byte_offset(file_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get starting offset for definition {:?}",
@@ -621,7 +628,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(def_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .get_byte_offset(file_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for definition {:?}",
@@ -631,6 +638,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
+        anchor_vname.set_path(file_vname.get_path().to_string());
+
         // Module definitions need special logic if they are implicit
         if def.kind == DefKind::Mod && self.is_module_implicit(def) {
             // Emit a 0-length anchor and defines edge at the top of the file
@@ -715,7 +724,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 ))
             })?;
 
-            let mut target_vname = reference_vname.clone();
+            let mut target_vname = template_vname.clone();
             target_vname
                 .set_signature(format!("{}_def_{}", disambiguators, reference.ref_id.index));
             target_vname.set_language("rust".to_string());
