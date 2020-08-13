@@ -148,7 +148,8 @@ func (e Encoding) String() string {
 	}
 }
 
-func defaultEncoding() Encoding {
+// DefaultEncoding returns the default kzip encoding
+func DefaultEncoding() Encoding {
 	if e := os.Getenv("KYTHE_KZIP_ENCODING"); e != "" {
 		enc, err := EncodingFor(e)
 		if err == nil {
@@ -497,7 +498,7 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 		zip:      archive,
 		fd:       stringset.New(),
 		ud:       stringset.New(),
-		encoding: defaultEncoding(),
+		encoding: DefaultEncoding(),
 	}
 	for _, opt := range options {
 		opt(kw)
