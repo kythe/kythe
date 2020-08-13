@@ -275,7 +275,7 @@ fn add_input(
     file_inputs.push(make_file_input(
         make_vname(&path, corpus_name, root, &base_dir, "rust")?,
         &path,
-        &base_dir,
+        &compilation_base_dir,
         &digest,
     )?);
     Ok(())
@@ -875,16 +875,66 @@ mod testing {
         let ru_vname = ri_one_file.get_v_name();
         assert_eq!("fuchsia", ru_vname.get_corpus());
         assert_eq!(SOURCE_CORPUS_NAME, ru_vname.get_root());
-
-        let ru_info = ri_one_file.get_info();
+        // In vname, the "path" is relative to corpus root.
         assert_eq!(
             "third_party/rust_crates/vendor/nom/lib.rs",
-            ru_info.get_path(),
+            ru_vname.get_path(),
             concat!(
-                "Expected to be relative to the root of its respective corpus",
-                " for example for ../../dir/file.txt it will be dir/file.txt"
+                "Expected to be relative to the root dir of its ",
+                "respective corpus, for example ../../dir/file.txt ",
+                "should appear here as dir/file.txt"
             )
         );
+
+        let ru_info = ri_one_file.get_info();
+        // In FileInfo, the path is relative to the build directory.
+        assert_eq!(
+            "../../third_party/rust_crates/vendor/nom/lib.rs",
+            ru_info.get_path(),
+            "Expected to be relative to the build directory"
+        );
         assert_eq!("nom", cu_vname.get_signature());
+    }
+
+    #[test]
+    fn kzip_info_spec_test() {
+        use std::process::Command;
+
+        let temp_dir = get_bazel_temp_dir();
+        let test_srcdir =
+            PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
+        let data_dir = test_srcdir
+            .join("io_kythe/kythe/rust/fuchsia_extractor/testdata")
+            .join("test_dir_1/compilation-root");
+
+        let options = Options {
+            corpus_name: "fuchsia".into(),
+            language_name: "rust".into(),
+            base_dir: data_dir.join("out/terminal.x64"),
+            output_dir: temp_dir.clone(),
+            revisions: vec!["revision1".into()],
+            quiet: true,
+        };
+        let all_files: Vec<PathBuf> =
+            vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
+        let zips = process_files(&all_files, &options).expect("processing is successful");
+        let only_archive = zips.get(0).unwrap();
+
+        let test_runfiles = PathBuf::from(
+            std::env::var("TEST_SRCDIR").expect("TEST_SRCDIR is available"));
+
+        let kzip_util_path = test_runfiles.join("io_kythe/kythe/go/platform/tools/kzip/kzip");
+
+        let output = Command::new(kzip_util_path)
+            .arg("info")
+            .arg("--input")
+            .arg(only_archive.to_string_lossy().to_string())
+            .output()
+            .expect("failed to execute kzip info");
+
+        assert!(output.status.success(), "failed kzip info: stderr:\n{:?}\nstdout:\n{:?}\ncode:{:?}",
+            String::from_utf8_lossy(&output.stderr),
+            String::from_utf8_lossy(&output.stdout),
+            output.status);
     }
 }
