@@ -36,6 +36,7 @@
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/analysis.pb.h"
@@ -251,7 +252,7 @@ class ClaimTool {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage("static_claim: assign ownership for analysis");
   absl::ParseCommandLine(argc, argv);
   std::string next_index_file;

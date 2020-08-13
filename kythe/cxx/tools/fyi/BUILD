@@ -16,6 +16,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",

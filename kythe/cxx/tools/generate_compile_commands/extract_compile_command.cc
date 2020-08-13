@@ -28,6 +28,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
@@ -85,7 +86,7 @@ std::string FormatCompilationCommand(const std::string& source_file,
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   if (argc != 3) {
     absl::FPrintF(stderr, "usage: %s extra-action-file output-file\n", argv[0]);
     return 1;

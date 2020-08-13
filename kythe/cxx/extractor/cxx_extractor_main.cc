@@ -39,14 +39,15 @@
 #include <string>
 #include <vector>
 
-#include "glog/logging.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/extractor/cxx_extractor.h"
 #include "kythe/cxx/extractor/language.h"
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
+
   kythe::ExtractorConfiguration config;
   config.SetArgs(std::vector<std::string>(argv, argv + argc));
   config.InitializeFromEnvironment();
