@@ -42,6 +42,7 @@ lazy_static = "1.4.0"
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1.0.5"
+serial_test = "0.4.0"
 
 [raze]
 workspace_path = "//kythe/rust/cargo"

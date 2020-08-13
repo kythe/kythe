@@ -54,6 +54,7 @@ rust_binary(
         "//kythe/rust/cargo:rls_data",
         "//kythe/rust/cargo:rust_crypto",
         "//kythe/rust/cargo:serde_json",
+        "//kythe/rust/cargo:tempdir",
     ],
     rustc_flags = select({
         ":if_opt": [ "-Crelocation-model=static" ],
@@ -66,6 +67,7 @@ rust_test(
     crate = ":fuchsia_extractor",
     deps = [
       "//kythe/rust/cargo:zip",
+      "//kythe/rust/cargo:serial_test",
     ],
     edition = "2018",
     # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
