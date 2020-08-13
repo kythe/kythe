@@ -79,6 +79,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "objc_bazel_support.h"
@@ -206,7 +207,7 @@ static bool LoadExtraAction(const XAState& xa_state,
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   if (remain.size() != 4 && remain.size() != 6) {
     absl::FPrintF(

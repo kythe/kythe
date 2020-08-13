@@ -141,7 +141,7 @@ cc_binary(
     deps = [
         ":lib",
         ":supported_language",
-        "@com_github_google_glog//:glog",
+        "//kythe/cxx/common:init",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -183,6 +183,7 @@ cc_binary(
         ":lib",
         ":supported_language",
         "//external:zlib",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:path_utils",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_github_google_glog//:glog",
@@ -211,6 +212,7 @@ cc_binary(
         ":objc_bazel_support_library",
         ":supported_language",
         "//external:zlib",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:path_utils",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_github_google_glog//:glog",
@@ -333,6 +335,7 @@ cc_binary(
     srcs = ["dump_bazel_artifacts.cc"],
     deps = [
         ":bazel_artifact_reader",
+        "//kythe/cxx/common:init",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",

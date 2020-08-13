@@ -487,6 +487,7 @@ cc_binary(
         ":lib",
         ":proto_library_support",
         "//external:zlib",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:lib",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",

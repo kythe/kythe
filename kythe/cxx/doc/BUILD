@@ -96,6 +96,7 @@ cc_binary(
     deps = [
         ":html_renderer",
         ":markup_handler",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",

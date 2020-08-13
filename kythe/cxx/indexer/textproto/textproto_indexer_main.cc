@@ -27,6 +27,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
 #include "kythe/proto/analysis.pb.h"
@@ -84,7 +85,7 @@ void DecodeKzipFile(const std::string& path,
 }
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
       R"(Command-line frontend for the Kythe Textproto indexer.
 

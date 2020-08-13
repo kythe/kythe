@@ -33,6 +33,7 @@
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/init.h"
 
 namespace kythe {
 namespace {
@@ -251,7 +252,7 @@ class EmbeddedMetadataGenerator : public CppGenerator {
 }  // namespace kythe
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   kythe::EmbeddedMetadataGenerator generator;
   return google::protobuf::compiler::PluginMain(argc, argv, &generator);
 }
