@@ -79,7 +79,10 @@ rust_test(
         ":if_opt": [ "-Crelocation-model=static" ],
         "//conditions:default": [],
     }),
-    data = ["//kythe/rust/fuchsia_extractor/testdata"],
+    data = [
+      "//kythe/rust/fuchsia_extractor/testdata",
+      "//kythe/go/platform/tools/kzip",
+    ],
 )
 
 rust_clippy(
