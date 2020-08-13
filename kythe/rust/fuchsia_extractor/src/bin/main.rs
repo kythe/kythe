@@ -897,7 +897,6 @@ mod testing {
     }
 
     #[test]
-    #[ignore]  // Reenable once we can subprocess `kzip`.
     fn kzip_info_spec_test() {
         use std::process::Command;
 
@@ -924,7 +923,7 @@ mod testing {
         let test_runfiles = PathBuf::from(
             std::env::var("TEST_SRCDIR").expect("TEST_SRCDIR is available"));
 
-        let kzip_util_path = test_runfiles.join("io_kythe/kythe/go/platform/tools/kzip");
+        let kzip_util_path = test_runfiles.join("io_kythe/kythe/go/platform/tools/kzip/kzip");
 
         let output = Command::new(kzip_util_path)
             .arg("info")
