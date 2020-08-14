@@ -114,6 +114,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":proto_analyzer",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common:lib",

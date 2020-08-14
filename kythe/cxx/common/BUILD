@@ -521,3 +521,14 @@ cc_test(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "init",
+    srcs = ["init.cc"],
+    hdrs = ["init.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/debugging:failure_signal_handler",
+        "@com_google_absl//absl/debugging:symbolize",
+    ],
+)

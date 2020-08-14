@@ -43,6 +43,7 @@
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -134,7 +135,7 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
 }  // anonymous namespace
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
       R"(Command-line frontend for the Kythe Proto indexer.
 Invokes the Kythe Proto indexer on compilation unit(s). By default writes binary
