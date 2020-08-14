@@ -55,7 +55,7 @@ pub struct CrateAnalyzer<'a, 'b> {
     krate: Crate,
     // A map between a crate's identifier and a string consisting of
     // "<disambiguator1>_<disambiguator2>"
-    krate_ids: HashMap<u32, String>,
+    krate_ids: HashMap<u32, rls_data::GlobalCrateId>,
     // The crate's VName
     krate_vname: VName,
     // Stores the parent of a child definition so that a childof edge can be emitted when the
@@ -256,20 +256,20 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // First emit the node for our own crate and add it to the hashmap
         let krate_id = &krate_prelude.crate_id;
-        let krate_signature = format!("{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1);
+        let krate_signature = format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
         let krate_vname = self.generate_crate_vname(&krate_signature);
         self.krate_vname = krate_vname.clone();
         self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
-        self.krate_ids.insert(0u32, krate_signature);
+        self.krate_ids.insert(0u32, krate_id.clone());
 
         // Then, do the same for all of the external crates
         for (krate_num, external_krate) in krate_prelude.external_crates.iter().enumerate() {
             let krate_id = &external_krate.id;
             let krate_signature =
-                format!("{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1);
+                format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
             let krate_vname = self.generate_crate_vname(&krate_signature);
             self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
-            self.krate_ids.insert((krate_num + 1) as u32, krate_signature);
+            self.krate_ids.insert((krate_num + 1) as u32, krate_id.clone());
         }
 
         Ok(())
@@ -379,12 +379,17 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let analysis = self.krate.analysis.clone();
 
         for def in &analysis.defs {
-            let krate_signature = self.krate_ids.get(&def.id.krate).ok_or_else(||{
+            let krate_id = self.krate_ids.get(&def.id.krate).ok_or_else(||{
                 KytheError::IndexerError(format!(
                     "Definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap",
                     def.qualname, def.id.krate
                 ))}
             )?;
+            let krate_signature = format!(
+                "{}_{}_{}",
+                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
+            );
+
             // Check for "./" at the beginning and remove it
             let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
 
@@ -537,7 +542,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         // krate disambiguator and index to create the signature. Usually this
                         // occurs if the save_analysis feeds us data that isn't part of our crate.
                         let mut vname = self.krate_vname.clone();
-                        let disambiguator = self
+                        let krate_id = self
                             .krate_ids
                             .get(&method_impl.struct_target.krate)
                             .ok_or_else(|| {
@@ -546,9 +551,13 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                                     def.id, def.name
                                 ))
                             })?;
+                        let krate_signature = format!(
+                            "{}_{}_{}",
+                            krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
+                        );
                         vname.set_signature(format!(
                             "{}_def_{}",
-                            disambiguator, &method_impl.struct_target.index
+                            krate_signature, &method_impl.struct_target.index
                         ));
                         vname
                     };
@@ -717,16 +726,19 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
 
             // Create VName being referenced
-            let disambiguators = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
+            let krate_id = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get krate disambiguator for reference {:?}",
                     reference
                 ))
             })?;
-
+            let krate_signature = format!(
+                "{}_{}_{}",
+                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
+            );
             let mut target_vname = template_vname.clone();
             target_vname
-                .set_signature(format!("{}_def_{}", disambiguators, reference.ref_id.index));
+                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
             target_vname.set_language("rust".to_string());
 
             self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
