@@ -50,6 +50,7 @@ rust_binary(
         "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:lazy_static",
         "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:rayon",
         "//kythe/rust/cargo:regex",
         "//kythe/rust/cargo:rls_data",
         "//kythe/rust/cargo:rust_crypto",
