@@ -526,6 +526,7 @@ cc_library(
     name = "init",
     srcs = ["init.cc"],
     hdrs = ["init.h"],
+    local_defines = ["KYTHE_OVERRIDE_ASSERT_FAIL"],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/debugging:failure_signal_handler",
