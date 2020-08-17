@@ -27,6 +27,7 @@ namespace kythe {
 #if defined(KYTHE_OVERRIDE_ASSERT_FAIL)
 extern "C" {
 // Make sure we get a legible stack trace when assert from <assert.h> fails.
+// This works around https://github.com/abseil/abseil-cpp/issues/769.
 //
 // We are replacing implementation-defined function (defined in glibc)
 // used by the expansion of system defined assert() macro.
