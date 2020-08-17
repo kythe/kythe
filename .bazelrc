@@ -24,6 +24,9 @@ build --javabase=@bazel_tools//tools/jdk:remote_jdk11
 build --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
 
+# For release, stamp binaries, use optimized mode w/ minimum line table debugging.
+build:release --stamp -c opt --copt=-gmlt
+
 # Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
 
