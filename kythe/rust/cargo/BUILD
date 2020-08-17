@@ -79,6 +79,11 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "serial_test",
+    actual = "@raze__serial_test__0_4_0//:serial_test",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "tempdir",
     actual = "@raze__tempdir__0_3_7//:tempdir",
     tags = ["cargo-raze"],

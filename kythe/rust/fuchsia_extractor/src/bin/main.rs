@@ -39,7 +39,6 @@ use {
 };
 
 /// By convention, the source corpus name is "".
-const SOURCE_CORPUS_NAME: &'static str = "";
 const RLIBS_CORPUS_NAME: &'static str = "rlibs";
 
 /// Reads the entire directory pointed at by `dir`.  The returned result
@@ -111,7 +110,7 @@ fn get_unique_filename(file: &PathBuf, output_dir: &PathBuf) -> Result<PathBuf> 
 fn partial_canonicalize_path(path: &PathBuf) -> Result<PathBuf> {
     if !path.is_absolute() {
         return Err(anyhow::anyhow!(
-            "partial_canonicalize_path: path must be absolute to begin with: {:?}",
+            "partial_canonicalize_path: path must be absolute: {:?}",
             path
         ));
     }
@@ -286,6 +285,102 @@ fn get_compilation_output_name(compilation: &rls_data::CompilationOptions) -> Pa
     compilation.output.clone()
 }
 
+/// Maps a single corpus root into the directory path relative to the build directory.
+#[derive(Debug)]
+struct CorpusRoot {
+    // The file path prefix by which the root is recognized, e.g. "../../", or
+    // "gen/".
+    path: &'static str,
+    // The name of the corpus root for files with filenames matching "gen/"
+    name: &'static str,
+}
+
+lazy_static! {
+    /// The map of known corpus roots and their respective directories.  When
+    /// matching to a file name with [corpus_root_for], matches are examined
+    /// in the order given here.
+    static ref ROOT_MAP: Vec<CorpusRoot> = vec![
+        CorpusRoot{
+            path: "../../",
+            name: "",
+        },
+        CorpusRoot{
+            path: "save-analysis-temp",
+            name: "save-analysis",
+        },
+        CorpusRoot{
+            path: "banjoing/gen",
+            name: "banjoing_gen",
+        },
+        CorpusRoot{
+            path: "x64-shared/gen",
+            name: "x64-shared_gen",
+        },
+        CorpusRoot{
+            path: "host_x64/gen",
+            name: "host_x64_gen",
+        },
+        CorpusRoot{
+            path: "host_arm64/gen",
+            name: "host_arm64_gen",
+        },
+        CorpusRoot{
+            path: "fidling/gen",
+            name: "fidling_gen",
+        },
+        CorpusRoot{
+            path: "gen",
+            name: "gen",
+        },
+        CorpusRoot{
+            path: "",
+            name: "undefined",
+        },
+    ];
+}
+
+/// Finds the likely corpus root for a file with the given `relative_path`.  If unknown, the
+/// assumed corpus root is going to be "unknown".  `relative_path` is assumed to be relative to the
+/// build directory.
+fn corpus_root_for(relative_path: &PathBuf) -> &'static CorpusRoot {
+    let pathstr = relative_path.to_string_lossy();
+    ROOT_MAP.iter()
+        .find(|r| pathstr.starts_with(r.path))
+        .unwrap_or(&ROOT_MAP[ROOT_MAP.len()-1])
+}
+
+/// Adds the single `src_path` input to the archive and required inputs.
+/// `src_path` is the absolute, but not necessarily canonicalized path to the
+/// file to add.
+fn add_source_input(
+    mut archive: &mut kzip::Writer, 
+    src_path: &PathBuf, 
+    options: &Options, 
+    mut required_inputs: &mut Vec<String>, 
+    mut file_inputs: &mut Vec<CompilationUnit_FileInput>,
+    ) -> Result<()> {
+        // "../../file.txt"
+        let src_path_relative = make_relative_to(src_path, &options.base_dir)?;
+        let corpus_root_info = corpus_root_for(&src_path_relative);
+        // "../../", ""
+        let corpus_relative_path = PathBuf::from(&corpus_root_info.path);
+        // absolute path to "
+        let src_base_dir = partial_canonicalize_path(&options.base_dir.join(corpus_relative_path))
+            .with_context(|| format!("add_source_input: while canonicalizing"))?;
+        println!("src_path:\n\t{:?}\ncorpus_root:\n\t{:?}", &src_path, &corpus_root_info);
+        add_input(
+            &mut archive,
+            &options.corpus_name,
+            &src_path,
+            corpus_root_info.name,
+            &src_base_dir,
+            &options.base_dir,
+            &mut required_inputs,
+            &mut file_inputs,
+        )
+        .with_context(|| format!("add_source_input: while adding Rust file: {:?}", &src_path))
+}
+
 /// Process one save-analysis file.
 ///
 /// Generates a kzip archive with its compilation unit as result.
@@ -302,7 +397,7 @@ fn process_file(
         return Err(anyhow::anyhow!(
             concat!(
                 "process_file: archive already exists when processing file",
-                ":\n\t{:?}, skipping archive:\n\t{:?}"
+                ":\n\t{:?},\nskipping archive:\n\t{:?}"
             ),
             &file,
             &kzip_filename
@@ -327,7 +422,9 @@ fn process_file(
     })?;
     let save_analysis_digest = archive
         .write_file(&save_analysis_contents)
-        .with_context(|| format!("while saving save analysis for storage: {:?}", &file))?;
+        .with_context(|| format!(
+                "while saving save analysis for storage:\n\t{:?}\ninto:\n\t{:?}",
+                &file, &kzip_filename))?;
     file_inputs.push(make_file_input(
         make_vname(file, &options.corpus_name, "save-analysis", &options.base_dir, "rust")?,
         file,
@@ -357,21 +454,8 @@ fn process_file(
         format!("process_file: while reading crate root: {:?}", &crate_root_directory)
     })?;
 
-    // The assumption is that the directory is 2 levels above base_dir, which
-    // is true today in Fuchsia.
-    let src_base_dir = &options.base_dir.join("../../");
     for src_path in rust_files {
-        add_input(
-            &mut archive,
-            &options.corpus_name,
-            &src_path,
-            SOURCE_CORPUS_NAME,
-            &src_base_dir,
-            &options.base_dir,
-            &mut required_inputs,
-            &mut file_inputs,
-        )
-        .with_context(|| format!("process_file: while adding Rust file: {:?}", &src_path))?;
+        add_source_input(&mut archive, &src_path, options, &mut required_inputs, &mut file_inputs)?;
     }
 
     // For each rlib file under the directory, add it.
@@ -576,7 +660,7 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod testing {
-    use {super::*, std::collections::HashSet, std::fs, std::io::Read};
+    use {super::*, std::collections::HashSet, std::fs, std::io::Read, tempdir::TempDir, serial_test::serial};
 
     /// Rebases the given `relative_path`, such that it is relative to
     /// `rebase_dir`. For example, "./foo/bar/file.txt", relative to "./foo"
@@ -601,20 +685,10 @@ mod testing {
         })
     }
 
-    /// Gets Bazel's sharded temporary directory.  This is better than using the
-    /// tempdir package or a similar solution, since adding `--sandbox_debug`
-    /// flag to bazel will *not* remove the temporary directory, which is hugely
-    /// useful for debugging.  In addition, this will play nice with remote
-    /// builds and sandboxes.
-    fn get_bazel_temp_dir() -> PathBuf {
-        let temp_dir = PathBuf::from(std::env::var("TEST_TMPDIR").expect("temp dir is available"));
-        let temp_dir = std::fs::canonicalize(&temp_dir).unwrap();
-        temp_dir
-    }
-
     #[test]
+    #[serial]
     fn test_rebase_path() {
-        let temp_dir = get_bazel_temp_dir();
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
         #[derive(Debug)]
         struct TestCase {
             source: PathBuf,
@@ -649,10 +723,14 @@ mod testing {
             },
         ];
         for test in tests {
-            let src = temp_dir.join(&test.source);
-            fs::create_dir_all(&src).expect("source dir created");
-            let dest_dir = temp_dir.join(&test.dest);
-            fs::create_dir_all(&dest_dir).expect("dest dir created");
+            let src = temp_dir.path().join(&test.source);
+            fs::create_dir_all(&src)
+                .expect(&format!("source dir created: {:?} in test:\n\t{:?}",
+                        &src, &test));
+            let dest_dir = temp_dir.path().join(&test.dest);
+            fs::create_dir_all(&dest_dir)
+                .expect(&format!("dest dir created: {:?} in test:\n\t{:?}",
+                        &dest_dir, &test));
             let actual = rebase_path(&src, &dest_dir)
                 .expect(&format!("rebase_path fails in test: {:?}", &test));
             assert_eq!(actual, test.expected, "mismatch in test: {:?}", &test);
@@ -660,10 +738,12 @@ mod testing {
     }
 
     #[test]
+    #[serial]
     fn test_make_file_input() {
-        let temp_dir = get_bazel_temp_dir();
-        let base_dir = temp_dir.join("src-root-dir");
-        fs::create_dir_all(&base_dir).expect("base dir created");
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let base_dir = temp_dir.path().join("src-root-dir");
+        fs::create_dir_all(&base_dir)
+            .expect(&format!("base dir created: {:?}", &base_dir));
         let save_analysis_dir = base_dir.join("save-analysis-dir");
         fs::create_dir_all(&save_analysis_dir).expect("save analysis dir created");
         let file_name = save_analysis_dir.join("save-analysis.json");
@@ -698,6 +778,7 @@ mod testing {
     }
 
     #[test]
+    #[serial]
     fn text_extract_rlibs() {
         let args = vec![
             "--extern",
@@ -714,9 +795,10 @@ mod testing {
     }
 
     #[test]
+    #[serial]
     fn test_read_dir_recursive() {
-        let temp_dir = get_bazel_temp_dir();
-        let base_dir = temp_dir.join("src-root-dir");
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let base_dir = temp_dir.path().join("src-root-dir");
         fs::create_dir_all(&base_dir).expect("base dir created");
         let base_dir = rebase_path(base_dir, temp_dir).expect("rebase is a success");
         let save_analysis_dir = base_dir.join("save-analysis-dir");
@@ -821,8 +903,9 @@ mod testing {
     }
 
     #[test]
+    #[serial]
     fn run_one_analysis() {
-        let temp_dir = get_bazel_temp_dir();
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
         let test_srcdir =
             PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
         let data_dir = test_srcdir
@@ -833,7 +916,7 @@ mod testing {
             corpus_name: "fuchsia".into(),
             language_name: "rust".into(),
             base_dir: data_dir.join("out/terminal.x64"),
-            output_dir: temp_dir.clone(),
+            output_dir: temp_dir.path().clone().to_path_buf(),
             revisions: vec!["revision1".into()],
             quiet: true,
         };
@@ -874,7 +957,7 @@ mod testing {
         let ri_one_file = compilation_unit.get_required_input().get(1).unwrap();
         let ru_vname = ri_one_file.get_v_name();
         assert_eq!("fuchsia", ru_vname.get_corpus());
-        assert_eq!(SOURCE_CORPUS_NAME, ru_vname.get_root());
+        assert_eq!("", ru_vname.get_root());
         // In vname, the "path" is relative to corpus root.
         assert_eq!(
             "third_party/rust_crates/vendor/nom/lib.rs",
@@ -897,10 +980,11 @@ mod testing {
     }
 
     #[test]
+    #[serial]
     fn kzip_info_spec_test() {
         use std::process::Command;
 
-        let temp_dir = get_bazel_temp_dir();
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
         let test_srcdir =
             PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
         let data_dir = test_srcdir
@@ -911,7 +995,7 @@ mod testing {
             corpus_name: "fuchsia".into(),
             language_name: "rust".into(),
             base_dir: data_dir.join("out/terminal.x64"),
-            output_dir: temp_dir.clone(),
+            output_dir: temp_dir.path().clone().to_path_buf(),
             revisions: vec!["revision1".into()],
             quiet: true,
         };
@@ -937,4 +1021,58 @@ mod testing {
             String::from_utf8_lossy(&output.stdout),
             output.status);
     }
+
+    #[test]
+    #[serial]
+    fn test_sorting_repo_roots() {
+        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let test_srcdir =
+            PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
+        let data_dir = test_srcdir
+            .join("io_kythe/kythe/rust/fuchsia_extractor/testdata")
+            .join("test_dir_2/compilation-root");
+
+        let options = Options {
+            corpus_name: "fuchsia".into(),
+            language_name: "rust".into(),
+            base_dir: data_dir.join("out/terminal.x64"),
+            output_dir: temp_dir.path().clone().to_path_buf(),
+            revisions: vec!["revision1".into()],
+            quiet: true,
+        };
+        let all_files: Vec<PathBuf> =
+            vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
+        let zips = process_files(&all_files, &options).expect("processing is successful");
+        let only_archive = zips.get(0).unwrap();
+        let indexed_compilation = unzip_compilation_unit(&only_archive);
+
+        let compilation_unit = indexed_compilation.get_unit();
+        let cu_vname = compilation_unit.get_v_name();
+
+        assert_eq!("nom", cu_vname.get_signature());
+
+        let ri_one_file = compilation_unit.get_required_input().get(1).unwrap();
+        let ru_vname = ri_one_file.get_v_name();
+        assert_eq!("fuchsia", ru_vname.get_corpus());
+        assert_eq!("gen", ru_vname.get_root());
+
+        // In vname, the "path" is relative to the root of the specific part
+        // of the corpus, which in this case is in `$FUCHSIA_OUT/gen`.
+        // So a file `$FUCHSIA_OUT/gen/blah.rs" shoudl appear as "blah.rs".
+        assert_eq!(
+            "third_party/rust_crates/vendor/nom/lib.rs",
+            ru_vname.get_path(),
+            "Expected to be relative to the root dir of the gen corpus"
+        );
+
+        let ru_info = ri_one_file.get_info();
+        // In FileInfo, the path is relative to the build directory.
+        assert_eq!(
+            "gen/third_party/rust_crates/vendor/nom/lib.rs",
+            ru_info.get_path(),
+            "Expected to be relative to the build directory"
+        );
+        assert_eq!("nom", cu_vname.get_signature());
+    }
+
 }

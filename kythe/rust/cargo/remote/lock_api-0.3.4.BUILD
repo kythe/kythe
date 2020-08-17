@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # MIT from expression "MIT OR Apache-2.0"
+  "notice", # Apache-2.0 from expression "Apache-2.0 OR MIT"
 ])
 
 load(
@@ -23,39 +23,22 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
 
 rust_library(
-    name = "winapi",
+    name = "lock_api",
     crate_type = "lib",
     deps = [
+        "@raze__scopeguard__1_1_0//:scopeguard",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.3.4",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "handleapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "ntstatus",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 

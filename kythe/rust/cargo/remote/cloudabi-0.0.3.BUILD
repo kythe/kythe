@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # MIT from expression "MIT OR Apache-2.0"
+  "restricted", # BSD-2-Clause from expression "BSD-2-Clause"
 ])
 
 load(
@@ -23,39 +23,24 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
 
 rust_library(
-    name = "winapi",
+    name = "cloudabi",
     crate_type = "lib",
     deps = [
+        "@raze__bitflags__1_2_1//:bitflags",
     ],
     srcs = glob(["**/*.rs"]),
-    crate_root = "src/lib.rs",
+    crate_root = "cloudabi.rs",
     edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.0.3",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "handleapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "ntstatus",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
+        "bitflags",
+        "default",
     ],
 )
 

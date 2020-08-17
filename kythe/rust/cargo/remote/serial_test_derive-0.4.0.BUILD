@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # MIT from expression "MIT OR Apache-2.0"
+  "notice", # MIT from expression "MIT"
 ])
 
 load(
@@ -23,39 +23,24 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
 
 rust_library(
-    name = "winapi",
-    crate_type = "lib",
+    name = "serial_test_derive",
+    crate_type = "proc-macro",
     deps = [
+        "@raze__proc_macro2__1_0_19//:proc_macro2",
+        "@raze__quote__1_0_7//:quote",
+        "@raze__syn__1_0_36//:syn",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.4.0",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "handleapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "ntstatus",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 

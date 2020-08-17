@@ -23,10 +23,10 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "readme" with type "example" omitted
 
 rust_library(
-    name = "winapi",
+    name = "scopeguard",
     crate_type = "lib",
     deps = [
     ],
@@ -36,26 +36,9 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "1.1.0",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "handleapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "ntstatus",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 

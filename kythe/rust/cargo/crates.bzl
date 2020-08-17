@@ -143,6 +143,14 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__cloudabi__0_0_3",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/cloudabi/cloudabi-0.0.3.crate",
+        type = "tar.gz",
+        strip_prefix = "cloudabi-0.0.3",
+        build_file = Label("//kythe/rust/cargo/remote:cloudabi-0.0.3.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__colored__2_0_0",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/colored/colored-2.0.0.crate",
         type = "tar.gz",
@@ -296,6 +304,14 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__lock_api__0_3_4",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/lock_api/lock_api-0.3.4.crate",
+        type = "tar.gz",
+        strip_prefix = "lock_api-0.3.4",
+        build_file = Label("//kythe/rust/cargo/remote:lock_api-0.3.4.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__log__0_4_11",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/log/log-0.4.11.crate",
         type = "tar.gz",
@@ -338,6 +354,22 @@ def raze_fetch_remote_crates():
         sha256 = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611",
         strip_prefix = "num-traits-0.2.12",
         build_file = Label("//kythe/rust/cargo/remote:num-traits-0.2.12.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__parking_lot__0_10_2",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/parking_lot/parking_lot-0.10.2.crate",
+        type = "tar.gz",
+        strip_prefix = "parking_lot-0.10.2",
+        build_file = Label("//kythe/rust/cargo/remote:parking_lot-0.10.2.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__parking_lot_core__0_7_2",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/parking_lot_core/parking_lot_core-0.7.2.crate",
+        type = "tar.gz",
+        strip_prefix = "parking_lot_core-0.7.2",
+        build_file = Label("//kythe/rust/cargo/remote:parking_lot_core-0.7.2.BUILD"),
     )
 
     _new_http_archive(
@@ -473,6 +505,14 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__redox_syscall__0_1_57",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/redox_syscall/redox_syscall-0.1.57.crate",
+        type = "tar.gz",
+        strip_prefix = "redox_syscall-0.1.57",
+        build_file = Label("//kythe/rust/cargo/remote:redox_syscall-0.1.57.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__regex__1_3_9",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/regex/regex-1.3.9.crate",
         type = "tar.gz",
@@ -554,6 +594,14 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__scopeguard__1_1_0",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/scopeguard/scopeguard-1.1.0.crate",
+        type = "tar.gz",
+        strip_prefix = "scopeguard-1.1.0",
+        build_file = Label("//kythe/rust/cargo/remote:scopeguard-1.1.0.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__serde__1_0_114",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/serde/serde-1.0.114.crate",
         type = "tar.gz",
@@ -569,6 +617,30 @@ def raze_fetch_remote_crates():
         sha256 = "164eacbdb13512ec2745fb09d51fd5b22b0d65ed294a1dcf7285a360c80a675c",
         strip_prefix = "serde_json-1.0.57",
         build_file = Label("//kythe/rust/cargo/remote:serde_json-1.0.57.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__serial_test__0_4_0",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/serial_test/serial_test-0.4.0.crate",
+        type = "tar.gz",
+        strip_prefix = "serial_test-0.4.0",
+        build_file = Label("//kythe/rust/cargo/remote:serial_test-0.4.0.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__serial_test_derive__0_4_0",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/serial_test_derive/serial_test_derive-0.4.0.crate",
+        type = "tar.gz",
+        strip_prefix = "serial_test_derive-0.4.0",
+        build_file = Label("//kythe/rust/cargo/remote:serial_test_derive-0.4.0.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__smallvec__1_4_2",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/smallvec/smallvec-1.4.2.crate",
+        type = "tar.gz",
+        strip_prefix = "smallvec-1.4.2",
+        build_file = Label("//kythe/rust/cargo/remote:smallvec-1.4.2.BUILD"),
     )
 
     _new_http_archive(
