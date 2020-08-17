@@ -24,6 +24,7 @@
 
 namespace kythe {
 
+#if defined(KYTHE_OVERRIDE_ASSERT_FAIL)
 extern "C" {
 // Make sure we get a legible stack trace when assert from <assert.h> fails.
 //
@@ -44,6 +45,7 @@ void __assert_perror_fail(int errnum, const char* file, unsigned int line,
              << std::strerror(errnum) << " [" << errnum << "]";
 }
 }  // extern "C"
+#endif
 
 void InitializeProgram(const char* argv0) {
   google::InitGoogleLogging(argv0);
