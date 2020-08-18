@@ -843,7 +843,10 @@ std::string FullPathToRelative(
 absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder) {
-  return AnalyzeCompilationUnit(nullptr, unit, files, recorder);
+  PluginLoadCallback nil_loader = [](absl::string_view msg_name,
+                                     const google::protobuf::Message& proto)
+      -> std::vector<std::unique_ptr<Plugin>> { return {}; };
+  return AnalyzeCompilationUnit(nil_loader, unit, files, recorder);
 }
 
 absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
@@ -963,9 +966,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                              descriptor_pool);
 
   // Load plugins
-  if (plugin_loader) {
-    analyzer.SetPlugins(plugin_loader(descriptor->full_name(), *proto.get()));
-  }
+  analyzer.SetPlugins(plugin_loader(descriptor->full_name(), *proto.get()));
 
   absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
   if (!status.ok()) {

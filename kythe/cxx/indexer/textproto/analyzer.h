@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/functional/function_ref.h"
 #include "absl/status/status.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/proto/analysis.pb.h"
@@ -56,8 +57,9 @@ absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                                     KytheGraphRecorder* recorder);
 
 // Callback function to instantiate plugins for a given proto message type.
-using PluginLoadCallback = std::function<std::vector<std::unique_ptr<Plugin>>(
-    absl::string_view msg_name, const google::protobuf::Message& proto)>;
+using PluginLoadCallback =
+    absl::FunctionRef<std::vector<std::unique_ptr<Plugin>>(
+        absl::string_view msg_name, const google::protobuf::Message& proto)>;
 
 // Override for AnalyzeCompilationUnit() that accepts a PluginLoadCallback for
 // loading plugins.
