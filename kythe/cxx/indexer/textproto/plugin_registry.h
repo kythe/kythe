@@ -19,6 +19,7 @@
 
 #include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
+#include "kythe/cxx/indexer/textproto/plugin.h"
 
 namespace kythe {
 namespace lang_textproto {

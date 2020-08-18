@@ -16,6 +16,8 @@
 
 #include "plugin_registry.h"
 
+#include "kythe/cxx/indexer/textproto/plugins/example/plugin.h"
+
 namespace kythe {
 namespace lang_textproto {
 
