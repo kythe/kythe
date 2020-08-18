@@ -30,6 +30,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/common/schema/edges.h"
@@ -173,7 +174,7 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(R"(perform simple documentation formatting
 
 doc -corpus foo -file bar.cc

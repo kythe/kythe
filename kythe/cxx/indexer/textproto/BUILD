@@ -6,6 +6,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":analyzer",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common/indexing:caching_output",
         "//kythe/cxx/common/indexing:output",

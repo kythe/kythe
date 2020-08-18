@@ -6,6 +6,7 @@ cc_binary(
     name = "extract_compile_command",
     srcs = ["extract_compile_command.cc"],
     deps = [
+        "//kythe/cxx/common:init",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",

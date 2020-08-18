@@ -86,4 +86,26 @@ impl<'a> EntryEmitter<'a> {
         self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/defines/binding")
     }
+
+    /// Creates an anchor node with ref edge to the target and emits
+    /// it.
+    ///
+    /// # Errors
+    /// If an error occurs while writing the entry, an error is returned.
+    pub fn emit_reference(
+        &mut self,
+        anchor_vname: &VName,
+        target_vname: &VName,
+        byte_start: u32,
+        byte_end: u32,
+    ) -> Result<(), KytheError> {
+        self.emit_node(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+        self.emit_node(
+            anchor_vname,
+            "/kythe/loc/start",
+            byte_start.to_string().into_bytes().to_vec(),
+        )?;
+        self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_edge(anchor_vname, target_vname, "/kythe/edge/ref")
+    }
 }

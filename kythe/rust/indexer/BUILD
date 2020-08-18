@@ -47,7 +47,10 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = ["tests/testkzip.kzip", "tests/testanalysis.json"],
+    data = [
+        "tests/testanalysis.json",
+        "tests/testkzip.kzip",
+    ],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
@@ -76,7 +79,51 @@ rust_indexer_test(
 )
 
 rust_indexer_test(
+    name = "enum_test",
+    srcs = ["testdata/enum.rs"],
+)
+
+rust_indexer_test(
     name = "function_test",
     srcs = ["testdata/function.rs"],
 )
 
+rust_indexer_test(
+    name = "modules_test",
+    srcs = glob(["testdata/modules/*"]),
+)
+
+rust_indexer_test(
+    name = "struct_test",
+    srcs = ["testdata/struct.rs"],
+)
+
+rust_indexer_test(
+    name = "tbuiltin_test",
+    srcs = ["testdata/tbuiltin.rs"],
+)
+
+rust_indexer_test(
+    name = "trait_test",
+    srcs = ["testdata/trait.rs"],
+)
+
+rust_indexer_test(
+    name = "type_test",
+    srcs = ["testdata/type.rs"],
+)
+
+rust_indexer_test(
+    name = "union_test",
+    srcs = ["testdata/union.rs"],
+)
+
+rust_indexer_test(
+    name = "variable_test",
+    srcs = ["testdata/variable.rs"],
+)
+
+rust_indexer_test(
+    name = "xrefs_test",
+    srcs = glob(["testdata/xrefs/*.rs"]),
+)

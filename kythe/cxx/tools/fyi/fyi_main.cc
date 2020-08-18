@@ -19,6 +19,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/tools/fyi/fyi.h"
 #include "llvm/Support/CommandLine.h"
@@ -35,7 +36,7 @@ static cl::opt<std::string> xrefs("xrefs",
 
 int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage("fyi: repair a C++ file with missing includes");
   clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
   kythe::JsonClient::InitNetwork();

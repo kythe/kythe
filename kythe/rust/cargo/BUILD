@@ -29,6 +29,11 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "lazy_static",
+    actual = "@raze__lazy_static__1_4_0//:lazy_static",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "predicates",
     actual = "@raze__predicates__1_0_5//:predicates",
     tags = ["cargo-raze"],
@@ -44,6 +49,16 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "rayon",
+    actual = "@raze__rayon__1_3_1//:rayon",
+    tags = ["cargo-raze"],
+)
+alias(
+    name = "regex",
+    actual = "@raze__regex__1_3_9//:regex",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "rls_analysis",
     actual = "@raze__rls_analysis__0_18_1//:rls_analysis",
     tags = ["cargo-raze"],
@@ -56,6 +71,21 @@ alias(
 alias(
     name = "rust_crypto",
     actual = "@raze__rust_crypto__0_2_36//:rust_crypto",
+    tags = ["cargo-raze"],
+)
+alias(
+    name = "serde",
+    actual = "@raze__serde__1_0_114//:serde",
+    tags = ["cargo-raze"],
+)
+alias(
+    name = "serde_json",
+    actual = "@raze__serde_json__1_0_57//:serde_json",
+    tags = ["cargo-raze"],
+)
+alias(
+    name = "serial_test",
+    actual = "@raze__serial_test__0_4_0//:serial_test",
     tags = ["cargo-raze"],
 )
 alias(

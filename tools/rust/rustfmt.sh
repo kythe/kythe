@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find kythe/rust/ tools/rust/ -name '*.rs' -not -wholename "*target/*" -print0 | while read -r -d $'\0' f
+find kythe/rust/ tools/rust/ -name '*.rs' -not -wholename "*target/*" -not -wholename "*indexer/testdata/*" -print0 | while read -r -d $'\0' f
 do
     echo "Formatting $f";
     rustfmt --config-path "$(dirname "${BASH_SOURCE[0]}")" "$f";
