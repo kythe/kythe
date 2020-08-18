@@ -113,9 +113,9 @@ Example:
       absl::GetFlag(FLAGS_flush_after_each_entry));
   KytheGraphRecorder recorder(&kythe_output);
 
-  // Plugin loader callback
+  // Plugin loader callback - add new plugins here.
   const kythe::lang_textproto::PluginLoadCallback plugin_loader =
-      [](std::string msg_name, const google::protobuf::Message& proto) {
+      [](absl::string_view msg_name, const google::protobuf::Message& proto) {
         std::vector<std::unique_ptr<Plugin>> plugins;
         if (msg_name == "kythe_plugin_example.Message") {
           plugins.push_back(
