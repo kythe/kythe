@@ -90,7 +90,8 @@ int FileDescriptorWalker::ComputeByteOffset(int line_number,
   int byte_offset_of_start_of_line =
       line_index_.ComputeByteOffset(line_number, 0);
   absl::string_view line_text = line_index_.GetLine(line_number);
-  int byte_offset_into_line = ByteOffsetIntoLine(column_number, line_text);
+  int byte_offset_into_line =
+      ByteOffsetOfTabularColumn(line_text, column_number);
   if (byte_offset_into_line < 0) {
     return byte_offset_into_line;
   }
@@ -100,8 +101,8 @@ int FileDescriptorWalker::ComputeByteOffset(int line_number,
 Location FileDescriptorWalker::LocationOfLeadingComments(
     const Location& entity_location, int entity_start_line,
     int entity_start_column, const std::string& comments) const {
-  int line_offset_of_entity = ByteOffsetIntoLine(
-      entity_start_column, line_index_.GetLine(entity_start_line));
+  int line_offset_of_entity = ByteOffsetOfTabularColumn(
+      line_index_.GetLine(entity_start_line), entity_start_column);
   if (line_offset_of_entity < 0) {
     return entity_location;
   }
