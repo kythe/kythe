@@ -1,0 +1,7 @@
+load("//kythe/cxx/indexer/textproto/testdata:textproto_verifier_test.bzl", "textproto_verifier_test")
+
+textproto_verifier_test(
+    name = "plugin_test",
+    protos = ["example.proto"],
+    textproto = "plugin_test.pbtxt",
+)

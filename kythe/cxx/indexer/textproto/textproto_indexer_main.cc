@@ -30,6 +30,7 @@
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
+#include "kythe/cxx/indexer/textproto/plugins/example/plugin.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 
@@ -112,11 +113,22 @@ Example:
       absl::GetFlag(FLAGS_flush_after_each_entry));
   KytheGraphRecorder recorder(&kythe_output);
 
+  // Plugin loader callback - add new plugins here.
+  const kythe::lang_textproto::PluginLoadCallback plugin_loader =
+      [](absl::string_view msg_name, const google::protobuf::Message& proto) {
+        std::vector<std::unique_ptr<Plugin>> plugins;
+        if (msg_name == "kythe_plugin_example.Message") {
+          plugins.push_back(
+              std::make_unique<kythe::lang_textproto::ExamplePlugin>(proto));
+        }
+        return plugins;
+      };
+
   DecodeKzipFile(absl::GetFlag(FLAGS_index_file),
                  [&](const proto::CompilationUnit& unit,
                      std::vector<proto::FileData> file_data) {
                    absl::Status status = lang_textproto::AnalyzeCompilationUnit(
-                       unit, file_data, &recorder);
+                       plugin_loader, unit, file_data, &recorder);
                    CHECK(status.ok()) << status;
                  });
 

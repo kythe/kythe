@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package kythe_plugin_example;
+
+message Message {
+  //- @field1 defines/binding Field1?
+  string field1 = 1;
+
+  //- @repeated_field defines/binding RepeatedField?
+  repeated string repeated_field = 2;
+}
