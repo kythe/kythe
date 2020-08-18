@@ -947,7 +947,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                              descriptor_pool);
 
   // Load plugins
-  analyzer.SetPlugins(plugin_loader(descriptor->full_name(), *proto.get()));
+  analyzer.SetPlugins(plugin_loader(descriptor->full_name(), *proto));
 
   absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
   if (!status.ok()) {
