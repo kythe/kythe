@@ -29,6 +29,7 @@ repeated_field:
 #- @"he\\n\\n\\nllo" ref RepeatedField
 repeated_field: "he\n\n\nllo"
 
+# test that tabs are handled correctly
 #- @repeated_field ref RepeatedField
 #- @"hello" ref RepeatedField
 	repeated_field	:	"hello"

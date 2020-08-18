@@ -494,15 +494,12 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
   // expects them 1-indexed. Both use zero-indexed column numbers.
   const size_t start_offset = input.data() - textproto_content_.data();
   const size_t start_line = line_index_.LineNumber(start_offset);
-
-  // TODO: we need to use proto's notion of 'column number' here. I guess we
-  // could cound # of tabs and multiply by 4 (or is it 8?)?
-  CharacterPosition pos =
+  CharacterPosition start_pos =
       line_index_.ComputePositionForByteOffset(start_offset);
-  CHECK(pos.line_number != -1);
-  absl::string_view start_line_content = line_index_.GetLine(pos.line_number);
-  const int start_col = pos.column_number;  // TODO
-  LOG(ERROR) << "substr start_col" << start_line_content.substr(start_col);
+  CHECK(start_pos.line_number != -1);
+  absl::string_view start_line_content =
+      line_index_.GetLine(start_pos.line_number);
+  const int start_col = start_pos.column_number;
 
   // Account for proto's tab behavior and its affect on what 'column number'
   // means :(.
@@ -524,7 +521,6 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
     // adjust token line/col according to where we started the tokenizer.
     int column = t.column + (t.line == 0 ? proto_start_col : 0);
     int line = t.line + start_line;
-    LOG(ERROR) << "token col=" << column << "; line=" << line;
 
     StringToken st;
     tokenizer.ParseStringAppend(t.text, &st.parsed_value);
@@ -534,7 +530,6 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
     st.source_text = absl::string_view(
         textproto_content_.data() + token_offset + 1, t.text.size() - 2);
     tokens.push_back(st);
-    LOG(ERROR) << "token span: " << st.source_text;
   } while (tokenizer.Next() &&
            tokenizer.current().type ==
                google::protobuf::io::Tokenizer::TYPE_STRING);
