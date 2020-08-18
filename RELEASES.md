@@ -1,5 +1,8 @@
 # Release Notes
 
+## [v0.0.47] - 2020-08-18
+* Include stacktraces from assertion failures in C++ tools (#4655) ([784e8ee7](https://github.com/kythe/kythe/commit/784e8ee7da2c5fe8eb8c246393f9d700261fd344))
+
 ## [v0.0.46] - 2020-08-13
 
 #### Features
@@ -975,7 +978,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.46...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.47...HEAD
+[v0.0.47] https://github.com/kythe/kythe/compare/v0.0.46...v0.0.47
 [v0.0.46] https://github.com/kythe/kythe/compare/v0.0.45...v0.0.46
 [v0.0.45] https://github.com/kythe/kythe/compare/v0.0.44...v0.0.45
 [v0.0.44] https://github.com/kythe/kythe/compare/v0.0.43...v0.0.44
