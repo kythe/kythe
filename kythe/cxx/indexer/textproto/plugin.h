@@ -63,10 +63,7 @@ struct StringToken {
 // handled by the indexer.
 class Plugin {
  public:
-  // Instantiate the plugin given the message resulting from parsing the
-  // textproto file.
-  Plugin(const google::protobuf::Message& proto) {}
-
+  Plugin() = default;
   virtual ~Plugin() = default;
 
   // Main entrypoint for plugins. In the common case, `tokens` will contain a
@@ -83,6 +80,10 @@ class Plugin {
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
       std::vector<StringToken> tokens) = 0;
+
+ protected:
+  Plugin(const Plugin&) = delete;
+  Plugin& operator=(const Plugin&) = delete;
 };
 
 }  // namespace lang_textproto
