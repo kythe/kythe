@@ -16,4 +16,6 @@ menu:
     href: '{{ site.data.development.issue_tracker }}'
   - title: kythe-dev@
     href: '{{ site.data.development.mailing_list }}'
+  - title: #general
+    href: '{{ site.data.development.slack_channel }}'
 ---
