@@ -38,6 +38,7 @@
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
+#include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
@@ -197,38 +198,16 @@ class TextprotoAnalyzer : public PluginApi {
   const DescriptorPool* descriptor_pool_;
 };
 
-// TODO: de-dupe with the one in file_descriptor_walker.cc
-// Figures out just how many bytes one needs to go into `line_text` to reach
-// what the proto compiler calls column `column_number`.
-int ByteOffsetIntoLine(int column_number, absl::string_view line_text) {
-  int computed_column = 0;
-  int offset = 0;
-  while (computed_column < column_number && offset < line_text.size()) {
-    if (line_text[offset] == '\t') {
-      // In proto land, tabs go to the next multiple of 8.  There are a million
-      // ways of computing this.  This one will do.
-      computed_column = (computed_column + 8) - (computed_column % 8);
-    } else {
-      ++computed_column;
-    }
-    ++offset;
-  }
-  if (computed_column != column_number) {
-    LOG(ERROR) << "Error computing byte offset: expected " << column_number
-               << " columns but counted up to " << computed_column
-               << " in line \"" << line_text << "\"";
-    return -1;
-  }
-  return offset;
-}
-
-// copied from proto indexer's file_descriptor_walker.cc
+// Converts from a proto line/column (both 0 based, and where column counts
+// bytes except that tabs move to the next multiple of 8) to a byte offset
+// from the start of the current file.  Returns -1 on error.
 int TextprotoAnalyzer::ComputeByteOffset(int line_number,
                                          int column_number) const {
   int byte_offset_of_start_of_line =
       line_index_.ComputeByteOffset(line_number, 0);
   absl::string_view line_text = line_index_.GetLine(line_number);
-  int byte_offset_into_line = ByteOffsetIntoLine(column_number, line_text);
+  int byte_offset_into_line =
+      lang_proto::ByteOffsetIntoLine(column_number, line_text);
   if (byte_offset_into_line < 0) {
     return byte_offset_into_line;
   }
@@ -329,8 +308,7 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   if (field_loc.line == 0) return absl::OkStatus();
 
   re2::StringPiece sp(textproto_content_.data(), textproto_content_.size());
-  const int search_from =
-      line_index_.ComputeByteOffset(field_loc.line, field_loc.column);
+  const int search_from = ComputeByteOffset(field_loc.line, field_loc.column);
   sp = sp.substr(search_from);
 
   // Consume rest of field name, colon (optional) and open brace.
