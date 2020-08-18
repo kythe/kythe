@@ -537,7 +537,6 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
   return tokens;
 }
 
-// TODO(justbuchanan): refactor to share more code with AnalyzeEnumValue().
 absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     const proto::VName& file_vname, const Message& proto,
     const FieldDescriptor& field, int start_offset) {
