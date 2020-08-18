@@ -207,7 +207,7 @@ int TextprotoAnalyzer::ComputeByteOffset(int line_number,
       line_index_.ComputeByteOffset(line_number, 0);
   absl::string_view line_text = line_index_.GetLine(line_number);
   int byte_offset_into_line =
-      lang_proto::ByteOffsetIntoLine(column_number, line_text);
+      lang_proto::ByteOffsetOfTabularColumn(line_text, column_number);
   if (byte_offset_into_line < 0) {
     return byte_offset_into_line;
   }

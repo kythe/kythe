@@ -24,7 +24,7 @@ namespace lang_proto {
 
 // Figures out just how many bytes one needs to go into `line_text` to reach
 // what the proto compiler calls column `column_number`.
-int ByteOffsetIntoLine(int column_number, absl::string_view line_text);
+int ByteOffsetOfTabularColumn(absl::string_view line_text, int column_number);
 
 }  // namespace lang_proto
 }  // namespace kythe
