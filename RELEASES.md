@@ -1,6 +1,7 @@
 # Release Notes
 
 ## [v0.0.47] - 2020-08-18
+* Include stacktraces from assertion failures in C++ tools (#4655) ([784e8ee7](https://github.com/kythe/kythe/commit/784e8ee7da2c5fe8eb8c246393f9d700261fd344))
 
 ## [v0.0.46] - 2020-08-13
 
