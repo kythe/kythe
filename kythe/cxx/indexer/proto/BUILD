@@ -38,6 +38,7 @@ cc_library(
         "-Wno-unused-variable",
     ],
     deps = [
+        ":offset_util",
         ":proto_graph_builder",
         ":search_path",
         ":source_tree",
@@ -148,5 +149,18 @@ cc_test(
         ":comments",
         "//third_party:gtest",
         "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "offset_util",
+    srcs = ["offset_util.cc"],
+    hdrs = ["offset_util.h"],
+    visibility = [
+        "//kythe/cxx/indexer/textproto:__subpackages__",
+    ],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
