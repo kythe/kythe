@@ -154,11 +154,8 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
                                       int end) override;
 
-  virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                              absl::string_view sp) override;
-
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                      re2::StringPiece sp);
+                                      absl::string_view sp) override;
 
   proto::VName VNameForRelPath(
       absl::string_view simplified_path) const override;
@@ -327,7 +324,8 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   }
 
   // Add anchor.
-  return CreateAndAddAnchorNode(file_vname, match);
+  return CreateAndAddAnchorNode(file_vname,
+                                absl::string_view(match.data(), match.size()));
 }
 
 // When the textproto parser finds an Any message in the input, it parses the
@@ -455,7 +453,8 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
     }
 
     // Add ref from matched text to enum value descriptor.
-    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, match);
+    proto::VName anchor_vname = CreateAndAddAnchorNode(
+        file_vname, absl::string_view(match.data(), match.size()));
     auto enum_vname = VNameForDescriptor(enum_val);
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                        VNameRef(enum_vname));
@@ -745,18 +744,6 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   CHECK(sp.begin() >= textproto_content_.begin() &&
         sp.end() <= textproto_content_.end())
       << "string_view not in range of source text";
-  const int begin = sp.begin() - textproto_content_.begin();
-  const int end = begin + sp.size();
-  return CreateAndAddAnchorNode(file_vname, begin, end);
-}
-
-// Adds an anchor node, using the StringPiece's offset relative to
-// `textproto_content_` as the start location.
-proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
-    const proto::VName& file_vname, re2::StringPiece sp) {
-  CHECK(sp.begin() >= textproto_content_.begin() &&
-        sp.end() <= textproto_content_.end())
-      << "StringPiece not in range of source text";
   const int begin = sp.begin() - textproto_content_.begin();
   const int end = begin + sp.size();
   return CreateAndAddAnchorNode(file_vname, begin, end);
