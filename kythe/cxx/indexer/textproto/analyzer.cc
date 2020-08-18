@@ -501,7 +501,7 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
       line_index_.GetLine(start_pos.line_number);
   const int start_col = start_pos.column_number;
 
-  // Account for proto's tab behavior and its affect on what 'column number'
+  // Account for proto's tab behavior and its effect on what 'column number'
   // means :(.
   int proto_start_col = 0;
   for (int i = 0; i < start_col; ++i) {
