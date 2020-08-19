@@ -934,7 +934,9 @@ mod testing {
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
         let zips = process_files(&all_files, &options).expect("processing is successful");
         let only_archive = zips.get(0).unwrap();
-        let indexed_compilation = unzip_compilation_unit(&only_archive);
+        let mut indexed_compilation = unzip_compilation_unit(&only_archive);
+        // Sort the required_input by info path to give a predictable order.
+        indexed_compilation.mut_unit().mut_required_input().sort_by(|a, b| a.get_info().get_path().partial_cmp(b.get_info().get_path()).unwrap());
 
         let compilation_unit = indexed_compilation.get_unit();
         let cu_vname = compilation_unit.get_v_name();
@@ -951,7 +953,7 @@ mod testing {
         ];
         assert_eq!(expected_arguments, compilation_unit.get_argument());
 
-        let required_input = compilation_unit.get_required_input().get(0).unwrap();
+        let required_input = compilation_unit.get_required_input().get(2).unwrap();
         let ru_vname = required_input.get_v_name();
         assert_eq!("fuchsia", ru_vname.get_corpus());
         assert_eq!("save-analysis", ru_vname.get_root());
@@ -1054,7 +1056,9 @@ mod testing {
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
         let zips = process_files(&all_files, &options).expect("processing is successful");
         let only_archive = zips.get(0).unwrap();
-        let indexed_compilation = unzip_compilation_unit(&only_archive);
+        let mut indexed_compilation = unzip_compilation_unit(&only_archive);
+        // Sort the required_input by info path to give a predictable order.
+        indexed_compilation.mut_unit().mut_required_input().sort_by(|a, b| a.get_info().get_path().partial_cmp(b.get_info().get_path()).unwrap());
 
         let compilation_unit = indexed_compilation.get_unit();
         let cu_vname = compilation_unit.get_v_name();
