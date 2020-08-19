@@ -40,7 +40,11 @@ type compdbCommand struct {
 // New creates a new subcommand for running compdb extraction.
 func New() subcommands.Command {
 	return &compdbCommand{
-		Info: cmdutil.NewInfo("compdb", "extract a repo from compile_commands.json", `documight`),
+		Info: cmdutil.NewInfo("compdb", "extract a repo from compile_commands.json",
+			`runextractor compdb [OPTIONS] -- [extractor_args...]
+
+Any flags specified in [extractor_args...] will be passed verbatim to the chosen extractor binary.
+`),
 	}
 }
 
@@ -73,7 +77,7 @@ func (c *compdbCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 	if err != nil {
 		return c.Fail("Unable to resolve path to extractor: %v", err)
 	}
-	if err := compdb.ExtractCompilations(ctx, extractor, c.path); err != nil {
+	if err := compdb.ExtractCompilations(ctx, extractor, c.path, fs.Args()); err != nil {
 		return c.Fail("Error extracting repository: %v", err)
 	}
 	return subcommands.ExitSuccess

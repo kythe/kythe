@@ -121,7 +121,7 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		return c.Fail("Error building repository: %v", err)
 	}
 
-	if err := compdb.ExtractCompilations(ctx, extractor, filepath.Join(buildDir, "compile_commands.json")); err != nil {
+	if err := compdb.ExtractCompilations(ctx, extractor, filepath.Join(buildDir, "compile_commands.json"), nil); err != nil {
 		return c.Fail("Error extracting repository: %v", err)
 	}
 	return subcommands.ExitSuccess
