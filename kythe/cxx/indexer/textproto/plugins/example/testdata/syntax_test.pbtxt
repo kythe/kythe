@@ -1,0 +1,36 @@
+# proto-file: example.proto
+# proto-message: kythe_plugin_example.Person
+
+# This test ensures that the plugin system can handle the various different
+# syntax options for specifying field values. It is more a test of the plugin
+# system than of the example plugin.
+
+#- @name ref NameField
+#- @person1 defines/binding Person1
+name: "person1"
+
+#- @friend ref FriendField
+#- @"person\" \"1" ref Person1
+friend: "person" "1"
+
+#- @friend ref FriendField
+#- @person1 ref Person1
+#- @person2 ref Person2?
+friend: [ "person1",  "person2" ]
+
+#- @friend ref FriendField
+#- StrValue ref Person1
+friend:
+#- StrValue.loc/start @^per
+  "per"
+#- StrValue.loc/end @$son1
+  "son1"
+
+#- @friend ref FriendField
+#- @"per\\n\\n\\nson3" ref Person3?
+friend: "per\n\n\nson3"
+
+# test that tabs are handled correctly
+#- @friend ref FriendField
+#- @"person1" ref Person1
+    friend  :   "person1"

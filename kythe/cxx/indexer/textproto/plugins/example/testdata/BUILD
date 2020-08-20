@@ -5,7 +5,18 @@ package(
 )
 
 textproto_verifier_test(
-    name = "plugin_test",
+    name = "cross_file_test",
     protos = ["example.proto"],
-    textprotos = ["plugin_test.pbtxt"],
+    textprotos = [
+        "test1.pbtxt",
+        "test2.pbtxt",
+    ],
+)
+
+textproto_verifier_test(
+    name = "syntax_test",
+    protos = ["example.proto"],
+    textprotos = [
+        "syntax_test.pbtxt",
+    ],
 )

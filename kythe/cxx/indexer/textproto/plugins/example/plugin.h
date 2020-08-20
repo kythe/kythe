@@ -23,12 +23,19 @@ namespace kythe {
 namespace lang_textproto {
 
 // The example plugin demonstrates the implementation of a textproto plugin and
-// serves as a test that the plugin system works. It adds an anchor for every
-// string field *value*  and a `ref` edge from that to the proto descriptor for
-// the field. See `plugin_test.pbtxt` for an example.
+// serves as a test that the plugin system works.
+//
+// The proto schema defines a very simple social graph. The single message
+// `Person` has a `name` field and a repeated `friend`s field. The plugin
+// defines a new kythe semantic node for each person, using their name as the
+// "signature". Each 'friend' entry in the textproto is treated as a `ref` to
+// the semantic node representing the person of that name. Note that these
+// semantic nodes have language="textproto_plugin_example" rather than
+// "textproto".
 class ExamplePlugin : public Plugin {
  public:
   ExamplePlugin(const google::protobuf::Message& proto) {}
+
   absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
