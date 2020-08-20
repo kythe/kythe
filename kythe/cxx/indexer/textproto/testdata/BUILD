@@ -4,37 +4,37 @@ load(":textproto_verifier_test.bzl", "textproto_verifier_test")
 textproto_verifier_test(
     name = "basics_test",
     protos = ["example.proto"],
-    textproto = "basics.pbtxt",
+    textprotos = ["basics.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "nested_message_test",
     protos = ["example.proto"],
-    textproto = "nested_message.pbtxt",
+    textprotos = ["nested_message.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "repeated_field_test",
     protos = ["example.proto"],
-    textproto = "repeated_field.pbtxt",
+    textprotos = ["repeated_field.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "inline_repeated_field_test",
     protos = ["example.proto"],
-    textproto = "inline_repeated_field.pbtxt",
+    textprotos = ["inline_repeated_field.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "default_value_test",
     protos = ["example.proto"],
-    textproto = "default_value.pbtxt",
+    textprotos = ["default_value.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "enum_value_test",
     protos = ["example.proto"],
-    textproto = "enum_value.pbtxt",
+    textprotos = ["enum_value.pbtxt"],
 )
 
 textproto_verifier_test(
@@ -43,13 +43,13 @@ textproto_verifier_test(
         "example.proto",
         "proto_with_imports.proto",
     ],
-    textproto = "imports.pbtxt",
+    textprotos = ["imports.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "extensions_test",
     protos = ["extensions.proto"],
-    textproto = "extensions.pbtxt",
+    textprotos = ["extensions.pbtxt"],
 )
 
 textproto_verifier_test(
@@ -66,13 +66,13 @@ textproto_verifier_test(
         "any_type.proto",
         "@com_google_protobuf//:well_known_protos",
     ],
-    textproto = "any_type.pbtxt",
+    textprotos = ["any_type.pbtxt"],
 )
 
 textproto_verifier_test(
     name = "repeated_extension_test",
     protos = ["repeated_extension.proto"],
-    textproto = "repeated_extension.pbtxt",
+    textprotos = ["repeated_extension.pbtxt"],
 )
 
 textproto_verifier_test(
@@ -88,7 +88,7 @@ textproto_verifier_test(
     protos = [
         "example.proto",
     ],
-    textproto = "schema_comments.pbtxt",
+    textprotos = ["schema_comments.pbtxt"],
     deps = ["@com_google_protobuf//:well_known_protos"],
 )
 

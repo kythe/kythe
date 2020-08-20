@@ -7,5 +7,5 @@ package(
 textproto_verifier_test(
     name = "plugin_test",
     protos = ["example.proto"],
-    textproto = "plugin_test.pbtxt",
+    textprotos = ["plugin_test.pbtxt"],
 )
