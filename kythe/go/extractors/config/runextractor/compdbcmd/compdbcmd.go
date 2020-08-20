@@ -77,7 +77,7 @@ func (c *compdbCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 	if err != nil {
 		return c.Fail("Unable to resolve path to extractor: %v", err)
 	}
-	if err := compdb.ExtractCompilations(ctx, extractor, c.path, fs.Args()); err != nil {
+	if err := compdb.ExtractCompilations(ctx, extractor, c.path, &compdb.ExtractOptions{ExtraArguments: fs.Args()}); err != nil {
 		return c.Fail("Error extracting repository: %v", err)
 	}
 	return subcommands.ExitSuccess
