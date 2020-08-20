@@ -32,10 +32,6 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   const proto::VName anchor_vname =
       api->CreateAndAddAnchorNode(file_vname, full_span);
 
-  auto target_vname = ::kythe::lang_proto::VNameForDescriptor(
-      &field,
-      [api](absl::string_view path) { return api->VNameForRelPath(path); });
-
   std::string full_value;
   for (const auto& t : tokens) {
     full_value += t.parsed_value;
@@ -44,9 +40,27 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   LOG(ERROR) << "[Example Plugin] String value:" << full_value;
   LOG(ERROR) << "[Example Plugin] String value full span: " << full_span;
 
-  // Add a ref edge from the anchor to the proto field descriptor.
-  api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                           VNameRef(target_vname));
+  // Create a VName for a semantic node representing this person. The person's
+  // name is used as the "signature".
+  proto::VName person_vname;
+  person_vname.set_signature(full_value);
+  person_vname.set_language("textproto_plugin_example");
+  person_vname.set_corpus(file_vname.corpus());
+
+  if (field.name() == "name") {
+    LOG(ERROR) << "[Example Plugin] Defined new person:\n"
+               << person_vname.DebugString();
+
+    api->recorder()->AddProperty(VNameRef(person_vname), NodeKindID::kVariable);
+    api->recorder()->AddEdge(VNameRef(anchor_vname),
+                             EdgeKindID::kDefinesBinding,
+                             VNameRef(person_vname));
+  } else if (field.name() == "friend") {
+    LOG(ERROR) << "[Example Plugin] Added ref for friend field:\n"
+               << person_vname.DebugString();
+    api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+                             VNameRef(person_vname));
+  }
 
   return absl::OkStatus();
 }
