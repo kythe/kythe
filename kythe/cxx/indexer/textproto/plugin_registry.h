@@ -28,7 +28,7 @@ namespace lang_textproto {
 // proto message. New plugins should be added to the implementation of this
 // function.
 std::vector<std::unique_ptr<Plugin>> LoadRegisteredPlugins(
-    absl::string_view msg_name, const google::protobuf::Message& proto);
+    const google::protobuf::Message& proto);
 
 }  // namespace lang_textproto
 }  // namespace kythe
