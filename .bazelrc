@@ -5,7 +5,7 @@ startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 build --strategy=TypeScriptCompile=sandboxed,local
 
 # Compatibility flags to avoid regressions.
-build --incompatible_disallow_empty_glob
+common --incompatible_disallow_empty_glob
 
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
