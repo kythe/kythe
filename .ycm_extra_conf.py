@@ -127,4 +127,4 @@ def Settings(**kwargs):
 # For testing.
 if __name__ == '__main__':
   import sys
-  print Settings(filename=sys.argv[1])
+  print(Settings(filename=sys.argv[1]))
