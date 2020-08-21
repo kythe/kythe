@@ -35,9 +35,11 @@ class PluginApi {
   PluginApi& operator=(const PluginApi&) = delete;
   virtual ~PluginApi() = default;
 
+  // Adds an anchor for the text span [begin, end) and returns its VName.
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file,
                                               int begin, int end) = 0;
 
+  // Adds an anchor for the text span and returns its VName.
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                               absl::string_view sp) = 0;
 
@@ -47,6 +49,9 @@ class PluginApi {
                               absl::string_view signature,
                               absl::string_view msg) = 0;
 
+  // Returns a VName for the given relative path by resolving it to its full
+  // path and matching it against a file in the CompilationUnit's
+  // required_inputs.
   virtual proto::VName VNameForRelPath(
       absl::string_view simplified_path) const = 0;
 };
@@ -76,6 +81,9 @@ class Plugin {
   // the string value contains escape codes, the parsed_value may be shorter
   // than the source_text as the multi-character escape code is replaced by a
   // single character.
+  //
+  // VNames for semantic nodes emitted by the plugin should set the language to
+  // something like "textproto_plugin_$PLUGIN_NAME".
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,

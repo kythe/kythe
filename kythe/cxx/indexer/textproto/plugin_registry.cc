@@ -22,8 +22,9 @@ namespace kythe {
 namespace lang_textproto {
 
 std::vector<std::unique_ptr<Plugin>> LoadRegisteredPlugins(
-    absl::string_view msg_name, const google::protobuf::Message& proto) {
+    const google::protobuf::Message& proto) {
   std::vector<std::unique_ptr<Plugin>> plugins;
+  std::string msg_name = proto.GetDescriptor()->full_name();
   if (msg_name == "kythe_plugin_example.Person") {
     plugins.push_back(
         std::make_unique<kythe::lang_textproto::ExamplePlugin>(proto));
