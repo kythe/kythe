@@ -26,6 +26,7 @@
 #include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
+#include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 #include "re2/re2.h"
 #include "re2/stringpiece.h"
@@ -82,30 +83,6 @@ class ScopedLookup {
   const int component_;
 };
 
-// Figures out just how many bytes one needs to go into `line_text` to reach
-// what the proto compiler calls column `column_number`.
-int ByteOffsetIntoLine(int column_number, absl::string_view line_text) {
-  int computed_column = 0;
-  int offset = 0;
-  while (computed_column < column_number && offset < line_text.size()) {
-    if (line_text[offset] == '\t') {
-      // In proto land, tabs go to the next multiple of 8.  There are a million
-      // ways of computing this.  This one will do.
-      computed_column = (computed_column + 8) - (computed_column % 8);
-    } else {
-      ++computed_column;
-    }
-    ++offset;
-  }
-  if (computed_column != column_number) {
-    LOG(ERROR) << "Error computing byte offset: expected " << column_number
-               << " columns but counted up to " << computed_column
-               << " in line \"" << line_text << "\"";
-    return -1;
-  }
-  return offset;
-}
-
 }  // namespace
 
 int FileDescriptorWalker::ComputeByteOffset(int line_number,
@@ -113,7 +90,8 @@ int FileDescriptorWalker::ComputeByteOffset(int line_number,
   int byte_offset_of_start_of_line =
       line_index_.ComputeByteOffset(line_number, 0);
   absl::string_view line_text = line_index_.GetLine(line_number);
-  int byte_offset_into_line = ByteOffsetIntoLine(column_number, line_text);
+  int byte_offset_into_line =
+      ByteOffsetOfTabularColumn(line_text, column_number);
   if (byte_offset_into_line < 0) {
     return byte_offset_into_line;
   }
@@ -123,8 +101,8 @@ int FileDescriptorWalker::ComputeByteOffset(int line_number,
 Location FileDescriptorWalker::LocationOfLeadingComments(
     const Location& entity_location, int entity_start_line,
     int entity_start_column, const std::string& comments) const {
-  int line_offset_of_entity = ByteOffsetIntoLine(
-      entity_start_column, line_index_.GetLine(entity_start_line));
+  int line_offset_of_entity = ByteOffsetOfTabularColumn(
+      line_index_.GetLine(entity_start_line), entity_start_column);
   if (line_offset_of_entity < 0) {
     return entity_location;
   }

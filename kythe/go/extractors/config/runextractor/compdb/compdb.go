@@ -43,9 +43,14 @@ type compileCommand struct {
 	Directory string
 }
 
+// ExtractOptions holds additional options related to compilation DB extraction.
+type ExtractOptions struct {
+	ExtraArguments []string // additional arguments to pass to the extractor
+}
+
 // ExtractCompilations runs the specified extractor over each compilation record
 // found in the compile_commands.json file at path.
-func ExtractCompilations(ctx context.Context, extractor, path string) error {
+func ExtractCompilations(ctx context.Context, extractor, path string, opts *ExtractOptions) error {
 	commands, err := readCommands(path)
 	if err != nil {
 		return err
@@ -69,7 +74,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string) error {
 			}
 			defer sem.Release(1)
 
-			if err := extractOne(ctx, extractor, entry, env); err != nil {
+			if err := extractOne(ctx, extractor, entry, env, opts); err != nil {
 				// Log error, but continue processing other compilations.
 				atomic.AddUint64(&failCount, 1)
 				log.Printf("Error extracting compilation with command '%s': %v", entry.Command, err)
@@ -86,12 +91,14 @@ func ExtractCompilations(ctx context.Context, extractor, path string) error {
 }
 
 // extractOne invokes the extractor for the given compileCommand.
-func extractOne(ctx context.Context, extractor string, cc compileCommand, env []string) error {
+func extractOne(ctx context.Context, extractor string, cc compileCommand, env []string, opts *ExtractOptions) error {
 	cmd := exec.CommandContext(ctx, extractor, "--with_executable")
 	args, ok := shell.Split(cc.Command)
 	if !ok {
 		return fmt.Errorf("unable to split command line")
 	}
+	// Wire through any additional arguments from the command line.
+	args = append(args, opts.extraArguments()...)
 	cmd.Args = append(cmd.Args, args...)
 	var err error
 	cmd.Dir, err = filepath.Abs(cc.Directory)
@@ -148,4 +155,12 @@ func extractorEnv() ([]string, error) {
 		return nil, errors.New("missing mandatory environment variable: KYTHE_OUTPUT_DIRECTORY")
 	}
 	return env, nil
+}
+
+// extraArguments returns a slice of additional arguments to provide to the extractor.
+func (o *ExtractOptions) extraArguments() []string {
+	if o != nil && len(o.ExtraArguments) > 0 {
+		return o.ExtraArguments
+	}
+	return nil
 }

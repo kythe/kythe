@@ -10,8 +10,10 @@ repeated_message {
     str_field: "hello"
 }
 
+# The message below is indented with tabs to test that they are handled
+# correctly by the indexer.
 #- @repeated_message ref RepeatedMessage
-repeated_message {
-    #- @str_field ref Message1StrField
-    str_field: "hello"
-}
+	repeated_message {
+		#- @str_field ref Message1StrField
+		str_field: "hello"
+	}

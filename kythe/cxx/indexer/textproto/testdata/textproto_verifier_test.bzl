@@ -17,6 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "@io_kythe//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheVerifierSources",
@@ -69,7 +70,7 @@ textproto_extract_kzip = rule(
 
 def textproto_verifier_test(
         name,
-        textproto,
+        textprotos,
         protos,
         deps = [],
         size = "small",
@@ -86,7 +87,7 @@ def textproto_verifier_test(
 
     Args:
       name: Name of the test
-      textproto: Textproto file being tested
+      textprotos: Textproto files being tested
       protos: Proto files that define the textproto's schema
       deps: Optional list of textproto_verifier_test targets to be used as proto compilation dependencies
       size: Test size
@@ -103,31 +104,38 @@ def textproto_verifier_test(
       Name of the test rule
     """
 
-    # extract textproto
-    textproto_kzip = _invoke(
-        textproto_extract_kzip,
-        name = name + "_kzip",
-        testonly = True,
-        srcs = [textproto],
-        extractor = extractor,
-        opts = extractor_opts,
-        tags = tags,
-        visibility = visibility,
-        vnames_config = vnames_config,
-        deps = deps + protos,
-    )
+    # extract and index each textproto
+    textproto_entries = []
+    for textproto in textprotos:
+        rule_prefix = name + "_" + paths.replace_extension(textproto, "")
 
-    # index textproto
-    entries = _invoke(
-        index_compilation,
-        name = name + "_entries",
-        testonly = True,
-        indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
-        opts = indexer_opts + ["--index_file"],
-        tags = tags,
-        visibility = visibility,
-        deps = [textproto_kzip],
-    )
+        # extract textproto
+        textproto_kzip = _invoke(
+            textproto_extract_kzip,
+            name = rule_prefix + "_kzip",
+            testonly = True,
+            srcs = [textproto],
+            extractor = extractor,
+            opts = extractor_opts,
+            tags = tags,
+            visibility = visibility,
+            vnames_config = vnames_config,
+            deps = deps + protos,
+        )
+
+        # index textproto
+        entries = _invoke(
+            index_compilation,
+            name = rule_prefix + "_entries",
+            testonly = True,
+            indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
+            opts = indexer_opts + ["--index_file"],
+            tags = tags,
+            visibility = visibility,
+            deps = [textproto_kzip],
+        )
+
+        textproto_entries += [entries]
 
     # extract proto(s)
     proto_kzip = _invoke(
@@ -161,9 +169,9 @@ def textproto_verifier_test(
         verifier_test,
         name = name,
         size = size,
-        srcs = [entries, proto_entries],
+        srcs = textproto_entries + [proto_entries],
         opts = vopts,
         tags = tags,
         visibility = visibility,
-        deps = [entries, proto_entries],
+        deps = textproto_entries + [proto_entries],
     )

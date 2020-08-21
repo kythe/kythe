@@ -30,6 +30,7 @@
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
+#include "kythe/cxx/indexer/textproto/plugin_registry.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 
@@ -116,7 +117,8 @@ Example:
                  [&](const proto::CompilationUnit& unit,
                      std::vector<proto::FileData> file_data) {
                    absl::Status status = lang_textproto::AnalyzeCompilationUnit(
-                       unit, file_data, &recorder);
+                       kythe::lang_textproto::LoadRegisteredPlugins, unit,
+                       file_data, &recorder);
                    CHECK(status.ok()) << status;
                  });
 
