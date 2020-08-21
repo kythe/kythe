@@ -572,9 +572,10 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
         LOG(ERROR) << "Plugin error: " << s;
       }
     }
-    // TODO: clarify the -3
-    input = input.substr(tokens.back().source_text.end() - 3 -
-                         textproto_content_.begin() - start_offset);
+    // Advance `input` past the last string token we just parsed.
+    const char* search_from = tokens.back().source_text.end() + 1;
+    input = re2::StringPiece(search_from,
+                             textproto_content_.end() - search_from + 1);
 
     if (!array_format) break;
 
