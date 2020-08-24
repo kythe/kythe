@@ -33,7 +33,7 @@ var (
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	checkFlags()
 
 	yamlData, err := config.KytheToYAML(*input)
 	if err != nil {
@@ -45,7 +45,7 @@ func main() {
 	}
 }
 
-func verifyFlags() {
+func checkFlags() {
 	failed := false
 	if *input == "" {
 		log.Println("Must specify --input on commandline")

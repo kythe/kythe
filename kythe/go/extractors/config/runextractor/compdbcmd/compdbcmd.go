@@ -55,7 +55,7 @@ func (c *compdbCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.path, "path", "./compile_commands.json", "Path to JSON compilations database.")
 }
 
-func (c *compdbCommand) verifyFlags() error {
+func (c *compdbCommand) checkFlags() error {
 	for _, key := range []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"} {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required %s not set", key)
@@ -69,7 +69,7 @@ func (c *compdbCommand) verifyFlags() error {
 
 // Execute implements the subcommands interface and runs compdb extraction.
 func (c *compdbCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	if err := c.verifyFlags(); err != nil {
+	if err := c.checkFlags(); err != nil {
 		return c.Fail("Incorrect flags: %v", err)
 	}
 	// Since we have to change our working directory, resolve all of our paths early.
