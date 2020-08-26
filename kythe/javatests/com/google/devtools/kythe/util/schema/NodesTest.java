@@ -98,6 +98,70 @@ public final class NodesTest extends TestCase {
                 + " edge: {generic_kind: '/edge/kind' ordinal: 1 target: {signature: 'tgt3'}}"));
   }
 
+  public void testNodeRoundtrip() {
+    testProtoConversion(
+        "(fromEntries . toEntries)",
+        n -> Nodes.fromEntries(Nodes.toEntries(n)),
+        Node.class,
+        Node.class,
+        ImmutableList.of(
+            "fact: {kythe_name: NODE_KIND value: 'record'}",
+            "fact: {kythe_name: SUBKIND value: 'class'}",
+            "fact: {kythe_name: NODE_KIND value: 'some_kind'}",
+            "fact: {kythe_name: SUBKIND value: 'some_subkind'}",
+            "edge: {generic_kind: '/kythe/edge/param' target: {signature: 'tgt'}}",
+            "fact: {generic_name: '/kythe/node/kind' value: 'record'}",
+            "fact: {generic_name: '/kythe/subkind' value: 'class'}",
+            "fact: {generic_name: '/fact/name' value: 'value'}",
+            "fact: {source: {signature: 's'} generic_name: '/fact/name' value: 'value'}",
+            "edge: {kythe_kind: TYPED target: {signature: 'tgt'}}",
+            "edge: {kythe_kind: PARAM ordinal: 42 target: {signature: 'tgt'}}",
+            "edge: {generic_kind: '/edge/kind' target: {signature: 'tgt'}}",
+            "edge: {source: {path: 'p'} generic_kind: '/edge/kind' target: {signature: 'tgt'}}",
+            "edge: {generic_kind: '/edge/kind' ordinal: 4 target: {signature: 'tgt'}}",
+            "generic_kind: 'something'",
+            "kythe_kind: RECORD",
+            "generic_subkind: 'some_subkind'",
+            "kythe_subkind: CLASS",
+            "source: {signature: 's' corpus: 'c' path: 'p'}"
+                + " kythe_kind: RECORD"
+                + " kythe_subkind: CLASS"
+                + " fact: {kythe_name: TEXT value: 'txt'}"
+                + " fact: {generic_name: '/fact/name' value: 'anything'}"
+                + " edge: {kythe_kind: PARAM ordinal: 1 target: {signature: 'tgt2'}}"
+                + " edge: {generic_kind: '/edge/kind' target: {signature: 'tgt'}}"
+                + " edge: {generic_kind: '/edge/kind' ordinal: 1 target: {signature: 'tgt3'}}"
+                + " edge: {kythe_kind: PARAM target: {signature: 'tgt'}}"),
+        ImmutableList.of(
+            "kythe_kind: RECORD",
+            "kythe_subkind: CLASS",
+            "generic_kind: 'some_kind'",
+            "generic_subkind: 'some_subkind'",
+            "edge: {kythe_kind: PARAM target: {signature: 'tgt'}}",
+            "kythe_kind: RECORD",
+            "kythe_subkind: CLASS",
+            "fact: {generic_name: '/fact/name' value: 'value'}",
+            "fact: {generic_name: '/fact/name' value: 'value'}",
+            "edge: {kythe_kind: TYPED target: {signature: 'tgt'}}",
+            "edge: {kythe_kind: PARAM ordinal: 42 target: {signature: 'tgt'}}",
+            "edge: {generic_kind: '/edge/kind' target: {signature: 'tgt'}}",
+            "edge: {generic_kind: '/edge/kind' target: {signature: 'tgt'}}",
+            "edge: {generic_kind: '/edge/kind' ordinal: 4 target: {signature: 'tgt'}}",
+            "generic_kind: 'something'",
+            "kythe_kind: RECORD",
+            "generic_subkind: 'some_subkind'",
+            "kythe_subkind: CLASS",
+            "source: {signature: 's' corpus: 'c' path: 'p'}"
+                + " kythe_kind: RECORD"
+                + " kythe_subkind: CLASS"
+                + " fact: {kythe_name: TEXT value: 'txt'}"
+                + " fact: {generic_name: '/fact/name' value: 'anything'}"
+                + " edge: {kythe_kind: PARAM target: {signature: 'tgt'}}"
+                + " edge: {kythe_kind: PARAM ordinal: 1 target: {signature: 'tgt2'}}"
+                + " edge: {generic_kind: '/edge/kind' target: {signature: 'tgt'}}"
+                + " edge: {generic_kind: '/edge/kind' ordinal: 1 target: {signature: 'tgt3'}}"));
+  }
+
   public void testConvertToSource() {
     testProtoConversion(
         "convertToSource",
