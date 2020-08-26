@@ -58,7 +58,7 @@ func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&m.verbose, "v", false, "Enable verbose mode to print more debug info.")
 }
 
-func (m mavenCommand) verifyFlags() error {
+func (m mavenCommand) checkFlags() error {
 	for _, key := range constants.RequiredJavaEnv {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
@@ -75,7 +75,7 @@ func (m mavenCommand) verifyFlags() error {
 
 // Execute implements the subcommands interface and runs maven extraction.
 func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	if err := m.verifyFlags(); err != nil {
+	if err := m.checkFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
 	tf, err := backup.New(m.pomXML)
