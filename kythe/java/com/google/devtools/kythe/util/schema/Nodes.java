@@ -18,6 +18,7 @@ package com.google.devtools.kythe.util.schema;
 
 import static com.google.devtools.kythe.util.KytheURI.parseVName;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.devtools.kythe.proto.Internal.Source;
 import com.google.devtools.kythe.proto.Schema.Edge;
@@ -133,7 +134,7 @@ public final class Nodes {
 
   /**
    * Returns a {@link Node} from the given set of {@link Entry} protos. All {@link Entry}s must
-   * share the same source {@link VName}.
+   * share the same source {@link VName} or an {@link IllegalArgumentException} will be thrown.
    */
   public static Node fromEntries(Iterable<Entry> entries) {
     List<Fact> facts = new ArrayList<>();
@@ -150,6 +151,16 @@ public final class Nodes {
       b.setSource(facts.get(0).getSource());
     } else if (!edges.isEmpty() && edges.get(0).hasSource()) {
       b.setSource(edges.get(0).getSource());
+    }
+    for (Fact f : facts) {
+      if (b.hasSource() != f.hasSource() || b.hasSource() && !b.getSource().equals(f.getSource())) {
+        throw new IllegalArgumentException("source VName mismatch in entry facts");
+      }
+    }
+    for (Edge e : edges) {
+      if (b.hasSource() != e.hasSource() || b.hasSource() && !b.getSource().equals(e.getSource())) {
+        throw new IllegalArgumentException("source VName mismatch in entry edges");
+      }
     }
     addEntries(b, facts, edges);
     return b.build();
@@ -187,7 +198,7 @@ public final class Nodes {
     return Streams.concat(
             facts.map(f -> Entry.newBuilder().setFact(f).build()),
             edges.map(e -> Entry.newBuilder().setEdge(e).build()))
-        ::iterator;
+        .collect(ImmutableList.toImmutableList());
   }
 
   /** Returns the kind {@link String} of the given {@link Node}. */
