@@ -1,6 +1,8 @@
 # Release Notes
 
 ## [v0.0.48] - 2020-09-01
+* **runextractor:**
+  * Pass flags to the compdb extractor (#4663) ([38fd346](https://github.com/kythe/kythe/commit/38fd346e0bbbf101334d7101a4031c320ac5c269))
 
 ## [v0.0.47] - 2020-08-18
 * Include stacktraces from assertion failures in C++ tools (#4655) ([784e8ee7](https://github.com/kythe/kythe/commit/784e8ee7da2c5fe8eb8c246393f9d700261fd344))
