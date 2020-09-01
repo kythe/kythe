@@ -195,7 +195,7 @@ public class JavaCompilationDetails implements AutoCloseable {
     return Optional.ofNullable(analysisCrash);
   }
 
-  /** Returns he encoding for the source files in this compilation */
+  /** Returns the encoding for the source files in this compilation */
   public Charset getEncoding() {
     return encoding;
   }
