@@ -167,7 +167,7 @@ public final class Nodes {
   }
 
   /** Returns the composite {@link Entry} protos of the given {@link Node}. */
-  public static Iterable<Entry> toEntries(Node node) {
+  public static ImmutableList<Entry> toEntries(Node node) {
     String nodeKind = getNodeKind(node);
     String subkind = getSubkind(node);
     Stream<Fact> facts =
