@@ -82,7 +82,7 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
     IndexWriter* index_writer) const {
   proto::CompilationUnit unit;
 
-  unit.set_working_directory(GetCurrentDirectory().ValueOrDie());
+  unit.set_working_directory(GetCurrentDirectory().value());
 
   for (const std::string& proto : proto_filenames) {
     unit.add_argument(proto);

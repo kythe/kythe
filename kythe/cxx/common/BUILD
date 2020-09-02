@@ -37,10 +37,10 @@ cc_library(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":status_or",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
@@ -67,11 +67,11 @@ cc_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":common_status",
-        ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ],
@@ -82,10 +82,11 @@ cc_test(
     srcs = ["path_utils_test.cc"],
     deps = [
         ":path_utils",
-        ":status_or",
         "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -290,9 +291,9 @@ cc_library(
     hdrs = ["index_writer.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -302,9 +303,9 @@ cc_library(
     srcs = ["index_reader.cc"],
     hdrs = ["index_reader.h"],
     deps = [
-        ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -329,13 +330,13 @@ cc_library(
         ":json_proto",
         ":kzip_encoding",
         ":libzip/error",
-        ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
@@ -360,6 +361,7 @@ cc_test(
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
@@ -419,10 +421,10 @@ cc_library(
     deps = [
         ":index_writer",
         ":kzip_writer",
-        ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -458,20 +460,6 @@ cc_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_google_absl//absl/status",
-    ],
-)
-
-cc_library(
-    name = "status_or",
-    hdrs = ["status_or.h"],
-    visibility = [PUBLIC_VISIBILITY],
-    deps = [
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 

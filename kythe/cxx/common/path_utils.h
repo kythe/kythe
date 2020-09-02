@@ -22,10 +22,10 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
-#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
 
@@ -35,13 +35,13 @@ class PathCleaner {
   /// \brief Creates a PathCleaner using the given root.
   /// \param root The root against which to relativize.
   ///             Will be cleaned and made an absolute path.
-  static StatusOr<PathCleaner> Create(absl::string_view root);
+  static absl::StatusOr<PathCleaner> Create(absl::string_view root);
 
   /// \brief Transforms the cleaned, absolute version of `path` into a path
   ///        relative to the configured root.
   /// \return A path relative to root, if `path` is, else a cleaned `path` or an
   ///         error if the current directory cannot be determined.
-  StatusOr<std::string> Relativize(absl::string_view path) const;
+  absl::StatusOr<std::string> Relativize(absl::string_view path) const;
 
  private:
   explicit PathCleaner(std::string root) : root_(std::move(root)) {}
@@ -55,7 +55,7 @@ class PathRealizer {
   /// \brief Creates a PathCleaner using the given root.
   /// \param root The root against which to relativize.
   ///             Will be resolved and made an absolute path.
-  static StatusOr<PathRealizer> Create(absl::string_view root);
+  static absl::StatusOr<PathRealizer> Create(absl::string_view root);
 
   /// PathRealizer is copyable and movable.
   PathRealizer(const PathRealizer& other);
@@ -67,17 +67,17 @@ class PathRealizer {
   ///        relative to the configured root.
   /// \return A path relative to root, if `path` is, else a resolved `path` or
   ///         an error if the path cannot be resolved.
-  StatusOr<std::string> Relativize(absl::string_view path) const;
+  absl::StatusOr<std::string> Relativize(absl::string_view path) const;
 
  private:
   class PathCache {
    public:
     template <typename K, typename Fn>
-    StatusOr<std::string> FindOrInsert(K&& key, Fn&& make);
+    absl::StatusOr<std::string> FindOrInsert(K&& key, Fn&& make);
 
    private:
     absl::Mutex mu_;
-    absl::flat_hash_map<std::string, StatusOr<std::string>> cache_;
+    absl::flat_hash_map<std::string, absl::StatusOr<std::string>> cache_;
   };
 
   explicit PathRealizer(std::string root) : root_(std::move(root)) {}
@@ -98,12 +98,12 @@ class PathCanonicalizer {
   };
 
   /// \brief Creates a new PathCanonicalizer with the given root and policy.
-  static StatusOr<PathCanonicalizer> Create(absl::string_view root,
-                                            Policy policy = Policy::kCleanOnly);
+  static absl::StatusOr<PathCanonicalizer> Create(
+      absl::string_view root, Policy policy = Policy::kCleanOnly);
 
   /// \brief Transforms the provided path into a relative path depending on
   ///        configured policy.
-  StatusOr<std::string> Relativize(absl::string_view path) const;
+  absl::StatusOr<std::string> Relativize(absl::string_view path) const;
 
  private:
   explicit PathCanonicalizer(Policy policy, PathCleaner cleaner,
@@ -166,13 +166,13 @@ std::string RelativizePath(absl::string_view to_relativize,
 
 /// \brief Convert `path` to an absolute path, eliminating `.` and `..`.
 /// \param path The path to convert.
-StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path);
+absl::StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path);
 
 /// \brief Returns the process's current working directory or an error.
-StatusOr<std::string> GetCurrentDirectory();
+absl::StatusOr<std::string> GetCurrentDirectory();
 
 /// \brief Returns the result of resolving symbolic links.
-StatusOr<std::string> RealPath(absl::string_view path);
+absl::StatusOr<std::string> RealPath(absl::string_view path);
 
 }  // namespace kythe
 

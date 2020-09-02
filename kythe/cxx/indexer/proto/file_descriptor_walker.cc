@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -24,7 +25,6 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/stubs/map_util.h"
-#include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
 #include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
@@ -49,7 +49,6 @@ using ::google::protobuf::OneofDescriptor;
 using ::google::protobuf::ServiceDescriptor;
 using ::google::protobuf::ServiceDescriptorProto;
 using ::google::protobuf::SourceCodeInfo;
-using ::kythe::StatusOr;
 using ::kythe::proto::VName;
 
 namespace {
@@ -200,7 +199,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
   return comment_location;
 }
 
-StatusOr<PartialLocation> FileDescriptorWalker::ParseLocation(
+absl::StatusOr<PartialLocation> FileDescriptorWalker::ParseLocation(
     const std::vector<int>& span) const {
   PartialLocation location;
   if (span.size() == 4) {
@@ -222,7 +221,7 @@ StatusOr<PartialLocation> FileDescriptorWalker::ParseLocation(
 void FileDescriptorWalker::InitializeLocation(const std::vector<int>& span,
                                               Location* loc) {
   loc->file = file_name_;
-  StatusOr<PartialLocation> possible_location = ParseLocation(span);
+  absl::StatusOr<PartialLocation> possible_location = ParseLocation(span);
   if (possible_location.ok()) {
     PartialLocation partial_location = *possible_location;
     loc->begin = ComputeByteOffset(partial_location.start_line,
@@ -741,7 +740,7 @@ void FileDescriptorWalker::AddComments(const VName& v_name,
                                        const std::vector<int>& path) {
   const auto* protoc_location =
       google::protobuf::FindOrNull(path_location_map_, path);
-  StatusOr<PartialLocation> readable_location =
+  absl::StatusOr<PartialLocation> readable_location =
       ParseLocation(location_map_[path]);
   if (protoc_location != nullptr && readable_location.ok()) {
     Location entity_location;

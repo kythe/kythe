@@ -121,7 +121,7 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
   return status.ok();
 }
 
-StatusOr<std::string> WriteMessageAsJsonToString(
+absl::StatusOr<std::string> WriteMessageAsJsonToString(
     const google::protobuf::Message& message) {
   std::string result;
   auto status = WriteMessageAsJsonToStringInternal(message, &result);
