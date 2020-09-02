@@ -930,7 +930,7 @@ void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {
 }
 
 void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
-  if (auto digest = writer_->WriteFile(file.content())) {
+  if (auto digest = writer_->WriteFile(file.content()); digest.ok()) {
     if (!file.info().digest().empty() && file.info().digest() != *digest) {
       LOG(WARNING) << "Wrote FileData with mismatched digests: "
                    << file.info().ShortDebugString() << " != " << *digest;
@@ -974,15 +974,17 @@ std::string CompilationWriter::RelativizePath(absl::string_view path) {
   }
 
   if (!canonicalizer_.has_value()) {
-    if (StatusOr<PathCanonicalizer> canonicalizer =
-            PathCanonicalizer::Create(root_directory_, path_policy_)) {
+    if (absl::StatusOr<PathCanonicalizer> canonicalizer =
+            PathCanonicalizer::Create(root_directory_, path_policy_);
+        canonicalizer.ok()) {
       canonicalizer_ = *std::move(canonicalizer);
     } else {
       LOG(INFO) << "Error making relative path: " << canonicalizer.status();
       return std::string(path);
     }
   }
-  if (StatusOr<std::string> relative = canonicalizer_->Relativize(path)) {
+  if (absl::StatusOr<std::string> relative = canonicalizer_->Relativize(path);
+      relative.ok()) {
     return *std::move(relative);
   } else {
     LOG(INFO) << "Error making relative path: " << relative.status();

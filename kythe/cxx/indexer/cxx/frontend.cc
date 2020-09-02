@@ -171,8 +171,9 @@ void DecodeIndexFile(const std::string& path,
 /// kzip file.
 void DecodeKZipFile(const std::string& path, bool silent,
                     const IndexerContext::CompilationVisitCallback& visit) {
-  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
-  CHECK(reader) << "Couldn't open kzip from " << path;
+  absl::StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
+                     << reader.status();
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     IndexerJob job;
@@ -181,8 +182,8 @@ void DecodeKZipFile(const std::string& path, bool silent,
     auto compilation = reader->ReadUnit(digest);
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      CHECK(content) << "Unable to read file with digest: "
-                     << file.info().digest() << ": " << content.status();
+      CHECK(content.ok()) << "Unable to read file with digest: "
+                          << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());

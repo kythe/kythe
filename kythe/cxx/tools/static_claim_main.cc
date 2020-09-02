@@ -84,7 +84,7 @@ struct Claimable {
 /// \return Vector of collected CompilationUnits.
 static std::vector<CompilationUnit> ReadCompilationUnits(
     const std::string& path) {
-  kythe::IndexReader reader = kythe::KzipReader::Open(path).ValueOrDie();
+  kythe::IndexReader reader = kythe::KzipReader::Open(path).value();
   std::vector<CompilationUnit> result;
   auto status = reader.Scan([&](const auto digest) {
     const auto compilation = reader.ReadUnit(digest);
