@@ -26,6 +26,11 @@ namespace kythe {
 
 #if defined(KYTHE_OVERRIDE_ASSERT_FAIL)
 extern "C" {
+
+#ifndef __THROW
+#define __THROW throw()
+#endif
+
 // Make sure we get a legible stack trace when assert from <assert.h> fails.
 // This works around https://github.com/abseil/abseil-cpp/issues/769.
 //
