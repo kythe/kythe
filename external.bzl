@@ -111,8 +111,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "0033c9ea91a52ade7c6b725aa2ef3cbe15463421",
-        sha256 = "a245e059514f2e3bd0bd6ca455b6a66e34656b1b447fec3dc98419153af23b14",
+        commit = "0e9921b75a0fdd639a504ec8443fc1fe801becd7",
+        sha256 = "8061df0ebbd3f599bcd3f5e57fb8003564d50a9b6a81a7f968fb0196b952365d",
     )
 
     maybe(

@@ -116,9 +116,8 @@ class MutableContextRows {
 class ScopedWorkingDirectory {
  public:
   explicit ScopedWorkingDirectory(std::string working_directory)
-      : saved_working_directory_(working_directory.empty()
-                                     ? ""
-                                     : GetCurrentDirectory().ValueOrDie()) {
+      : saved_working_directory_(
+            working_directory.empty() ? "" : GetCurrentDirectory().value()) {
     if (working_directory.empty()) return;
     CHECK(::chdir(working_directory.c_str()) == 0)
         << "unable to chdir(" << working_directory << "): " << strerror(errno);
@@ -248,12 +247,12 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
     if (ExecuteAndWait(*extractor, options.arguments,
                        FlattenEnvironment(options.environment),
                        options.working_directory)) {
-      if (auto reader = KzipReader::Open(output_file.filename())) {
+      if (auto reader = KzipReader::Open(output_file.filename()); reader.ok()) {
         absl::optional<std::vector<kpb::CompilationUnit>> result(
             absl::in_place);  // Default construct a result vector.
 
         auto status = reader->Scan([&](absl::string_view digest) {
-          if (auto unit = reader->ReadUnit(digest)) {
+          if (auto unit = reader->ReadUnit(digest); unit.ok()) {
             result->push_back(std::move(*unit->mutable_unit()));
             return true;
           } else {

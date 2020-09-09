@@ -23,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"
@@ -98,7 +99,8 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
   proto::GoDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
                   ->Scan([&](absl::string_view digest) {
@@ -169,7 +171,7 @@ TEST(KzipReaderTest, SourceFreedOnEmptyFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -246,7 +248,7 @@ TEST(KzipReaderTest, SourceFreedOnInvalidFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -326,7 +328,7 @@ TEST(KzipReaderTest, SourceFreedOnEmptyZipFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -341,8 +343,9 @@ TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
   proto::GoDetails needed_for_proto_deserialization;
 
   libzip::Error error;
-  StatusOr<IndexReader> reader = KzipReader::FromSource(zip_source_file_create(
-      TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::FromSource(zip_source_file_create(
+          TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
 
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader

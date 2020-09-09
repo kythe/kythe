@@ -24,6 +24,7 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/status/status.h"
+#include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -58,8 +59,9 @@ void DecodeKzipFile(const std::string& path,
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
-  CHECK(reader) << "Couldn't open kzip from " << path;
+  absl::StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
+                     << reader.status();
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
@@ -67,8 +69,8 @@ void DecodeKzipFile(const std::string& path,
     CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      CHECK(content) << "Unable to read file with digest: "
-                     << file.info().digest() << ": " << content.status();
+      CHECK(content.ok()) << "Unable to read file with digest: "
+                          << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
@@ -81,7 +83,7 @@ void DecodeKzipFile(const std::string& path,
     compilation_read = true;
     return true;
   });
-  CHECK(status.ok()) << status.ToString();
+  CHECK(status.ok()) << status;
   CHECK(compilation_read) << "Missing compilation in " << path;
 }
 

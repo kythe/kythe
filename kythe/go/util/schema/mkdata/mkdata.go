@@ -275,7 +275,9 @@ func generateJava(protoFile string, index *SchemaIndex) {
 	fmt.Fprintf(src, "package %s;\n", *packageName)
 
 	fmt.Fprintln(src, "import com.google.common.collect.ImmutableBiMap;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Edge;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.EdgeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Fact;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.FactName;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.NodeKind;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Subkind;")
@@ -340,8 +342,14 @@ func generateJava(protoFile string, index *SchemaIndex) {
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link EdgeKind}. */")
 	fmt.Fprintln(src, "public static String edgeKindString(EdgeKind k) { return EDGE_KINDS.inverse().getOrDefault(k, \"\"); }")
 
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Edge}'s kind. */")
+	fmt.Fprintln(src, "public static String edgeKindString(Edge e) { return e.getKytheKind().equals(EdgeKind.UNKNOWN_EDGE_KIND) ? e.getGenericKind() : edgeKindString(e.getKytheKind()); }")
+
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link FactName}. */")
 	fmt.Fprintln(src, "public static String factNameString(FactName n) { return FACT_NAMES.inverse().getOrDefault(n, \"\"); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Fact}'s name. */")
+	fmt.Fprintln(src, "public static String factNameString(Fact f) { return f.getKytheName().equals(FactName.UNKNOWN_FACT_NAME) ? f.getGenericName() : factNameString(f.getKytheName()); }")
 
 	fmt.Fprintln(src, "}")
 

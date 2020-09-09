@@ -84,8 +84,8 @@ bool HasEncoding(KzipEncoding lhs, KzipEncoding rhs) {
 }  // namespace
 
 /* static */
-StatusOr<IndexWriter> KzipWriter::Create(absl::string_view path,
-                                         KzipEncoding encoding) {
+absl::StatusOr<IndexWriter> KzipWriter::Create(absl::string_view path,
+                                               KzipEncoding encoding) {
   int error;
   if (auto archive =
           zip_open(std::string(path).c_str(), ZIP_CREATE | ZIP_EXCL, &error)) {
@@ -95,9 +95,9 @@ StatusOr<IndexWriter> KzipWriter::Create(absl::string_view path,
 }
 
 /* static */
-StatusOr<IndexWriter> KzipWriter::FromSource(zip_source_t* source,
-                                             KzipEncoding encoding,
-                                             const int flags) {
+absl::StatusOr<IndexWriter> KzipWriter::FromSource(zip_source_t* source,
+                                                   KzipEncoding encoding,
+                                                   const int flags) {
   libzip::Error error;
   if (auto archive = zip_open_from_source(source, flags, error.get())) {
     return IndexWriter(absl::WrapUnique(new KzipWriter(archive, encoding)));
@@ -137,7 +137,7 @@ absl::Status KzipWriter::InitializeArchive(zip_t* archive) {
   return absl::OkStatus();
 }
 
-StatusOr<std::string> KzipWriter::WriteUnit(
+absl::StatusOr<std::string> KzipWriter::WriteUnit(
     const kythe::proto::IndexedCompilation& unit) {
   if (!initialized_) {
     auto status = InitializeArchive(archive_);
@@ -147,15 +147,15 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     initialized_ = true;
   }
   auto json = WriteMessageAsJsonToString(unit);
-  if (!json) {
+  if (!json.ok()) {
     return json.status();
   }
   auto digest = SHA256Digest(*json);
-  StatusOr<std::string> result = absl::InternalError("unsupported encoding");
-  ;
+  absl::StatusOr<std::string> result =
+      absl::InternalError("unsupported encoding");
   if (HasEncoding(encoding_, KzipEncoding::kJson)) {
     result = InsertFile(absl::StrCat(kJsonUnitRoot, digest), *json);
-    if (!result) {
+    if (!result.ok()) {
       return result;
     }
   }
@@ -169,7 +169,7 @@ StatusOr<std::string> KzipWriter::WriteUnit(
   return result;
 }
 
-StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
+absl::StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
   if (!initialized_) {
     auto status = InitializeArchive(archive_);
     if (!status.ok()) {
@@ -194,8 +194,8 @@ absl::Status KzipWriter::Close() {
   return result;
 }
 
-StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
-                                             absl::string_view content) {
+absl::StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
+                                                   absl::string_view content) {
   // Initially insert an empty string for the file content.
   auto insertion = contents_.emplace(std::string(path), "");
   if (insertion.second) {

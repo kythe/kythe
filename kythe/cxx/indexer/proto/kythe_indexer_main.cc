@@ -78,8 +78,9 @@ void DecodeKzipFile(const std::string& path,
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
-  CHECK(reader) << "Couldn't open kzip from " << path;
+  absl::StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
+                     << reader.status();
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
@@ -87,8 +88,8 @@ void DecodeKzipFile(const std::string& path,
     CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      CHECK(content) << "Unable to read file with digest: "
-                     << file.info().digest() << ": " << content.status();
+      CHECK(content.ok()) << "Unable to read file with digest: "
+                          << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
@@ -198,7 +199,7 @@ Examples:
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
-      unit.set_working_directory(GetCurrentDirectory().ValueOrDie());
+      unit.set_working_directory(GetCurrentDirectory().value());
       FileVNameGenerator file_vnames;
       kythe::proto::VName default_vname;
       default_vname.set_corpus(absl::GetFlag(FLAGS_default_corpus));

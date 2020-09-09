@@ -74,7 +74,7 @@ std::string TestOutputFile(absl::string_view basename) {
   return absl::StrCat(TestTmpdir(), "/", filename);
 }
 
-StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+absl::StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 CopyIndex(IndexReader* reader, IndexWriter* writer) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
@@ -110,7 +110,7 @@ CopyIndex(IndexReader* reader, IndexWriter* writer) {
   return digests;
 }
 
-StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+absl::StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 ReadDigests(IndexReader* reader) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
@@ -142,12 +142,14 @@ TEST_P(FullKzipWriterTest, RecapitulatesSimpleKzip) {
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
   proto::GoDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
 
   std::string output_file = TestOutputFile("stringset.kzip");
   LOG(INFO) << output_file;
-  StatusOr<IndexWriter> writer = KzipWriter::Create(output_file, GetParam());
+  absl::StatusOr<IndexWriter> writer =
+      KzipWriter::Create(output_file, GetParam());
   ASSERT_TRUE(writer.ok()) << writer.status();
   auto written_digests = CopyIndex(&*reader, &*writer);
   ASSERT_TRUE(written_digests.ok()) << written_digests.status();
@@ -165,7 +167,7 @@ TEST_P(FullKzipWriterTest, RecapitulatesSimpleKzip) {
 
 TEST(KzipWriterTest, IncludesDirectoryEntries) {
   std::string dummy_file = TestOutputFile("dummy.kzip");
-  StatusOr<IndexWriter> writer = KzipWriter::Create(dummy_file);
+  absl::StatusOr<IndexWriter> writer = KzipWriter::Create(dummy_file);
   ASSERT_TRUE(writer.ok()) << writer.status();
   {
     auto digest = writer->WriteFile("contents");
@@ -202,7 +204,7 @@ TEST(KzipWriterTest, IncludesDirectoryEntries) {
 }
 
 TEST(KzipWriterTest, DuplicateFilesAreIgnored) {
-  StatusOr<IndexWriter> writer =
+  absl::StatusOr<IndexWriter> writer =
       KzipWriter::Create(TestOutputFile("dummy.kzip"));
   ASSERT_TRUE(writer.ok()) << writer.status();
   {

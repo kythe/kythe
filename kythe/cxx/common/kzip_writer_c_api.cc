@@ -20,15 +20,15 @@
 #include <stdint.h>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "glog/logging.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_writer.h"
-#include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
 
 using kythe::IndexWriter;
 using kythe::KzipEncoding;
-using kythe::StatusOr;
 
 namespace {
 
@@ -65,7 +65,7 @@ KzipWriter* KzipWriter_Create(const char* path, const size_t path_len,
   KzipEncoding kzip_encoding = ToKzipEncoding(encoding);
   const absl::string_view path_view(path, path_len);
 
-  StatusOr<IndexWriter> writer =
+  absl::StatusOr<IndexWriter> writer =
       kythe::KzipWriter::Create(path_view, kzip_encoding);
   if (!writer.ok()) {
     *create_status = CodeFromStatus(writer.status());
@@ -117,7 +117,7 @@ int32_t KzipWriter_WriteUnit(KzipWriter* writer, const char* proto,
     LOG(ERROR) << "Protobuf could not be parsed, at len: " << proto_length;
     return KZIP_WRITER_PROTO_PARSING_ERROR;
   }
-  StatusOr<std::string> digest_or = w->WriteUnit(unit);
+  absl::StatusOr<std::string> digest_or = w->WriteUnit(unit);
   if (!digest_or.ok()) {
     return CodeFromStatus(digest_or.status());
   }

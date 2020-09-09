@@ -73,7 +73,7 @@ Options:
 	}
 }
 
-func verifyFlags() {
+func checkFlags() {
 	if flag.NArg() > 0 {
 		log.Fatalf("Unknown arguments: %v", flag.Args())
 	}
@@ -122,7 +122,7 @@ func isEmptyDir(dir string) bool {
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	checkFlags()
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
