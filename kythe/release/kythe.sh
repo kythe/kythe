@@ -40,7 +40,7 @@ Indexing:
 
   To emit file nodes for the entire repository, use the --files flag to specify a JSON file VNames
   configuration relative to the repository root.  --files-excludes can be used to exclude certain
-  paths by a comma-separated list regex patterns.  It is highly recommended to blacklist build
+  paths by a comma-separated list regex patterns.  It is highly recommended to exclude build
   output directories such as '(^|/)target'.  The --index flag is required for --files to be handled.
 
   Supported Languages: java,c++
