@@ -546,6 +546,25 @@ void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range& Range,
   }
 }
 
+void IndexerASTVisitor::RecordBlame(const clang::Decl* Decl,
+                                    const GraphObserver::Range& Range) {
+  if (ShouldHaveBlameContext(Decl)) {
+    if (Job->BlameStack.empty()) {
+      if (auto FileId = Observer.recordFileInitializer(Range)) {
+        Observer.recordBlameLocation(Range, *FileId,
+                                     GraphObserver::Claimability::Unclaimable,
+                                     this->IsImplicit(Range));
+      }
+    } else {
+      for (const auto& Context : Job->BlameStack.back()) {
+        Observer.recordBlameLocation(Range, Context,
+                                     GraphObserver::Claimability::Unclaimable,
+                                     this->IsImplicit(Range));
+      }
+    }
+  }
+}
+
 /// An in-flight possible lookup result used to approximate qualified lookup.
 struct PossibleLookup {
   clang::LookupResult Result;
@@ -1226,9 +1245,10 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto Range = NormalizeRange(E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-      Observer.recordDeclUseLocation(
-          RCC.value(), BuildNodeIdForRefToDecl(FieldDecl),
-          GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
+      RecordBlame(FieldDecl, *RCC);
+      Observer.recordDeclUseLocation(*RCC, BuildNodeIdForRefToDecl(FieldDecl),
+                                     GraphObserver::Claimability::Unclaimable,
+                                     IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
@@ -2068,21 +2088,7 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
-      if (ShouldHaveBlameContext(FoundDecl)) {
-        if (Job->BlameStack.empty()) {
-          if (auto FileId = Observer.recordFileInitializer(*RCC)) {
-            Observer.recordBlameLocation(
-                *RCC, *FileId, GraphObserver::Claimability::Unclaimable,
-                this->IsImplicit(*RCC));
-          }
-        } else {
-          for (const auto& Context : Job->BlameStack.back()) {
-            Observer.recordBlameLocation(
-                *RCC, Context, GraphObserver::Claimability::Unclaimable,
-                this->IsImplicit(*RCC));
-          }
-        }
-      }
+      RecordBlame(FoundDecl, *RCC);
       auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
                           ? GraphObserver::UseKind::kWrite
                           : GraphObserver::UseKind::kUnknown;
