@@ -4,7 +4,7 @@ load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
-load("@npm_bazel_labs//:index.bzl", "ts_proto_library")
+load("@npm//@bazel/labs:index.bzl", "ts_proto_library")
 load("@io_bazel_rules_rust//proto:proto.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
