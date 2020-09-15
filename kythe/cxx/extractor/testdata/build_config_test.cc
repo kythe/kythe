@@ -79,7 +79,7 @@ TEST(CxxExtractorTest, TestBuildConfigExtraction) {
           "./kythe/cxx/extractor/testdata/build_config.cc",
       },
       {{"KYTHE_BUILD_CONFIG", "test-build-config"},
-       {"KYTHE_BUILD_TARGET", "//this/is/a/build:target"}},
+       {"KYTHE_ANALYSIS_TARGET", "//this/is/a/build:target"}},
   });
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
