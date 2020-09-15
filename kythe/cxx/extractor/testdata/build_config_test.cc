@@ -63,6 +63,7 @@ details {
   # The TextFormat parser does not like our custom type_url, but generally
   # disregards the part before the type name.
   [type.googleapis.com/kythe.proto.BuildDetails] {
+    build_target: "//this/is/a/build:target"
     build_config: "test-build-config"
   }
 }
@@ -77,7 +78,8 @@ TEST(CxxExtractorTest, TestBuildConfigExtraction) {
           "-I./kythe/cxx/extractor",
           "./kythe/cxx/extractor/testdata/build_config.cc",
       },
-      {{"KYTHE_BUILD_CONFIG", "test-build-config"}},
+      {{"KYTHE_BUILD_CONFIG", "test-build-config"},
+       {"KYTHE_BUILD_TARGET", "//this/is/a/build:target"}},
   });
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");

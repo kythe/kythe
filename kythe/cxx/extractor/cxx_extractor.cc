@@ -1309,6 +1309,9 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   if (const char* env_kythe_build_config = getenv("KYTHE_BUILD_CONFIG")) {
     SetBuildConfig(env_kythe_build_config);
   }
+  if (const char* env_kythe_build_target = getenv("KYTHE_BUILD_TARGET")) {
+    SetTargetName(env_kythe_build_target);
+  }
   if (const char* env_path_policy = getenv("KYTHE_CANONICALIZE_VNAME_PATHS")) {
     index_writer_.set_path_canonicalization_policy(
         ParseCanonicalizationPolicy(env_path_policy)
