@@ -6,7 +6,7 @@ struct S { int f; };
 //- @f defines/binding FnF
 void f() {
   S s;
-  //- @f ref FieldF
+  //- @f ref/writes FieldF
   //- @f childof FnF
   s.f = 3;
 }

@@ -103,7 +103,13 @@ bool IsUsedAsWrite(const IndexedParentMap& map, const clang::Stmt* stmt) {
   const auto* indexed_parent = map.GetIndexedParent(*stmt);
   if (indexed_parent == nullptr) return false;
   const auto* parent_stmt = indexed_parent->parent.get<clang::Stmt>();
+  while (llvm::isa_and_nonnull<clang::MemberExpr>(parent_stmt)) {
+    indexed_parent = map.GetIndexedParent(*parent_stmt);
+    if (indexed_parent == nullptr) return false;
+    parent_stmt = indexed_parent->parent.get<clang::Stmt>();
+  }
   if (parent_stmt == nullptr) return false;
+
   switch (parent_stmt->getStmtClass()) {
     case clang::Stmt::StmtClass::BinaryOperatorClass: {
       const auto* binop = clang::dyn_cast<clang::BinaryOperator>(parent_stmt);
