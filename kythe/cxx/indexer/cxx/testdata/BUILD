@@ -3236,6 +3236,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_field_rw",
+    srcs = ["df/df_field_rw.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
     tags = ["df"],

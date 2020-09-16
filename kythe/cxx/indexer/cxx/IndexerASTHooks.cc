@@ -1246,9 +1246,12 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
-      Observer.recordDeclUseLocation(*RCC, BuildNodeIdForRefToDecl(FieldDecl),
-                                     GraphObserver::Claimability::Unclaimable,
-                                     IsImplicit(*RCC));
+      auto semantic = IsUsedAsWrite(*getAllParents(), E)
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
+      Observer.recordSemanticDeclUseLocation(
+          *RCC, BuildNodeIdForRefToDecl(FieldDecl), semantic,
+          GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
