@@ -677,6 +677,11 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void RecordCallEdges(const GraphObserver::Range& Range,
                        const GraphObserver::NodeId& Callee);
 
+  // Blames the use of a `Decl` at a particular `Range` on everything at the
+  // top of `BlameStack`. If there is nothing at the top of `BlameStack`,
+  // blames the use on the file.
+  void RecordBlame(const clang::Decl* Decl, const GraphObserver::Range& Range);
+
   /// \return whether `range` should be considered to be implicit under the
   /// current context.
   GraphObserver::Implicit IsImplicit(const GraphObserver::Range& range);

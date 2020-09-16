@@ -87,6 +87,7 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
 bool ShouldHaveBlameContext(const clang::Decl* decl) {
   // TODO(zarko): introduce more blameable decls.
   switch (decl->getKind()) {
+    case clang::Decl::Kind::Field:
     case clang::Decl::Kind::Var:
       return true;
     default:

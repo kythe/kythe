@@ -20,7 +20,7 @@ if executable('kythe_languageserver')
     au User lsp_setup call lsp#register_server({
         \ 'name': 'kythe_languageserver',
         \ 'cmd': {server_info->['kythe_languageserver']},
-        \ 'whitelist': ['go'],
+        \ 'allowlist': ['go'],
         \ })
 endif
 ```

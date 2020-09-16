@@ -1,7 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("@npm_bazel_typescript//:index.bzl", "ts_config", "ts_library")
-load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_library")
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
 
 ts_config(
@@ -27,8 +27,8 @@ ts_library(
         ":kythe",
         "//kythe/proto:common_ts_proto",
         "@npm//@types/node",
-        "@npm//typescript",
         "@npm//google-protobuf",
+        "@npm//typescript",
     ],
 )
 
