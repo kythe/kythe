@@ -25,7 +25,7 @@ def cc_proto_verifier_test(
         srcs,
         proto_lib,
         proto_srcs = [],
-	proto_deps = [],
+        proto_deps = [],
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
@@ -48,8 +48,7 @@ def cc_proto_verifier_test(
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        srcs = proto_srcs,
-	deps = proto_deps,
+        srcs = [proto_lib],
     )
 
     proto_entries = _invoke(
