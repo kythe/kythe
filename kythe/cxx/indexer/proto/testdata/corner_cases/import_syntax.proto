@@ -7,11 +7,11 @@ syntax = "proto2";
 package proto_kythe_test;
 option java_package = "io.kythe";
 
-//- @"import \"other-package.proto\";" ref/includes _OtherPackageImport
-import "other-package.proto";
-import "basic/nested-message.proto";
-//- @"import public \"basic/oneof.proto\";" ref/includes _PublicImport
-import public "basic/oneof.proto";
+//- @"import \"kythe/cxx/indexer/proto/testdata/other-package.proto\";" ref/includes _OtherPackageImport
+import "kythe/cxx/indexer/proto/testdata/other-package.proto";
+import "kythe/cxx/indexer/proto/testdata/basic/nested-message.proto";
+//- @"import public \"kythe/cxx/indexer/proto/testdata/basic/oneof.proto\";" ref/includes _PublicImport
+import public "kythe/cxx/indexer/proto/testdata/basic/oneof.proto";
 
 // Message to test for various syntax expressions of referring to a message
 // defined in a namespace.

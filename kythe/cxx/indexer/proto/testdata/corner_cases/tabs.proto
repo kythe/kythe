@@ -2,7 +2,7 @@
 
 syntax = "proto2";
 
-import "other-package.proto";
+import "kythe/cxx/indexer/proto/testdata/other-package.proto";
 
 package proto_kythe_test;
 option java_package = "io.kythe";

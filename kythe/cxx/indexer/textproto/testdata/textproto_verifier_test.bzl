@@ -25,7 +25,7 @@ load(
     "index_compilation",
     "verifier_test",
 )
-load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "proto_extract_kzip")
+load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "get_proto_files_and_proto_path_opts", "proto_extract_kzip")
 
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
@@ -33,15 +33,17 @@ def _invoke(rulefn, name, **kwargs):
     return "//{}:{}".format(native.package_name(), name)
 
 def _textproto_extract_kzip_impl(ctx):
+    proto_files, pathopt = get_proto_files_and_proto_path_opts(ctx.attr.protos)
+
     extract(
         srcs = ctx.files.srcs,
         ctx = ctx,
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
         mnemonic = "TextprotoExtractKZip",
-        opts = ["--", "--proto_path", ctx.label.package] + ctx.attr.opts,
+        opts = ["--"] + ctx.attr.opts + pathopt,
         vnames_config = ctx.file.vnames_config,
-        deps = ctx.files.deps,
+        deps = proto_files,
     )
     return [KytheVerifierSources(files = depset(ctx.files.srcs))]
 
@@ -52,7 +54,7 @@ textproto_extract_kzip = rule(
             allow_empty = False,
             allow_files = True,
         ),
-        "deps": attr.label_list(allow_files = True),
+        "protos": attr.label_list(mandatory = True, allow_empty = False, allow_files = False),
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor/textproto:textproto_extractor"),
             executable = True,
@@ -72,13 +74,8 @@ def textproto_verifier_test(
         name,
         textprotos,
         protos,
-        deps = [],
         size = "small",
         tags = [],
-        extractor = None,
-        extractor_opts = [],
-        proto_extractor_opts = [],
-        indexer_opts = [],
         verifier_opts = [],
         convert_marked_source = False,
         vnames_config = None,
@@ -88,14 +85,9 @@ def textproto_verifier_test(
     Args:
       name: Name of the test
       textprotos: Textproto files being tested
-      protos: Proto files that define the textproto's schema
-      deps: Optional list of textproto_verifier_test targets to be used as proto compilation dependencies
+      protos: Proto libraries that define the textproto's schema
       size: Test size
       tags: Test tags
-      extractor: Executable extractor tool to invoke (defaults to protoc_extractor)
-      extractor_opts: List of options passed to the extractor tool
-      proto_extractor_opts: List of options passed to the proto extractor tool
-      indexer_opts: List of options passed to the indexer tool
       verifier_opts: List of options passed to the verifier tool
       convert_marked_source: Whether the verifier should convert marked source.
       vnames_config: Optional path to a VName configuration file
@@ -115,12 +107,10 @@ def textproto_verifier_test(
             name = rule_prefix + "_kzip",
             testonly = True,
             srcs = [textproto],
-            extractor = extractor,
-            opts = extractor_opts,
             tags = tags,
             visibility = visibility,
             vnames_config = vnames_config,
-            deps = deps + protos,
+            protos = protos,
         )
 
         # index textproto
@@ -129,7 +119,7 @@ def textproto_verifier_test(
             name = rule_prefix + "_entries",
             testonly = True,
             indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
-            opts = indexer_opts + ["--index_file"],
+            opts = ["--index_file"],
             tags = tags,
             visibility = visibility,
             deps = [textproto_kzip],
@@ -144,10 +134,8 @@ def textproto_verifier_test(
         testonly = True,
         srcs = protos,
         tags = tags,
-        opts = proto_extractor_opts,
         visibility = visibility,
         vnames_config = vnames_config,
-        deps = deps,
     )
 
     # index proto(s)

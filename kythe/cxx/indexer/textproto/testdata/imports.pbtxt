@@ -1,5 +1,5 @@
 # proto-message: example2.OuterMessage
-# proto-file: proto_with_imports.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/proto_with_imports.proto
 
 #- @inner_msg ref OuterMessageInnerMsg
 inner_msg {

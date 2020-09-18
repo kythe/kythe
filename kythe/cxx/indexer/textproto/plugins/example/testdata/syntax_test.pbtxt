@@ -1,4 +1,4 @@
-# proto-file: example.proto
+# proto-file: kythe/cxx/indexer/textproto/plugins/example/testdata/example.proto
 # proto-message: kythe_plugin_example.Person
 
 # This test ensures that the plugin system can handle the various different

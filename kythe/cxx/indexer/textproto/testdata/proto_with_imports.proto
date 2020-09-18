@@ -2,9 +2,9 @@ syntax = "proto2";
 
 package example2;
 
-import "example.proto";
+import "kythe/cxx/indexer/textproto/testdata/example.proto";
 
 message OuterMessage {
-    //- @inner_msg defines/binding OuterMessageInnerMsg?
-    optional example.Message2 inner_msg = 1;
+  //- @inner_msg defines/binding OuterMessageInnerMsg?
+  optional example.Message2 inner_msg = 1;
 };

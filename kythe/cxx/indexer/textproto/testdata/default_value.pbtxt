@@ -1,4 +1,4 @@
-# proto-file: example.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
 # proto-message: example.Message2
 
 # proto3 does not have "has" bits that track whether a field is set or not.
