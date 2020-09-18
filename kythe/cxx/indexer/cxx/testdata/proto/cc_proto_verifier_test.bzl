@@ -24,7 +24,6 @@ def cc_proto_verifier_test(
         name,
         srcs,
         proto_lib,
-        proto_srcs = [],
         proto_deps = [],
         verifier_opts = [
             "--ignore_dups",
@@ -37,8 +36,7 @@ def cc_proto_verifier_test(
     Args:
       name: Name of the test.
       srcs: The compilation's C++ source files; each file's verifier goals will be checked
-      proto_lib: A proto_library target containing proto_srcs
-      proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
+      proto_lib: A proto_library target
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
 
@@ -92,7 +90,7 @@ def cc_proto_verifier_test(
     return _invoke(
         verifier_test,
         name = name,
-        srcs = srcs + proto_srcs,
+        srcs = srcs + [proto_entries],
         opts = verifier_opts,
         size = size,
         deps = [
