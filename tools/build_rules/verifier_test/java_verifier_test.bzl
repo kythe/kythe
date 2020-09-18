@@ -305,6 +305,7 @@ def java_proto_verifier_test(
         name,
         srcs,
         size = "small",
+        proto_libs = [],
         proto_srcs = [],
         tags = [],
         java_extractor_opts = _default_java_extractor_opts,
@@ -319,6 +320,7 @@ def java_proto_verifier_test(
       tags: Test target tags.
       visibility: Visibility of the test target.
       srcs: The compilation's Java source files; each file's verifier goals will be checked
+      proto_libs: The proto_library targets containing proto_srcs
       proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
       verifier_opts: List of options passed to the verifier tool
       vnames_config: Optional path to a VName configuration file
@@ -328,7 +330,7 @@ def java_proto_verifier_test(
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        srcs = proto_srcs,
+        srcs = proto_libs,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
@@ -344,6 +346,7 @@ def java_proto_verifier_test(
         deps = [proto_kzip],
     )
 
+    # TODO(justinbuchanan): use java_proto_library instead of manually invoking protoc
     _generate_java_proto(
         name = name + "_gensrc",
         srcs = proto_srcs,
@@ -377,7 +380,7 @@ def java_proto_verifier_test(
         verifier_test,
         name = name,
         size = size,
-        srcs = [entries, proto_entries] + proto_srcs,
+        srcs = [entries, proto_entries],
         opts = verifier_opts,
         tags = tags,
         visibility = visibility,
