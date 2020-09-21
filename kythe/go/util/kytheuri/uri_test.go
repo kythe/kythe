@@ -194,6 +194,23 @@ func TestRoundTripURI(t *testing.T) {
 	}
 }
 
+func TestToString(t *testing.T) {
+	tests := []struct {
+		VName    *spb.VName
+		Expected string
+	}{
+		{&spb.VName{Corpus: "kythe", Path: "unrooted/path"}, "kythe://kythe?path=unrooted/path"},
+		{&spb.VName{Corpus: "kythe", Path: "/rooted/path"}, "kythe://kythe?path=/rooted/path"},
+		{&spb.VName{Corpus: "kythe", Path: "//rooted//path"}, "kythe://kythe?path=/rooted/path"},
+	}
+
+	for _, test := range tests {
+		if found := ToString(test.VName); found != test.Expected {
+			t.Errorf("kytheuri.ToString(%#v): found %q, want %q", test.VName, found, test.Expected)
+		}
+	}
+}
+
 func TestRoundTripVName(t *testing.T) {
 	// Verify that converting a VName to a Kythe URI and then back preserves
 	// equivalence.

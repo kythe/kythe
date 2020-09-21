@@ -114,6 +114,13 @@ public class KytheURITest extends TestCase {
     assertThat(builder().setCorpus("kythe").setSignature("a=").build().toString())
         .isEqualTo("kythe://kythe#a%3D");
     assertThat(builder().setSignature("広").build().toString()).isEqualTo("kythe:#%E5%BA%83");
+
+    assertThat(builder().setCorpus("kythe").setPath("unrooted/path").build().toString())
+        .isEqualTo("kythe://kythe?path=unrooted/path");
+    assertThat(builder().setCorpus("kythe").setPath("/rooted/path").build().toString())
+        .isEqualTo("kythe://kythe?path=/rooted/path");
+    assertThat(builder().setCorpus("kythe").setPath("//rooted//path").build().toString())
+        .isEqualTo("kythe://kythe?path=/rooted/path");
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {

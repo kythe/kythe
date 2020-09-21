@@ -282,6 +282,9 @@ public class KytheURI implements Serializable {
    */
   private static String cleanPath(String path) {
     ArrayList<String> clean = new ArrayList<>();
+    if (!path.isEmpty() && path.charAt(0) == '/') {
+      clean.add("");
+    }
     for (String part : PATH_SPLITTER.split(path)) {
       if (part.isEmpty() || part.equals(".")) {
         continue; // skip empty path components and "here" markers.
