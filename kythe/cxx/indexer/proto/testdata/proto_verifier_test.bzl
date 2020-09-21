@@ -37,8 +37,6 @@ def get_proto_files_and_proto_path_opts(protolibs):
     srcs = []
     proto_paths = []
     for lib in protolibs:
-        if ProtoInfo not in lib:
-            fail("Expected a proto_library, got: %s" % lib)
         for src in lib[ProtoInfo].transitive_sources.to_list():
             if src.path.endswith(".proto"):
                 srcs.append(src)
@@ -68,6 +66,7 @@ proto_extract_kzip = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = True,
+            providers=[ProtoInfo],
         ),
         "deps": attr.label_list(allow_files = True),
         "extractor": attr.label(

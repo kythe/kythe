@@ -53,6 +53,7 @@ textproto_extract_kzip = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = True,
+            providers = [ProtoInfo]
         ),
         "protos": attr.label_list(mandatory = True, allow_empty = False, allow_files = False),
         "extractor": attr.label(
