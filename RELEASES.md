@@ -450,7 +450,7 @@
   *  Set cxx extractor kzip times to a constant (#4086) ([642c9330](https://github.com/kythe/kythe/commit/642c933026acafd44f49de81f12e9f21e4fb6de0))
 * **cxx_indexer:**
   *  emit references to dependent names based on name, not location (#4097) ([28cf259b](https://github.com/kythe/kythe/commit/28cf259beac09d1a4d687f87990ddba92ec32bff))
-  *  whitelist and test std::make_shared (#4059) ([4016c5b3](https://github.com/kythe/kythe/commit/4016c5b30a02a85e996c10e4a873e10d1b80c4cd))
+  *  allow and test std::make_shared (#4059) ([4016c5b3](https://github.com/kythe/kythe/commit/4016c5b30a02a85e996c10e4a873e10d1b80c4cd))
   *  allow protobuf metadata in .stubby.h files (#4004) ([29cdef09](https://github.com/kythe/kythe/commit/29cdef09e32b5fc86420e1774ff2d79067dc08a8))
   *  properly reference C++17 deduced templates (#3900) ([69ef278c](https://github.com/kythe/kythe/commit/69ef278c8cc262df5b3437d468e8e304a44b2ad3))
   *  normalize windows paths (#3742) ([167786ac](https://github.com/kythe/kythe/commit/167786acf6f2d10e1e8f3923da0a1f4f59e59a66))

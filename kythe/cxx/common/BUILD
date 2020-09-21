@@ -10,6 +10,9 @@ load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 cc_library(
     name = "scope_guard",
     hdrs = ["scope_guard.h"],
+    deps = [
+        "@com_google_absl//absl/base",
+    ],
 )
 
 cc_test(

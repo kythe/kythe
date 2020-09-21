@@ -1171,11 +1171,11 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "2ba20d91341ef88259896a5dfaf55666d11648caa0964342991e30a96b7cd630",
-        strip_prefix = "protobuf-3.10.0-rc1",
+        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
+        strip_prefix = "protobuf-3.13.0",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
