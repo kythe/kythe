@@ -41,7 +41,7 @@ def get_proto_files_and_proto_paths(protolibs):
         for src in info.direct_sources:
             toplevel_srcs.append(src)
     all_srcs = depset([], transitive = [lib[ProtoInfo].transitive_sources for lib in protolibs])
-    proto_paths = depset(transitive=[lib[ProtoInfo].transitive_proto_path for lib in protolibs])
+    proto_paths = depset(transitive = [lib[ProtoInfo].transitive_proto_path for lib in protolibs])
     return toplevel_srcs, all_srcs, proto_paths
 
 def _proto_extract_kzip_impl(ctx):
@@ -50,7 +50,7 @@ def _proto_extract_kzip_impl(ctx):
     args = ctx.actions.args()
     args.add("--")
     args.add_all(ctx.attr.opts)
-    args.add_all(pathopt, before_each="--proto_path")
+    args.add_all(pathopt, before_each = "--proto_path")
 
     extract(
         srcs = toplevel_srcs,
@@ -70,7 +70,7 @@ proto_extract_kzip = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = True,
-            providers=[ProtoInfo],
+            providers = [ProtoInfo],
         ),
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor/proto:proto_extractor"),

@@ -61,7 +61,7 @@ def cc_proto_verifier_test(
             cc_kythe_proto_library,
             name = name + "_cc_proto",
             deps = proto_libs,
-        )
+        ),
     ]
 
     cc_kzip = _invoke(
