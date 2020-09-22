@@ -9,22 +9,19 @@ rust_library(
         include = ["src/**/*.rs"],
         exclude = ["src/bin/**/*.rs"],
     ),
-    deps = [
-      "//kythe/cxx/common:kzip_writer_c_api",
-      "//kythe/proto:analysis_rust_proto",
-      "//kythe/rust/cargo:anyhow",
-      "//kythe/rust/cargo:protobuf",
-      "@com_google_absl//absl/status",
-    ],
     edition = "2018",
+    deps = [
+        "//kythe/cxx/common:kzip_writer_c_api",
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:protobuf",
+        "@com_google_absl//absl/status",
+    ],
 )
 
 rust_test(
     name = "fuchsia_extractor_lib_test",
     crate = ":fuchsia_extractor_lib",
-    deps = [
-      "//kythe/rust/cargo:tempdir",
-    ],
     edition = "2018",
     # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
     # rust binaries require their deps to be compiled with -fPIC, which is not
@@ -34,15 +31,22 @@ rust_test(
     # Using static relocation model will sometimes cause the binary to crash in
     # opt and fastbuild mode, so we use this flag only in opt.
     rustc_flags = select({
-        ":if_opt": [ "-Crelocation-model=static" ],
+        ":if_opt": ["-Crelocation-model=static"],
         "//conditions:default": [],
-    })
+    }),
+    deps = [
+        "//kythe/rust/cargo:tempdir",
+    ],
 )
 
 rust_binary(
-    edition = "2018",
     name = "fuchsia_extractor",
     srcs = glob(["src/bin/**/*.rs"]),
+    edition = "2018",
+    rustc_flags = select({
+        ":if_opt": ["-Crelocation-model=static"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":fuchsia_extractor_lib",
         "//kythe/proto:analysis_rust_proto",
@@ -57,18 +61,14 @@ rust_binary(
         "//kythe/rust/cargo:serde_json",
         "//kythe/rust/cargo:tempdir",
     ],
-    rustc_flags = select({
-        ":if_opt": [ "-Crelocation-model=static" ],
-        "//conditions:default": [],
-    })
 )
 
 rust_test(
     name = "fuchsia_extractor_test",
     crate = ":fuchsia_extractor",
-    deps = [
-      "//kythe/rust/cargo:zip",
-      "//kythe/rust/cargo:serial_test",
+    data = [
+        "//kythe/go/platform/tools/kzip",
+        "//kythe/rust/fuchsia_extractor/testdata",
     ],
     edition = "2018",
     # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
@@ -79,12 +79,12 @@ rust_test(
     # Using static relocation model will sometimes cause the binary to crash in
     # opt and fastbuild mode, so we use this flag only in opt.
     rustc_flags = select({
-        ":if_opt": [ "-Crelocation-model=static" ],
+        ":if_opt": ["-Crelocation-model=static"],
         "//conditions:default": [],
     }),
-    data = [
-      "//kythe/rust/fuchsia_extractor/testdata",
-      "//kythe/go/platform/tools/kzip",
+    deps = [
+        "//kythe/rust/cargo:serial_test",
+        "//kythe/rust/cargo:zip",
     ],
 )
 
@@ -101,4 +101,3 @@ config_setting(
         "compilation_mode": "opt",
     },
 )
-

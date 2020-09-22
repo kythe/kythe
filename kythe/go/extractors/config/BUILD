@@ -12,9 +12,9 @@ go_library(
     deps = [
         "//kythe/go/extractors/config/base",
         "//kythe/proto:extraction_config_go_proto",
+        "@org_bitbucket_creachadair_shell//:go_default_library",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_shell//:go_default_library",
     ],
 )
 

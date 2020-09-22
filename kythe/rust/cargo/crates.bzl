@@ -3,19 +3,19 @@ cargo-raze crate workspace functions
 
 DO NOT EDIT! Replaced on runs of cargo-raze
 """
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 def _new_http_archive(name, **kwargs):
     if not native.existing_rule(name):
-        http_archive(name=name, **kwargs)
+        http_archive(name = name, **kwargs)
 
 def _new_git_repository(name, **kwargs):
     if not native.existing_rule(name):
-        new_git_repository(name=name, **kwargs)
+        new_git_repository(name = name, **kwargs)
 
 def raze_fetch_remote_crates():
-
     _new_http_archive(
         name = "raze__adler__0_2_3",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/adler/adler-0.2.3.crate",
@@ -849,4 +849,3 @@ def raze_fetch_remote_crates():
         strip_prefix = "zip-0.5.6",
         build_file = Label("//kythe/rust/cargo/remote:zip-0.5.6.BUILD"),
     )
-

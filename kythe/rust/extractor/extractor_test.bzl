@@ -24,6 +24,7 @@ def _rust_extractor_test_impl(ctx):
     rust_lib = rust_toolchain.rust_lib.files.to_list()
 
     source_file = ctx.actions.declare_file("main.rs")
+
     # sha256 digest = 7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03
     source_content = """
     fn main() {
@@ -32,7 +33,7 @@ def _rust_extractor_test_impl(ctx):
     """
     ctx.actions.write(
         output = source_file,
-        content = source_content
+        content = source_content,
     )
 
     script = "\n".join(
@@ -41,7 +42,7 @@ def _rust_extractor_test_impl(ctx):
         ["export TEST_FILE=%s" % source_file.short_path] +
         ["export EXTRACTOR_PATH=%s" % extractor.short_path] +
         ["export KYTHE_CORPUS=test_corpus"] +
-        ["./%s" % test_binary.short_path]
+        ["./%s" % test_binary.short_path],
     )
     ctx.actions.write(
         output = ctx.outputs.executable,
@@ -49,7 +50,7 @@ def _rust_extractor_test_impl(ctx):
     )
 
     runfiles = ctx.runfiles(
-        files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_lib
+        files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_lib,
     )
 
     return [DefaultInfo(runfiles = runfiles)]
@@ -70,5 +71,5 @@ rust_extractor_test = rule(
         ),
     },
     test = True,
-    toolchains = ["@io_bazel_rules_rust//rust:toolchain"]
+    toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
 )

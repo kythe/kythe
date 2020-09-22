@@ -38,7 +38,7 @@ def _textproto_extract_kzip_impl(ctx):
     args = ctx.actions.args()
     args.add("--")
     args.add_all(ctx.attr.opts)
-    args.add_all(pathopt, before_each="--proto_path")
+    args.add_all(pathopt, before_each = "--proto_path")
 
     extract(
         srcs = ctx.files.srcs,
@@ -58,7 +58,7 @@ textproto_extract_kzip = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = True,
-            providers = [ProtoInfo]
+            providers = [ProtoInfo],
         ),
         "protos": attr.label_list(mandatory = True, allow_empty = False, allow_files = False),
         "extractor": attr.label(
