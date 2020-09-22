@@ -20,7 +20,7 @@
         },
         {
             "info": {
-                "digest": "6d48481a83f2e236fcb4afafe363b54af9377d9ec9deacc382930ef7c52e163a",
+                "digest": "40e64606167c9bea6f8c2a60f489901565aca97c6a676d25db195d4af91bcb9f",
                 "path": "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
             },
             "v_name": {
