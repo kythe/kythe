@@ -1,4 +1,4 @@
-# proto-file: kythe/cxx/extractor/textproto/testdata/example.proto
+# proto-file: example.proto
 # proto-message: textproto_test.MyMessage
 
 str_field: "testing, testing..."
