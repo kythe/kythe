@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load(
     "@io_kythe//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheVerifierSources",
