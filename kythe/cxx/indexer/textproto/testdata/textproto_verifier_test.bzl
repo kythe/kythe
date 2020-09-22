@@ -33,7 +33,7 @@ def _invoke(rulefn, name, **kwargs):
     return "//{}:{}".format(native.package_name(), name)
 
 def _textproto_extract_kzip_impl(ctx):
-    proto_files, pathopt = get_proto_files_and_proto_path_opts(ctx.attr.protos)
+    toplevel_proto_srcs, all_proto_srcs, pathopt = get_proto_files_and_proto_path_opts(ctx.attr.protos)
 
     extract(
         srcs = ctx.files.srcs,
@@ -43,7 +43,7 @@ def _textproto_extract_kzip_impl(ctx):
         mnemonic = "TextprotoExtractKZip",
         opts = ["--"] + ctx.attr.opts + pathopt,
         vnames_config = ctx.file.vnames_config,
-        deps = proto_files,
+        deps = all_proto_srcs,
     )
     return [KytheVerifierSources(files = depset(ctx.files.srcs))]
 

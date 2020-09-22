@@ -87,14 +87,22 @@ test_suite(
 
 proto_verifier_test(
     name = "import_syntax",
-    srcs = [":corner_cases_import_syntax_proto"],
+    srcs = [
+        ":basic_nested_message_proto",
+        ":basic_oneof_proto",
+        ":corner_cases_import_syntax_proto",
+        ":other_package_proto",
+    ],
     convert_marked_source = True,
     tags = ["corner_cases"],
 )
 
 proto_verifier_test(
     name = "tabs",
-    srcs = [":corner_cases_tabs_proto"],
+    srcs = [
+        ":corner_cases_tabs_proto",
+        ":other_package_proto",
+    ],
     tags = ["corner_cases"],
 )
 
