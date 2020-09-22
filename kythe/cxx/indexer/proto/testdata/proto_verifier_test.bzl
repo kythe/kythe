@@ -36,16 +36,14 @@ def get_proto_files_and_proto_path_opts(protolibs):
       * a list of options to pass to protoc (containing --proto_path locations).
     """
     toplevel_srcs = []
-    all_srcs = []
     proto_paths = []
 
     for lib in protolibs:
         info = lib[ProtoInfo]
         for src in info.direct_sources:
             toplevel_srcs.append(src)
-        all_srcs += info.transitive_sources.to_list()
         proto_paths += lib[ProtoInfo].transitive_proto_path.to_list()
-    all_srcs = collections.uniq(all_srcs)
+    all_srcs = depset([], transitive = [lib[ProtoInfo].transitive_sources for lib in protolibs])
     proto_path_opts = collections.before_each("--proto_path", collections.uniq(proto_paths))
     return toplevel_srcs, all_srcs, proto_path_opts
 
