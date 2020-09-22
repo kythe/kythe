@@ -32,7 +32,7 @@ def _invoke(rulefn, name, **kwargs):
 def get_proto_files_and_proto_paths(protolibs):
     """Given a list of proto_library targets, returns:
       * a list of top-level .proto files
-      * a list of all transitively-included .proto files
+      * a depset of all transitively-included .proto files
       * a depset of --proto_path locations
     """
     toplevel_srcs = []
