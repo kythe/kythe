@@ -23,9 +23,7 @@ load(
 def cc_proto_verifier_test(
         name,
         srcs,
-        proto_lib,
-        proto_srcs = [],
-	proto_deps = [],
+        proto_libs,
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
@@ -37,8 +35,7 @@ def cc_proto_verifier_test(
     Args:
       name: Name of the test.
       srcs: The compilation's C++ source files; each file's verifier goals will be checked
-      proto_lib: A proto_library target containing proto_srcs
-      proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
+      proto_libs: A list of proto_library targets
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
 
@@ -48,8 +45,7 @@ def cc_proto_verifier_test(
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        srcs = proto_srcs,
-	deps = proto_deps,
+        srcs = proto_libs,
     )
 
     proto_entries = _invoke(
@@ -60,11 +56,11 @@ def cc_proto_verifier_test(
         deps = [proto_kzip],
     )
 
-    proto_libs = [
+    cc_proto_libs = [
         _invoke(
             cc_kythe_proto_library,
             name = name + "_cc_proto",
-            deps = [proto_lib] + proto_deps,
+            deps = proto_libs,
         )
     ]
 
@@ -72,7 +68,7 @@ def cc_proto_verifier_test(
         cc_extract_kzip,
         name = name + "_cc_kzip",
         srcs = srcs,
-        deps = proto_libs,
+        deps = cc_proto_libs,
     )
 
     cc_entries = _invoke(
@@ -93,7 +89,7 @@ def cc_proto_verifier_test(
     return _invoke(
         verifier_test,
         name = name,
-        srcs = srcs + proto_srcs,
+        srcs = srcs + [proto_entries],
         opts = verifier_opts,
         size = size,
         deps = [

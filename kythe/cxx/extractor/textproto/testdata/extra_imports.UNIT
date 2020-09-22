@@ -28,7 +28,7 @@
         },
         {
             "info": {
-                "digest": "b3462a501dafa3eea3d3fd7e8ed1ae6be6b3fba38849b20effeeea4cd8448c3e",
+                "digest": "1df9b906fcc53691e0dae75488f4f7f9474f868c3c7190f6f5b555ba129a1acb",
                 "path": "kythe/cxx/extractor/textproto/testdata/extra_imports.pbtxt"
             },
             "v_name": {

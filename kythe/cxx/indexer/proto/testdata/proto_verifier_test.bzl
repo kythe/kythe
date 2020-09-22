@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load(
     "@io_kythe//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheVerifierSources",
@@ -21,24 +22,47 @@ load(
     "index_compilation",
     "verifier_test",
 )
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
+def get_proto_files_and_proto_paths(protolibs):
+    """Given a list of proto_library targets, returns:
+      * a list of top-level .proto files
+      * a depset of all transitively-included .proto files
+      * a depset of --proto_path locations
+    """
+    toplevel_srcs = []
+    for lib in protolibs:
+        info = lib[ProtoInfo]
+        for src in info.direct_sources:
+            toplevel_srcs.append(src)
+    all_srcs = depset([], transitive = [lib[ProtoInfo].transitive_sources for lib in protolibs])
+    proto_paths = depset(transitive=[lib[ProtoInfo].transitive_proto_path for lib in protolibs])
+    return toplevel_srcs, all_srcs, proto_paths
+
 def _proto_extract_kzip_impl(ctx):
+    toplevel_srcs, all_srcs, pathopt = get_proto_files_and_proto_paths(ctx.attr.srcs)
+
+    args = ctx.actions.args()
+    args.add("--")
+    args.add_all(ctx.attr.opts)
+    args.add_all(pathopt, before_each="--proto_path")
+
     extract(
-        srcs = ctx.files.srcs,
+        srcs = toplevel_srcs,
         ctx = ctx,
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
         mnemonic = "ProtoExtractKZip",
-        opts = ["--", "--proto_path", ctx.label.package] + ctx.attr.opts,
+        opts = args,
         vnames_config = ctx.file.vnames_config,
-        deps = ctx.files.deps,
+        deps = all_srcs,
     )
-    return [KytheVerifierSources(files = depset(ctx.files.srcs))]
+    return [KytheVerifierSources(files = depset(toplevel_srcs))]
 
 proto_extract_kzip = rule(
     attrs = {
@@ -46,8 +70,8 @@ proto_extract_kzip = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = True,
+            providers=[ProtoInfo],
         ),
-        "deps": attr.label_list(allow_files = True),
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor/proto:proto_extractor"),
             executable = True,
@@ -104,7 +128,6 @@ def proto_verifier_test(
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
-        deps = deps,
     )
     entries = _invoke(
         index_compilation,

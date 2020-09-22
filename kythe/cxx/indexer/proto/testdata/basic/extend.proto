@@ -5,7 +5,7 @@ syntax = "proto2";
 //- @"package proto_kythe_test;" ref MainPackage
 package proto_kythe_test;
 
-import "other-package.proto";
+import "kythe/cxx/indexer/proto/testdata/other-package.proto";
 
 //- @Extendee defines/binding ExtendeeMessage
 message Extendee {

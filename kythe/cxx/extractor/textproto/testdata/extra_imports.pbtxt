@@ -1,4 +1,4 @@
-# proto-file: example.proto
+# proto-file: kythe/cxx/extractor/textproto/testdata/example.proto
 # proto-message: textproto_test.MyMessage
 # proto-import: dep.proto
 

@@ -23,6 +23,8 @@ filegroup(
         "vnames.cxx.json",
         "vnames.go.json",
         "vnames.java.json",
+        "vnames.proto.json",
+        # generic vnames are low precedence
         "vnames.json",
     ],
 )
