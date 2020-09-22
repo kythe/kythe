@@ -25,7 +25,7 @@ load(
     "index_compilation",
     "verifier_test",
 )
-load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "get_proto_files_and_proto_path_opts", "proto_extract_kzip")
+load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "get_proto_files_and_proto_paths", "proto_extract_kzip")
 
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
@@ -33,7 +33,12 @@ def _invoke(rulefn, name, **kwargs):
     return "//{}:{}".format(native.package_name(), name)
 
 def _textproto_extract_kzip_impl(ctx):
-    toplevel_proto_srcs, all_proto_srcs, pathopt = get_proto_files_and_proto_path_opts(ctx.attr.protos)
+    toplevel_proto_srcs, all_proto_srcs, pathopt = get_proto_files_and_proto_paths(ctx.attr.protos)
+
+    args = ctx.actions.args()
+    args.add("--")
+    args.add_all(ctx.attr.opts)
+    args.add_all(pathopt, before_each="--proto_path")
 
     extract(
         srcs = ctx.files.srcs,
@@ -41,7 +46,7 @@ def _textproto_extract_kzip_impl(ctx):
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
         mnemonic = "TextprotoExtractKZip",
-        opts = ["--"] + ctx.attr.opts + pathopt,
+        opts = args,
         vnames_config = ctx.file.vnames_config,
         deps = all_proto_srcs,
     )

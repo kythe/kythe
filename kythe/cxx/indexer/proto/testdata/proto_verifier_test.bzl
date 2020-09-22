@@ -29,26 +29,28 @@ def _invoke(rulefn, name, **kwargs):
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
-def get_proto_files_and_proto_path_opts(protolibs):
+def get_proto_files_and_proto_paths(protolibs):
     """Given a list of proto_library targets, returns:
       * a list of top-level .proto files
       * a list of all transitively-included .proto files
-      * a list of options to pass to protoc (containing --proto_path locations).
+      * a depset of --proto_path locations
     """
     toplevel_srcs = []
-    proto_paths = []
-
     for lib in protolibs:
         info = lib[ProtoInfo]
         for src in info.direct_sources:
             toplevel_srcs.append(src)
-        proto_paths += lib[ProtoInfo].transitive_proto_path.to_list()
     all_srcs = depset([], transitive = [lib[ProtoInfo].transitive_sources for lib in protolibs])
-    proto_path_opts = collections.before_each("--proto_path", collections.uniq(proto_paths))
-    return toplevel_srcs, all_srcs, proto_path_opts
+    proto_paths = depset(transitive=[lib[ProtoInfo].transitive_proto_path for lib in protolibs])
+    return toplevel_srcs, all_srcs, proto_paths
 
 def _proto_extract_kzip_impl(ctx):
-    toplevel_srcs, all_srcs, pathopt = get_proto_files_and_proto_path_opts(ctx.attr.srcs)
+    toplevel_srcs, all_srcs, pathopt = get_proto_files_and_proto_paths(ctx.attr.srcs)
+
+    args = ctx.actions.args()
+    args.add("--")
+    args.add_all(ctx.attr.opts)
+    args.add_all(pathopt, before_each="--proto_path")
 
     extract(
         srcs = toplevel_srcs,
@@ -56,7 +58,7 @@ def _proto_extract_kzip_impl(ctx):
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
         mnemonic = "ProtoExtractKZip",
-        opts = ["--"] + ctx.attr.opts + pathopt,
+        opts = args,
         vnames_config = ctx.file.vnames_config,
         deps = all_srcs,
     )
