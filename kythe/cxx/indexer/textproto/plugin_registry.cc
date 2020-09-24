@@ -16,7 +16,11 @@
 
 #include "plugin_registry.h"
 
+#include "absl/flags/flag.h"
 #include "kythe/cxx/indexer/textproto/plugins/example/plugin.h"
+
+ABSL_FLAG(bool, enable_example_plugin, false,
+          "Enable the 'example' textproto plugin");
 
 namespace kythe {
 namespace lang_textproto {
@@ -25,7 +29,8 @@ std::vector<std::unique_ptr<Plugin>> LoadRegisteredPlugins(
     const google::protobuf::Message& proto) {
   std::vector<std::unique_ptr<Plugin>> plugins;
   std::string msg_name = proto.GetDescriptor()->full_name();
-  if (msg_name == "kythe_plugin_example.Person") {
+  if (absl::GetFlag(FLAGS_enable_example_plugin) &&
+      msg_name == "kythe_plugin_example.Person") {
     plugins.push_back(
         std::make_unique<kythe::lang_textproto::ExamplePlugin>(proto));
   }

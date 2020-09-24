@@ -6,6 +6,7 @@ package(
 
 textproto_verifier_test(
     name = "cross_file_test",
+    indexer_opts = ["--enable_example_plugin"],
     protos = [":example_proto"],
     textprotos = [
         "test1.pbtxt",
@@ -15,6 +16,7 @@ textproto_verifier_test(
 
 textproto_verifier_test(
     name = "syntax_test",
+    indexer_opts = ["--enable_example_plugin"],
     protos = [":example_proto"],
     textprotos = [
         "syntax_test.pbtxt",
