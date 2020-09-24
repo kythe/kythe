@@ -82,6 +82,7 @@ def textproto_verifier_test(
         protos,
         size = "small",
         tags = [],
+        indexer_opts = [],
         verifier_opts = [],
         convert_marked_source = False,
         vnames_config = None,
@@ -94,6 +95,7 @@ def textproto_verifier_test(
       protos: Proto libraries that define the textproto's schema
       size: Test size
       tags: Test tags
+      indexer_opts: List of options passed to the textproto indexer
       verifier_opts: List of options passed to the verifier tool
       convert_marked_source: Whether the verifier should convert marked source.
       vnames_config: Optional path to a VName configuration file
@@ -125,7 +127,7 @@ def textproto_verifier_test(
             name = rule_prefix + "_entries",
             testonly = True,
             indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
-            opts = ["--index_file"],
+            opts = indexer_opts + ["--index_file"],
             tags = tags,
             visibility = visibility,
             deps = [textproto_kzip],
