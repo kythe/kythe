@@ -1514,6 +1514,9 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       }
     }
   }
+  if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
+    Job->InfluenceSets.back().insert(E->getDirectCallee());
+  }
   return true;
 }
 
@@ -1969,6 +1972,50 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   return true;
 }
 
+bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
+  auto callee = CE->getDirectCallee();
+  auto callee_exp = CE->getCallee();
+  bool valid = callee != nullptr && callee_exp != nullptr &&
+               callee->param_size() == CE->getNumArgs();
+  for (unsigned arg = 0; valid && arg < CE->getNumArgs(); ++arg) {
+    valid = CE->getArg(arg) != nullptr && callee->getParamDecl(arg) != nullptr;
+  }
+  if (valid) {
+    auto callee_node = BuildNodeIdForDecl(callee);
+    if (!WalkUpFromCallExpr(CE)) return false;
+    if (!TraverseStmt(callee_exp)) return false;
+    for (unsigned arg = 0; arg < CE->getNumArgs(); ++arg) {
+      auto scope_guard = PushScope(Job->InfluenceSets, {});
+      if (!TraverseStmt(CE->getArg(arg))) {
+        return false;
+      }
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(
+            BuildNodeIdForDecl(decl),
+            BuildNodeIdForDecl(callee->getParamDecl(arg)));
+      }
+    }
+    return true;
+  }
+
+  return Base::TraverseCallExpr(CE);
+}
+
+bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
+  if (auto rv = RS->getRetValue(); rv != nullptr && !Job->BlameStack.empty()) {
+    if (!WalkUpFromReturnStmt(RS)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    if (!TraverseStmt(rv)) return false;
+    for (const auto* decl : Job->InfluenceSets.back()) {
+      for (const auto& context : Job->BlameStack.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl), context);
+      }
+    }
+    return true;
+  }
+  return Base::TraverseReturnStmt(RS);
+}
+
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (BO->getOpcode() != clang::BO_Assign)
     return Base::TraverseBinaryOperator(BO);
@@ -1983,7 +2030,8 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
     }
     if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
         expr != nullptr && expr->getFoundDecl() != nullptr &&
-        expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var) {
+        (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+         expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
       for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
                                   BuildNodeIdForDecl(expr->getFoundDecl()));
@@ -2096,7 +2144,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
                           ? GraphObserver::UseKind::kWrite
                           : GraphObserver::UseKind::kUnknown;
       if (!Job->InfluenceSets.empty() &&
-          FoundDecl->getKind() == clang::Decl::Kind::Var) {
+          (FoundDecl->getKind() == clang::Decl::Kind::Var ||
+           FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
         Job->InfluenceSets.back().insert(FoundDecl);
       }
       Observer.recordSemanticDeclUseLocation(
@@ -3140,6 +3189,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 ? GraphObserver::Specificity::UniquelyCompletes
                 : GraphObserver::Specificity::Completes,
             OuterNode);
+
+        if (Decl->param_size() == NextDecl->param_size()) {
+          for (size_t param = 0; param < Decl->param_size(); ++param) {
+            auto lhs = NextDecl->getParamDecl(param);
+            auto rhs = Decl->getParamDecl(param);
+            if (lhs != nullptr && rhs != nullptr) {
+              Observer.recordInfluences(BuildNodeIdForDecl(lhs),
+                                        BuildNodeIdForDecl(rhs));
+            }
+          }
+        }
       }
     }
   }
