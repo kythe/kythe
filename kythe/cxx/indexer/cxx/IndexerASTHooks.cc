@@ -1976,7 +1976,8 @@ bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
   auto callee = CE->getDirectCallee();
   auto callee_exp = CE->getCallee();
   bool valid = callee != nullptr && callee_exp != nullptr &&
-               callee->param_size() == CE->getNumArgs();
+               CE->getNumArgs() <= callee->param_size();
+  // TODO(zarko): deal with parameter packs and varargs.
   for (unsigned arg = 0; valid && arg < CE->getNumArgs(); ++arg) {
     valid = CE->getArg(arg) != nullptr && callee->getParamDecl(arg) != nullptr;
   }
