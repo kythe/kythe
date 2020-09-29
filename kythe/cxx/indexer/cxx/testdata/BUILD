@@ -3242,6 +3242,34 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_fncall_influence",
+    srcs = ["df/df_fncall_influence.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_defaultargs",
+    srcs = ["df/df_fncall_influence_defaultargs.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_pack",
+    srcs = ["df/df_fncall_influence_pack.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_vararg",
+    srcs = ["df/df_fncall_influence_vararg.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
     tags = ["df"],

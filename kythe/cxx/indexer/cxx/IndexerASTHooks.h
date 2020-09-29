@@ -117,6 +117,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
 
+  bool TraverseCallExpr(clang::CallExpr* CE);
+  bool TraverseReturnStmt(clang::ReturnStmt* RS);
   bool TraverseBinaryOperator(clang::BinaryOperator* BO);
 
   bool TraverseInitListExpr(clang::InitListExpr* ILE);
