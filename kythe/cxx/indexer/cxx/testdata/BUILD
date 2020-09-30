@@ -3257,6 +3257,7 @@ cc_indexer_test(
 
 cc_indexer_test(
     name = "df_fncall_influence_pack",
+    size = "medium",
     srcs = ["df/df_fncall_influence_pack.cc"],
     ignore_dups = True,
     tags = ["df"],
