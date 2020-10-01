@@ -172,6 +172,9 @@ message DecorationsReply {
   // The normalized location for which decorations are returned.
   Location location = 1;
 
+  // The revision of the corpus containing this file's data.
+  string revision = 18;
+
   // The encoded source text for the selected window.
   bytes source_text = 2;
   string encoding = 3;
@@ -429,6 +432,9 @@ message Anchor {
 
   // The build config of the file containing this anchor.
   string build_config = 12;
+
+  // The revision of the corpus containing this anchor's parent file data.
+  string revision = 14;
 
   reserved 4, 5, 8, 9;
 }
