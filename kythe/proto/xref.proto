@@ -168,6 +168,13 @@ message DecorationsRequest {
   bool semantic_scopes = 12;
 }
 
+// File represents a whole file
+message File {
+  kythe.proto.common.CorpusPath corpus_path = 1;
+
+  string revision = 2;
+}
+
 message DecorationsReply {
   // The normalized location for which decorations are returned.
   Location location = 1;
@@ -201,6 +208,10 @@ message DecorationsReply {
     // reference.  Populated only if semantic_scopes is true in the
     // DecorationsRequest.
     string semantic_scope = 7;
+
+    // The revision of the file being targeted by this reference, may be empty
+    // if targeting a non-file.
+    string target_revision = 8;
 
     reserved 1, 10, 11;
   }
@@ -243,7 +254,11 @@ message DecorationsReply {
   repeated common.Diagnostic diagnostic = 5;
 
   // List of tickets for files that generate the requested file.
-  repeated string generated_by = 6;
+  // Deprecated: use generated_by_file, if data available
+  repeated string generated_by = 6 [deprecated = true];
+
+  // List of files that generate the requested file.
+  repeated File generated_by_file = 19;
 
   // This field will contain one entry, keyed by ticket, for each distinct node
   // referenced by a reference edge that has at least 1 non-filtered fact.
