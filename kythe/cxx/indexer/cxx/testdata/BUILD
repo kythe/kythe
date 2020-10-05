@@ -3244,6 +3244,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_fncall_influence",
     srcs = ["df/df_fncall_influence.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3251,6 +3252,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_fncall_influence_defaultargs",
     srcs = ["df/df_fncall_influence_defaultargs.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3259,6 +3261,7 @@ cc_indexer_test(
     name = "df_fncall_influence_pack",
     size = "medium",
     srcs = ["df/df_fncall_influence_pack.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3266,6 +3269,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_fncall_influence_vararg",
     srcs = ["df/df_fncall_influence_vararg.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3291,6 +3295,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_influence",
     srcs = ["df/df_var_influence.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )

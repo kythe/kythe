@@ -76,6 +76,12 @@ struct MiniAnchor {
   GraphObserver::NodeId AnchoredTo;
 };
 
+/// \brief Specifies whether dataflow edges should be emitted.
+enum EmitDataflowEdges : bool {
+  No = false,  ///< Don't emit dataflow edges.
+  Yes = true   ///< Emit dataflow edges.
+};
+
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -95,7 +101,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                     BehaviorOnFwdDeclComments ObjC,
                     BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
-                    GraphObserver* GO = nullptr, int UsrByteSize = 0)
+                    GraphObserver* GO = nullptr, int UsrByteSize = 0,
+                    EmitDataflowEdges EDE = EmitDataflowEdges::No)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -107,7 +114,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         Sema(Sema),
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
-        UsrByteSize(UsrByteSize) {}
+        UsrByteSize(UsrByteSize),
+        DataflowEdges(EDE) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
@@ -988,6 +996,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -1000,7 +1011,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      int UsrByteSize)
+      int UsrByteSize, EmitDataflowEdges EDE)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -1010,13 +1021,15 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         Supports(S),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)),
-        UsrByteSize(UsrByteSize) {}
+        UsrByteSize(UsrByteSize),
+        DataflowEdges(EDE) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
                               Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
-                              *Sema, ShouldStopIndexing, Observer, UsrByteSize);
+                              *Sema, ShouldStopIndexing, Observer, UsrByteSize,
+                              DataflowEdges);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
@@ -1051,6 +1064,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges;
 };
 
 }  // namespace kythe

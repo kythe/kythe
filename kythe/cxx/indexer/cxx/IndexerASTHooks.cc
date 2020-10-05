@@ -1514,8 +1514,10 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       }
     }
   }
-  if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
-    Job->InfluenceSets.back().insert(E->getDirectCallee());
+  if (DataflowEdges) {
+    if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
+      Job->InfluenceSets.back().insert(E->getDirectCallee());
+    }
   }
   return true;
 }
@@ -1973,6 +1975,9 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
 }
 
 bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
+  if (!DataflowEdges) {
+    return Base::TraverseCallExpr(CE);
+  }
   auto callee = CE->getDirectCallee();
   auto callee_exp = CE->getCallee();
   bool valid = callee != nullptr && callee_exp != nullptr &&
@@ -2003,6 +2008,9 @@ bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
 }
 
 bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
+  if (!DataflowEdges) {
+    return Base::TraverseReturnStmt(RS);
+  }
   if (auto rv = RS->getRetValue(); rv != nullptr && !Job->BlameStack.empty()) {
     if (!WalkUpFromReturnStmt(RS)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
@@ -2018,6 +2026,9 @@ bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
 }
 
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
+  if (!DataflowEdges) {
+    return Base::TraverseBinaryOperator(BO);
+  }
   if (BO->getOpcode() != clang::BO_Assign)
     return Base::TraverseBinaryOperator(BO);
 
@@ -2144,10 +2155,12 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
                           ? GraphObserver::UseKind::kWrite
                           : GraphObserver::UseKind::kUnknown;
-      if (!Job->InfluenceSets.empty() &&
-          (FoundDecl->getKind() == clang::Decl::Kind::Var ||
-           FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
-        Job->InfluenceSets.back().insert(FoundDecl);
+      if (DataflowEdges) {
+        if (!Job->InfluenceSets.empty() &&
+            (FoundDecl->getKind() == clang::Decl::Kind::Var ||
+             FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
+          Job->InfluenceSets.back().insert(FoundDecl);
+        }
       }
       Observer.recordSemanticDeclUseLocation(
           *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
@@ -3195,7 +3208,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           for (size_t param = 0; param < Decl->param_size(); ++param) {
             auto lhs = NextDecl->getParamDecl(param);
             auto rhs = Decl->getParamDecl(param);
-            if (lhs != nullptr && rhs != nullptr) {
+            if (DataflowEdges && lhs != nullptr && rhs != nullptr) {
               Observer.recordInfluences(BuildNodeIdForDecl(lhs),
                                         BuildNodeIdForDecl(rhs));
             }

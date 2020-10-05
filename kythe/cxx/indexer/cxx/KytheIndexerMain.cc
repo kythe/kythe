@@ -55,6 +55,8 @@ ABSL_FLAG(int, experimental_usr_byte_size, 0,
           "Use this many bytes to represent a USR (or don't at all if 0).");
 ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
+ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
+          "Emit experimental dataflow edges.");
 
 namespace kythe {
 
@@ -86,6 +88,10 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.DataflowEdges =
+      absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
+          ? kythe::EmitDataflowEdges::Yes
+          : kythe::EmitDataflowEdges::No;
   options.UseCompilationCorpusAsDefault =
       absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
