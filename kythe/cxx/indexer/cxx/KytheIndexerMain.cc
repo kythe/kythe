@@ -57,6 +57,9 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
+ABSL_FLAG(std::string, template_instance_exclude_path_pattern, "",
+          "If nonempty, a regex that matches files to be excluded from "
+          "template instance indexing.");
 
 namespace kythe {
 
@@ -88,6 +91,8 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.TemplateInstanceExcludePathPattern =
+      absl::GetFlag(FLAGS_template_instance_exclude_path_pattern);
   options.DataflowEdges =
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes

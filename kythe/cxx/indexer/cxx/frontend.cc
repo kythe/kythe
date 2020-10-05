@@ -71,7 +71,6 @@ ABSL_FLAG(uint64_t, experimental_dynamic_overclaim, 1,
           "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
 ABSL_FLAG(bool, test_claim, false,
           "Use an in-memory claim database for testing.");
-
 namespace kythe {
 
 namespace {

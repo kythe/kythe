@@ -1049,11 +1049,72 @@ bool IndexerASTVisitor::TraverseCXXConstructorDecl(
          TraverseDeclarationNameInfo(DNI);
 }
 
+bool IndexerASTVisitor::ShouldIndex(const clang::Decl* Decl) {
+  if (TemplateInstanceExcludePathPattern == nullptr) {
+    return true;
+  }
+  clang::SourceLocation loc;
+  if (const auto* fun = llvm::dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
+    if (auto* msi = fun->getMemberSpecializationInfo();
+        msi != nullptr && !msi->isExplicitSpecialization()) {
+      loc = msi->getInstantiatedFrom()->getBeginLoc();
+    } else if (auto* ftsi = fun->getTemplateSpecializationInfo();
+               ftsi != nullptr &&
+               !ftsi->isExplicitInstantiationOrSpecialization()) {
+      loc = ftsi->getTemplate()->getBeginLoc();
+    } else {
+      return true;
+    }
+  } else if (const auto* rec =
+                 llvm::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(
+                     Decl)) {
+    if (rec->isExplicitInstantiationOrSpecialization()) {
+      return true;
+    }
+    auto from = rec->getInstantiatedFrom();
+    if (const auto* partial =
+            from.dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
+      loc = partial->getBeginLoc();
+    } else if (const auto* primary =
+                   from.dyn_cast<clang::ClassTemplateDecl*>()) {
+      loc = primary->getBeginLoc();
+    } else {
+      return true;
+    }
+  } else if (const auto* var =
+                 llvm::dyn_cast_or_null<clang::VarTemplateSpecializationDecl>(
+                     Decl)) {
+    if (var->isExplicitInstantiationOrSpecialization()) {
+      return true;
+    }
+    auto from = var->getInstantiatedFrom();
+    if (const auto* partial =
+            from.dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
+      loc = partial->getBeginLoc();
+    } else if (const auto* primary = from.dyn_cast<clang::VarTemplateDecl*>()) {
+      loc = primary->getBeginLoc();
+    } else {
+      return true;
+    }
+  } else {
+    return true;
+  }
+  auto file = Observer.getSourceManager()->getFilename(loc);
+  if (file.data() == nullptr) {
+    return true;
+  }
+  if (re2::RE2::FullMatch({file.data(), file.size()},
+                          *TemplateInstanceExcludePathPattern)) {
+    return false;
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   if (ShouldStopIndexing()) {
     return false;
   }
-  if (Decl == nullptr) {
+  if (Decl == nullptr || !ShouldIndex(Decl)) {
     return true;
   }
 

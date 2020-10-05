@@ -209,6 +209,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
+        "@com_googlesource_code_re2//:re2",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",
         "@org_llvm//:clangBasic",
