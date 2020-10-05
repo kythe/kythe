@@ -83,7 +83,8 @@ CXX_ARGS="-std=c++1y $(cat "$ARGS_FILE")"
 
 for TEST_CC in "${SRCS}"/*.cc
 do
-  "$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "${TEST_CC}" -- $CXX_ARGS \
+  "$CXX_INDEXER_BIN" --ignore_unimplemented=false \
+      --experimental_record_dataflow_edges -i "${TEST_CC}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
 done
 "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
