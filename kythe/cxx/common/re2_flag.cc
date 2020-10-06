@@ -18,6 +18,9 @@
 
 namespace kythe {
 bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error) {
+  if (text.empty()) {
+    return true;
+  }
   re2::RE2::Options options;
   options.set_never_capture(true);
   *value = {std::make_shared<re2::RE2>(
@@ -28,6 +31,9 @@ bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error) {
   return value->value->ok();
 }
 std::string AbslUnparseFlag(const RE2Flag& value) {
+  if (value.value == nullptr) {
+    return "";
+  }
   return value.value->pattern();
 }
 }  // namespace kythe
