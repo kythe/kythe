@@ -105,7 +105,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
                     GraphObserver* GO = nullptr, int UsrByteSize = 0,
                     EmitDataflowEdges EDE = EmitDataflowEdges::No,
-                    absl::string_view TIEPP = "")
+                    std::shared_ptr<re2::RE2> TIEPP = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -118,14 +118,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         UsrByteSize(UsrByteSize),
-        DataflowEdges(EDE) {
-    if (!TIEPP.empty()) {
-      re2::RE2::Options options;
-      options.set_never_capture(true);
-      TemplateInstanceExcludePathPattern =
-          std::make_unique<re2::RE2>(std::string(TIEPP), options);
-    }
-  }
+        DataflowEdges(EDE),
+        TemplateInstanceExcludePathPattern(TIEPP) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
@@ -1015,7 +1009,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
-  std::unique_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -1028,7 +1022,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      int UsrByteSize, EmitDataflowEdges EDE, absl::string_view TIEPP)
+      int UsrByteSize, EmitDataflowEdges EDE, std::shared_ptr<re2::RE2> TIEPP)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -1086,7 +1080,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   EmitDataflowEdges DataflowEdges;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
-  std::string TemplateInstanceExcludePathPattern;
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 }  // namespace kythe

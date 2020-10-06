@@ -1049,58 +1049,82 @@ bool IndexerASTVisitor::TraverseCXXConstructorDecl(
          TraverseDeclarationNameInfo(DNI);
 }
 
-bool IndexerASTVisitor::ShouldIndex(const clang::Decl* Decl) {
-  if (TemplateInstanceExcludePathPattern == nullptr) {
-    return true;
-  }
-  clang::SourceLocation loc;
+namespace {
+
+/// \return the location of the template `Decl` implicitly instantiates,
+/// or an invalid location of `Decl` does not implicitly instantiate a template.
+clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
+    const clang::Decl* Decl) {
   if (const auto* fun = llvm::dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
     if (auto* msi = fun->getMemberSpecializationInfo();
         msi != nullptr && !msi->isExplicitSpecialization()) {
-      loc = msi->getInstantiatedFrom()->getBeginLoc();
+      return msi->getInstantiatedFrom()->getBeginLoc();
     } else if (auto* ftsi = fun->getTemplateSpecializationInfo();
                ftsi != nullptr &&
                !ftsi->isExplicitInstantiationOrSpecialization()) {
-      loc = ftsi->getTemplate()->getBeginLoc();
+      return ftsi->getTemplate()->getBeginLoc();
     } else {
-      return true;
+      return clang::SourceLocation{};
     }
   } else if (const auto* rec =
                  llvm::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(
                      Decl)) {
     if (rec->isExplicitInstantiationOrSpecialization()) {
-      return true;
+      return clang::SourceLocation{};
     }
     auto from = rec->getInstantiatedFrom();
+    if (from.isNull()) {
+      return clang::SourceLocation{};
+    }
     if (const auto* partial =
             from.dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
-      loc = partial->getBeginLoc();
-    } else if (const auto* primary =
-                   from.dyn_cast<clang::ClassTemplateDecl*>()) {
-      loc = primary->getBeginLoc();
+      return partial->getBeginLoc();
     } else {
-      return true;
+      const auto* primary = from.dyn_cast<clang::ClassTemplateDecl*>();
+      return primary->getBeginLoc();
     }
   } else if (const auto* var =
                  llvm::dyn_cast_or_null<clang::VarTemplateSpecializationDecl>(
                      Decl)) {
     if (var->isExplicitInstantiationOrSpecialization()) {
-      return true;
+      return clang::SourceLocation{};
     }
     auto from = var->getInstantiatedFrom();
+    if (from.isNull()) {
+      return clang::SourceLocation{};
+    }
     if (const auto* partial =
             from.dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
-      loc = partial->getBeginLoc();
-    } else if (const auto* primary = from.dyn_cast<clang::VarTemplateDecl*>()) {
-      loc = primary->getBeginLoc();
+      return partial->getBeginLoc();
     } else {
-      return true;
+      const auto* primary = from.dyn_cast<clang::VarTemplateDecl*>();
+      return primary->getBeginLoc();
     }
   } else {
+    return clang::SourceLocation{};
+  }
+}
+
+}  // anonymous namespace
+
+bool IndexerASTVisitor::ShouldIndex(const clang::Decl* Decl) {
+  // This function effectively returns true if:
+  //   - There is no TemplateInstanceExcludePathPattern specified.
+  //   - `Decl` is not a template instantiation or specialization.
+  //   - `Decl` is an explicit template instantiation or partial specialization.
+  //   - `Decl` is an implicit template instantiation that appears in a
+  //     concrete location (not a macro) with a path that is not matched by
+  //     TemplateInstanceExcludePathPattern.
+  if (TemplateInstanceExcludePathPattern == nullptr) {
+    return true;
+  }
+  auto loc = GetImplicitlyInstantiatedTemplateLoc(Decl);
+  loc = Observer.getSourceManager()->getSpellingLoc(loc);
+  if (loc.isInvalid()) {
     return true;
   }
   auto file = Observer.getSourceManager()->getFilename(loc);
-  if (file.data() == nullptr) {
+  if (file.empty()) {
     return true;
   }
   if (re2::RE2::FullMatch({file.data(), file.size()},

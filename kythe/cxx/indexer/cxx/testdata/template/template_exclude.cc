@@ -16,6 +16,24 @@ Excluded<int> exc;
 //- TAppExcInt param.0 _TemplateExcluded
 //- !{_ImpExc instantiates TAppExcInt}
 
+INC_MACRO
+EXC_MACRO
+
+//- @inc_macro defines/binding VarIncMacro
+IncludedMacro<int> inc_macro;
+//- @exc_macro defines/binding VarExcMacro
+ExcludedMacro<int> exc_macro;
+
+//- VarIncMacro typed TAppIncMacroInt
+//- TAppIncMacroInt.node/kind tapp
+//- TAppIncMacroInt param.0 _TemplateIncludedMacro
+//- _ImpMacroInc instantiates TAppIncMacroInt
+
+//- VarExcMacro typed TAppExcMacroInt
+//- TAppExcMacroInt.node/kind tapp
+//- TAppExcMacroInt param.0 _TemplateExcludedMacro
+//- !{_ExcMacroInc instantiates TAppExcMacroInt}
+
 void f() {
   //- @IF ref IncFun
   IF(1);

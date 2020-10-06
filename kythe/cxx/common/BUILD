@@ -8,6 +8,16 @@ licenses(["notice"])
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 
 cc_library(
+    name = "re2_flag",
+    srcs = ["re2_flag.cc"],
+    hdrs = ["re2_flag.h"],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_library(
     name = "scope_guard",
     hdrs = ["scope_guard.h"],
     deps = [

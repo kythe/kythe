@@ -31,6 +31,7 @@
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
+#include "kythe/cxx/common/re2_flag.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
@@ -57,7 +58,8 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
-ABSL_FLAG(std::string, template_instance_exclude_path_pattern, "",
+ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
+          kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
           "template instance indexing.");
 
@@ -92,7 +94,7 @@ int main(int argc, char* argv[]) {
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
   options.TemplateInstanceExcludePathPattern =
-      absl::GetFlag(FLAGS_template_instance_exclude_path_pattern);
+      absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
   options.DataflowEdges =
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes
