@@ -2131,6 +2131,19 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_exclude",
+    srcs = ["template/template_exclude.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = ["template"],
+    template_instance_exclude_path_pattern = ".*exclude.*",
+    deps = [
+        "template/exclude_this_file.h",
+        "template/include_this_file.h",
+    ],
+)
+
+cc_indexer_test(
     name = "template_field",
     srcs = ["template/template_field.cc"],
     tags = ["template"],

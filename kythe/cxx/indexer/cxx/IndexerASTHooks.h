@@ -27,6 +27,7 @@
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -42,6 +43,7 @@
 #include "kythe/cxx/indexer/cxx/recursive_type_visitor.h"
 #include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "marked_source.h"
+#include "re2/re2.h"
 #include "type_map.h"
 
 namespace kythe {
@@ -102,7 +104,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                     BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
                     GraphObserver* GO = nullptr, int UsrByteSize = 0,
-                    EmitDataflowEdges EDE = EmitDataflowEdges::No)
+                    EmitDataflowEdges EDE = EmitDataflowEdges::No,
+                    std::shared_ptr<re2::RE2> TIEPP = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -115,7 +118,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         UsrByteSize(UsrByteSize),
-        DataflowEdges(EDE) {}
+        DataflowEdges(EDE),
+        TemplateInstanceExcludePathPattern(TIEPP) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
@@ -961,6 +965,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                               const clang::DeclContext* DCxt,
                               absl::optional<GraphObserver::NodeId> DCID);
 
+  /// \brief Returns whether `Decl` should be indexed.
+  bool ShouldIndex(const clang::Decl* Decl);
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 
@@ -999,6 +1006,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges;
+
+  /// \brief if nonempty, the pattern to match a path against to see whether
+  /// it should be excluded from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -1011,7 +1022,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      int UsrByteSize, EmitDataflowEdges EDE)
+      int UsrByteSize, EmitDataflowEdges EDE, std::shared_ptr<re2::RE2> TIEPP)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -1022,14 +1033,15 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)),
         UsrByteSize(UsrByteSize),
-        DataflowEdges(EDE) {}
+        DataflowEdges(EDE),
+        TemplateInstanceExcludePathPattern(TIEPP) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
     CHECK(Sema != nullptr);
-    IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
-                              *Sema, ShouldStopIndexing, Observer, UsrByteSize,
-                              DataflowEdges);
+    IndexerASTVisitor Visitor(
+        Context, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
+        CppFwdDocs, Supports, *Sema, ShouldStopIndexing, Observer, UsrByteSize,
+        DataflowEdges, TemplateInstanceExcludePathPattern);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
@@ -1066,6 +1078,9 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   int UsrByteSize = 0;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges;
+  /// \brief if nonempty, the pattern to match a path against to see whether
+  /// it should be excluded from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 }  // namespace kythe

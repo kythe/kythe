@@ -45,6 +45,7 @@ clang::SourceLocation GetLocForEndOfToken(
                                            source_manager, lang_options);
 }
 
+// TODO(zarko): Update this to handle member specializations.
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
   if (const auto* FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
     if (auto* ftsi = FD->getTemplateSpecializationInfo()) {

@@ -263,6 +263,8 @@ std::string IndexCompilationUnit(
   Action->setObjCFwdDeclEmitDocs(Options.ObjCFwdDocs);
   Action->setCppFwdDeclEmitDocs(Options.CppFwdDocs);
   Action->setUsrByteSize(Options.UsrByteSize);
+  Action->setTemplateInstanceExcludePathPattern(
+      Options.TemplateInstanceExcludePathPattern);
   Action->setEmitDataflowEdges(Options.DataflowEdges);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
