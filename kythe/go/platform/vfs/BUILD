@@ -11,9 +11,6 @@ go_test(
     name = "vfs_test",
     size = "small",
     srcs = ["vfs_test.go"],
-    data = glob([
-        "testdata/**",
-    ]),
     library = "vfs",
     deps = [
         "//kythe/go/test/testutil",

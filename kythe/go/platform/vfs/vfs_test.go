@@ -18,23 +18,57 @@ package vfs
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
 )
-
-const testDataDir = "testdata"
 
 type walkResult struct {
 	Path string
 	Info string
 }
 
+const testDataDir = "testdata"
+
+var files = []string{
+	"a/b/*/c/empty.txt",
+	"a/b/c/d/empty.txt",
+}
+
+func tempDir() string {
+	root := os.Getenv("TEST_TMPDIR")
+	if len(root) > 0 {
+		return root
+	}
+	return os.TempDir()
+}
+
+func populateFiles(t *testing.T) (string, func()) {
+	t.Helper()
+	root := filepath.Join(tempDir(), testDataDir)
+	for _, file := range files {
+		path := filepath.Join(root, filepath.FromSlash(file))
+		testutil.FatalOnErrT(t, "unable to create directory", os.MkdirAll(filepath.Dir(path), 0777))
+		testutil.FatalOnErrT(t, "unable to write file", ioutil.WriteFile(path, nil, 0777))
+	}
+	return root, func() {
+		testutil.FatalOnErrT(t, "failed to remove test data", os.RemoveAll(root))
+	}
+}
+
 func TestGlobWalker(t *testing.T) {
-	byglob, err := collectFiles(&globWalker{LocalFS{}}, testutil.TestFilePath(t, testDataDir))
+	root, cleanup := populateFiles(t)
+	defer cleanup()
+
+	byglob, err := collectFiles(&globWalker{LocalFS{}}, root)
+	if len(byglob) == 0 {
+		t.Fatal("no files found")
+	}
 	testutil.FatalOnErrT(t, "unable to collect files from glob", err)
-	bylocal, err := collectFiles(LocalFS{}, testutil.TestFilePath(t, testDataDir))
+	bylocal, err := collectFiles(LocalFS{}, root)
 	testutil.FatalOnErrT(t, "unable to collect local files", err)
 	testutil.FatalOnErrT(t, "local and glob walks differ", testutil.DeepEqual(bylocal, byglob))
 }
