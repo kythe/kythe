@@ -26,25 +26,10 @@
 #include "absl/types/variant.h"
 #include "glog/logging.h"
 #include "kythe/cxx/extractor/bazel_event_reader.h"
+#include "kythe/cxx/extractor/bazel_artifact.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
-
-/// \brief A pair of local path and canonical URI for a given Bazel output file.
-/// Bazel typically provides both a workspace-local path to a file as well as a
-/// canonical URI and both can be useful to clients.
-struct BazelArtifactFile {
-  std::string local_path;  ///< The workspace-relative path to the file.
-  std::string uri;  ///< The canonical URI for the file. Clients should be able
-                    ///< to handle at least `file:` and `data:` schemes.
-};
-
-/// \brief A list of extracted compilation units and the target which owns them.
-struct BazelArtifact {
-  std::string label;  ///< The target from which these artifacts originate.
-  std::vector<BazelArtifactFile>
-      files;  ///< A list of paths and URIs at which the artifacts can be found.
-};
 
 /// \brief A callback which will be invoked on each BuildEvent in turn.  If the
 /// selector can supply a BazelArtifact as a result of this event, it should

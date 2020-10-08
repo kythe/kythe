@@ -21,6 +21,7 @@ proto_library(
     srcs = [
         {filenames},
     ],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
