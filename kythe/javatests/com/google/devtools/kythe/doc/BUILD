@@ -2,6 +2,14 @@ load("@rules_java//java:defs.bzl", "java_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
+filegroup(
+    name = "marked_source_testdata",
+    srcs = [
+        "testdata/marked_source_renderer_test.textproto",
+        "testdata/marked_source_signature_test.textproto",
+    ],
+)
+
 java_test(
     name = "doc_unbracketer_test",
     size = "small",
@@ -23,10 +31,7 @@ java_test(
     name = "marked_source_renderer_test",
     size = "small",
     srcs = ["MarkedSourceRendererTest.java"],
-    data = [
-        "testdata/marked_source_renderer_test.textproto",
-        "testdata/marked_source_signature_test.textproto",
-    ],
+    data = [":marked_source_testdata"],
     test_class = "com.google.devtools.kythe.doc.MarkedSourceRendererTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/doc:marked_source_renderer",
