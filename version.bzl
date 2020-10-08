@@ -2,7 +2,7 @@
 MIN_VERSION = "2.2.0"
 
 # Maximum supported Bazel version.  Should match .bazelversion file.
-MAX_VERSION = "3.4.1"
+MAX_VERSION = "3.6.0"
 
 def _tuplicate(value, delim):
     rv = ()
