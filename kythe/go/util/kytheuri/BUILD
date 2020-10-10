@@ -10,7 +10,10 @@ go_library(
         "escape.go",
         ":uri.go",
     ],
-    deps = ["//kythe/proto:storage_go_proto"],
+    deps = [
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:storage_go_proto",
+    ],
 )
 
 go_test(
