@@ -139,6 +139,8 @@ message File {
   string ticket = 1;
   bytes text = 2;
   string encoding = 3;
+
+  FileInfo info = 4;
 }
 
 // A RawAnchor is a specialized Node structure for anchor nodes.
@@ -170,6 +172,16 @@ message ExpandedAnchor {
   string build_configuration = 8;
 
   double rank = 9;
+
+  // Info for parent file
+  FileInfo file_info = 10;
+}
+
+message FileInfo {
+  // Structured path of the file
+  kythe.proto.common.CorpusPath corpus_path = 1;
+
+  string revision = 2;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
@@ -231,6 +243,9 @@ message FileDecorations {
 
   // List of tickets for files that generate this file.
   repeated string generated_by = 7;
+
+  // List of files referenced in the decorations
+  repeated FileInfo file_info = 8;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
@@ -275,6 +290,9 @@ message PagedCrossReferences {
     repeated ExpandedAnchor anchor = 2;
     repeated RelatedNode related_node = 3;
     repeated Caller caller = 4;
+
+    // List of files referenced in the group
+    repeated FileInfo file_info = 6;
   }
 
   message Page {
