@@ -1138,6 +1138,13 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
+    # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
+    maybe(
+        native.bind,
+        name = "error_prone_annotations",
+        actual = "@maven//:com_google_errorprone_error_prone_annotations",
+    )
+
 def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
     go_repository(
