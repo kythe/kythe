@@ -398,7 +398,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/statusor",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
