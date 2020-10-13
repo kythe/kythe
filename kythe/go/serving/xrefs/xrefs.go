@@ -196,6 +196,8 @@ func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *cpb.NodeInfo {
 	return ni
 }
 
+func corpusPathTicket(cp *cpb.CorpusPath) string { return kytheuri.FromCorpusPath(cp).String() }
+
 // Decorations implements part of the xrefs Service interface.
 func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if req.GetLocation() == nil || req.GetLocation().Ticket == "" {
@@ -244,9 +246,27 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, err
 	}
 
+	fileInfos := makeFileInfoMap(decor.FileInfo)
+
 	reply := &xpb.DecorationsReply{
 		Location:    loc,
 		GeneratedBy: decor.GeneratedBy,
+		Revision:    fileInfos[loc.GetTicket()].GetRevision(),
+	}
+
+	for _, g := range decor.GeneratedBy {
+		uri, err := kytheuri.Parse(g)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse generated_by ticket %q: %w", g, err)
+		}
+		reply.GeneratedByFile = append(reply.GeneratedByFile, &xpb.File{
+			CorpusPath: &cpb.CorpusPath{
+				Corpus: uri.Corpus,
+				Root:   uri.Root,
+				Path:   uri.Path,
+			},
+			Revision: fileInfos[g].GetRevision(),
+		})
 	}
 
 	if req.SourceText {
@@ -299,7 +319,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		// All known definition locations (Anchor.Ticket -> Anchor)
 		defs := make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 		for _, def := range decor.TargetDefinitions {
-			defs[def.Ticket] = a2a(def, false).Anchor
+			defs[def.Ticket] = a2a(def, fileInfos, false).Anchor
 		}
 		if req.TargetDefinitions {
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
@@ -336,6 +356,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			if !req.SemanticScopes {
 				r.SemanticScope = ""
 			}
+
+			// Populate any target revision, if known
+			r.TargetRevision = fileInfos[r.TargetTicket].GetRevision()
 
 			if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
 				bindings.Add(r.TargetTicket)
@@ -415,6 +438,14 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	}
 
 	return reply, nil
+}
+
+func makeFileInfoMap(infos []*srvpb.FileInfo) map[string]*srvpb.FileInfo {
+	fileInfos := make(map[string]*srvpb.FileInfo, len(infos))
+	for _, info := range infos {
+		fileInfos[corpusPathTicket(info.CorpusPath)] = info
+	}
+	return fileInfos
 }
 
 func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
@@ -774,6 +805,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 
 func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
+	fileInfos := makeFileInfoMap(grp.FileInfo)
 
 	if s.done() {
 		// We've already hit our cap; return true that we're done.
@@ -794,13 +826,13 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 	s.total += len(cs)
 	for _, c := range cs {
 		ra := &xpb.CrossReferencesReply_RelatedAnchor{
-			Anchor: a2a(c.Caller, false).Anchor,
+			Anchor: a2a(c.Caller, fileInfos, false).Anchor,
 			Ticket: c.SemanticCaller,
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
 		ra.MarkedSource = c.MarkedSource
 		for _, site := range c.Callsite {
-			ra.Site = append(ra.Site, a2a(site, false).Anchor)
+			ra.Site = append(ra.Site, a2a(site, fileInfos, false).Anchor)
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
@@ -811,6 +843,7 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 	ns := grp.RelatedNode
 	nodes := reply.Nodes
 	defs := reply.DefinitionLocations
+	fileInfos := makeFileInfoMap(grp.FileInfo)
 
 	if s.total == s.max {
 		// We've already hit our cap; return true that we're done.
@@ -835,7 +868,7 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 				nodes[rn.Node.Ticket] = info
 				if defs != nil && rn.Node.DefinitionLocation != nil {
 					nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
-					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, false).Anchor
+					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, fileInfos, false).Anchor
 				}
 			}
 		}
@@ -851,6 +884,7 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group, anchorText bool) bool {
 	kind := edges.Canonical(grp.Kind)
 	as := grp.Anchor
+	fileInfos := makeFileInfoMap(grp.FileInfo)
 
 	if s.total == s.max {
 		return true
@@ -867,14 +901,14 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 	}
 	s.total += len(as)
 	for _, a := range as {
-		ra := a2a(a, anchorText)
+		ra := a2a(a, fileInfos, anchorText)
 		ra.Anchor.Kind = kind
 		*to = append(*to, ra)
 	}
 	return s.total == s.max
 }
 
-func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
+func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
 	var text string
 	if anchorText {
 		text = a.Text
@@ -892,10 +926,11 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
 		BuildConfig: a.BuildConfiguration,
+		Revision:    fileInfos[parent].GetRevision(),
 	}}
 }
 
-func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor) *xpb.DocumentationReply_Document {
+func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor, fileInfos map[string]*srvpb.FileInfo) *xpb.DocumentationReply_Document {
 	for _, node := range d.Node {
 		if _, ok := nodes[node.Ticket]; ok {
 			continue
@@ -911,7 +946,7 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 
 			n.Definition = def.Ticket
 			if _, ok := defs[def.Ticket]; !ok {
-				defs[def.Ticket] = a2a(def, false).Anchor
+				defs[def.Ticket] = a2a(def, fileInfos, false).Anchor
 			}
 		}
 
@@ -976,6 +1011,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		// Match all facts if given no filters
 		patterns = xrefs.ConvertFilters([]string{"**"})
 	}
+	fileInfos := make(map[string]*srvpb.FileInfo)
 
 	for _, ticket := range tickets {
 		d, err := t.lookupDocument(ctx, ticket)
@@ -985,7 +1021,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 			return nil, canonicalError(err, "documentation", ticket)
 		}
 
-		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations)
+		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
 				// TODO(schroederc): store children with root of documentation tree
@@ -996,7 +1032,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 					return nil, canonicalError(err, "documentation child", ticket)
 				}
 
-				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations))
+				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos))
 			}
 			tracePrintf(ctx, "Children: %d", len(d.ChildTicket))
 		}
