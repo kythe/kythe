@@ -59,12 +59,6 @@ load("@npm//@bazel/labs:package.bzl", "npm_bazel_labs_dependencies")
 
 npm_bazel_labs_dependencies()
 
-# This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
-bind(
-    name = "error_prone_annotations",
-    actual = "@maven//:com_google_errorprone_error_prone_annotations",
-)
-
 load("@maven//:compat.bzl", "compat_repositories")
 
 compat_repositories()
