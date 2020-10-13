@@ -17,6 +17,7 @@ load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_reposi
 load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
 load("@io_bazel_rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
+load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -1092,6 +1093,14 @@ def _go_dependencies():
 def _rust_dependencies():
     raze_fetch_remote_crates()
 
+def _js_dependencies():
+    npm_install(
+        name = "npm",
+        package_json = "@io_kythe//:package.json",
+        package_lock_json = "@io_kythe//:package-lock.json",
+    )
+
+
 def _bindings():
     maybe(
         native.bind,
@@ -1165,6 +1174,7 @@ def kythe_dependencies(sample_ui = True):
     _go_dependencies()
     _java_dependencies()
     _rust_dependencies()
+    _js_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
