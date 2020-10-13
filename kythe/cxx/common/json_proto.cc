@@ -17,6 +17,7 @@
 #include "json_proto.h"
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
