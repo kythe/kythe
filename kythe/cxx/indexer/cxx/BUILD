@@ -58,6 +58,7 @@ cc_library(
         "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
         "@org_llvm//:LLVMSupport",

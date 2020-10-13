@@ -31,6 +31,7 @@ java_library(
     srcs = ["KytheURI.java"],
     visibility = ["//kythe:proto_visibility"],
     deps = [
+        "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",

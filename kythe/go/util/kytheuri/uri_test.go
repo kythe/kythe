@@ -22,6 +22,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -207,6 +208,28 @@ func TestToString(t *testing.T) {
 	for _, test := range tests {
 		if found := ToString(test.VName); found != test.Expected {
 			t.Errorf("kytheuri.ToString(%#v): found %q, want %q", test.VName, found, test.Expected)
+		}
+	}
+}
+
+func TestCorpusPath(t *testing.T) {
+	tests := []struct {
+		CorpusPath *cpb.CorpusPath
+		Expected   string
+	}{
+		{&cpb.CorpusPath{Corpus: "c", Root: "r", Path: "p"}, "kythe://c?path=p?root=r"},
+		{&cpb.CorpusPath{Corpus: "", Root: "r", Path: "p"}, "kythe:?path=p?root=r"},
+		{&cpb.CorpusPath{Corpus: "", Root: "", Path: "p"}, "kythe:?path=p"},
+		{&cpb.CorpusPath{Corpus: "", Root: "", Path: ""}, "kythe:"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "r", Path: ""}, "kythe://c?root=r"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "", Path: ""}, "kythe://c"},
+		{&cpb.CorpusPath{Corpus: "", Root: "r", Path: ""}, "kythe:?root=r"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "", Path: "p"}, "kythe://c?path=p"},
+	}
+
+	for _, test := range tests {
+		if found := FromCorpusPath(test.CorpusPath).String(); found != test.Expected {
+			t.Errorf("kytheuri.FromCorpusPath(%+v): found %q, want %q", test.CorpusPath, found, test.Expected)
 		}
 	}
 }

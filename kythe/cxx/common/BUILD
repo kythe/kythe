@@ -376,6 +376,7 @@ cc_test(
         "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -397,6 +398,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -419,6 +421,7 @@ cc_test(
         "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@org_libzip//:zip",
     ],
