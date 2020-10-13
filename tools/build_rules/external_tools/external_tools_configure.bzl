@@ -3,7 +3,7 @@
 _BUILD_TEMPLATE = """
 package(default_visibility=["//visibility:public"])
 
-load("@//tools/build_rules/external_tools:external_tools_toolchain.bzl", "external_tools_toolchain")
+load("@io_kythe//tools/build_rules/external_tools:external_tools_toolchain.bzl", "external_tools_toolchain")
 
 external_tools_toolchain(
   name = "host_toolchain_impl",
@@ -22,7 +22,7 @@ toolchain(
       #"@bazel_tools//platforms:host_platform",
     ],
     toolchain = ":host_toolchain_impl",
-    toolchain_type = "@//tools/build_rules/external_tools:external_tools_toolchain_type",
+    toolchain_type = "@io_kythe//tools/build_rules/external_tools:external_tools_toolchain_type",
 )
 """
 
