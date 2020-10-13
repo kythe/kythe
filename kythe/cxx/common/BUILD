@@ -421,7 +421,7 @@ cc_test(
         "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/statusor",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@org_libzip//:zip",
     ],
