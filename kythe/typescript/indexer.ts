@@ -1506,7 +1506,6 @@ class Visitor {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
-      case ts.SyntaxKind.ComputedPropertyName:
       case ts.SyntaxKind.StringLiteral:
       case ts.SyntaxKind.NumericLiteral:
         const sym = this.host.getSymbolAtLocation(decl.name);
@@ -1530,6 +1529,9 @@ class Visitor {
         for (const element of (decl.name as ts.BindingPattern).elements) {
           this.visit(element);
         }
+        break;
+      case ts.SyntaxKind.ComputedPropertyName:
+        decl.name.forEachChild(child => this.visit(child));
         break;
       default:
         break;
@@ -1767,10 +1769,18 @@ class Visitor {
           `function declaration ${decl.getText()} has no symbol`);
       return;
     }
-    if (decl.name) {
-      if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
-        this.visit((decl.name as ts.ComputedPropertyName).expression);
-      }
+    const isNameComputedProperty =
+        decl.name && decl.name.kind === ts.SyntaxKind.ComputedPropertyName;
+    if (isNameComputedProperty) {
+      this.visit((decl.name as ts.ComputedPropertyName).expression);
+    }
+
+    // Treat functions with computed names as anonymous. From developer point of view in the
+    // following expression:
+    // `const k = {[foo]() {}};`
+    // the part `[foo]` isn't a separate symbol that you can click. Only `foo` should be xref'ed
+    // and lead to the `foo` definition.
+    if (decl.name && !isNameComputedProperty) {
       if (!sym) {
         todo(
             this.sourceRoot, decl.name,

@@ -29,6 +29,21 @@ Run `yarn test` to run the test suite. (You'll need to have built first.)
 Run `yarn run fmt` to autoformat the source code. (Better, configure your editor
 to run clang-format on save.)
 
+### Running tests
+
+To run tests use:
+
+```shell
+cd kythe/typescript
+bazel test :indexer_test
+```
+
+To run single test from file `testdata/foo.ts`:
+
+```shell
+bazel test --test_arg=foo :indexer_test
+```
+
 ### Writing tests
 
 By default in TypeScript, files are "scripts", where every declaration is in the

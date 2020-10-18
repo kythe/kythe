@@ -14,8 +14,7 @@ const Object = {
   //- ShortProperty.node/kind variable
   shortProperty,
 
-  //- @"[computed]" defines/binding ComputedProperty
-  //- ComputedProperty.node/kind variable
+  //- !{@"[computed]" defines/binding _}
   //- @computed ref Computed
   [computed]: 0,
 
@@ -34,8 +33,10 @@ const Object = {
 
 //- @property ref Property
 //- @shortProperty ref ShortProperty
-//- @computed ref ComputedProperty
-const x = Object.property || Object.shortProperty || Object.computed;
+const x = Object.property || Object.shortProperty;
+
+//- @computed ref Computed
+Object[computed];
 
 //- @"'string#literal'" ref SLiteralProperty
 Object['string#literal'];
