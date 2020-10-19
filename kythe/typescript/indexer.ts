@@ -52,6 +52,14 @@ export interface IndexerHost {
    */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName
       |undefined;
+
+  /**
+   * Aliases a local symbol to a remote symbol. Returns the aliased name.
+   * This is used to return a remote symbol's VNames for a local symbol when a
+   * symbol is imported into a file; @see Visitor#visitImport.
+   */
+  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName;
+
   /**
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
@@ -615,6 +623,32 @@ class StandardIndexerContext implements IndexerHost {
     return vname;
   }
 
+  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
+    // This imported symbol can refer to a type, a value, or both.
+    // Attempt to create VNames for both the symbol's type and value and mark
+    // the local symbol with the remote symbol's VName(s) so that all
+    // references resolve to the remote symbol.
+    let kType, kValue;
+    if (remoteSym.flags & ts.SymbolFlags.Type) {
+      kType = this.getSymbolName(remoteSym, TSNamespace.TYPE);
+      if (kType) {
+        this.symbolNames.set(localSym, TSNamespace.TYPE, Context.Any, kType);
+      }
+    }
+    if (remoteSym.flags & ts.SymbolFlags.Value) {
+      kValue = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+      if (kValue) {
+        this.symbolNames.set(localSym, TSNamespace.VALUE, Context.Any, kValue);
+      }
+    }
+
+    // The name anchor must link somewhere.  In rare cases a symbol is both
+    // a type and a value that resolve to two different locations; for now,
+    // because we must choose one, just prefer linking to the value.
+    // One of the value or type reference should be non-null.
+    return (kValue || kType)!;
+  }
+
   /**
    * moduleName returns the ES6 module name of a path to a source file.
    * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
@@ -1134,9 +1168,7 @@ class Visitor {
    *     definition
    * @param refAnchor anchor that "ref" the import's remote declaration
    */
-  visitImport(
-      name: ts.Node, bindingAnchor: Readonly<VName>,
-      refAnchor: Readonly<VName>) {
+  visitImport(name: ts.Node): VName {
     // An import both aliases a symbol from another module
     // (call it the remote symbol) and it defines a local symbol.
     //
@@ -1153,48 +1185,18 @@ class Visitor {
     // "foo" should both:
     //   - "ref/imports" the remote symbol
     //   - "defines/binding" the local symbol
+    // But in Kythe the UI for stacking multiple references out from a single
+    // anchor isn't great, so this code instead unifies all references
+    // (including renaming imports) to a single VName.
 
     const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-
-    // The imported symbol can refer to a type, a value, or both. Attempt to
-    // define local imports and reference remote definitions in both cases.
-    if (remoteSym.flags & ts.SymbolFlags.Value) {
-      const kRemoteValue =
-          this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
-      const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
-      if (!kRemoteValue || !kLocalValue) return;
-
-      // The local import value is a "variable" with an "import" subkind, and
-      // aliases its remote definition.
-      this.emitNode(kLocalValue, NodeKind.VARIABLE);
-      this.emitFact(kLocalValue, FactName.SUBKIND, Subkind.IMPORT);
-      this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
-
-      // Emit edges from the binding and referencing anchors to the import's
-      // local and remote definition, respectively.
-      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
-      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
-    }
-    if (remoteSym.flags & ts.SymbolFlags.Type) {
-      const kRemoteType = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
-      const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
-      if (!kRemoteType || !kLocalType) return;
-
-      // The local import value is a "talias" (type alias) with an "import"
-      // subkind, and aliases its remote definition.
-      this.emitNode(kLocalType, NodeKind.TALIAS);
-      this.emitFact(kLocalType, FactName.SUBKIND, Subkind.IMPORT);
-      this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
-
-      // Emit edges from the binding and referencing anchors to the import's
-      // local and remote definition, respectively.
-      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
-      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
-    }
+    const kImportName = this.host.aliasSymbol(localSym, remoteSym);
+    this.emitEdge(this.newAnchor(name), EdgeKind.REF_IMPORTS, kImportName);
+    return kImportName;
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
@@ -1268,7 +1270,7 @@ class Visitor {
       //
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
-      this.visitImport(decl.name, importTextAnchor, this.newAnchor(decl.name));
+      this.visitImport(decl.name);
       return;
     }
 
@@ -1285,8 +1287,7 @@ class Visitor {
       //
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
-      this.visitImport(
-          clause.name, importTextAnchor, this.newAnchor(clause.name));
+      this.visitImport(clause.name);
       return;
     }
 
@@ -1326,15 +1327,11 @@ class Visitor {
           // definition on the import name.
           //
           // TODO(#4021): Unify binding and reference anchors.
-          let bindingAnchor, refAnchor;
+          const kImport = this.visitImport(imp.name);
           if (imp.propertyName) {
-            bindingAnchor = this.newAnchor(imp.name);
-            refAnchor = this.newAnchor(imp.propertyName);
-          } else {
-            bindingAnchor = importTextAnchor;
-            refAnchor = this.newAnchor(imp.name);
+            this.emitEdge(
+                this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS, kImport);
           }
-          this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
         break;
     }
