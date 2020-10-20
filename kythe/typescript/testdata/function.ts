@@ -39,14 +39,13 @@ test(
 //- @#0"fn" defines/binding OFnStr
 const fn = 'fn';
 let o = {
-  //- @"[fn]" defines/binding OFn
-  //- OFn.node/kind function
+  //- !{@"[fn]" defines/binding _}
   //- @fn ref OFnStr
   [fn]() {},
 };
 
-//- @fn ref OFn
-o.fn();
+//- @fn ref OFnStr
+o[fn]();
 
 // Test arrow functions
 //- @x defines/binding X
