@@ -9,7 +9,7 @@
 
 // NamespaceImport
 //- @NspI defines/binding VName("NspI", _, _, "testdata/schema", "typescript")
-import * as NspI from './declaration';
+import * as NspI from './declaration_group/declaration';
 
 // ExportAssignment
 //- @default defines/binding VName("default", _, _, "testdata/schema", "typescript")
