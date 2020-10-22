@@ -54,6 +54,11 @@ class PluginApi {
   // required_inputs.
   virtual proto::VName VNameForRelPath(
       absl::string_view simplified_path) const = 0;
+
+  // Returns a pointer to the descriptor pool built from the .proto files
+  // included as dependencies in the textproto's compilation unit.
+  virtual const google::protobuf::DescriptorPool* ProtoDescriptorPool()
+      const = 0;
 };
 
 struct StringToken {

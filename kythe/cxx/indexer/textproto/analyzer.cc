@@ -171,6 +171,10 @@ class TextprotoAnalyzer : public PluginApi {
         descriptor, [this](auto path) { return VNameForRelPath(path); });
   }
 
+  const DescriptorPool* ProtoDescriptorPool() const override {
+    return descriptor_pool_;
+  }
+
  private:
   absl::Status AnalyzeField(const proto::VName& file_vname,
                             const Message& proto,
