@@ -3,5 +3,5 @@
 
 import * as mod from './declaration';
 
-//- @decl ref _Val=vname(_, _, _, "testdata/declaration", _)
+//- @decl ref Decl
 mod.decl;
