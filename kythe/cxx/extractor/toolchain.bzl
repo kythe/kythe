@@ -19,7 +19,11 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 CxxExtractorToolchainInfo = provider(
     doc = "Provides required information for C++/ObjectiveC extractors.",
-    fields = ["cc_toolchain", "extractor_binary", "compiler_executable"],
+    fields = [
+        "cc_toolchain",
+        "extractor_binary",
+        "compiler_executable",
+    ],
 )
 
 CXX_EXTRACTOR_TOOLCHAINS = ["@io_kythe//kythe/cxx/extractor:toolchain_type"]
@@ -31,9 +35,9 @@ def _cxx_extractor_toolchain_impl(ctx):
     else:
         compiler_executable = cc_toolchain.compiler_executable
     cxx_extractor = CxxExtractorToolchainInfo(
-        extractor_binary = ctx.attr.extractor.files_to_run,
-        compiler_executable = compiler_executable,
         cc_toolchain = cc_toolchain,
+        compiler_executable = compiler_executable,
+        extractor_binary = ctx.attr.extractor.files_to_run,
     )
     return [
         platform_common.ToolchainInfo(
@@ -43,7 +47,6 @@ def _cxx_extractor_toolchain_impl(ctx):
     ]
 
 cxx_extractor_toolchain = rule(
-    implementation = _cxx_extractor_toolchain_impl,
     attrs = {
         "extractor": attr.label(
             executable = True,
@@ -55,9 +58,14 @@ cxx_extractor_toolchain = rule(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
-    provides = [CxxExtractorToolchainInfo, platform_common.ToolchainInfo],
     fragments = ["cpp"],
+    incompatible_use_toolchain_transition = True,
+    provides = [
+        CxxExtractorToolchainInfo,
+        platform_common.ToolchainInfo,
+    ],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    implementation = _cxx_extractor_toolchain_impl,
 )
 
 def register_toolchains():
