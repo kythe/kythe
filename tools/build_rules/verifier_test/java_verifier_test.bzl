@@ -125,10 +125,10 @@ java_extract_kzip = rule(
         ),
         "_host_javabase": attr.label(
             cfg = "host",
-            default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
+            default = Label("@bazel_tools//tools/jdk:current_host_java_runtime"),
         ),
         "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:toolchain"),
+            default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
         ),
     },
     fragments = ["java"],
@@ -180,7 +180,7 @@ def java_verifier_test(
     """
     if compilation:
         kzip = name + "_kzip"
-        extract_java(name = kzip, compilation = compilation, testonly = True)
+        extract_java(name = kzip, testonly = True, compilation = compilation)
     else:
         kzip = _invoke(
             java_extract_kzip,
