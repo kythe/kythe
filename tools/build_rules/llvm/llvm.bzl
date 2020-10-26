@@ -248,7 +248,7 @@ def _llvm_tablegen(ctx, kind, out, *opts):
         name = _genfile_name(out),
         outs = [out],
         srcs = _glob([
-            _join_path(root, "*.td"),  # local_tds
+            _join_path(root, "**/*.td"),  # local_tds
             "include/llvm/**/*.td",  # global_tds
         ]),
         tools = [":llvm-tblgen"],

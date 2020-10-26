@@ -528,11 +528,11 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
                                                const std::string& in_path) {
   if (in_path == "-" || in_path == "<stdin>") {
     if (main_source_file_stdin_alternate_->empty()) {
-      const llvm::MemoryBuffer* buffer =
-          source_manager_->getMemoryBufferForFile(file);
+      const llvm::MemoryBufferRef buffer =
+          source_manager_->getMemoryBufferForFileOrFake(file);
       std::string hashed_name =
-          Sha256(buffer->getBufferStart(),
-                 buffer->getBufferEnd() - buffer->getBufferStart());
+          Sha256(buffer.getBufferStart(),
+                 buffer.getBufferEnd() - buffer.getBufferStart());
       *main_source_file_stdin_alternate_ = "<stdin:" + hashed_name + ">";
     }
     return *main_source_file_stdin_alternate_;
@@ -545,10 +545,10 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   std::string path = FixStdinPath(file, in_path);
   auto contents = source_files_->insert({in_path, SourceFile{""}});
   if (contents.second) {
-    const llvm::MemoryBuffer* buffer =
-        source_manager_->getMemoryBufferForFile(file);
-    contents.first->second.file_content.assign(buffer->getBufferStart(),
-                                               buffer->getBufferEnd());
+    const llvm::MemoryBufferRef buffer =
+        source_manager_->getMemoryBufferForFileOrFake(file);
+    contents.first->second.file_content.assign(buffer.getBufferStart(),
+                                               buffer.getBufferEnd());
     contents.first->second.vname.CopyFrom(
         index_writer_->VNameForPath(index_writer_->RelativizePath(path)));
     VLOG(1) << "added content for " << path << ": mapped to "

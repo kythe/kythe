@@ -8,6 +8,9 @@ TARGET_DEFAULTS = {
             "utils/TableGen/GlobalISel/*.cpp",
             "utils/TableGen/GlobalISel/*.h",
         ]),
+        "deps": [
+            ":LLVMMC",
+        ],
     },
     "LLVMSupport": {
         "linkopts": [
