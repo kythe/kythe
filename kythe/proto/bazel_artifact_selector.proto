@@ -20,7 +20,7 @@ package kythe.proto;
 
 import "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto";
 
-message BazelArtifactSelectorState {
+message BazelAspectArtifactSelectorState {
   // A list of fileset ids which have already been processed or skipped.
   repeated string seen = 1;
   // Filesets with potentially interesting contents which haven't matched an

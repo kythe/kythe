@@ -311,7 +311,7 @@ cc_library(
     hdrs = ["bazel_artifact_selector.h"],
     deps = [
         ":bazel_artifact",
-        "//kythe/proto:build_artifact_selector_cc_proto",
+        "//kythe/proto:bazel_artifact_selector_cc_proto",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -319,6 +319,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -329,6 +330,7 @@ cc_library(
     hdrs = ["bazel_artifact_reader.h"],
     deps = [
         ":bazel_artifact",
+        ":bazel_artifact_selector",
         ":bazel_event_reader",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",

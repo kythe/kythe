@@ -1,9 +1,12 @@
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
+#include "absl/status/status.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "glog/logging.h"
+#include "google/protobuf/any.pb.h"
+#include "kythe/proto/bazel_artifact_selector.pb.h"
 
 namespace kythe {
 namespace {
@@ -31,50 +34,85 @@ std::string AsLocalPath(const build_event_stream::File& file) {
   return absl::StrJoin(parts, "/");
 }
 
+template <typename T>
+struct FromRange {
+  template <typename U>
+  operator U() {
+    return U(range.begin(), range.end());
+  }
+
+  const T& range;
+};
+
+template <typename T>
+FromRange(const T&) -> FromRange<T>;
+
 }  // namespace
 
 absl::optional<BazelArtifact> AspectArtifactSelector::Select(
     const build_event_stream::BuildEvent& event) {
+  absl::optional<BazelArtifact> result = absl::nullopt;
   if (event.id().has_named_set()) {
-    return SelectFileSet(event.id().named_set().id(),
-                         event.named_set_of_files());
+    result =
+        SelectFileSet(event.id().named_set().id(), event.named_set_of_files());
+  } else if (event.id().has_target_completed()) {
+    result =
+        SelectTargetCompleted(event.id().target_completed(), event.completed());
   }
-  if (event.id().has_target_completed()) {
-    return SelectTargetCompleted(event.id().target_completed(),
-                                 event.completed());
+  if (event.last_message()) {
+    state_ = {};
   }
-  // TODO(shahms): Handle event.last_message == true
-  return absl::nullopt;
+  return result;
 }
 
 absl::optional<google::protobuf::Any> AspectArtifactSelector::Serialize()
     const {
-  return absl::nullopt;
+  kythe::proto::BazelAspectArtifactSelectorState state;
+  *state.mutable_seen() = FromRange{state_.seen};
+  *state.mutable_fileset() = FromRange{state_.filesets};
+  *state.mutable_pending() = FromRange{state_.pending};
+
+  google::protobuf::Any result;
+  result.PackFrom(state);
+  return result;
 }
 
 absl::Status AspectArtifactSelector::Deserialize(
     absl::Span<const google::protobuf::Any> state) {
-  return absl::OkStatus();
+  for (const auto& any : state) {
+    kythe::proto::BazelAspectArtifactSelectorState proto_state;
+    if (any.UnpackTo(&proto_state)) {
+      state_ = {
+          .seen = FromRange{proto_state.seen()},
+          .filesets = FromRange{proto_state.fileset()},
+          .pending = FromRange{proto_state.pending()},
+      };
+
+      return absl::OkStatus();
+    }
+  }
+  return absl::NotFoundError(
+      "No entry found for kythe.proto.BazelAspectArtifactSelectorState");
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
   bool kept = false;
   for (const auto& file : fileset.files()) {
-    if (options_.file_name_allowlist.Match(file.name(), nullptr)) {
+    if (options_->file_name_allowlist.Match(file.name(), nullptr)) {
       kept = true;
-      *filesets_contents_[id].add_files() = file;
+      *state_.filesets[id].add_files() = file;
     }
   }
   for (const auto& child : fileset.file_sets()) {
-    if (!filesets_seen_.contains(child.id())) {
+    if (!state_.seen.contains(child.id())) {
       kept = true;
-      *filesets_contents_[id].add_file_sets() = child;
+      *state_.filesets[id].add_file_sets() = child;
     }
   }
   // TODO(shahms): check pending *before* doing all of the insertion.
-  if (auto iter = filesets_pending_.find(id); iter != filesets_pending_.end()) {
-    auto node = filesets_pending_.extract(iter);
+  if (auto iter = state_.pending.find(id); iter != state_.pending.end()) {
+    auto node = state_.pending.extract(iter);
     BazelArtifact result = {.label = std::string(node.mapped())};
     ReadFilesInto(id, result.label, result.files);
     if (result.files.empty()) {
@@ -84,7 +122,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
   }
   if (!kept) {
     // There were no files, no children and no previous references, skip it.
-    filesets_seen_.insert(std::string(id));
+    state_.seen.insert(std::string(id));
   }
   return absl::nullopt;
 }
@@ -93,12 +131,12 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
   if (payload.success() &&
-      options_.target_aspect_allowlist.Match(id.aspect(), nullptr)) {
+      options_->target_aspect_allowlist.Match(id.aspect(), nullptr)) {
     BazelArtifact result = {
         .label = id.label(),
     };
     for (const auto& output_group : payload.output_group()) {
-      if (options_.output_group_allowlist.Match(output_group.name(), nullptr)) {
+      if (options_->output_group_allowlist.Match(output_group.name(), nullptr)) {
         for (const auto& fileset : output_group.file_sets()) {
           ReadFilesInto(fileset.id(), id.label(), result.files);
         }
@@ -114,14 +152,13 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
 void AspectArtifactSelector::ReadFilesInto(
     absl::string_view id, absl::string_view target,
     std::vector<BazelArtifactFile>& files) {
-  if (filesets_seen_.contains(id)) {
+  if (state_.seen.contains(id)) {
     return;
   }
 
-  if (auto iter = filesets_contents_.find(id);
-      iter != filesets_contents_.end()) {
-    filesets_seen_.insert(std::string(id));
-    auto node = filesets_contents_.extract(iter);
+  if (auto iter = state_.filesets.find(id); iter != state_.filesets.end()) {
+    state_.seen.insert(std::string(id));
+    auto node = state_.filesets.extract(iter);
     const build_event_stream::NamedSetOfFiles& fileset = node.mapped();
 
     for (const auto& file : fileset.files()) {
@@ -141,7 +178,23 @@ void AspectArtifactSelector::ReadFilesInto(
   // this for future processing.
   LOG(INFO) << "NamedSetOfFiles " << id << " requested by " << target
             << " but not yet seen.";
-  filesets_pending_.emplace(id, target);
+  state_.pending.emplace(id, target);
+}
+
+absl::optional<BazelArtifact> ExtraActionSelector::Select(
+    const build_event_stream::BuildEvent& event) {
+  if (event.id().has_action_completed() && event.action().success() &&
+      (action_types_.empty() ||
+       action_types_.contains(event.action().type()))) {
+    return BazelArtifact{
+        .label = event.id().action_completed().label(),
+        .files = {{
+            .local_path = event.id().action_completed().primary_output(),
+            .uri = AsUri(event.action().primary_output()),
+        }},
+    };
+  }
+  return absl::nullopt;
 }
 
 }  // namespace kythe

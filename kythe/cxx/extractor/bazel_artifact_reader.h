@@ -25,41 +25,51 @@
 #include "absl/status/status.h"
 #include "absl/types/variant.h"
 #include "glog/logging.h"
-#include "kythe/cxx/extractor/bazel_event_reader.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
+#include "kythe/cxx/extractor/bazel_artifact_selector.h"
+#include "kythe/cxx/extractor/bazel_event_reader.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 
-/// \brief A callback which will be invoked on each BuildEvent in turn.  If the
-/// selector can supply a BazelArtifact as a result of this event, it should
-/// do so via the second parameter and return true.
-/// A return value of false indicates no match and the artifacts should be
-/// unmodified.
-using ArtifactSelector =
-    std::function<bool(const build_event_stream::BuildEvent&, BazelArtifact*)>;
-
+/// \brief A cursor which selects and filters extraction artifacts from an
+/// underlying Bazel BuildEvent stream.
 class BazelArtifactReader {
  public:
   using value_type = BazelArtifact;
   using reference = value_type&;
   using const_reference = const value_type&;
 
-  static std::vector<ArtifactSelector> DefaultSelectors();
+  /// \brief Returns a list of default BazelArtifactSelectors consisting of a
+  /// default-constructed ExtraActionSelector.
+  static std::vector<AnyArtifactSelector> DefaultSelectors();
 
+  /// \brief Constructs a new BazelArtifactSelector over the provided event
+  /// stream.
   explicit BazelArtifactReader(
       BazelEventReaderInterface* event_reader,
-      std::vector<ArtifactSelector> selectors = DefaultSelectors())
+      std::vector<AnyArtifactSelector> selectors = DefaultSelectors())
       : event_reader_(CHECK_NOTNULL(event_reader)),
         selectors_(std::move(selectors)) {
     Select();
   }
 
+  /// \brief Advances the event stream until the next artifact is found.
+  /// Invokes all selectors on sequential events from the stream until at least
+  /// one selector signals success.
   void Next();
 
+  /// \brief Returns true if the underlying stream is exahusted and there are
+  /// no more artifacts to find.
   bool Done() const { return value_.index() != 0; }
+
+  /// \brief Returns a reference to the most recently selected artifact.
+  /// Requires: Done() == false.
   reference Ref() { return absl::get<value_type>(value_); }
   const_reference Ref() const { return absl::get<value_type>(value_); }
+
+  /// \brief Returns the overall status of the stream.
+  /// Requires: Done() == true.
   absl::Status status() const { return absl::get<absl::Status>(value_); }
 
  private:
@@ -67,44 +77,7 @@ class BazelArtifactReader {
 
   absl::variant<value_type, absl::Status> value_;
   BazelEventReaderInterface* event_reader_;
-  std::vector<ArtifactSelector> selectors_;
-};
-
-/// \brief An ArtifactSelector which selects artifacts emitted by extra
-/// actions.
-///
-/// This will select any successful ActionCompleted build event, but the
-/// selection can be restricted to an allowlist of action_types.
-struct ExtraActionSelector {
-  /// \brief Allowlist against which to match ActionCompleted events.
-  /// An empty set will select any successful action.
-  absl::flat_hash_set<std::string> action_types;
-
-  /// \brief Sets result from the primary output of a successful
-  /// ActionCompleted event.
-  bool operator()(const build_event_stream::BuildEvent& event,
-                  BazelArtifact* result) const;
-};
-
-/// \brief An ArtifactSelector which selects artifacts by output group.
-///
-/// This is a stateful selector as it needs to track the named sets of files
-/// from the output stream.
-class OutputGroupSelector {
- public:
-  explicit OutputGroupSelector(absl::flat_hash_set<std::string> group_names)
-      : group_names_(std::move(group_names)) {}
-
-  bool operator()(const build_event_stream::BuildEvent& event,
-                  BazelArtifact* result);
-
- private:
-  void FindNamedFiles(std::vector<std::string> ids,
-                      std::vector<BazelArtifactFile>* result);
-
-  absl::flat_hash_set<std::string> group_names_;
-  absl::flat_hash_map<std::string, build_event_stream::NamedSetOfFiles>
-      filesets_;
+  std::vector<AnyArtifactSelector> selectors_;
 };
 
 }  // namespace kythe
