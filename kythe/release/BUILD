@@ -120,7 +120,7 @@ filegroup(
 
 sh_test(
     name = "release_test",
-    timeout = "short",
+    timeout = "moderate",
     srcs = ["release_test.sh"],
     args = [
         # Since go binaries are not located at their bazel target path (//go/binary
