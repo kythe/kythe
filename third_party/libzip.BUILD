@@ -4,6 +4,10 @@ package(
 
 load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
 
+PACKAGE_VERSION = "1.7.3"
+
+PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_MICRO = PACKAGE_VERSION.split(".")
+
 _CMAKE_VARIABLES = {
     "INT16_T_LIBZIP": 2,
     "INT32_T_LIBZIP": 4,
@@ -13,10 +17,10 @@ _CMAKE_VARIABLES = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
     "LONG_LIBZIP": 8,
     "LONG_LONG_LIBZIP": 8,
-    "PACKAGE_VERSION": "1.5.1",
-    "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MICRO": "1",
-    "PACKAGE_VERSION_MINOR": "5",
+    "PACKAGE_VERSION": PACKAGE_VERSION,
+    "PACKAGE_VERSION_MAJOR": PACKAGE_VERSION_MAJOR,
+    "PACKAGE_VERSION_MICRO": PACKAGE_VERSION_MICRO,
+    "PACKAGE_VERSION_MINOR": PACKAGE_VERSION_MINOR,
     "SHORT_LIBZIP": 2,
     "SIZEOF_OFF_T": 8,
     "SIZE_T_LIBZIP": 8,
@@ -48,10 +52,11 @@ _CMAKE_VARIABLES.update(dict([
 
 _SUBSTITUTIONS = {
     "@PACKAGE@": "libzip",
-    "@VERSION@": "1.5.1",  # Keep in sync with actual package!
+    "@VERSION@": PACKAGE_VERSION,
 }
 
 _DEFINES = {
+    "HAVE_ARC4RANDOM": False,
     "HAVE_CLONEFILE": False,
     "HAVE_COMMONCRYPTO": False,
     "HAVE_CRYPTO": False,
@@ -65,8 +70,12 @@ _DEFINES = {
     "HAVE_GETPROGNAME": False,
     "HAVE_GNUTLS": False,
     "HAVE_LIBBZ2": False,
+    "HAVE_LIBLZMA": False,
+    "HAVE_LOCALTIME_R": True,
+    "HAVE_MBEDTLS": False,
     "HAVE_MKSTEMP": True,
     "HAVE_NDIR_H": False,
+    "HAVE_NULLABLE": True,
     "HAVE_OPEN": True,
     "HAVE_OPENSSL": False,
     "HAVE_SETMODE": False,
@@ -84,6 +93,7 @@ _DEFINES = {
     "HAVE_SYS_DIR_H": False,
     "HAVE_SYS_NDIR_H": False,
     "HAVE_UNISTD_H": True,
+    "HAVE_WINDOWS_CRYPTO": False,
     "HAVE__CHMOD": False,
     "HAVE__CLOSE": False,
     "HAVE__DUP": False,
@@ -100,6 +110,7 @@ _DEFINES = {
     "HAVE__UNLINK": False,
     "HAVE___PROGNAME": False,
     "WORDS_BIGENDIAN": False,
+    "SIZEOF_SIZE_T": "sizeof(size_t)",
 }
 
 _DEFINES.update(dict([(
@@ -121,10 +132,11 @@ expand_template(
 
 _VARS = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
-    "PACKAGE_VERSION": "1.5.1",
-    "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MICRO": "1",
-    "PACKAGE_VERSION_MINOR": "5",
+    "ZIP_NULLABLE_DEFINES": "",
+    "PACKAGE_VERSION": PACKAGE_VERSION,
+    "PACKAGE_VERSION_MAJOR": PACKAGE_VERSION_MAJOR,
+    "PACKAGE_VERSION_MICRO": PACKAGE_VERSION_MICRO,
+    "PACKAGE_VERSION_MINOR": PACKAGE_VERSION_MINOR,
 }
 
 _VARS.update(dict([
@@ -171,9 +183,11 @@ cc_library(
             "lib/*crypto*",
             "lib/*aes*",
             "lib/*bzip2*",
+            "lib/*xz*",
         ],
     ) + [
         "config.h",
+        "zip_err_str.c",
     ],
     hdrs = [
         "lib/zip.h",
@@ -186,4 +200,14 @@ cc_library(
     deps = [
         "//external:zlib",
     ],
+)
+
+# libzip uses CMake to generated this file, so recreate that as much as we can
+# using sed.
+genrule(
+    name = "zip_err_str",
+    srcs = ["lib/zip.h"],
+    outs = ["zip_err_str.c"],
+    cmd = "$(location @io_kythe//third_party/libzip:genziperrs) $< $@",
+    tools = ["@io_kythe//third_party/libzip:genziperrs"],
 )
