@@ -38,8 +38,8 @@ import sys
 # Find the locations of the workspace root and the generated files directory.
 workspace = check_output(['bazel', 'info', 'workspace']).strip()
 bazel_bin = check_output(['bazel', 'info', 'bazel-bin']).strip()
-targets = '//kythe/proto/...'
-import_base = 'kythe.io/kythe/proto'
+targets = '//kythe/...'
+import_base = 'kythe.io'
 
 go_protos = check_output([
     'bazel',
@@ -66,7 +66,7 @@ for rule in go_protos:
     print('Copying Go protobuf source for %s' % rule)
     generated_file = re.sub('.proto$', '.pb.go', proto_file)
     generated_path = glob.glob(
-        os.path.join(bazel_bin, rule_dir, proto + '_', import_base, proto,
+        os.path.join(bazel_bin, rule_dir, proto + '_', import_base, rule_dir, proto,
                      generated_file)).pop()
 
     if os.path.isdir(output_dir):

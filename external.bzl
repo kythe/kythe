@@ -139,15 +139,15 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "org_brotli",
-        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
-        strip_prefix = "brotli-1.0.7",
+        sha256 = "f9e8d81d0405ba66d181529af42a3354f838c939095ff99930da6aa9cdf6fe46",
+        strip_prefix = "brotli-1.0.9",
         patch_args = ["-p1"],
         patches = [
             "@io_kythe//third_party:brotli/brotli-1.0.7-int-float-conversion.patch",
         ],
         urls = [
-            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
-            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.9.tar.gz",
+            "https://github.com/google/brotli/archive/v1.0.9.tar.gz",
         ],
     )
 
@@ -294,8 +294,8 @@ def _go_dependencies():
     go_repository(
         name = "co_honnef_go_tools",
         importpath = "honnef.co/go/tools",
-        sum = "h1:sXmLre5bzIR6ypkjXCDI3jHPssRhc8KD/Ome589sc3U=",
-        version = "v0.0.1-2020.1.3",
+        sum = "h1:W18jzjh8mfPez+AwGLxmOImucz/IFjpNlrKVnaj2YVc=",
+        version = "v0.0.1-2020.1.6",
     )
     go_repository(
         name = "com_github_apache_beam",
@@ -305,8 +305,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:Dm4cSxkGeH8l9OG2jkOodp2Dg6uZjorV0XU8vDy/fa4=",
-        version = "v2.19.0+incompatible",
+        sum = "h1:Y8Q9pZ9V8IKM8EDNOE314D6cJE0neJooK+MxBvCcs1M=",
+        version = "v2.25.0+incompatible",
     )
 
     _gazelle_ignore(
@@ -366,8 +366,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:+IawcoXhCBylN7ccwdwf8LOH2jKq7NavGpEPanrlTzE=",
-        version = "v1.4.4",
+        sum = "h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=",
+        version = "v1.4.5",
     )
 
     go_repository(
@@ -457,8 +457,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:new_export_license.patch",
         ],
-        sum = "h1:ZFgWrT+bLgsYPirOnRfKLYJLvssAegOj/hgyMFdJZe0=",
-        version = "v1.4.1",
+        sum = "h1:JjCZWpVbqXDqFVmTfYWEVTMIYrL/NPdPSCHPJ0T/raM=",
+        version = "v1.4.3",
     )
 
     go_repository(
@@ -471,11 +471,18 @@ def _go_dependencies():
         sum = "h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=",
         version = "v0.0.1",
     )
-
-    _gazelle_ignore(
+    go_repository(
         name = "com_github_google_brotli",
-        actual = "org_brotli_go",
         importpath = "github.com/google/brotli",
+        sum = "h1:vgeehFs4lfG6xStg/Tr5Kjt4nEHhly0I8te7HKwPUfY=",
+        version = "v1.0.9",
+    )
+
+    go_repository(
+        name = "com_github_google_brotli_go_cbrotli",
+        importpath = "github.com/google/brotli/go/cbrotli",
+        sum = "h1:NUJM1LC//7oSHaLGpvXhdiT+jjESax/2UJUcQCJrTA4=",
+        version = "v0.0.0-20201008125033-fcda9db7fd55",
     )
 
     go_repository(
@@ -920,16 +927,6 @@ def _go_dependencies():
         version = "v0.0.8",
     )
 
-    maybe(
-        http_archive,
-        name = "org_brotli_go",
-        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
-        strip_prefix = "brotli-1.0.7/go",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
-            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
-        ],
-    )
     go_repository(
         name = "org_golang_google_api",
         importpath = "google.golang.org/api",
@@ -950,8 +947,8 @@ def _go_dependencies():
     go_repository(
         name = "org_golang_google_genproto",
         importpath = "google.golang.org/genproto",
-        sum = "h1:pyQjO6BnPvrPMldYxgDlXq9PLahtc0EKnUTYX1pWwXU=",
-        version = "v0.0.0-20200313141609-30c55424f95d",
+        sum = "h1:d4k3uIU763E31Rk4UZPA47oOoBymMsDImV3U4mGhX9E=",
+        version = "v0.0.0-20201026171402-d4b8fe4fd877",
     )
     go_repository(
         name = "org_golang_google_grpc",
@@ -966,8 +963,8 @@ def _go_dependencies():
     go_repository(
         name = "org_golang_google_protobuf",
         importpath = "google.golang.org/protobuf",
-        sum = "h1:cJv5/xdbk1NnMPR1VP9+HU6gupuG9MLBoH1r6RHZ2MY=",
-        version = "v1.22.0",
+        sum = "h1:Ejskq+SyPohKW+1uil0JJMtmHCgJPJ/qWTxr8qp+R4c=",
+        version = "v1.25.0",
     )
     go_repository(
         name = "org_golang_x_crypto",
@@ -1002,8 +999,8 @@ def _go_dependencies():
     go_repository(
         name = "org_golang_x_mod",
         importpath = "golang.org/x/mod",
-        sum = "h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=",
-        version = "v0.2.0",
+        sum = "h1:RM4zey1++hCTbCVQfnWeKs9/IEsaBLA8vTkd0WVtmH4=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "org_golang_x_net",
