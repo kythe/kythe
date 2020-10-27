@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
@@ -44,12 +45,13 @@ def _proto_dependencies():
     maybe(
         build_event_stream_repository,
         name = "build_event_stream_proto",
-        revision = "2.2.0",
+        revision = "3.7.0",
         sha256s = {
-            "build_event_stream.proto": "aa71ad693b7b474517ee3702318603d76baef35a6c13e9f8980f3962d91c2827",
+            "build_event_stream.proto": "0127da17b5cd40e61b0dcb9f18bebedd7a4851538fa39627c55ffdb01839bef2",
             "command_line.proto": "a6fb6591aa50794431787169bc4fae16105ef5c401e7c30ecf0f775e0ab25c2c",
             "invocation_policy.proto": "5312a440a5d16e9bd72cd8561ad2f5d2b29579f19df7e13af1517c6ad9e7fa64",
             "option_filters.proto": "e3e8dfa9a4e05683bf1853a0be29fae46c753b18ad3d42b92bedcb412577f20f",
+            "failure_details.proto": "0dca56c2f749459d76094af2fb1844e65ff65d11208bcbe7302b0570b5a1d007",
         },
     )
 
@@ -70,13 +72,11 @@ def _cc_dependencies():
         http_archive,
         name = "org_libzip",
         build_file = "@io_kythe//third_party:libzip.BUILD",
-        sha256 = "a5d22f0c87a2625450eaa5e10db18b8ee4ef17042102d04c62e311993a2ba363",
-        strip_prefix = "libzip-rel-1-5-1",
+        strip_prefix = "libzip-1.7.3",
+        sha256 = "0e2276c550c5a310d4ebf3a2c3dfc43fb3b4602a072ff625842ad4f3238cb9cc",
         urls = [
-            # Bazel does not like the official download link at libzip.org,
-            # so use the GitHub release tag.
-            "https://mirror.bazel.build/github.com/nih-at/libzip/archive/rel-1-5-1.zip",
-            "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
+            "https://mirror.bazel.build/github.com/nih-at/libzip/releases/download/v1.7.3/libzip-1.7.3.tar.gz",
+            "https://github.com/nih-at/libzip/releases/download/v1.7.3/libzip-1.7.3.tar.gz",
         ],
     )
 
@@ -91,8 +91,8 @@ def _cc_dependencies():
         remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
         # branch = "master-with-bazel",
-        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
-        shallow_since = "1566966435 +0000",
+        commit = "3ef9a6b03503ae25f9267473073fea9c39d9cdac",
+        shallow_since = "1603819042 +0000",
     )
 
     maybe(
@@ -112,27 +112,24 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "0e9921b75a0fdd639a504ec8443fc1fe801becd7",
-        sha256 = "8061df0ebbd3f599bcd3f5e57fb8003564d50a9b6a81a7f968fb0196b952365d",
+        commit = "5bf048b8425cc0a342e4647932de19e25ffd6ad7",
+        sha256 = "6bc23aa3b5adfc8ca8831d7fc95e4cedae4db2eadc93e396bc7e8a099158fffb",
     )
 
     maybe(
         github_archive,
         name = "com_google_googletest",
         repo_name = "google/googletest",
-        sha256 = "4a4cbf4bb09606f42a0cdd6f0893fbf1e257243fda64bc5b585d027808a3a64b",
-        commit = "61f010d703b32de9bfb20ab90ece38ab2f25977f",
+        commit = "3005672db1d05f2378f642b61faa96f85498befe",
+        sha256 = "d87849e281d376a1c955f867cf10be0d672ff41dbe7fd600bcc2faa9bcb6e23f",
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_github_google_glog",
-        strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
+        repo_name = "google/glog",
+        commit = "ba8a9f6952d04d1403b97df24e6836227751454e",
         sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
-            "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
-        ],
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
@@ -1175,6 +1172,7 @@ def kythe_dependencies(sample_ui = True):
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
+    bazel_skylib_workspace()
     _proto_dependencies()
     _cc_dependencies()
     _go_dependencies()
