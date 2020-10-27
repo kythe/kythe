@@ -4,6 +4,10 @@ package(
 
 load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
 
+PACKAGE_VERSION = "1.7.3"
+
+PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_MICRO = PACKAGE_VERSION.split(".")
+
 _CMAKE_VARIABLES = {
     "INT16_T_LIBZIP": 2,
     "INT32_T_LIBZIP": 4,
@@ -13,10 +17,10 @@ _CMAKE_VARIABLES = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
     "LONG_LIBZIP": 8,
     "LONG_LONG_LIBZIP": 8,
-    "PACKAGE_VERSION": "1.5.1",
-    "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MICRO": "1",
-    "PACKAGE_VERSION_MINOR": "5",
+    "PACKAGE_VERSION": PACKAGE_VERSION,
+    "PACKAGE_VERSION_MAJOR": PACKAGE_VERSION_MAJOR,
+    "PACKAGE_VERSION_MICRO": PACKAGE_VERSION_MICRO,
+    "PACKAGE_VERSION_MINOR": PACKAGE_VERSION_MINOR,
     "SHORT_LIBZIP": 2,
     "SIZEOF_OFF_T": 8,
     "SIZE_T_LIBZIP": 8,
@@ -48,7 +52,7 @@ _CMAKE_VARIABLES.update(dict([
 
 _SUBSTITUTIONS = {
     "@PACKAGE@": "libzip",
-    "@VERSION@": "1.5.1",  # Keep in sync with actual package!
+    "@VERSION@": PACKAGE_VERSION,
 }
 
 _DEFINES = {
@@ -129,11 +133,10 @@ expand_template(
 _VARS = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
     "ZIP_NULLABLE_DEFINES": "",
-    #"SIZEOF_SIZE_T": "sizeof(size_t)",
-    "PACKAGE_VERSION": "1.7.3",
-    "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MICRO": "3",
-    "PACKAGE_VERSION_MINOR": "7",
+    "PACKAGE_VERSION": PACKAGE_VERSION,
+    "PACKAGE_VERSION_MAJOR": PACKAGE_VERSION_MAJOR,
+    "PACKAGE_VERSION_MICRO": PACKAGE_VERSION_MICRO,
+    "PACKAGE_VERSION_MINOR": PACKAGE_VERSION_MINOR,
 }
 
 _VARS.update(dict([
