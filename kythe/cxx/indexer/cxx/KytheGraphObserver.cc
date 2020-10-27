@@ -1144,8 +1144,8 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
 void KytheGraphObserver::applyMetadataFile(clang::FileID id,
                                            const clang::FileEntry* file,
                                            const std::string& search_string) {
-  const llvm::MemoryBuffer* buffer =
-      SourceManager->getMemoryBufferForFile(file);
+  const llvm::Optional<llvm::MemoryBufferRef> buffer =
+      SourceManager->getMemoryBufferForFileOrNone(file);
   if (!buffer) {
     absl::FPrintF(stderr, "Couldn't get content for %s\n",
                   file->getName().str());
@@ -1286,10 +1286,9 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
             state.context, state.vname.signature(), build_config_));
         if (client_->Claim(claimant_, state.vname)) {
           if (recorded_files_.insert(entry).second) {
-            bool was_invalid = false;
-            const llvm::MemoryBuffer* buf =
-                SourceManager->getMemoryBufferForFile(entry, &was_invalid);
-            if (was_invalid || !buf) {
+            const llvm::Optional<llvm::MemoryBufferRef> buf =
+                SourceManager->getMemoryBufferForFileOrNone(entry);
+            if (!buf) {
               // TODO(zarko): diagnostic logging.
             } else {
               recorder_->AddFileContent(VNameRef(state.base_vname),

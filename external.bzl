@@ -1100,7 +1100,6 @@ def _js_dependencies():
         package_lock_json = "@io_kythe//:package-lock.json",
     )
 
-
 def _bindings():
     maybe(
         native.bind,
@@ -1198,14 +1197,11 @@ def kythe_dependencies(sample_ui = True):
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "io_kythe_llvmbzlgen",
-        sha256 = "6d077cfe818d08ea9184d71f73581135b69c379692771afd88392fa1fee018ac",
-        urls = [
-            "https://mirror.bazel.build/github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
-            "https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
-        ],
-        strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
+        repo_name = "kythe/llvmbzlgen",
+        commit = "7ca9c6146d7d2363a36da6a5eb76f8e139c8d3fe",
+        sha256 = "809da3c5b5c918d9321cfec01b38c46f0c99cf562d9ad3d79ec45e4b8e2d9b3c",
     )
 
     _bindings()

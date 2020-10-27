@@ -475,10 +475,9 @@ void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
             source_manager->getFileEntryForID(loc_id)) {
       if (file_entry->getName() == enclosing_pass_->tracker()->filename()) {
         enclosing_pass_->tracker()->set_file_begin(loc);
-        bool valid = true;
-        const auto* buffer =
-            source_manager->getMemoryBufferForFile(file_entry, &valid);
-        if (valid && buffer) {
+        const auto buffer =
+            source_manager->getMemoryBufferForFileOrNone(file_entry);
+        if (buffer) {
           enclosing_pass_->tracker()->SetInitialContent(buffer->getBuffer());
         }
         tracked_file_ = file_entry;
