@@ -343,38 +343,16 @@ def _go_dependencies():
         sum = "h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=",
         version = "v0.2.1",
     )
-    go_repository(
-        name = "com_github_chzyer_logex",
-        importpath = "github.com/chzyer/logex",
-        sum = "h1:Swpa1K6QvQznwJRcfTfQJmTE72DqScAa40E+fbHEXEE=",
-        version = "v1.1.10",
-    )
-    go_repository(
-        name = "com_github_chzyer_readline",
-        importpath = "github.com/chzyer/readline",
-        sum = "h1:fY5BOSpyZCqRo5OhCuC+XN+r/bBCmeuuJtjz+bCNIf8=",
-        version = "v0.0.0-20180603132655-2972be24d48e",
-    )
-    go_repository(
-        name = "com_github_chzyer_test",
-        importpath = "github.com/chzyer/test",
-        sum = "h1:q763qf9huN11kDQavWsoZXJNW3xEE4JJyHa5Q25/sd8=",
-        version = "v0.0.0-20180213035817-a1ea475d72b1",
-    )
-
+    _gazelle_ignore(name = "com_github_chzyer_logex")
+    _gazelle_ignore(name = "com_github_chzyer_readline")
+    _gazelle_ignore(name = "com_github_chzyer_test")
     go_repository(
         name = "com_github_client9_misspell",
         importpath = "github.com/client9/misspell",
         sum = "h1:ta993UF76GwbvJcIo3Y68y/M3WxlpEHPWIGDkJYwzJI=",
         version = "v0.3.4",
     )
-    go_repository(
-        name = "com_github_cncf_udpa_go",
-        importpath = "github.com/cncf/udpa/go",
-        sum = "h1:WBZRG4aNOuI15bLRrCgN8fCq8E5Xuty6jGbmSNEvSsU=",
-        version = "v0.0.0-20191209042840-269d4d468f6f",
-    )
-
+    _gazelle_ignore(name = "com_github_cncf_udpa_go")
     go_repository(
         name = "com_github_creachadair_staticfile",
         importpath = "github.com/creachadair/staticfile",
@@ -603,12 +581,8 @@ def _go_dependencies():
         sum = "h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=",
         version = "v1.0.0",
     )
-    go_repository(
-        name = "com_github_ianlancetaylor_demangle",
-        importpath = "github.com/ianlancetaylor/demangle",
-        sum = "h1:UDMh68UUwekSh5iP2OMhRRZJiiBccgV7axzUG8vi56c=",
-        version = "v0.0.0-20181102032728-5e5cf60278f6",
-    )
+
+    _gazelle_ignore(name = "com_github_ianlancetaylor_demangle")
 
     go_repository(
         name = "com_github_jmhodges_levigo",
@@ -817,12 +791,8 @@ def _go_dependencies():
         sum = "h1:nIPpBwaJSVYIxUFsDv3M8ofmx9yWTog9BfvIu0q41lo=",
         version = "v0.0.0-20171230120015-48954b6210f8",
     )
-    go_repository(
-        name = "com_github_yuin_goldmark",
-        importpath = "github.com/yuin/goldmark",
-        sum = "h1:nqDD4MMMQA0lmWq03Z2/myGPYLQoXtmi0rGVs95ntbo=",
-        version = "v1.1.27",
-    )
+
+    _gazelle_ignore(name = "com_github_yuin_goldmark")
 
     go_repository(
         name = "com_google_cloud_go",
@@ -926,18 +896,8 @@ def _go_dependencies():
         sum = "h1:HfqmD5MEmC0zvwBuF187nq9mdnXjXsSivRiXN7SmRkE=",
         version = "v0.2.0",
     )
-    go_repository(
-        name = "io_rsc_quote_v3",
-        importpath = "rsc.io/quote/v3",
-        sum = "h1:9JKUTTIUgS6kzR9mK1YuGKv6Nl+DijDNIc0ghT58FaY=",
-        version = "v3.1.0",
-    )
-    go_repository(
-        name = "io_rsc_sampler",
-        importpath = "rsc.io/sampler",
-        sum = "h1:7uVkIFmeBqHfdjD+gZwtXXI+RODJ2Wc4O7MPEh/QiW4=",
-        version = "v1.3.0",
-    )
+    _gazelle_ignore(name = "io_rsc_quote_v3")
+    _gazelle_ignore(name = "io_rsc_sampler")
 
     go_repository(
         name = "org_bitbucket_creachadair_shell",
@@ -1009,7 +969,6 @@ def _go_dependencies():
         sum = "h1:cJv5/xdbk1NnMPR1VP9+HU6gupuG9MLBoH1r6RHZ2MY=",
         version = "v1.22.0",
     )
-
     go_repository(
         name = "org_golang_x_crypto",
         importpath = "golang.org/x/crypto",
