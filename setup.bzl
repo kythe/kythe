@@ -38,10 +38,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "e5de048e72612598c45f564202f6a3c74616be4ffd2dbd6f7bc75045f8ecbdce",
+        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.4/rules_go-v0.23.4.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.4/rules_go-v0.23.4.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
         ],
     )
 
@@ -75,10 +75,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "bfd86b3cbe855d6c16c6fce60d76bd51f5c8dbc9cfcaef7a2bb5c1aafd0710e8",
+        sha256 = "b85f48fa105c4403326e9525ad2b2cc437babaa6e15a3fc0b1dbab0ab064bc7c",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
         ],
     )
 
