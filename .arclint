@@ -2,7 +2,7 @@
   "linters": {
     "spelling": {
       "type": "spelling",
-      "exclude": "(^third_party)"
+      "exclude": "(^third_party|kythe/java/com/google/devtools/kythe/platform/java/helpers/SignatureGenerator.java)"
     },
     "chmod": {
       "type": "chmod",

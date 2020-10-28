@@ -24,8 +24,8 @@ go_library(
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:schema_go_proto",
         "//kythe/proto:serving_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
         "@org_golang_x_net//trace:go_default_library",
     ],
 )

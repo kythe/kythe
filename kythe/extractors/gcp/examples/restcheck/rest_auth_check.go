@@ -39,7 +39,7 @@ var (
 	projectID = flag.String("project_id", "", "The GCP Cloud Build project ID to use")
 )
 
-func verifyFlags() {
+func checkFlags() {
 	if *projectID == "" {
 		log.Fatalf("Must specify valid -project_id")
 	}
@@ -47,7 +47,7 @@ func verifyFlags() {
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	checkFlags()
 
 	httpClient, err := google.DefaultClient(context.Background(), cloudbuild.CloudPlatformScope)
 	if err != nil {

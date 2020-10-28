@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
@@ -55,12 +57,12 @@ struct WithStatusFn {
     return status->ok();
   }
 
-  Status* status;
+  absl::Status* status;
   T function;
 };
 
 template <typename T>
-WithStatusFn<T> WithStatus(Status* status, T function) {
+WithStatusFn<T> WithStatus(absl::Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 
@@ -73,32 +75,33 @@ std::string TestOutputFile(absl::string_view basename) {
   return absl::StrCat(TestTmpdir(), "/", filename);
 }
 
-StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+absl::StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 CopyIndex(IndexReader* reader, IndexWriter* writer) {
-  Status error;
+  absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
-    auto unit = reader->ReadUnit(digest);
-    if (!unit.ok()) {
-      return unit.status();
-    }
-    auto written_digest = writer->WriteUnit(*unit);
-    if (!written_digest.ok()) {
-      return written_digest.status();
-    }
-    for (const auto& file : unit->unit().required_input()) {
-      auto data = reader->ReadFile(file.info().digest());
-      if (!data.ok()) {
-        return data.status();
-      }
-      auto written_file = writer->WriteFile(*data);
-      if (!written_file.ok()) {
-        return written_file.status();
-      }
-      digests[*written_digest].insert(*written_file);
-    }
-    return OkStatus();
-  }));
+  absl::Status scan =
+      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+        auto unit = reader->ReadUnit(digest);
+        if (!unit.ok()) {
+          return unit.status();
+        }
+        auto written_digest = writer->WriteUnit(*unit);
+        if (!written_digest.ok()) {
+          return written_digest.status();
+        }
+        for (const auto& file : unit->unit().required_input()) {
+          auto data = reader->ReadFile(file.info().digest());
+          if (!data.ok()) {
+            return data.status();
+          }
+          auto written_file = writer->WriteFile(*data);
+          if (!written_file.ok()) {
+            return written_file.status();
+          }
+          digests[*written_digest].insert(*written_file);
+        }
+        return absl::OkStatus();
+      }));
   if (!scan.ok()) {
     return scan;
   }
@@ -108,20 +111,21 @@ CopyIndex(IndexReader* reader, IndexWriter* writer) {
   return digests;
 }
 
-StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+absl::StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 ReadDigests(IndexReader* reader) {
-  Status error;
+  absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
-    auto unit = reader->ReadUnit(digest);
-    if (!unit.ok()) {
-      return unit.status();
-    }
-    for (const auto& file : unit->unit().required_input()) {
-      digests[std::string(digest)].insert(file.info().digest());
-    }
-    return OkStatus();
-  }));
+  absl::Status scan =
+      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+        auto unit = reader->ReadUnit(digest);
+        if (!unit.ok()) {
+          return unit.status();
+        }
+        for (const auto& file : unit->unit().required_input()) {
+          digests[std::string(digest)].insert(file.info().digest());
+        }
+        return absl::OkStatus();
+      }));
   if (!scan.ok()) {
     return scan;
   }
@@ -139,12 +143,14 @@ TEST_P(FullKzipWriterTest, RecapitulatesSimpleKzip) {
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
   proto::GoDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
 
   std::string output_file = TestOutputFile("stringset.kzip");
   LOG(INFO) << output_file;
-  StatusOr<IndexWriter> writer = KzipWriter::Create(output_file, GetParam());
+  absl::StatusOr<IndexWriter> writer =
+      KzipWriter::Create(output_file, GetParam());
   ASSERT_TRUE(writer.ok()) << writer.status();
   auto written_digests = CopyIndex(&*reader, &*writer);
   ASSERT_TRUE(written_digests.ok()) << written_digests.status();
@@ -162,7 +168,7 @@ TEST_P(FullKzipWriterTest, RecapitulatesSimpleKzip) {
 
 TEST(KzipWriterTest, IncludesDirectoryEntries) {
   std::string dummy_file = TestOutputFile("dummy.kzip");
-  StatusOr<IndexWriter> writer = KzipWriter::Create(dummy_file);
+  absl::StatusOr<IndexWriter> writer = KzipWriter::Create(dummy_file);
   ASSERT_TRUE(writer.ok()) << writer.status();
   {
     auto digest = writer->WriteFile("contents");
@@ -193,13 +199,13 @@ TEST(KzipWriterTest, IncludesDirectoryEntries) {
       // We don't really care about the rest of the entries, but it's easy
       // enough to fix the order of the subdirectories and minimally harmful.
       ElementsAre(
-          "root/", "root/files/", "root/units/",
+          "root/", "root/files/", "root/pbunits/",
           "root/files/"
           "d1b2a59fbea7e20077af9f91b27e95e865061b270be03ff539ab3b73587882e8"));
 }
 
 TEST(KzipWriterTest, DuplicateFilesAreIgnored) {
-  StatusOr<IndexWriter> writer =
+  absl::StatusOr<IndexWriter> writer =
       KzipWriter::Create(TestOutputFile("dummy.kzip"));
   ASSERT_TRUE(writer.ok()) << writer.status();
   {

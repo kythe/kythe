@@ -201,9 +201,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             nodeConsumer,
             fileManager,
             metadataLoaders,
-            config.getJvmMode() == JavaIndexerConfig.JvmMode.SEMANTIC
-                ? new JvmGraph(statistics, entrySets.getEmitter())
-                : null,
+            new JvmGraph(statistics, entrySets.getEmitter()),
             config)
         .scan(compilation, null);
   }
@@ -341,18 +339,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     getScope(ctx).ifPresent(scope -> entrySets.emitEdge(classNode, EdgeKind.CHILDOF, scope));
 
     NestingKind nestingKind = classDef.sym.getNestingKind();
-    if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
-      if (jvmGraph != null) {
-        // Emit corresponding JVM node
-        JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
-        VName jvmNode =
-            jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
-        entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
-      } else {
-        // Emit NAME nodes for the jvm binary name of classes.
-        VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
-        entrySets.emitEdge(classNode, EdgeKind.NAMED, nameNode);
-      }
+    if (nestingKind != NestingKind.LOCAL
+        && nestingKind != NestingKind.ANONYMOUS
+        && !isErroneous(classDef.sym)) {
+      // Emit corresponding JVM node
+      JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
+      VName jvmNode = jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
+      entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -490,21 +484,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
 
-    // Emit corresponding JVM node
-    if (jvmGraph != null) {
+    if (!isErroneous(methodDef.sym)) {
+      // Emit corresponding JVM node
       CorpusPath corpusPath = entrySets.jvmCorpusPath(methodDef.sym);
       JvmGraph.Type.MethodType methodJvmType =
           toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
-      ReferenceType parentClass = referenceType(externalType(owner.getTree().type.tsym));
+      ReferenceType parentClass = referenceType(externalType(methodDef.sym.enclClass()));
       String methodName = methodDef.name.toString();
       VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(methodNode, EdgeKind.NAMED, jvmNode);
 
       for (int i = 0; i < params.size(); i++) {
         JavaNode param = params.get(i);
         VName paramJvmNode =
             jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
         entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
+        entrySets.emitEdge(param.getVName(), EdgeKind.NAMED, paramJvmNode);
         entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
       }
     }
@@ -597,8 +593,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
     for (Type target : getTargets(lambda)) {
-      VName targetNode = getNode(target.asElement());
-      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+      if (target != null) {
+        VName targetNode = getNode(target.asElement());
+        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+      }
     }
 
     scan(lambda.body, ctx);
@@ -658,14 +656,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitComment(varDef, varNode);
     }
 
-    // Emit corresponding JVM node
-    if (jvmGraph != null && varDef.sym.getKind().isField()) {
+    if (varDef.sym.getKind().isField() && !isErroneous(varDef.sym)) {
+      // Emit corresponding JVM node
       VName jvmNode =
           jvmGraph.emitFieldNode(
               entrySets.jvmCorpusPath(varDef.sym),
-              referenceType(externalType(owner.getTree().type.tsym)),
+              referenceType(externalType(varDef.sym.enclClass())),
               varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(varNode, EdgeKind.NAMED, jvmNode);
     }
 
     getScope(ctx).ifPresent(scope -> entrySets.emitEdge(varNode, EdgeKind.CHILDOF, scope));
@@ -855,6 +854,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scanList(newClass.getArguments(), ctx);
     scan(newClass.getEnclosingExpression(), ctx);
     scan(newClass.getClassBody(), ctx);
+
     return scan(newClass.getIdentifier(), ctx);
   }
 
@@ -1089,42 +1089,42 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
     }
 
-    if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
-      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
-      // related JVM node to accommodate cross-language references.
-      Type type = externalType(sym);
-      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
-      if (sym instanceof Symbol.VarSymbol) {
-        if (((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
-          ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
-          String fieldName = sym.getSimpleName().toString();
-          return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
-        }
-      } else if (type instanceof Type.MethodType) {
-        JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
-        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
-        String methodName = sym.getQualifiedName().toString();
-        return new JavaNode(
-            JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType));
-      } else if (type instanceof Type.ClassType) {
-        return new JavaNode(JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type)));
-      }
+    VName jvmNode = getJvmNode(sym);
+
+    JavaNode node =
+        signatureGenerator
+            .getSignature(sym)
+            .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+            .orElse(null);
+    if (node != null && jvmNode != null) {
+      entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
     }
 
-    return signatureGenerator
-        .getSignature(sym)
-        .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
-        .orElse(null);
+    return node;
   }
 
-  private boolean isExternal(Symbol sym) {
-    // TODO(schroederc): check if Symbol comes from any source file in compilation
-    // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
-    //                   a Java compilation (vs. some other JVM language)
-    ClassSymbol cls = sym.enclClass();
-    return cls != null
-        && cls.sourcefile != filePositions.getSourceFile()
-        && !JavaEntrySets.fromJDK(sym);
+  private VName getJvmNode(Symbol sym) {
+    if (isErroneous(sym)) {
+      return null;
+    }
+
+    Type type = externalType(sym);
+    CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
+    if (sym instanceof Symbol.VarSymbol) {
+      if (sym.getKind() == ElementKind.FIELD) {
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+        String fieldName = sym.getSimpleName().toString();
+        return JvmGraph.getFieldVName(corpusPath, parentClass, fieldName);
+      }
+    } else if (type instanceof Type.MethodType) {
+      JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
+      ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+      String methodName = sym.getQualifiedName().toString();
+      return JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType);
+    } else if (type instanceof Type.ClassType) {
+      return JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type));
+    }
+    return null;
   }
 
   private void visitAnnotations(
@@ -1506,6 +1506,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return fullPath;
   }
 
+  /** Check if a {@link Symbol} is erroneous or produces an exception. */
+  private boolean isErroneous(Symbol sym) {
+    try {
+      return sym.asType().isErroneous() || sym.enclClass().asType().isErroneous();
+    } catch (Symbol.CompletionFailure | AssertionError | NullPointerException f) {
+      return true;
+    }
+  }
+
   private Type externalType(Symbol sym) {
     return sym.externalType(Types.instance(javaContext));
   }
@@ -1538,8 +1547,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case SHORT:
         return JvmGraph.Type.shortType();
 
+      case ERROR:
+        // Assume reference type; avoid crashing
+        return referenceType(type);
+
       default:
-        throw new IllegalStateException("unhandled Java Type: " + type.getTag());
+        throw new IllegalStateException("unhandled Java Type: " + type.getTag() + " -- " + type);
     }
   }
 

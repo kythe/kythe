@@ -35,9 +35,10 @@ def _atomize_entries_impl(ctx):
     postprocessor = ctx.executable._postprocessor
     atomizer = ctx.executable._atomizer
 
-    inputs = depset(ctx.files.srcs)
-    for dep in ctx.attr.deps:
-        inputs += dep.kythe_entries
+    inputs = depset(ctx.files.srcs, transitive = [
+        dep.kythe_entries
+        for dep in ctx.attr.deps
+    ])
 
     sort_args = ctx.actions.args()
     sort_args.add_all([zcat, entrystream, sorted_entries])

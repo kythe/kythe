@@ -1,4 +1,4 @@
-# proto-file: any_type.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/any_type.proto
 # proto-message: any_type_test.Message
 
 #- @str_field ref StrField
@@ -26,9 +26,9 @@ repeated_details_field: {
 #- @repeated_details_field ref RepeatedDetailsField
 repeated_details_field {
 
-  #- @type_url ref vname("4.0.2.0", _,"","external/com_google_protobuf/src/google/protobuf/any.proto",_)
+  #- @type_url ref vname("4.0.2.0",_,_,"google/protobuf/any.proto",_)
   type_url: "type.googleapis.com/any_type_test.Message2"
-  #- @value ref vname("4.0.2.1", _,"","external/com_google_protobuf/src/google/protobuf/any.proto",_)
+  #- @value ref vname("4.0.2.1",_,_,"google/protobuf/any.proto",_)
   value: ""
 }
 

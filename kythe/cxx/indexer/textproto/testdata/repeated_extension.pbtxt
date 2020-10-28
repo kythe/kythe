@@ -1,4 +1,4 @@
-# proto-file: repeated_extension.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/repeated_extension.proto
 # proto-message: repeated_extension_test.Extendee
 
 #- @"repeated_extension_test.Extension.ext" ref Ext

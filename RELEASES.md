@@ -1,5 +1,148 @@
 # Release Notes
 
+## [v0.0.48] - 2020-09-01
+* **runextractor:**
+  * Pass flags to the compdb extractor (#4663) ([38fd346](https://github.com/kythe/kythe/commit/38fd346e0bbbf101334d7101a4031c320ac5c269))
+
+## [v0.0.47] - 2020-08-18
+* Include stacktraces from assertion failures in C++ tools (#4655) ([784e8ee7](https://github.com/kythe/kythe/commit/784e8ee7da2c5fe8eb8c246393f9d700261fd344))
+
+## [v0.0.46] - 2020-08-13
+
+#### Features
+
+*   Create new Rust Bazel extractor (#4602) ([a030ce48](https://github.com/kythe/kythe/commit/a030ce48ddf46b171736d136af10f8462c5a302a))
+*   Add library for generating Rust save_analysis files (#4594) ([c84b2373](https://github.com/kythe/kythe/commit/c84b2373f36aa783a8d2ef9db5050dab78655b61))
+*   Add support for defining environment variables passed to extractors (#4592) ([ade706d5](https://github.com/kythe/kythe/commit/ade706d5409a9a997f85d14a1251033577f1f5a1))
+* **cxx_indexer:**
+  *  record var-to-var influence (#4559) ([e8461650](https://github.com/kythe/kythe/commit/e8461650c5665aa6ead02a6b35124b10ab5598a1))
+  *  annotate edges we know are writes to vars and ivars (#4558) ([c3f64566](https://github.com/kythe/kythe/commit/c3f645667b9bb72747f1ac9f0d63c84099537a03))
+  *  blame variable references on the surrounding context (#4556) ([b9ea1a9c](https://github.com/kythe/kythe/commit/b9ea1a9c691fd994e6ae9dcd8ebfb1fb157b7173))
+* **extraction:**  generate build metadata kzip in bazel-extractor docker image (#4554) ([7a528667](https://github.com/kythe/kythe/commit/7a5286676e1d86fd3fa1987b8039c2615c8a3f2f))
+* **fuchsia:**  Fuchsia-specific extractor (#4624) ([38346f2e](https://github.com/kythe/kythe/commit/38346f2eb38ba0e73c72cf24884e4dbbedb07447), closes [#4606](https://github.com/kythe/kythe/issues/4606))
+* **go-extractor image:**  record commit timestamp in kzip (#4582) ([5813326c](https://github.com/kythe/kythe/commit/5813326c593ed7be77ceee2f9cb3c3cfd63501c7))
+* **java_common:**  add ByteString overloads for fact value conversions (#4610) ([a95d2e06](https://github.com/kythe/kythe/commit/a95d2e0620202fa97169e6091cad03eb191d0183))
+* **rust:**
+  *  Add support for Rust cross-references (#4641) ([8555988e](https://github.com/kythe/kythe/commit/8555988e1ed6305c6ebbe3c32c9ab41a3410a519))
+  *  Makes the extractor more robust (#4640) ([358eac11](https://github.com/kythe/kythe/commit/358eac11735b802d2686f0f20e301c179383f1b2), breaks [#](https://github.com/kythe/kythe/issues/))
+  *  Support emitting remaining definition types (#4638) ([61dc64c1](https://github.com/kythe/kythe/commit/61dc64c104ff05dde731991e9e4ae897a1531428))
+  *  Add support for indexing enums (#4633) ([b9844877](https://github.com/kythe/kythe/commit/b9844877a2f826cca2f1d7e3c156136b16cc88d1))
+  *  Adds Fuchsia Rust extractor to release (#4634) ([29d7f12e](https://github.com/kythe/kythe/commit/29d7f12eabffb6f1d26f4fa2d5a07c0284a9f880))
+  *  Add support to the Rust indexer for emitting module definitions and anchors (#4629) ([405ee13f](https://github.com/kythe/kythe/commit/405ee13f587b0323bf764328679fbb69137cc7fa))
+  *  Support emitting function definitions (#4617) ([b2876116](https://github.com/kythe/kythe/commit/b2876116a9f2795569e51f0e128ce603ce94c997))
+  *  Add Bazel rule for running Rust indexer tests (#4612) ([a0f1f67b](https://github.com/kythe/kythe/commit/a0f1f67bdbd61698bbfc78dc16b8ae475478e64a))
+  *  Create Rust indexer CLI (#4605) ([2dba4dd9](https://github.com/kythe/kythe/commit/2dba4dd904cbbfff5a2ff3dcde5f7b5b930d23d5))
+  *  Unify Kythe Rust dependencies (#4611) ([545968b9](https://github.com/kythe/kythe/commit/545968b919f76a41086eb7db089597dabcf13917))
+  *  Create KytheWriter component for Rust indexer (#4565) ([bf8c25a8](https://github.com/kythe/kythe/commit/bf8c25a8446dbc3a0b60dc00a0695ac659ae22a8))
+  *  Change Rust indexer FileProvider (#4564) ([7852fc43](https://github.com/kythe/kythe/commit/7852fc43ebd660a461f06294444a4362e8bd4b99))
+  *  Create provider and error modules for Rust indexer library (#4550) ([d47857e7](https://github.com/kythe/kythe/commit/d47857e7de04af0f33b60224f649c7daec4bf43f))
+* **textproto:**  index enum values (#4615) ([573ffff4](https://github.com/kythe/kythe/commit/573ffff49ea75ca6c859da72046e1a6fe1d8d63a))
+
+#### Breaking Changes
+
+* **rust:**  Makes the extractor more robust (#4640) ([358eac11](https://github.com/kythe/kythe/commit/358eac11735b802d2686f0f20e301c179383f1b2), breaks [#](https://github.com/kythe/kythe/issues/))
+
+#### Bug Fixes
+
+*   Remove old cargo-kythe directory (#4601) ([e71ea980](https://github.com/kythe/kythe/commit/e71ea98001182e0c1216330aca13bc77c58631d8))
+*   Clean up old Rust tools (#4600) ([9e316b15](https://github.com/kythe/kythe/commit/9e316b15da8fb214869dde0d18d9350fb340ab0b))
+*   allow PushScope to work with braced-init (#4567) ([70374dff](https://github.com/kythe/kythe/commit/70374dffb94eea48ff781a7177fdf296f5749314))
+* **bazel extractor:**  fix path to bazelisk in docker image (#4555) ([468ad47f](https://github.com/kythe/kythe/commit/468ad47f48c02d5ce20eeb64166f489b25e13f4c))
+* **cxx_indexer:**
+  *  avoid an assert check in Clang, silence errors (#4631) ([0a700ac0](https://github.com/kythe/kythe/commit/0a700ac06fb17b7c64213692d545e8e76aa18414))
+  *  handle null init expr (#4622) ([bcdc8e9d](https://github.com/kythe/kythe/commit/bcdc8e9df40a540ca4e04c75f95f83b0950c264b))
+  *  report errors more directly rather than stderr (#4613) ([9e12b4a4](https://github.com/kythe/kythe/commit/9e12b4a44e7361c7c2e6a622cd32f2ad65e3a0c1))
+  *  handle list-init on incomplete types (#4584) ([0bcb51ef](https://github.com/kythe/kythe/commit/0bcb51efd42a02fefe0a1442dc938c91f5725b3f))
+  *  increase flexibility of proto library plugin (#4580) ([d5f3e41b](https://github.com/kythe/kythe/commit/d5f3e41baae5e886c1388d6ee9608f8b5c1d7581))
+  *  make sure init-list-expr has a type (#4571) ([bfc03501](https://github.com/kythe/kythe/commit/bfc0350165abac1e9825c11f5bce4807135caddc))
+  *  properly filter empty ref/init exprs (#4560) ([9fd021cd](https://github.com/kythe/kythe/commit/9fd021cd1aacdc1a473d1826f41d7f43a020d1d8))
+* **java_indexer:**  workaround JDK bug on Java 11 (#4614) ([15cea9b3](https://github.com/kythe/kythe/commit/15cea9b3825b65d416004946778181598f54cd6a))
+* **rust:**
+  *  Fixes the kzip generation (#4650) ([5b74224c](https://github.com/kythe/kythe/commit/5b74224c2cdc908b584818eddc0f24178eba1516))
+  *  Fix definition anchors and xrefs in the indexer (#4645) ([00bb6402](https://github.com/kythe/kythe/commit/00bb6402244a451c6af11cc49989a67a9c2f8dd4))
+  *  write_all instead of write in the extractor (#4646) ([8cab33ed](https://github.com/kythe/kythe/commit/8cab33ed2d69ed9d56820b082e4059b2fd0259ae))
+  *  Fix Rust indexer issue with Trait definitions (#4644) ([8750956d](https://github.com/kythe/kythe/commit/8750956d168de91d2a33362200f011a533cf06f7))
+  *  Fix bugs in the Rust implementation (#4642) ([bfc0cc58](https://github.com/kythe/kythe/commit/bfc0cc584b626725d6db4105bc3806653f05bd7a))
+  *  Fix fuchsia_extractor test data (#4637) ([9e1eedcd](https://github.com/kythe/kythe/commit/9e1eedcd3cf347aa91a323957995369266afaf5f))
+  *  Ensure that Rust extractor creates a top-level folder (#4616) ([297d4440](https://github.com/kythe/kythe/commit/297d44405b7b33e9b5e1810c8e504e9791e148fd))
+* **schema:**
+  *  add defines/implicit and examples (#4628) ([0a500b8f](https://github.com/kythe/kythe/commit/0a500b8f0a55f177919436cb5311a3bcb41e2d88))
+  *  document the use of special spans for implicit modules (#4625) ([f1f9a814](https://github.com/kythe/kythe/commit/f1f9a814c3b3c07f5343623569d56592a0cb290e))
+* **serving:**  turn diffmatchpatch panics into internal errors (#4621) ([88c36a09](https://github.com/kythe/kythe/commit/88c36a096254823ae72895439511d1b365fb88e1))
+* **tools:**  kzip merge uses proto as default encoding (#4649) ([5b77cd64](https://github.com/kythe/kythe/commit/5b77cd640ecc1e642f9f4783fc5e2f925b006996))
+* **verifier:**  compile with the xcode clang (#4553) ([9e75b8af](https://github.com/kythe/kythe/commit/9e75b8af12683655374d0d656ebfc449ad08b523))
+
+## [v0.0.45] - 2020-06-11
+
+#### Bug Fixes
+
+* **cxx_indexer:**  don't emit ref/init for unspecified fields (#4516) ([6e60a52c](https://github.com/kythe/kythe/commit/6e60a52c7752085ff6a023913469e2fd40597016))
+* **java_indexer:**
+  *  don't emit JVM nodes for erroneous types (#4509) ([7f9e3d98](https://github.com/kythe/kythe/commit/7f9e3d98c60e01a9c2d4495ebf6743831365862d))
+* **serving:**  avoid returning a nil node in map (#4487) ([4e303666](https://github.com/kythe/kythe/commit/4e3036668a59804cbc34c7e0a1bd9d987b81a294))
+* **ts_indexer:**  emit ref/call edges from calls. (#4478) ([920aeaae](https://github.com/kythe/kythe/commit/920aeaae6631aa22be14a8bdc4965dfbdb44240c))
+
+#### Features
+
+*   Change kzip writer implementations to use proto kzip encoding by default. (#4547) ([566a83bd](https://github.com/kythe/kythe/commit/566a83bd8f84bb8474e9d4d4078e13fb4edb7567))
+* **compdb:**
+  *  print out command for failed extractions (#4546) ([da636ca2](https://github.com/kythe/kythe/commit/da636ca268677df5a3a6d7b372099a110fa42a0b))
+  *  continue processing other compilations on error (#4544) ([a6022c91](https://github.com/kythe/kythe/commit/a6022c916611835a415c4e79a407806afabbdf20))
+* **java_indexer:**  experimentally emit named edges to JVM nodes (#4490) ([9753c0f6](https://github.com/kythe/kythe/commit/9753c0f68392aad3f63d5133c317ad3b2c82227d))
+* **kzip:**  add subcommand and proto for metadata kzips (#4545) ([f063dae5](https://github.com/kythe/kythe/commit/f063dae5813ed2e135ac57a93699dc493652709a))
+* **rust:**
+  *  Remove deprecated Rust indexer ([4140adfc](https://github.com/kythe/kythe/commit/4140adfca08c894828d0eb91c6c8d3b74fa1886e))
+  *  Add basic Rust extractor ([b31406b8](https://github.com/kythe/kythe/commit/b31406b8523852b8e4f67dd64418c1a700b45f07))
+
+## [v0.0.44] - 2020-04-21
+
+#### Features
+
+*   add lib for reading artifacts from bazel event streams (#4460) ([0a124804](https://github.com/kythe/kythe/commit/0a12480436fdd76d3cca5e2585f94cb73bd1dcee))
+* **api:**  return Documentation node defs even if no facts are found (#4458) ([f03e8e67](https://github.com/kythe/kythe/commit/f03e8e673ef556e8e7b37935f38cfba61d858b86))
+* **build:**  have arc run build test with named config (#4438) ([756521e8](https://github.com/kythe/kythe/commit/756521e8aec17cd5a607be841f95617f6d1f899d))
+* **cxx_extractor:**  cache symlink resolution in PathRealizer (#4483) ([0f3c7f47](https://github.com/kythe/kythe/commit/0f3c7f47491d30488bf85108e6a3cd539fc72d77))
+* **cxx_indexer:**
+  *  emit ref/id to class when class and ctor overlap (#4476) ([0f9ced3e](https://github.com/kythe/kythe/commit/0f9ced3e2490c0dcd2661d8da8cf27168885748d))
+  *  expose a useful internal metadata loading function (#4459) ([f196b3e8](https://github.com/kythe/kythe/commit/f196b3e8b1321395f17ec3e3a5eb6e43e9094046))
+* **indexing:**  add ref/id edge (#4435) ([82ce8fc6](https://github.com/kythe/kythe/commit/82ce8fc68e7669790b5c838b270696071978ef71))
+* **runextractor cmake:**  add -extra_cmake_args option (#4436) ([489b5aec](https://github.com/kythe/kythe/commit/489b5aec0b1920ab528d6c9cd65f58dd690cbe97))
+
+#### Bug Fixes
+
+*   require flex version 2.6 or newer (#4456) ([70f2eeea](https://github.com/kythe/kythe/commit/70f2eeea4c642adbd1897efb91b1a4aab10bbec0))
+* **cxx_indexer:**
+  *  don't check-fail on copy-init-list (#4471) ([addc2410](https://github.com/kythe/kythe/commit/addc2410c5ae9dc94410361ba0185dd08c217f26))
+  *  properly emit ref/init edges in all cases (#4468) ([62d89fe8](https://github.com/kythe/kythe/commit/62d89fe8c1bc7340341ef98874cf1b18ab1460b1))
+  *  emit ref and ref/init for designated inits (#4462) ([5522b38a](https://github.com/kythe/kythe/commit/5522b38a555f7216eaa2502b2ecb91c53e8f98bc))
+  *  emit zero-width spans for entities in macro bodies (#4461) ([118afbe2](https://github.com/kythe/kythe/commit/118afbe2d2c2e32f499eb2be4689b62bbb805002))
+  *  update proto literal support to mirror current lib (#4439) ([74dfc7b2](https://github.com/kythe/kythe/commit/74dfc7b29c73d7111255fec3adccf6d600531a1b))
+* **extraction:**  deterministically write files to kzip (#4479) ([04e2fc9e](https://github.com/kythe/kythe/commit/04e2fc9e0d959ebd3bbed6c1d2f3ff7675e5242c))
+* **java_indexer:**
+  *  only consider Symbols without a source file external (#4472) ([059806cf](https://github.com/kythe/kythe/commit/059806cfc546fe1a8507ed9107da401329661462))
+  *  ensure annotated type vars generate consistent VNames (#4441) ([fd91ce0a](https://github.com/kythe/kythe/commit/fd91ce0a0a9b8e6878c6ba576985a2e59247e9d1))
+  *  only apply jdk override for non-source symbols (#4434) ([1d4ced6c](https://github.com/kythe/kythe/commit/1d4ced6c7da3c33cf367b993d59da7424e19ac55))
+* **java_tests:**  export jdk_kzip (#4443) ([c76ad892](https://github.com/kythe/kythe/commit/c76ad89265154351b27725d49d5cd97795d0b046))
+* **ts_indexer:**  bug related to overridden functions. (#4463) ([7288552a](https://github.com/kythe/kythe/commit/7288552abf729989c10d75e7256fe482cd665a12))
+
+## [v0.0.43] - 2020-03-10
+
+#### Bug Fixes
+
+* **bazel_go_extractor:**  record canonical importpath for archives (#4425) ([9f999295](https://github.com/kythe/kythe/commit/9f99929540d712f534425e15d1b9016d3589f4f1))
+* **cmake docs:**  make output directory before extracting (#4409) ([2ceb0305](https://github.com/kythe/kythe/commit/2ceb03051225c83b43aae688440e4bcaab12a42c))
+* **cxx_indexer:**
+  *  emit ref to class from ctor (#4400) ([3a9b2a7c](https://github.com/kythe/kythe/commit/3a9b2a7c8499eaaf2001792a31b3b43ad58f10dc))
+* **objc_tests:**  run objc tests on more platforms (#4426) ([9ddf0176](https://github.com/kythe/kythe/commit/9ddf017685d189ede377d9a4ae9dc925e1a4f75e))
+* **runextractor:**  set --build_file default to build.gradle (#4393) ([eff63cb2](https://github.com/kythe/kythe/commit/eff63cb2f333f030bee12beada233c5c146100b1))
+
+#### Features
+
+* **build:**  switch to an autoconfigured ubuntu 18.04 image and C++17 (#4385) ([509d7c61](https://github.com/kythe/kythe/commit/509d7c618a5203682566fbcf5fc0572a87dddef2))
+* **example:**  recommend a way to handle TypeScript/&c-style modules (#4357) ([9e9a6571](https://github.com/kythe/kythe/commit/9e9a6571d2d557b4fd84c3a3e0c6a2c98d28d985))
+* **go_indexer:**  support GeneratedCodeInfo .meta textproto files (#4414) ([7c44d34c](https://github.com/kythe/kythe/commit/7c44d34c8a4b92d2821dbf9abaf672fa07c20791))
+* **java_extractor:**  attribute corpus based on sources if unambiguous (#4399) ([7f3868cf](https://github.com/kythe/kythe/commit/7f3868cf9c6fc6dc34646a4ef15affdbdd054bef))
+
 ## [v0.0.42] - 2020-02-19
 
 #### Bug Fixes
@@ -307,7 +450,7 @@
   *  Set cxx extractor kzip times to a constant (#4086) ([642c9330](https://github.com/kythe/kythe/commit/642c933026acafd44f49de81f12e9f21e4fb6de0))
 * **cxx_indexer:**
   *  emit references to dependent names based on name, not location (#4097) ([28cf259b](https://github.com/kythe/kythe/commit/28cf259beac09d1a4d687f87990ddba92ec32bff))
-  *  whitelist and test std::make_shared (#4059) ([4016c5b3](https://github.com/kythe/kythe/commit/4016c5b30a02a85e996c10e4a873e10d1b80c4cd))
+  *  allow and test std::make_shared (#4059) ([4016c5b3](https://github.com/kythe/kythe/commit/4016c5b30a02a85e996c10e4a873e10d1b80c4cd))
   *  allow protobuf metadata in .stubby.h files (#4004) ([29cdef09](https://github.com/kythe/kythe/commit/29cdef09e32b5fc86420e1774ff2d79067dc08a8))
   *  properly reference C++17 deduced templates (#3900) ([69ef278c](https://github.com/kythe/kythe/commit/69ef278c8cc262df5b3437d468e8e304a44b2ad3))
   *  normalize windows paths (#3742) ([167786ac](https://github.com/kythe/kythe/commit/167786acf6f2d10e1e8f3923da0a1f4f59e59a66))
@@ -839,7 +982,13 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.42...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.48...HEAD
+[v0.0.48] https://github.com/kythe/kythe/compare/v0.0.47...v0.0.48
+[v0.0.47] https://github.com/kythe/kythe/compare/v0.0.46...v0.0.47
+[v0.0.46] https://github.com/kythe/kythe/compare/v0.0.45...v0.0.46
+[v0.0.45] https://github.com/kythe/kythe/compare/v0.0.44...v0.0.45
+[v0.0.44] https://github.com/kythe/kythe/compare/v0.0.43...v0.0.44
+[v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
 [v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
 [v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40

@@ -16,10 +16,15 @@
 
 #include "analyzer.h"
 
+#include <algorithm>
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
@@ -27,15 +32,17 @@
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
-#include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
+#include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
+#include "kythe/cxx/indexer/textproto/plugin.h"
 #include "kythe/proto/analysis.pb.h"
 #include "re2/re2.h"
 
@@ -71,19 +78,25 @@ class LoggingMultiFileErrorCollector
   }
 };
 
-absl::optional<proto::VName> LookupVNameForFullPath(
-    absl::string_view full_path, const proto::CompilationUnit& unit) {
+// Finds the file in the compilation unit's inputs and returns its vname.
+// Returns an empty vname if the file is not found.
+proto::VName LookupVNameForFullPath(absl::string_view full_path,
+                                    const proto::CompilationUnit& unit) {
   for (const auto& input : unit.required_input()) {
     if (input.info().path() == full_path) {
       return input.v_name();
     }
   }
-  return absl::nullopt;
+  LOG(ERROR) << "Unable to find file path in compilation unit: '" << full_path
+             << "'. This likely indicates a bug in the textproto indexer, "
+                "which should only need to construct VNames for files in "
+                "the compilation unit";
+  return proto::VName{};
 }
 
 // The TextprotoAnalyzer maintains state needed across indexing operations and
 // provides some relevant helper methods.
-class TextprotoAnalyzer {
+class TextprotoAnalyzer : public PluginApi {
  public:
   // Note: The TextprotoAnalyzer does not take ownership of its pointer
   // arguments, so they must outlive it.
@@ -105,54 +118,74 @@ class TextprotoAnalyzer {
 
   // Recursively analyzes the message and any submessages, emitting "ref" edges
   // for all fields.
-  Status AnalyzeMessage(const proto::VName& file_vname, const Message& proto,
-                        const Descriptor& descriptor,
-                        const TextFormat::ParseInfoTree& parse_tree);
+  absl::Status AnalyzeMessage(const proto::VName& file_vname,
+                              const Message& proto,
+                              const Descriptor& descriptor,
+                              const TextFormat::ParseInfoTree& parse_tree);
 
   // Analyzes the message contained inside a google.protobuf.Any field. The
   // parse location of the field (if nonzero) is used to add an anchor for the
   // Any's type specifier (i.e. [some.url/mypackage.MyMessage]).
-  Status AnalyzeAny(const proto::VName& file_vname, const Message& proto,
-                    const Descriptor& descriptor,
-                    const TextFormat::ParseInfoTree& parse_tree,
-                    TextFormat::ParseLocation field_loc);
+  absl::Status AnalyzeAny(const proto::VName& file_vname, const Message& proto,
+                          const Descriptor& descriptor,
+                          const TextFormat::ParseInfoTree& parse_tree,
+                          TextFormat::ParseLocation field_loc);
 
-  StatusOr<proto::VName> AnalyzeAnyTypeUrl(const proto::VName& file_vname,
-                                           TextFormat::ParseLocation field_loc);
+  absl::StatusOr<proto::VName> AnalyzeAnyTypeUrl(
+      const proto::VName& file_vname, TextFormat::ParseLocation field_loc);
 
-  Status AnalyzeSchemaComments(const proto::VName& file_vname,
-                               const Descriptor& msg_descriptor);
+  absl::Status AnalyzeEnumValue(const proto::VName& file_vname,
+                                const FieldDescriptor& field, int start_offset);
+
+  absl::Status AnalyzeStringValue(const proto::VName& file_vname,
+                                  const Message& proto,
+                                  const FieldDescriptor& field,
+                                  int start_offset);
+
+  absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
+                                     const Descriptor& msg_descriptor);
+
+  KytheGraphRecorder* recorder() override { return recorder_; }
 
   void EmitDiagnostic(const proto::VName& file_vname,
-                      absl::string_view signature, absl::string_view msg);
-
- private:
-  Status AnalyzeField(const proto::VName& file_vname, const Message& proto,
-                      const TextFormat::ParseInfoTree& parse_tree,
-                      const FieldDescriptor& field, int field_index);
+                      absl::string_view signature,
+                      absl::string_view msg) override;
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
-                                      int end);
+                                      int end) override;
 
-  absl::optional<proto::VName> VNameForRelPath(
-      absl::string_view simplified_path) const;
+  proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                      absl::string_view sp) override;
 
-  template <typename SomeDescriptor>
-  StatusOr<proto::VName> VNameForDescriptor(const SomeDescriptor* descriptor) {
-    Status vname_lookup_status = OkStatus();
-    proto::VName vname = ::kythe::lang_proto::VNameForDescriptor(
-        descriptor, [this, &vname_lookup_status](const std::string& path) {
-          auto v = VNameForRelPath(path);
-          if (!v.has_value()) {
-            vname_lookup_status = UnknownError(
-                absl::StrCat("Unable to lookup vname for rel path: ", path));
-            return proto::VName();
-          }
-          return *v;
-        });
-    return vname_lookup_status.ok() ? StatusOr<proto::VName>(vname)
-                                    : vname_lookup_status;
+  proto::VName VNameForRelPath(
+      absl::string_view simplified_path) const override;
+
+  void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) {
+    plugins_ = std::move(p);
   }
+
+  // Convenience method for constructing proto descriptor vnames.
+  template <typename SomeDescriptor>
+  proto::VName VNameForDescriptor(const SomeDescriptor* descriptor) {
+    return ::kythe::lang_proto::VNameForDescriptor(
+        descriptor, [this](auto path) { return VNameForRelPath(path); });
+  }
+
+  const DescriptorPool* ProtoDescriptorPool() const override {
+    return descriptor_pool_;
+  }
+
+ private:
+  absl::Status AnalyzeField(const proto::VName& file_vname,
+                            const Message& proto,
+                            const TextFormat::ParseInfoTree& parse_tree,
+                            const FieldDescriptor& field, int field_index);
+
+  std::vector<StringToken> ReadStringTokens(absl::string_view input);
+
+  int ComputeByteOffset(int line_number, int column_number) const;
+
+  std::vector<std::unique_ptr<Plugin>> plugins_;
 
   const proto::CompilationUnit* unit_;
   KytheGraphRecorder* recorder_;
@@ -166,7 +199,23 @@ class TextprotoAnalyzer {
   const DescriptorPool* descriptor_pool_;
 };
 
-absl::optional<proto::VName> TextprotoAnalyzer::VNameForRelPath(
+// Converts from a proto line/column (both 0 based, and where column counts
+// bytes except that tabs move to the next multiple of 8) to a byte offset
+// from the start of the current file.  Returns -1 on error.
+int TextprotoAnalyzer::ComputeByteOffset(int line_number,
+                                         int column_number) const {
+  int byte_offset_of_start_of_line =
+      line_index_.ComputeByteOffset(line_number, 0);
+  absl::string_view line_text = line_index_.GetLine(line_number);
+  int byte_offset_into_line =
+      lang_proto::ByteOffsetOfTabularColumn(line_text, column_number);
+  if (byte_offset_into_line < 0) {
+    return byte_offset_into_line;
+  }
+  return byte_offset_of_start_of_line + byte_offset_into_line;
+}
+
+proto::VName TextprotoAnalyzer::VNameForRelPath(
     absl::string_view simplified_path) const {
   absl::string_view full_path;
   auto it = file_substitution_cache_->find(simplified_path);
@@ -178,7 +227,7 @@ absl::optional<proto::VName> TextprotoAnalyzer::VNameForRelPath(
   return LookupVNameForFullPath(full_path, *unit_);
 }
 
-Status TextprotoAnalyzer::AnalyzeMessage(
+absl::Status TextprotoAnalyzer::AnalyzeMessage(
     const proto::VName& file_vname, const Message& proto,
     const Descriptor& descriptor, const TextFormat::ParseInfoTree& parse_tree) {
   const Reflection* reflection = proto.GetReflection();
@@ -192,7 +241,6 @@ Status TextprotoAnalyzer::AnalyzeMessage(
        field_index++) {
     const FieldDescriptor& field = *descriptor.field(field_index);
     if (field.is_repeated()) {
-      // Handle repeated field.
       const int count = reflection->FieldSize(proto, &field);
       if (count == 0) {
         continue;
@@ -232,7 +280,7 @@ Status TextprotoAnalyzer::AnalyzeMessage(
     }
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 // Given a type url that looks like "type.googleapis.com/example.Message1",
@@ -255,19 +303,18 @@ std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
 // Ideally this information would be provided in the ParseInfoTree generated by
 // the textproto parser, but since it's not, we do our own "parsing" with a
 // regex.
-StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
+absl::StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
     const proto::VName& file_vname, TextFormat::ParseLocation field_loc) {
   // Note that line is 1-indexed; a value of zero indicates an empty location.
-  if (field_loc.line == 0) return OkStatus();
+  if (field_loc.line == 0) return absl::OkStatus();
 
   re2::StringPiece sp(textproto_content_.data(), textproto_content_.size());
-  const int search_from =
-      line_index_.ComputeByteOffset(field_loc.line, field_loc.column);
+  const int search_from = ComputeByteOffset(field_loc.line, field_loc.column);
   sp = sp.substr(search_from);
 
   // Consume rest of field name, colon (optional) and open brace.
   if (!re2::RE2::Consume(&sp, R"(^[a-zA-Z0-9_]+:?\s*\{\s*)")) {
-    return UnknownError("");
+    return absl::UnknownError("");
   }
   // consume any extra comments before "[type_url]".
   while (re2::RE2::Consume(&sp, R"(\s*#.*\n*)")) {
@@ -277,15 +324,12 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   re2::StringPiece match;
   if (!re2::RE2::PartialMatch(sp, R"(^\s*\[\s*[^/]+/([^\s\]]+)\s*\])",
                               &match)) {
-    return UnknownError("Unable to find type_url span for Any");
+    return absl::UnknownError("Unable to find type_url span for Any");
   }
 
   // Add anchor.
-  const int begin = match.begin() - textproto_content_.begin();
-  const int end = begin + match.size();
-  proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
-
-  return anchor_vname;
+  return CreateAndAddAnchorNode(file_vname,
+                                absl::string_view(match.data(), match.size()));
 }
 
 // When the textproto parser finds an Any message in the input, it parses the
@@ -295,7 +339,7 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
 // the message based on the type_url and de-serialize the value bytes into it.
 // This is then passed to AnalyzeMessage, which does the actual analysis and
 // matches fields up with the ParseInfoTree.
-Status TextprotoAnalyzer::AnalyzeAny(
+absl::Status TextprotoAnalyzer::AnalyzeAny(
     const proto::VName& file_vname, const Message& proto,
     const Descriptor& descriptor, const TextFormat::ParseInfoTree& parse_tree,
     TextFormat::ParseLocation field_loc) {
@@ -315,7 +359,7 @@ Status TextprotoAnalyzer::AnalyzeAny(
   const FieldDescriptor* type_url_desc = descriptor.FindFieldByName("type_url");
   const FieldDescriptor* value_desc = descriptor.FindFieldByName("value");
   if (type_url_desc == nullptr || value_desc == nullptr) {
-    return UnknownError("Unable to get field descriptors for Any");
+    return absl::UnknownError("Unable to get field descriptors for Any");
   }
 
   const Reflection* reflection = proto.GetReflection();
@@ -328,22 +372,19 @@ Status TextprotoAnalyzer::AnalyzeAny(
     // Log the error, but continue. Failure to include the descriptor for an Any
     // shouldn't stop the rest of the file from being indexed.
     LOG(ERROR) << "Unable to find descriptor for message named " << msg_name;
-    return OkStatus();
+    return absl::OkStatus();
   }
 
   // Add ref from type_url to proto message.
   auto msg_vname = VNameForDescriptor(msg_desc);
-  if (!msg_vname.ok()) {
-    return msg_vname.status();
-  }
   recorder_->AddEdge(VNameRef(type_url_anchor), EdgeKindID::kRef,
-                     VNameRef(*msg_vname));
+                     VNameRef(msg_vname));
 
   // Deserialize Any value into the appropriate message type.
   std::string value_bytes = reflection->GetString(proto, value_desc);
   if (value_bytes.size() == 0) {
     // Any value is empty, nothing to index
-    return OkStatus();
+    return absl::OkStatus();
   }
   google::protobuf::io::ArrayInputStream array_stream(value_bytes.data(),
                                                       value_bytes.size());
@@ -352,7 +393,7 @@ Status TextprotoAnalyzer::AnalyzeAny(
       msg_factory.GetPrototype(msg_desc)->New());
   google::protobuf::io::CodedInputStream coded_stream(&array_stream);
   if (!value_proto->ParseFromCodedStream(&coded_stream)) {
-    return UnknownError(absl::StrFormat(
+    return absl::UnknownError(absl::StrFormat(
         "Unable to parse Any.value bytes into a %s message", msg_name));
   }
 
@@ -360,7 +401,202 @@ Status TextprotoAnalyzer::AnalyzeAny(
   return AnalyzeMessage(file_vname, *value_proto, *msg_desc, parse_tree);
 }
 
-Status TextprotoAnalyzer::AnalyzeField(
+// Trims whitespace (including newlines) and comments from the start of the
+// input.
+void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
+  re2::RE2::Consume(sp, R"((\s+|#[^\n]*)*)");
+}
+
+// Adds an anchor and ref edge for usage of enum values. For example, in
+// `my_enum_field: VALUE1`, this adds an anchor for "VALUE1".
+absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
+                                                 const FieldDescriptor& field,
+                                                 int start_offset) {
+  // Start after the last character of the field name.
+  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  input = input.substr(start_offset);
+
+  // Consume whitespace and colon after field name.
+  ConsumeTextprotoWhitespace(&input);
+  if (!re2::RE2::Consume(&input, ":")) {
+    return absl::UnknownError("Failed to find ':' when analyzing enum value");
+  }
+  ConsumeTextprotoWhitespace(&input);
+
+  // Detect 'array format' for repeated fields and trim the leading '['.
+  const bool array_format =
+      field.is_repeated() && re2::RE2::Consume(&input, "\\[");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
+
+  while (true) {
+    // Match the enum value, which may be an identifier or an integer.
+    re2::StringPiece match;
+    if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
+      return absl::UnknownError("Failed to find text span for enum value: " +
+                                field.full_name());
+    }
+    const std::string value_str = match.ToString();
+    input = input.substr(value_str.size());
+
+    // Lookup EnumValueDescriptor based on the matched value.
+    const google::protobuf::EnumDescriptor* enum_field = field.enum_type();
+    const google::protobuf::EnumValueDescriptor* enum_val =
+        enum_field->FindValueByName(value_str);
+    // If name lookup failed, try it as a number.
+    if (!enum_val) {
+      int value_int;
+      if (!absl::SimpleAtoi(value_str, &value_int)) {
+        return absl::InvalidArgumentError(
+            absl::StrFormat("Unable to parse enum value: '%s'", value_str));
+      }
+      enum_val = enum_field->FindValueByNumber(value_int);
+    }
+    if (!enum_val) {
+      return absl::InvalidArgumentError(
+          absl::StrFormat("Unable to find enum value for '%s'", value_str));
+    }
+
+    // Add ref from matched text to enum value descriptor.
+    proto::VName anchor_vname = CreateAndAddAnchorNode(
+        file_vname, absl::string_view(match.data(), match.size()));
+    auto enum_vname = VNameForDescriptor(enum_val);
+    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+                       VNameRef(enum_vname));
+
+    if (!array_format) break;
+
+    // Consume trailing comma and whitespace; exit if there's no comma.
+    ConsumeTextprotoWhitespace(&input);
+    if (!re2::RE2::Consume(&input, ",")) {
+      break;
+    }
+    ConsumeTextprotoWhitespace(&input);
+  }
+
+  return absl::OkStatus();
+}
+
+std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
+    absl::string_view input) {
+  // Create a tokenizer for the input.
+  google::protobuf::io::ArrayInputStream array_stream(input.data(),
+                                                      input.size());
+  google::protobuf::io::Tokenizer tokenizer(&array_stream, nullptr);
+  // '#' starts a comment.
+  tokenizer.set_comment_style(
+      google::protobuf::io::Tokenizer::SH_COMMENT_STYLE);
+  tokenizer.set_require_space_after_number(false);
+  tokenizer.set_allow_multiline_strings(true);
+
+  if (!tokenizer.Next() || tokenizer.current().type !=
+                               google::protobuf::io::Tokenizer::TYPE_STRING) {
+    return {};  // We require at least one string token.
+  }
+
+  // NOTE: the proto tokenizer uses 0-indexed line numbers, while UTF8LineIndex
+  // expects them 1-indexed. Both use zero-indexed column numbers.
+  const size_t start_offset = input.data() - textproto_content_.data();
+  const size_t start_line = line_index_.LineNumber(start_offset);
+  CharacterPosition start_pos =
+      line_index_.ComputePositionForByteOffset(start_offset);
+  CHECK(start_pos.line_number != -1);
+  absl::string_view start_line_content =
+      line_index_.GetLine(start_pos.line_number);
+  const int start_col = start_pos.column_number;
+
+  // Account for proto's tab behavior and its effect on what 'column number'
+  // means :(.
+  int proto_start_col = 0;
+  for (int i = 0; i < start_col; ++i) {
+    if (start_line_content[i] == '\t') {
+      // tabs advance to the nearest 8th column
+      proto_start_col += 8 - (proto_start_col % 8);
+    } else {
+      proto_start_col += 1;
+    }
+  }
+
+  // Read all TYPE_STRING tokens.
+  std::vector<StringToken> tokens;
+  do {
+    auto t = tokenizer.current();
+
+    // adjust token line/col according to where we started the tokenizer.
+    int column = t.column + (t.line == 0 ? proto_start_col : 0);
+    int line = t.line + start_line;
+
+    StringToken st;
+    tokenizer.ParseStringAppend(t.text, &st.parsed_value);
+    size_t token_offset = ComputeByteOffset(line, column);
+    // create the string_view, trimming the first and last character, which are
+    // quotes.
+    st.source_text = absl::string_view(
+        textproto_content_.data() + token_offset + 1, t.text.size() - 2);
+    tokens.push_back(st);
+  } while (tokenizer.Next() &&
+           tokenizer.current().type ==
+               google::protobuf::io::Tokenizer::TYPE_STRING);
+
+  return tokens;
+}
+
+absl::Status TextprotoAnalyzer::AnalyzeStringValue(
+    const proto::VName& file_vname, const Message& proto,
+    const FieldDescriptor& field, int start_offset) {
+  // Start after the last character of the field name.
+  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  input = input.substr(start_offset);
+
+  // Consume rest of field name, colon (optional).
+  ConsumeTextprotoWhitespace(&input);
+  if (!re2::RE2::Consume(&input, ":")) {
+    return absl::UnknownError("Failed to find ':' when analyzing string value");
+  }
+  ConsumeTextprotoWhitespace(&input);
+
+  const bool array_format =
+      field.is_repeated() && re2::RE2::Consume(&input, "\\[");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
+
+  while (!input.empty()) {
+    char c = input[0];
+    if (c != '"' && c != '\'') {
+      return absl::UnknownError("Can't find string");
+    }
+
+    std::vector<StringToken> tokens =
+        ReadStringTokens(absl::string_view(input.data(), input.size()));
+    if (tokens.empty()) {
+      return absl::UnknownError("Unable to find a string value for field: " +
+                                field.name());
+    }
+    for (auto& p : plugins_) {
+      auto s = p->AnalyzeStringField(this, file_vname, field, tokens);
+      if (!s.ok()) {
+        LOG(ERROR) << "Plugin error: " << s;
+      }
+    }
+    // Advance `input` past the last string token we just parsed.
+    const char* search_from = tokens.back().source_text.end() + 1;
+    input = re2::StringPiece(search_from,
+                             textproto_content_.end() - search_from + 1);
+
+    if (!array_format) break;
+
+    // Consume trailing comma and whitespace; exit if there's no comma.
+    ConsumeTextprotoWhitespace(&input);
+    if (!re2::RE2::Consume(&input, ",")) {
+      break;
+    }
+    ConsumeTextprotoWhitespace(&input);
+  }
+
+  return absl::OkStatus();
+}
+
+// Analyzes the field and returns the number of values indexed. Typically this
+// is 1, but it could be 1+ when list syntax is used in the textproto.
+absl::Status TextprotoAnalyzer::AnalyzeField(
     const proto::VName& file_vname, const Message& proto,
     const TextFormat::ParseInfoTree& parse_tree, const FieldDescriptor& field,
     int field_index) {
@@ -393,12 +629,12 @@ Status TextprotoAnalyzer::AnalyzeField(
     } else if (field.is_extension() || field_index != kNonRepeatedFieldIndex) {
       // If we can't find a location for a set extension or the first entry of
       // the repeated field, this is a bug.
-      return UnknownError(
+      return absl::UnknownError(
           absl::StrCat("Failed to find location of field: ", field.full_name(),
                        ". This is a bug in the textproto indexer."));
     } else {
       // Normal proto field. Failure to find a location just means it's not set.
-      return OkStatus();
+      return absl::OkStatus();
     }
   }
 
@@ -408,15 +644,29 @@ Status TextprotoAnalyzer::AnalyzeField(
     if (field.is_extension()) {
       loc.column++;  // Skip leading "[" for extensions.
     }
-    const int begin = line_index_.ComputeByteOffset(loc.line, loc.column);
+    const int begin = ComputeByteOffset(loc.line, loc.column);
     const int end = begin + len;
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 
     // Add ref to proto field.
     auto field_vname = VNameForDescriptor(&field);
-    if (!field_vname.ok()) return field_vname.status();
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                       VNameRef(*field_vname));
+                       VNameRef(field_vname));
+
+    // Add refs for enum values.
+    if (field.type() == FieldDescriptor::TYPE_ENUM) {
+      auto s = AnalyzeEnumValue(file_vname, field, end);
+      if (!s.ok()) {
+        // Log this error, but don't block further progress
+        LOG(ERROR) << "Error analyzing enum value: " << s;
+      }
+    } else if (field.type() == FieldDescriptor::TYPE_STRING &&
+               !plugins_.empty()) {
+      auto s = AnalyzeStringValue(file_vname, proto, field, end);
+      if (!s.ok()) {
+        LOG(ERROR) << "Error analyzing string value: " << s;
+      }
+    }
   }
 
   // Handle submessage.
@@ -442,10 +692,10 @@ Status TextprotoAnalyzer::AnalyzeField(
     }
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status TextprotoAnalyzer::AnalyzeSchemaComments(
+absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
     const proto::VName& file_vname, const Descriptor& msg_descriptor) {
   TextprotoSchema schema = ParseTextprotoSchemaComments(textproto_content_);
 
@@ -457,9 +707,7 @@ Status TextprotoAnalyzer::AnalyzeSchemaComments(
 
     // Add ref edge to proto message.
     auto msg_vname = VNameForDescriptor(&msg_descriptor);
-    if (!msg_vname.ok()) return msg_vname.status();
-    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef,
-                       VNameRef(*msg_vname));
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(msg_vname));
   }
 
   // Handle 'proto-file' and 'proto-import' comments if present.
@@ -473,15 +721,11 @@ Status TextprotoAnalyzer::AnalyzeSchemaComments(
     proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
 
     // Add ref edge to file.
-    auto v = VNameForRelPath(file);
-    if (!v.has_value()) {
-      return UnknownError(
-          absl::StrCat("Unable to lookup vname for rel path: ", file));
-    }
-    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(*v));
+    proto::VName v = VNameForRelPath(file);
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(v));
   }
 
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
@@ -496,6 +740,18 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   recorder_->AddProperty(VNameRef(anchor), PropertyID::kLocationEndOffset, end);
 
   return anchor;
+}
+
+// Adds an anchor node, using the string_view's offset relative to
+// `textproto_content_` as the start location.
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, absl::string_view sp) {
+  CHECK(sp.begin() >= textproto_content_.begin() &&
+        sp.end() <= textproto_content_.end())
+      << "string_view not in range of source text";
+  const int begin = sp.begin() - textproto_content_.begin();
+  const int end = begin + sp.size();
+  return CreateAndAddAnchorNode(file_vname, begin, end);
 }
 
 void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
@@ -515,11 +771,11 @@ void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
 // argument from @args if found.
 absl::optional<std::string> ParseProtoMessageArg(
     std::vector<std::string>* args) {
-  for (size_t i = 0; i < args->size(); i++) {
-    if (args->at(i) == "--proto_message") {
-      if (i + 1 < args->size()) {
-        std::string v = args->at(i + 1);
-        args->erase(args->begin() + i, args->begin() + i + 2);
+  for (auto iter = args->begin(); iter != args->end(); iter++) {
+    if (*iter == "--proto_message") {
+      if (iter + 1 < args->end()) {
+        std::string v = *(iter + 1);
+        args->erase(iter, iter + 2);
         return v;
       }
       return absl::nullopt;
@@ -570,14 +826,24 @@ std::string FullPathToRelative(
 
 }  // namespace
 
-Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
-                              const std::vector<proto::FileData>& files,
-                              KytheGraphRecorder* recorder) {
+absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
+                                    const std::vector<proto::FileData>& files,
+                                    KytheGraphRecorder* recorder) {
+  PluginLoadCallback nil_loader = [](const google::protobuf::Message& proto)
+      -> std::vector<std::unique_ptr<Plugin>> { return {}; };
+  return AnalyzeCompilationUnit(nil_loader, unit, files, recorder);
+}
+
+absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
+                                    const proto::CompilationUnit& unit,
+                                    const std::vector<proto::FileData>& files,
+                                    KytheGraphRecorder* recorder) {
   if (unit.source_file().size() != 1) {
-    return FailedPreconditionError("Expected Unit to contain 1 source file");
+    return absl::FailedPreconditionError(
+        "Expected Unit to contain 1 source file");
   }
   if (files.size() < 2) {
-    return FailedPreconditionError(
+    return absl::FailedPreconditionError(
         "Must provide at least 2 files: a textproto and 1+ .proto files");
   }
 
@@ -595,7 +861,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
   {
     auto opt_message_name = ParseProtoMessageArg(&args);
     if (!opt_message_name.has_value()) {
-      return UnknownError(
+      return absl::UnknownError(
           "Compilation unit arguments must specify --proto_message");
     }
     message_name = *opt_message_name;
@@ -616,12 +882,12 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
 
     VLOG(1) << "Added file to descriptor db: " << file.info().path();
     if (!file_reader.AddFile(file.info().path(), file.content())) {
-      return UnknownError("Unable to add file to SourceTree.");
+      return absl::UnknownError("Unable to add file to SourceTree.");
     }
     proto_filenames.push_back(file.info().path());
   }
   if (textproto_file_data == nullptr) {
-    return NotFoundError("Couldn't find textproto source in file data.");
+    return absl::NotFoundError("Couldn't find textproto source in file data.");
   }
 
   // Build proto descriptor pool with top-level protos.
@@ -640,7 +906,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
     std::string relpath =
         FullPathToRelative(fname, path_substitutions, &file_substitution_cache);
     if (!proto_importer.Import(relpath)) {
-      return UnknownError("Error importing proto file: " + relpath);
+      return absl::UnknownError("Error importing proto file: " + relpath);
     }
     VLOG(1) << "Added proto to descriptor pool: " << relpath;
   }
@@ -650,7 +916,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
   const Descriptor* descriptor =
       descriptor_pool->FindMessageTypeByName(message_name);
   if (descriptor == nullptr) {
-    return NotFoundError(absl::StrCat(
+    return absl::NotFoundError(absl::StrCat(
         "Unable to find proto message in descriptor pool: ", message_name));
   }
 
@@ -669,36 +935,33 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
     parser.AllowPartialMessage(true);
     parser.AllowUnknownExtension(true);
     if (!parser.ParseFromString(textproto_file_data->content(), proto.get())) {
-      return UnknownError("Failed to parse text proto");
+      return absl::UnknownError("Failed to parse text proto");
     }
   }
 
   // Emit file node.
-  absl::optional<proto::VName> file_vname =
-      LookupVNameForFullPath(textproto_name, unit);
-  if (!file_vname.has_value()) {
-    return UnknownError(
-        absl::StrCat("Unable to find vname for textproto: ", textproto_name));
-  }
-  recorder->AddProperty(VNameRef(*file_vname), NodeKindID::kFile);
+  proto::VName file_vname = LookupVNameForFullPath(textproto_name, unit);
+  recorder->AddProperty(VNameRef(file_vname), NodeKindID::kFile);
   // Record source text as a fact.
-  recorder->AddProperty(VNameRef(*file_vname), PropertyID::kText,
+  recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
                         textproto_file_data->content());
 
-  // Analyze!
   TextprotoAnalyzer analyzer(&unit, textproto_file_data->content(),
                              &file_substitution_cache, recorder,
                              descriptor_pool);
 
-  Status status = analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
+  // Load plugins
+  analyzer.SetPlugins(plugin_loader(*proto));
+
+  absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
   if (!status.ok()) {
     std::string msg =
         absl::StrCat("Error analyzing schema comments: ", status.ToString());
     LOG(ERROR) << msg << status;
-    analyzer.EmitDiagnostic(*file_vname, "schema_comments", msg);
+    analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
   }
 
-  return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
+  return analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, parse_tree);
 }
 
 }  // namespace lang_textproto

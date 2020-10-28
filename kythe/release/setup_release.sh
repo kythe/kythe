@@ -104,5 +104,5 @@ git checkout -b "release-$version"
 git commit -am "release: $version"
 
 # Build and test the Kythe release archive.
-bazel --bazelrc=/dev/null test --stamp -c opt \
-  //kythe/release //kythe/release:release_test
+bazel --bazelrc=/dev/null test --config=release //kythe/release:release_test
+bazel --bazelrc=/dev/null build --config=release //kythe/release

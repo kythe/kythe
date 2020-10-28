@@ -21,6 +21,8 @@
 #include <set>
 
 #include "absl/memory/memory.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -100,16 +102,16 @@ struct KzipOptions {
   KzipEncoding encoding;
 };
 
-StatusOr<KzipOptions> Validate(zip_t* archive) {
+absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
   if (!zip_get_num_entries(archive, 0)) {
-    return InvalidArgumentError("Empty kzip archive");
+    return absl::InvalidArgumentError("Empty kzip archive");
   }
 
   // Pull the root directory from an arbitrary entry.
   absl::string_view root = zip_get_name(archive, 0, 0);
   auto slashpos = root.find('/');
   if (slashpos == 0 || slashpos == absl::string_view::npos) {
-    return InvalidArgumentError(
+    return absl::InvalidArgumentError(
         absl::StrCat("Malformed kzip: invalid root: ", root));
   }
   root.remove_suffix(root.size() - slashpos);
@@ -119,7 +121,7 @@ StatusOr<KzipOptions> Validate(zip_t* archive) {
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {
     absl::string_view name = zip_get_name(archive, i, 0);
     if (!absl::ConsumePrefix(&name, root)) {
-      return InvalidArgumentError(
+      return absl::InvalidArgumentError(
           absl::StrCat("Malformed kzip: invalid entry: ", name));
     }
     if (absl::ConsumePrefix(&name, kJsonUnitsDir)) {
@@ -137,7 +139,7 @@ StatusOr<KzipOptions> Validate(zip_t* archive) {
                                   proto_units.begin(), proto_units.end(),
                                   std::inserter(diff, diff.end()));
     if (!diff.empty()) {
-      return InvalidArgumentError(absl::StrCat(
+      return absl::InvalidArgumentError(absl::StrCat(
           "Malformed kzip: multiple unit encodings but different entries"));
     }
   }
@@ -154,7 +156,8 @@ absl::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
   return sb.size;
 }
 
-StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
+absl::StatusOr<std::string> ReadTextFile(zip_t* archive,
+                                         const std::string& path) {
   zip_int64_t index = zip_name_locate(archive, path.c_str(), 0);
   if (index >= 0) {
     if (auto file = ZipFile(zip_fopen_index(archive, index, 0))) {
@@ -168,11 +171,11 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
       }
     }
   }
-  Status status = libzip::ToStatus(zip_get_error(archive));
+  absl::Status status = libzip::ToStatus(zip_get_error(archive));
   if (!status.ok()) {
     return status;
   }
-  return UnknownError(absl::StrCat("Unable to read: ", path));
+  return absl::UnknownError(absl::StrCat("Unable to read: ", path));
 }
 
 absl::string_view DirNameForEncoding(KzipEncoding encoding) {
@@ -198,11 +201,11 @@ absl::optional<absl::string_view> KzipReader::UnitDigest(
 }
 
 /* static */
-StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
+absl::StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
-    if (auto options = Validate(archive.get())) {
+    if (auto options = Validate(archive.get()); options.ok()) {
       return IndexReader(absl::WrapUnique(new KzipReader(
           std::move(archive), options->root, options->encoding)));
     } else {
@@ -213,11 +216,11 @@ StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
 }
 
 /* static */
-StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
+absl::StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
   libzip::Error error;
   if (auto archive =
           ZipHandle(zip_open_from_source(source, ZIP_RDONLY, error.get()))) {
-    if (auto options = Validate(archive.get())) {
+    if (auto options = Validate(archive.get()); options.ok()) {
       return IndexReader(absl::WrapUnique(new KzipReader(
           std::move(archive), options->root, options->encoding)));
     } else {
@@ -237,23 +240,24 @@ KzipReader::KzipReader(ZipHandle archive, absl::string_view root,
       files_prefix_(absl::StrCat(root, "/files/")),
       unit_prefix_(absl::StrCat(root, DirNameForEncoding(encoding))) {}
 
-StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
+absl::StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
     absl::string_view digest) {
   std::string path = absl::StrCat(unit_prefix_, digest);
 
   if (auto file = ZipFile(zip_fopen(archive(), path.c_str(), 0))) {
     proto::IndexedCompilation unit;
     ZipFileInputStream input(file.get());
-    Status status;
+    absl::Status status;
     if (encoding_ == KzipEncoding::kJson) {
       status = ParseFromJsonStream(&input, &unit);
     } else {
       if (!unit.ParseFromZeroCopyStream(&input)) {
-        status = InvalidArgumentError("Failure parsing proto unit");
+        status = absl::InvalidArgumentError("Failure parsing proto unit");
       }
     }
     if (!status.ok()) {
-      Status zip_status = libzip::ToStatus(zip_file_get_error(file.get()));
+      absl::Status zip_status =
+          libzip::ToStatus(zip_file_get_error(file.get()));
       if (!zip_status.ok()) {
         // Prefer the underlying zip error, if present.
         return zip_status;
@@ -262,18 +266,18 @@ StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
     }
     return unit;
   }
-  Status status = libzip::ToStatus(zip_get_error(archive()));
+  absl::Status status = libzip::ToStatus(zip_get_error(archive()));
   if (!status.ok()) {
     return status;
   }
-  return UnknownError(absl::StrCat("Unable to open unit ", digest));
+  return absl::UnknownError(absl::StrCat("Unable to open unit ", digest));
 }
 
-StatusOr<std::string> KzipReader::ReadFile(absl::string_view digest) {
+absl::StatusOr<std::string> KzipReader::ReadFile(absl::string_view digest) {
   return ReadTextFile(archive(), absl::StrCat(files_prefix_, digest));
 }
 
-Status KzipReader::Scan(const ScanCallback& callback) {
+absl::Status KzipReader::Scan(const ScanCallback& callback) {
   for (int i = 0; i < zip_get_num_entries(archive(), 0); ++i) {
     if (auto digest = UnitDigest(zip_get_name(archive(), i, 0))) {
       if (!callback(*digest)) {
@@ -281,7 +285,7 @@ Status KzipReader::Scan(const ScanCallback& callback) {
       }
     }
   }
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 }  // namespace kythe

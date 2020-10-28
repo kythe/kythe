@@ -28,11 +28,11 @@ go_library(
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:xref_go_proto",
         "//kythe/proto:xref_serving_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_golang_snappy//:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
         "@org_golang_x_net//trace:go_default_library",
     ],
 )

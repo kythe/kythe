@@ -50,7 +50,7 @@ type mergeCommand struct {
 func New() subcommands.Command {
 	return &mergeCommand{
 		Info:     cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
-		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
+		encoding: flags.EncodingFlag{Encoding: kzip.DefaultEncoding()},
 	}
 }
 

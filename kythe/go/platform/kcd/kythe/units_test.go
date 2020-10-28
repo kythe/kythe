@@ -23,9 +23,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/ptypes"
+
+	"google.golang.org/protobuf/encoding/prototext"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -146,7 +147,7 @@ func TestDigest(t *testing.T) {
 			t.Fatalf("error reading test proto: %v", err)
 		}
 		var unit apb.CompilationUnit
-		if err := proto.UnmarshalText(string(b), &unit); err != nil {
+		if err := prototext.Unmarshal(b, &unit); err != nil {
 			t.Fatalf("error unmarshaling proto: %v", err)
 		}
 		got := Unit{Proto: &unit}.Digest()

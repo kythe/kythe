@@ -44,6 +44,7 @@
 #include "kythe/cxx/extractor/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace proto {
@@ -107,6 +108,14 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \brief Use this many raw bytes for USRs.
   void setUsrByteSize(int S) { UsrByteSize = S; }
 
+  /// \brief Emit dataflow edges?
+  void setEmitDataflowEdges(EmitDataflowEdges EDE) { DataflowEdges = EDE; }
+
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  void setTemplateInstanceExcludePathPattern(std::shared_ptr<re2::RE2> P) {
+    TemplateInstanceExcludePathPattern = P;
+  }
+
  private:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& CI, llvm::StringRef Filename) override {
@@ -145,7 +154,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
     }
     return absl::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
-        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize);
+        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize,
+        DataflowEdges, TemplateInstanceExcludePathPattern);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
@@ -186,6 +196,10 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
@@ -265,6 +279,13 @@ struct IndexerOptions {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Whether to use the CompilationUnit VName corpus as the default
+  /// corpus.
+  bool UseCompilationCorpusAsDefault = false;
+  /// \brief Whether to emit dataflow edges.
+  EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

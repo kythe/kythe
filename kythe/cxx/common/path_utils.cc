@@ -22,13 +22,14 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/status.h"
-#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
 namespace {
@@ -66,14 +67,14 @@ absl::string_view TrimPathPrefix(const absl::string_view path,
   return path;
 }
 
-StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
+absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
     PathCanonicalizer::Policy policy, absl::string_view root) {
   switch (policy) {
     case PathCanonicalizer::Policy::kCleanOnly:
       return {absl::nullopt};
     case PathCanonicalizer::Policy::kPreferRelative:
     case PathCanonicalizer::Policy::kPreferReal:
-      if (auto realizer = PathRealizer::Create(root)) {
+      if (auto realizer = PathRealizer::Create(root); realizer.ok()) {
         return {*std::move(realizer)};
       } else {
         return realizer.status();
@@ -85,7 +86,7 @@ StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
 absl::optional<std::string> MaybeRealPath(
     const absl::optional<PathRealizer>& realizer, absl::string_view root) {
   if (realizer.has_value()) {
-    if (auto result = realizer->Relativize(root)) {
+    if (auto result = realizer->Relativize(root); result.ok()) {
       return *std::move(result);
     } else {
       LOG(ERROR) << "Unable to resolve " << root << ": " << result.status();
@@ -112,45 +113,72 @@ PathParts SplitPath(absl::string_view path) {
 
 }  // namespace
 
-StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
-  if (StatusOr<std::string> resolved = MakeCleanAbsolutePath(root)) {
+absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
+  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(root);
+      resolved.ok()) {
     return PathCleaner(*std::move(resolved));
   } else {
     return resolved.status();
   }
 }
 
-StatusOr<std::string> PathCleaner::Relativize(absl::string_view path) const {
-  if (StatusOr<std::string> resolved = MakeCleanAbsolutePath(path)) {
+absl::StatusOr<std::string> PathCleaner::Relativize(
+    absl::string_view path) const {
+  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(path);
+      resolved.ok()) {
     return std::string(TrimPathPrefix(*std::move(resolved), root_));
   } else {
     return resolved.status();
   }
 }
 
-StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
-  if (StatusOr<std::string> resolved = RealPath(root)) {
+absl::StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
+  if (absl::StatusOr<std::string> resolved = RealPath(root); resolved.ok()) {
     return PathRealizer(*std::move(resolved));
   } else {
     return resolved.status();
   }
 }
 
-StatusOr<std::string> PathRealizer::Relativize(absl::string_view path) const {
-  if (StatusOr<std::string> resolved = RealPath(path)) {
-    return std::string(TrimPathPrefix(*std::move(resolved), root_));
-  } else {
-    return resolved.status();
-  }
+// We do not copy the cache on assignment or construction to retain thread
+// safety.
+PathRealizer::PathRealizer(const PathRealizer& other) : root_(other.root_) {}
+PathRealizer& PathRealizer::operator=(const PathRealizer& other) {
+  root_ = other.root_;
+  return *this;
 }
 
-StatusOr<PathCanonicalizer> PathCanonicalizer::Create(absl::string_view root,
-                                                      Policy policy) {
-  StatusOr<PathCleaner> cleaner = PathCleaner::Create(root);
+template <typename K, typename Fn>
+absl::StatusOr<std::string> PathRealizer::PathCache::FindOrInsert(K&& key,
+                                                                  Fn&& make) {
+  absl::MutexLock lock(&mu_);
+  auto [iter, inserted] = cache_.try_emplace(std::forward<K>(key), "");
+  if (inserted) {
+    iter->second = std::forward<Fn>(make)();
+  }
+  return iter->second;
+}
+
+absl::StatusOr<std::string> PathRealizer::Relativize(
+    absl::string_view path) const {
+  return cache_->FindOrInsert(
+      CleanPath(path), [this, path]() -> absl::StatusOr<std::string> {
+        if (absl::StatusOr<std::string> resolved = RealPath(path);
+            resolved.ok()) {
+          return std::string(TrimPathPrefix(*std::move(resolved), root_));
+        } else {
+          return resolved.status();
+        }
+      });
+}
+
+absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
+    absl::string_view root, Policy policy) {
+  absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(root);
   if (!cleaner.ok()) {
     return cleaner.status();
   }
-  StatusOr<absl::optional<PathRealizer>> realizer =
+  absl::StatusOr<absl::optional<PathRealizer>> realizer =
       MaybeMakeRealizer(policy, root);
   if (!realizer.ok()) {
     return realizer.status();
@@ -158,7 +186,7 @@ StatusOr<PathCanonicalizer> PathCanonicalizer::Create(absl::string_view root,
   return PathCanonicalizer(policy, *std::move(cleaner), *std::move(realizer));
 }
 
-StatusOr<std::string> PathCanonicalizer::Relativize(
+absl::StatusOr<std::string> PathCanonicalizer::Relativize(
     absl::string_view path) const {
   switch (policy_) {
     case Policy::kPreferRelative:
@@ -245,7 +273,7 @@ bool IsAbsolutePath(absl::string_view path) {
   return absl::StartsWith(path, "/");
 }
 
-StatusOr<std::string> GetCurrentDirectory() {
+absl::StatusOr<std::string> GetCurrentDirectory() {
   std::string result(128, '\0');
   while (::getcwd(&result.front(), result.size() + 1) == nullptr) {
     if (errno != ERANGE) {
@@ -257,11 +285,11 @@ StatusOr<std::string> GetCurrentDirectory() {
   return result;
 }
 
-StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path) {
+absl::StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path) {
   if (IsAbsolutePath(path)) {
     return CleanPath(path);
   }
-  if (StatusOr<std::string> dir = GetCurrentDirectory()) {
+  if (absl::StatusOr<std::string> dir = GetCurrentDirectory(); dir.ok()) {
     return CleanPath(JoinPath(*std::move(dir), path));
   } else {
     return dir.status();
@@ -278,14 +306,14 @@ absl::string_view Basename(absl::string_view path) {
 
 std::string RelativizePath(absl::string_view to_relativize,
                            absl::string_view relativize_against) {
-  StatusOr<PathCleaner> cleaner = PathCleaner::Create(relativize_against);
+  absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(relativize_against);
   if (!cleaner.ok()) {
     return "";
   }
   return cleaner->Relativize(to_relativize).value_or("");
 }
 
-StatusOr<std::string> RealPath(absl::string_view path) {
+absl::StatusOr<std::string> RealPath(absl::string_view path) {
   // realpath requires a null-terminated cstring, but string_view may not be.
   // checking whether or not it is null-terminated is potentially UB.
   std::string zpath(path);

@@ -55,3 +55,27 @@ class Class {
 //- FunctionDoc.text "Function doc."
 /** Function doc. */
 function myFunc() {}
+
+interface String {
+//- @:66"fontsize" defines/binding FontSize
+//- FontSize.tag/deprecated "The <font> element has been removed in HTML5.\nPrefer using CSS properties."
+  /**
+   * @deprecated The <font> element has been removed in HTML5.
+   *             Prefer using CSS properties.
+   */
+  fontsize: (size: number) => string;
+//- @:70"big" defines/binding Big
+//- Big.tag/deprecated ""
+  /** @deprecated */
+  big: () => string;
+}
+
+//- @:76"PromiseAlias" defines/binding PromiseAlias
+//- PromiseAlias.tag/deprecated "dont use me"
+/** @deprecated dont use me */
+type PromiseAlias<T> = Promise<T>;
+
+//- @:81"Foo" defines/binding IFoo
+//- IFoo.tag/deprecated "use Bar"
+/** @deprecated use Bar */
+interface Foo {}

@@ -1,3 +1,5 @@
+load("@bazel_skylib//lib:versions.bzl", "versions")
+
 def genlex(name, src, out, includes = []):
     """Generate a C++ lexer from a lex file using Flex.
 
@@ -83,10 +85,22 @@ def lexyacc_toolchain(name, lex, yacc):
         toolchain_type = "@io_kythe//tools/build_rules/lexyacc:toolchain_type",
     )
 
-def _local_lexyacc(repository_ctx):
-    flex = repository_ctx.which("flex")
+def _check_flex_version(repository_ctx, min_version):
+    flex = repository_ctx.os.environ.get("FLEX", repository_ctx.which("flex"))
     if flex == None:
         fail("Unable to find flex binary")
+    flex_result = repository_ctx.execute([flex, "--version"])
+    if flex_result.return_code:
+        fail("Unable to determine flex version: " + flex_result.stderr)
+    flex_version = flex_result.stdout.split(" ")
+    if len(flex_version) < 2:
+        fail("Too few components in flex version: " + flex_result.stdout)
+    if not versions.is_at_least(min_version, flex_version[1]):
+        fail("Flex too old (%s < %s)" % (flex_version[1], min_version))
+    return flex
+
+def _local_lexyacc(repository_ctx):
+    flex = _check_flex_version(repository_ctx, "2.6")
     bison = repository_ctx.os.environ.get("BISON", repository_ctx.which("bison"))
     if not bison:
         fail("Unable to find bison binary")
@@ -111,7 +125,7 @@ def _local_lexyacc(repository_ctx):
 local_lexyacc_repository = repository_rule(
     implementation = _local_lexyacc,
     local = True,
-    environ = ["PATH", "BISON"],
+    environ = ["PATH", "BISON", "FLEX"],
 )
 
 def lexyacc_configure():

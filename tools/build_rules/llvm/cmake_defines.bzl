@@ -45,6 +45,7 @@ _CMAKE_DEFINES = {
     "HAVE_STRERROR": "1",
     "HAVE_STRERROR_R": "1",
     "HAVE_SYSCONF": "1",
+    "HAVE_SYSEXITS_H": "1",
     "HAVE_SYS_IOCTL_H": "1",
     "HAVE_SYS_MMAN_H": "1",
     "HAVE_SYS_PARAM_H": "1",

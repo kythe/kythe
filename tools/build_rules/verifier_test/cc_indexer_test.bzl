@@ -62,11 +62,14 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
+    "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
+    "template_instance_exclude_path_pattern": "",
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
     "ibuild_config": "",
+    "use_compilation_corpus_as_default": False,
 }
 
 def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
@@ -243,8 +246,17 @@ _cc_kythe_proto_library_aspect = aspect(
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
+        # Attribute to make importing easier as the internal API requires this parameter.
+        # Unused externally.
+        "_grep_includes": attr.label(
+            allow_single_file = True,
+            executable = True,
+            cfg = "host",
+            default = Label("//tools/cpp:grep-includes"),
+        ),
     },
     fragments = ["cpp"],
+    incompatible_use_toolchain_transition = True,
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_kythe_proto_library_aspect_impl,
 )
@@ -274,7 +286,13 @@ def _cc_extract_kzip_impl(ctx):
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
-    opts, env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
+    opts, cc_env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
+    if ctx.attr.corpus:
+        env = {"KYTHE_CORPUS": ctx.attr.corpus}
+        env.update(cc_env)
+    else:
+        env = cc_env
+
     outputs = depset([
         extract(
             srcs = depset([src]),
@@ -296,9 +314,11 @@ def _cc_extract_kzip_impl(ctx):
         for src in ctx.files.srcs
         if not src.path.endswith(".h")  # Don't extract headers.
     ])
-    for dep in ctx.attr.deps:
-        if CxxCompilationUnits in dep:
-            outputs += dep[CxxCompilationUnits].files
+    outputs = depset(transitive = [outputs] + [
+        dep[CxxCompilationUnits].files
+        for dep in ctx.attr.deps
+        if CxxCompilationUnits in dep
+    ])
     return [
         DefaultInfo(files = outputs),
         CxxCompilationUnits(files = outputs),
@@ -326,6 +346,10 @@ cc_extract_kzip = rule(
         ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
+        ),
+        "corpus": attr.string(
+            doc = "The compilation unit corpus to use.",
+            default = "",
         ),
         "vnames_config": attr.label(
             doc = "vnames_config file to be used by the extractor.",
@@ -554,10 +578,14 @@ def _cc_index_impl(ctx):
         if kzip not in ctx.files.deps
     ]
 
-    entries = depset(intermediates)
-    for dep in ctx.attr.deps:
-        if KytheEntries in dep:
-            entries += dep[KytheEntries].files
+    entries = depset(
+        intermediates,
+        transitive = [
+            dep[KytheEntries].files
+            for dep in ctx.attr.deps
+            if KytheEntries in dep
+        ],
+    )
 
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
@@ -773,7 +801,8 @@ def objc_indexer_test(
         deps = deps,
         tags = tags,
         size = size,
-        copts = ["-fblocks"],
+        # Newer ObjC features are only enabled on the "modern" runtime.
+        copts = ["-fblocks", "-fobjc-runtime=macosx"],
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,

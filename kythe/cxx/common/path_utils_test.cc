@@ -22,8 +22,10 @@
 #include <string>
 #include <system_error>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
 namespace {
@@ -76,7 +78,7 @@ TEST(PathUtilsTest, JoinPath) {
 }
 
 TEST(PathUtilsTest, RelativizePath) {
-  StatusOr<std::string> current_dir = GetCurrentDirectory();
+  absl::StatusOr<std::string> current_dir = GetCurrentDirectory();
   ASSERT_TRUE(current_dir.ok());
 
   std::string cwd_foo = JoinPath(*current_dir, "foo");
@@ -97,29 +99,29 @@ TEST(PathUtilsTest, RelativizePath) {
 }
 
 TEST(PathUtilsTest, MakeCleanAbsolutePath) {
-  std::string current_dir = GetCurrentDirectory().ValueOrDie();
+  std::string current_dir = GetCurrentDirectory().value();
 
-  EXPECT_EQ(current_dir, MakeCleanAbsolutePath(".").ValueOrDie());
+  EXPECT_EQ(current_dir, MakeCleanAbsolutePath(".").value());
 
-  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c").ValueOrDie());
-  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/.").ValueOrDie());
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./..").ValueOrDie());
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../.").ValueOrDie());
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/..").ValueOrDie());
-  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/..").ValueOrDie());
-  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../..").ValueOrDie());
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c").value());
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/.").value());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./..").value());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../.").value());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/..").value());
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/..").value());
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../..").value());
 }
 
 TEST(PathUtilsTest, RealPath) {
   // Since RealPath accesses the filesystem, we can't make very many
   // guarantees about its behavior, but we would like it to return an
   // error if a path doesn't exist.
-  StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
-  EXPECT_EQ(StatusCode::kNotFound, result.status().code());
+  absl::StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
+  EXPECT_EQ(absl::StatusCode::kNotFound, result.status().code());
 
   // Some systems symlink their temporary directory, so use RealPath()
   // here to deal with that.
-  const std::string temp_dir = RealPath(testing::TempDir()).ValueOrDie();
+  const std::string temp_dir = RealPath(testing::TempDir()).value();
 
   // If so, check that RealPath resolves a known link.
   const std::string link_path = JoinPath(temp_dir, "PathUtilsTestLink");
@@ -148,10 +150,9 @@ class CanonicalizerTest : public ::testing::Test {
   void SetUp() override {
     const testing::TestInfo* test_info =
         testing::UnitTest::GetInstance()->current_test_info();
-    std::string root =
-        JoinPath(JoinPath(RealPath(testing::TempDir()).ValueOrDie(),
-                          test_info->test_suite_name()),
-                 test_info->name());
+    std::string root = JoinPath(JoinPath(RealPath(testing::TempDir()).value(),
+                                         test_info->test_suite_name()),
+                                test_info->name());
     ASSERT_EQ(std::error_code(), MakeDirectory(root));
     filesystem_.push_back(root);
   }
@@ -199,7 +200,7 @@ TEST_F(CanonicalizerTest, CanonicalizerCleanPathOnly) {
 
   PathCanonicalizer canonicalizer =
       PathCanonicalizer::Create(root(), PathCanonicalizer::Policy::kCleanOnly)
-          .ValueOrDie();
+          .value();
   EXPECT_EQ("link/file",
             canonicalizer.Relativize(JoinPath(root(), "link/subdir/../file"))
                 .value_or(""));
@@ -216,7 +217,7 @@ TEST_F(CanonicalizerTest, CanonicalizerPreferRelative) {
   PathCanonicalizer canonicalizer =
       PathCanonicalizer::Create(base,
                                 PathCanonicalizer::Policy::kPreferRelative)
-          .ValueOrDie();
+          .value();
   // link/file points somewhere outside of "base", so prefer the relative path,
   // even if it's an unresolved symlink.
   EXPECT_EQ("link/file",
@@ -234,7 +235,7 @@ TEST_F(CanonicalizerTest, CanonicalizerPreferReal) {
   const std::string base = JoinPath(root(), "base");
   PathCanonicalizer canonicalizer =
       PathCanonicalizer::Create(base, PathCanonicalizer::Policy::kPreferReal)
-          .ValueOrDie();
+          .value();
   // Use the resolved path, even if it points outside of the base.
   EXPECT_EQ(JoinPath(root(), "elsewhere/file"),
             canonicalizer.Relativize(JoinPath(base, "link/subdir/../file"))

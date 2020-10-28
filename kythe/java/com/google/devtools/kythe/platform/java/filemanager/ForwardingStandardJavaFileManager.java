@@ -16,6 +16,7 @@
 package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.reflect.Reflection;
 import java.io.File;
@@ -223,7 +224,10 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.getLocationAsPaths(location);
     try {
       return (Iterable<? extends Path>) getLocationAsPathsMethod.invoke(fileManager, location);
-    } catch (NullPointerException | ReflectiveOperationException e) {
+    } catch (NullPointerException npe) {
+      // Fall back to using getLocation from the underlying fileManager.
+      return Iterables.transform(fileManager.getLocation(location), File::toPath);
+    } catch (ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getLocationAsPaths", e);
     }
   }

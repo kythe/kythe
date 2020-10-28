@@ -34,13 +34,24 @@ def _join_path(root, path):
         root = paths.relativize(root, _ROOT_PREFIX)
     return paths.normalize(paths.join(root, path))
 
-def _llvm_headers(root):
+def _llvm_headers(root, additional_header_dirs = []):
     root = _replace_prefix(root, "lib/", "include/llvm/")
-    return _glob([_join_path(root, "**/*.*")])
+    hdrglob = [_join_path(root, "**/*.*")]
+    for dir in additional_header_dirs:
+        # Only include "public" headers in the header files.
+        if paths.is_absolute(dir) and "include/llvm" in dir:
+            hdrglob.append(paths.join(_join_path(root, dir), "**/*.*"))
+    return _glob(hdrglob)
 
 def _replace_prefix(value, prefix, repl):
     if value.startswith(prefix):
         return repl + value[len(prefix):]
+    return value
+
+def _replace_suffix(value, suffix_map):
+    for suffix, repl in suffix_map.items():
+        if value.endswith(suffix):
+            return value[:len(value) - len(suffix)] + repl
     return value
 
 def _clang_headers(root):
@@ -123,6 +134,15 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
         for s in srcs
         if paths.dirname(s)
     }.keys()
+
+    # Upstream LLVM has some inconsistent-case header directories
+    # which causes breakages on macOS.
+    # Adjust the case here if we encounter it.
+    # https://github.com/kythe/kythe/issues/4535
+    additional_header_dirs = [
+        _replace_suffix(dir, {"/Elf": "/ELF", "/ASMParser": "/AsmParser"})
+        for dir in additional_header_dirs
+    ]
     sources = (
         [_join_path(root, s) for s in srcs] +
         _llvm_srcglob(root, additional_header_dirs + subdirs) +
@@ -148,7 +168,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
     native.cc_library(
         name = name,
         srcs = collections.uniq(sources),
-        hdrs = _llvm_headers(root) + hdrs,
+        hdrs = _llvm_headers(root, additional_header_dirs) + hdrs,
         deps = depends,
         copts = ["-I$(GENDIR)/{0} -I{0}".format(_repo_path(i)) for i in includes],
         **kwargs
@@ -228,7 +248,7 @@ def _llvm_tablegen(ctx, kind, out, *opts):
         name = _genfile_name(out),
         outs = [out],
         srcs = _glob([
-            _join_path(root, "*.td"),  # local_tds
+            _join_path(root, "**/*.td"),  # local_tds
             "include/llvm/**/*.td",  # global_tds
         ]),
         tools = [":llvm-tblgen"],

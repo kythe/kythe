@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
@@ -34,4 +35,9 @@ go_test(
         "settings_test.go",
     ],
     library = ":bazel",
+)
+
+bzl_library(
+    name = "extractors_bzl",
+    srcs = ["extractors.bzl"],
 )

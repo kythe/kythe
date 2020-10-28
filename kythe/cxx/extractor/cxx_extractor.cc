@@ -28,6 +28,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -527,11 +528,11 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
                                                const std::string& in_path) {
   if (in_path == "-" || in_path == "<stdin>") {
     if (main_source_file_stdin_alternate_->empty()) {
-      const llvm::MemoryBuffer* buffer =
-          source_manager_->getMemoryBufferForFile(file);
+      const llvm::MemoryBufferRef buffer =
+          source_manager_->getMemoryBufferForFileOrFake(file);
       std::string hashed_name =
-          Sha256(buffer->getBufferStart(),
-                 buffer->getBufferEnd() - buffer->getBufferStart());
+          Sha256(buffer.getBufferStart(),
+                 buffer.getBufferEnd() - buffer.getBufferStart());
       *main_source_file_stdin_alternate_ = "<stdin:" + hashed_name + ">";
     }
     return *main_source_file_stdin_alternate_;
@@ -544,10 +545,10 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   std::string path = FixStdinPath(file, in_path);
   auto contents = source_files_->insert({in_path, SourceFile{""}});
   if (contents.second) {
-    const llvm::MemoryBuffer* buffer =
-        source_manager_->getMemoryBufferForFile(file);
-    contents.first->second.file_content.assign(buffer->getBufferStart(),
-                                               buffer->getBufferEnd());
+    const llvm::MemoryBufferRef buffer =
+        source_manager_->getMemoryBufferForFileOrFake(file);
+    contents.first->second.file_content.assign(buffer.getBufferStart(),
+                                               buffer.getBufferEnd());
     contents.first->second.vname.CopyFrom(
         index_writer_->VNameForPath(index_writer_->RelativizePath(path)));
     VLOG(1) << "added content for " << path << ": mapped to "
@@ -930,7 +931,7 @@ void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {
 }
 
 void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
-  if (auto digest = writer_->WriteFile(file.content())) {
+  if (auto digest = writer_->WriteFile(file.content()); digest.ok()) {
     if (!file.info().digest().empty() && file.info().digest() != *digest) {
       LOG(WARNING) << "Wrote FileData with mismatched digests: "
                    << file.info().ShortDebugString() << " != " << *digest;
@@ -968,16 +969,23 @@ kythe::proto::VName CompilationWriter::VNameForPath(const std::string& path) {
 }
 
 std::string CompilationWriter::RelativizePath(absl::string_view path) {
+  // Don't attempt to relativize builtin resource paths.
+  if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
+    return std::string(path);
+  }
+
   if (!canonicalizer_.has_value()) {
-    if (StatusOr<PathCanonicalizer> canonicalizer =
-            PathCanonicalizer::Create(root_directory_, path_policy_)) {
+    if (absl::StatusOr<PathCanonicalizer> canonicalizer =
+            PathCanonicalizer::Create(root_directory_, path_policy_);
+        canonicalizer.ok()) {
       canonicalizer_ = *std::move(canonicalizer);
     } else {
       LOG(INFO) << "Error making relative path: " << canonicalizer.status();
       return std::string(path);
     }
   }
-  if (StatusOr<std::string> relative = canonicalizer_->Relativize(path)) {
+  if (absl::StatusOr<std::string> relative = canonicalizer_->Relativize(path);
+      relative.ok()) {
     return *std::move(relative);
   } else {
     LOG(INFO) << "Error making relative path: " << relative.status();
@@ -1139,6 +1147,11 @@ void CompilationWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   *unit_vname = main_vname;
+  if (!corpus_.empty()) {
+    // Use the explicit build corpus as the unit corpus in preference to that of
+    // the primary file.
+    unit_vname->set_corpus(corpus_);
+  }
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 
@@ -1264,8 +1277,11 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
     final_args_.insert(final_args_.begin() + 1, "-resource-dir");
   }
   final_args_.insert(final_args_.begin() + 1, "-DKYTHE_IS_RUNNING=1");
-  // Store the arguments post-filtering.
+  // Store the arguments in the compilation unit post-filtering.
   index_writer_.set_args(final_args_);
+  // Disable all warnings when running the extractor, but don't propagate this
+  // to the indexer.
+  final_args_.push_back("--no-warnings");
 }
 
 void ExtractorConfiguration::InitializeFromEnvironment() {
@@ -1293,6 +1309,9 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
   if (const char* env_kythe_build_config = getenv("KYTHE_BUILD_CONFIG")) {
     SetBuildConfig(env_kythe_build_config);
+  }
+  if (const char* env_kythe_build_target = getenv("KYTHE_ANALYSIS_TARGET")) {
+    SetTargetName(env_kythe_build_target);
   }
   if (const char* env_path_policy = getenv("KYTHE_CANONICALIZE_VNAME_PATHS")) {
     index_writer_.set_path_canonicalization_policy(

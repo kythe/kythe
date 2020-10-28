@@ -48,11 +48,13 @@ def _extract_java_aspect(target, ctx):
     else:
         args += ["-proc:none"]
 
-    deps = depset()
-    for a in target.actions:
-        if a.mnemonic == "Javac":
-            deps += a.inputs
-    deps += annotations.processor_classpath
+    deps = depset(
+        transitive = annotations.processor_classpath + [
+            a.inputs
+            for a in target.actions
+            if a.mnemonic == "Javac"
+        ],
+    )
 
     extract(
         ctx = ctx,

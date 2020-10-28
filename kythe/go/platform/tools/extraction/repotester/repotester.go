@@ -69,7 +69,7 @@ Options:
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	checkFlags()
 
 	w := csv.NewWriter(os.Stdout)
 	w.Write([]string{"downloads", "extracts", "downloadfilecount", "extractfilecount", "coverage", "repo"})
@@ -108,7 +108,7 @@ func main() {
 	}
 }
 
-func verifyFlags() {
+func checkFlags() {
 	if flag.NArg() > 0 {
 		log.Fatalf("Unknown arguments: %v", flag.Args())
 	}

@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
@@ -413,4 +413,6 @@ func (errSeeker) Seek(offset int64, whence int) (int64, error) {
 func NewReader(r io.Reader) Reader { return NewReadSeeker(&errSeeker{r}) }
 
 // NewReadSeeker returns a Riegeli ReadSeeker for r.
-func NewReadSeeker(r io.ReadSeeker) ReadSeeker { return &reader{r: &chunkReader{r: &blockReader{r: r}}} }
+func NewReadSeeker(r io.ReadSeeker) ReadSeeker {
+	return &reader{r: &chunkReader{r: &blockReader{r: r}}}
+}

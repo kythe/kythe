@@ -1,5 +1,4 @@
 // Checks how we link operator overload functions.
-// Needs --ignore_dups=true because of noncanonicalized function types.
 struct S {
 //- @"operator=" defines/binding OpEq
   void operator=(int);
@@ -10,13 +9,13 @@ struct S {
 //- @"operator->" defines/binding OpArrow
   void operator->();
 };
-//- @"operator" defines/binding OpNew
+//- @"operator new" defines/binding OpNew
 void* operator new(unsigned long);
-//- @"operator" defines/binding OpDelete
+//- @"operator delete" defines/binding OpDelete
 void operator delete(void*);
-//- @"operator" defines/binding OpNewArray
+//- @"operator new[]" defines/binding OpNewArray
 void* operator new[](unsigned long);
-//- @"operator" defines/binding OpDeleteArray
+//- @"operator delete[]" defines/binding OpDeleteArray
 void operator delete[](void*);
 //- @"operator+" defines/binding OpPlus
 void operator+(S a, S b);

@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 cc_library(
     name = "kythe_claim_client",
@@ -24,7 +27,9 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:filecontext_cc_proto",
         "//kythe/proto:storage_cc_proto",
+        "@boringssl//:crypto",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
     ],
@@ -48,10 +53,15 @@ cc_library(
         ":kythe_claim_client",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/common/indexing:caching_output",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf",
+        "@org_llvm//:LLVMSupport",
     ],
 )
 
@@ -82,6 +92,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":indexed_parent_map",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@org_llvm//:LLVMSupport",
@@ -110,6 +121,7 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@org_llvm//:clangAST",
+        "@org_llvm//:clangBasic",
     ],
 )
 
@@ -149,6 +161,7 @@ cc_library(
     deps = [
         ":kythe_claim_client",
         "//third_party/llvm/src:clang_builtin_headers",
+        "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
@@ -175,6 +188,8 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_range_finder",
+        ":clang_utils",
         ":graph_observer",
         ":indexed_parent_iterator",
         ":indexed_parent_map",
@@ -182,6 +197,7 @@ cc_library(
         ":kythe_claim_client",
         ":marked_source",
         ":node_set",
+        ":recursive_type_visitor",
         ":semantic_hash",
         ":type_map",
         "//kythe/cxx/common:lib",
@@ -189,10 +205,15 @@ cc_library(
         "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_googlesource_code_re2//:re2",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",
+        "@org_llvm//:clangBasic",
         "@org_llvm//:clangIndex",
         "@org_llvm//:clangLex",
         "@org_llvm//:clangSema",
@@ -270,8 +291,10 @@ cc_library(
         "//kythe/cxx/extractor:path_utils",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings:str_format",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangBasic",
+        "@org_llvm//:clangIndex",
         "@org_llvm//:clangLex",
     ],
 )
@@ -296,6 +319,7 @@ cc_library(
         ":vfs",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/common/schema:edges",
         "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm/src:clang_builtin_headers",
@@ -303,6 +327,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",
@@ -324,12 +349,15 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_range_finder",
         ":clang_utils",
         ":graph_observer",
         ":kythe_claim_client",
+        "//kythe/cxx/common:scope_guard",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_protobuf//:protobuf",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",
         "@org_llvm//:clangBasic",
@@ -353,6 +381,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_utils",
         ":indexer_ast_hooks",
         ":indexer_library_support",
         "//third_party/llvm/src:clang_builtin_headers",
@@ -384,6 +413,7 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
@@ -419,17 +449,23 @@ cc_library(
         "//external:libmemcached",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/extractor:cxx_details",
         "//kythe/cxx/extractor:supported_language",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_googlesource_code_re2//:re2",
         "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangBasic",
         "@org_llvm//:clangFrontend",
         "@org_llvm//:clangLex",
         "@org_llvm//:clangTooling",
@@ -448,13 +484,21 @@ cc_binary(
     ],
     deps = [
         ":frontend",
+        ":google_flags_library_support",
+        ":imputed_constructor_library_support",
+        ":indexer_ast_hooks",
         ":lib",
+        ":proto_library_support",
         "//external:zlib",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:re2_flag",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -484,7 +528,9 @@ cc_test(
         "//conditions:default": [],
     }),
     deps = [
+        ":indexer_ast_hooks",
         ":lib",
+        "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/common/indexing:testlib",
         "//third_party:gtest",
         "@com_google_absl//absl/memory",
@@ -492,6 +538,57 @@ cc_test(
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",
         "@org_llvm//:clangFrontend",
+        "@org_llvm//:clangTooling",
+    ],
+)
+
+cc_library(
+    name = "recursive_type_visitor",
+    hdrs = ["recursive_type_visitor.h"],
+    deps = [
+        "@org_llvm//:clangAST",
+    ],
+)
+
+cc_test(
+    name = "recursive_type_visitor_test",
+    srcs = ["recursive_type_visitor_test.cc"],
+    deps = [
+        ":recursive_type_visitor",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "clang_range_finder",
+    srcs = ["clang_range_finder.cc"],
+    hdrs = ["clang_range_finder.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangAST",
+        "@org_llvm//:clangBasic",
+        "@org_llvm//:clangLex",
+    ],
+)
+
+cc_test(
+    name = "clang_range_finder_test",
+    srcs = [
+        "clang_range_finder_test.cc",
+    ],
+    deps = [
+        ":clang_range_finder",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangAST",
+        "@org_llvm//:clangFrontend",
+        "@org_llvm//:clangLex",
         "@org_llvm//:clangTooling",
     ],
 )

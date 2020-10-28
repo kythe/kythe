@@ -354,8 +354,6 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
 
   // Messages are record types.
   if (!Expr->getType()->isRecordType()) {
-    LOG(ERROR) << "Found a proto that is not a record type: "
-               << Expr->getType().getAsString();
     return;
   }
 
@@ -373,19 +371,19 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
   const clang::StringLiteral* Literal = nullptr;
   if (const auto* const HelperCallExpr =
           clang::dyn_cast<clang::CallExpr>(ParseProtoExpr)) {
-    // We're matching against a call to ParseTextProtoOrDieAt, a function
+    // We're matching against a call to ParseTextProtoOrDie, a function
     // template that returns some proto type T via ParseProtoHelper's
-    // operator() (which performs the actual message parsing).
-    // Get the inner stringpiece.
-    if (HelperCallExpr->getNumArgs() != 4) {
-      LOG(ERROR) << "Unknown signature for ParseTextProtoOrDieAt";
+    // operator T() (which performs the actual message parsing).
+    // Get the inner string_view.
+    if (HelperCallExpr->getNumArgs() < 1) {
+      LOG(ERROR) << "Unknown signature for ParseTextProtoOrDie";
       return;
     }
-    const auto* const StringpieceCtorExpr =
+    const auto* const StringViewCtorExpr =
         HelperCallExpr->getArg(0)->IgnoreParenImpCasts();
-    // TODO(courbet): Handle the case when the stringpiece is not a temporary.
+    // TODO(courbet): Handle the case when the string_view is not a temporary.
     if (const auto* const CxxConstruct =
-            clang::dyn_cast<clang::CXXConstructExpr>(StringpieceCtorExpr)) {
+            clang::dyn_cast<clang::CXXConstructExpr>(StringViewCtorExpr)) {
       // StringPiece(StringPiece&&) has a single parameter.
       if (CxxConstruct->getNumArgs() != 1) {
         return;
@@ -399,7 +397,7 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
       if (clang::isa<clang::StringLiteral>(Arg)) {
         Literal = clang::dyn_cast<clang::StringLiteral>(Arg);
       } else {
-        // TODO(courbet): Handle the case when the input is not a const char*
+        // TODO(courbet): Handle the case when the input is not a string
         // literal.
         return;
       }

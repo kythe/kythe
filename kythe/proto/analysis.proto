@@ -23,6 +23,7 @@ option java_package = "com.google.devtools.kythe.proto";
 option cc_enable_arenas = true;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 import "kythe/proto/storage.proto";
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
@@ -209,6 +210,18 @@ message KzipInfo {
   // with no corresponding required_input. If there are any items in this field,
   // it indicates that this kzip has serious problems and should not be used.
   repeated string critical_kzip_errors = 5;
+}
+
+// RepoMetadata provides storage for additional information about a specific
+// build from a repository. This message is stored in the
+// CompilationUnit.details field.
+message BuildMetadata {
+  // The commit_timestamp is generally the timestamp at which the source for
+  // this build was checked into version control, but can be any timestamp
+  // associated with the origin of this build. In the case that a project is
+  // made up of multiple repositories, this timestamp should be the one
+  // associated with the primary/super repository.
+  google.protobuf.Timestamp commit_timestamp = 1;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a

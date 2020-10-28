@@ -18,7 +18,6 @@ package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Diagnostic;
@@ -46,8 +45,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
   public static final String NODE_PREFIX = "/kythe/";
 
   private final StatisticsCollector statistics;
@@ -76,12 +73,6 @@ public class KytheEntrySets {
       if (name.getSignature().isEmpty()) {
         // Ensure file VName has digest signature
         name = name.setSignature(digest);
-      }
-      if (inputVNames.containsKey(digest)) {
-        statistics.incrementCounter("file-digest-collision");
-        logger.atWarning().log(
-            "Found two files with the same digest [%s]: %s and %s",
-            digest, name, inputVNames.get(digest));
       }
       inputVNames.put(digest, name.build());
     }
@@ -185,14 +176,6 @@ public class KytheEntrySets {
     }
     EntrySet anchor = builder.build();
     return emitAndReturn(anchor);
-  }
-
-  /**
-   * Emits and returns a NAME node representing the specified JVM binary name (See
-   * https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1).
-   */
-  public EntrySet getJvmNameAndEmit(String name) {
-    return emitAndReturn(new NodeBuilder(NodeKind.NAME, "jvm").setSignature(name).build());
   }
 
   /** Emits and returns a DIAGNOSTIC node attached to no file. */

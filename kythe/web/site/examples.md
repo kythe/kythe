@@ -85,12 +85,16 @@ bazel --bazelrc=$KYTHE_DIR/extractors.bazelrc \
     //...
 {% endhighlight %}
 
-## Extracting CMake based repositories
+## runextractor tool
 
-**These instructions assume your environment is already set up to successfully
-run cmake for your repository**.
+`runextractor` is a generic extraction tool that works with any build system capable of emitting a [compile_commands.json](https://clang.llvm.org/docs/JSONCompilationDatabase.html) file. `runextractor` invokes an extractor for each compilation action listed in compile_commands.json and generates a kzip in the output directory for each.
 
-Set the following three environment variables:
+Build systems capable of emitting a `compile_commands.json` include CMake, Ninja, [gn](https://gn.googlesource.com/gn/+/master/docs/reference.md), waf, and others.
+
+
+### runextractor configuration
+
+`runextractor` is configured via a set of environment variables:
 
 *   `KYTHE_ROOT_DIRECTORY`: The absolute path for file input to be extracted.
     This is generally the root of the repository. All files extracted will be
@@ -98,10 +102,29 @@ Set the following three environment variables:
 *   `KYTHE_OUTPUT_DIRECTORY`: The absolute path for storing output.
 *   `KYTHE_CORPUS`: The corpus label for extracted files.
 
+
+### Extracting from a compile_commands.json file
+
+This example uses Ninja, but the first step can be adapted for others.
+
+1. Begin by building your project with compile_commands.json enabled. For ninja, the command is `ninja -t compdb > compile_commands.json`
+2. Set environment variables - see above section.
+3. Invoke runextractor: `runextractor compdb -extractor /opt/kythe/extractors/cxx_extractor`
+4. If successful, the output directory should contain one kzip for each compilation action. An optional last step is to merge these into one kzip with `/opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip`.
+
+### Extracting CMake based repositories
+
+The `runextractor` tool has a convenience subcommand for cmake-based repositories that first invokes CMake to generate a compile_commands.json, then processes the listed compilation actions. However the same result could be achieved by invoking CMake manually, then using the generic `runextractor compdb` command.
+
+**These instructions assume your environment is already set up to successfully
+run cmake for your repository**.
+
 ```shell
 $ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
-$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
 $ export KYTHE_CORPUS="github.com/myproject/myrepo"
+
+$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
+$ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
 # $CMAKE_ROOT_DIRECTORY is passed into the -sourcedir flag. This value should be
 # the directory that contains the top-level CMakeLists.txt file. In many
@@ -117,97 +140,96 @@ $ /opt/kythe/tools/runextractor cmake \
 
 1. Install compiler wrapper
 
-Extraction works by intercepting all calls to `javac` and saving the compiler arguments and inputs to a "compilation unit", which is stored in a .kzip file. We have a javac-wrapper.sh script that forwards javac calls to the java extractor and then calls javac. Add this to the end of your project's build.gradle:
+    Extraction works by intercepting all calls to `javac` and saving the compiler arguments and inputs to a "compilation unit", which is stored in a .kzip file. We have a javac-wrapper.sh script that forwards javac calls to the java extractor and then calls javac. Add this to the end of your project's build.gradle:
 
-```groovy
-allprojects {
-  gradle.projectsEvaluated {
-    tasks.withType(JavaCompile) {
-      options.fork = true
-      options.forkOptions.executable = '/opt/kythe/extractors/javac-wrapper.sh'
+    ```groovy
+    allprojects {
+      gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+          options.fork = true
+          options.forkOptions.executable = '/opt/kythe/extractors/javac-wrapper.sh'
+        }
+      }
     }
-  }
-}
-```
+    ```
 
 2. VName configuration
 
-Next, you will need to create a vnames.json mapping file, which tells the
-extractor how to assign vnames to files based on their paths. A basic vnames
-config for a gradle project looks like:
+    Next, you will need to create a vnames.json mapping file, which tells the
+    extractor how to assign vnames to files based on their paths. A basic vnames
+    config for a gradle project looks like:
 
-```json
-// vnames.json
-[
-  {
-    "pattern": "(build/[^/]+)/(.*)",
-    "vname": {
-      "corpus": "MY_CORPUS",
-      "path": "@2@",
-      "root": "@1@"
-    }
-  },
-  {
-    "pattern": ".*/.gradle/caches/(.*)",
-    "vname": {
-      "corpus": "MY_CORPUS",
-      "path": "@1@",
-      "root": ".gradle/caches"
-    }
-  },
-  {
-    "pattern": "(.*)",
-    "vname": {
-      "corpus": "MY_CORPUS",
-      "path": "@1@"
-    }
-  }
-]
-```
+    ```json
+    [
+      {
+        "pattern": "(build/[^/]+)/(.*)",
+        "vname": {
+          "corpus": "MY_CORPUS",
+          "path": "@2@",
+          "root": "@1@"
+        }
+      },
+      {
+        "pattern": ".*/.gradle/caches/(.*)",
+        "vname": {
+          "corpus": "MY_CORPUS",
+          "path": "@1@",
+          "root": ".gradle/caches"
+        }
+      },
+      {
+        "pattern": "(.*)",
+        "vname": {
+          "corpus": "MY_CORPUS",
+          "path": "@1@"
+        }
+      }
+    ]
+    ```
 
-(note: change "MY_CORPUS" to the actual corpus for your project)
+    (note: change "MY_CORPUS" to the actual corpus for your project)
 
-You can test your vname config using the `vnames` command line tool. For example:
+    You can test your vname config using the `vnames` command line tool. For example:
 
-```shell
-bazel build //kythe/go/util/tools/vnames
+    ```shell
+    bazel build //kythe/go/util/tools/vnames
 
-echo "some/test/path.java" | ./bazel-bin/kythe/go/util/tools/vnames/vnames apply-rules --rules vnames.json
-> {
->   "corpus": "MY_CORPUS",
->   "path": "some/test/path.java"
-> }
-```
+    echo "some/test/path.java" | ./bazel-bin/kythe/go/util/tools/vnames/vnames apply-rules --rules vnames.json
+    > {
+    >   "corpus": "MY_CORPUS",
+    >   "path": "some/test/path.java"
+    > }
+    ```
 
 
 3. Extraction
 
-```shell
-# note: you may want to use a different javac depending on your install
-export REAL_JAVAC="/usr/bin/javac"
-export JAVA_HOME="$(readlink -f $REAL_JAVAC | sed 's:/bin/javac::')"
-export JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
+    ```shell
+    # note: you may want to use a different javac depending on your install
+    export REAL_JAVAC="/usr/bin/javac"
+    export JAVA_HOME="$(readlink -f $REAL_JAVAC | sed 's:/bin/javac::')"
+    export JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
 
-export KYTHE_VNAMES="$PWD/vnames.json"
+    export KYTHE_VNAMES="$PWD/vnames.json"
 
-export KYTHE_ROOT_DIRECTORY="$PWD" # paths in the compilation unit will be made relative to this
-export KYTHE_OUTPUT_DIRECTORY="/tmp/extracted_gradle_project"
-mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
+    export KYTHE_ROOT_DIRECTORY="$PWD" # paths in the compilation unit will be made relative to this
+    export KYTHE_OUTPUT_DIRECTORY="/tmp/extracted_gradle_project"
+    mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
-./gradlew clean build -x test -Dno_werror=true
+    ./gradlew clean build -x test -Dno_werror=true
 
-# merge all kzips into one
-/opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip
-```
+    # merge all kzips into one
+    /opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip
+    ```
 
 4. Examine results
 
-If extraction was successful, the final kzip should be at `$KYTHE_OUTPUT_DIRECTORY/merged.kzip`. The `kzip` tool can be used to inspect the result.
+    If extraction was successful, the final kzip should be at `$KYTHE_OUTPUT_DIRECTORY/merged.kzip`. The `kzip` tool can be used to inspect the result.
 
-```shell
-$ kzip info --input merged.kzip | jq . # view summary information
-$ kzip view merged.kzip | jq .         # view all compilation units in the kzip
-```
+    ```shell
+    $ kzip info --input merged.kzip | jq . # view summary information
+    $ kzip view merged.kzip | jq .         # view all compilation units in the kzip
+    ```
 
 
 ## Indexing Compilations
@@ -292,6 +314,8 @@ cayley repl --dbpath kythe.nq.gz # or cayley http --dbpath kythe.nq.gz
 As part of Kythe's first release, a sample UI has been made to show Kythe's
 basic cross-reference capabilities.  The following command can be run over the
 serving table created with the `write_tables` binary (see above).
+
+Note: Version v0.0.30 is the latest version that includes the web UI. If you want a newer Kythe than this, you'll need to build from source.
 
 {% highlight bash %}
 # --listen localhost:8080 allows access from only this machine; change to

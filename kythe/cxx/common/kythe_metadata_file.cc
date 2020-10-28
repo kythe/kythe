@@ -113,8 +113,9 @@ absl::optional<std::string> FindCommentMetadata(
   return LoadCommentMetadata(buffer, comment_start,
                              comment_start + 3 + search_string.size());
 }
+}  // anonymous namespace
 
-absl::optional<MetadataFile::Rule> LoadMetaElement(
+absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
     const proto::metadata::MappingRule& mapping) {
   using ::kythe::proto::metadata::MappingRule;
   if (mapping.type() == MappingRule::NOP) {
@@ -160,7 +161,6 @@ absl::optional<MetadataFile::Rule> LoadMetaElement(
     return absl::nullopt;
   }
 }
-}  // anonymous namespace
 
 std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
     absl::string_view id, absl::string_view json) {
@@ -178,7 +178,7 @@ std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
   std::vector<MetadataFile::Rule> rules;
   rules.reserve(metadata.meta().size());
   for (const auto& meta_element : metadata.meta()) {
-    if (auto rule = LoadMetaElement(meta_element)) {
+    if (auto rule = MetadataFile::LoadMetaElement(meta_element)) {
       rules.push_back(*std::move(rule));
     } else {
       return nullptr;

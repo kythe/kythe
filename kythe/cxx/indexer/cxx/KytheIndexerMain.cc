@@ -29,7 +29,9 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
+#include "kythe/cxx/common/re2_flag.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
@@ -52,12 +54,20 @@ ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
           "Drop comments for C++ forward declarations.");
 ABSL_FLAG(int, experimental_usr_byte_size, 0,
           "Use this many bytes to represent a USR (or don't at all if 0).");
+ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
+          "Use the CompilationUnit VName corpus as the default.");
+ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
+          "Emit experimental dataflow edges.");
+ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
+          kythe::RE2Flag{},
+          "If nonempty, a regex that matches files to be excluded from "
+          "template instance indexing.");
 
 namespace kythe {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
       IndexerContext::UsageMessage("the Kythe C++ indexer", "indexer"));
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
@@ -83,6 +93,14 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.TemplateInstanceExcludePathPattern =
+      absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
+  options.DataflowEdges =
+      absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
+          ? kythe::EmitDataflowEdges::Yes
+          : kythe::EmitDataflowEdges::No;
+  options.UseCompilationCorpusAsDefault =
+      absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
       absl::GetFlag(FLAGS_experimental_drop_instantiation_independent_data);
   options.AllowFSAccess = context.allow_filesystem_access();

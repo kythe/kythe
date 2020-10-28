@@ -20,10 +20,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <fstream>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
 #include "glog/logging.h"
@@ -31,6 +33,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
@@ -59,7 +62,7 @@ static void LoadExtraAction(const std::string& path,
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   if (remain.size() != 4) {
     absl::FPrintF(stderr,
@@ -73,6 +76,16 @@ int main(int argc, char* argv[]) {
   blaze::ExtraActionInfo info;
   blaze::CppCompileInfo cpp_info;
   LoadExtraAction(extra_action_file, &info, &cpp_info);
+
+  const std::string& source = cpp_info.source_file();
+  if (absl::EndsWith(source, ".s") || absl::EndsWith(source, ".asm")) {
+    // Assembly files can be in the srcs of CppCompile actions (created with
+    // cc_* rules or Starlark rules using cc_common.compile). However, these
+    // actions don't actually run the compiler, so there's nothing to extract.
+    std::ofstream output(output_file);
+    return 0;
+  }
+
   kythe::ExtractorConfiguration config;
   std::vector<std::string> args;
   args.push_back(cpp_info.tool());

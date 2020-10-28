@@ -20,6 +20,7 @@
 
 #include "IndexerASTHooks.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/Basic/FileManager.h"
 
 namespace kythe {
 

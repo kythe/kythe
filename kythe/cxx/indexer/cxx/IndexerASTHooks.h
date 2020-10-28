@@ -27,6 +27,8 @@
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
@@ -38,8 +40,10 @@
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
+#include "kythe/cxx/indexer/cxx/recursive_type_visitor.h"
 #include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "marked_source.h"
+#include "re2/re2.h"
 #include "type_map.h"
 
 namespace kythe {
@@ -74,6 +78,12 @@ struct MiniAnchor {
   GraphObserver::NodeId AnchoredTo;
 };
 
+/// \brief Specifies whether dataflow edges should be emitted.
+enum EmitDataflowEdges : bool {
+  No = false,  ///< Don't emit dataflow edges.
+  Yes = true   ///< Emit dataflow edges.
+};
+
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -84,14 +94,18 @@ class PruneCheck;
 
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
-class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
+class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
+  using Base = RecursiveTypeVisitor;
+
  public:
   IndexerASTVisitor(clang::ASTContext& C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
                     BehaviorOnFwdDeclComments ObjC,
                     BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
-                    GraphObserver* GO = nullptr, int UsrByteSize = 0)
+                    GraphObserver* GO = nullptr, int UsrByteSize = 0,
+                    EmitDataflowEdges EDE = EmitDataflowEdges::No,
+                    std::shared_ptr<re2::RE2> TIEPP = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -103,15 +117,26 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         Sema(Sema),
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
-        UsrByteSize(UsrByteSize) {}
+        UsrByteSize(UsrByteSize),
+        DataflowEdges(EDE),
+        TemplateInstanceExcludePathPattern(TIEPP) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
   bool VisitVarDecl(const clang::VarDecl* Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl* Decl);
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
+  bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
+
+  bool TraverseCallExpr(clang::CallExpr* CE);
+  bool TraverseReturnStmt(clang::ReturnStmt* RS);
+  bool TraverseBinaryOperator(clang::BinaryOperator* BO);
+
+  bool TraverseInitListExpr(clang::InitListExpr* ILE);
+  bool VisitInitListExpr(const clang::InitListExpr* ILE);
   bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE);
+
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr* E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr* E);
@@ -133,14 +158,17 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
 
-  template <typename T>
-  bool VisitTemplateSpecializationTypeLocHelper(T TL);
+  template <typename TypeLoc, typename Type>
+  bool VisitTemplateSpecializationTypePairHelper(TypeLoc Written,
+                                                 const Type* Resolved);
+
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-  bool VisitDeducedTemplateSpecializationTypeLoc(
-      clang::DeducedTemplateSpecializationTypeLoc TL);
+  bool VisitDeducedTemplateSpecializationTypePair(
+      clang::DeducedTemplateSpecializationTypeLoc TL,
+      const clang::DeducedTemplateSpecializationType* T);
 
-  bool VisitAutoTypeLoc(clang::AutoTypeLoc TL);
+  bool VisitAutoTypePair(clang::AutoTypeLoc TL, const clang::AutoType* T);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
@@ -158,6 +186,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   // Emit edges for an anchor pointing to the indicated type.
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
+  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
+                                        const clang::Type* Resolved);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -173,10 +203,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl* Decl);
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
   bool TraverseDecl(clang::Decl* Decl);
+  bool TraverseCXXConstructorDecl(clang::CXXConstructorDecl* CD);
 
   bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
   bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr* E);
+  bool TraverseCXXTemporaryObjectExpr(clang::CXXTemporaryObjectExpr* E);
 
   bool IndexConstructExpr(const clang::CXXConstructExpr* E,
                           const clang::TypeSourceInfo* TSI);
@@ -237,7 +269,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
   absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
-      const clang::ObjCMethodDecl* MD, EmitRanges ER);
+      const clang::ObjCMethodDecl* MD);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -260,52 +292,58 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param TL The TypeLoc for which to build a NodeSet.
   /// \returns NodeSet instance indicating claimability of the contained
   /// NodeIds.
-  NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
   NodeSet BuildNodeSetForType(const clang::QualType& QT);
+  NodeSet BuildNodeSetForType(const clang::Type* T);
+  NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
 
-  NodeSet BuildNodeSetForBuiltin(clang::BuiltinTypeLoc TL) const;
-  NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
-  NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
-  NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
-  NodeSet BuildNodeSetForTemplateTypeParm(clang::TemplateTypeParmTypeLoc TL);
-  NodeSet BuildNodeSetForPointer(clang::PointerTypeLoc TL);
-  NodeSet BuildNodeSetForMemberPointer(clang::MemberPointerTypeLoc TL);
-  NodeSet BuildNodeSetForLValueReference(clang::LValueReferenceTypeLoc TL);
-  NodeSet BuildNodeSetForRValueReference(clang::RValueReferenceTypeLoc TL);
+  NodeSet BuildNodeSetForTypeInternal(const clang::Type& T);
+  NodeSet BuildNodeSetForTypeInternal(const clang::QualType& QT);
 
-  NodeSet BuildNodeSetForAuto(clang::AutoTypeLoc TL);
+  NodeSet BuildNodeSetForBuiltin(const clang::BuiltinType& T) const;
+  NodeSet BuildNodeSetForEnum(const clang::EnumType& T);
+  NodeSet BuildNodeSetForRecord(const clang::RecordType& T);
+  NodeSet BuildNodeSetForInjectedClassName(
+      const clang::InjectedClassNameType& T);
+  NodeSet BuildNodeSetForTemplateTypeParm(const clang::TemplateTypeParmType& T);
+  NodeSet BuildNodeSetForPointer(const clang::PointerType& T);
+  NodeSet BuildNodeSetForMemberPointer(const clang::MemberPointerType& T);
+  NodeSet BuildNodeSetForLValueReference(const clang::LValueReferenceType& T);
+  NodeSet BuildNodeSetForRValueReference(const clang::RValueReferenceType& T);
+
+  NodeSet BuildNodeSetForAuto(const clang::AutoType& TL);
   NodeSet BuildNodeSetForDeducedTemplateSpecialization(
-      clang::DeducedTemplateSpecializationTypeLoc TL);
+      const clang::DeducedTemplateSpecializationType& TL);
+  // Helper used for Auto and DeducedTemplateSpecialization.
+  NodeSet BuildNodeSetForDeduced(const clang::DeducedType& T);
 
-  NodeSet BuildNodeSetForQualified(clang::QualifiedTypeLoc TL);
-  NodeSet BuildNodeSetForConstantArray(clang::ConstantArrayTypeLoc TL);
-  NodeSet BuildNodeSetForIncompleteArray(clang::IncompleteArrayTypeLoc TL);
+  NodeSet BuildNodeSetForConstantArray(const clang::ConstantArrayType& TL);
+  NodeSet BuildNodeSetForIncompleteArray(const clang::IncompleteArrayType& TL);
   NodeSet BuildNodeSetForDependentSizedArray(
-      clang::DependentSizedArrayTypeLoc TL);
-  NodeSet BuildNodeSetForFunctionProto(clang::FunctionProtoTypeLoc TL);
-  NodeSet BuildNodeSetForFunctionNoProto(clang::FunctionNoProtoTypeLoc TL);
-  NodeSet BuildNodeSetForParen(clang::ParenTypeLoc TL);
-  NodeSet BuildNodeSetForDecltype(clang::DecltypeTypeLoc TL);
-  NodeSet BuildNodeSetForElaborated(clang::ElaboratedTypeLoc TL);
-  NodeSet BuildNodeSetForTypedef(clang::TypedefTypeLoc TL);
+      const clang::DependentSizedArrayType& T);
+  NodeSet BuildNodeSetForExtInt(const clang::ExtIntType& T);
+  NodeSet BuildNodeSetForDependentExtInt(const clang::DependentExtIntType& T);
+  NodeSet BuildNodeSetForFunctionProto(const clang::FunctionProtoType& T);
+  NodeSet BuildNodeSetForFunctionNoProto(const clang::FunctionNoProtoType& T);
+  NodeSet BuildNodeSetForParen(const clang::ParenType& T);
+  NodeSet BuildNodeSetForDecltype(const clang::DecltypeType& T);
+  NodeSet BuildNodeSetForElaborated(const clang::ElaboratedType& T);
+  NodeSet BuildNodeSetForTypedef(const clang::TypedefType& T);
 
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
-      clang::SubstTemplateTypeParmTypeLoc TL);
-  NodeSet BuildNodeSetForDependentName(clang::DependentNameTypeLoc TL);
+      const clang::SubstTemplateTypeParmType& T);
+  NodeSet BuildNodeSetForDependentName(const clang::DependentNameType& T);
   NodeSet BuildNodeSetForTemplateSpecialization(
-      clang::TemplateSpecializationTypeLoc TL);
-  NodeSet BuildNodeSetForPackExpansion(clang::PackExpansionTypeLoc TL);
-  NodeSet BuildNodeSetForBlockPointer(clang::BlockPointerTypeLoc TL);
-  NodeSet BuildNodeSetForObjCObjectPointer(clang::ObjCObjectPointerTypeLoc TL);
-  NodeSet BuildNodeSetForObjCObject(clang::ObjCObjectTypeLoc TL);
-  NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
-  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
-  NodeSet BuildNodeSetForAttributed(clang::AttributedTypeLoc TL);
+      const clang::TemplateSpecializationType& T);
+  NodeSet BuildNodeSetForPackExpansion(const clang::PackExpansionType& T);
+  NodeSet BuildNodeSetForBlockPointer(const clang::BlockPointerType& T);
+  NodeSet BuildNodeSetForObjCObjectPointer(
+      const clang::ObjCObjectPointerType& T);
+  NodeSet BuildNodeSetForObjCObject(const clang::ObjCObjectType& T);
+  NodeSet BuildNodeSetForObjCTypeParam(const clang::ObjCTypeParamType& T);
+  NodeSet BuildNodeSetForObjCInterface(const clang::ObjCInterfaceType& T);
+  NodeSet BuildNodeSetForAttributed(const clang::AttributedType& T);
   NodeSet BuildNodeSetForDependentAddressSpace(
-      clang::DependentAddressSpaceTypeLoc TL);
-
-  // Helper used for Auto and DeducedTemplateSpecialization.
-  NodeSet BuildNodeSetForDeduced(clang::DeducedTypeLoc TL);
+      const clang::DependentAddressSpaceType& T);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
@@ -315,15 +353,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForNonSpecializedRecordDecl(
       const clang::RecordDecl* Decl);
 
-  const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
-      clang::TemplateTypeParmTypeLoc TL) const;
+  const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeDecl(
+      const clang::TemplateTypeParmType& T) const;
 
   absl::optional<GraphObserver::NodeId> BuildNodeIdForObjCProtocols(
-      clang::ObjCObjectTypeLoc TL);
+      const clang::ObjCObjectType& T);
   GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      const clang::ObjCObjectType* T);
-  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      GraphObserver::NodeId BaseType, const clang::ObjCObjectType* T);
+      absl::Span<const GraphObserver::NodeId> ProtocolIds);
+
+  std::vector<GraphObserver::NodeId> BuildNodeIdsForObjCProtocols(
+      GraphObserver::NodeId BaseType, const clang::ObjCObjectType& T);
+  std::vector<GraphObserver::NodeId> BuildNodeIdsForObjCProtocols(
+      const clang::ObjCObjectType& T);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified.
@@ -334,22 +375,26 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Builds a stable node ID for `QT`.
   /// \param QT The type that is being identified.
   /// \return The Node ID for `QT`.
-  ///
-  /// This function will invent a `TypeLoc` with an invalid location.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::QualType& QT);
+
+  /// \brief Builds a stable node ID for `T`.
+  /// \param T The type that is being identified.
+  /// \return The Node ID for `T`.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::Type* T);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
       const clang::TemplateName& Name);
 
-  /// \brief Builds a stable node ID for the given `TemplateArgument`.
+  /// \brief Builds a stable node ID for the given `TemplateArgumentLoc`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc& Arg, EmitRanges EmitRanges);
+      const clang::TemplateArgumentLoc& ArgLoc);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgument& Arg, clang::SourceLocation L);
+      const clang::TemplateArgument& Arg);
 
   /// \brief Builds a stable node ID for `Stmt`.
   ///
@@ -526,22 +571,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   clang::SourceRange RangeForNameOfDeclaration(
       const clang::NamedDecl* Decl) const;
 
-  /// \brief Gets a suitable range for an AST entity from the `start_location`.
-  clang::SourceRange RangeForASTEntity(
-      clang::SourceLocation start_location) const;
-  clang::SourceRange RangeForSingleToken(
-      clang::SourceLocation start_location) const;
-
-  /// Consume a token of the `ExpectedKind` from the `StartLocation`,
-  /// returning the range for that token on success and an invalid
-  /// range otherwise.
-  ///
-  /// The begin location for the returned range may be different than
-  /// StartLocation. For example, this can happen if StartLocation points to
-  /// whitespace before the start of the token.
-  clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
-                                  clang::tok::TokenKind ExpectedKind) const;
-
   bool TraverseClassTemplateDecl(clang::ClassTemplateDecl* TD);
   bool TraverseClassTemplateSpecializationDecl(
       clang::ClassTemplateSpecializationDecl* TD);
@@ -595,20 +624,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Returns the ASTContext.
   const clang::ASTContext& getASTContext() { return Context; }
 
-  /// If `SR` is empty (getBegin() == getEnd()) and a valid file id, expands the
-  /// range. Otherwise, returns the input unmodified.
-  clang::SourceRange ExpandRangeIfEmptyFileID(const clang::SourceRange& SR);
-
-  // If `SR` is a valid macro id, attempt to map it to a file range,
-  // otherwise returns the input unmodified.
-  clang::SourceRange MapRangeToFileIfMacroID(const clang::SourceRange& SR);
-
-  /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
-  /// RangeContext after expanding empty ranges and mapping macros to a file
-  /// location.
-  absl::optional<GraphObserver::Range> ExpandedFileRangeInCurrentContext(
-      const clang::SourceRange& SR);
-
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   absl::optional<GraphObserver::Range> ExplicitRangeInCurrentContext(
@@ -620,6 +635,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// via RangeForASTEntityFromSourceLocation.
   absl::optional<GraphObserver::Range> ExpandedRangeInCurrentContext(
       clang::SourceRange SR);
+  /// Returns `SR` as a character-based file range.
+  clang::SourceRange NormalizeRange(clang::SourceRange SR) const;
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
@@ -674,13 +691,16 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void RecordCallEdges(const GraphObserver::Range& Range,
                        const GraphObserver::NodeId& Callee);
 
+  // Blames the use of a `Decl` at a particular `Range` on everything at the
+  // top of `BlameStack`. If there is nothing at the top of `BlameStack`,
+  // blames the use on the file.
+  void RecordBlame(const clang::Decl* Decl, const GraphObserver::Range& Range);
+
   /// \return whether `range` should be considered to be implicit under the
   /// current context.
   GraphObserver::Implicit IsImplicit(const GraphObserver::Range& range);
 
  private:
-  using Base = RecursiveASTVisitor;
-
   friend class PruneCheck;
 
   /// Whether we should stop on missing cases or continue on.
@@ -770,19 +790,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
-
-  /// \brief Ascribes a type to `AscribeTo`.
-  /// \param Type The `TypeLoc` referring to the type
-  /// \param DType A possibly deduced type (or simply Type->getType()).
-  /// \param AscribeTo The node to which the type should be ascribed.
-  ///
-  /// `auto` does not update TypeSourceInfo records after deduction, so
-  /// a deduced `auto` in the source text will appear to be undeduced.
-  /// In this case, it's useful to query the object being ascribed for its
-  /// unlocated QualType, as this does get updated.
-  void AscribeSpelledType(const clang::TypeLoc& Type,
-                          const clang::QualType& TrueType,
-                          const GraphObserver::NodeId& AscribeTo);
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
@@ -879,12 +886,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// DeclRefExpr and ObjCIvarRefExpr are similar entities and can be processed
   /// in the same way but do not have a useful common ancestry.
-  ///
-  /// \param IsInit set to true if this is an initializing reference.
   bool VisitDeclRefOrIvarRefExpr(const clang::Expr* Expr,
                                  const clang::NamedDecl* const FoundDecl,
                                  clang::SourceLocation SL,
-                                 bool IsImplicit = false, bool IsInit = false);
+                                 bool IsImplicit = false);
 
   /// \brief Connect a NodeId to the super and implemented protocols for a
   /// ObjCInterfaceDecl.
@@ -934,9 +939,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void ConnectCategoryToBaseClass(const GraphObserver::NodeId& DeclNode,
                                   const clang::ObjCInterfaceDecl* IFace);
 
-  void LogErrorWithASTDump(const std::string& msg,
+  void LogErrorWithASTDump(absl::string_view msg,
                            const clang::Decl* Decl) const;
-  void LogErrorWithASTDump(const std::string& msg,
+  void LogErrorWithASTDump(absl::string_view msg,
                            const clang::Expr* Expr) const;
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
@@ -959,6 +964,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                               const clang::RawComment* Comment,
                               const clang::DeclContext* DCxt,
                               absl::optional<GraphObserver::NodeId> DCID);
+
+  /// \brief Returns whether `Decl` should be indexed.
+  bool ShouldIndex(const clang::Decl* Decl);
 
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
@@ -995,6 +1003,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges;
+
+  /// \brief if nonempty, the pattern to match a path against to see whether
+  /// it should be excluded from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -1007,7 +1022,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      int UsrByteSize)
+      int UsrByteSize, EmitDataflowEdges EDE, std::shared_ptr<re2::RE2> TIEPP)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -1017,13 +1032,16 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         Supports(S),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)),
-        UsrByteSize(UsrByteSize) {}
+        UsrByteSize(UsrByteSize),
+        DataflowEdges(EDE),
+        TemplateInstanceExcludePathPattern(TIEPP) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
     CHECK(Sema != nullptr);
-    IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
-                              *Sema, ShouldStopIndexing, Observer, UsrByteSize);
+    IndexerASTVisitor Visitor(
+        Context, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
+        CppFwdDocs, Supports, *Sema, ShouldStopIndexing, Observer, UsrByteSize,
+        DataflowEdges, TemplateInstanceExcludePathPattern);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
@@ -1058,6 +1076,11 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges;
+  /// \brief if nonempty, the pattern to match a path against to see whether
+  /// it should be excluded from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 }  // namespace kythe

@@ -1,4 +1,4 @@
-# proto-file: extensions.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/extensions.proto
 # proto-message: mypkg.ExtendableMessage
 
 #- @str_field1 ref ExtendableMessageStrField1

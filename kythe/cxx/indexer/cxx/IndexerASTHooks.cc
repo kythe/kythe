@@ -23,6 +23,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
@@ -50,6 +51,7 @@
 #include "clang/Sema/Lookup.h"
 #include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
@@ -270,34 +272,63 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
-// Calls tsi->overrideType(new_type) and restores the current type upon
-// destruction.
-class ScopedTypeOverride {
- public:
-  explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi,
-                              clang::QualType new_type)
-      : tsi_(tsi), previous_type_(tsi_->getType()) {
-    tsi_->overrideType(new_type);
-  }
-
-  ~ScopedTypeOverride() { tsi_->overrideType(previous_type_); }
-
-  // Neither copyable nor movable.
-  ScopedTypeOverride(const ScopedTypeOverride&) = delete;
-  ScopedTypeOverride& operator=(const ScopedTypeOverride) = delete;
-
- private:
-  clang::TypeSourceInfo* tsi_;
-  clang::QualType previous_type_;
-};
-
-template <typename T>
-std::string DumpString(const T& val) {
+template <typename T, typename... Tail>
+std::string DumpString(const T& val, Tail&&... tail) {
   std::string s;
   llvm::raw_string_ostream ss(s);
-  val.dump(ss);
+  val.dump(ss, std::forward<Tail>(tail)...);
   return s;
 }
+
+bool IsCompleteAggregateType(clang::QualType Type) {
+  if (Type.isNull()) {
+    return false;
+  }
+  Type = Type.getCanonicalType();
+  return !Type->isIncompleteType() && Type->isAggregateType();
+}
+
+llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
+    const clang::InitListExpr* ILE) {
+  CHECK(ILE->isSemanticForm());
+  QualType Type = ILE->getType();
+  // Ignore non-aggregate and copy initialization.
+  if (!IsCompleteAggregateType(Type) || ILE->isTransparent()) {
+    return {};
+  }
+  if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
+    return {Field};
+  }
+  llvm::SmallVector<const clang::Decl*, 5> result;
+  if (const auto* Decl = Type->getAsCXXRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const auto& Base : Decl->bases()) {
+      result.push_back(CHECK_NOTNULL(Base.getType()->getAsTagDecl()));
+    }
+  }
+  if (const auto* Decl = Type->getAsRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const auto* Field : Decl->fields()) {
+      if (!Field->isUnnamedBitfield()) {
+        result.push_back(Field);
+      }
+    }
+  }
+  return result;
+}
+
+clang::InitListExpr* GetSemanticForm(clang::InitListExpr* ILE) {
+  return (ILE->isSemanticForm() ? ILE : ILE->getSemanticForm());
+}
+
+clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
+  return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
+}
+
+const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
+  return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -469,103 +500,11 @@ bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {
   return VD->isThisDeclarationADefinition() != VarDecl::DeclarationOnly;
 }
 
-SourceRange IndexerASTVisitor::ConsumeToken(
-    SourceLocation StartLocation, clang::tok::TokenKind ExpectedKind) const {
-  clang::Token Token;
-  if (getRawToken(StartLocation, Token) == LexerResult::Success) {
-    // We can't use findLocationAfterToken() as that also uses "raw" lexing,
-    // which does not respect |lang_opts_.CXXOperatorNames| and will happily
-    // give |tok::raw_identifier| for tokens such as "compl" and then decide
-    // that "compl" doesn't match tok::tilde.  We want raw lexing so that
-    // macro expansion is suppressed, but then we need to manually re-map
-    // C++'s "alternative tokens" to the correct token kinds.
-    clang::tok::TokenKind ActualKind = Token.getKind();
-    if (Token.is(clang::tok::raw_identifier)) {
-      llvm::StringRef TokenSpelling(Token.getRawIdentifier());
-      const clang::IdentifierInfo& II =
-          Observer.getPreprocessor()->getIdentifierTable().get(TokenSpelling);
-      ActualKind = II.getTokenID();
-    }
-    if (ActualKind == ExpectedKind) {
-      const SourceLocation Begin = Token.getLocation();
-      return SourceRange(
-          Begin, GetLocForEndOfToken(*Observer.getSourceManager(),
-                                     *Observer.getLangOptions(), Begin));
-    }
-  }
-  return SourceRange();  // invalid location signals error/mismatch.
-}
-
 clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
     const clang::NamedDecl* Decl) const {
-  const SourceLocation StartLocation = Decl->getLocation();
-  if (StartLocation.isInvalid()) {
-    return SourceRange();
-  }
-  if (StartLocation.isFileID()) {
-    if (isa<clang::CXXDestructorDecl>(Decl)) {
-      // If the first token is "~" (or its alternate spelling, "compl") and
-      // the second is the name of class (rather than the name of a macro),
-      // then span two tokens.  Otherwise span just one.
-      const SourceLocation NextLocation =
-          ConsumeToken(StartLocation, clang::tok::tilde).getEnd();
-
-      if (NextLocation.isValid()) {
-        // There was a tilde (or its alternate token, "compl", which is
-        // technically valid for a destructor even if it's awful style).
-        // The "name" of the destructor is "~Type" even if the source
-        // code says "compl Type".
-        clang::Token SecondToken;
-        if (getRawToken(NextLocation, SecondToken) == LexerResult::Success &&
-            SecondToken.is(clang::tok::raw_identifier) &&
-            ("~" + std::string(SecondToken.getRawIdentifier())) ==
-                Decl->getNameAsString()) {
-          const SourceLocation EndLocation = GetLocForEndOfToken(
-              *Observer.getSourceManager(), *Observer.getLangOptions(),
-              SecondToken.getLocation());
-          return clang::SourceRange(StartLocation, EndLocation);
-        }
-      }
-    } else if (auto* M = dyn_cast<clang::ObjCMethodDecl>(Decl)) {
-      // Only take the first selector (if we have one). This simplifies what
-      // consumers of this data have to do but it is not correct.
-
-      if (M->getNumSelectorLocs() == 0) {
-        // Take the whole declaration. For decls this goes up to but does not
-        // include the ";". For definitions this goes up to but does not include
-        // the "{". This range will include other fields, such as the return
-        // type, parameter types, and parameter names.
-
-        auto S = M->getSelectorStartLoc();
-        auto E = M->getDeclaratorEndLoc();
-        return SourceRange(S, E);
-      }
-      // TODO(salguarnieri) Return multiple ranges, one for each portion of the
-      // selector.
-      const SourceLocation& Loc = M->getSelectorLoc(0);
-      if (Loc.isValid() && Loc.isFileID()) {
-        return RangeForSingleToken(Loc);
-      }
-
-      // If the selector location is not valid or is not a file, return the
-      // whole range of the selector and hope for the best.
-      LogErrorWithASTDump("Could not get source range", M);
-      return M->getSourceRange();
-    }
-  }
-  return RangeForASTEntity(StartLocation);
-}
-
-clang::SourceRange IndexerASTVisitor::RangeForASTEntity(
-    const clang::SourceLocation start_location) const {
-  return RangeForASTEntityFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
-}
-
-clang::SourceRange IndexerASTVisitor::RangeForSingleToken(
-    const clang::SourceLocation start_location) const {
-  return RangeForSingleTokenFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
+  return ClangRangeFinder(Observer.getSourceManager(),
+                          Observer.getLangOptions())
+      .RangeForNameOf(Decl);
 }
 
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
@@ -603,6 +542,25 @@ void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range& Range,
   } else {
     for (const auto& Caller : Job->BlameStack.back()) {
       Observer.recordCallEdge(Range, Caller, Callee, IsImplicit(Range));
+    }
+  }
+}
+
+void IndexerASTVisitor::RecordBlame(const clang::Decl* Decl,
+                                    const GraphObserver::Range& Range) {
+  if (ShouldHaveBlameContext(Decl)) {
+    if (Job->BlameStack.empty()) {
+      if (auto FileId = Observer.recordFileInitializer(Range)) {
+        Observer.recordBlameLocation(Range, *FileId,
+                                     GraphObserver::Claimability::Unclaimable,
+                                     this->IsImplicit(Range));
+      }
+    } else {
+      for (const auto& Context : Job->BlameStack.back()) {
+        Observer.recordBlameLocation(Range, Context,
+                                     GraphObserver::Claimability::Unclaimable,
+                                     this->IsImplicit(Range));
+      }
     }
   }
 }
@@ -802,7 +760,7 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 
 void IndexerASTVisitor::HandleFileLevelComments(
     clang::FileID Id, const GraphObserver::NodeId& FileNode) {
-  const auto& RCL = Context.getRawCommentList();
+  const auto& RCL = Context.Comments;
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
@@ -921,7 +879,7 @@ void IndexerASTVisitor::VisitComment(
     unsigned offset = Tok.getLocation().getRawEncoding() -
                       Comment->getSourceRange().getBegin().getRawEncoding();
     OffsetsInStrippedRawText.insert(
-        std::make_pair(Tok.getLocation(), StrippedRawText.size()));
+        {Tok.getLocation(), StrippedRawText.size()});
     StrippedRawText.append(Text.substr(offset, Tok.getLength()));
     switch (Tok.getKind()) {
       case clang::comments::tok::text: {
@@ -1077,25 +1035,111 @@ void IndexerASTVisitor::VisitRecordDeclComment(
   }
 }
 
+bool IndexerASTVisitor::TraverseCXXConstructorDecl(
+    clang::CXXConstructorDecl* CD) {
+  auto DNI = CD->getNameInfo();
+  if (DNI.getNamedTypeInfo() == nullptr && !CD->isImplicit()) {
+    // Clang does not currently set the NamedTypeInfo for constructors,
+    // but does for destructors and conversion operators.  As such, work
+    // around this here. Implicit constructors do not get TypeSourceInfo.
+    DNI.setNamedTypeInfo(Context.getTrivialTypeSourceInfo(
+        QualType(CD->getParent()->getTypeForDecl(), 0), CD->getLocation()));
+  }
+  return RecursiveASTVisitor::TraverseCXXConstructorDecl(CD) &&
+         TraverseDeclarationNameInfo(DNI);
+}
+
+namespace {
+
+/// \return the location of the template `Decl` implicitly instantiates,
+/// or an invalid location of `Decl` does not implicitly instantiate a template.
+clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
+    const clang::Decl* Decl) {
+  if (const auto* fun = llvm::dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
+    if (auto* msi = fun->getMemberSpecializationInfo();
+        msi != nullptr && !msi->isExplicitSpecialization()) {
+      return msi->getInstantiatedFrom()->getBeginLoc();
+    } else if (auto* ftsi = fun->getTemplateSpecializationInfo();
+               ftsi != nullptr &&
+               !ftsi->isExplicitInstantiationOrSpecialization()) {
+      return ftsi->getTemplate()->getBeginLoc();
+    } else {
+      return clang::SourceLocation{};
+    }
+  } else if (const auto* rec =
+                 llvm::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(
+                     Decl)) {
+    if (rec->isExplicitInstantiationOrSpecialization()) {
+      return clang::SourceLocation{};
+    }
+    auto from = rec->getInstantiatedFrom();
+    if (from.isNull()) {
+      return clang::SourceLocation{};
+    }
+    if (const auto* partial =
+            from.dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
+      return partial->getBeginLoc();
+    } else {
+      const auto* primary = from.dyn_cast<clang::ClassTemplateDecl*>();
+      return primary->getBeginLoc();
+    }
+  } else if (const auto* var =
+                 llvm::dyn_cast_or_null<clang::VarTemplateSpecializationDecl>(
+                     Decl)) {
+    if (var->isExplicitInstantiationOrSpecialization()) {
+      return clang::SourceLocation{};
+    }
+    auto from = var->getInstantiatedFrom();
+    if (from.isNull()) {
+      return clang::SourceLocation{};
+    }
+    if (const auto* partial =
+            from.dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
+      return partial->getBeginLoc();
+    } else {
+      const auto* primary = from.dyn_cast<clang::VarTemplateDecl*>();
+      return primary->getBeginLoc();
+    }
+  } else {
+    return clang::SourceLocation{};
+  }
+}
+
+}  // anonymous namespace
+
+bool IndexerASTVisitor::ShouldIndex(const clang::Decl* Decl) {
+  // This function effectively returns true if:
+  //   - There is no TemplateInstanceExcludePathPattern specified.
+  //   - `Decl` is not a template instantiation or specialization.
+  //   - `Decl` is an explicit template instantiation or partial specialization.
+  //   - `Decl` is an implicit template instantiation that appears in a
+  //     concrete location (not a macro) with a path that is not matched by
+  //     TemplateInstanceExcludePathPattern.
+  if (TemplateInstanceExcludePathPattern == nullptr) {
+    return true;
+  }
+  auto loc = GetImplicitlyInstantiatedTemplateLoc(Decl);
+  loc = Observer.getSourceManager()->getSpellingLoc(loc);
+  if (loc.isInvalid()) {
+    return true;
+  }
+  auto file = Observer.getSourceManager()->getFilename(loc);
+  if (file.empty()) {
+    return true;
+  }
+  if (re2::RE2::FullMatch({file.data(), file.size()},
+                          *TemplateInstanceExcludePathPattern)) {
+    return false;
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   if (ShouldStopIndexing()) {
     return false;
   }
-  if (Decl == nullptr) {
+  if (Decl == nullptr || !ShouldIndex(Decl)) {
     return true;
-  }
-
-  // This is a dirty, dirty hack to allow other parts of the code to more
-  // cleanly handle deduced types, but should *only* be done for deduced types.
-  // TODO(shahms): Remove this when it's fixed upstream.
-  //   Or replace it with the properly deduced type.
-  absl::optional<ScopedTypeOverride> type_override;
-  if (auto* D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
-    if (auto* TSI = D->getTypeSourceInfo()) {
-      if (TSI->getType() != D->getType() && TSI->getType()->isUndeducedType()) {
-        type_override.emplace(TSI, D->getType());
-      }
-    }
   }
 
   auto Scope = RestoreValue(Job->PruneIncompleteFunctions);
@@ -1247,8 +1291,8 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
 
   if (auto DepNodeId = RecordEdgesForDependentName(
           E->getQualifierLoc(), E->getMember(), E->getMemberLoc(), Root)) {
-    if (auto RCC = ExplicitRangeInCurrentContext(
-            RangeForASTEntity(E->getMemberLoc()))) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(NormalizeRange(E->getMemberLoc()))) {
       Observer.recordDeclUseLocation(*RCC, *DepNodeId,
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
@@ -1257,8 +1301,7 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
       if (auto ArgIds = BuildTemplateArgumentList(E->template_arguments())) {
         auto TappNodeId = Observer.recordTappNode(*DepNodeId, *ArgIds);
         auto StmtId = BuildNodeIdForImplicitStmt(E);
-        auto Range = clang::SourceRange(E->getMemberLoc(),
-                                        E->getEndLoc().getLocWithOffset(1));
+        auto Range = NormalizeRange({E->getMemberLoc(), E->getEndLoc()});
         if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
           Observer.recordDeclUseLocation(
               RCC.value(), TappNodeId, GraphObserver::Claimability::Unclaimable,
@@ -1284,12 +1327,16 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     }
   }
   if (const auto* FieldDecl = E->getMemberDecl()) {
-    auto Range = RangeForASTEntity(E->getMemberLoc());
+    auto Range = NormalizeRange(E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-      Observer.recordDeclUseLocation(
-          RCC.value(), BuildNodeIdForRefToDecl(FieldDecl),
-          GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
+      RecordBlame(FieldDecl, *RCC);
+      auto semantic = IsUsedAsWrite(*getAllParents(), E)
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
+      Observer.recordSemanticDeclUseLocation(
+          *RCC, BuildNodeIdForRefToDecl(FieldDecl), semantic,
+          GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
@@ -1323,24 +1370,31 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
     VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
 
     clang::SourceRange SR = E->getSourceRange();
-    if (RPL.isValid()) {
-      // This loses the right paren without the offset.
-      SR.setEnd(RPL.getLocWithOffset(1));
-    } else if (TSI != nullptr) {
-      SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
-    } else if (SR.getBegin() == SR.getEnd()) {
-      // For zero-width ranges, attempt to figure out the real extent of the
-      // expression.  This includes calls to default constructors and
-      // conversions from string literals, among others.
-      SR = RangeForASTEntity(SR.getBegin());
-    } else {
-      // Otherwise, include the final character in the expression forming an
-      // implicit ctor call.
-      SR.setEnd(SR.getEnd().getLocWithOffset(1));
+    // If there are not arguments and no braces or parens, getEndLoc()
+    // is the same as getLocation(), rather than the type.
+    // TODO(shahms): Upstream this into CXXConstructExpr::getEndLoc.
+    if (TSI != nullptr && SR.getBegin() == SR.getEnd()) {
+      SR.setEnd(TSI->getTypeLoc().getEndLoc());
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
-    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+    if (auto RCC = RangeInCurrentContext(StmtId, NormalizeRange(SR))) {
       RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
+    }
+  }
+  // This is a hack which pairs with that from VisitRecordTypeLoc to emit ref/id
+  // rather than ref for types visited as part of a constructor expr for that
+  // record.
+  if (TSI != nullptr) {
+    clang::TypeLoc TL = TSI->getTypeLoc().getAsAdjusted<clang::RecordTypeLoc>();
+    if (TL &&
+        TL.getTypePtr() == E->getType()->getAsAdjusted<clang::RecordType>()) {
+      if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+        if (auto Nodes = BuildNodeSetForType(TL.getTypePtr())) {
+          Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
+                                                Nodes.claimability(),
+                                                IsImplicit(*RCC));
+        }
+      }
     }
   }
   return true;
@@ -1411,8 +1465,7 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E) {
                                        DtorName, E->getBeginLoc(), TyId);
   }
   if (DDId) {
-    clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(SR.getEnd().getLocWithOffset(1));
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1444,15 +1497,23 @@ bool IndexerASTVisitor::TraverseCXXNewExpr(clang::CXXNewExpr* E) {
   return Base::TraverseCXXNewExpr(E);
 }
 
+bool IndexerASTVisitor::TraverseCXXTemporaryObjectExpr(
+    clang::CXXTemporaryObjectExpr* E) {
+  if (E == nullptr) return true;
+  if (IndexConstructExpr(E, E->getTypeSourceInfo())) {
+    auto Scope = PushScope(Job->ConstructorStack, E);
+    return Base::TraverseCXXTemporaryObjectExpr(E);
+  }
+  return false;
+}
+
 bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr* E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (FunctionDecl* New = E->getOperatorNew()) {
     auto NewId = BuildNodeIdForRefToDecl(New);
     clang::SourceLocation NewLoc = E->getBeginLoc();
     if (NewLoc.isFileID()) {
-      clang::SourceRange NewRange(
-          NewLoc, GetLocForEndOfToken(*Observer.getSourceManager(),
-                                      *Observer.getLangOptions(), NewLoc));
+      clang::SourceRange NewRange = NormalizeRange(NewLoc);
       if (auto RCC = RangeInCurrentContext(StmtId, NewRange)) {
         Observer.recordDeclUseLocation(RCC.value(), NewId,
                                        GraphObserver::Claimability::Unclaimable,
@@ -1483,14 +1544,13 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
       CanQualType::CreateUnsafe(DTCan));
   if (auto DDId = RecordEdgesForDependentName(NNSLoc, DtorName,
                                               E->getTildeLoc(), TyId)) {
-    if (auto RCC = ExplicitRangeInCurrentContext(
-            RangeForASTEntity(E->getTildeLoc()))) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(NormalizeRange(E->getTildeLoc()))) {
       Observer.recordDeclUseLocation(*RCC, *DDId,
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
     }
-    clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(RangeForASTEntity(SR.getEnd()).getEnd());
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1514,12 +1574,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
       CanQualType::CreateUnsafe(QTCan));
   if (auto LookupId = RecordEdgesForDependentName(
           clang::NestedNameSpecifierLoc(), CtorName, E->getBeginLoc(), TyId)) {
-    clang::SourceLocation RPL = E->getRParenLoc();
-    clang::SourceRange SR = E->getSourceRange();
-    // This loses the right paren without the offset.
-    if (RPL.isValid()) {
-      SR.setEnd(RPL.getLocWithOffset(1));
-    }
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), LookupId.value());
@@ -1529,12 +1584,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
-  clang::SourceLocation RPL = E->getRParenLoc();
-  clang::SourceRange SR = E->getSourceRange();
-  if (RPL.isValid()) {
-    // This loses the right paren without the offset.
-    SR.setEnd(RPL.getLocWithOffset(1));
-  }
+  clang::SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto* Callee = E->getCalleeDecl()) {
@@ -1547,6 +1597,11 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
         RecordCallEdges(RCC.value(), CalleeId.value());
       }
+    }
+  }
+  if (DataflowEdges) {
+    if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
+      Job->InfluenceSets.back().insert(E->getDirectCallee());
     }
   }
   return true;
@@ -1651,8 +1706,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       // Prefer arguments as they were written in source files.
       NIDS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
-                                                        EmitRanges::Yes)) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -1662,8 +1716,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     } else {
       NIDS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(
-                Args->get(I), clang::SourceLocation())) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -1744,6 +1797,15 @@ void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
   }
 }
 
+bool IndexerASTVisitor::VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Expr->getPackLoc())) {
+    auto NodeId = BuildNodeIdForRefToDecl(Expr->getPack());
+    Observer.recordDeclUseLocation(
+        *RCC, NodeId, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
   return VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation());
 }
@@ -1761,6 +1823,15 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
+  // This is a hack to see if we're being visited as part of a construct expr
+  // constructing the type in question. When visiting a CXXConstructExpr, we
+  // emit the ref/id to the class in question directly.
+  if (!Job->ConstructorStack.empty() &&
+      Job->ConstructorStack.back()
+              ->getType()
+              ->getAsAdjusted<clang::RecordType>() == TL.getTypePtr()) {
+    return true;
+  }
   RecordTypeLocSpellingLocation(TL);
   return true;
 }
@@ -1771,15 +1842,16 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
-template <typename T>
-bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
-  auto NameLocation = TL.getTemplateNameLoc();
+template <typename TypeLoc, typename Type>
+bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
+    TypeLoc Written, const Type* Resolved) {
+  auto NameLocation = Written.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
       if (auto TemplateName =
-              BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
+              BuildNodeIdForTemplateName(Resolved->getTemplateName())) {
         NodeId DeclNode = [&] {
-          if (const auto* Decl = TL.getTypePtr()->getAsCXXRecordDecl()) {
+          if (const auto* Decl = Resolved->getAsCXXRecordDecl()) {
             return BuildNodeIdForDecl(Decl);
           }
           return TemplateName.value();
@@ -1790,22 +1862,24 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
       }
     }
   }
-  RecordTypeLocSpellingLocation(TL);
+  RecordTypeLocSpellingLocation(Written, Resolved);
   return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
     clang::TemplateSpecializationTypeLoc TL) {
-  return VisitTemplateSpecializationTypeLocHelper(TL);
+  return VisitTemplateSpecializationTypePairHelper(TL, TL.getTypePtr());
 }
 
-bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
-    clang::DeducedTemplateSpecializationTypeLoc TL) {
-  return VisitTemplateSpecializationTypeLocHelper(TL);
+bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypePair(
+    clang::DeducedTemplateSpecializationTypeLoc TL,
+    const clang::DeducedTemplateSpecializationType* T) {
+  return VisitTemplateSpecializationTypePairHelper(TL, T);
 }
 
-bool IndexerASTVisitor::VisitAutoTypeLoc(clang::AutoTypeLoc TL) {
-  RecordTypeLocSpellingLocation(TL);
+bool IndexerASTVisitor::VisitAutoTypePair(clang::AutoTypeLoc TL,
+                                          const clang::AutoType* T) {
+  RecordTypeLocSpellingLocation(TL, T);
   return true;
 }
 
@@ -1845,7 +1919,7 @@ bool IndexerASTVisitor::VisitDependentNameTypeLoc(
     clang::DependentNameTypeLoc TL) {
   if (auto Nodes = RecordTypeLocSpellingLocation(TL)) {
     if (auto RCC =
-            ExplicitRangeInCurrentContext(RangeForASTEntity(TL.getNameLoc()))) {
+            ExplicitRangeInCurrentContext(NormalizeRange(TL.getNameLoc()))) {
       Observer.recordDeclUseLocation(*RCC, Nodes.ForReference(),
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
@@ -1931,7 +2005,7 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   for (const auto& D : DIE->designators()) {
     if (!D.isFieldDesignator()) continue;
     if (const auto* F = D.getField()) {
-      if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false, true)) {
+      if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false)) {
         return false;
       }
     }
@@ -1939,9 +2013,169 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   return true;
 }
 
+bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
+  // We need the resolved type of the InitListExpr and all of the fields, but
+  // don't want to do so redundantly for both syntactic and semantic forms.
+  // Skip emitting ref/init if there aren't any syntactic initializers.
+  const auto* SynILE = GetSyntacticForm(ILE);
+  if (!ILE->isSemanticForm() || SynILE->getNumInits() == 0) {
+    return true;
+  }
+
+  // SourceRange covering the *syntactic* initializers.
+  clang::SourceRange ListRange =
+      NormalizeRange({(*SynILE->inits().begin())->getBeginLoc(),
+                      (*SynILE->inits().rbegin())->getEndLoc()});
+  if (!ListRange.isValid()) {
+    return true;
+  }
+
+  auto II = ILE->inits().begin();
+  for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
+    if (II == ILE->inits().end()) {
+      LogErrorWithASTDump("Fewer initializers than decls:\n", ILE);
+      break;
+    }
+    // On rare occasions, the init Expr we get from clang is null.
+    if (const clang::Expr* Init = *II++) {
+      clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
+      if (!(InitRange.isValid() && ListRange.fullyContains(InitRange))) {
+        // When visiting the semantic form initializers which aren't explicitly
+        // specified either have an invalid location (for uninitialized fields)
+        // or share a location with the end of the ILE (for default initialized
+        // fields). Skip these by checking that their location is wholly
+        // contained by the syntactic initializers, rather than the enclosing
+        // ILE itself.
+        continue;
+      }
+      if (auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                           InitRange)) {
+        Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
+                                    GraphObserver::Claimability::Unclaimable,
+                                    this->IsImplicit(*RCC));
+      }
+    }
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
+  if (!DataflowEdges) {
+    return Base::TraverseCallExpr(CE);
+  }
+  auto callee = CE->getDirectCallee();
+  auto callee_exp = CE->getCallee();
+  bool valid = callee != nullptr && callee_exp != nullptr &&
+               CE->getNumArgs() <= callee->param_size();
+  // TODO(zarko): deal with parameter packs and varargs.
+  for (unsigned arg = 0; valid && arg < CE->getNumArgs(); ++arg) {
+    valid = CE->getArg(arg) != nullptr && callee->getParamDecl(arg) != nullptr;
+  }
+  if (valid) {
+    auto callee_node = BuildNodeIdForDecl(callee);
+    if (!WalkUpFromCallExpr(CE)) return false;
+    if (!TraverseStmt(callee_exp)) return false;
+    for (unsigned arg = 0; arg < CE->getNumArgs(); ++arg) {
+      auto scope_guard = PushScope(Job->InfluenceSets, {});
+      if (!TraverseStmt(CE->getArg(arg))) {
+        return false;
+      }
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(
+            BuildNodeIdForDecl(decl),
+            BuildNodeIdForDecl(callee->getParamDecl(arg)));
+      }
+    }
+    return true;
+  }
+
+  return Base::TraverseCallExpr(CE);
+}
+
+bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
+  if (!DataflowEdges) {
+    return Base::TraverseReturnStmt(RS);
+  }
+  if (auto rv = RS->getRetValue(); rv != nullptr && !Job->BlameStack.empty()) {
+    if (!WalkUpFromReturnStmt(RS)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    if (!TraverseStmt(rv)) return false;
+    for (const auto* decl : Job->InfluenceSets.back()) {
+      for (const auto& context : Job->BlameStack.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl), context);
+      }
+    }
+    return true;
+  }
+  return Base::TraverseReturnStmt(RS);
+}
+
+bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
+  if (!DataflowEdges) {
+    return Base::TraverseBinaryOperator(BO);
+  }
+  if (BO->getOpcode() != clang::BO_Assign)
+    return Base::TraverseBinaryOperator(BO);
+
+  if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
+      lhs != nullptr && rhs != nullptr) {
+    if (!WalkUpFromBinaryOperator(BO)) return false;
+    if (!TraverseStmt(lhs)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    if (!TraverseStmt(rhs)) {
+      return false;
+    }
+    if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
+        expr != nullptr && expr->getFoundDecl() != nullptr &&
+        (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+         expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl),
+                                  BuildNodeIdForDecl(expr->getFoundDecl()));
+      }
+    }
+    return true;
+  }
+  return Base::TraverseBinaryOperator(BO);
+}
+
+bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
+  if (ILE == nullptr) return true;
+  // Because we visit implicit code, the default traversal will visit both
+  // syntactic and semantic forms, resulting in duplicate edges.  This is
+  // because only the syntactic form retains designated initializers while the
+  // semantic form is required for mapping from initializing expression to the
+  // field/base which it initializes.
+  if (ILE->isSemanticForm() && ILE->isSyntacticForm()) {
+    return Base::TraverseSynOrSemInitListExpr(ILE);
+  }
+
+  // The only thing we need from the syntactic form are designated initializers,
+  // so visit them directly, but don't recurse into InitListExprs.
+  struct DesignatedInitVisitor : RecursiveASTVisitor<DesignatedInitVisitor> {
+    bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE) {
+      return parent.VisitDesignatedInitExpr(DIE);
+    }
+
+    bool TraverseInitListExpr(const clang::InitListExpr*) {
+      return true;  // Disable recursion on InitListExpr.
+    }
+
+    IndexerASTVisitor& parent;
+  } visitor{{}, *this};
+
+  return visitor.TraverseSynOrSemInitListExpr(GetSyntacticForm(ILE)) &&
+         Base::TraverseSynOrSemInitListExpr(GetSemanticForm(ILE));
+}
+
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
-  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
-    if (auto Nodes = BuildNodeSetForType(TL)) {
+  return RecordTypeLocSpellingLocation(TL, TL.getTypePtr());
+}
+
+NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(
+    clang::TypeLoc Written, const clang::Type* Resolved) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Written.getSourceRange())) {
+    if (auto Nodes = BuildNodeSetForType(Resolved)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
       return Nodes;
@@ -1952,11 +2186,27 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
 
 bool IndexerASTVisitor::TraverseDeclarationNameInfo(
     clang::DeclarationNameInfo NameInfo) {
-  // For ConversionFunctions this leads to duplicate edges as the return value
-  // is visited both here and via TraverseFunctionProtoTypeLoc.
-  if (NameInfo.getName().getNameKind() ==
-      clang::DeclarationName::CXXConversionFunctionName) {
-    return true;
+  switch (NameInfo.getName().getNameKind()) {
+    case DeclarationName::CXXConversionFunctionName:
+      // For ConversionFunctions this leads to duplicate edges as the return
+      // value is visited both here and via TraverseFunctionProtoTypeLoc.
+      return true;
+    case DeclarationName::CXXConstructorName:
+    case DeclarationName::CXXDestructorName:
+      if (clang::TypeSourceInfo* TSI = NameInfo.getNamedTypeInfo()) {
+        if (auto RCC = ExpandedRangeInCurrentContext(
+                TSI->getTypeLoc().getSourceRange())) {
+          if (auto Nodes =
+                  BuildNodeSetForType(TSI->getTypeLoc().getTypePtr())) {
+            Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
+                                                  Nodes.claimability(),
+                                                  IsImplicit(*RCC));
+          }
+        }
+        return true;
+      }
+    default:
+      break;
   }
   return Base::TraverseDeclarationNameInfo(NameInfo);
 }
@@ -1965,26 +2215,19 @@ bool IndexerASTVisitor::TraverseDeclarationNameInfo(
 // instantiations.
 bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     const clang::Expr* Expr, const NamedDecl* const FoundDecl,
-    SourceLocation SL, bool IsImplicit, bool IsInit) {
+    SourceLocation SL, bool IsImplicit) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
   // TODO(zarko): Point at the capture as well as the thing being captured;
   // port over RemapDeclIfCaptured.
   // const NamedDecl* const TargetDecl = RemapDeclIfCaptured(FoundDecl);
-  const NamedDecl* TargetDecl = FoundDecl;
-  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(FoundDecl)) {
-    // An IndirectFieldDecl is just an alias; we want to record this as a
-    // reference to the underlying entity.
-    // TODO(jdennett): Would this be better done in BuildNodeIdForDecl?
-    TargetDecl = IFD->getAnonField();
-  }
-  if (isa<clang::VarDecl>(TargetDecl) && TargetDecl->isImplicit()) {
+  if (isa<clang::VarDecl>(FoundDecl) && FoundDecl->isImplicit()) {
     // Ignore variable declarations synthesized from for-range loops, as they
     // are just a clang implementation detail.
     return true;
   }
   if (SL.isValid()) {
-    SourceRange Range = RangeForASTEntity(SL);
+    SourceRange Range = NormalizeRange(SL);
     if (IsImplicit) {
       // Mark implicit ranges by making them zero-length.
       Range.setEnd(Range.getBegin());
@@ -1992,18 +2235,23 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
 
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-      GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);
-      if (IsInit) {
-        Observer.recordInitLocation(RCC.value(), DeclId,
-                                    GraphObserver::Claimability::Unclaimable,
-                                    this->IsImplicit(RCC.value()));
-      } else {
-        Observer.recordDeclUseLocation(RCC.value(), DeclId,
-                                       GraphObserver::Claimability::Unclaimable,
-                                       this->IsImplicit(RCC.value()));
+      GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
+      RecordBlame(FoundDecl, *RCC);
+      auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
+      if (DataflowEdges) {
+        if (!Job->InfluenceSets.empty() &&
+            (FoundDecl->getKind() == clang::Decl::Kind::Var ||
+             FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
+          Job->InfluenceSets.back().insert(FoundDecl);
+        }
       }
+      Observer.recordSemanticDeclUseLocation(
+          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
+          this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, TargetDecl);
+        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
     }
   }
@@ -2015,8 +2263,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(ArrayRef<TemplateArgument> Args) {
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& Arg : Args) {
-    if (auto ArgId =
-            BuildNodeIdForTemplateArgument(Arg, clang::SourceLocation())) {
+    if (auto ArgId = BuildNodeIdForTemplateArgument(Arg)) {
       result.push_back(*ArgId);
     } else {
       return absl::nullopt;
@@ -2031,7 +2278,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& ArgLoc : Args) {
-    if (auto ArgId = BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes)) {
+    if (auto ArgId = BuildNodeIdForTemplateArgument(ArgLoc)) {
       result.push_back(*ArgId);
     } else {
       return absl::nullopt;
@@ -2121,15 +2368,10 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       BuildNodeIdForDefnOfDecl(Decl));
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Storage classes.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), BodyDeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(BodyDeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(BodyDeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
@@ -2189,22 +2431,7 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   // Use the range covering `namespace` for anonymous namespaces.
-  SourceRange NameRange;
-  if (Decl->isAnonymousNamespace()) {
-    SourceLocation Loc = Decl->getBeginLoc();
-    if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
-      // Skip the `inline` keyword.
-      Loc = RangeForSingleToken(Loc).getEnd();
-      if (Loc.isValid() && Loc.isFileID()) {
-        SkipWhitespace(*Observer.getSourceManager(), &Loc);
-      }
-    }
-    if (Loc.isValid() && Loc.isFileID()) {
-      NameRange = RangeForASTEntity(Loc);
-    }
-  } else {
-    NameRange = RangeForNameOfDeclaration(Decl);
-  }
+  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   // Namespaces are never defined; they are only invoked.
   if (auto RCC =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
@@ -2243,9 +2470,7 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
   // TODO(zarko): Record completeness data. This is relevant for static fields,
   // which may be declared along with a complete class definition but later
@@ -2254,11 +2479,8 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
                               GraphObserver::VariableSubkind::Field,
                               Marks.GenerateMarkedSource(DeclNode));
   AssignUSR(DeclNode, Decl);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Record storage classes for fields.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(DeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
@@ -2272,9 +2494,7 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
@@ -2295,9 +2515,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   if (Decl->isThisDeclarationADefinition() && Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
-    Marks.set_marked_source_end(GetLocForEndOfToken(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getSourceRange().getEnd()));
+    Marks.set_marked_source_end(
+        NormalizeRange(Decl->getSourceRange()).getEnd());
   }
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
@@ -2306,7 +2525,9 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   bool HasSpecifiedStorageType = false;
   if (const auto* TSI = Decl->getIntegerTypeSourceInfo()) {
     HasSpecifiedStorageType = true;
-    AscribeSpelledType(TSI->getTypeLoc(), TSI->getType(), DeclNode);
+    if (auto TyNodeId = BuildNodeIdForType(TSI->getType())) {
+      Observer.recordTypeEdge(DeclNode, *TyNodeId);
+    }
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   // TODO(zarko): Would this be clearer as !Decl->isThisDeclarationADefinition
@@ -2520,47 +2741,6 @@ bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
   return true;
 }
 
-clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
-    const clang::SourceRange& SR) {
-  // Clang frequently handes out zero-width ranges at the start of an identifier
-  // or other AST entity.  In this case, we use
-  // RangeForASTEntity to fill out the full SourceRange.
-  if (SR.isValid() && SR.getBegin().isFileID() &&
-      SR.getBegin() == SR.getEnd()) {
-    return RangeForASTEntity(SR.getBegin());
-  }
-  return SR;
-}
-
-clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(
-    const clang::SourceRange& SR) {
-  if (SR.isValid() && SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntity(SR.getBegin());
-    if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntity(SR.getEnd());
-      NewSR.setEnd(EndSR.getEnd());
-    }
-    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
-        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
-        NewSR.getBegin() < NewSR.getEnd() &&
-        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
-            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
-      return NewSR;
-    }
-  }
-  return SR;
-}
-
-absl::optional<GraphObserver::Range>
-IndexerASTVisitor::ExpandedFileRangeInCurrentContext(
-    const clang::SourceRange& SR) {
-  if (!SR.isValid()) {
-    return absl::nullopt;
-  }
-  return ExplicitRangeInCurrentContext(
-      ExpandRangeIfEmptyFileID(MapRangeToFileIfMacroID(SR)));
-}
-
 absl::optional<GraphObserver::Range>
 IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
   if (!SR.getBegin().isValid()) {
@@ -2579,24 +2759,14 @@ IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
   if (!SR.isValid()) {
     return absl::nullopt;
   }
-  // If this type reference came from a macro context, try to see whether we
-  // can attribute it back to a source file.
-  if (SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntity(SR.getBegin());
-    if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntity(SR.getEnd());
-      NewSR.setEnd(EndSR.getEnd());
-    }
-    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
-        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
-        NewSR.getBegin() < NewSR.getEnd() &&
-        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
-            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
-      SR = NewSR;
-    }
-  }
-  return ExplicitRangeInCurrentContext(
-      SR.getBegin() == SR.getEnd() ? RangeForASTEntity(SR.getBegin()) : SR);
+  return ExplicitRangeInCurrentContext(NormalizeRange(SR));
+}
+
+clang::SourceRange IndexerASTVisitor::NormalizeRange(
+    clang::SourceRange SR) const {
+  return ClangRangeFinder(Observer.getSourceManager(),
+                          Observer.getLangOptions())
+      .NormalizeRange(SR);
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
@@ -2906,8 +3076,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     if (ArgsAsWritten) {
       NIDS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
-                                                        EmitRanges::Yes)) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -2917,8 +3086,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     } else {
       NIDS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(
-                Args->get(I), clang::SourceLocation())) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -2955,9 +3123,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
-    Marks.set_marked_source_end(GetLocForEndOfToken(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getSourceRange().getEnd()));
+    Marks.set_marked_source_end(
+        NormalizeRange(Decl->getSourceRange()).getEnd());
   }
   Marks.set_name_range(NameRange);
   auto NameRangeInContext =
@@ -2981,10 +3148,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
 
   if (IsFunctionDefinition && !Decl->isImplicit() &&
       Decl->getBody() != nullptr) {
-    SourceRange DefinitionRange(
-        TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
-                                     : Decl->getSourceRange().getBegin(),
-        RangeForASTEntity(Decl->getSourceRange().getEnd()).getEnd());
+    SourceRange DefinitionRange = NormalizeRange(
+        {TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
+                                      : Decl->getSourceRange().getBegin(),
+         Decl->getSourceRange().getEnd()});
     auto DefinitionRangeInContext =
         RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
     MaybeRecordFullDefinitionRange(DefinitionRangeInContext, OuterNode,
@@ -3051,7 +3218,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           // for the variable we are initializing.
           const SourceLocation& Loc = Init->getMemberLocation();
           if (Loc.isValid() && Loc.isFileID()) {
-            MemberSR = RangeForSingleToken(Loc);
+            MemberSR = NormalizeRange(Loc);
           }
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto& ID = BuildNodeIdForRefToDecl(M);
@@ -3071,9 +3238,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
             if (auto LookupId = RecordEdgesForDependentName(
                     clang::NestedNameSpecifierLoc(), DepName,
                     Init->getSourceLocation(), TyId)) {
-              clang::SourceLocation RPL = Init->getRParenLoc();
-              clang::SourceRange SR = Init->getSourceRange();
-              SR.setEnd(SR.getEnd().getLocWithOffset(1));
+              clang::SourceRange SR = NormalizeRange(Init->getSourceRange());
               if (Init->isWritten()) {
                 if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
                   RecordCallEdges(RCC.value(), LookupId.value());
@@ -3123,6 +3288,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 ? GraphObserver::Specificity::UniquelyCompletes
                 : GraphObserver::Specificity::Completes,
             OuterNode);
+
+        if (Decl->param_size() == NextDecl->param_size()) {
+          for (size_t param = 0; param < Decl->param_size(); ++param) {
+            auto lhs = NextDecl->getParamDecl(param);
+            auto rhs = Decl->getParamDecl(param);
+            if (DataflowEdges && lhs != nullptr && rhs != nullptr) {
+              Observer.recordInfluences(BuildNodeIdForDecl(lhs),
+                                        BuildNodeIdForDecl(rhs));
+            }
+          }
+        }
       }
     }
   }
@@ -3236,14 +3412,6 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
         GraphObserver::Claimability::Claimable, IsImplicit(RCC.value()));
   }
   return true;
-}
-
-void IndexerASTVisitor::AscribeSpelledType(
-    const clang::TypeLoc& Type, const clang::QualType& TrueType,
-    const GraphObserver::NodeId& AscribeTo) {
-  if (auto TyNodeId = BuildNodeIdForType(Type)) {
-    Observer.recordTypeEdge(AscribeTo, *TyNodeId);
-  }
 }
 
 GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
@@ -3496,6 +3664,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     Decl = FindSpecializedTemplate(Decl);
   }
 
+  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(Decl)) {
+    // An IndirectFieldDecl is just an alias; we want to record this as a
+    // reference to the underlying entity.
+    Decl = IFD->getAnonField();
+  }
+
   // find, not insert, since we might generate other IDs in the process of
   // generating this one (thus invalidating the iterator insert returns).
   const auto Cached = DeclToNodeId.find(Decl);
@@ -3539,7 +3713,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       Ostream << "#builtin";
       GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
                                Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   }
@@ -3547,7 +3721,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   if (const auto* BTD = dyn_cast<BuiltinTemplateDecl>(Decl)) {
     Ostream << "#builtin";
     GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(), Ostream.str());
-    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    DeclToNodeId.insert({Decl, Id});
     return Id;
   }
 
@@ -3557,7 +3731,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     // There's a special way to name type aliases but we want to handle type
     // parameters for Objective-C as "normal" named decls.
     if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
-      DeclToNodeId.insert(std::make_pair(Decl, TypedefNameId.value()));
+      DeclToNodeId.insert({Decl, TypedefNameId.value()});
       return TypedefNameId.value();
     }
   } else if (const auto* NS = dyn_cast<NamespaceDecl>(Decl)) {
@@ -3568,7 +3742,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
             ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
             : Observer.getNamespaceClaimToken(NS->getLocation()),
         Ostream.str());
-    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    DeclToNodeId.insert({Decl, Id});
     return Id;
   }
 
@@ -3645,14 +3819,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
       Ostream << "#" << HashToString(Hash(Rec));
       GraphObserver::NodeId Id(Token, Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(Hash(Enum));
       GraphObserver::NodeId Id(Token, Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
@@ -3660,7 +3834,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(Hash(E));
         GraphObserver::NodeId Id(Token, Ostream.str());
-        DeclToNodeId.insert(std::make_pair(Decl, Id));
+        DeclToNodeId.insert({Decl, Id});
         return Id;
       }
     }
@@ -3678,13 +3852,17 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       // for enums and records because of the code above.
       Ostream << "#D";
     }
+  } else if (const auto* OD = dyn_cast<clang::ObjCInterfaceDecl>(Decl)) {
+    if (OD->isThisDeclarationADefinition()) {
+      // TODO(zarko): Investigate why Clang colocates incomplete and
+      // definition instances of VarDecls. This may have been masked
+      // for enums and records because of the code above.
+      Ostream << "#D";
+    }
   }
   clang::SourceRange DeclRange;
   if (const auto* named_decl = dyn_cast<NamedDecl>(Decl)) {
-    // RangeForNameOfDeclaration doesn't work well with some ObjCInterfaceDecls.
-    if (!isa<ObjCInterfaceDecl>(Decl)) {
-      DeclRange = RangeForNameOfDeclaration(named_decl);
-    }
+    DeclRange = RangeForNameOfDeclaration(named_decl);
   }
   if (!DeclRange.isValid()) {
     DeclRange = clang::SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
@@ -3698,9 +3876,9 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     Ostream << "invalid";
   }
   GraphObserver::NodeId Id(Token, Ostream.str());
-  DeclToNodeId.insert(std::make_pair(Decl, Id));
+  DeclToNodeId.insert({Decl, Id});
   return Id;
-}  // namespace kythe
+}
 
 bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
@@ -3959,7 +4137,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     const clang::Expr* Expr, EmitRanges ER) {
-  if (!Verbosity) {
+  if (!Verbosity || Expr == nullptr) {
     return absl::nullopt;
   }
   clang::Expr::EvalResult Result;
@@ -3969,7 +4147,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
   llvm::raw_string_ostream TOstream(Text);
   bool IsBindingSite = false;
   auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Expr),
-                                   RangeForASTEntity(Expr->getExprLoc()));
+                                   NormalizeRange(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
     // graph; link ranges to them. Right now we don't emit any node data for
@@ -4003,13 +4181,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
   return ResultId;
 }
 
-// The duplication here is unfortunate, but `TemplateArgumentLoc` is
-// different enough from `TemplateArgument * SourceLocation` that
-// we can't factor it out.
-
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateArgument(
-    const clang::TemplateArgument& Arg, clang::SourceLocation L) {
+    const clang::TemplateArgument& Arg) {
   // TODO(zarko): Do we need to canonicalize `Arg`?
   // Maybe with Context.getCanonicalTemplateArgument()?
   switch (Arg.getKind()) {
@@ -4017,8 +4191,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument("null");
     case TemplateArgument::Type:
       CHECK(!Arg.getAsType().isNull());
-      return BuildNodeIdForType(
-          Context.getTrivialTypeSourceInfo(Arg.getAsType(), L)->getTypeLoc());
+      return BuildNodeIdForType(Arg.getAsType());
     case TemplateArgument::Declaration:
       return BuildNodeIdForDecl(Arg.getAsDecl());
     case TemplateArgument::NullPtr:
@@ -4038,7 +4211,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       std::vector<GraphObserver::NodeId> Nodes;
       Nodes.reserve(Arg.pack_size());
       for (const auto& Element : Arg.pack_elements()) {
-        auto Id = BuildNodeIdForTemplateArgument(Element, L);
+        auto Id = BuildNodeIdForTemplateArgument(Element);
         if (!Id) {
           return absl::nullopt;
         }
@@ -4052,34 +4225,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateArgument(
-    const clang::TemplateArgumentLoc& ArgLoc, EmitRanges EmitRanges) {
-  // TODO(zarko): Do we need to canonicalize `Arg`?
-  // Maybe with Context.getCanonicalTemplateArgument()?
-  const TemplateArgument& Arg = ArgLoc.getArgument();
-  switch (Arg.getKind()) {
-    case TemplateArgument::Null:
-      return BuildNodeIdForSpecialTemplateArgument("null");
-    case TemplateArgument::Type:
-      return BuildNodeIdForType(ArgLoc.getTypeSourceInfo()->getTypeLoc());
-    case TemplateArgument::Declaration:
-      return BuildNodeIdForDecl(Arg.getAsDecl());
-    case TemplateArgument::NullPtr:
-      return BuildNodeIdForSpecialTemplateArgument("nullptr");
-    case TemplateArgument::Integral:
-      return BuildNodeIdForSpecialTemplateArgument(
-          Arg.getAsIntegral().toString(10) + "i");
-    case TemplateArgument::Template:
-      return BuildNodeIdForTemplateName(Arg.getAsTemplate());
-    case TemplateArgument::TemplateExpansion:
-      return BuildNodeIdForTemplateExpansion(
-          Arg.getAsTemplateOrTemplatePattern());
-    case TemplateArgument::Expression:
-      CHECK(ArgLoc.getSourceExpression() != nullptr);
-      return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
-    case TemplateArgument::Pack:
-      return BuildNodeIdForTemplateArgument(Arg, ArgLoc.getLocation());
-  }
-  return absl::nullopt;
+    const clang::TemplateArgumentLoc& ArgLoc) {
+  return BuildNodeIdForTemplateArgument(ArgLoc.getArgument());
 }
 
 void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
@@ -4095,13 +4242,13 @@ void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForBuiltin(
-    clang::BuiltinTypeLoc TL) const {
-  return Observer.getNodeIdForBuiltinType(TL.getTypePtr()->getName(
-      clang::PrintingPolicy(*Observer.getLangOptions())));
+    const clang::BuiltinType& T) const {
+  return Observer.getNodeIdForBuiltinType(
+      T.getName(clang::PrintingPolicy(*Observer.getLangOptions())));
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
-  EnumDecl* Decl = TL.getDecl();
+NodeSet IndexerASTVisitor::BuildNodeSetForEnum(const clang::EnumType& T) {
+  EnumDecl* Decl = T.getDecl();
   if (EnumDecl* Defn = Decl->getDefinition()) {
     return {BuildNodeIdForDecl(Defn), GraphObserver::Claimability::Unclaimable};
   }
@@ -4112,16 +4259,15 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
   return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
-  RecordDecl* Decl = CHECK_NOTNULL(TL.getDecl());
+NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
+  RecordDecl* Decl = CHECK_NOTNULL(T.getDecl());
   if (const auto* Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Simplify building template argument lists.
     const auto& TAL = Spec->getTemplateArgs();
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TAL.size());
     for (const auto& Arg : TAL.asArray()) {
-      if (auto ArgA =
-              BuildNodeIdForTemplateArgument(Arg, Spec->getLocation())) {
+      if (auto ArgA = BuildNodeIdForTemplateArgument(Arg)) {
         TemplateArgs.push_back(ArgA.value());
       } else {
         return NodeSet::Empty();
@@ -4140,6 +4286,302 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
   } else {
     return BuildNodeSetForNonSpecializedRecordDecl(Decl);
   }
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
+    const clang::InjectedClassNameType& T) {
+  // TODO(zarko): Replace with logic that uses InjectedType.
+  return BuildNodeSetForNonSpecializedRecordDecl(T.getDecl());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
+    const clang::TemplateTypeParmType& T) {
+  if (const auto* Decl = FindTemplateTypeParmTypeDecl(T)) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForPointer(const clang::PointerType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
+    const clang::MemberPointerType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    if (auto ClassID = BuildNodeIdForType(T.getClass())) {
+      auto tapp = Observer.getNodeIdForBuiltinType("mptr");
+      return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
+    }
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForLValueReference(
+    const clang::LValueReferenceType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("lvr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForRValueReference(
+    const clang::RValueReferenceType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("rvr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForAuto(const clang::AutoType& T) {
+  return BuildNodeSetForDeduced(T);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
+    const clang::DeducedTemplateSpecializationType& T) {
+  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
+  // They currently return the same thing, but only via the indirection through
+  // the deduced type.  We should also potentially emit implicit references to
+  // the deduced template parameters.
+  return BuildNodeSetForDeduced(T);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDeduced(const clang::DeducedType& T) {
+  auto DeducedQT = T.getDeducedType();
+  if (DeducedQT.isNull()) {
+    // We still need to come up with a name here--it's more useful than
+    // returning None, since we might be down a branch of some structural
+    // type. We might also have an unconstrained type variable,
+    // as with `auto foo();` with no definition.
+    // TODO(zarko): Is "auto" the correct thing to return here for
+    // a DeducedTemplateSpecialization?
+    return Observer.getNodeIdForBuiltinType("auto");
+  }
+  return BuildNodeSetForType(DeducedQT);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForConstantArray(
+    const clang::ConstantArrayType& T) {
+  if (auto ElementID = BuildNodeIdForType(T.getElementType())) {
+    // TODO(zarko): Record size expression.
+    return ApplyBuiltinTypeConstructor("carr", *ElementID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForIncompleteArray(
+    const clang::IncompleteArrayType& T) {
+  if (auto ElementID = BuildNodeIdForType(T.getElementType())) {
+    return ApplyBuiltinTypeConstructor("iarr", *ElementID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
+    const clang::DependentSizedArrayType& T) {
+  if (auto ElemID = BuildNodeIdForType(T.getElementType())) {
+    if (auto ExprID = BuildNodeIdForExpr(T.getSizeExpr(), EmitRanges::No)) {
+      return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
+                                     {*ElemID, *ExprID});
+    } else {
+      return ApplyBuiltinTypeConstructor("darr", *ElemID);
+    }
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForExtInt(const clang::ExtIntType& T) {
+  return Observer.getNodeIdForBuiltinType(absl::StrCat(
+      T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", "#", T.getNumBits()));
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentExtInt(
+    const clang::DependentExtIntType& T) {
+  if (auto ExprID = BuildNodeIdForExpr(T.getNumBitsExpr(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor(
+        T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", *ExprID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
+    const clang::FunctionProtoType& T) {
+  std::vector<GraphObserver::NodeId> NodeIds;
+  auto ReturnType = BuildNodeIdForType(T.getReturnType());
+  if (!ReturnType) {
+    return NodeSet::Empty();
+  }
+  NodeIds.push_back(*ReturnType);
+
+  for (const auto& param : T.getParamTypes()) {
+    if (auto ParmType = BuildNodeIdForType(param)) {
+      NodeIds.push_back(*ParmType);
+    } else {
+      return NodeSet::Empty();
+    }
+  }
+
+  const char* Tycon = T.isVariadic() ? "fnvararg" : "fn";
+  return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
+                                 NodeIds);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForFunctionNoProto(
+    const clang::FunctionNoProtoType& T) {
+  return Observer.getNodeIdForBuiltinType("knrfn");
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForParen(const clang::ParenType& T) {
+  return BuildNodeSetForType(T.getInnerType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDecltype(
+    const clang::DecltypeType& T) {
+  return BuildNodeSetForType(T.getUnderlyingType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForElaborated(
+    const clang::ElaboratedType& T) {
+  return BuildNodeSetForType(T.getNamedType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(const clang::TypedefType& T) {
+  // TODO(zarko): Return canonicalized versions as well.
+  GraphObserver::NameId AliasID = BuildNameIdForDecl(T.getDecl());
+  // We're retrieving the type of an alias here, so we shouldn't thread
+  // through the deduced type.
+  if (auto AliasedTypeID =
+          BuildNodeIdForType(T.getDecl()->getTypeSourceInfo()->getTypeLoc())) {
+    // TODO(shahms): Move caching here and use
+    // `Observer.nodeIdForTypeAliasNode()` when already built?
+    // Or is always using the cached id sufficient?
+    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
+    auto Marks = MarkedSources.Generate(T.getDecl());
+    AssignUSR(ID, T.getDecl());
+    return Observer.recordTypeAliasNode(
+        ID, *AliasedTypeID, BuildNodeIdForType(FollowAliasChain(T.getDecl())),
+        Marks.GenerateMarkedSource(ID));
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForSubstTemplateTypeParm(
+    const clang::SubstTemplateTypeParmType& T) {
+  return BuildNodeSetForType(T.getReplacementType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
+    const clang::DependentNameType& T) {
+  return BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
+    const clang::TemplateSpecializationType& T) {
+  // This refers to a particular class template, type alias template,
+  // or template template parameter. Non-dependent template
+  // specializations appear as different types.
+  if (auto TemplateName = BuildNodeIdForTemplateName(T.getTemplateName())) {
+    std::vector<GraphObserver::NodeId> TemplateArgs;
+    TemplateArgs.reserve(T.getNumArgs());
+    for (const auto& arg : T.template_arguments()) {
+      if (auto ArgId = BuildNodeIdForTemplateArgument(arg)) {
+        TemplateArgs.push_back(*ArgId);
+      } else {
+        return NodeSet::Empty();
+      }
+    }
+    return Observer.recordTappNode(*TemplateName, TemplateArgs);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForPackExpansion(
+    const clang::PackExpansionType& T) {
+  return BuildNodeSetForType(T.getPattern());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForBlockPointer(
+    const clang::BlockPointerType& T) {
+  if (auto ID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *ID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
+    const clang::ObjCObjectPointerType& T) {
+  if (auto ID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *ID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
+    const clang::ObjCObjectType& T) {
+  if (auto BaseId = BuildNodeIdForObjCProtocols(T)) {
+    if (T.getTypeArgsAsWritten().size() == 0) {
+      return *std::move(BaseId);
+    }
+    std::vector<NodeId> GenericArgIds;
+    GenericArgIds.reserve(T.getTypeArgsAsWritten().size());
+    for (const auto& QT : T.getTypeArgsAsWritten()) {
+      if (auto Arg = BuildNodeIdForType(QT)) {
+        GenericArgIds.push_back(*Arg);
+      } else {
+        return NodeSet::Empty();
+      }
+    }
+    return Observer.recordTappNode(*BaseId, GenericArgIds);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
+    const clang::ObjCTypeParamType& T) {
+  if (const auto* Decl = T.getDecl()) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
+    const clang::ObjCInterfaceType& T) {
+  const auto* IFace = CHECK_NOTNULL(T.getDecl());
+  // Link to the implementation if we have one, otherwise link to the
+  // interface. If we just have a forward declaration, link to the nominal
+  // type node.
+  if (const auto* Impl = IFace->getImplementation()) {
+    return {BuildNodeIdForDecl(Impl), Claimability::Unclaimable};
+  } else if (!IsObjCForwardDecl(IFace)) {
+    return {BuildNodeIdForDecl(IFace), Claimability::Unclaimable};
+  } else {
+    // Thanks to the ODR, we shouldn't record multiple nominal type nodes
+    // for the same TU: given distinct names, NameIds will be distinct,
+    // there may be only one definition bound to each name, and we
+    // memoize the NodeIds we give to types.
+    return BuildNominalNodeIdForDecl(IFace);
+  }
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForAttributed(
+    const clang::AttributedType& T) {
+  return BuildNodeSetForType(T.getModifiedType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
+    const clang::DependentAddressSpaceType& T) {
+  return BuildNodeSetForType(T.getPointeeType());
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
+    const clang::NamedDecl* Decl) {
+  auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+  return Observer.recordNominalTypeNode(
+      NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
+      GetDeclChildOf(Decl));
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
@@ -4168,341 +4610,26 @@ NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
   }
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
-    clang::TemplateTypeParmTypeLoc TL) {
-  if (const auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
-    return BuildNodeIdForDecl(Decl);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
-    clang::ObjCInterfaceTypeLoc TL) {
-  const auto* IFace = CHECK_NOTNULL(TL.getIFaceDecl());
-  // Link to the implementation if we have one, otherwise link to the
-  // interface. If we just have a forward declaration, link to the nominal
-  // type node.
-  if (const auto* Impl = IFace->getImplementation()) {
-    return {BuildNodeIdForDecl(Impl), Claimability::Unclaimable};
-  } else if (!IsObjCForwardDecl(IFace)) {
-    return {BuildNodeIdForDecl(IFace), Claimability::Unclaimable};
-  } else {
-    // Thanks to the ODR, we shouldn't record multiple nominal type nodes
-    // for the same TU: given distinct names, NameIds will be distinct,
-    // there may be only one definition bound to each name, and we
-    // memoize the NodeIds we give to types.
-    return BuildNominalNodeIdForDecl(IFace);
-  }
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForPointer(clang::PointerTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
-    clang::MemberPointerTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    if (auto ClassID = BuildNodeIdForType(clang::QualType(TL.getClass(), 0))) {
-      auto tapp = Observer.getNodeIdForBuiltinType("mptr");
-      return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
-    }
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForLValueReference(
-    clang::LValueReferenceTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("lvr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForRValueReference(
-    clang::RValueReferenceTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("rvr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForAuto(clang::AutoTypeLoc TL) {
-  return BuildNodeSetForDeduced(TL);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
-    clang::DeducedTemplateSpecializationTypeLoc TL) {
-  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
-  // They currently return the same thing, but only via the indirection through
-  // the deduced type.  We should also potentially emit implicit references to
-  // the deduced template parameters.
-  return BuildNodeSetForDeduced(TL);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDeduced(clang::DeducedTypeLoc TL) {
-  auto DeducedQT = TL.getTypePtr()->getDeducedType();
-  if (DeducedQT.isNull()) {
-    // We still need to come up with a name here--it's more useful than
-    // returning None, since we might be down a branch of some structural
-    // type. We might also have an unconstrained type variable,
-    // as with `auto foo();` with no definition.
-    // TODO(zarko): Is "auto" the correct thing to return here for
-    // a DeducedTemplateSpecialization?
-    return Observer.getNodeIdForBuiltinType("auto");
-  }
-  return BuildNodeSetForType(DeducedQT);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForQualified(
-    clang::QualifiedTypeLoc TL) {
-  // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
-  if (auto ID = BuildNodeIdForType(TL.getUnqualifiedLoc())) {
-    // Don't look down into type aliases. We'll have hit those during the
-    // BuildNodeIdForType call above.
-    // TODO(zarko): also add canonical edges (what do we call the edges?
-    // 'expanded' seems reasonable).
-    //   using ConstInt = const int;
-    //   using CVInt1 = volatile ConstInt;
-    if (TL.getType().isLocalConstQualified()) {
-      ID = ApplyBuiltinTypeConstructor("const", *ID);
-    }
-    if (TL.getType().isLocalRestrictQualified()) {
-      ID = ApplyBuiltinTypeConstructor("restrict", *ID);
-    }
-    if (TL.getType().isLocalVolatileQualified()) {
-      ID = ApplyBuiltinTypeConstructor("volatile", *ID);
-    }
-    return std::move(ID).value();
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForConstantArray(
-    clang::ConstantArrayTypeLoc TL) {
-  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc())) {
-    // TODO(zarko): Record size expression.
-    return ApplyBuiltinTypeConstructor("carr", *ElementID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForIncompleteArray(
-    clang::IncompleteArrayTypeLoc TL) {
-  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc())) {
-    return ApplyBuiltinTypeConstructor("iarr", *ElementID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
-    clang::DependentSizedArrayTypeLoc TL) {
-  if (auto ElemID = BuildNodeIdForType(TL.getElementLoc())) {
-    if (auto ExprID = BuildNodeIdForExpr(TL.getSizeExpr(), EmitRanges::No)) {
-      return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
-                                     {*ElemID, *ExprID});
-    } else {
-      return ApplyBuiltinTypeConstructor("darr", *ElemID);
-    }
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
-    clang::FunctionProtoTypeLoc TL) {
-  std::vector<GraphObserver::NodeId> NodeIds;
-  auto ReturnType = BuildNodeIdForType(TL.getReturnLoc());
-  if (!ReturnType) {
-    return NodeSet::Empty();
-  }
-  NodeIds.push_back(*ReturnType);
-
-  for (const auto& param : TL.getTypePtr()->getParamTypes()) {
-    if (auto ParmType = BuildNodeIdForType(param)) {
-      NodeIds.push_back(*ParmType);
-    } else {
-      return NodeSet::Empty();
-    }
-  }
-
-  const char* Tycon = TL.getTypePtr()->isVariadic() ? "fnvararg" : "fn";
-  return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
-                                 NodeIds);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForFunctionNoProto(
-    clang::FunctionNoProtoTypeLoc TL) {
-  return Observer.getNodeIdForBuiltinType("knrfn");
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForParen(clang::ParenTypeLoc TL) {
-  return BuildNodeSetForType(TL.getInnerLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDecltype(clang::DecltypeTypeLoc TL) {
-  return BuildNodeSetForType(TL.getTypePtr()->getUnderlyingType());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForElaborated(
-    clang::ElaboratedTypeLoc TL) {
-  return BuildNodeSetForType(TL.getNamedTypeLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(clang::TypedefTypeLoc TL) {
-  // TODO(zarko): Return canonicalized versions as well.
-  GraphObserver::NameId AliasID = BuildNameIdForDecl(TL.getTypedefNameDecl());
-  // We're retrieving the type of an alias here, so we shouldn't thread
-  // through the deduced type.
-  if (auto AliasedTypeID = BuildNodeIdForType(
-          TL.getTypedefNameDecl()->getTypeSourceInfo()->getTypeLoc())) {
-    // TODO(shahms): Move caching here and use
-    // `Observer.nodeIdForTypeAliasNode()` when already built?
-    // Or is always using the cached id sufficient?
-    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
-    auto Marks = MarkedSources.Generate(TL.getTypedefNameDecl());
-    AssignUSR(ID, TL.getTypedefNameDecl());
-    return Observer.recordTypeAliasNode(
-        ID, *AliasedTypeID,
-        BuildNodeIdForType(FollowAliasChain(TL.getTypedefNameDecl())),
-        Marks.GenerateMarkedSource(ID));
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForSubstTemplateTypeParm(
-    clang::SubstTemplateTypeParmTypeLoc TL) {
-  return BuildNodeSetForType(TL.getTypePtr()->getReplacementType());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
-    clang::InjectedClassNameTypeLoc TL) {
-  // TODO(zarko): Replace with logic that uses InjectedType.
-  return BuildNodeSetForNonSpecializedRecordDecl(TL.getDecl());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
-    clang::DependentNameTypeLoc TL) {
-  return BuildNodeIdForDependentIdentifier(
-      TL.getQualifierLoc().getNestedNameSpecifier(),
-      TL.getTypePtr()->getIdentifier());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
-    clang::TemplateSpecializationTypeLoc TL) {
-  // This refers to a particular class template, type alias template,
-  // or template template parameter. Non-dependent template
-  // specializations appear as different types.
-  if (auto TemplateName =
-          BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
-    std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(TL.getNumArgs());
-    for (unsigned A = 0, AE = TL.getNumArgs(); A != AE; ++A) {
-      if (auto ArgA =
-              BuildNodeIdForTemplateArgument(TL.getArgLoc(A), EmitRanges::No)) {
-        TemplateArgs.push_back(ArgA.value());
-      } else {
-        return NodeSet::Empty();
-      }
-    }
-    return Observer.recordTappNode(*TemplateName, TemplateArgs);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForPackExpansion(
-    clang::PackExpansionTypeLoc TL) {
-  return BuildNodeSetForType(TL.getPatternLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForBlockPointer(
-    clang::BlockPointerTypeLoc TL) {
-  if (auto ID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *ID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
-    clang::ObjCObjectPointerTypeLoc TL) {
-  if (auto ID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *ID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
-    clang::ObjCObjectTypeLoc TL) {
-  if (auto BaseId = BuildNodeIdForObjCProtocols(TL)) {
-    if (TL.getNumTypeArgs() == 0) {
-      return *std::move(BaseId);
-    }
-    std::vector<NodeId> GenericArgIds;
-    GenericArgIds.reserve(TL.getNumTypeArgs());
-    for (unsigned int i = 0; i < TL.getNumTypeArgs(); ++i) {
-      const auto* TI = TL.getTypeArgTInfo(i);
-      if (auto Arg = BuildNodeIdForType(TI->getTypeLoc())) {
-        GenericArgIds.push_back(*Arg);
-      } else {
-        return NodeSet::Empty();
-      }
-    }
-    return Observer.recordTappNode(*BaseId, GenericArgIds);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
-    clang::ObjCTypeParamTypeLoc TL) {
-  if (const auto* Decl = TL.getDecl()) {
-    return BuildNodeIdForDecl(Decl);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForAttributed(
-    clang::AttributedTypeLoc TL) {
-  return BuildNodeSetForType(TL.getModifiedLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
-    clang::DependentAddressSpaceTypeLoc TL) {
-  return BuildNodeSetForType(TL.getPointeeTypeLoc());
-}
-
-GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
-    const clang::NamedDecl* Decl) {
-  auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
-  return Observer.recordNominalTypeNode(
-      NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
-      GetDeclChildOf(Decl));
-}
-
 const clang::TemplateTypeParmDecl*
-IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(
-    clang::TemplateTypeParmTypeLoc TL) const {
+IndexerASTVisitor::FindTemplateTypeParmTypeDecl(
+    const clang::TemplateTypeParmType& T) const {
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
   // types) we will find the Decl in the `Job->TypeContext` according to the
   // parameter's depth and index.
   // Depths count from the outside-in; each Template*ParmDecl has only
   // one possible (depth, index).
-  if (auto* Decl = TL.getDecl()) {
+  if (auto* Decl = T.getDecl()) {
     return Decl;
   }
   LOG(INFO) << "Immediate TemplateTypeParmDecl not found, falling back to "
                "TypeContext";
-  if (auto* TypeParm = TL.getTypePtr()) {
-    if (TypeParm->getDepth() < Job->TypeContext.size() &&
-        TypeParm->getIndex() < Job->TypeContext[TypeParm->getDepth()]->size()) {
-      return cast<clang::TemplateTypeParmDecl>(
-          Job->TypeContext[TypeParm->getDepth()]->getParam(
-              TypeParm->getIndex()));
-    }
+  if (T.getDepth() < Job->TypeContext.size() &&
+      T.getIndex() < Job->TypeContext[T.getDepth()]->size()) {
+    return cast<clang::TemplateTypeParmDecl>(
+        Job->TypeContext[T.getDepth()]->getParam(T.getIndex()));
   }
-  LOG(ERROR)
-      << "Unable to find TemplateTypeParmDecl for TemplateTypeParmTypeLoc";
+  LOG(ERROR) << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
   return nullptr;
 }
 
@@ -4516,180 +4643,202 @@ absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
   return BuildNodeSetForType(QT).AsOptional();
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
-  // TODO(shahms): This be barkwards; we should build NodeSets from
-  // `clang::Type*` subclasses, rather than TypeLoc's with occasionally empty
-  // locations.
-  CHECK(!QT.isNull());
-  TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(QT, SourceLocation());
-  return BuildNodeSetForType(TSI->getTypeLoc());
+absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
+    const clang::Type* T) {
+  return BuildNodeSetForType(T).AsOptional();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::Type* T) {
+  CHECK(T != nullptr);
+  return BuildNodeSetForType(clang::QualType(T, 0));
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
-  TypeKey Key(Context, TL.getType(), TL.getTypePtr());
-  const auto& Prev = TypeNodes.find(Key);
-  if (Prev != TypeNodes.end()) {
-    return Prev->second;
+  return BuildNodeSetForType(TL.getType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
+  CHECK(!QT.isNull());
+  TypeKey Key(Context, QT, QT.getTypePtr());
+  auto [iter, inserted] = TypeNodes.insert({Key, NodeSet::Empty()});
+  if (inserted) {
+    iter->second = QT.hasLocalQualifiers()
+                       ? BuildNodeSetForTypeInternal(QT)
+                       : BuildNodeSetForTypeInternal(*QT.getTypePtr());
   }
-  NodeSet Nodes = [&]() -> NodeSet {
+  return iter->second;
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(
+    const clang::QualType& QT) {
+  CHECK(!QT.isNull() && QT.hasLocalQualifiers());
+  // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
+  if (auto ID = BuildNodeSetForType(QT.getTypePtr())) {
+    // Don't look down into type aliases. We'll have hit those during the
+    // BuildNodeIdForType call above.
+    // TODO(zarko): also add canonical edges (what do we call the edges?
+    // 'expanded' seems reasonable).
+    //   using ConstInt = const int;
+    //   using CVInt1 = volatile ConstInt;
+    if (QT.isLocalConstQualified()) {
+      ID = ApplyBuiltinTypeConstructor("const", *ID);
+    }
+    if (QT.isLocalRestrictQualified()) {
+      ID = ApplyBuiltinTypeConstructor("restrict", *ID);
+    }
+    if (QT.isLocalVolatileQualified()) {
+      ID = ApplyBuiltinTypeConstructor("volatile", *ID);
+    }
+    return ID;
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
   // There aren't too many types in C++, as it turns out. See
   // clang/AST/TypeNodes.def.
-
-#define UNSUPPORTED_CLANG_TYPE(t)                  \
-  case TypeLoc::t:                                 \
-    if (IgnoreUnimplemented) {                     \
-      return NodeSet::Empty();                     \
-    } else {                                       \
-      LOG(FATAL) << "TypeLoc::" #t " unsupported"; \
-    }                                              \
+#define UNSUPPORTED_CLANG_TYPE(t)               \
+  case clang::Type::t:                          \
+    if (IgnoreUnimplemented) {                  \
+      return NodeSet::Empty();                  \
+    } else {                                    \
+      LOG(FATAL) << "Type::" #t " unsupported"; \
+    }                                           \
     break
 
 #define DELEGATE_TYPE(t) \
-  case TypeLoc::t:       \
-    return BuildNodeSetFor##t(TL.castAs<t##TypeLoc>());
-    // We only care about leaves in the type hierarchy (eg, we shouldn't match
-    // on Reference, but instead on LValueReference or RValueReference).
-    switch (TL.getTypeLocClass()) {
-      DELEGATE_TYPE(Builtin);           // Leaf.
-      DELEGATE_TYPE(Enum);              // Leaf.
-      DELEGATE_TYPE(TemplateTypeParm);  // Leaf.
-      DELEGATE_TYPE(Record);            // Leaf.
-      DELEGATE_TYPE(ObjCInterface);     // Leaf.
-      DELEGATE_TYPE(ObjCObjectPointer);
-      DELEGATE_TYPE(ObjCTypeParam);
-      DELEGATE_TYPE(ObjCObject);
-      DELEGATE_TYPE(Pointer);
-      DELEGATE_TYPE(MemberPointer);
-      DELEGATE_TYPE(LValueReference);
-      DELEGATE_TYPE(RValueReference);
-      DELEGATE_TYPE(Auto);
-      DELEGATE_TYPE(DeducedTemplateSpecialization);
-      DELEGATE_TYPE(Qualified);
-      DELEGATE_TYPE(ConstantArray);
-      DELEGATE_TYPE(IncompleteArray);
-      DELEGATE_TYPE(DependentSizedArray);
-      DELEGATE_TYPE(FunctionProto);
-      DELEGATE_TYPE(FunctionNoProto);
-      DELEGATE_TYPE(Paren);
-      DELEGATE_TYPE(Typedef);
-      DELEGATE_TYPE(Decltype);
-      DELEGATE_TYPE(Elaborated);
-      // "Within an instantiated template, all template type parameters have
-      // been replaced with these. They are used solely to record that a type
-      // was originally written as a template type parameter; therefore they are
-      // never canonical."
-      DELEGATE_TYPE(SubstTemplateTypeParm);
-      DELEGATE_TYPE(InjectedClassName);
-      DELEGATE_TYPE(DependentName);
-      DELEGATE_TYPE(PackExpansion);
-      DELEGATE_TYPE(BlockPointer);
-      DELEGATE_TYPE(TemplateSpecialization);
-      DELEGATE_TYPE(Attributed);
-      DELEGATE_TYPE(DependentAddressSpace);
-      UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
-      UNSUPPORTED_CLANG_TYPE(Complex);
-      UNSUPPORTED_CLANG_TYPE(VariableArray);
-      UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
-      UNSUPPORTED_CLANG_TYPE(Vector);
-      UNSUPPORTED_CLANG_TYPE(ExtVector);
-      UNSUPPORTED_CLANG_TYPE(Adjusted);
-      UNSUPPORTED_CLANG_TYPE(Decayed);
-      UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
-      UNSUPPORTED_CLANG_TYPE(TypeOf);
-      UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
-      UNSUPPORTED_CLANG_TYPE(UnaryTransform);
-      // "When a pack expansion in the source code contains multiple parameter
-      // packs and those parameter packs correspond to different levels of
-      // template parameter lists, this type node is used to represent a
-      // template type parameter pack from an outer level, which has already had
-      // its argument pack substituted but that still lives within a pack
-      // expansion that itself could not be instantiated. When actually
-      // performing a substitution into that pack expansion (e.g., when all
-      // template parameters have corresponding arguments), this type will be
-      // replaced with the SubstTemplateTypeParmType at the current pack
-      // substitution index."
-      UNSUPPORTED_CLANG_TYPE(SubstTemplateTypeParmPack);
-      UNSUPPORTED_CLANG_TYPE(Atomic);
-      UNSUPPORTED_CLANG_TYPE(Pipe);
-      UNSUPPORTED_CLANG_TYPE(DependentVector);
-      UNSUPPORTED_CLANG_TYPE(MacroQualified);
-    }
+  case clang::Type::t:   \
+    return BuildNodeSetFor##t(clang::cast<t##Type>(T));
+  // We only care about leaves in the type hierarchy (eg, we shouldn't match
+  // on Reference, but instead on LValueReference or RValueReference).
+  switch (T.getTypeClass()) {
+    DELEGATE_TYPE(Builtin);           // Leaf.
+    DELEGATE_TYPE(Enum);              // Leaf.
+    DELEGATE_TYPE(TemplateTypeParm);  // Leaf.
+    DELEGATE_TYPE(Record);            // Leaf.
+    DELEGATE_TYPE(ObjCInterface);     // Leaf.
+    DELEGATE_TYPE(ObjCObjectPointer);
+    DELEGATE_TYPE(ObjCTypeParam);
+    DELEGATE_TYPE(ObjCObject);
+    DELEGATE_TYPE(Pointer);
+    DELEGATE_TYPE(MemberPointer);
+    DELEGATE_TYPE(LValueReference);
+    DELEGATE_TYPE(RValueReference);
+    DELEGATE_TYPE(Auto);
+    DELEGATE_TYPE(DeducedTemplateSpecialization);
+    DELEGATE_TYPE(ConstantArray);
+    DELEGATE_TYPE(IncompleteArray);
+    DELEGATE_TYPE(DependentSizedArray);
+    DELEGATE_TYPE(FunctionProto);
+    DELEGATE_TYPE(FunctionNoProto);
+    DELEGATE_TYPE(Paren);
+    DELEGATE_TYPE(Typedef);
+    DELEGATE_TYPE(Decltype);
+    DELEGATE_TYPE(Elaborated);
+    // "Within an instantiated template, all template type parameters have
+    // been replaced with these. They are used solely to record that a type
+    // was originally written as a template type parameter; therefore they are
+    // never canonical."
+    DELEGATE_TYPE(SubstTemplateTypeParm);
+    DELEGATE_TYPE(InjectedClassName);
+    DELEGATE_TYPE(DependentName);
+    DELEGATE_TYPE(PackExpansion);
+    DELEGATE_TYPE(BlockPointer);
+    DELEGATE_TYPE(TemplateSpecialization);
+    DELEGATE_TYPE(Attributed);
+    DELEGATE_TYPE(DependentAddressSpace);
+    DELEGATE_TYPE(ExtInt);
+    DELEGATE_TYPE(DependentExtInt);
+    UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
+    UNSUPPORTED_CLANG_TYPE(Complex);
+    UNSUPPORTED_CLANG_TYPE(VariableArray);
+    UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
+    UNSUPPORTED_CLANG_TYPE(Vector);
+    UNSUPPORTED_CLANG_TYPE(ExtVector);
+    UNSUPPORTED_CLANG_TYPE(Adjusted);
+    UNSUPPORTED_CLANG_TYPE(Decayed);
+    UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
+    UNSUPPORTED_CLANG_TYPE(TypeOf);
+    UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
+    UNSUPPORTED_CLANG_TYPE(UnaryTransform);
+    // "When a pack expansion in the source code contains multiple parameter
+    // packs and those parameter packs correspond to different levels of
+    // template parameter lists, this type node is used to represent a
+    // template type parameter pack from an outer level, which has already had
+    // its argument pack substituted but that still lives within a pack
+    // expansion that itself could not be instantiated. When actually
+    // performing a substitution into that pack expansion (e.g., when all
+    // template parameters have corresponding arguments), this type will be
+    // replaced with the SubstTemplateTypeParmType at the current pack
+    // substitution index."
+    UNSUPPORTED_CLANG_TYPE(SubstTemplateTypeParmPack);
+    UNSUPPORTED_CLANG_TYPE(Atomic);
+    UNSUPPORTED_CLANG_TYPE(Pipe);
+    UNSUPPORTED_CLANG_TYPE(DependentVector);
+    UNSUPPORTED_CLANG_TYPE(MacroQualified);
+    UNSUPPORTED_CLANG_TYPE(ConstantMatrix);
+    UNSUPPORTED_CLANG_TYPE(DependentSizedMatrix);
+  }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE
-  }();
-  return (TypeNodes[Key] = Nodes);
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForObjCProtocols(clang::ObjCObjectTypeLoc TL) {
-  if (TL.getTypePtr()->getInterface()) {
-    if (auto BaseId = BuildNodeIdForType(TL.getBaseLoc())) {
-      return BuildNodeIdForObjCProtocols(*BaseId, TL.getTypePtr());
+IndexerASTVisitor::BuildNodeIdForObjCProtocols(const clang::ObjCObjectType& T) {
+  if (T.getInterface()) {
+    if (auto BaseId = BuildNodeIdForType(T.getBaseType())) {
+      return BuildNodeIdForObjCProtocols(
+          BuildNodeIdsForObjCProtocols(*BaseId, T));
     } else {
       return absl::nullopt;
     }
   } else {
-    return BuildNodeIdForObjCProtocols(TL.getTypePtr());
+    return BuildNodeIdForObjCProtocols(BuildNodeIdsForObjCProtocols(T));
   }
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
+    absl::Span<const GraphObserver::NodeId> ProtocolIds) {
+  if (ProtocolIds.empty()) {
+    return Observer.getNodeIdForBuiltinType("id");
+  } else if (ProtocolIds.size() == 1) {
+    // We have something like id<P1>. This is a special case of the following
+    // code that handles id<P1, P2> because *this* case can skip the
+    // intermediate union tapp.
+    return ProtocolIds.front();
+  }
+  // Create/find the Union node.
+  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
+  return Observer.recordTappNode(UnionTApp, ProtocolIds);
 }
 
 // Base case where we don't have a separate BaseType to contend with
 // (BaseType is just an `id` node).
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
-    const ObjCObjectType* T) {
+std::vector<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(const ObjCObjectType& T) {
   // Use a multimap since it is sorted by key and we want our nodes sorted by
   // their (uncompressed) name. We want the items sorted by the original class
   // name because the user should be able to write down a union type
   // for the verifier and they can only do that if they know the order in
   // which the types will be passed as parameters.
   std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  for (ObjCProtocolDecl* P : T->getProtocols()) {
+  for (ObjCProtocolDecl* P : T.getProtocols()) {
     ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
   }
-  if (ProtocolNodes.empty()) {
-    return Observer.getNodeIdForBuiltinType("id");
-  } else if (ProtocolNodes.size() == 1) {
-    // We have something like id<P1>. This is a special case of the following
-    // code that handles id<P1, P2> because *this* case can skip the
-    // intermediate union tapp.
-    return ProtocolNodes.begin()->second;
-  }
-  // We have something like id<P1, P2>  union of types P1 and P2.
   std::vector<GraphObserver::NodeId> ProtocolIds;
   ProtocolIds.reserve(ProtocolNodes.size());
   for (const auto& PN : ProtocolNodes) {
     ProtocolIds.push_back(PN.second);
   }
-  // Create/find the Union node.
-  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolIds);
+  return ProtocolIds;
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
-    GraphObserver::NodeId BaseType, const ObjCObjectType* T) {
-  // Use a multimap since it is sorted by key and we want our nodes sorted by
-  // their (uncompressed) name. We want the items sorted by the original class
-  // name because the user should be able to write down a union type
-  // for the verifier and they can only do that if they know the order in
-  // which the types will be passed as parameters.
-  std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  for (ObjCProtocolDecl* P : T->getProtocols()) {
-    ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
-  }
-  if (ProtocolNodes.empty()) {
-    return BaseType;
-  }
-  // We have something like id<P1, P2> or P1<P2>, which means this is a union
-  // of types P1 and P2.
-  std::vector<GraphObserver::NodeId> ProtocolIds;
-  ProtocolIds.reserve(ProtocolNodes.size() + 1);
-  ProtocolIds.push_back(BaseType);
-  for (const auto& PN : ProtocolNodes) {
-    ProtocolIds.push_back(PN.second);
-  }
-  // Create/find the Union node.
-  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolIds);
+std::vector<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(GraphObserver::NodeId BaseType,
+                                                const ObjCObjectType& T) {
+  auto ProtocolIds = BuildNodeIdsForObjCProtocols(T);
+  ProtocolIds.insert(ProtocolIds.begin(), BaseType);
+  return ProtocolIds;
 }
 
 // This is the synthesize statement.
@@ -4730,20 +4879,19 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   // not give them to us. We expect something of the form:
   // @compatibility_alias AliasName OriginalClassName
   // Note that this does not work in the presence of macros with parameters.
-  SourceRange AtSign = RangeForNameOfDeclaration(Decl);
-  const auto KeywordRange(
-      ConsumeToken(AtSign.getEnd(), clang::tok::identifier));
-  const auto AliasRange(
-      ConsumeToken(KeywordRange.getEnd(), clang::tok::identifier));
-  const auto OrgClassRange(
-      ConsumeToken(AliasRange.getEnd(), clang::tok::identifier));
+  const auto AliasRange = RangeForNameOfDeclaration(Decl);
 
   // Record a ref to the original type
-  if (const auto& ERCC = ExplicitRangeInCurrentContext(OrgClassRange)) {
-    const auto& ID = BuildNodeIdForDecl(Decl->getClassInterface());
-    Observer.recordDeclUseLocation(ERCC.value(), ID,
-                                   GraphObserver::Claimability::Claimable,
-                                   IsImplicit(ERCC.value()));
+  if (const auto OrigClass = clang::Lexer::findNextToken(
+          AliasRange.getEnd(), *Observer.getSourceManager(),
+          *Observer.getLangOptions())) {
+    if (const auto& ERCC = ExplicitRangeInCurrentContext(clang::SourceRange(
+            OrigClass->getLocation(), OrigClass->getEndLoc()))) {
+      const auto& ID = BuildNodeIdForDecl(Decl->getClassInterface());
+      Observer.recordDeclUseLocation(ERCC.value(), ID,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(ERCC.value()));
+    }
   }
 
   // Record the type alias
@@ -4813,7 +4961,7 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     const clang::ObjCCategoryImplDecl* ImplDecl) {
   auto Marks = MarkedSources.Generate(ImplDecl);
-  SourceRange NameRange = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
+  SourceRange NameRange = NormalizeRange(ImplDecl->getCategoryNameLoc());
   auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
@@ -4852,7 +5000,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       LOG(ERROR) << "Class extensions should not have a category impl.";
       return true;
     }
-    auto Range = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
+    auto Range = NormalizeRange(ImplDecl->getCategoryNameLoc());
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       auto ID = BuildNodeIdForDecl(CategoryDecl);
       Observer.recordDeclUseLocation(RCC.value(), ID,
@@ -4870,8 +5018,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange =
-        RangeForASTEntity(ImplDecl->getLocation());
+    const SourceRange& IFaceNameRange = NormalizeRange(ImplDecl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -4903,7 +5050,7 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   // Draw a ref edge from the superclass usage in the interface declaration to
   // the superclass declaration.
   if (auto SC = IFace->getSuperClass()) {
-    auto SuperRange = RangeForASTEntity(IFace->getSuperClassLoc());
+    auto SuperRange = NormalizeRange(IFace->getSuperClassLoc());
     if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
       auto SCID = BuildNodeIdForDecl(SC);
       Observer.recordDeclUseLocation(SCRCC.value(), SCID,
@@ -4935,7 +5082,7 @@ void IndexerASTVisitor::ConnectToProtocols(
     Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
                                false /* isVirtual */,
                                clang::AccessSpecifier::AS_none);
-    auto Range = RangeForASTEntity(*PLocIt);
+    auto Range = NormalizeRange(*PLocIt);
     if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
       auto PID = BuildNodeIdForDecl(*PIt);
       Observer.recordDeclUseLocation(ERCC.value(), PID,
@@ -5003,7 +5150,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
   if (Decl->IsClassExtension()) {
     NameRange = RangeForNameOfDeclaration(Decl);
   } else {
-    NameRange = RangeForASTEntity(Decl->getCategoryNameLoc());
+    NameRange = NormalizeRange(Decl->getCategoryNameLoc());
   }
 
   auto DeclNode = BuildNodeIdForDecl(Decl);
@@ -5023,7 +5170,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange = RangeForASTEntity(Decl->getLocation());
+    const SourceRange& IFaceNameRange = NormalizeRange(Decl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -5114,7 +5261,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   }
 
   absl::optional<GraphObserver::NodeId> FunctionType =
-      CreateObjCMethodTypeNode(Decl, EmitRanges::Yes);
+      CreateObjCMethodTypeNode(Decl);
 
   if (FunctionType) {
     Observer.recordTypeEdge(Node, FunctionType.value());
@@ -5257,9 +5404,7 @@ void IndexerASTVisitor::ConnectParam(const Decl* Decl,
   Marks.set_name_range(Range);
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                      DeclIsImplicit);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Param->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Param->getSourceRange()).getEnd());
   Observer.recordVariableNode(VarNodeId,
                               IsFunctionDefinition
                                   ? GraphObserver::Completeness::Definition
@@ -5303,11 +5448,8 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
       GraphObserver::VariableSubkind::Field,
       Marks.GenerateMarkedSource(DeclNode));
   AssignUSR(DeclNode, Decl);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Record storage classes for fields.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(DeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
@@ -5320,14 +5462,7 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
 
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr* Expr) {
-  SourceRange SR = Expr->getSourceRange();
-  // The end of the source range for ObjCMessageExpr is the location of the
-  // right brace. We actually want to include the right brace in the range
-  // we record, so get the location *after* the right brace.
-  if (SR.getBegin() != SR.getEnd()) {
-    SR.setEnd(SR.getEnd().getLocWithOffset(1));
-  }
-  if (auto RCC = ExpandedRangeInCurrentContext(SR)) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Expr->getSourceRange())) {
     // This does not take dynamic dispatch into account when looking for the
     // method definition.
     if (const auto* Callee = FindMethodDefn(Expr->getMethodDecl(),
@@ -5348,7 +5483,7 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         // make it easier for frontends to make use of this data.
         const SourceLocation& Loc = Expr->getSelectorLoc(0);
         if (Loc.isValid() && Loc.isFileID()) {
-          const SourceRange& range = RangeForSingleToken(Loc);
+          SourceRange range = NormalizeRange(Loc);
           if (auto R = ExplicitRangeInCurrentContext(range)) {
             Observer.recordDeclUseLocation(
                 R.value(), DeclId, GraphObserver::Claimability::Unclaimable,
@@ -5402,7 +5537,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
   if (SL.isValid()) {
     // This gives us the property name. If we just call Expr->getSourceRange()
     // we just get the range for the object's name.
-    SourceRange SR = RangeForASTEntity(SL);
+    SourceRange SR = NormalizeRange(SL);
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       // Record the "field" access if this has an explicit property.
@@ -5433,8 +5568,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
-                                            EmitRanges EmitRanges) {
+IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
   std::vector<GraphObserver::NodeId> NodeIds;
   // If we are in an implicit method (for example: property access), we may
   // not get return type source information and we will have to rely on the
@@ -5465,7 +5599,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
                                  NodeIds);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Decl* Decl) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
@@ -5473,11 +5607,11 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
   LOG(ERROR) << msg << " :" << std::endl << s;
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Expr* Expr) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
-  Expr->dump(ss);
+  Expr->dump(ss, Context);
   LOG(ERROR) << msg << " :" << std::endl << s;
 }
 

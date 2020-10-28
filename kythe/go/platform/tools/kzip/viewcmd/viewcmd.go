@@ -32,11 +32,11 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type cmd struct {
@@ -100,11 +100,15 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}
 	return subcommands.ExitSuccess
 }
 
-var marshaler = &jsonpb.Marshaler{OrigName: true}
+var marshaler = &protojson.MarshalOptions{UseProtoNames: true}
 
 func (c *cmd) writeUnit(base string, msg proto.Message) error {
 	if c.extractDir == "" {
-		err := marshaler.Marshal(os.Stdout, msg)
+		rec, err := marshaler.Marshal(msg)
+		if err != nil {
+			return err
+		}
+		_, err = os.Stdout.Write(rec)
 		if err == nil {
 			fmt.Println()
 		}
@@ -117,7 +121,12 @@ func (c *cmd) writeUnit(base string, msg proto.Message) error {
 	if err != nil {
 		return err
 	}
-	err = marshaler.Marshal(f, msg)
+	rec, err := marshaler.Marshal(msg)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	_, err = f.Write(rec)
 	cerr := f.Close()
 	if err != nil {
 		return err

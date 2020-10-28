@@ -19,12 +19,14 @@
 
 #include <utility>
 
+#include "absl/base/attributes.h"
+
 namespace kythe {
 
 /// \brief A move-only RAII object that calls a stored cleanup functor when
 /// destroyed.
 template <typename F>
-class ScopeGuard {
+class ABSL_MUST_USE_RESULT ScopeGuard {
  public:
   explicit ScopeGuard(F&& Fn) : Fn(std::forward<F>(Fn)) {}
   ScopeGuard(ScopeGuard&& O) : Released(O.Released), Fn(std::move(O.Fn)) {
@@ -80,7 +82,8 @@ struct BackPopper {
 
 /// \brief Pushes the value onto the stack and returns a sentinel which will
 /// remove it at destruction.
-template <typename StackType, typename ValueType>
+template <typename StackType,
+          typename ValueType = typename StackType::value_type>
 ScopeGuard<BackPopper<StackType>> PushScope(StackType& Target,
                                             ValueType&& Value) {
   Target.push_back(std::forward<ValueType>(Value));

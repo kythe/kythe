@@ -25,6 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
+import com.google.devtools.kythe.proto.CorpusPath;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URLDecoder;
@@ -74,6 +75,16 @@ public class KytheURI implements Serializable {
   /** Unpacks a {@link VName} into a new {@link KytheURI}. */
   public KytheURI(VName vName) {
     this.vName = vName;
+  }
+
+  /** Unpacks a {@link CorpusPath} into a new {@link KytheURI}. */
+  public KytheURI(CorpusPath cp) {
+    this(
+        VName.newBuilder()
+            .setCorpus(cp.getCorpus())
+            .setRoot(cp.getRoot())
+            .setPath(cp.getPath())
+            .build());
   }
 
   /** Returns the {@link KytheURI}'s signature. */
@@ -145,6 +156,11 @@ public class KytheURI implements Serializable {
   /** Returns an equivalent Kythe ticket for the given {@link VName}. */
   public static String asString(VName vName) {
     return new KytheURI(vName).toString();
+  }
+
+  /** Returns an equivalent Kythe ticket for the given {@link CorpusPath}. */
+  public static String asString(CorpusPath cp) {
+    return new KytheURI(cp).toString();
   }
 
   /** Parses the given string to produce a new {@link KytheURI}. */
@@ -282,6 +298,9 @@ public class KytheURI implements Serializable {
    */
   private static String cleanPath(String path) {
     ArrayList<String> clean = new ArrayList<>();
+    if (!path.isEmpty() && path.charAt(0) == '/') {
+      clean.add("");
+    }
     for (String part : PATH_SPLITTER.split(path)) {
       if (part.isEmpty() || part.equals(".")) {
         continue; // skip empty path components and "here" markers.

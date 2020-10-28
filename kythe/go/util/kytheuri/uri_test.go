@@ -20,8 +20,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -191,6 +192,45 @@ func TestRoundTripURI(t *testing.T) {
 	w := FromVName(v)
 	if got, want := w.String(), u.String(); got != want {
 		t.Errorf("URI did not round-trip: got %q, want %q", got, want)
+	}
+}
+
+func TestToString(t *testing.T) {
+	tests := []struct {
+		VName    *spb.VName
+		Expected string
+	}{
+		{&spb.VName{Corpus: "kythe", Path: "unrooted/path"}, "kythe://kythe?path=unrooted/path"},
+		{&spb.VName{Corpus: "kythe", Path: "/rooted/path"}, "kythe://kythe?path=/rooted/path"},
+		{&spb.VName{Corpus: "kythe", Path: "//rooted//path"}, "kythe://kythe?path=/rooted/path"},
+	}
+
+	for _, test := range tests {
+		if found := ToString(test.VName); found != test.Expected {
+			t.Errorf("kytheuri.ToString(%#v): found %q, want %q", test.VName, found, test.Expected)
+		}
+	}
+}
+
+func TestCorpusPath(t *testing.T) {
+	tests := []struct {
+		CorpusPath *cpb.CorpusPath
+		Expected   string
+	}{
+		{&cpb.CorpusPath{Corpus: "c", Root: "r", Path: "p"}, "kythe://c?path=p?root=r"},
+		{&cpb.CorpusPath{Corpus: "", Root: "r", Path: "p"}, "kythe:?path=p?root=r"},
+		{&cpb.CorpusPath{Corpus: "", Root: "", Path: "p"}, "kythe:?path=p"},
+		{&cpb.CorpusPath{Corpus: "", Root: "", Path: ""}, "kythe:"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "r", Path: ""}, "kythe://c?root=r"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "", Path: ""}, "kythe://c"},
+		{&cpb.CorpusPath{Corpus: "", Root: "r", Path: ""}, "kythe:?root=r"},
+		{&cpb.CorpusPath{Corpus: "c", Root: "", Path: "p"}, "kythe://c?path=p"},
+	}
+
+	for _, test := range tests {
+		if found := FromCorpusPath(test.CorpusPath).String(); found != test.Expected {
+			t.Errorf("kytheuri.FromCorpusPath(%+v): found %q, want %q", test.CorpusPath, found, test.Expected)
+		}
 	}
 }
 

@@ -275,10 +275,13 @@ func generateJava(protoFile string, index *SchemaIndex) {
 	fmt.Fprintf(src, "package %s;\n", *packageName)
 
 	fmt.Fprintln(src, "import com.google.common.collect.ImmutableBiMap;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Edge;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.EdgeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Fact;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.FactName;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.NodeKind;")
 	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Subkind;")
+	fmt.Fprintln(src, "import com.google.protobuf.ByteString;")
 
 	fmt.Fprintln(src, "/** Utility for handling schema strings and their corresponding protocol buffer enums. */")
 	fmt.Fprintln(src, "public final class Schema {")
@@ -315,8 +318,14 @@ func generateJava(protoFile string, index *SchemaIndex) {
 	fmt.Fprintln(src, "/** Returns the schema {@link NodeKind} for the given kind. */")
 	fmt.Fprintln(src, "public static NodeKind nodeKind(String k) { return NODE_KINDS.getOrDefault(k, NodeKind.UNKNOWN_NODE_KIND); }")
 
+	fmt.Fprintln(src, "/** Returns the schema {@link NodeKind} for the given kind. */")
+	fmt.Fprintln(src, "public static NodeKind nodeKind(ByteString k) { return nodeKind(k.toStringUtf8()); }")
+
 	fmt.Fprintln(src, "/** Returns the schema {@link Subkind} for the given kind. */")
 	fmt.Fprintln(src, "public static Subkind subkind(String k) { return SUBKINDS.getOrDefault(k, Subkind.UNKNOWN_SUBKIND); }")
+
+	fmt.Fprintln(src, "/** Returns the schema {@link Subkind} for the given kind. */")
+	fmt.Fprintln(src, "public static Subkind subkind(ByteString k) { return subkind(k.toStringUtf8()); }")
 
 	fmt.Fprintln(src, "/** Returns the schema {@link EdgeKind} for the given kind. */")
 	fmt.Fprintln(src, "public static EdgeKind edgeKind(String k) { return EDGE_KINDS.getOrDefault(k, EdgeKind.UNKNOWN_EDGE_KIND); }")
@@ -333,8 +342,14 @@ func generateJava(protoFile string, index *SchemaIndex) {
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link EdgeKind}. */")
 	fmt.Fprintln(src, "public static String edgeKindString(EdgeKind k) { return EDGE_KINDS.inverse().getOrDefault(k, \"\"); }")
 
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Edge}'s kind. */")
+	fmt.Fprintln(src, "public static String edgeKindString(Edge e) { return e.getKytheKind().equals(EdgeKind.UNKNOWN_EDGE_KIND) ? e.getGenericKind() : edgeKindString(e.getKytheKind()); }")
+
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link FactName}. */")
 	fmt.Fprintln(src, "public static String factNameString(FactName n) { return FACT_NAMES.inverse().getOrDefault(n, \"\"); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Fact}'s name. */")
+	fmt.Fprintln(src, "public static String factNameString(Fact f) { return f.getKytheName().equals(FactName.UNKNOWN_FACT_NAME) ? f.getGenericName() : factNameString(f.getKytheName()); }")
 
 	fmt.Fprintln(src, "}")
 

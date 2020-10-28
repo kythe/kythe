@@ -13,6 +13,8 @@ MANIFEST-*
 \#*#
 .DS_Store
 .vscode
+.clangd
+.cache
 
 # Binary files
 *.class
@@ -35,3 +37,6 @@ kythe/web/site/_vendor/
 
 # User bazelrc overrides
 /user.bazelrc
+
+# Ignore Rust build artifacts
+kythe/rust/**/target

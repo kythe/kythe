@@ -59,7 +59,7 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc bison brotli go graphviz leveldb node parallel source-highlight wget ; do
+for pkg in asciidoc bison brotli flex go graphviz leveldb node openjdk parallel source-highlight wget ; do
    brew install $pkg
 done
 
@@ -72,9 +72,20 @@ brew tap bazelbuild/tap
 brew tap-pin bazelbuild/tap
 brew install bazelbuild/tap/bazel
 
-# Bison. The stock version is too old, but Bison is keg-only and Bazel uses
-# a restricted PATH, so we need to tell Bazel where to find bison (see #3514):
+# Bison and Flex. The stock versions are too old, but these tools are keg-only
+# and Bazel uses a restricted PATH, so we need to tell Bazel where to find
+# them (see #3514, #4455).
 export BISON=/usr/local/opt/bison/bin/bison
+export FLEX=/usr/local/opt/flex/bin/flex
+
+# Java (OpenJDK). By default macOS does not have a JDK installed, so we use the
+# openjdk package from Homebrew.  We need to set JAVA_HOME so the command-line
+# tools will find the right version.
+#
+# Without this, running `java -version` reports an error:
+#    No Java runtime present, requesting install.
+#
+export JAVA_HOME=/usr/local/opt/openjdk
 
 # Docker: See the instructions below.
 # DO NOT use brew install docker (or if you did: brew uninstall docker).

@@ -60,9 +60,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
   private final Set<Symbol> symbolsDocumented = new HashSet<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
-  private final boolean ignoreVNamePaths;
-  private final boolean ignoreVNameRoots;
-  private final String overrideJdkCorpus;
+  private final JavaIndexerConfig config;
   private final Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
   public JavaEntrySets(
@@ -70,13 +68,9 @@ public class JavaEntrySets extends KytheEntrySets {
       FactEmitter emitter,
       VName compilationVName,
       List<FileInput> requiredInputs,
-      boolean ignoreVNamePaths,
-      boolean ignoreVNameRoots,
-      String overrideJdkCorpus) {
+      JavaIndexerConfig config) {
     super(statistics, emitter, compilationVName, requiredInputs);
-    this.ignoreVNamePaths = ignoreVNamePaths;
-    this.ignoreVNameRoots = ignoreVNameRoots;
-    this.overrideJdkCorpus = overrideJdkCorpus;
+    this.config = config;
   }
 
   /**
@@ -127,10 +121,11 @@ public class JavaEntrySets extends KytheEntrySets {
 
     ClassSymbol enclClass = sym.enclClass();
     VName v = lookupVName(enclClass);
-    if ((v == null || overrideJdkCorpus != null) && fromJDK(sym)) {
+    if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
       v =
           VName.newBuilder()
-              .setCorpus(overrideJdkCorpus != null ? overrideJdkCorpus : "jdk")
+              .setCorpus(
+                  config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk")
               .build();
     }
 
@@ -141,14 +136,16 @@ public class JavaEntrySets extends KytheEntrySets {
               "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen"
                   + " during extraction.",
               sym, enclClass);
-      logger.atWarning().log(msg);
+      if (config.getVerboseLogging()) {
+        logger.atWarning().log(msg);
+      }
       Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
       return emitDiagnostic(d.build()).getVName();
     } else {
-      if (ignoreVNamePaths) {
+      if (config.getIgnoreVNamePaths()) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
-      if (ignoreVNameRoots) {
+      if (config.getIgnoreVNameRoots()) {
         v = v.toBuilder().clearRoot().build();
       }
 
@@ -361,13 +358,19 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   static boolean fromJDK(@Nullable Symbol sym) {
-    if (sym == null || sym.enclClass() == null) {
+    if (sym == null) {
       return false;
     }
-    String cls = sym.enclClass().className();
+    ClassSymbol enclClass = sym.enclClass();
+    if (enclClass == null
+        || enclClass.classfile == null
+        || enclClass.classfile.getKind() == JavaFileObject.Kind.SOURCE) {
+      return false;
+    }
+    String cls = enclClass.className();
     // For performance, first check common package prefixes, then delegate
     // to the slower loadedByJDKClassLoader() method.
-    return SignatureGenerator.isArrayHelperClass(sym.enclClass())
+    return SignatureGenerator.isArrayHelperClass(enclClass)
         || cls.startsWith("java.")
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")

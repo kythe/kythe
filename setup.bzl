@@ -7,6 +7,19 @@ def maybe(repo_rule, name, **kwargs):
     if name not in native.existing_rules():
         repo_rule(name = name, **kwargs)
 
+def github_archive(name, repo_name, commit, kind = "zip", **kwargs):
+    """Defines a GitHub commit-based repository rule."""
+    project = repo_name[repo_name.index("/"):]
+    http_archive(
+        name = name,
+        strip_prefix = "{project}-{commit}".format(project = project, commit = commit),
+        urls = [u.format(commit = commit, repo_name = repo_name, kind = kind) for u in [
+            "https://mirror.bazel.build/github.com/{repo_name}/archive/{commit}.{kind}",
+            "https://github.com/{repo_name}/archive/{commit}.{kind}",
+        ]],
+        **kwargs
+    )
+
 def kythe_rule_repositories():
     """Defines external repositories for Kythe Bazel rules.
 
@@ -15,19 +28,21 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_skylib",
-        sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
-        strip_prefix = "bazel-skylib-1.0.2",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
+        urls = [
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        ],
+        sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
     )
 
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
+        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
         ],
-        sha256 = "af04c969321e8f428f63ceb73463d6ea817992698974abeff0161e069cd08bd6",
     )
 
     maybe(
@@ -60,18 +75,18 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
+        sha256 = "b85f48fa105c4403326e9525ad2b2cc437babaa6e15a3fc0b1dbab0ab064bc7c",
         urls = [
-            "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
         ],
-        sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
     )
 
     maybe(
         http_archive,
         name = "build_bazel_rules_nodejs",
-        sha256 = "b6670f9f43faa66e3009488bbd909bc7bc46a5a9661a33f6bc578068d1837f37",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.3.0/rules_nodejs-1.3.0.tar.gz"],
+        sha256 = "4952ef879704ab4ad6729a29007e7094aef213ea79e9f2e94cbe1c9a753e63ef",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/2.2.0/rules_nodejs-2.2.0.tar.gz"],
     )
 
     maybe(
@@ -90,5 +105,15 @@ def kythe_rule_repositories():
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
             "https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
+        ],
+    )
+
+    maybe(
+        http_archive,
+        name = "io_bazel_rules_rust",
+        sha256 = "0a38be61514ed6364d60324486a2748653689c02dafff0cd8e3c9840b04008fe",
+        strip_prefix = "rules_rust-3dffbabb3ab65a41056228b5c387d4b78331eaec",
+        urls = [
+            "https://github.com/bazelbuild/rules_rust/archive/3dffbabb3ab65a41056228b5c387d4b78331eaec.tar.gz",
         ],
     )

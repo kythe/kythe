@@ -83,9 +83,9 @@ import (
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 
@@ -130,7 +130,7 @@ func EncodingFor(v string) (Encoding, error) {
 	case v == "PROTO":
 		return EncodingProto, nil
 	default:
-		return EncodingJSON, fmt.Errorf("unknown encoding %s", v)
+		return EncodingProto, fmt.Errorf("unknown encoding %s", v)
 	}
 }
 
@@ -148,7 +148,8 @@ func (e Encoding) String() string {
 	}
 }
 
-func defaultEncoding() Encoding {
+// DefaultEncoding returns the default kzip encoding
+func DefaultEncoding() Encoding {
 	if e := os.Getenv("KYTHE_KZIP_ENCODING"); e != "" {
 		enc, err := EncodingFor(e)
 		if err == nil {
@@ -156,7 +157,7 @@ func defaultEncoding() Encoding {
 		}
 		log.Printf("Unknown kzip encoding: %s", e)
 	}
-	return EncodingJSON
+	return EncodingProto
 }
 
 // A Reader permits reading and scanning compilation records and file contents
@@ -268,17 +269,18 @@ func (r *Reader) readUnit(digest string, f *zip.File) (*Unit, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rc.Close()
+	rec := make([]byte, f.UncompressedSize64)
+	_, err = io.ReadFull(rc, rec)
+	rc.Close()
+	if err != nil {
+		return nil, err
+	}
 	var msg apb.IndexedCompilation
 	if r.unitsPrefix == prefixProto {
-		rec := make([]byte, f.UncompressedSize64)
-		if _, err = io.ReadFull(rc, rec); err != nil {
-			return nil, err
-		}
 		if err := proto.Unmarshal(rec, &msg); err != nil {
 			return nil, fmt.Errorf("error unmarshaling for %s: %s", digest, err)
 		}
-	} else if err := jsonpb.Unmarshal(rc, &msg); err != nil {
+	} else if err := protojson.Unmarshal(rec, &msg); err != nil {
 		return nil, err
 	}
 	return &Unit{
@@ -496,7 +498,7 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 		zip:      archive,
 		fd:       stringset.New(),
 		ud:       stringset.New(),
-		encoding: defaultEncoding(),
+		encoding: DefaultEncoding(),
 	}
 	for _, opt := range options {
 		opt(kw)
@@ -515,7 +517,7 @@ func NewWriteCloser(wc io.WriteCloser, options ...WriterOption) (*Writer, error)
 }
 
 // toJSON defines the encoding format for compilation messages.
-var toJSON = &jsonpb.Marshaler{OrigName: true}
+var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 
 // AddUnit adds a new compilation record to be added to the archive, returning
 // the hex-encoded SHA256 digest of the unit's contents. It is legal for index
@@ -540,10 +542,14 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 		if err != nil {
 			return "", err
 		}
-		if err := toJSON.Marshal(f, &apb.IndexedCompilation{
+		rec, err := toJSON.Marshal(&apb.IndexedCompilation{
 			Unit:  unit.Proto,
 			Index: index,
-		}); err != nil {
+		})
+		if err != nil {
+			return "", err
+		}
+		if _, err := f.Write(rec); err != nil {
 			return "", err
 		}
 	}

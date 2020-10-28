@@ -40,6 +40,7 @@ java_test(
     test_class = "com.google.devtools.kythe.util.KytheURITest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
+        "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",

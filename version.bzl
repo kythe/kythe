@@ -1,8 +1,8 @@
 # Minimum supported Bazel version.  Should match .bazelminversion file.
-MIN_VERSION = "1.2.0"
+MIN_VERSION = "3.6.0"
 
 # Maximum supported Bazel version.  Should match .bazelversion file.
-MAX_VERSION = "2.1.1"
+MAX_VERSION = "3.7.0"
 
 def _tuplicate(value, delim):
     rv = ()
@@ -49,11 +49,11 @@ def check_version(min_required, max_supported):
     if max < _bound_size(found_version, len(max)):
         fail("Your bazel is too new. Maximum supported version {} of bazel, found {}".format(max_supported, found))
 
-def blacklist_version(version, reason):
+def prohibit_version(version, reason):
     found = _parse_version(native.bazel_version)
     if found == _parse_version(version):
         fail("\n".join([
-            "You're using a blacklisted version of Bazel ({}).".format(native.bazel_version),
+            "You're using a prohibited version of Bazel ({}).".format(native.bazel_version),
             "Please upgrade or downgrade to a supported release.",
             "The version of Bazel you're using is incompatible with Kythe because:",
             reason,

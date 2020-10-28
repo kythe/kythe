@@ -1,3 +1,7 @@
+package(
+    features = ["layering_check"],
+)
+
 cc_binary(
     name = "textproto_extractor",
     srcs = ["textproto_extractor.cc"],
@@ -5,6 +9,7 @@ cc_binary(
     deps = [
         ":textproto_schema",
         "//kythe/cxx/common:file_utils",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/extractor/proto:lib",
@@ -33,6 +38,7 @@ cc_test(
     srcs = ["textproto_schema_test.cc"],
     deps = [
         ":textproto_schema",
+        "//third_party:gtest",
         "//third_party:gtest_main",
     ],
 )

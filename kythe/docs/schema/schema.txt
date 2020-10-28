@@ -455,6 +455,43 @@ public class E {
 int x;
 --------------------------------------------------------------------------------
 
+[[definesimplicit]]
+defines/implicit
+~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *defines/implicit* B if A semantically defines an entity B, but that
+  definition is not explicitly related to the decorated text.
+Commonly arises from::
+  filename-based packages, C++ special member functions
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+See also::
+  <<package>>
+Notes::
+  The most common situations in which this edge should be used are in languages
+  for which modules don't have an explicit syntactic marker, deriving the module
+  name from the file or directory path and C++'s compiler-defined special member
+  functions.
+
+[kythe,C++,"Implicit destructor definition."]
+--------------------------------------------------------------------------------
+///- @X defines/implicit XDtor
+///- XDtor.subkind destructor
+class X {};
+--------------------------------------------------------------------------------
+
+[kythe,clike,"Implicit module definition."]
+--------------------------------------------------------------------------------
+///- Mod=vname(_, _, _, _, _).node/kind package
+///- ModAnchor.node/kind anchor
+///- ModAnchor./kythe/loc/start 0
+///- ModAnchor./kythe/loc/end 0
+///- ModAnchor defines/implicit Mod
+--------------------------------------------------------------------------------
+
 [[depends]]
 depends
 ~~~~~~~
@@ -511,6 +548,7 @@ class C { };
 [[exports]]
 exports
 ~~~~~~~~
+
 Brief description::
   A *exports* B if process node A exports process node B.
 Commonly arises from::
@@ -591,6 +629,7 @@ class B : public A { };
 [[generates]]
 generates
 ~~~~~~~~~
+
 Brief description::
   A *generates* B if A is related to B through some extralingual process.
 Commonly arises from::
@@ -612,6 +651,38 @@ all the $$C++$$ and Java uses of a particular service call, starting at the
 specification of that service. The specification and its generated artifacts
 may be joined by the *generates* edge.  Either both the specification and its
 generated artifact are file nodes or both are semantic nodes.
+
+[[influences]]
+influences
+~~~~~~~~~~
+
+Brief description::
+  A *influences* B if A directly affects B during the evaluation of a program.
+Commonly arises from::
+  assignment
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  This is an experimental definition and is expected to undergo refinement.
+
+[kythe,C++,"Assignment causes influence"]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  //- @y defines/binding VarY
+  //- @z defines/binding VarZ
+  int x = 0, y = 1, z = 2;
+  //- VarZ influences VarY
+  //- VarY influences VarX
+  //- !{VarZ influences VarX}
+  //- !{VarY influences VarZ}
+  x = y = z;
+}
+--------------------------------------------------------------------------------
 
 [[instantiates]]
 instantiates
@@ -793,7 +864,7 @@ Commonly arises from::
 Points from::
   semantic nodes
 Points toward::
-  names
+  name/linkage nodes
 Ordinals are used::
   never
 See also::
@@ -803,8 +874,8 @@ See also::
 --------------------------------------------------------------------------------
 package pkg;
 //- @E defines/binding EClass
-//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
-//- EClassName.node/kind name
+//- EClass named EClassName = vname("pkg.E", "kythe", "", "", "jvm")
+//- EClassName.node/kind record
 public class E {}
 --------------------------------------------------------------------------------
 
@@ -1180,7 +1251,7 @@ Ordinals are used::
 
 [[refimports]]
 ref/imports
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 Brief description::
   A *ref/imports* B if B is imported at the site of A.
@@ -1199,6 +1270,44 @@ public class E {
   //- @LinkedList ref LL
   LinkedList field;
 }
+--------------------------------------------------------------------------------
+
+[[refid]]
+ref/id
+~~~~~~
+
+Brief description::
+  A *ref/id* B if A does not otherwise *ref* or *define* B but the bytes of A's
+  span are determined by the identifier of B.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+A *ref/id* edge captures a relationship between multiple objects that are
+grammatically required to share a name, such as a class and its constructors.
+
+Add a *ref/id* edge at a usage of the governed object (e.g., the constructor)
+pointing to the governing object (e.g., the class). This captures the fact that
+the two are linked, but allows a client to distinguish the cross-references of
+the constructor from those of the class.
+
+
+[kythe,C++,"Constructors and destructors are named after their classes."]
+--------------------------------------------------------------------------------
+//- @C defines/binding ClassC
+struct C {
+  //- @C defines/binding CtorC
+  //- @C ref/id ClassC
+  C(int i);
+};
+
+//- @"C(1)" ref/call CtorC
+//- @C ref CtorC
+//- @C ref/id ClassC
+void f() { auto c = C(1); }
 --------------------------------------------------------------------------------
 
 [[refincludes]]
@@ -1275,7 +1384,7 @@ Ordinals are used::
 [kythe,C++,"Initializers inside template instantiations are implicit."]
 --------------------------------------------------------------------------------
 template<typename T> class C {
-  //- @x ref/init/implicit MemberX
+  //- @"1" ref/init/implicit MemberX
   T t = {.x = 1};
 };
 //- @x defines/binding MemberX
@@ -1401,6 +1510,7 @@ template <> bool id(bool x) { return !(!x); }
 [[specializesspeculative]]
 specializes/speculative
 ~~~~~~~~~~~~~~~~~~~~~~~
+
 See <<instantiatesspeculative,[instantiates/speculative]>>.
 
 
@@ -1760,6 +1870,7 @@ Facts::
 [[doc]]
 doc
 ~~~
+
 Brief description::
   A *doc* is text that documents a node.
 Facts::
@@ -1930,6 +2041,7 @@ using S = typename T<int>::D::E::F;
 [[macro]]
 macro
 ~~~~~
+
 Brief description::
   A *macro* is a metaprogram that operates on source text.
 Notes::
@@ -1950,6 +2062,7 @@ See also::
 [[meta]]
 meta
 ~~~~
+
 Brief description::
   A *meta* is a node that describes details about a particular language.
 Naming convention::
@@ -1982,21 +2095,7 @@ Naming convention::
     *empty*
 Notes::
   The namespace is some domain in which the names are expected to be unique at linkage
-  time and/or runtime, such as JVM binary names, or the Itanium C++ ABI.
-
-[kythe,Java,"JVM binary class names, as used for classloading, are names."]
---------------------------------------------------------------------------------
-package pkg;
-//- @E defines/binding EClass
-//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
-//- EClassName.node/kind name
-public class E {
-  //- @Inner defines/binding InnerClass
-  //- InnerClass named InnerClassName = vname("pkg.E$Inner", "", "", "", "jvm")
-  //- InnerClassName.node/kind name
-  public class Inner {}
-}
---------------------------------------------------------------------------------
+  time and/or runtime, such as the Itanium C++ ABI.
 
 [[package]]
 package
@@ -2004,6 +2103,10 @@ package
 
 Brief description::
   A *package* defines a module containing declarations.
+Notes::
+  Languages in which a module is implicitly defined based on the file name
+  should emit a `defines/implicit` edge from a zero-width anchor at offset 0 in
+  that file to the corresponding package node.
 
 [kythe,Java,"Top-level declarations are children of package nodes."]
 --------------------------------------------------------------------------------

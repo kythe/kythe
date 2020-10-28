@@ -27,8 +27,8 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
@@ -117,8 +117,12 @@ func TestLoadReturnsProperData(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to seek test data: %v", err)
 		}
+		rec, err := ioutil.ReadAll(file)
+		if err != nil {
+			t.Fatalf("Failed to read test data: %v", err)
+		}
 		want := &ecpb.ExtractionConfiguration{}
-		if err := jsonpb.Unmarshal(file, want); err != nil {
+		if err := protojson.Unmarshal(rec, want); err != nil {
 			t.Fatalf("Failed to unmarshal test data: %v", err)
 		}
 

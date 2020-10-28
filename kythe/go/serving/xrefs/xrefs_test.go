@@ -29,10 +29,10 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/span"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -136,6 +136,7 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
+			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: "kythe:?path=def/location#defDoc"},
 		}, {
 			Ticket: "kythe:#documentedBy",
 			Fact: makeFactList(
@@ -158,6 +159,9 @@ var (
 			),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl#withRelated",
+			Fact:   makeFactList("/kythe/node/kind", "testNode"),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#withInfos",
 			Fact:   makeFactList("/kythe/node/kind", "testNode"),
 		}, {
 			Ticket: "kythe:#aliasNode",
@@ -285,6 +289,48 @@ var (
 				},
 				GeneratedBy: []string{"kythe://corpus?path=/some/proto.proto"},
 			},
+			{
+				File: &srvpb.File{
+					Ticket:   "kythe://corpus?path=file/infos",
+					Text:     []byte(`some file with infos`),
+					Encoding: "utf-8",
+				},
+				Decoration: []*srvpb.FileDecorations_Decoration{
+					{
+						Anchor: &srvpb.RawAnchor{
+							Ticket:      "kythe://corpus?lang=lang?path=file/infos#0-4",
+							StartOffset: 0,
+							EndOffset:   4,
+						},
+						Kind:   "/kythe/edge/includes/ref",
+						Target: "kythe://corpus?path=another/file",
+					},
+					{
+						Anchor: &srvpb.RawAnchor{
+							Ticket:      "kythe://corpus?lang=lang?path=file/infos#5-9",
+							StartOffset: 5,
+							EndOffset:   9,
+						},
+						Kind:             "/kythe/edge/ref",
+						Target:           "kythe://corpus?path=def/file#node",
+						TargetDefinition: "kythe://corpus?path=def/file#anchor",
+					},
+				},
+				TargetDefinitions: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe://corpus?path=def/file#anchor",
+					Span: &cpb.Span{
+						Start: &cpb.Point{LineNumber: 1},
+						End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+					},
+				}},
+				GeneratedBy: []string{"kythe://corpus?path=some/proto.proto"},
+				FileInfo: []*srvpb.FileInfo{
+					fi(cp("corpus", "", "file/infos"), "overallFileRev"),
+					fi(cp("corpus", "", "some/proto.proto"), "generatedRev"),
+					fi(cp("corpus", "", "another/file"), "anotherFileRev"),
+					fi(cp("corpus", "", "def/file"), "defFileRev"),
+				},
+			},
 		},
 
 		RefSets: []*srvpb.PagedCrossReferences{{
@@ -358,6 +404,33 @@ var (
 						Ticket: "kythe:#someParameter1",
 					},
 				}},
+			}},
+		}, {
+			SourceTicket: "kythe://someCorpus?lang=otpl#withInfos",
+			SourceNode:   getNode("kythe://someCorpus?lang=otpl#withInfos"),
+
+			Group: []*srvpb.PagedCrossReferences_Group{{
+				Kind: "%/kythe/edge/ref",
+				Anchor: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe://corpus?lang=otpl?path=some/file#27-33",
+
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   27,
+							LineNumber:   2,
+							ColumnOffset: 10,
+						},
+						End: &cpb.Point{
+							ByteOffset:   33,
+							LineNumber:   3,
+							ColumnOffset: 5,
+						},
+					},
+				}},
+
+				FileInfo: []*srvpb.FileInfo{
+					fi(cp("corpus", "", "some/file"), "someFileRev"),
+				},
 			}},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withMerge",
@@ -598,7 +671,7 @@ func TestDecorationsRefs(t *testing.T) {
 		t.Errorf("Unexpected encoding: %q", reply.Encoding)
 	}
 
-	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration)
+	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration, d.FileInfo)
 	for _, ref := range expected {
 		ref.SemanticScope = "" // not requested
 	}
@@ -623,7 +696,7 @@ func TestDecorationsRefScopes(t *testing.T) {
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
-	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration)
+	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration, d.FileInfo)
 	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
 		t.Fatal(err)
 	}
@@ -721,7 +794,7 @@ func TestDecorationsBuildConfig(t *testing.T) {
 		})
 		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
-		expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1])
+		expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1], d.FileInfo)
 		if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
 			t.Fatal(err)
 		}
@@ -896,13 +969,170 @@ func TestDecorationsGeneratedBy(t *testing.T) {
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 	expected := &xpb.DecorationsReply{
-		Location:    &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
-		GeneratedBy: []string{"kythe://corpus?path=/some/proto.proto"},
+		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
+		GeneratedByFile: []*xpb.File{{
+			CorpusPath: &cpb.CorpusPath{
+				Corpus: "corpus",
+				Path:   "/some/proto.proto",
+			},
+		}},
 	}
 
 	if diff := compare.ProtoDiff(expected, reply); diff != "" {
 		t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
 	}
+}
+
+func TestDecorationsRevisions(t *testing.T) {
+	st := tbl.Construct(t)
+
+	t.Run("file/generated_by", func(t *testing.T) {
+		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		})
+		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+		expected := &xpb.DecorationsReply{
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
+			GeneratedByFile: []*xpb.File{{
+				CorpusPath: &cpb.CorpusPath{
+					Corpus: "corpus",
+					Path:   "some/proto.proto",
+				},
+				Revision: "generatedRev",
+			}},
+		}
+
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
+			t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
+		}
+	})
+
+	t.Run("target_revision", func(t *testing.T) {
+		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+			Location:   &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			References: true,
+		})
+		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+		expected := &xpb.DecorationsReply{
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
+			GeneratedByFile: []*xpb.File{{
+				CorpusPath: &cpb.CorpusPath{
+					Corpus: "corpus",
+					Path:   "some/proto.proto",
+				},
+				Revision: "generatedRev",
+			}},
+			Reference: []*xpb.DecorationsReply_Reference{{
+				TargetTicket:   "kythe://corpus?path=another/file",
+				Kind:           "/kythe/edge/includes/ref",
+				TargetRevision: "anotherFileRev",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   0,
+						LineNumber:   1,
+						ColumnOffset: 0,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			}, {
+				TargetTicket: "kythe://corpus?path=def/file#node",
+				Kind:         "/kythe/edge/ref",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   1,
+						ColumnOffset: 5,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}},
+		}
+
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
+			t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
+		}
+	})
+
+	t.Run("target_defs", func(t *testing.T) {
+		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+			Location:          &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			References:        true,
+			TargetDefinitions: true,
+		})
+		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+		expected := &xpb.DecorationsReply{
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
+			GeneratedByFile: []*xpb.File{{
+				CorpusPath: &cpb.CorpusPath{
+					Corpus: "corpus",
+					Path:   "some/proto.proto",
+				},
+				Revision: "generatedRev",
+			}},
+			Reference: []*xpb.DecorationsReply_Reference{{
+				TargetTicket:   "kythe://corpus?path=another/file",
+				Kind:           "/kythe/edge/includes/ref",
+				TargetRevision: "anotherFileRev",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   0,
+						LineNumber:   1,
+						ColumnOffset: 0,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			}, {
+				TargetTicket:     "kythe://corpus?path=def/file#node",
+				TargetDefinition: "kythe://corpus?path=def/file#anchor",
+				Kind:             "/kythe/edge/ref",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   1,
+						ColumnOffset: 5,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}},
+			DefinitionLocations: map[string]*xpb.Anchor{
+				"kythe://corpus?path=def/file#anchor": &xpb.Anchor{
+					Ticket:   "kythe://corpus?path=def/file#anchor",
+					Parent:   "kythe://corpus?path=def/file",
+					Revision: "defFileRev",
+					Span: &cpb.Span{
+						Start: &cpb.Point{LineNumber: 1},
+						End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+					},
+				},
+			},
+		}
+
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
+			t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
+		}
+	})
 }
 
 func TestDecorationsDiagnostics(t *testing.T) {
@@ -1713,6 +1943,56 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 	}
 }
 
+func TestCrossReferencesRevisions(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#withInfos"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_NONE,
+	})
+	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply{
+		Total: &xpb.CrossReferencesReply_Total{
+			References: 1,
+		},
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: &xpb.CrossReferencesReply_CrossReferenceSet{
+				Ticket: ticket,
+
+				Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Anchor: &xpb.Anchor{
+						Ticket:   "kythe://corpus?lang=otpl?path=some/file#27-33",
+						Kind:     "/kythe/edge/ref",
+						Parent:   "kythe://corpus?path=some/file",
+						Revision: "someFileRev", // ⟵ this is expected now
+
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   27,
+								LineNumber:   2,
+								ColumnOffset: 10,
+							},
+							End: &cpb.Point{
+								ByteOffset:   33,
+								LineNumber:   3,
+								ColumnOffset: 5,
+							},
+						},
+					},
+				}},
+			},
+		},
+	}
+
+	if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
+	}
+}
+
 func nodeInfos(nss ...[]*srvpb.Node) map[string]*cpb.NodeInfo {
 	m := make(map[string]*cpb.NodeInfo)
 	for _, ns := range nss {
@@ -1758,12 +2038,18 @@ func TestDocumentation(t *testing.T) {
 			},
 		}},
 		Nodes: nodeInfos(getNodes("kythe:#documented")),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1803,12 +2089,18 @@ func TestDocumentationChildren(t *testing.T) {
 			"kythe:#documented",
 			"kythe:#secondChildDoc",
 		)),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1830,12 +2122,18 @@ func TestDocumentationIndirection(t *testing.T) {
 			},
 		}},
 		Nodes: nodeInfos(getNodes("kythe:#documented", "kythe:#documentedBy")),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1850,11 +2148,14 @@ func (s byOffset) Less(i, j int) bool {
 }
 
 func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {
-	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
+	ni := &cpb.NodeInfo{
+		Facts:      make(map[string][]byte, len(n.Fact)),
+		Definition: n.DefinitionLocation.GetTicket(),
+	}
 	for _, f := range n.Fact {
 		ni.Facts[f.Name] = f.Value
 	}
-	if len(ni.Facts) == 0 {
+	if len(ni.Facts) == 0 && ni.Definition == "" {
 		return nil
 	}
 	return ni
@@ -1874,9 +2175,12 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 	return facts
 }
 
-func refs(norm *span.Normalizer, ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
+func refs(norm *span.Normalizer, ds []*srvpb.FileDecorations_Decoration, infos []*srvpb.FileInfo) (refs []*xpb.DecorationsReply_Reference) {
+	fileInfos := makeFileInfoMap(infos)
 	for _, d := range ds {
-		refs = append(refs, decorationToReference(norm, d))
+		r := decorationToReference(norm, d)
+		r.TargetRevision = fileInfos[r.TargetTicket].GetRevision()
+		refs = append(refs, r)
 	}
 	return
 }
@@ -1933,3 +2237,18 @@ func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message)
 func (t testProtoTable) Buffered() table.BufferedProto { panic("UNIMPLEMENTED") }
 
 func (t testProtoTable) Close(_ context.Context) error { return nil }
+
+func fi(cp *cpb.CorpusPath, rev string) *srvpb.FileInfo {
+	return &srvpb.FileInfo{
+		CorpusPath: cp,
+		Revision:   rev,
+	}
+}
+
+func cp(corpus, root, path string) *cpb.CorpusPath {
+	return &cpb.CorpusPath{
+		Corpus: corpus,
+		Root:   root,
+		Path:   path,
+	}
+}

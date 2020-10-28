@@ -121,8 +121,8 @@ public class JavaExtractor {
     javacOpts.add(output.toString());
 
     // Add the generated sources directory if any processors could be invoked.
-    Optional<Path> genSrcDir = Optional.empty();
     if (!jInfo.getProcessorList().isEmpty()) {
+      Optional<Path> genSrcDir = Optional.empty();
       try {
         genSrcDir = readGeneratedSourceDirParam(jInfo);
       } catch (IOException ioe) {
@@ -149,7 +149,6 @@ public class JavaExtractor {
                 sourcepaths,
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),
-                genSrcDir,
                 javacOpts,
                 jInfo.getOutputjar());
 

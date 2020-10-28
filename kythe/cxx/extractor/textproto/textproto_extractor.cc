@@ -34,6 +34,7 @@
 #include "absl/strings/str_split.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/proto/proto_extractor.h"
@@ -61,7 +62,7 @@ IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
       R"(Standalone extractor for the Kythe textproto indexer.
 Creates a kzip containing the textproto and all proto files it depends on.

@@ -18,5 +18,5 @@ go_test(
     srcs = ["span_test.go"],
     library = "span",
     visibility = ["//visibility:private"],
-    deps = ["@com_github_golang_protobuf//proto:go_default_library"],
+    deps = ["@org_golang_google_protobuf//proto:go_default_library"],
 )

@@ -32,6 +32,7 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -43,6 +44,7 @@
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -77,8 +79,9 @@ void DecodeKzipFile(const std::string& path,
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
-  CHECK(reader) << "Couldn't open kzip from " << path;
+  absl::StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
+                     << reader.status();
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
@@ -86,8 +89,8 @@ void DecodeKzipFile(const std::string& path,
     CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      CHECK(content) << "Unable to read file with digest: "
-                     << file.info().digest() << ": " << content.status();
+      CHECK(content.ok()) << "Unable to read file with digest: "
+                          << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
@@ -134,7 +137,7 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
 }  // anonymous namespace
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
       R"(Command-line frontend for the Kythe Proto indexer.
 Invokes the Kythe Proto indexer on compilation unit(s). By default writes binary
@@ -197,7 +200,7 @@ Examples:
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
-      unit.set_working_directory(GetCurrentDirectory().ValueOrDie());
+      unit.set_working_directory(GetCurrentDirectory().value());
       FileVNameGenerator file_vnames;
       kythe::proto::VName default_vname;
       default_vname.set_corpus(absl::GetFlag(FLAGS_default_corpus));

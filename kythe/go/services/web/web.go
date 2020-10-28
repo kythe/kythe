@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -28,15 +29,35 @@ import (
 
 	"kythe.io/kythe/go/util/httpencoding"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 const jsonBodyType = "application/json; charset=utf-8"
 
 // JSONMarshaler is the marshaler used to encode all JSON web requests.
-var JSONMarshaler = jsonpb.Marshaler{
-	OrigName: true,
+var JSONMarshaler = Marshaler{
+	protojson.MarshalOptions{
+		UseProtoNames: true,
+	},
+}
+
+// A Marshaler writes JSON-encoded protobufs.
+type Marshaler struct{ Options protojson.MarshalOptions }
+
+// Marshal JSON-encodings msg and writes it to w.
+func (m Marshaler) Marshal(w io.Writer, msg proto.Message) error {
+	rec, err := m.MarshalToString(msg)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(rec)
+	return err
+}
+
+// MarshalToString returns msg as a JSON-encoded string.
+func (m Marshaler) MarshalToString(msg proto.Message) ([]byte, error) {
+	return m.Options.Marshal(msg)
 }
 
 // RegisterQuitHandler adds a handler for /quitquitquit that call os.Exit(0).
@@ -65,7 +86,7 @@ func Call(server, method string, req, reply proto.Message) error {
 	} else if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("remote method error (code %d): %s", resp.StatusCode, string(rec))
 	}
-	if err := jsonpb.UnmarshalString(string(rec), reply); err != nil {
+	if err := protojson.Unmarshal(rec, reply); err != nil {
 		return fmt.Errorf("error unmarshaling %T: %v", reply, err)
 	}
 	return nil
@@ -81,7 +102,7 @@ func ReadJSONBody(r *http.Request, msg proto.Message) error {
 	if len(rec) == 0 {
 		return nil
 	}
-	return jsonpb.UnmarshalString(string(rec), msg)
+	return protojson.Unmarshal(rec, msg)
 }
 
 // WriteResponse writes msg to w as a serialized protobuf if the "proto" query

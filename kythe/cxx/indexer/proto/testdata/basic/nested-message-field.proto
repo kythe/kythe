@@ -4,7 +4,7 @@ syntax = "proto2";
 package proto_kythe_test;
 option java_package = "io.kythe";
 
-import "basic/nested-message.proto";
+import "kythe/cxx/indexer/proto/testdata/basic/nested-message.proto";
 
 //- @TestMessage defines/binding TestMessageNode
 //- TestMessageNode childof ThePackage

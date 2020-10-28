@@ -1,9 +1,14 @@
+package(
+    features = ["layering_check"],
+)
+
 cc_binary(
     name = "proto_extractor",
     srcs = ["proto_extractor_main.cc"],
     visibility = ["//visibility:public"],
     deps = [
         ":lib",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/indexer/proto:search_path",

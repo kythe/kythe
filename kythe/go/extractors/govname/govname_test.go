@@ -24,8 +24,8 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/vnameutil"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/vcs"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
