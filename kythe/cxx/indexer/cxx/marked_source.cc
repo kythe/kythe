@@ -16,20 +16,23 @@
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 
+#include "absl/flags/flag.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/Basic/FileManager.h"
 #include "clang/Format/Format.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
-#include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
-DEFINE_bool(reformat_marked_source, false,
-            "Reformat source code used in MarkedSource (experimental).");
-DEFINE_bool(pretty_print_function_prototypes, false,
-            "Synthesize new function prototypes (experimental).");
+ABSL_FLAG(bool, reformat_marked_source, false,
+          "Reformat source code used in MarkedSource (experimental).");
+ABSL_FLAG(bool, pretty_print_function_prototypes, false,
+          "Synthesize new function prototypes (experimental).");
 
 namespace kythe {
 namespace {
@@ -48,6 +51,12 @@ bool IsValidRange(const clang::SourceManager& source_manager,
     return false;
   }
   return true;
+}
+
+clang::SourceRange NormalizeRange(const clang::SourceManager& source_manager,
+                                  const clang::LangOptions& lang_options,
+                                  const clang::SourceRange& range) {
+  return ClangRangeFinder(&source_manager, &lang_options).NormalizeRange(range);
 }
 
 llvm::StringRef GetTextRange(const clang::SourceManager& source_manager,
@@ -93,7 +102,7 @@ std::string Reformat(const clang::LangOptions& lang_options,
   auto Source = llvm::MemoryBuffer::getMemBuffer(source_text);
   InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, Source.get());
   clang::FileID ID =
-      Sources.createFileID(Files.getFile(kReplacementFile),
+      Sources.createFileID(*Files.getFile(kReplacementFile),
                            clang::SourceLocation(), clang::SrcMgr::C_User);
   clang::Rewriter Rewrite(Sources, lang_options);
   clang::tooling::applyAllReplacements(*replacements, Rewrite);
@@ -357,9 +366,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -368,9 +377,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -379,9 +388,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -394,9 +403,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
         if (auto function_type = type_info->getTypeLoc()
                                      .IgnoreParens()
                                      .getAs<clang::FunctionTypeLoc>()) {
-          arg_list = ExpandRangeBySingleToken(cache_->source_manager(),
-                                              cache_->lang_options(),
-                                              function_type.getParensRange());
+          arg_list =
+              NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                             function_type.getParensRange());
           InsertAnnotation(arg_list, Annotation{Annotation::ArgListWithParens});
         }
       }
@@ -408,10 +417,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     if (!ShouldSkipDecl(decl, decl->getReturnType(), type_range) &&
         type_range.isValid()) {
-      InsertTypeAnnotation(
-          ExpandRangeBySingleToken(cache_->source_manager(),
-                                   cache_->lang_options(), type_range),
-          arg_list);
+      InsertTypeAnnotation(NormalizeRange(cache_->source_manager(),
+                                          cache_->lang_options(), type_range),
+                           arg_list);
     }
   }
 
@@ -423,9 +431,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     // -(void) myFunc:(int)size withTimeout:(int)time. The "name" should be
     // myFunc:withTimeout and the arguments should be something like
     // "(int)size, (int)time".
-    auto ret_type_range = ExpandRangeBySingleToken(
-        cache_->source_manager(), cache_->lang_options(),
-        decl->getReturnTypeSourceRange());
+    auto ret_type_range =
+        NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                       decl->getReturnTypeSourceRange());
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {
@@ -545,7 +553,7 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   auto name = decl->getDeclName();
   auto identifier_info = name.getAsIdentifierInfo();
   if (identifier_info && !identifier_info->getName().empty()) {
-    return identifier_info->getName();
+    return std::string(identifier_info->getName());
   } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
     switch (name.getCXXOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
@@ -584,6 +592,14 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     MarkedSource* marked_source_node,
     const clang::ClassTemplateSpecializationDecl* decl) {
+  // While we try to figure out which template arguments are defaults, silence
+  // diagnostics from the typechecker.
+  clang::IgnoringDiagConsumer consumer;
+  auto* diags = &cache_->source_manager().getDiagnostics();
+  auto guard = MakeScopeGuard(
+      [diags = diags, client = diags->getClient(),
+       owned = diags->ownsClient()] { diags->setClient(client, owned); });
+  diags->setClient(&consumer, false);
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
   auto cached_default = cache_->first_default_template_argument()->find(decl);
@@ -651,6 +667,10 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
           break;
         }
       }
+      // Integral template arguments cause an assert failure inside clang.
+      if (template_args.get(noprint).getKind() ==
+          clang::TemplateArgument::Integral)
+        break;
       add_template_argument(template_args.get(noprint));
     }
     (*cache_->first_default_template_argument())[decl] = noprint;
@@ -804,7 +824,7 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     return absl::nullopt;
   }
   MarkedSource out_sig;
-  if (FLAGS_reformat_marked_source) {
+  if (absl::GetFlag(FLAGS_reformat_marked_source)) {
     clang::tooling::Replacements replacements;
     bool incomplete = false;
     // Weirdly, Clang tooling complains if we don't make a copy of `range` here.
@@ -858,7 +878,7 @@ absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (const auto* func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
-    if (FLAGS_pretty_print_function_prototypes) {
+    if (absl::GetFlag(FLAGS_pretty_print_function_prototypes)) {
       return GenerateMarkedSourceForFunction(func);
     } else {
       return GenerateMarkedSourceUsingSource(decl_id);

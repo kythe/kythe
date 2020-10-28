@@ -17,7 +17,8 @@
 # Download, build, and extract a set of Go packages.  Resulting compilations
 # will be merged into a single .kzip archive in the "$OUTPUT" directory.
 
-: "${TMPDIR:=/tmp}" "${OUTPUT:=/output}"
+: "${TMPDIR:=/tmp}" "${OUTPUT:=/output}" "${KYTHE_KZIP_ENCODING:=JSON}"
+
 
 FLAGS=()
 PACKAGES=()
@@ -30,6 +31,16 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+# golang build tags can optionally be specified with the `KYTHE_GO_BUILD_TAGS`
+# env variable.
+if [ ! -z "$KYTHE_GO_BUILD_TAGS" ]; then
+  FLAGS+=( "--buildtags=$KYTHE_GO_BUILD_TAGS" )
+fi
+
+if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+  eval "$KYTHE_PRE_BUILD_STEP"
+fi
 
 echo "Downloading ${PACKAGES[*]}" >&2
 go get -d "${PACKAGES[@]}" || true
@@ -47,6 +58,19 @@ OUT="$OUTPUT/compilations.kzip"
 if [[ -f "$OUT" ]]; then
   OUT="$(mktemp -p "$OUTPUT/" compilations.XXXXX.kzip)"
 fi
+
+# cd into the top-level git directory of our package and query git for the
+# commit timestamp.
+pushd "/workspace/gopath/src/$(dirname ${PACKAGES[1]})"
+TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
+popd
+
+# Record the timestamp of the git commit in a metadata kzip.
+kzip create_metadata \
+  --output "$OUTPUT/buildmetadata.kzip" \
+  --corpus "$KYTHE_CORPUS" \
+  --commit_timestamp "$TIMESTAMP"
+
 echo "Merging compilations into $OUT" >&2
-kzip merge --output "$OUT" "$TMPDIR"/out.*.kzip
+kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR"/out.*.kzip "$OUTPUT/buildmetadata.kzip"
 fix_permissions.sh "$OUTPUT"

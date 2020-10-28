@@ -18,14 +18,13 @@ package entryset
 
 import (
 	"log"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 
-	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 
 	espb "kythe.io/kythe/proto/entryset_go_proto"
@@ -273,8 +272,8 @@ func TestSources(t *testing.T) {
 		got = append(got, src)
 		return true
 	})
-	if err := testutil.DeepEqual(want, got); err != nil {
-		t.Errorf("Sources failed: %v", err)
+	if diff := compare.ProtoDiff(want, got); diff != "" {
+		t.Errorf("Sources failed: %s", diff)
 	}
 }
 
@@ -290,8 +289,8 @@ func TestVisit(t *testing.T) {
 	sort.Sort(byEntryOrder(got))
 
 	// Verify that we got all the entries and no extras.
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Visit order differs.\n--- Got:\n%+v\n--- Want:\n%+v\n", got, want)
+	if diff := compare.ProtoDiff(got, want); diff != "" {
+		t.Errorf("Visit order differs.\n--- Got:\n%+v\n--- Want:\n%+v: %s\n", got, want, diff)
 	}
 }
 

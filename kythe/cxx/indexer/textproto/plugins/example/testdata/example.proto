@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package kythe_plugin_example;
+
+message Person {
+  //- @name defines/binding NameField?
+  string name = 1;
+
+  //- @friend defines/binding FriendField?
+  repeated string friend = 2;
+}

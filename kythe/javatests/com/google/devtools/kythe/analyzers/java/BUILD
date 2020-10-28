@@ -1,13 +1,13 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 shell_tool_test(
     name = "indexer_test",
-    data = ["//kythe/testdata:test.kindex"],
+    data = ["//kythe/testdata:test.kzip"],
     scriptfile = "indexer_test.sh",
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
         "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-        "indexpack": "//kythe/go/platform/tools/indexpack",
     },
 )
 
@@ -48,7 +48,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 

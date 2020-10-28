@@ -25,7 +25,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
@@ -450,6 +450,9 @@ func TestDecorations_targetDefinition(t *testing.T) {
 }
 
 func TestCrossReferences(t *testing.T) {
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Signature: "node1"},
+	}}
 	testRefs := []*ppb.Reference{{
 		Source: &spb.VName{Signature: "node1"},
 		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF},
@@ -519,6 +522,36 @@ func TestCrossReferences(t *testing.T) {
 				},
 			},
 		},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor2_parent"},
+		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+		Anchor: &srvpb.ExpandedAnchor{
+			Ticket: "kythe:?path=path#anchor3",
+			Text:   "text",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+			Snippet: "some text",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		},
 	}}
 	expectedSets := []*srvpb.PagedCrossReferences{{
 		SourceTicket: "kythe:#node1",
@@ -559,6 +592,65 @@ func TestCrossReferences(t *testing.T) {
 	}, {
 		SourceTicket: "kythe:#node2",
 		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "#internal/ref/call/direct",
+			Caller: []*srvpb.PagedCrossReferences_Caller{{
+				SemanticCaller: "kythe:?path=path#anchor2_parent",
+				Caller: &srvpb.ExpandedAnchor{
+					Ticket: "kythe:?path=path#anchor3",
+					Text:   "text",
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   5,
+							LineNumber:   1,
+							ColumnOffset: 5,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+					Snippet: "some text",
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							LineNumber: 1,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+				},
+				Callsite: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe:?path=path#anchor2",
+					Text:   "text",
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   5,
+							LineNumber:   1,
+							ColumnOffset: 5,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+					Snippet: "some text",
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							LineNumber: 1,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+				}},
+			}},
+		}, {
 			Kind: "/kythe/edge/ref/call",
 			Anchor: []*srvpb.ExpandedAnchor{{
 				Ticket: "kythe:?path=path#anchor2",
@@ -588,10 +680,42 @@ func TestCrossReferences(t *testing.T) {
 				},
 			}},
 		}},
+	}, {
+		SourceTicket: "kythe:?path=path#anchor2_parent",
+		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "/kythe/edge/defines/binding",
+			Anchor: []*srvpb.ExpandedAnchor{{
+				Ticket: "kythe:?path=path#anchor3",
+				Text:   "text",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   1,
+						ColumnOffset: 5,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+				Snippet: "some text",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}},
+		}},
 	}}
 
-	p, s, refs := ptest.CreateList(testRefs)
-	k := &KytheBeam{s: s, refs: refs}
+	p, s, refs, nodes := ptest.CreateList2(testRefs, testNodes)
+	k := &KytheBeam{s: s, refs: refs, nodes: nodes}
 	sets, _ := k.CrossReferences()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))

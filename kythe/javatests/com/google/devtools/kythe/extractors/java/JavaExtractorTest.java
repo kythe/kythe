@@ -19,15 +19,19 @@ package com.google.devtools.kythe.extractors.java;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
+import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
+import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRule;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRules;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.File;
@@ -54,36 +58,28 @@ public class JavaExtractorTest extends TestCase {
 
   private static final ImmutableList<String> EMPTY = ImmutableList.of();
 
-  private static final FileInfo GENERATED_ANNOATION_CLASS =
+  private static final String JDK_ANNOTATION_PATH = "!CLASS_PATH_JAR!";
+  private static final FileInfo GENERATED_ANNOTATION_CLASS =
       FileInfo.newBuilder()
-          .setPath(join("!CLASS_PATH_JAR!", "javax/annotation/Generated.class"))
-          // This digest depends on the external javax_annotation_jsr250_api dependency.  If it is
-          // updated, this will also need to change.
-          .setDigest("e5ee743f5c6df4923a934cba33c73d3d73e19d277c8ddec5c4e7ac59788fc674")
+          .setPath(join(JDK_ANNOTATION_PATH, "javax/annotation/Generated.class"))
+          // This digest depends on the external org_apache_tomcat_tomcat_annotations_api
+          // dependency.  If it is updated, this will also need to change.
+          .setDigest("33d95d043232aa7dc76f00e831495f9b0e89f9c3f6fe440660390514624ec08c")
           .build();
 
   /** Tests the basic case of indexing a java compilation with two sources. */
   public void testJavaExtractorSimple() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources =
-        Lists.newArrayList(join(TEST_DATA_DIR, "/pkg/A.java"), join(TEST_DATA_DIR, "/pkg/B.java"));
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit.getVName().getCorpus()).isEqualTo(CORPUS);
+    assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
@@ -93,12 +89,59 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(sources));
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).isEmpty();
+  }
+
+  /** Tests the extraction with a {@link FileVNames}. */
+  public void testJavaExtractorFileVNames() throws Exception {
+    JavaCompilationUnitExtractor java =
+        new JavaCompilationUnitExtractor(
+            FileVNames.fromProto(
+                VNameRewriteRules.newBuilder()
+                    .addRule(
+                        VNameRewriteRule.newBuilder()
+                            .setPattern("(.*A.*)")
+                            .setVName(VName.newBuilder().setCorpus("A").setPath("@1@").build()))
+                    .addRule(
+                        VNameRewriteRule.newBuilder()
+                            .setPattern("(.*B.*)")
+                            .setVName(VName.newBuilder().setCorpus("B").setPath("@1@").build())
+                            .build())
+                    .build()));
+
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
+
+    // Index the specified sources
+    CompilationDescription description =
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit.getVName().getCorpus()).isEmpty(); // source files are from different corpora
+    assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+
+    // With the expected sources as explicit sources.
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
+    assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
+
+    // With the expected sources as required inputs.
+    assertThat(getInfos(unit.getRequiredInputList()))
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
+
+    // With the expected VNames based on the FileVNames configuration.
+    assertThat(getVNames(unit.getRequiredInputList()))
+        .containsAtLeast(
+            VName.newBuilder().setCorpus("A").setPath(join(TEST_DATA_DIR, "/pkg/A.java")).build(),
+            VName.newBuilder().setCorpus("B").setPath(join(TEST_DATA_DIR, "/pkg/B.java")).build());
+
+    // And the correct sourcepath set to replay the compilation.
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
   }
 
   /** Tests that metadata is included when a file specifies it. */
@@ -112,17 +155,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -134,12 +167,12 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected dependencies as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(dependencies, GENERATED_ANNOATION_CLASS));
+        .containsAtLeastElementsIn(getExpectedInfos(dependencies, GENERATED_ANNOTATION_CLASS));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
+    assertThat(details.getClasspathList()).contains(JDK_ANNOTATION_PATH);
   }
 
   /** Tests indexing within a symlink root. */
@@ -157,17 +190,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -178,12 +201,11 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(sources));
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -200,17 +222,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -221,13 +233,12 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
 
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(sources));
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation for both sources.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList())
         .containsExactly(join(TEST_DATA_DIR, "one"), join(TEST_DATA_DIR, "two"));
-    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -246,17 +257,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from the classpath
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            classpath,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -266,7 +267,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Ensure the right class files are picked up from the classpath.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(Arrays.asList(sources.get(0), classFile)));
+        .containsAtLeastElementsIn(getExpectedInfos(Arrays.asList(sources.get(0), classFile)));
 
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(join(TEST_DATA_DIR, "child"));
@@ -289,29 +290,19 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from inside jar on the classpath.
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            classpath,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
     assertThat(unit.getSourceFileList()).containsExactlyElementsIn(sources).inOrder();
 
-    // The classpath is adjusted to start wit !CLASS_PATH_JAR!
+    // The classpath is adjusted to start with !CLASS_PATH_JAR!
     String classFile = join("!CLASS_PATH_JAR!", "base/A.class");
 
     // Ensure the right class files are picked up from the classpath from within the jar.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactly(
+        .containsAtLeast(
             makeFileInfo(sources.get(0)),
             makeFileInfo(classFile, join(TEST_DATA_DIR, "parent/base/A.class")));
 
@@ -333,25 +324,12 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources, reporting compilation failure.
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
-    assertThat(unit.getRequiredInputCount()).isEqualTo(1);
-    assertThat(unit.getRequiredInput(0).getInfo().getPath()).isEqualTo(sources.get(0));
-    assertThat(unit.getRequiredInput(0).getInfo().getDigest())
-        .isEqualTo(ExtractorUtils.digestForPath(sources.get(0)));
+    assertThat(getInfos(unit.getRequiredInputList())).contains(makeFileInfo(sources.get(0)));
     assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
@@ -373,17 +351,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -395,8 +363,10 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(
-            getExpectedInfos(Arrays.asList(sources.get(0), sources.get(2), sources.get(1))))
+        .containsAtLeast(
+            makeFileInfo(sources.get(0)),
+            makeFileInfo(sources.get(2)),
+            makeFileInfo(sources.get(1)))
         .inOrder();
   }
 
@@ -413,17 +383,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -433,13 +393,12 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(sources));
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).hasSize(1);
     assertThat(details.getSourcepathList().get(0)).isEqualTo(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -455,17 +414,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -475,12 +424,11 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(sources));
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -543,7 +491,6 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             processorpath,
             processors,
-            Optional.absent(),
             options,
             "output");
 
@@ -597,7 +544,6 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             processorpath,
             processors,
-            Optional.of(genSrcDir),
             options,
             "output");
 
@@ -612,17 +558,15 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactly(
+        .containsAtLeast(
             makeFileInfo(origSources.get(0)),
             makeFileInfo(origSources.get(1)),
             makeFileInfo(sillyGenerated, Paths.get(testDir, sillyGenerated).toString()));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).hasSize(2);
     assertThat(details.getSourcepathList())
         .containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
-    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /** Tests that the extractor doesn't fall over when it's provided with no sources. */
@@ -634,17 +578,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            bootclasspath,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
 
@@ -671,17 +605,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(
-            TARGET1,
-            sources,
-            EMPTY,
-            bootclasspath,
-            EMPTY,
-            EMPTY,
-            EMPTY,
-            Optional.absent(),
-            EMPTY,
-            "output");
+        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -689,16 +613,12 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
-    assertThat(unit.getRequiredInputCount()).isEqualTo(3);
     List<String> requiredPaths = new ArrayList<>();
     for (FileInput input : unit.getRequiredInputList()) {
       requiredPaths.add(input.getInfo().getPath());
     }
     assertThat(requiredPaths)
-        .containsExactly(
-            sources.get(0),
-            "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class",
-            "!CLASS_PATH_JAR!/javax/annotation/Generated.class");
+        .containsAtLeast(sources.get(0), "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class");
 
     assertThat(unit.getArgumentList())
         .containsNoneOf("-bootclasspath", "-sourcepath", "-cp", "-classpath");
@@ -706,8 +626,66 @@ public class JavaExtractorTest extends TestCase {
     // And the correct source/class locations set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).isEmpty();
-    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
     assertThat(details.getBootclasspathList()).containsExactly("!PLATFORM_CLASS_PATH_JAR!");
+  }
+
+  public void testSourceInJar() throws ExtractionException, InvalidProtocolBufferException {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = testFiles("src_in_jar/C1.java");
+    List<String> classpath = ImmutableList.of(join(TEST_DATA_DIR, "src_in_jar/pack.jar"));
+
+    CompilationDescription description =
+        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
+    assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
+
+    // Ensure the source jar and the class jar are included in the required inputs.
+    assertThat(getInfos(unit.getRequiredInputList()))
+        .containsAtLeast(
+            makeFileInfo(sources.get(0)),
+            makeFileInfo(
+                "!CLASS_PATH_JAR!/pack2/C3.class",
+                join(TEST_DATA_DIR, "src_in_jar/pack2/C3.class")),
+            makeFileInfo(
+                "!SOURCE_JAR!/pack/C2.java", join(TEST_DATA_DIR, "src_in_jar/pack/C2.java")));
+
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly("!SOURCE_JAR!");
+    // Ensure the classpath is set for replay.
+    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
+  }
+
+  public void testSystemDir() throws ExtractionException, InvalidProtocolBufferException {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
+
+    java.useSystemDirectory(join(TEST_DATA_DIR, "/system_modules"));
+
+    CompilationDescription description =
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
+    assertThat(unit.getSourceFileList()).containsExactlyElementsIn(sources).inOrder();
+
+    List<String> requiredInputs =
+        unit.getRequiredInputList().stream()
+            .map(f -> f.getInfo().getPath())
+            .collect(Collectors.toList());
+    assertThat(requiredInputs)
+        .containsAtLeast(
+            join(TEST_DATA_DIR, "/pkg/A.java"),
+            join(TEST_DATA_DIR, "/pkg/B.java"),
+            join(TEST_DATA_DIR, "/system_modules/lib/jrt-fs.jar"),
+            join(TEST_DATA_DIR, "/system_modules/lib/modules"));
   }
 
   private List<String> testFiles(String... files) {
@@ -720,6 +698,10 @@ public class JavaExtractorTest extends TestCase {
 
   private static List<FileInfo> getInfos(List<FileInput> files) {
     return Lists.transform(files, FileInput::getInfo);
+  }
+
+  private static List<VName> getVNames(List<FileInput> files) {
+    return Lists.transform(files, FileInput::getVName);
   }
 
   private static List<FileInfo> getExpectedInfos(List<String> files, FileInfo... extra) {

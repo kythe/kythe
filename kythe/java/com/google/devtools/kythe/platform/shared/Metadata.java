@@ -21,6 +21,8 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Metadata provides rules for emitting new edges when edges of certain kinds are emitted. An
@@ -30,7 +32,11 @@ import com.google.devtools.kythe.proto.Storage.VName;
  * path to a loadable metadata file.
  */
 public class Metadata {
-  /** A Rule can generate one additional edge based on input conditions. */
+  /**
+   * A Rule can generate one additional edge based on input conditions.
+   *
+   * <p>begin/end are ignored for file-scoped rules.
+   */
   public static class Rule {
     /** The starting byte offset in the source file. */
     public int begin;
@@ -55,6 +61,12 @@ public class Metadata {
     rules.put(rule.begin, rule);
   }
 
+  /** Applies a new file-scoped {@link Rule} to the file to which this metadata pertains. */
+  public void addFileScopeRule(Rule rule) {
+    Preconditions.checkNotNull(rule);
+    fileRules.add(rule);
+  }
+
   /**
    * @param location the starting byte offset in the source file to check.
    * @return all rules with spans starting at that offset.
@@ -63,9 +75,17 @@ public class Metadata {
     return rules.get(location);
   }
 
+  /** @return the file-scope rules */
+  public Iterable<Rule> getFileScopeRules() {
+    return fileRules;
+  }
+
   /** All of the {@link Rule} instances, keyed on their starting offsets. */
   private final ListMultimap<Integer, Rule> rules =
       MultimapBuilder.treeKeys().arrayListValues().build();
+
+  /** All of the file-scope rules */
+  private final List<Rule> fileRules = new ArrayList<>();
 
   /**
    * A class's javax.annotation.Generated must have a comments field with this string as a prefix to

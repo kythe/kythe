@@ -17,7 +17,7 @@
 // Package reduce provides a simple interface for transforming a stream of
 // inputs.  Currently, other than utility functions/interfaces, the only
 // transformation available is Sort.
-package reduce
+package reduce // import "kythe.io/kythe/go/util/reduce"
 
 import (
 	"context"

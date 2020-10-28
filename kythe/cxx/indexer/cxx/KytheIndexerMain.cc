@@ -23,9 +23,15 @@
 //       indexer -i foo.cc | verifier foo.cc
 //       indexer some/index.kindex
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
+#include "kythe/cxx/common/re2_flag.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
@@ -33,58 +39,75 @@
 #include "kythe/cxx/indexer/cxx/frontend.h"
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
-DEFINE_bool(index_template_instantiations, true,
-            "Index template instantiations.");
-DEFINE_bool(experimental_drop_instantiation_independent_data, false,
-            "Don't emit template nodes and edges found to be "
-            "instantiation-independent.");
-DEFINE_bool(report_profiling_events, false,
-            "Write profiling events to standard error.");
-DEFINE_bool(experimental_index_lite, false,
-            "Drop uncommonly-used data from the index.");
-DEFINE_bool(experimental_drop_objc_fwd_class_docs, false,
-            "Drop comments for Objective-C forward class declarations.");
-DEFINE_bool(experimental_drop_cpp_fwd_decl_docs, false,
-            "Drop comments for C++ forward declarations.");
-DEFINE_int32(experimental_usr_byte_size, 0,
-             "Use this many bytes to represent a USR (or don't at all if 0).");
+ABSL_FLAG(bool, index_template_instantiations, true,
+          "Index template instantiations.");
+ABSL_FLAG(bool, experimental_drop_instantiation_independent_data, false,
+          "Don't emit template nodes and edges found to be "
+          "instantiation-independent.");
+ABSL_FLAG(bool, report_profiling_events, false,
+          "Write profiling events to standard error.");
+ABSL_FLAG(bool, experimental_index_lite, false,
+          "Drop uncommonly-used data from the index.");
+ABSL_FLAG(bool, experimental_drop_objc_fwd_class_docs, false,
+          "Drop comments for Objective-C forward class declarations.");
+ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
+          "Drop comments for C++ forward declarations.");
+ABSL_FLAG(int, experimental_usr_byte_size, 0,
+          "Use this many bytes to represent a USR (or don't at all if 0).");
+ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
+          "Use the CompilationUnit VName corpus as the default.");
+ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
+          "Emit experimental dataflow edges.");
+ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
+          kythe::RE2Flag{},
+          "If nonempty, a regex that matches files to be excluded from "
+          "template instance indexing.");
 
 namespace kythe {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::SetUsageMessage(
+  kythe::InitializeProgram(argv[0]);
+  absl::SetProgramUsageMessage(
       IndexerContext::UsageMessage("the Kythe C++ indexer", "indexer"));
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  std::vector<std::string> final_args(argv, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> final_args(remain.begin(), remain.end());
   IndexerContext context(final_args, "stdin.cc");
   IndexerOptions options;
-  options.TemplateBehavior = FLAGS_index_template_instantiations
+  options.TemplateBehavior = absl::GetFlag(FLAGS_index_template_instantiations)
                                  ? BehaviorOnTemplates::VisitInstantiations
                                  : BehaviorOnTemplates::SkipInstantiations;
   options.UnimplementedBehavior = context.ignore_unimplemented()
                                       ? kythe::BehaviorOnUnimplemented::Continue
                                       : kythe::BehaviorOnUnimplemented::Abort;
-  options.Verbosity = FLAGS_experimental_index_lite ? kythe::Verbosity::Lite
-                                                    : kythe::Verbosity::Classic;
-  options.ObjCFwdDocs = FLAGS_experimental_drop_objc_fwd_class_docs
-                            ? kythe::BehaviorOnFwdDeclComments::Ignore
-                            : kythe::BehaviorOnFwdDeclComments::Emit;
-  options.CppFwdDocs = FLAGS_experimental_drop_cpp_fwd_decl_docs
+  options.Verbosity = absl::GetFlag(FLAGS_experimental_index_lite)
+                          ? kythe::Verbosity::Lite
+                          : kythe::Verbosity::Classic;
+  options.ObjCFwdDocs =
+      absl::GetFlag(FLAGS_experimental_drop_objc_fwd_class_docs)
+          ? kythe::BehaviorOnFwdDeclComments::Ignore
+          : kythe::BehaviorOnFwdDeclComments::Emit;
+  options.CppFwdDocs = absl::GetFlag(FLAGS_experimental_drop_cpp_fwd_decl_docs)
                            ? kythe::BehaviorOnFwdDeclComments::Ignore
                            : kythe::BehaviorOnFwdDeclComments::Emit;
-  options.UsrByteSize = FLAGS_experimental_usr_byte_size <= 0
+  options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
-                            : FLAGS_experimental_usr_byte_size;
+                            : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.TemplateInstanceExcludePathPattern =
+      absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
+  options.DataflowEdges =
+      absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
+          ? kythe::EmitDataflowEdges::Yes
+          : kythe::EmitDataflowEdges::No;
+  options.UseCompilationCorpusAsDefault =
+      absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
-      FLAGS_experimental_drop_instantiation_independent_data;
+      absl::GetFlag(FLAGS_experimental_drop_instantiation_independent_data);
   options.AllowFSAccess = context.allow_filesystem_access();
-  if (FLAGS_report_profiling_events) {
+  if (absl::GetFlag(FLAGS_report_profiling_events)) {
     options.ReportProfileEvent = [](const char* counter, ProfilingEvent event) {
-      fprintf(stderr, "%s: %s\n", counter,
-              event == ProfilingEvent::Enter ? "enter" : "exit");
+      absl::FPrintF(stderr, "%s: %s\n", counter,
+                    event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
 
@@ -92,16 +115,16 @@ int main(int argc, char* argv[]) {
   NullOutputStream null_stream;
 
   context.EnumerateCompilations([&](IndexerJob& job) {
-    options.EffectiveWorkingDirectory = job.working_directory;
+    options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
-    meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
-    meta_supports.Add(llvm::make_unique<KytheMetadataSupport>());
+    meta_supports.Add(absl::make_unique<ProtobufMetadataSupport>());
+    meta_supports.Add(absl::make_unique<KytheMetadataSupport>());
 
     kythe::LibrarySupports library_supports;
-    library_supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
-    library_supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
-    library_supports.push_back(llvm::make_unique<ImputedConstructorSupport>());
+    library_supports.push_back(absl::make_unique<GoogleFlagsLibrarySupport>());
+    library_supports.push_back(absl::make_unique<GoogleProtoLibrarySupport>());
+    library_supports.push_back(absl::make_unique<ImputedConstructorSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
@@ -114,7 +137,7 @@ int main(int argc, char* argv[]) {
         });
 
     if (!result.empty()) {
-      fprintf(stderr, "Error: %s\n", result.c_str());
+      absl::FPrintF(stderr, "Error: %s\n", result);
       had_errors = true;
     }
   });

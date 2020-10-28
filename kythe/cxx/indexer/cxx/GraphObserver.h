@@ -715,6 +715,10 @@ class GraphObserver {
   virtual void recordTypeEdge(const NodeId& TermNodeId,
                               const NodeId& TypeNodeId) {}
 
+  /// \brief Records that `Influencer` influences `Influenced`.
+  virtual void recordInfluences(const NodeId& Influencer,
+                                const NodeId& Influenced) {}
+
   /// \brief Records an upper bound for the type of a node as an edge in the
   /// graph.
   /// \param TypeNodeId The identifier for the node to given a bounded type.
@@ -820,6 +824,25 @@ class GraphObserver {
                                      const NodeId& DeclId, Claimability Cl,
                                      Implicit I) {}
 
+  /// \brief Blames a given source range on the given context.
+  virtual void recordBlameLocation(const Range& SourceRange,
+                                   const NodeId& BlameId, Claimability Cl,
+                                   Implicit I) {}
+
+  /// \brief Classifies a use site.
+  enum class UseKind {
+    /// No specific determination. Similar to a read.
+    kUnknown,
+    /// This use site is a write.
+    kWrite
+  };
+
+  /// \brief Records a use site for some decl with additional semantic
+  /// information.
+  virtual void recordSemanticDeclUseLocation(const Range& SourceRange,
+                                             const NodeId& DeclId, UseKind K,
+                                             Claimability Cl, Implicit I) {}
+
   /// \brief Records an init site for some decl.
   virtual void recordInitLocation(const Range& SourceRange,
                                   const NodeId& DeclId, Claimability Cl,
@@ -832,6 +855,15 @@ class GraphObserver {
   virtual void recordTypeSpellingLocation(const Range& SourceRange,
                                           const NodeId& TypeId, Claimability Cl,
                                           Implicit I) {}
+
+  /// \brief Records that a type was spelled out at a particular location, while
+  /// referencing a different entity.
+  /// \param SourceRange The source range covering the type spelling.
+  /// \param TypeNode The identifier for the type being spelled out.
+  /// \param Cr Whether this information can be dropped by claiming.
+  virtual void recordTypeIdSpellingLocation(const Range& SourceRange,
+                                            const NodeId& TypeId,
+                                            Claimability Cl, Implicit I) {}
 
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId& MacroNode) {}

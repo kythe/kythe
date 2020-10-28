@@ -1,5 +1,0 @@
-content: "#include \"/fake/test.h\"\n#ifdef CMDARG\nclass Main;\n#else\n#error CMDARG unset--maybe we didn't see the CompilationUnit's arguments?\n#endif\n"
-info {
-  path: "/fake/test.cc"
-  digest: "e505365b9fb607e9077b673cbafb0d756bc6a13316fd63f2908b679f884cfb80"
-}

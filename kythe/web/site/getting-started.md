@@ -31,16 +31,13 @@ Kythe relies on the following external dependencies:
 
 * asciidoc
 * bison-3.0.4
-* clang >= 3.6
-* cmake >= 3.4.3
+* clang >= 8
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
-* flex-2.5
+* flex-2.6
 * go >= 1.7
 * graphviz
 * jdk >= 8
 * [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
-* libcurl4-openssl-dev
-* libssl-dev
 * node.js
 * parallel
 * source-highlight
@@ -60,7 +57,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison \
+    gcc uuid-dev libncurses-dev flex clang-8 bison \
     openjdk-8-jdk \
     parallel \
     wget
@@ -70,18 +67,19 @@ apt-get install \
 {% endhighlight %}
 
 #### Troubleshooting bazel/clang/llvm errors
+
 You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
 for Bazel:
 
 {% highlight bash %}
-echo 'build --client_env=CC=/usr/bin/clang-3.6' >>~/.bazelrc
+echo 'build --client_env=CC=/usr/bin/clang-8' >>~/.bazelrc
 {% endhighlight %}
 
 OR:
 
 {% highlight bash %}
-sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang
-sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++
+sudo ln -s /usr/bin/clang-8 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-8 /usr/bin/clang++
 {% endhighlight %}
 
 OR:
@@ -106,6 +104,14 @@ then you need to clean and rebuild your TOOLCHAIN:
 {% highlight bash %}
 bazel clean --expunge && bazel build @local_config_cc//:toolchain
 {% endhighlight %}
+
+Note also that Kythe depends on LLVM, which in turn requires support for C++14.
+In most installations, C++14 is not enabled by default, so the default Kythe
+`.bazelrc` includes the necessary flag (`-std=c++14`) to enable it.
+
+If you have user-specific Bazel settings that override the defaults, you may
+need to include these flags explicitly. If you get errors about undefined C++14
+names (such as `std::is_final`), check for this.
 
 ## Building Kythe
 
@@ -137,10 +143,10 @@ Many examples on the site assume you have installed kythe in /opt/kythe.
 # Build a Kythe release
 bazel build //kythe/release
 # Set current Kythe version
-# check bazel-genfiles/kythe/release/ directory to get current version.
+# check bazel-bin/kythe/release/ directory to get current version.
 export KYTHE_RELEASE="x.y.z"
 # Extract our new Kythe release to /opt/ including its version number
-tar -zxf bazel-genfiles/kythe/release/kythe-v${KYTHE_RELEASE}.tar.gz --directory /opt/
+tar -zxf bazel-bin/kythe/release/kythe-v${KYTHE_RELEASE}.tar.gz --directory /opt/
 # Remove the old pointer to Kythe if we had one
 rm -f /opt/kythe
 # Point Kythe to our new version

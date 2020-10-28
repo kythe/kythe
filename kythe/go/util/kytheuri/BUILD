@@ -10,7 +10,10 @@ go_library(
         "escape.go",
         ":uri.go",
     ],
-    deps = ["//kythe/proto:storage_go_proto"],
+    deps = [
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:storage_go_proto",
+    ],
 )
 
 go_test(
@@ -24,6 +27,6 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

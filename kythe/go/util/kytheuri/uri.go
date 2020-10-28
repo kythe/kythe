@@ -17,7 +17,7 @@
 // Package kytheuri provides a type to represent Kythe URIs.  This package
 // supports parsing a Kythe URI from a string, and converting back and forth
 // between a Kythe URI and a Kythe VName protobuf message.
-package kytheuri
+package kytheuri // import "kythe.io/kythe/go/util/kytheuri"
 
 import (
 	"errors"
@@ -25,6 +25,7 @@ import (
 	"path"
 	"strings"
 
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -151,6 +152,18 @@ func FromVName(v *spb.VName) *URI {
 		Root:      v.Root,
 		Path:      v.Path,
 		Language:  v.Language,
+	}
+}
+
+// FromCorpusPath returns a Kythe URI for the given Kythe VName protobuf message.
+func FromCorpusPath(cp *cpb.CorpusPath) *URI {
+	if cp == nil {
+		return &URI{}
+	}
+	return &URI{
+		Corpus: cp.Corpus,
+		Root:   cp.Root,
+		Path:   cp.Path,
 	}
 }
 

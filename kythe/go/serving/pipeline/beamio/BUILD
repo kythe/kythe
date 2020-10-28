@@ -41,6 +41,6 @@ go_test(
     deps = [
         "@com_github_apache_beam//sdks/go/pkg/beam/io/filesystem/local:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@go_levigo//:levigo",
+        "@com_github_jmhodges_levigo//:go_default_library",
     ],
 )

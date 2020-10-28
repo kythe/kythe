@@ -59,7 +59,7 @@
 //   fdigest, err := w.AddFile(file)
 //   ...
 //
-package kzip
+package kzip // import "kythe.io/kythe/go/platform/kzip"
 
 import (
 	"archive/zip"
@@ -71,9 +71,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -81,8 +83,9 @@ import (
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 
@@ -95,6 +98,68 @@ import (
 	_ "kythe.io/kythe/proto/java_go_proto"
 )
 
+// Encoding describes how compilation units will be encoded when written to a kzip.
+type Encoding int
+
+const (
+	// EncodingJSON specifies to use JSON encoding
+	EncodingJSON Encoding = 1
+	// EncodingProto specifies to use Proto encoding
+	EncodingProto Encoding = 2
+	// EncodingAll specifies to encode using all known encodings
+	EncodingAll Encoding = EncodingJSON | EncodingProto
+
+	prefixJSON  = "units"
+	prefixProto = "pbunits"
+)
+
+var (
+	// Use a constant file modification time in the kzip so file diffs only compare the contents,
+	// not when the kzips were created.
+	modifiedTime = time.Unix(0, 0)
+)
+
+// EncodingFor converts a string to an Encoding.
+func EncodingFor(v string) (Encoding, error) {
+	v = strings.ToUpper(v)
+	switch {
+	case v == "ALL":
+		return EncodingAll, nil
+	case v == "JSON":
+		return EncodingJSON, nil
+	case v == "PROTO":
+		return EncodingProto, nil
+	default:
+		return EncodingProto, fmt.Errorf("unknown encoding %s", v)
+	}
+}
+
+// String stringifies an Encoding
+func (e Encoding) String() string {
+	switch {
+	case e == EncodingAll:
+		return "All"
+	case e == EncodingJSON:
+		return "JSON"
+	case e == EncodingProto:
+		return "Proto"
+	default:
+		return "Encoding" + strconv.FormatInt(int64(e), 10)
+	}
+}
+
+// DefaultEncoding returns the default kzip encoding
+func DefaultEncoding() Encoding {
+	if e := os.Getenv("KYTHE_KZIP_ENCODING"); e != "" {
+		enc, err := EncodingFor(e)
+		if err == nil {
+			return enc
+		}
+		log.Printf("Unknown kzip encoding: %s", e)
+	}
+	return EncodingProto
+}
+
 // A Reader permits reading and scanning compilation records and file contents
 // stored in a .kzip archive. The Lookup and Scan methods are mutually safe for
 // concurrent use by multiple goroutines.
@@ -105,6 +170,10 @@ type Reader struct {
 	// directory, but it's not required by the spec. Use whatever name the
 	// archive actually specifies in the leading directory.
 	root string
+
+	// The prefix used for the compilation unit directory; one of
+	// prefixJSON or prefixProto
+	unitsPrefix string
 }
 
 // NewReader constructs a new Reader that consumes zip data from r, whose total
@@ -124,14 +193,67 @@ func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	} else if fi := archive.File[0].FileInfo(); !fi.IsDir() {
 		return nil, errors.New("archive root is not a directory")
 	}
-
+	root := archive.File[0].Name
+	pref, err := unitPrefix(root, archive.File)
+	if err != nil {
+		return nil, err
+	}
 	return &Reader{
-		zip:  archive,
-		root: archive.File[0].Name,
+		zip:         archive,
+		root:        root,
+		unitsPrefix: pref,
 	}, nil
 }
 
-func (r *Reader) unitPath(digest string) string { return path.Join(r.root, "units", digest) }
+func unitPrefix(root string, fs []*zip.File) (string, error) {
+	jsonDir := root + prefixJSON + "/"
+	protoDir := root + prefixProto + "/"
+	j := sort.Search(len(fs), func(i int) bool {
+		return fs[i].Name > jsonDir
+	})
+	hasJSON := j < len(fs) && strings.HasPrefix(fs[j].Name, jsonDir)
+	p := sort.Search(len(fs), func(i int) bool {
+		return fs[i].Name > protoDir
+	})
+	hasProto := p < len(fs) && strings.HasPrefix(fs[p].Name, protoDir)
+	if hasJSON && hasProto {
+		// validate that they have identical units based on hash
+		for p < len(fs) && j < len(fs) {
+			ispb := strings.HasPrefix(fs[p].Name, protoDir)
+			isjson := strings.HasPrefix(fs[j].Name, jsonDir)
+			if ispb != isjson {
+				return "", fmt.Errorf("both proto and JSON units found but are not identical")
+			}
+			if !ispb {
+				break
+			}
+			pdigest := strings.Split(fs[p].Name, "/")[2]
+			jdigest := strings.Split(fs[j].Name, "/")[2]
+			if pdigest != jdigest {
+				return "", fmt.Errorf("both proto and JSON units found but are not identical")
+			}
+			p++
+			j++
+		}
+	}
+	if hasProto {
+		return prefixProto, nil
+	}
+	return prefixJSON, nil
+}
+
+// Encoding exposes the file encoding being used to read compilation units.
+func (r *Reader) Encoding() (Encoding, error) {
+	switch {
+	case r.unitsPrefix == prefixJSON:
+		return EncodingJSON, nil
+	case r.unitsPrefix == prefixProto:
+		return EncodingProto, nil
+	}
+	return EncodingAll, fmt.Errorf("unknown encoding prefix: %v", r.unitsPrefix)
+}
+
+func (r *Reader) unitPath(digest string) string { return path.Join(r.root, r.unitsPrefix, digest) }
 func (r *Reader) filePath(digest string) string { return path.Join(r.root, "files", digest) }
 
 // ErrDigestNotFound is returned when a requested compilation unit or file
@@ -142,15 +264,23 @@ var ErrDigestNotFound = errors.New("digest not found")
 // multiple times.
 var ErrUnitExists = errors.New("unit already exists")
 
-func readUnit(digest string, f *zip.File) (*Unit, error) {
+func (r *Reader) readUnit(digest string, f *zip.File) (*Unit, error) {
 	rc, err := f.Open()
 	if err != nil {
 		return nil, err
 	}
-	defer rc.Close()
-
+	rec := make([]byte, f.UncompressedSize64)
+	_, err = io.ReadFull(rc, rec)
+	rc.Close()
+	if err != nil {
+		return nil, err
+	}
 	var msg apb.IndexedCompilation
-	if err := jsonpb.Unmarshal(rc, &msg); err != nil {
+	if r.unitsPrefix == prefixProto {
+		if err := proto.Unmarshal(rec, &msg); err != nil {
+			return nil, fmt.Errorf("error unmarshaling for %s: %s", digest, err)
+		}
+	} else if err := protojson.Unmarshal(rec, &msg); err != nil {
 		return nil, err
 	}
 	return &Unit{
@@ -160,14 +290,17 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 	}, nil
 }
 
-// firstIndex returns the first index in the archive's file list whose path is
-// greater than or equal to with prefix, or -1 if no such index exists.
+// firstIndex returns the first index in the archive's file list whose
+// path starts with prefix, or -1 if no such index exists.
 func (r *Reader) firstIndex(prefix string) int {
 	fs := r.zip.File
 	n := sort.Search(len(fs), func(i int) bool {
 		return fs[i].Name >= prefix
 	})
 	if n >= len(fs) {
+		return -1
+	}
+	if !strings.HasPrefix(fs[n].Name, prefix) {
 		return -1
 	}
 	return n
@@ -177,9 +310,10 @@ func (r *Reader) firstIndex(prefix string) int {
 // the requested digest is not in the archive, ErrDigestNotFound is returned.
 func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 	needle := r.unitPath(unitDigest)
-	if pos := r.firstIndex(needle); pos >= 0 {
+	pos := r.firstIndex(needle)
+	if pos >= 0 {
 		if f := r.zip.File[pos]; f.Name == needle {
-			return readUnit(unitDigest, f)
+			return r.readUnit(unitDigest, f)
 		}
 	}
 	return nil, ErrDigestNotFound
@@ -196,6 +330,26 @@ func (readConcurrency) isScanOption() {}
 // reading compilation units within a kzip archive.
 func ReadConcurrency(n int) ScanOption {
 	return readConcurrency(n)
+}
+
+func (r *Reader) canonicalUnits() (string, []*zip.File) {
+	prefix := r.unitPath("") + "/"
+	pos := r.firstIndex(prefix)
+	if pos < 0 {
+		return "", nil
+	}
+	var res []*zip.File
+	for _, file := range r.zip.File[pos:] {
+		if !strings.HasPrefix(file.Name, prefix) {
+			break
+		}
+		if file.Name == prefix {
+			continue // tolerate an empty units directory entry
+		}
+		res = append(res, file)
+
+	}
+	return prefix, res
 }
 
 // Scan scans all the compilations stored in the archive, and invokes f for
@@ -215,9 +369,8 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 	}
 
-	prefix := r.unitPath("") + "/"
-	pos := r.firstIndex(prefix)
-	if pos < 0 {
+	prefix, fileUnits := r.canonicalUnits()
+	if len(fileUnits) == 0 {
 		return nil
 	}
 
@@ -226,14 +379,10 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	files := make(chan *zip.File)
+
 	g.Go(func() error {
 		defer close(files)
-		for _, file := range r.zip.File[pos:] {
-			if !strings.HasPrefix(file.Name, prefix) {
-				break
-			} else if file.Name == prefix {
-				continue // tolerate an empty units directory entry
-			}
+		for _, file := range fileUnits {
 			select {
 			case <-ctx.Done():
 				return nil
@@ -242,7 +391,6 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 		return nil
 	})
-
 	units := make(chan *Unit)
 	var wg sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
@@ -251,7 +399,7 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 			defer wg.Done()
 			for file := range files {
 				digest := strings.TrimPrefix(file.Name, prefix)
-				unit, err := readUnit(digest, file)
+				unit, err := r.readUnit(digest, file)
 				if err != nil {
 					return err
 				}
@@ -316,35 +464,52 @@ type Writer struct {
 	fd  stringset.Set // file digests already written
 	ud  stringset.Set // unit digests already written
 	c   io.Closer     // a closer for the underlying writer (may be nil)
+
+	encoding Encoding // What encoding to use
+}
+
+// WriterOption describes options when creating a Writer
+type WriterOption func(*Writer)
+
+// WithEncoding sets the encoding to be used by a Writer
+func WithEncoding(e Encoding) WriterOption {
+	return func(w *Writer) {
+		w.encoding = e
+	}
 }
 
 // NewWriter constructs a new empty Writer that delivers output to w.  The
 // AddUnit and AddFile methods are safe for use by concurrent goroutines.
-func NewWriter(w io.Writer) (*Writer, error) {
+func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 	archive := zip.NewWriter(w)
 	// Create an entry for the root directory, which must be first.
 	root := &zip.FileHeader{
-		Name:    "root/",
-		Comment: "kzip root directory",
+		Name:     "root/",
+		Comment:  "kzip root directory",
+		Modified: modifiedTime,
 	}
 	root.SetMode(os.ModeDir | 0755)
-	root.SetModTime(time.Now())
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
 	archive.SetComment("Kythe kzip archive")
 
-	return &Writer{
-		zip: archive,
-		fd:  stringset.New(),
-		ud:  stringset.New(),
-	}, nil
+	kw := &Writer{
+		zip:      archive,
+		fd:       stringset.New(),
+		ud:       stringset.New(),
+		encoding: DefaultEncoding(),
+	}
+	for _, opt := range options {
+		opt(kw)
+	}
+	return kw, nil
 }
 
 // NewWriteCloser behaves as NewWriter, but arranges that when the *Writer is
 // closed it also closes wc.
-func NewWriteCloser(wc io.WriteCloser) (*Writer, error) {
-	w, err := NewWriter(wc)
+func NewWriteCloser(wc io.WriteCloser, options ...WriterOption) (*Writer, error) {
+	w, err := NewWriter(wc, options...)
 	if err == nil {
 		w.c = wc
 	}
@@ -352,7 +517,7 @@ func NewWriteCloser(wc io.WriteCloser) (*Writer, error) {
 }
 
 // toJSON defines the encoding format for compilation messages.
-var toJSON = &jsonpb.Marshaler{OrigName: true}
+var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 
 // AddUnit adds a new compilation record to be added to the archive, returning
 // the hex-encoded SHA256 digest of the unit's contents. It is legal for index
@@ -364,9 +529,7 @@ var toJSON = &jsonpb.Marshaler{OrigName: true}
 func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
 	unit := kythe.Unit{Proto: cu}
 	unit.Canonicalize()
-	hash := sha256.New()
-	unit.Digest(hash)
-	digest := hex.EncodeToString(hash.Sum(nil))
+	digest := unit.Digest()
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -374,15 +537,38 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 		return digest, ErrUnitExists
 	}
 
-	f, err := w.zip.CreateHeader(newFileHeader("root", "units", digest))
-	if err != nil {
-		return "", err
+	if w.encoding&EncodingJSON != 0 {
+		f, err := w.zip.CreateHeader(newFileHeader("root", prefixJSON, digest))
+		if err != nil {
+			return "", err
+		}
+		rec, err := toJSON.Marshal(&apb.IndexedCompilation{
+			Unit:  unit.Proto,
+			Index: index,
+		})
+		if err != nil {
+			return "", err
+		}
+		if _, err := f.Write(rec); err != nil {
+			return "", err
+		}
 	}
-	if err := toJSON.Marshal(f, &apb.IndexedCompilation{
-		Unit:  unit.Proto,
-		Index: index,
-	}); err != nil {
-		return "", err
+	if w.encoding&EncodingProto != 0 {
+		f, err := w.zip.CreateHeader(newFileHeader("root", prefixProto, digest))
+		if err != nil {
+			return "", err
+		}
+		rec, err := proto.Marshal(&apb.IndexedCompilation{
+			Unit:  unit.Proto,
+			Index: index,
+		})
+		if err != nil {
+			return "", err
+		}
+		_, err = f.Write(rec)
+		if err != nil {
+			return "", err
+		}
 	}
 	w.ud.Add(digest)
 	return digest, nil
@@ -440,7 +626,7 @@ func (w *Writer) Close() error {
 func newFileHeader(parts ...string) *zip.FileHeader {
 	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
 	fh.SetMode(0600)
-	fh.SetModTime(time.Now())
+	fh.Modified = modifiedTime
 	return fh
 }
 

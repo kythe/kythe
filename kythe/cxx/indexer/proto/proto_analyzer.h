@@ -46,7 +46,7 @@ class ProtoAnalyzer {
   ProtoAnalyzer(
       const proto::CompilationUnit* unit,
       google::protobuf::DescriptorDatabase* descriptor_db,
-      FileVNameGenerator* file_vnames, KytheGraphRecorder* recorder,
+      KytheGraphRecorder* recorder,
       absl::flat_hash_map<std::string, std::string>* path_substitution_cache);
 
   // disallow copy and assign
@@ -72,14 +72,11 @@ class ProtoAnalyzer {
   absl::node_hash_set<std::string> visited_files_;
 
   // Returns the VName associated with `path` in unit_'s required inputs, or
-  // a VName created from file_vnames_ if none is found.
+  // an empty vname if none is found.
   proto::VName VNameFromFullPath(const std::string& path) const;
 
   // Compilation unit to be analyzed.
   const proto::CompilationUnit* unit_;
-
-  // A generator for consistently mapping file paths to VNames.
-  FileVNameGenerator* file_vnames_;
 
   // Where we output Kythe artifacts.
   KytheGraphRecorder* recorder_;

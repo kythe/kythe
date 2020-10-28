@@ -16,7 +16,7 @@
 
 // Package bazel implements the internal plumbing of a configurable Bazel
 // compilation unit extractor.
-package bazel
+package bazel // import "kythe.io/kythe/go/extractors/bazel"
 
 import (
 	"context"
@@ -24,11 +24,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
-	"sync"
 	"time"
 
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -155,6 +154,26 @@ func (c *Config) logPrintf(msg string, args ...interface{}) {
 	}
 }
 
+// ExtractToKzip extracts a spawn action through c and writes the
+// results to the specified output file in kzip format. The outputPath
+// must have a suffix of ".kzip".
+func (c *Config) ExtractToKzip(ctx context.Context, ai *ActionInfo, outputPath string) error {
+	if ext := filepath.Ext(outputPath); ext != ".kzip" {
+		return fmt.Errorf("unknown output extension %q", ext)
+	}
+	w, err := NewKZIP(outputPath)
+	if err != nil {
+		return fmt.Errorf("creating kzip writer: %v", err)
+	}
+	if _, err := c.ExtractToFile(ctx, ai, w); err != nil {
+		return fmt.Errorf("extracting: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("closing output: %v", err)
+	}
+	return nil
+}
+
 // ExtractToFile extracts a compilation from the specified extra action info,
 // and writes it along with its required inputs to w. The unit digest of the
 // stored compilation is returned.
@@ -170,23 +189,6 @@ func (c *Config) ExtractToFile(ctx context.Context, info *ActionInfo, w *kzip.Wr
 		return "", err
 	}
 	return w.AddUnit(cu, nil)
-}
-
-// Extract extracts a compilation from the specified extra action info.
-func (c *Config) Extract(ctx context.Context, info *ActionInfo) (*kindex.Compilation, error) {
-	var files []*apb.FileData
-	cu, err := c.extract(ctx, info, func(ri *apb.CompilationUnit_FileInput, r io.Reader) error {
-		fd, err := kindex.FileData(ri.Info.Path, r)
-		if err == nil {
-			ri.Info.Digest = fd.Info.Digest
-			files = append(files, fd)
-		}
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &kindex.Compilation{Proto: cu, Files: files}, nil
 }
 
 type fileReader func(*apb.CompilationUnit_FileInput, io.Reader) error
@@ -254,30 +256,54 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 }
 
 // fetchInputs concurrently fetches the contents of all the specified file
-// paths. An open reader for each file is passed to the file callback along
-// with its path's offset in the input slice. If the callback returns an error,
-// that error is propagated.
+// paths. An open reader for each file is passed sequentially to the file
+// callback along with its path's offset in the input slice. If the callback
+// returns an error, that error is propagated.
 func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int, io.Reader) error) error {
 	// Fetch concurrently. Each element of the proto slices is accessed by a
 	// single goroutine corresponding to its index.
 
+	g, gCtx := errgroup.WithContext(ctx)
+
+	files := make([]chan io.ReadCloser, len(paths))
+	for i := range paths {
+		files[i] = make(chan io.ReadCloser)
+	}
+	g.Go(func() error {
+		// Pass each file Reader to the callback sequentially
+		for i, ch := range files {
+			select {
+			case <-gCtx.Done():
+				return gCtx.Err()
+			case rc := <-ch:
+				err := file(i, rc)
+				rc.Close()
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+
 	throttle := make(chan struct{}, 256)
-	var g errgroup.Group
-	var fmu sync.Mutex // coordinates access into the file callback
 	for i, path := range paths {
 		i, path := i, path
+		throttle <- struct{}{}
 		g.Go(func() error {
-			throttle <- struct{}{}
 			defer func() { <-throttle }()
-			rc, err := c.openRead(ctx, path)
+			rc, err := c.openRead(gCtx, path)
 			if err != nil {
 				log.Printf("ERROR: Reading input file: %v", err)
 				return err
 			}
-			defer rc.Close()
-			fmu.Lock()
-			defer fmu.Unlock()
-			return file(i, rc)
+			select {
+			case <-gCtx.Done():
+				rc.Close()
+				return gCtx.Err()
+			case files[i] <- rc:
+				return nil
+			}
 		})
 	}
 	return g.Wait()

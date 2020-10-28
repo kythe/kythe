@@ -16,6 +16,7 @@
 
 #include "path_utils.h"
 
+#include "absl/strings/str_format.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/LexDiagnostic.h"
@@ -66,7 +67,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
   } else {
     result_filename->append(filename.begin(), filename.end());
   }
-  const clang::FileEntry* file = preprocessor->LookupFile(
+  llvm::Optional<clang::FileEntryRef> file = preprocessor->LookupFile(
       filename_token.getLocation(),
       preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
                                              : filename,
@@ -74,10 +75,11 @@ const clang::FileEntry* LookupFileForIncludePragma(
       search_path, relative_path, nullptr /* SuggestedModule */,
       nullptr /* IsMapped */, nullptr /* IsFrameworkFound */,
       false /* SkipCache */);
-  if (file == nullptr) {
-    fprintf(stderr, "Missing required file %s.\n", filename.str().c_str());
+  if (!file) {
+    absl::FPrintF(stderr, "Missing required file %s.\n", filename.str());
+    return nullptr;
   }
-  return file;
+  return &file->getFileEntry();
 }
 
 }  // namespace cxx_extractor

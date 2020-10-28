@@ -24,8 +24,8 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
@@ -124,8 +124,12 @@ func loadProto(path string, t *testing.T) *ecpb.ExtractionConfiguration {
 		t.Fatalf("Test specfication failure: failed to load config %s: %v", path, err)
 	}
 	defer f.Close()
+	rec, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Fatalf("Test specification failure: failed to read config %s: %v", path, err)
+	}
 	extractionConfig := &ecpb.ExtractionConfiguration{}
-	if err := jsonpb.Unmarshal(f, extractionConfig); err != nil {
+	if err := protojson.Unmarshal(rec, extractionConfig); err != nil {
 		t.Fatalf("Test specification failure: failed to parse config %s: %v", path, err)
 	}
 

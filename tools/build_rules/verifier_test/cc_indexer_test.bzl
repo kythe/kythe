@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_COMPILE_ACTION_NAME",
@@ -26,6 +27,12 @@ load(
     "KytheVerifierSources",
     "extract",
     "verifier_test",
+)
+load(
+    "@io_kythe//kythe/cxx/extractor:toolchain.bzl",
+    "CXX_EXTRACTOR_TOOLCHAINS",
+    "CxxExtractorToolchainInfo",
+    "find_extractor_toolchain",
 )
 
 UNSUPPORTED_FEATURES = [
@@ -55,38 +62,81 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
+    "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
+    "template_instance_exclude_path_pattern": "",
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
     "ibuild_config": "",
+    "use_compilation_corpus_as_default": False,
 }
 
-def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
+def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
+    cc_toolchain = extractor_toolchain.cc_toolchain
     feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
     )
+
     variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(direct = includes, transitive = [cc_info.compilation_context.system_includes]),
+        system_include_directories = cc_info.compilation_context.system_includes,
         add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
     args = ctx.actions.args()
+    args.add("--with_executable", extractor_toolchain.compiler_executable)
     args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,
         variables = variables,
     ))
-    return args
+    env = cc_common.get_environment_variables(
+        feature_configuration = feature_configuration,
+        action_name = CPP_COMPILE_ACTION_NAME,
+        variables = variables,
+    )
+    return args, env
+
+def _compile_and_link(ctx, cc_info_providers, sources, headers):
+    cc_toolchain = find_cpp_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
+    )
+    compile_ctx, compile_outs = cc_common.compile(
+        name = ctx.label.name,
+        actions = ctx.actions,
+        cc_toolchain = cc_toolchain,
+        srcs = sources,
+        public_hdrs = headers,
+        feature_configuration = feature_configuration,
+        compilation_contexts = [provider.compilation_context for provider in cc_info_providers],
+    )
+    linking_ctx, linking_out = cc_common.create_linking_context_from_compilation_outputs(
+        name = ctx.label.name + "_transitive_library",
+        actions = ctx.actions,
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        compilation_outputs = compile_outs,
+        linking_contexts = [provider.linking_context for provider in cc_info_providers],
+    )
+    return struct(
+        compilation_context = compile_ctx,
+        linking_context = linking_ctx,
+        transitive_library_file = linking_out,
+    )
 
 def _flag(name, typename, value):
     if value == None:  # Omit None flags.
@@ -165,33 +215,13 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
         tools = [ctx.executable._plugin],
         mnemonic = "GenerateKytheCCProto",
     )
-    cc_toolchain = find_cpp_toolchain(ctx)
     cc_info_providers = [lib[CcInfo] for lib in [target, ctx.attr._runtime] if CcInfo in lib]
-    feature_configuration = cc_common.configure_features(
-        cc_toolchain = cc_toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
-    )
-    compile_protos_cc_info = cc_common.compile(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-        srcs = sources,
-        hdrs = headers,
-        feature_configuration = feature_configuration,
-        compilation_contexts = [provider.compilation_context for provider in cc_info_providers],
-    )
-    linking_info = cc_common.link(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-        cc_compilation_outputs = compile_protos_cc_info.cc_compilation_outputs,
-        feature_configuration = feature_configuration,
-        linking_contexts = [provider.linking_context for provider in cc_info_providers],
-    )
+    cc_context = _compile_and_link(ctx, cc_info_providers, headers = headers, sources = sources)
     return [
         _KytheProtoInfo(files = depset(sources + headers)),
         CcInfo(
-            compilation_context = compile_protos_cc_info.compilation_context,
-            linking_context = linking_info.linking_context,
+            compilation_context = cc_context.compilation_context,
+            linking_context = cc_context.linking_context,
         ),
     ]
 
@@ -216,16 +246,26 @@ _cc_kythe_proto_library_aspect = aspect(
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
+        # Attribute to make importing easier as the internal API requires this parameter.
+        # Unused externally.
+        "_grep_includes": attr.label(
+            allow_single_file = True,
+            executable = True,
+            cfg = "host",
+            default = Label("//tools/cpp:grep-includes"),
+        ),
     },
     fragments = ["cpp"],
+    incompatible_use_toolchain_transition = True,
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_kythe_proto_library_aspect_impl,
 )
 
 def _cc_kythe_proto_library(ctx):
+    files = [dep[_KytheProtoInfo].files for dep in ctx.attr.deps]
     return [
         ctx.attr.deps[0][CcInfo],
-        DefaultInfo(files = ctx.attr.deps[0][_KytheProtoInfo].files),
+        DefaultInfo(files = depset([], transitive = files)),
     ]
 
 cc_kythe_proto_library = rule(
@@ -239,41 +279,46 @@ cc_kythe_proto_library = rule(
 )
 
 def _cc_extract_kzip_impl(ctx):
-    cpp = find_cpp_toolchain(ctx)
-    if cpp.libc == "macosx":
-        toolchain_includes = cpp.built_in_include_directories
-    else:
-        toolchain_includes = []
+    extractor_toolchain = find_extractor_toolchain(ctx)
+    cpp = extractor_toolchain.cc_toolchain
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
+    opts, cc_env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
+    if ctx.attr.corpus:
+        env = {"KYTHE_CORPUS": ctx.attr.corpus}
+        env.update(cc_env)
+    else:
+        env = cc_env
+
     outputs = depset([
         extract(
             srcs = depset([src]),
             ctx = ctx,
-            extractor = ctx.executable.extractor,
+            env = env,
+            extractor = extractor_toolchain.extractor_binary,
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
-            opts = _compiler_options(
-                ctx,
-                cpp,
-                ctx.attr.opts,
-                toolchain_includes,
-                cc_info,
-            ),
+            opts = opts,
             vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
-                transitive = [depset(ctx.files.deps), cc_info.compilation_context.headers],
+                transitive = [
+                    depset(ctx.files.deps),
+                    cc_info.compilation_context.headers,
+                    cpp.all_files,
+                ],
             ),
         )
         for src in ctx.files.srcs
         if not src.path.endswith(".h")  # Don't extract headers.
     ])
-    for dep in ctx.attr.deps:
-        if CxxCompilationUnits in dep:
-            outputs += dep[CxxCompilationUnits].files
+    outputs = depset(transitive = [outputs] + [
+        dep[CxxCompilationUnits].files
+        for dep in ctx.attr.deps
+        if CxxCompilationUnits in dep
+    ])
     return [
         DefaultInfo(files = outputs),
         CxxCompilationUnits(files = outputs),
@@ -299,13 +344,12 @@ cc_extract_kzip = rule(
             These will be included in the resulting .kzip CompilationUnits.
             """,
         ),
-        "extractor": attr.label(
-            default = Label("//kythe/cxx/extractor:cxx_extractor"),
-            executable = True,
-            cfg = "host",
-        ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
+        ),
+        "corpus": attr.string(
+            doc = "The compilation unit corpus to use.",
+            default = "",
         ),
         "vnames_config": attr.label(
             doc = "vnames_config file to be used by the extractor.",
@@ -331,9 +375,10 @@ cc_extract_kzip = rule(
                 [CxxCompilationUnits],
             ],
         ),
-        # Do not add references, temporary attribute for find_cpp_toolchain.
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        "_cxx_extractor_toolchain": attr.label(
+            doc = "Fallback cxx_extractor_toolchain to use.",
+            default = Label("@io_kythe//kythe/cxx/extractor:cxx_extractor_default"),
+            providers = [CxxExtractorToolchainInfo],
         ),
     },
     doc = """cc_extract_kzip extracts srcs into CompilationUnits.
@@ -341,7 +386,8 @@ cc_extract_kzip = rule(
     Each file in srcs will be extracted into a separate .kzip file, based on the name
     of the source.
     """,
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    fragments = ["cpp"],
+    toolchains = CXX_EXTRACTOR_TOOLCHAINS,
     implementation = _cc_extract_kzip_impl,
 )
 
@@ -532,10 +578,14 @@ def _cc_index_impl(ctx):
         if kzip not in ctx.files.deps
     ]
 
-    entries = depset(intermediates)
-    for dep in ctx.attr.deps:
-        if KytheEntries in dep:
-            entries += dep[KytheEntries].files
+    entries = depset(
+        intermediates,
+        transitive = [
+            dep[KytheEntries].files
+            for dep in ctx.attr.deps
+            if KytheEntries in dep
+        ],
+    )
 
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
@@ -751,7 +801,8 @@ def objc_indexer_test(
         deps = deps,
         tags = tags,
         size = size,
-        copts = ["-fblocks"],
+        # Newer ObjC features are only enabled on the "modern" runtime.
+        copts = ["-fblocks", "-fobjc-runtime=macosx"],
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,

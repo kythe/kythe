@@ -23,7 +23,6 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
-#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/cxx/indexer/cxx/KytheClaimClient.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/FileSystem.h"
@@ -37,9 +36,6 @@ struct IndexerJob {
   std::vector<proto::FileData> virtual_files;
   /// The compilation under analysis.
   proto::CompilationUnit unit;
-  /// The absolute working directory in which indexing is taking place. This may
-  /// not exist on the local filesystem.
-  std::string working_directory;
   /// If set, this job should not produce any output.
   bool silent = false;
 };

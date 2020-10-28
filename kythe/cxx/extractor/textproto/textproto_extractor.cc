@@ -24,13 +24,17 @@
 //   textproto_extractor foo.pbtxt -- --proto_path dir/with/proto/deps
 
 #include <string>
+#include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/proto/proto_extractor.h"
@@ -38,11 +42,11 @@
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"
 
-DEFINE_string(proto_message, "",
-              "namespace-qualified message name for the textproto.");
-DEFINE_string(proto_files, "",
-              "A comma-separated list of proto files needed to fully define "
-              "the textproto's schema.");
+ABSL_FLAG(std::string, proto_message, "",
+          "namespace-qualified message name for the textproto.");
+ABSL_FLAG(std::vector<std::string>, proto_files, {},
+          "A comma-separated list of proto files needed to fully define "
+          "the textproto's schema.");
 
 namespace kythe {
 namespace lang_textproto {
@@ -58,8 +62,8 @@ IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(
+  kythe::InitializeProgram(argv[0]);
+  absl::SetProgramUsageMessage(
       R"(Standalone extractor for the Kythe textproto indexer.
 Creates a kzip containing the textproto and all proto files it depends on.
 
@@ -77,8 +81,8 @@ Examples:
   textproto_extractor foo.pbtxt
   textproto_extractor foo.pbtxt --proto_message MyMessage --proto_files foo.proto,bar.proto
   textproto_extractor foo.pbtxt --proto_message MyMessage --proto_files foo.proto -- --proto_path dir/with/my/deps")");
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
-  std::vector<std::string> final_args(argv + 1, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> final_args(remain.begin() + 1, remain.end());
 
   lang_proto::ProtoExtractor proto_extractor;
   proto_extractor.ConfigureFromEnv();
@@ -107,16 +111,17 @@ Examples:
   // precedence.
   TextprotoSchema schema = ParseTextprotoSchemaComments(textproto);
   std::vector<std::string> proto_filenames;
-  if (!FLAGS_proto_files.empty()) {
-    proto_filenames = absl::StrSplit(FLAGS_proto_files, ',');
+  if (!absl::GetFlag(FLAGS_proto_files).empty()) {
+    proto_filenames = absl::GetFlag(FLAGS_proto_files);
   } else {
     proto_filenames.push_back(std::string(schema.proto_file));
     for (const auto& extra_import : schema.proto_imports) {
       proto_filenames.push_back(std::string(extra_import));
     }
   }
-  if (!FLAGS_proto_message.empty()) {
-    schema.proto_message = FLAGS_proto_message;
+  std::string proto_message = absl::GetFlag(FLAGS_proto_message);
+  if (!proto_message.empty()) {
+    schema.proto_message = proto_message;
   }
   CHECK(!proto_filenames.empty())
       << "Proto file must be specified either with --proto_files flag or in "

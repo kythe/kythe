@@ -15,7 +15,7 @@
  */
 
 // Package beamtest contains utilities to test Apache Beam pipelines.
-package beamtest
+package beamtest // import "kythe.io/kythe/go/serving/pipeline/beamtest"
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/util/reflectx"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // CheckRegistrations returns an error if p uses any non-registered types.

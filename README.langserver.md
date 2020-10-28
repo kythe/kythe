@@ -20,7 +20,7 @@ if executable('kythe_languageserver')
     au User lsp_setup call lsp#register_server({
         \ 'name': 'kythe_languageserver',
         \ 'cmd': {server_info->['kythe_languageserver']},
-        \ 'whitelist': ['go'],
+        \ 'allowlist': ['go'],
         \ })
 endif
 ```
@@ -50,8 +50,8 @@ bazel-bin/kythe/go/indexer/cmd/go_indexer/go_indexer -code $(find bazel-out/k8-f
 # See https://github.com/kythe/kythe/issues/3412.
 bazel-bin/kythe/go/serving/tools/write_tables/write_tables --entries $ENTRIES --experimental_beam_pipeline --out $TAB
 
-# Serve.
-bazel-bin/kythe/go/serving/tools/http_server/http_server --serving_table $TAB --listen 0.0.0.0:8080 --public_resources $UI
+# Serve.  ("--listen :8080" allows access from other machines)
+bazel-bin/kythe/go/serving/tools/http_server/http_server --serving_table $TAB --listen localhost:8080 --public_resources $UI
 ```
 
 ## Augment the local-to-vname mapping

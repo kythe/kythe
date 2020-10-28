@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
@@ -185,7 +187,15 @@ public class SignatureGenerator
       } else if (symbol instanceof MethodSymbol) {
         return Optional.of(sigGen.getSignature((MethodSymbol) symbol));
       } else if (symbol instanceof VarSymbol) {
-        return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        try {
+          return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        } catch (Types.SignatureGenerator.InvalidSignatureException e) {
+          logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
+              "Likely hitting bug JDK-8212750, omitting reference"
+                  + " (VarSymbol [%s] in class [%s], package [%s], type [%s])",
+              symbol, symbol.outermostClass(), symbol.packge(), symbol.type);
+          return Optional.empty();
+        }
       }
     }
     try {
@@ -287,7 +297,7 @@ public class SignatureGenerator
     if (!typeParams.isEmpty()) {
       Set<TypeVar> typeVars = new HashSet<>();
       for (TypeParameterElement aType : typeParams) {
-        typeVars.add((TypeVar) ((TypeSymbol) aType).type);
+        typeVars.add((TypeVar) ((TypeSymbol) aType).type.stripMetadata());
       }
       boundedVars.addAll(typeVars);
       sb.append("<");
@@ -451,16 +461,16 @@ public class SignatureGenerator
 
   @Override
   public Void visitTypeVar(TypeVar t, StringBuilder sbout) {
-    if (boundedVars.contains(t)) {
+    if (boundedVars.contains((TypeVar) t.stripMetadata())) {
       sbout.append(t.tsym.name);
     } else {
       if (!visitedTypes.containsKey(t)) {
-        boundedVars.add(t);
+        boundedVars.add((TypeVar) t.stripMetadata());
         StringBuilder sb = new StringBuilder();
         t.tsym.owner.accept(this, sb);
         sb.append("~").append(t.tsym.name);
         visitedTypes.put(t, sb.toString());
-        boundedVars.remove(t);
+        boundedVars.remove((TypeVar) t.stripMetadata());
       }
       sbout.append(visitedTypes.get(t));
     }
@@ -505,7 +515,10 @@ public class SignatureGenerator
   public Void visitForAll(ForAll t, StringBuilder sbout) {
     if (!visitedTypes.containsKey(t)) {
       StringBuilder sb = new StringBuilder();
-      List<TypeVar> typeVars = t.getTypeVariables();
+      List<TypeVar> typeVars =
+          t.getTypeVariables().stream()
+              .map(v -> (TypeVar) v.stripMetadata())
+              .collect(Collectors.toList());
       boundedVars.addAll(typeVars);
       visitParameterTypes(t.getParameterTypes(), sb);
       boundedVars.removeAll(typeVars);

@@ -1,3 +1,18 @@
+# Copyright 2019 The Kythe Authors. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""C++ protocol buffer metadata test rules."""
+
 load("//tools/build_rules/verifier_test:cc_indexer_test.bzl", "cc_extract_kzip", "cc_index", "cc_kythe_proto_library")
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "index_compilation", "verifier_test")
 load(
@@ -8,8 +23,7 @@ load(
 def cc_proto_verifier_test(
         name,
         srcs,
-        proto_lib,
-        proto_srcs = [],
+        proto_libs,
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
@@ -21,17 +35,17 @@ def cc_proto_verifier_test(
     Args:
       name: Name of the test.
       srcs: The compilation's C++ source files; each file's verifier goals will be checked
-      proto_lib: A proto_library target containing proto_srcs
-      proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
+      proto_libs: A list of proto_library targets
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
 
-    Returns: the label of the test.
+    Returns:
+      The label of the test.
     """
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        srcs = proto_srcs,
+        srcs = proto_libs,
     )
 
     proto_entries = _invoke(
@@ -42,17 +56,19 @@ def cc_proto_verifier_test(
         deps = [proto_kzip],
     )
 
-    proto_lib = _invoke(
-        cc_kythe_proto_library,
-        name = name + "_cc_proto",
-        deps = [proto_lib],
-    )
+    cc_proto_libs = [
+        _invoke(
+            cc_kythe_proto_library,
+            name = name + "_cc_proto",
+            deps = proto_libs,
+        ),
+    ]
 
     cc_kzip = _invoke(
         cc_extract_kzip,
         name = name + "_cc_kzip",
         srcs = srcs,
-        deps = [proto_lib],
+        deps = cc_proto_libs,
     )
 
     cc_entries = _invoke(
@@ -73,7 +89,7 @@ def cc_proto_verifier_test(
     return _invoke(
         verifier_test,
         name = name,
-        srcs = srcs + proto_srcs,
+        srcs = srcs + [proto_entries],
         opts = verifier_opts,
         size = size,
         deps = [

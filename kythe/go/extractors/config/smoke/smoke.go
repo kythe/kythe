@@ -16,7 +16,7 @@
 
 // Package smoke is a basic harness for testing the validity of
 // config.ExtractRepo output.
-package smoke
+package smoke // import "kythe.io/kythe/go/extractors/config/smoke"
 
 import (
 	"context"

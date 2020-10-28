@@ -21,14 +21,15 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -74,20 +75,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
-import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
@@ -109,7 +113,7 @@ public class JavaCompilationUnitExtractor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final String JDK_MODULE_PREFIX = "/modules/java.";
+  private static final Pattern JDK_MODULE_PATTERN = Pattern.compile("^/modules/(java|jdk)[.].*");
   private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
 
@@ -117,29 +121,106 @@ public class JavaCompilationUnitExtractor {
     return String.format("!%s_JAR!", location);
   }
 
-  // TODO(shahms): Use the proper methods when we can rely on JDK 9.
-  private static final ClassLoader moduleClassLoader;
-
-  static {
-    ClassLoader loader = null;
-    try {
-      Object thisModule =
-          Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
-      thisModule
-          .getClass()
-          .getMethod("addUses", Class.class)
-          .invoke(thisModule, JavaCompiler.class);
-      loader = (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
-    } catch (ReflectiveOperationException e) {
-      logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
-    }
-    moduleClassLoader = loader;
-  }
+  private static final ClassLoader moduleClassLoader = findModuleClassLoader().orElse(null);
 
   private static final String JAR_SCHEME = "jar";
   private final String jdkJar;
   private final String rootDirectory;
   private final FileVNames fileVNames;
+  private String systemDir;
+
+  /**
+   * ExtractionTask represents a single invocation of the java compiler in order to determine the
+   * required inputs.
+   */
+  public static class ExtractionTask implements AutoCloseable {
+    private final TemporaryDirectory tempDir = new TemporaryDirectory();
+
+    // Can only be intiailized once the task is created.
+    private Symtab symbolTable;
+
+    private final JavaCompiler compiler = getJavaCompiler();
+    private final DiagnosticCollector<JavaFileObject> diagnosticCollector =
+        new DiagnosticCollector<>();
+    private final CompilationUnitCollector compilationCollector = new CompilationUnitCollector();
+    private final UsageAsInputReportingFileManager fileManager =
+        JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
+
+    ExtractionTask() throws ExtractionException {}
+
+    public UsageAsInputReportingFileManager getFileManager() {
+      return fileManager;
+    }
+
+    public Collection<Diagnostic<? extends JavaFileObject>> getDiagnostics() {
+      return diagnosticCollector.getDiagnostics();
+    }
+
+    public Collection<CompilationUnitTree> getCompilations() {
+      return compilationCollector.getCompilations();
+    }
+
+    public Symtab getSymbolTable() {
+      return symbolTable;
+    }
+
+    public boolean compileResolved(
+        Iterable<String> options,
+        Iterable<? extends JavaFileObject> sourceFiles,
+        Iterable<Processor> processors)
+        throws ExtractionException {
+      Preconditions.checkNotNull(options);
+      Preconditions.checkNotNull(sourceFiles);
+      Preconditions.checkNotNull(processors);
+      // Launch the java compiler with our modified settings and the filemanager wrapper
+      JavacTask javacTask =
+          (JavacTask)
+              compiler.getTask(
+                  null,
+                  fileManager,
+                  diagnosticCollector,
+                  completeCompilerOptions(options, tempDir.getPath()),
+                  null,
+                  sourceFiles);
+      javacTask.addTaskListener(compilationCollector);
+      javacTask.setProcessors(
+          Iterables.concat(processors, ImmutableList.of(new ProcessAnnotation(fileManager))));
+
+      symbolTable = JavaCompilationUnitExtractor.getSymbolTable(javacTask);
+      boolean result;
+      try {
+        // In order for the compiler to load all required .java & .class files we need to have it go
+        // through parsing, analysis & generate phases.  Unfortunately the latter is needed to get a
+        // complete list, this was found as we were breaking on analyzing certain files.
+        // JavacTask#call() subsumes parse() and generate(), but calling those methods directly may
+        // silently ignore fatal errors.
+        result = javacTask.call();
+      } catch (com.sun.tools.javac.util.Abort e) {
+        logFatalErrors(getDiagnostics());
+        throw new ExtractionException("Fatal error while running javac compiler.", e, false);
+      }
+      return !logErrors(getDiagnostics()) && result;
+    }
+
+    public boolean compile(
+        Iterable<String> options, Iterable<String> sourcePaths, Iterable<String> processors)
+        throws ExtractionException {
+      return compileResolved(
+          options,
+          fileManager.getJavaFileObjectsFromStrings(sourcePaths),
+          loadProcessors(processingClassLoader(fileManager), processors));
+    }
+
+    @Override
+    public void close() {
+      tempDir.close();
+      try {
+        fileManager.close();
+      } catch (IOException err) {
+        logger.atWarning().withCause(err).log("Unable to close file manager");
+      }
+    }
+  }
 
   /**
    * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
@@ -188,6 +269,14 @@ public class JavaCompilationUnitExtractor {
     }
   }
 
+  /**
+   * Use this value for the -system javac option. {@code systemDir} should either be a path to the
+   * system module directory or "none" which is a special value to javac.
+   */
+  public void useSystemDirectory(String systemDir) {
+    this.systemDir = systemDir;
+  }
+
   private CompilationUnit buildCompilationUnit(
       String target,
       Iterable<String> options,
@@ -199,14 +288,26 @@ public class JavaCompilationUnitExtractor {
       List<String> sourceFiles,
       String outputPath) {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
-    unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
+    unit.getVNameBuilder().setSignature(target).setLanguage("java");
     unit.addAllArgument(options);
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
+    ImmutableMap<String, String> inputCorpus =
+        Streams.stream(requiredInputs)
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    f -> f.getInfo().getPath(), f -> f.getVName().getCorpus()));
+    Set<String> sourceFileCorpora = new HashSet<>();
     for (String sourceFile : sourceFiles) {
       unit.addSourceFile(sourceFile);
+      sourceFileCorpora.add(inputCorpus.getOrDefault(sourceFile, ""));
+    }
+    if (sourceFileCorpora.size() == 1) {
+      // Attribute the source files' corpus to the CompilationUnit if it is unambiguous.
+      unit.getVNameBuilder().setCorpus(Iterables.getOnlyElement(sourceFileCorpora));
     }
     unit.setOutputKey(outputPath);
+    unit.setWorkingDirectory(stableRoot(rootDirectory, options, requiredInputs));
     unit.addDetails(
         Any.newBuilder()
             .setTypeUrl(JAVA_DETAILS_URL)
@@ -250,7 +351,6 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
-      Optional<Path> genSrcDir,
       Iterable<String> options,
       String outputPath)
       throws ExtractionException {
@@ -261,25 +361,41 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(sourcepath);
     Preconditions.checkNotNull(processorpath);
     Preconditions.checkNotNull(processors);
-    Preconditions.checkNotNull(genSrcDir);
+    Preconditions.checkNotNull(options);
+    Preconditions.checkNotNull(outputPath);
+    return extract(
+        target,
+        sources,
+        ImmutableMap.of(
+            StandardLocation.CLASS_PATH, classpath,
+            StandardLocation.PLATFORM_CLASS_PATH, bootclasspath,
+            StandardLocation.SOURCE_PATH, sourcepath,
+            StandardLocation.ANNOTATION_PROCESSOR_PATH, processorpath),
+        processors,
+        options,
+        outputPath);
+  }
+
+  /** Extracts required compilation files and arguments into a CompilationDescription. */
+  public CompilationDescription extract(
+      String target,
+      Iterable<String> sources,
+      Map<Location, Iterable<String>> searchPaths,
+      Iterable<String> processors,
+      Iterable<String> options,
+      String outputPath)
+      throws ExtractionException {
+    Preconditions.checkNotNull(target);
+    Preconditions.checkNotNull(sources);
+    Preconditions.checkNotNull(searchPaths);
+    Preconditions.checkNotNull(processors);
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
-    AnalysisResults results;
-    if (sources.iterator().hasNext()) {
-      results =
-          runJavaAnalysisToExtractCompilationDetails(
-              sources,
-              classpath,
-              bootclasspath,
-              sourcepath,
-              processorpath,
-              processors,
-              genSrcDir,
-              options);
-    } else {
-      results = new AnalysisResults();
-    }
+    final AnalysisResults results =
+        Iterables.isEmpty(sources)
+            ? new AnalysisResults()
+            : runJavaAnalysisToExtractCompilationDetails(sources, searchPaths, processors, options);
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs =
@@ -299,7 +415,7 @@ public class JavaCompilationUnitExtractor {
                 })
             .collect(toImmutableList());
 
-    CompilationUnit compilationUnit =
+    final CompilationUnit compilationUnit =
         buildCompilationUnit(
             target,
             removeDestDirOptions(options),
@@ -317,7 +433,6 @@ public class JavaCompilationUnitExtractor {
    * Returns a new list with the same options except header/source destination directory options.
    */
   private static ImmutableList<String> removeDestDirOptions(Iterable<String> options) {
-    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
     return ModifiableOptions.of(options)
         .removeOptions(EnumSet.of(Option.D, Option.S, Option.H))
         .build();
@@ -330,8 +445,8 @@ public class JavaCompilationUnitExtractor {
    * wildcard. So we add one matching file here.
    */
   private void findOnDemandImportedFiles(
-      Iterable<? extends CompilationUnitTree> compilationUnits,
-      UsageAsInputReportingFileManager fileManager)
+      UsageAsInputReportingFileManager fileManager,
+      Iterable<? extends CompilationUnitTree> compilationUnits)
       throws ExtractionException {
     // Maps package names to source files that wildcard import them.
     Multimap<String, String> pkgs = HashMultimap.create();
@@ -398,9 +513,9 @@ public class JavaCompilationUnitExtractor {
    * is needed as the sharded analysis will need to resolve dependent source files. Also locates
    * sources that do not follow the package == path convention and list them as explicit sources.
    */
-  private void getAdditionalSourcePaths(
-      Iterable<? extends CompilationUnitTree> compilationUnits, AnalysisResults results) {
-
+  private Collection<String> getAdditionalSourcePaths(
+      Iterable<? extends CompilationUnitTree> compilationUnits) {
+    ImmutableList.Builder<String> results = new ImmutableList.Builder<>();
     for (CompilationUnitTree compilationUnit : compilationUnits) {
       ExpressionTree packageExpression = compilationUnit.getPackageName();
       if (packageExpression != null) {
@@ -411,17 +526,44 @@ public class JavaCompilationUnitExtractor {
           // the correct sourcepath to add is the directory containing that
           // package.
           String packageSubDir = packageName.replace('.', '/');
-          String path = compilationUnit.getSourceFile().toUri().getPath();
+          URI uri = compilationUnit.getSourceFile().toUri();
+          // If the user included source files in their jars, we don't record anything special here
+          // because we pick up this source jar and the classpath/sourcepath usage with our other
+          // compiler hooks.
+          if ("jar".equals(uri.getScheme())) {
+            logger.atWarning().log(
+                "Detected a source in a jar file: %s - %s", uri, compilationUnit);
+            continue;
+          }
+          String path = uri.getPath();
           // This needs to be lastIndexOf as there are source jars that
           // contain the same package name in the files contained in them
           // as the path the source jars live in. As we extract the source
           // jars, we end up with a double named path.
           int index = path.lastIndexOf(packageSubDir);
           if (index >= 0) {
-            String root = ExtractorUtils.tryMakeRelative(rootDirectory, path.substring(0, index));
-            results.newSourcePath.add(root);
+            results.add(ExtractorUtils.tryMakeRelative(rootDirectory, path.substring(0, index)));
           }
         }
+      }
+    }
+    return results.build();
+  }
+
+  // Checks for ".pb.meta" files for each compilation unit and marks it as required if present.
+  private static void findMetadataFiles(
+      UsageAsInputReportingFileManager fileManager,
+      Iterable<CompilationUnitTree> compilationUnits) {
+    for (CompilationUnitTree compilationUnit : compilationUnits) {
+      try {
+        String annotationPath = compilationUnit.getSourceFile().toUri().getPath() + ".pb.meta";
+        if (Files.exists(Paths.get(annotationPath))) {
+          for (JavaFileObject file : fileManager.getJavaFileObjects(annotationPath)) {
+            ((UsageAsInputReportingJavaFileObject) file).markUsed();
+          }
+        }
+      } catch (IllegalArgumentException ex) {
+        // Invalid path.
       }
     }
   }
@@ -429,12 +571,23 @@ public class JavaCompilationUnitExtractor {
   private void findRequiredFiles(
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
-      Optional<Path> genSrcDir,
       AnalysisResults results)
       throws ExtractionException {
+    Set<String> genSrcDirs =
+        fileManager.hasLocation(StandardLocation.SOURCE_OUTPUT)
+            ? ImmutableSet.copyOf(
+                Iterables.transform(
+                    fileManager.getLocation(StandardLocation.SOURCE_OUTPUT),
+                    f -> ExtractorUtils.tryMakeRelative(rootDirectory, f.toString())))
+            : ImmutableSet.of();
     for (InputUsageRecord input : fileManager.getUsages()) {
       processRequiredInput(
-          input.fileObject(), input.location(), fileManager, sourceFiles, genSrcDir, results);
+          input.fileObject(),
+          input.location().orElse(null),
+          fileManager,
+          sourceFiles,
+          genSrcDirs,
+          results);
     }
   }
 
@@ -443,7 +596,7 @@ public class JavaCompilationUnitExtractor {
       Location location,
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
-      Optional<Path> genSrcDir,
+      Set<String> genSrcDirs,
       AnalysisResults results)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
@@ -495,7 +648,7 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if ((isJarPath && jarPath.startsWith(jdkJar)) || path.startsWith(JDK_MODULE_PREFIX)) {
+    if ((isJarPath && jarPath.startsWith(jdkJar)) || JDK_MODULE_PATTERN.matcher(path).matches()) {
       return;
     }
 
@@ -554,13 +707,17 @@ public class JavaCompilationUnitExtractor {
       }
     }
 
-    // Identify generated sources by checking if the source file is under the genSrcDir.
-    if (genSrcDir.isPresent()
-        && !isJarPath
-        && requiredInput.getKind() == Kind.SOURCE
-        && Paths.get(relativePath).startsWith(genSrcDir.get())) {
-      results.explicitSources.add(strippedPath);
-      results.newSourcePath.add(genSrcDir.get().toString());
+    // Identify generated sources by checking if the source file is under the genSrcDirs.
+    try {
+      if (!genSrcDirs.isEmpty()
+          && !isJarPath
+          && requiredInput.getKind() == Kind.SOURCE
+          && fileManager.contains(StandardLocation.SOURCE_OUTPUT, requiredInput)) {
+        results.explicitSources.add(strippedPath);
+        results.newSourcePath.addAll(genSrcDirs);
+      }
+    } catch (IOException err) {
+      // Ignore IOExceptions potentially thrown by fileManager.contains(...);
     }
 
     if (!results.fileContents.containsKey(strippedPath)) {
@@ -583,7 +740,7 @@ public class JavaCompilationUnitExtractor {
         }
       } catch (IOException e) {
         throw new ExtractionException(
-            String.format("Unable to read file content of %s", strippedPath), false);
+            String.format("Unable to read file content of %s", strippedPath), e, false);
       }
     }
   }
@@ -640,10 +797,20 @@ public class JavaCompilationUnitExtractor {
   }
 
   // Install NonResolvingCacheFSInfo into Context to avoid resolving symlinks.
-  private void setupFSInfo(StandardJavaFileManager fileManager) {
+  private static void setupFSInfo(StandardJavaFileManager fileManager) {
     Context context = new Context();
     NonResolvingCacheFSInfo.preRegister(context);
     ((JavacFileManager) fileManager).setContext(context);
+  }
+
+  private static UsageAsInputReportingFileManager getFileManager(
+      JavaCompiler compiler, DiagnosticCollector<JavaFileObject> diagnosticCollector) {
+    // We insert a filemanager that wraps the standard filemanager and records the compiler's
+    // usage of .java & .class files.
+    StandardJavaFileManager fileManager =
+        compiler.getStandardFileManager(diagnosticCollector, null, null);
+    setupFSInfo(fileManager);
+    return new UsageAsInputReportingFileManager(fileManager);
   }
 
   // FSInfo class which does not resolve symlinks when canonicalizing paths.
@@ -669,207 +836,95 @@ public class JavaCompilationUnitExtractor {
 
   private AnalysisResults runJavaAnalysisToExtractCompilationDetails(
       Iterable<String> sources,
-      Iterable<String> classpath,
-      Iterable<String> bootclasspath,
-      Iterable<String> sourcepath,
-      Iterable<String> processorpath,
+      Map<Location, Iterable<String>> searchPaths,
       Iterable<String> processors,
-      Optional<Path> genSrcDir,
       Iterable<String> options)
       throws ExtractionException {
 
     AnalysisResults results = new AnalysisResults();
 
-    // We will initialize and run the Javac compiler to detect which dependencies
-    // the current compilation has.
-    JavaCompiler compiler = findJavaCompiler();
-    if (compiler == null) {
-      // TODO(schroederc): provide link to further context
-      throw new IllegalStateException(
-          "Could not get system Java compiler; are you missing the JDK?");
-    }
-
-    DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
-
-    StandardJavaFileManager standardFileManager =
-        compiler.getStandardFileManager(diagnosticsCollector, null, null);
-    setupFSInfo(standardFileManager);
-
-    // We insert a filemanager that wraps the standard filemanager and records the compiler's
-    // usage of .java & .class files.
-    final UsageAsInputReportingFileManager fileManager =
-        new UsageAsInputReportingFileManager(standardFileManager);
-
-    Iterable<? extends JavaFileObject> sourceFiles = fileManager.getJavaFileForSources(sources);
-
     // Generate class files in a temporary directory
-    Path tempDir;
-    try {
-      tempDir = Files.createTempDirectory("javac_extractor");
-    } catch (IOException ioe) {
-      throw new ExtractionException(
-          "Unable to create temporary .class output directory", ioe, true);
-    }
-    List<String> completeOptions =
-        completeCompilerOptions(
-            standardFileManager,
-            options,
-            classpath,
-            bootclasspath,
-            sourcepath,
-            processorpath,
-            tempDir);
-
-    final List<CompilationUnitTree> compilationUnits = new ArrayList<>();
-    Symtab syms;
-    try {
-      // Launch the java compiler with our modified settings and the filemanager wrapper
-      CompilationTask task =
-          compiler.getTask(
-              null, fileManager, diagnosticsCollector, completeOptions, null, sourceFiles);
-
-      ClassLoader loader = processingClassloader(classpath, processorpath);
-
-      List<Processor> procs = new ArrayList<>();
-
-      // Add any processors passed as flags.
-      for (String processor : processors) {
-        try {
-          procs.add(
-              loader
-                  .loadClass(processor)
-                  .asSubclass(Processor.class)
-                  .getConstructor()
-                  .newInstance());
-        } catch (Throwable e) {
-          throw new ExtractionException("Bad processor entry: " + processor, e, false);
-        }
+    try (ExtractionTask task = new ExtractionTask()) {
+      for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
+        setLocation(task.getFileManager(), entry.getKey(), entry.getValue());
       }
 
-      if (procs.isEmpty()) {
-        // If no --processors were passed, add any processors registered in the META-INF/services
-        // configuration.
-        for (Processor proc : ServiceLoader.load(Processor.class, loader)) {
-          procs.add(proc);
-        }
-      }
-
-      procs.add(new ProcessAnnotation(fileManager));
-
-      JavacTask javacTask = (JavacTask) task;
-      javacTask.setProcessors(procs);
-      syms = Symtab.instance(((JavacTaskImpl) javacTask).getContext());
-
-      javacTask.addTaskListener(
-          new TaskListener() {
-            @Override
-            public void finished(TaskEvent e) {
-              if (e.getKind() == TaskEvent.Kind.PARSE) {
-                compilationUnits.add(e.getCompilationUnit());
-              }
-            }
-
-            @Override
-            public void started(TaskEvent e) {}
-          });
-
-      try {
-        // In order for the compiler to load all required .java & .class files we need to have it go
-        // through parsing, analysis & generate phases.  Unfortunately the latter is needed to get a
-        // complete list, this was found as we were breaking on analyzing certain files.
-        // JavacTask#call() subsumes parse() and generate(), but calling those methods directly may
-        // silently ignore fatal errors.
-        results.hasErrors = !javacTask.call();
-      } catch (com.sun.tools.javac.util.Abort e) {
-        // Type resolution issues, the diagnostics will give hints on what's going wrong.
-        for (Diagnostic<? extends JavaFileObject> diagnostic :
-            diagnosticsCollector.getDiagnostics()) {
-          if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
-            logger.atSevere().log(
-                "Fatal error in compiler: %s", diagnostic.getMessage(Locale.ENGLISH));
-          }
-        }
-        throw new ExtractionException("Fatal error while running javac compiler.", e, false);
-      }
-
-      // If we encountered any compilation errors, we report them even though we
-      // still store the compilation information for this set of sources.
-      for (Diagnostic<? extends JavaFileObject> diag : diagnosticsCollector.getDiagnostics()) {
-        if (diag.getKind() == Diagnostic.Kind.ERROR) {
-          results.hasErrors = true;
-          if (diag.getSource() != null) {
-            logger.atSevere().log(
-                "compiler error: %s(%d): %s",
-                diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
-          } else {
-            logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
-          }
-        }
-      }
-
-      // Ensure generated source directory is relative to root.
-      genSrcDir =
-          genSrcDir.transform(
-              p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
+      results.hasErrors = !task.compile(options, sources, processors);
 
       for (String source : sources) {
         results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
       }
 
-      getAdditionalSourcePaths(compilationUnits, results);
+      results.newSourcePath.addAll(getAdditionalSourcePaths(task.getCompilations()));
 
+      // Include any .pb.meta files which may reside next to compilations.
+      findMetadataFiles(task.getFileManager(), task.getCompilations());
       // Find files potentially used for resolving .* imports.
-      findOnDemandImportedFiles(compilationUnits, fileManager);
-      // We accumulate all file contents from the java compiler so we can store it in the bigtable.
-      findRequiredFiles(fileManager, mapClassesToSources(syms), genSrcDir, results);
-    } finally {
-      try {
-        DeleteRecursively.delete(tempDir);
-      } catch (IOException ioe) {
-        logger.atSevere().withCause(ioe).log("Failed to delete temporary directory %s", tempDir);
-      }
+      findOnDemandImportedFiles(task.getFileManager(), task.getCompilations());
+      // Add modular system files directly, if specified explicitly.
+      addSystemFiles(results);
+
+      // We accumulate all file contents from the java compiler.
+      findRequiredFiles(task.getFileManager(), mapClassesToSources(task.getSymbolTable()), results);
     }
 
     return results;
   }
 
-  /** Sets the given location using command-line flags and the FileManager API. */
+  /** Sets the given location using the FileManager API. */
   private static void setLocation(
-      ModifiableOptions options,
-      StandardJavaFileManager fileManager,
-      Iterable<String> searchpath,
-      String flag,
-      StandardLocation location)
+      UsageAsInputReportingFileManager fileManager, Location location, Iterable<String> searchpath)
       throws ExtractionException {
-    String joined = Joiner.on(":").join(searchpath);
-    if (!joined.isEmpty()) {
-      options.add(flag);
-      options.add(joined);
+    if (!Iterables.isEmpty(searchpath)) {
       try {
-        List<File> files = new ArrayList<>();
-        for (String elt : searchpath) {
-          files.add(new File(elt));
-        }
-        fileManager.setLocation(location, files);
+        fileManager.setLocation(location, Iterables.transform(searchpath, File::new));
       } catch (IOException e) {
         throw new ExtractionException(String.format("Couldn't set %s", location), e, false);
       }
     }
   }
 
+  /**
+   * Adds the files from "system" directory. When --system=DIR option is present, the compiler looks
+   * for system classes (e.g., java.lang.*) in DIR, which contains two files: DIR/lib/jrt-fs.jar and
+   * DIR/lib/modules. The former is a regular jar containing the implementation of a "module" file
+   * system, and the latter contains such file system. The analyzer will be also invoked with
+   * --system and thus will need them.
+   */
+  private void addSystemFiles(AnalysisResults results) throws ExtractionException {
+    if (Strings.isNullOrEmpty(systemDir)) {
+      return;
+    }
+    for (String fname : ImmutableList.of("jrt-fs.jar", "modules")) {
+      Path modPath = Paths.get(systemDir, "lib", fname);
+      String relativePath = ExtractorUtils.tryMakeRelative(rootDirectory, modPath.toString());
+      if (results.fileContents.containsKey(relativePath)) {
+        continue;
+      }
+      try {
+        results.fileContents.put(relativePath, Files.readAllBytes(modPath));
+        results.relativePaths.put(relativePath, relativePath);
+      } catch (IOException e) {
+        throw new ExtractionException(
+            String.format("Bad system directory, cannot read %s", modPath), e, false);
+      }
+    }
+  }
+
   /** Create the ClassLoader to use for annotation processors. */
-  private static ClassLoader processingClassloader(
-      Iterable<String> classpath, Iterable<String> processorpath) throws ExtractionException {
+  private static ClassLoader processingClassLoader(StandardJavaFileManager fileManager)
+      throws ExtractionException {
     // If javac is run with -processor set and -processorpath *unset*, it will fall back to
     // searching the regular classpath for annotation processors.
-    if (Iterables.isEmpty(processorpath)) {
-      processorpath = classpath;
-    }
+    Iterable<? extends File> files =
+        fileManager.hasLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH)
+            ? fileManager.getLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH)
+            : fileManager.getLocation(StandardLocation.CLASS_PATH);
 
     List<URL> urls = new ArrayList<>();
-    for (String path : processorpath) {
+    for (File file : files) {
       try {
-        urls.add(new File(path).toURI().toURL());
+        urls.add(file.toURI().toURL());
       } catch (MalformedURLException e) {
         throw new ExtractionException("Bad processorpath entry", e, false);
       }
@@ -907,55 +962,66 @@ public class JavaCompilationUnitExtractor {
     }
   }
 
+  private static class CompilationUnitCollector implements TaskListener {
+    private final List<CompilationUnitTree> compilationUnits = new ArrayList<>();
+
+    public Collection<CompilationUnitTree> getCompilations() {
+      return Collections.unmodifiableCollection(compilationUnits);
+    }
+
+    @Override
+    public void finished(TaskEvent e) {
+      if (e.getKind() == TaskEvent.Kind.PARSE) {
+        compilationUnits.add(e.getCompilationUnit());
+      }
+    }
+
+    @Override
+    public void started(TaskEvent e) {}
+  }
+
+  private static class TemporaryDirectory implements AutoCloseable {
+    private final Path path;
+
+    TemporaryDirectory() throws ExtractionException {
+      try {
+        this.path = Files.createTempDirectory("javac_extractor");
+      } catch (IOException ioe) {
+        throw new ExtractionException(
+            "Unable to create temporary .class output directory", ioe, true);
+      }
+    }
+
+    public Path getPath() {
+      return path;
+    }
+
+    @Override
+    public void close() {
+      try {
+        DeleteRecursively.delete(path);
+      } catch (IOException ioe) {
+        logger.atSevere().withCause(ioe).log("Failed to delete temporary directory %s", path);
+      }
+    }
+  }
+
   /**
    * Completes the given raw compiler options with the given classpath, sourcepath, and temporary
    * destination directory. Only options supported by the Java compiler will be within the returned
    * {@link List}.
    */
   private static ImmutableList<String> completeCompilerOptions(
-      StandardJavaFileManager standardFileManager,
-      Iterable<String> rawOptions,
-      Iterable<String> classpath,
-      Iterable<String> bootclasspath,
-      Iterable<String> sourcepath,
-      Iterable<String> processorpath,
-      Path tempDestinationDir)
-      throws ExtractionException {
+      Iterable<String> rawOptions, Path tempDestinationDir) throws ExtractionException {
 
-    ModifiableOptions completeOptions =
-        ModifiableOptions.of(rawOptions)
-            .removeUnsupportedOptions()
-            .ensureEncodingSet(StandardCharsets.UTF_8);
-
-    setLocation(
-        completeOptions, standardFileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
-    setLocation(
-        completeOptions,
-        standardFileManager,
-        sourcepath,
-        "-sourcepath",
-        StandardLocation.SOURCE_PATH);
-    setLocation(
-        completeOptions,
-        standardFileManager,
-        processorpath,
-        "-processorpath",
-        StandardLocation.ANNOTATION_PROCESSOR_PATH);
-    setLocation(
-        completeOptions,
-        standardFileManager,
-        bootclasspath,
-        "-bootclasspath",
-        StandardLocation.PLATFORM_CLASS_PATH);
-
-    return completeOptions
-        .removeOptions(EnumSet.of(Option.D))
-        .add("-d")
-        .add(tempDestinationDir.toString())
+    return ModifiableOptions.of(rawOptions)
+        .removeUnsupportedOptions()
+        .ensureEncodingSet(StandardCharsets.UTF_8)
+        .replaceOptionValue(Option.D, tempDestinationDir.toString())
         .build();
   }
 
-  private static JavaCompiler findJavaCompiler() {
+  private static Optional<JavaCompiler> findJavaCompiler() {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     if (compiler == null && moduleClassLoader != null) {
       // This is all a bit of a hack to be able to extract OpenJDK itself, which
@@ -965,10 +1031,36 @@ public class JavaCompilationUnitExtractor {
       // JavaCompiler we can find.
       logger.atWarning().log("Unable to find system compiler, using first available.");
       for (JavaCompiler found : ServiceLoader.load(JavaCompiler.class, moduleClassLoader)) {
-        return found;
+        return Optional.ofNullable(found);
       }
     }
-    return compiler;
+    return Optional.ofNullable(compiler);
+  }
+
+  private static JavaCompiler getJavaCompiler() {
+    return findJavaCompiler()
+        .orElseThrow(
+            () ->
+                // TODO(schroederc): provide link to further context
+                new IllegalStateException(
+                    "Could not get system Java compiler; are you missing the JDK?"));
+  }
+
+  private static Optional<ClassLoader> findModuleClassLoader() {
+    // TODO(shahms): Use the proper methods when we can rely on JDK 9.
+    try {
+      Object thisModule =
+          Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
+      thisModule
+          .getClass()
+          .getMethod("addUses", Class.class)
+          .invoke(thisModule, JavaCompiler.class);
+      return Optional.ofNullable(
+          (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule));
+    } catch (ReflectiveOperationException e) {
+      logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
+    }
+    return Optional.empty();
   }
 
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */
@@ -987,5 +1079,99 @@ public class JavaCompilationUnitExtractor {
       }
     }
     return sourceBaseNames;
+  }
+
+  private static Iterable<Processor> loadProcessors(ClassLoader loader, Iterable<String> names)
+      throws ExtractionException {
+    return Iterables.isEmpty(names)
+        // If no --processors were passed, add any processors registered in the META-INF/services
+        // configuration.
+        ? loadServiceProcessors(loader)
+        // Add any processors passed as flags.
+        : loadNamedProcessors(loader, names);
+  }
+
+  private static Iterable<Processor> loadNamedProcessors(ClassLoader loader, Iterable<String> names)
+      throws ExtractionException {
+    List<Processor> procs = new ArrayList<>();
+    for (String processor : names) {
+      try {
+        procs.add(
+            loader.loadClass(processor).asSubclass(Processor.class).getConstructor().newInstance());
+      } catch (Throwable e) {
+        throw new ExtractionException("Bad processor entry: " + processor, e, false);
+      }
+    }
+    return procs;
+  }
+
+  private static Iterable<Processor> loadServiceProcessors(ClassLoader loader) {
+    return ServiceLoader.load(Processor.class, loader);
+  }
+
+  private static boolean logErrors(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
+    // If we encountered any compilation errors, we report them even though we
+    // still store the compilation information for this set of sources.
+    return diagnostics.stream()
+            .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+            .peek(
+                diag -> {
+                  if (diag.getSource() != null) {
+                    logger.atSevere().log(
+                        "compiler error: %s(%d): %s",
+                        diag.getSource().getName(),
+                        diag.getLineNumber(),
+                        diag.getMessage(Locale.ENGLISH));
+                  } else {
+                    logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
+                  }
+                })
+            .count()
+        > 0;
+  }
+
+  private static void logFatalErrors(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
+    // Type resolution issues, the diagnostics will give hints on what's going wrong.
+    diagnostics.stream()
+        .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+        .forEach(
+            d ->
+                logger.atSevere().log("Fatal error in compiler: %s", d.getMessage(Locale.ENGLISH)));
+  }
+
+  private static Symtab getSymbolTable(JavacTask javacTask) {
+    return getSymbolTable(((JavacTaskImpl) javacTask).getContext());
+  }
+
+  private static Symtab getSymbolTable(Context context) {
+    return Symtab.instance(context);
+  }
+
+  // Returns a string to use for the compilation unit working directory.
+  // Attempts to use a stable path for the root, but falls back to the specified rootDirectory
+  // if the stable root is present in an absolutely-qualified requiredInput or the rootDirectory
+  // is mentioned in options.
+  private static String stableRoot(
+      String rootDirectory, Iterable<String> options, Iterable<FileInput> requiredInput) {
+    if (Iterables.any(options, o -> o.contains(rootDirectory))) {
+      logger.atInfo().log(
+          "Using real working directory (%s) due to its inclusion in %s", rootDirectory, options);
+      return rootDirectory;
+    }
+    ImmutableSet<String> requiredRoots =
+        Streams.stream(requiredInput)
+            .map(
+                fi -> {
+                  Path path = Paths.get(fi.getInfo().getPath());
+                  return path.isAbsolute() ? path.subpath(0, 1).toString() : null;
+                })
+            .filter(p -> p != null)
+            .collect(ImmutableSet.toImmutableSet());
+    for (String root : ImmutableList.of("root", "build", "kythe_java_extractor_root")) {
+      if (!requiredRoots.contains(root)) {
+        return "/" + root;
+      }
+    }
+    return rootDirectory;
   }
 }

@@ -15,7 +15,7 @@
  */
 
 // Package testutil contains common utilities to test Kythe libraries.
-package testutil
+package testutil // import "kythe.io/kythe/go/test/testutil"
 
 import (
 	"encoding/json"
@@ -29,9 +29,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
+	"sigs.k8s.io/yaml"
 )
 
 // DeepEqual determines if expected is deeply equal to got, returning a

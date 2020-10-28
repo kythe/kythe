@@ -17,7 +17,7 @@
 // Package locked implements a delegating wrapper that protects each method of
 // the resulting kcd.Reader or kcd.ReadWriter with a mutex, so that the result
 // is safe for concurrent use by multiple goroutines.
-package locked
+package locked // import "kythe.io/kythe/go/platform/kcd/locked"
 
 import (
 	"context"

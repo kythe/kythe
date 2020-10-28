@@ -15,14 +15,16 @@
  */
 
 // Package mavencmd extracts a maven repo.
-package mavencmd
+package mavencmd // import "kythe.io/kythe/go/extractors/config/runextractor/mavencmd"
 
 import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
@@ -37,6 +39,7 @@ type mavenCommand struct {
 
 	pomXML       string
 	javacWrapper string
+	verbose      bool
 }
 
 // New creates a new subcommand for running maven extraction.
@@ -52,9 +55,10 @@ func New() subcommands.Command {
 func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&m.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
 	fs.StringVar(&m.pomXML, "pom_xml", "pom.xml", "The config file for a maven repo, defaults to 'pom.xml'")
+	fs.BoolVar(&m.verbose, "v", false, "Enable verbose mode to print more debug info.")
 }
 
-func (m mavenCommand) verifyFlags() error {
+func (m mavenCommand) checkFlags() error {
 	for _, key := range constants.RequiredJavaEnv {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
@@ -71,7 +75,7 @@ func (m mavenCommand) verifyFlags() error {
 
 // Execute implements the subcommands interface and runs maven extraction.
 func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	if err := m.verifyFlags(); err != nil {
+	if err := m.checkFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
 	tf, err := backup.New(m.pomXML)
@@ -82,10 +86,27 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err := modifier.PreProcessPomXML(m.pomXML); err != nil {
 		return m.Fail("error modifying maven pom XML %s: %v", m.pomXML, err)
 	}
-	if err := exec.Command("mvn", "clean", "install",
+
+	if m.verbose {
+		// Print diff to show changes made to pom.xml.
+		log.Printf("Modified pom.xml. Diff:")
+		diff, err := tf.GetDiff()
+		if err != nil {
+			m.Fail("Error diffing pom.xml: %v", err)
+		}
+		log.Print(diff)
+	}
+
+	mvnArgs := []string{"clean", "install",
 		"-Dmaven.compiler.forceJavaCompilerUser=true",
 		"-Dmaven.compiler.fork=true",
-		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper)).Run(); err != nil {
+		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper),
+	}
+	log.Printf("Running `mvn %v`", strings.Join(mvnArgs, " "))
+	cmd := exec.Command("mvn", mvnArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return m.Fail("error executing maven build: %v", err)
 	}
 	// We restore the original config file even during successful runs because

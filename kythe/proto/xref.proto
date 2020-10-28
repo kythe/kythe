@@ -46,17 +46,20 @@ import "kythe/proto/common.proto";
 service XRefService {
   // Decorations returns an index of the nodes and edges associated with a
   // particular file node.
-  rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
+  rpc Decorations(DecorationsRequest) returns (DecorationsReply) {
+  }
 
   // CrossReferences returns the global references, definitions, declarations,
   // callers, and related nodes of a set of requested nodes.
-  rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
+  rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {
+  }
 
   // Documentation takes a set of tickets for semantic objects and returns
   // documentation about them, including generated signatures and
   // user-provided text. The documentation may refer to tickets for other
   // nodes in the graph.
-  rpc Documentation(DocumentationRequest) returns (DocumentationReply) {}
+  rpc Documentation(DocumentationRequest) returns (DocumentationReply) {
+  }
 }
 
 // A Location represents a single span of zero or more contiguous bytes of a
@@ -160,11 +163,24 @@ message DecorationsRequest {
   // no filtering based on build configs will be done; all decorations for the
   // file will be returned.
   repeated string build_config = 11;
+
+  // Whether to return known semantic scopes per Reference.
+  bool semantic_scopes = 12;
+}
+
+// File represents a whole file
+message File {
+  kythe.proto.common.CorpusPath corpus_path = 1;
+
+  string revision = 2;
 }
 
 message DecorationsReply {
   // The normalized location for which decorations are returned.
   Location location = 1;
+
+  // The revision of the corpus containing this file's data.
+  string revision = 18;
 
   // The encoded source text for the selected window.
   bytes source_text = 2;
@@ -187,6 +203,15 @@ message DecorationsReply {
 
     // The build config of the file containing this reference.
     string build_config = 6;
+
+    // Ticket of the semantic node with the narrowest scope enclosing the
+    // reference.  Populated only if semantic_scopes is true in the
+    // DecorationsRequest.
+    string semantic_scope = 7;
+
+    // The revision of the file being targeted by this reference, may be empty
+    // if targeting a non-file.
+    string target_revision = 8;
 
     reserved 1, 10, 11;
   }
@@ -228,6 +253,9 @@ message DecorationsReply {
   // TODO(schroederc): filter spanning diagnostics by build configuration
   repeated common.Diagnostic diagnostic = 5;
 
+  // List of files that generate the requested file.
+  repeated File generated_by_file = 19;
+
   // This field will contain one entry, keyed by ticket, for each distinct node
   // referenced by a reference edge that has at least 1 non-filtered fact.
   map<string, common.NodeInfo> nodes = 15;
@@ -239,6 +267,8 @@ message DecorationsReply {
   // Maps from semantic nodes on the right-hand side of defines/binding
   // references to the list of their overrides.
   map<string, Overrides> extends_overrides = 17;
+
+  reserved 6;
 }
 
 message CrossReferencesRequest {
@@ -344,6 +374,17 @@ message CrossReferencesRequest {
   // definition location populated (assuming it has one).
   bool node_definitions = 8;
 
+  enum TotalsQuality {
+    UNSPECIFIED_TOTALS = 0;
+    PRECISE_TOTALS = 1;
+    APPROXIMATE_TOTALS = 2;
+  }
+  // Quality of the aggregated xref totals returned for the requested tickets.
+  // If PRECISE, the totals will be accurate across all requested tickets and
+  // pages.  If APPROXIMATE, the totals may be partial/approximate so that the
+  // server can return results as soon as possible.
+  TotalsQuality totals_quality = 16;
+
   // The cross-references matching a request are organized into logical pages.
   // The size of each page is a number of distinct cross-references
   // (definitions, references, documentation, and related nodes).
@@ -401,6 +442,12 @@ message Anchor {
   string snippet = 7;
   // Span of the anchor's snippet within its parent's text
   common.Span snippet_span = 11;
+
+  // The build config of the file containing this anchor.
+  string build_config = 12;
+
+  // The revision of the corpus containing this anchor's parent file data.
+  string revision = 14;
 
   reserved 4, 5, 8, 9;
 }
@@ -471,6 +518,7 @@ message CrossReferencesReply {
     map<string, int64> related_nodes_by_relation = 6;
   }
   // Total number of cross-references on all pages matching requested filters.
+  // This may be an approximation if allowed by the CrossReferencesRequest.
   Total total = 5;
 
   // A map from ticket to cross-references for each ticket specified in the

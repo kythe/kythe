@@ -15,7 +15,7 @@
  */
 
 // Package gradlecmd extracts a gradle repo.
-package gradlecmd
+package gradlecmd // import "kythe.io/kythe/go/extractors/config/runextractor/gradlecmd"
 
 import (
 	"context"
@@ -51,17 +51,17 @@ func New() subcommands.Command {
 // flags for gradle extraction.
 func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&g.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
-	fs.StringVar(&g.buildFile, "build_file", "gradle.build", "The config file for a gradle repo, defaults to 'gradle.build'")
+	fs.StringVar(&g.buildFile, "build_file", "build.gradle", "The config file for a gradle repo, defaults to 'build.gradle'")
 }
 
-func (g gradleCommand) verifyFlags() error {
+func (g gradleCommand) checkFlags() error {
 	for _, key := range constants.RequiredJavaEnv {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
 		}
 	}
 	if g.buildFile == "" {
-		return fmt.Errorf("gradle build file (e.g. 'gradle.build') not set")
+		return fmt.Errorf("gradle build file (e.g. 'build.gradle') not set")
 	}
 	if g.javacWrapper == "" {
 		return fmt.Errorf("required -javac_wrapper not set")
@@ -71,7 +71,7 @@ func (g gradleCommand) verifyFlags() error {
 
 // Execute implements the subcommands interface and runs gradle extraction.
 func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	if err := g.verifyFlags(); err != nil {
+	if err := g.checkFlags(); err != nil {
 		return g.Fail("incorrect flags: %v", err)
 	}
 	tf, err := backup.New(g.buildFile)

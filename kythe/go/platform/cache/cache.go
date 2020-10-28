@@ -16,7 +16,7 @@
 
 // Package cache implements a simple in-memory file cache and provides a simple
 // Fetcher wrapper that uses the cache for its Fetch operations.
-package cache
+package cache // import "kythe.io/kythe/go/platform/cache"
 
 import (
 	"container/heap"

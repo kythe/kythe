@@ -20,18 +20,26 @@
 #include <functional>
 #include <iostream>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
+#include "kythe/cxx/indexer/textproto/plugin_registry.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 
-DEFINE_string(o, "-", "Output filename.");
-DEFINE_bool(flush_after_each_entry, true,
-            "Flush output after writing each entry.");
-DEFINE_string(index_file, "", "Path to a KZip file to index.");
+ABSL_FLAG(std::string, o, "-", "Output filename.");
+ABSL_FLAG(bool, flush_after_each_entry, true,
+          "Flush output after writing each entry.");
+ABSL_FLAG(std::string, index_file, "", "Path to a KZip file to index.");
 
 namespace kythe {
 namespace lang_textproto {
@@ -52,8 +60,9 @@ void DecodeKzipFile(const std::string& path,
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
-  CHECK(reader) << "Couldn't open kzip from " << path;
+  absl::StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
+                     << reader.status();
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
@@ -61,8 +70,8 @@ void DecodeKzipFile(const std::string& path,
     CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      CHECK(content) << "Unable to read file with digest: "
-                     << file.info().digest() << ": " << content.status();
+      CHECK(content.ok()) << "Unable to read file with digest: "
+                          << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
@@ -75,27 +84,27 @@ void DecodeKzipFile(const std::string& path,
     compilation_read = true;
     return true;
   });
-  CHECK(status.ok()) << status.ToString();
+  CHECK(status.ok()) << status;
   CHECK(compilation_read) << "Missing compilation in " << path;
 }
 
 int main(int argc, char* argv[]) {
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(
+  kythe::InitializeProgram(argv[0]);
+  absl::SetProgramUsageMessage(
       R"(Command-line frontend for the Kythe Textproto indexer.
 
 Example:
   indexer -o foo.bin --index_file foo.kzip")");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  std::vector<std::string> final_args(argv + 1, argv + argc);
+  absl::ParseCommandLine(argc, argv);
 
-  CHECK(!FLAGS_index_file.empty())
+  CHECK(!absl::GetFlag(FLAGS_index_file).empty())
       << "Please provide a kzip file path to --index_file.";
 
+  std::string output = absl::GetFlag(FLAGS_o);
   int write_fd = STDOUT_FILENO;
-  if (FLAGS_o != "-") {
+  if (output != "-") {
     // TODO: do we need all these flags?
-    write_fd = ::open(FLAGS_o.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+    write_fd = ::open(output.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     CHECK(write_fd != -1) << "Can't open output file";
   }
@@ -103,15 +112,18 @@ Example:
   google::protobuf::io::FileOutputStream raw_output(write_fd);
   raw_output.SetCloseOnDelete(true);
   FileOutputStream kythe_output(&raw_output);
-  kythe_output.set_flush_after_each_entry(FLAGS_flush_after_each_entry);
+  kythe_output.set_flush_after_each_entry(
+      absl::GetFlag(FLAGS_flush_after_each_entry));
   KytheGraphRecorder recorder(&kythe_output);
 
-  DecodeKzipFile(FLAGS_index_file, [&](const proto::CompilationUnit& unit,
-                                       std::vector<proto::FileData> file_data) {
-    Status status =
-        lang_textproto::AnalyzeCompilationUnit(unit, file_data, &recorder);
-    CHECK(status.ok()) << status;
-  });
+  DecodeKzipFile(absl::GetFlag(FLAGS_index_file),
+                 [&](const proto::CompilationUnit& unit,
+                     std::vector<proto::FileData> file_data) {
+                   absl::Status status = lang_textproto::AnalyzeCompilationUnit(
+                       kythe::lang_textproto::LoadRegisteredPlugins, unit,
+                       file_data, &recorder);
+                   CHECK(status.ok()) << status;
+                 });
 
   return 0;
 }

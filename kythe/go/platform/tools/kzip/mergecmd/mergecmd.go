@@ -15,7 +15,7 @@
  */
 
 // Package mergecmd provides the kzip command for merging archives.
-package mergecmd
+package mergecmd // import "kythe.io/kythe/go/platform/tools/kzip/mergecmd"
 
 import (
 	"context"
@@ -25,27 +25,32 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"bitbucket.org/creachadair/stringset"
-
 	"github.com/google/subcommands"
 )
 
 type mergeCommand struct {
 	cmdutil.Info
 
-	output string
-	append bool
+	output    string
+	append    bool
+	encoding  flags.EncodingFlag
+	recursive bool
+	rules     vnameRules
 }
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &mergeCommand{
-		Info: cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		Info:     cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		encoding: flags.EncodingFlag{Encoding: kzip.DefaultEncoding()},
 	}
 }
 
@@ -54,18 +59,25 @@ func New() subcommands.Command {
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
+	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
+	fs.Var(&c.rules, "rules", "VName rules to apply while merging (optional)")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
 func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
-		return c.Fail("required --output path missing")
+		return c.Fail("Required --output path missing")
 	}
+	opt := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
 		dir = "."
 	}
 	tmpOut, err := vfs.CreateTempFile(ctx, dir, file)
+	if err != nil {
+		return c.Fail("Error creating temp output: %v", err)
+	}
 	tmpName := tmpOut.Name()
 	defer func() {
 		if tmpOut != nil {
@@ -73,10 +85,13 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			vfs.Remove(ctx, tmpName)
 		}
 	}()
-	if err != nil {
-		return c.Fail("Error creating temp output: %v", err)
-	}
 	archives := fs.Args()
+	if c.recursive {
+		archives, err = recurseDirectories(ctx, archives)
+		if err != nil {
+			return c.Fail("Error reading archives: %s", err)
+		}
+	}
 	if c.append {
 		orig, err := vfs.Open(ctx, c.output)
 		if err == nil {
@@ -86,7 +101,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
+	if err := c.mergeArchives(ctx, tmpOut, archives, opt); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -95,8 +110,8 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string) error {
-	wr, err := kzip.NewWriteCloser(out)
+func (c *mergeCommand) mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, opts ...kzip.WriterOption) error {
+	wr, err := kzip.NewWriteCloser(out, opts...)
 	if err != nil {
 		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)
@@ -104,7 +119,7 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string) e
 
 	filesAdded := stringset.New()
 	for _, path := range archives {
-		if err := mergeInto(wr, path, filesAdded); err != nil {
+		if err := c.mergeInto(ctx, wr, path, filesAdded); err != nil {
 			wr.Close()
 			return err
 		}
@@ -116,14 +131,14 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string) e
 	return nil
 }
 
-func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
-	f, err := os.Open(path)
+func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded stringset.Set) error {
+	f, err := vfs.Open(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error opening archive: %v", err)
 	}
 	defer f.Close()
 
-	stat, err := f.Stat()
+	stat, err := vfs.Stat(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -152,9 +167,35 @@ func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
 					return fmt.Errorf("error closing file: %v", err)
 				}
 			}
+			if vname, match := c.rules.Apply(ri.Info.Path); match {
+				ri.VName = vname
+			}
 		}
 		// TODO(schroederc): duplicate compilations with different revisions
 		_, err = wr.AddUnit(u.Proto, u.Index)
 		return err
 	})
+}
+
+func recurseDirectories(ctx context.Context, archives []string) ([]string, error) {
+	var files []string
+	for _, path := range archives {
+		err := vfs.Walk(ctx, path, func(file string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return err
+			}
+
+			// Include the file if it was directly specified or ends in .kzip.
+			if file == path || strings.HasSuffix(file, ".kzip") {
+				files = append(files, file)
+			}
+
+			return err
+		})
+		if err != nil {
+			return files, err
+		}
+	}
+	return files, nil
+
 }

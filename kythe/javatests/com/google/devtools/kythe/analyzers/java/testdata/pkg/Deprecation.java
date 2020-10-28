@@ -31,4 +31,24 @@ public class Deprecation {
   /** @deprecated */
   int deprecatedFieldEmpty;
   //- DeprecationFieldEmpty.tag/deprecated ""
+  
+  //- InnerAbs.node/kind abs
+  //- InnerClass.node/kind record
+  //- InnerAbs.tag/deprecated "this record and abs is deprecated"
+  //- InnerClass.tag/deprecated "this record and abs is deprecated"
+  //- InnerClass childof InnerAbs
+  //- @+3Inner defines/binding InnerAbs
+
+  /** @deprecated this record and abs is deprecated */
+  public class Inner<E> {}
+
+  //- MethodAbs.node/kind abs
+  //- Method.node/kind function
+  //- MethodAbs.tag/deprecated "abs and function"
+  //- Method.tag/deprecated "abs and function"
+  //- Method childof MethodAbs
+  //- @+3method defines/binding Method
+
+  /** @deprecated abs and function */
+  <T> void method(T t) {}
 }

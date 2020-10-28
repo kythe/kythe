@@ -1,10 +1,8 @@
-runtime: go
-api_version: go1
-threadsafe: true
+runtime: go112
 
 inbound_services:
   - warmup
 handlers:
 - url: /.*
-  script: _go_app
+  script: auto
   secure: always

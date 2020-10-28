@@ -5,9 +5,18 @@ package any_type_test;
 import "google/protobuf/any.proto";
 
 message Message {
-    //- @str_field defines/binding StrField?
-    string str_field = 1;
+  //- @str_field defines/binding StrField?
+  string str_field = 1;
 
-    //- @details_field defines/binding DetailsField?
-    google.protobuf.Any details_field = 2;
+  //- @details_field defines/binding DetailsField?
+  google.protobuf.Any details_field = 2;
+
+  //- @repeated_details_field defines/binding RepeatedDetailsField?
+  repeated google.protobuf.Any repeated_details_field = 3;
+}
+
+//- @Message2 defines/binding Message2?
+message Message2 {
+  //- @bool_field defines/binding BoolField?
+  bool bool_field = 1;
 }

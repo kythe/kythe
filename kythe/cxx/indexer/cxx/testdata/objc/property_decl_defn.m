@@ -37,11 +37,14 @@ int main(int argc, char **argv) {
 
   //- @a defines/binding AVar
   //- @width ref WidthPropDecl
-  //- @width ref/call _
+  //- @width ref/call GetterMethod
   int a = box.width;
 
   //- @a ref AVar
   int b = a;
+
+  //- @"[box width]" ref/call GetterMethod
+  int c = [box width];
 
   return 0;
 }

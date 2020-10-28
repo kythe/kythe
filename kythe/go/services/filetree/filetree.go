@@ -16,7 +16,7 @@
 
 // Package filetree defines the filetree Service interface and a simple
 // in-memory implementation.
-package filetree
+package filetree // import "kythe.io/kythe/go/services/filetree"
 
 import (
 	"context"
@@ -33,7 +33,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -165,15 +165,6 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 		}
 	}
 	return dir
-}
-
-func addToSet(strs []string, str string) []string {
-	for _, s := range strs {
-		if s == str {
-			return strs
-		}
-	}
-	return append(strs, str)
 }
 
 func addEntry(entries []*ftpb.DirectoryReply_Entry, e *ftpb.DirectoryReply_Entry) []*ftpb.DirectoryReply_Entry {

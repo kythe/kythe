@@ -31,6 +31,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	gsrv "kythe.io/kythe/go/serving/graph"
+	"kythe.io/kythe/go/serving/identifiers"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -39,13 +40,12 @@ import (
 	"golang.org/x/net/http2"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
-	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 var (
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 
-	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
+	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server (\":<port>\" allows access from any machine)")
 	httpAllowOrigin   = flag.String("http_allow_origin", "", "If set, each HTTP response will contain a Access-Control-Allow-Origin header with the given value")
 	publicResources   = flag.String("public_resources", "", "Path to directory of static resources to serve")
 
@@ -76,6 +76,7 @@ func main() {
 	var (
 		xs xrefs.Service
 		gs graph.Service
+		it identifiers.Service
 		ft filetree.Service
 	)
 
@@ -99,6 +100,7 @@ func main() {
 	}
 	tbl := &table.KVProto{db}
 	ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
+	it = &identifiers.Table{tbl}
 
 	if *httpListeningAddr != "" || *tlsListeningAddr != "" {
 		apiMux := http.NewServeMux()
@@ -111,6 +113,7 @@ func main() {
 
 		xrefs.RegisterHTTPHandlers(ctx, xs, apiMux)
 		graph.RegisterHTTPHandlers(ctx, gs, apiMux)
+		identifiers.RegisterHTTPHandlers(ctx, it, apiMux)
 		filetree.RegisterHTTPHandlers(ctx, ft, apiMux)
 		if *publicResources != "" {
 			log.Println("Serving public resources at", *publicResources)

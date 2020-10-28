@@ -15,7 +15,7 @@
  */
 
 // Package link implements the link resolver service.
-package link
+package link // import "kythe.io/kythe/go/services/link"
 
 import (
 	"context"
@@ -30,11 +30,12 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
 	ipb "kythe.io/kythe/proto/identifier_go_proto"
 	linkpb "kythe.io/kythe/proto/link_go_proto"
@@ -110,7 +111,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	default:
 		log.Printf("WARNING: Unknown definition kind %v (ignored)", req.DefinitionKind)
 	}
-	log.Print("Cross-references request:\n", proto.MarshalTextString(xreq))
+	log.Print("Cross-references request:\n", prototext.Format(xreq))
 	defs, err := s.crossRefs(ctx, xreq)
 	if err != nil {
 		return nil, err

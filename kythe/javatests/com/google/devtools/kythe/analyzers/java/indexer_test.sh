@@ -17,18 +17,8 @@ set -eo pipefail
 # This script tests the java indexer's CLI.
 
 : ${indexer?:missing indexer}
-: ${indexpack?:missing indexpack}
 : ${entrystream?:missing entrystream}
-test_kindex="$PWD/kythe/testdata/test.kindex"
+test_kzip="$PWD/kythe/testdata/test.kzip"
 
-# Test indexing a .kindex file
-$indexer $test_kindex | $entrystream >/dev/null
-
-tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
-trap 'rm -rf "$tmp"' EXIT ERR INT
-
-UNIT="$($indexpack --verbose --to_archive "$tmp/archive" "$test_kindex" | \
-  awk '-F\t' '/Wrote compilation:/ { print $2 }')"
-
-# Test indexing compilation in an indexpack
-$indexer --index_pack="$tmp/archive" $UNIT | $entrystream >/dev/null
+# Test indexing a .kzip file
+$indexer $test_kzip | $entrystream >/dev/null

@@ -9,9 +9,10 @@ go_binary(
     deps = [
         "//kythe/go/extractors/golang",
         "//kythe/go/indexer",
+        "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
-        "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
+        "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
     ],
 )

@@ -1,9 +1,4 @@
-package(
-    features = [
-        "layering_check",
-        "parse_headers",
-    ],
-)
+package(features = ["layering_check"])
 
 cc_library(
     name = "proto_graph_builder",
@@ -43,13 +38,13 @@ cc_library(
         "-Wno-unused-variable",
     ],
     deps = [
+        ":offset_util",
         ":proto_graph_builder",
         ":search_path",
         ":source_tree",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
-        "//kythe/cxx/common:status_or",
         "//kythe/cxx/common:utf8_line_index",
         "//kythe/cxx/common/indexing:output",
         "//kythe/proto:analysis_cc_proto",
@@ -59,6 +54,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
@@ -110,20 +106,16 @@ cc_library(
 
 cc_binary(
     name = "indexer",
-    visibility = ["//visibility:public"],
-    deps = [":cmdlib"],
-)
-
-cc_library(
-    name = "cmdlib",
     srcs = ["kythe_indexer_main.cc"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":proto_analyzer",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common:lib",
@@ -132,8 +124,11 @@ cc_library(
         "//kythe/cxx/common/indexing:output",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -153,6 +148,20 @@ cc_test(
     srcs = ["comments_test.cc"],
     deps = [
         ":comments",
+        "//third_party:gtest",
         "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "offset_util",
+    srcs = ["offset_util.cc"],
+    hdrs = ["offset_util.h"],
+    visibility = [
+        "//kythe/cxx/indexer/textproto:__subpackages__",
+    ],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )

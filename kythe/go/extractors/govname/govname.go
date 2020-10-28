@@ -16,14 +16,17 @@
 
 // Package govname supports the creation of VName protobuf messages for Go
 // packages and other entities.
-package govname
+package govname // import "kythe.io/kythe/go/extractors/govname"
 
 import (
 	"go/build"
+	"log"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/vcs"
+
+	"kythe.io/kythe/go/util/vnameutil"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -47,6 +50,15 @@ type PackageVNameOptions struct {
 	// canonicalized as its VCS repository root URL rather than the Go import path
 	// corresponding to the VCS repository root.
 	CanonicalizePackageCorpus bool
+
+	// Rules optionally provides a list of rules to apply to go package and file
+	// paths to customize output vnames. See the vnameutil package for details.
+	Rules vnameutil.Rules
+
+	// If set, file and package paths are made relative to this directory before
+	// applying vname rules (if any). If unset, the module root (if using
+	// modules) or the gopath directory is used instead.
+	RootDirectory string
 }
 
 // ForPackage returns a VName for a Go package.
@@ -57,6 +69,8 @@ type PackageVNameOptions struct {
 // component of the import path is used as the corpus name, except for packages
 // under GOROOT which are attributed to the special corpus "golang.org".
 //
+// If a set of vname rules is provided, they are applied first and used if
+// applicable. Note that vname rules are ignored for go stdlib packages.
 //
 // Examples:
 //   ForPackage(<kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
@@ -87,6 +101,28 @@ type PackageVNameOptions struct {
 //		 Signature: "package",
 //   }
 func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
+	if !pkg.Goroot && opts != nil && opts.Rules != nil {
+		root := pkg.Root
+		if opts.RootDirectory != "" {
+			root = opts.RootDirectory
+		}
+
+		relpath, err := filepath.Rel(root, pkg.Dir)
+		if err != nil {
+			log.Fatalf("relativizing path %q against dir %q: %v", pkg.Dir, root, err)
+		}
+		if relpath == "." {
+			relpath = ""
+		}
+
+		v2, ok := opts.Rules.Apply(relpath)
+		if ok {
+			v2.Language = Language
+			v2.Signature = packageSig
+			return v2
+		}
+	}
+
 	ip := pkg.ImportPath
 	v := &spb.VName{Language: Language, Signature: packageSig}
 

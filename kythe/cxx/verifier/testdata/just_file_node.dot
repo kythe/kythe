@@ -1,3 +1,3 @@
 digraph G {
-"App(vname, (\"\", \"\", \"\", kythe/cxx/indexer/cxx/testdata/file_node.cc, c++))" [ label=<<TABLE><TR><TD COLSPAN="2">(&quot;&quot;, &quot;&quot;, &quot;&quot;, kythe/cxx/indexer/cxx/testdata/file_node.cc, c++)</TD></TR><TR><TD>/kythe/node/kind</TD><TD>file</TD></TR><TR><TD>/kythe/text</TD><TD>...</TD></TR></TABLE>> shape=plaintext ];
+"vname(\"\", \"\", \"\", \"kythe/cxx/indexer/cxx/testdata/file_node.cc\", \"c++\")" [ label=<<TABLE><TR><TD COLSPAN="2">(&quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;kythe/cxx/indexer/cxx/testdata/file_node.cc&quot;, &quot;c++&quot;)</TD></TR><TR><TD>/kythe/node/kind</TD><TD>file</TD></TR><TR><TD>/kythe/text</TD><TD>...</TD></TR></TABLE>> shape=plaintext ];
 }

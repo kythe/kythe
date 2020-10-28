@@ -283,7 +283,7 @@ cc_library(
     ],
     copts = [
         "-DBUILDING_MEMCACHED",
-        "-Wno-deprecated-register",
+        "-Dregister=",
     ] + select({
         "@io_kythe//:darwin": [],
         "//conditions:default": [

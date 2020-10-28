@@ -49,6 +49,6 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     git checkout -q "$branch"
   fi
   # TODO(#3173): remove need for arcanist
-  arc lint --rev "$remote/master"
+  arc lint --never-apply-patches --rev "$remote/master" < /dev/null
   arc unit --rev "$remote/master"
 done

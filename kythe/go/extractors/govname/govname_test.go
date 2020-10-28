@@ -22,21 +22,34 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/vnameutil"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/vcs"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestForPackage(t *testing.T) {
+	var exampleRules = `[{
+		"pattern": "(.*)",
+		"vname": {
+			"corpus": "rule_corpus",
+			"path": "rule_path/@1@"
+		}}]`
+
 	tests := []struct {
-		path      string
+		path      string // import path
+		dir       string // on-disk directory that contains this package
+		root      string // GOPATH if set, otherwise working directory from which extractor was invoked
 		ticket    string
 		canonical string
 		isRoot    bool
+		rulesJSON string
 	}{
 		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#package", isRoot: true},
+		// Rules should have no effect on go stdlib packages.
+		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#package", isRoot: true, rulesJSON: exampleRules},
 		{path: "go/types", ticket: "kythe://golang.org?lang=go?path=go/types#package", isRoot: true},
 		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package",
 			canonical: "kythe://go.googlesource.com/net?lang=go?path=context#package"},
@@ -45,17 +58,29 @@ func TestForPackage(t *testing.T) {
 		{path: "github.com/kythe/kythe/kythe/go/util/kytheuri", ticket: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
 		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#package"},
 		{path: "github.com/kythe/kythe/foo", ticket: "kythe://github.com/kythe/kythe?lang=go?path=foo#package"},
+		{root: "/workspace", dir: "/workspace/kythe/foo", path: "github.com/kythe/kythe/foo",
+			ticket: "kythe://rule_corpus?lang=go?path=rule_path/kythe/foo#package", rulesJSON: exampleRules},
 		{path: "bitbucket.org/creachadair/stringset/makeset", ticket: "kythe://bitbucket.org/creachadair/stringset?lang=go?path=makeset#package"},
 		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go#package"},
 		{path: "launchpad.net/~frood/blee/blor/baz", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go?path=baz#package"},
 	}
-	canonicalOpts := &PackageVNameOptions{CanonicalizePackageCorpus: true}
 	for _, test := range tests {
+		var rules vnameutil.Rules
+		if test.rulesJSON != "" {
+			var err error
+			rules, err = vnameutil.ParseRules([]byte(test.rulesJSON))
+			if err != nil {
+				t.Errorf("parsing vname rules: %v", err)
+			}
+		}
+
 		pkg := &build.Package{
 			ImportPath: test.path,
 			Goroot:     test.isRoot,
+			Dir:        test.dir,
+			Root:       test.root,
 		}
-		got := ForPackage(pkg, nil)
+		got := ForPackage(pkg, &PackageVNameOptions{Rules: rules})
 		gotTicket := kytheuri.ToString(got)
 		if gotTicket != test.ticket {
 			t.Errorf(`ForPackage([%s], nil): got %q, want %q`, test.path, gotTicket, test.ticket)
@@ -65,6 +90,7 @@ func TestForPackage(t *testing.T) {
 		if test.canonical != "" {
 			canonical = test.canonical
 		}
+		canonicalOpts := &PackageVNameOptions{CanonicalizePackageCorpus: true, Rules: rules}
 		if got := kytheuri.ToString(ForPackage(pkg, canonicalOpts)); got != canonical {
 			t.Errorf(`ForPackage([%s], %#v): got %q, want canonicalized %q`, test.path, canonicalOpts, got, canonical)
 		}

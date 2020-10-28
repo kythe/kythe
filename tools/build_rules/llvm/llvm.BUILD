@@ -3,6 +3,15 @@ package(
 )
 
 TARGET_DEFAULTS = {
+    "llvm-tblgen": {
+        "srcs": glob([
+            "utils/TableGen/GlobalISel/*.cpp",
+            "utils/TableGen/GlobalISel/*.h",
+        ]),
+        "deps": [
+            ":LLVMMC",
+        ],
+    },
     "LLVMSupport": {
         "linkopts": [
             "-pthread",
@@ -20,17 +29,30 @@ TARGET_DEFAULTS = {
     "LLVMCore": {
         "additional_header_dirs": [
             # Layering violation.
-            "/include/llvm/Analysis",
+            "/root/include/llvm/Analysis",
         ],
         "hdrs": glob([
             "include/llvm/*.h",
         ]),
     },
-    "LLVMTransformUtils": {
-        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
+    "LLVMRemarks": {
+        # Technically BitstreamWriter, but it's header-only
+        # and BitstreamReader is equivalent.
+        "deps": [
+            ":LLVMBitstreamReader",
+            # Below are required by the ObjectFile layering violation.
+            ":LLVMBinaryFormat",
+            ":LLVMMC",
+        ],
+        "srcs": [
+            "/root/include/llvm/Object/ObjectFile.h",
+        ],
     },
     "LLVMScalarOpts": {
         "deps": [":LLVMTarget"],
+    },
+    "LLVMTransformUtils": {
+        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
     },
     "LLVMX86CodeGen": {
         "deps": [":LLVMipo"],
@@ -43,10 +65,16 @@ TARGET_DEFAULTS = {
     "clangBasic": {
         "deps": [
             ":LLVMTarget",
+            ":LLVMFrontendOpenMP",
         ],
         "textual_hdrs": [
             "tools/clang/include/clang/Basic/Version.inc",
             ":tools_clang_include_clang_Basic_genhdrs",
+        ],
+        "srcs": [
+            ":tools_clang_include_clang_Sema_AttrParsedAttrList_inc",
+            ":tools_clang_include_clang_Sema_AttrParsedAttrKinds_inc",
+            ":tools_clang_include_clang_Sema_AttrSpellingListIndex_inc",
         ],
     },
     "clangCodeGen": {
@@ -90,11 +118,6 @@ TARGET_DEFAULTS = {
             ":tools_clang_include_clang_Serialization_genhdrs",
         ],
     },
-    "ClangDriverOptions": {
-        "textual_hdrs": [
-            "tools/clang/include/clang/Frontend/LangStandards.def",
-        ],
-    },
 }
 
 cc_library(
@@ -136,6 +159,17 @@ cc_library(
     hdrs = ["include/llvm/Support/VCSRevision.h"],
 )
 
+genrule(
+    name = "clang_basic_version_inc_gen",
+    outs = ["tools/clang/lib/Basic/VCSVersion.inc"],
+    cmd = ("printf " +
+           "\"#define CLANG_VERSION 9999.0\n\"" +
+           "\"#define CLANG_VERSION_MAJOR 9999\n\"" +
+           "\"#define CLANG_VERSION_MINOR 0\n\"" +
+           "\"#define CLANG_VERSION_PATCHLEVEL 0\n\"" +
+           "\"#define CLANG_VERSION_STRING \\\"google3-trunk\\\"\n\" > $@"),
+)
+
 load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
 
 builtin_headers = glob(
@@ -159,20 +193,23 @@ genrule(
 cc_resources(
     name = "clang_builtin_headers_resources",
     data = [":builtin_headers_gen"],
+    strip = "staging/include/",
 )
 
-load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")
-load("@io_kythe//tools/build_rules/llvm:generated_llvm_build_deps.bzl", "LLVM_BUILD_DEPS")
-load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
-load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
+load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "LLVM_TARGETS", "cmake_defines")
 
 cc_library(
     name = "all_targets",
     deps = [":LLVM%sCodeGen" % t for t in LLVM_TARGETS],
 )
 
+load("@io_kythe_llvmbzlgen//rules:llvmbuild.bzl", _llvmbuild_context = "make_context")
+load("@io_kythe//tools/build_rules/llvm:generated_llvm_build_targets.bzl", "generated_llvm_build_targets")
+load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
+load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
+
 generated_cmake_targets(make_context(
     cmake_defines = cmake_defines(),
-    llvm_build_deps = LLVM_BUILD_DEPS,
+    llvmbuildctx = generated_llvm_build_targets(_llvmbuild_context()),
     target_defaults = TARGET_DEFAULTS,
 ))

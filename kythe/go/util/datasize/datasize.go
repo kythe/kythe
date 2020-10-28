@@ -15,7 +15,7 @@
  */
 
 // Package datasize implements a type representing data sizes in bytes.
-package datasize
+package datasize // import "kythe.io/kythe/go/util/datasize"
 
 import (
 	"errors"

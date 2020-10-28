@@ -29,7 +29,8 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/riegeli"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
@@ -44,6 +45,7 @@ var (
 		"uncompressed_transpose",
 		"brotli",
 		"brotli_transpose",
+		"snappy",
 		"zstd",
 	}
 )
@@ -120,7 +122,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 		t.Fatalf("Error reading %s: %v", goldenMetadataFile, err)
 	}
 	var expectedMetadata rmpb.RecordsMetadata
-	if err := proto.UnmarshalText(string(mdTextProto), &expectedMetadata); err != nil {
+	if err := prototext.Unmarshal(mdTextProto, &expectedMetadata); err != nil {
 		t.Fatalf("Error unmarshaling %s: %v", goldenMetadataFile, err)
 	}
 	expectedMetadata.RecordWriterOptions = proto.String(expectedOptions)

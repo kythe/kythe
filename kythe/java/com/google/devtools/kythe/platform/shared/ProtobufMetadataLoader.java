@@ -23,9 +23,14 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Loads protobuf metadata (stored as GeneratedCodeInfo messages). */
 public class ProtobufMetadataLoader implements MetadataLoader {
@@ -81,10 +86,16 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
+    Path root = Paths.get("/", unit.getWorkingDirectory());
     for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
-      map.put(input.getInfo().getPath(), input.getVName());
+      try {
+        map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
+      } catch (InvalidPathException ipe) {
+        logger.atWarning().withCause(ipe).log(
+            "Found invalid path in CompilationUnit: %s", input.getInfo());
+      }
     }
-    return map::get;
+    return p -> map.get(root.resolve(p).toString());
   }
 
   @Override
@@ -102,6 +113,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       contextVName = VName.newBuilder().setCorpus(defaultCorpus).build();
     }
     Metadata metadata = new Metadata();
+    Set<VName> fileVNames = new HashSet<>();
+
     for (GeneratedCodeInfo.Annotation annotation : info.getAnnotationList()) {
       Metadata.Rule rule = new Metadata.Rule();
       rule.begin = annotation.getBegin();
@@ -123,14 +136,25 @@ public class ProtobufMetadataLoader implements MetadataLoader {
                 .setPath(annotation.getSourceFile())
                 .build();
       }
+      fileVNames.add(rule.vname);
       rule.vname =
-          rule.vname.toBuilder()
+          rule.vname
+              .toBuilder()
               .setSignature(protoPath.toString())
               .setLanguage(PROTOBUF_LANGUAGE)
               .build();
       rule.edgeOut = EdgeKind.GENERATES;
       rule.reverseEdge = true;
       metadata.addRule(rule);
+    }
+    for (VName vname : fileVNames) {
+      Metadata.Rule rule = new Metadata.Rule();
+      rule.begin = -1;
+      rule.end = -1;
+      rule.vname = vname;
+      rule.reverseEdge = true;
+      rule.edgeOut = EdgeKind.GENERATES;
+      metadata.addFileScopeRule(rule);
     }
     return metadata;
   }

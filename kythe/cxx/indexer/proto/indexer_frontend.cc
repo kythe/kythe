@@ -30,7 +30,6 @@ namespace kythe {
 std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
                                       const std::vector<proto::FileData>& files,
                                       KytheOutputStream* output) {
-  FileVNameGenerator file_vnames;
   KytheGraphRecorder recorder(output);
 
   std::vector<std::string> unprocessed_args;
@@ -49,8 +48,8 @@ std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
   for (const auto& file_data : files) {
     file_reader.AddFile(file_data.info().path(), file_data.content());
   }
-  lang_proto::ProtoAnalyzer analyzer(&unit, &descriptor_db, &file_vnames,
-                                     &recorder, &file_substitution_cache);
+  lang_proto::ProtoAnalyzer analyzer(&unit, &descriptor_db, &recorder,
+                                     &file_substitution_cache);
   if (unit.source_file().empty()) {
     return "Error: no source_files in CompilationUnit.";
   }

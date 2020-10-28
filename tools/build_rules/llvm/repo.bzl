@@ -2,7 +2,11 @@ def _git(repository_ctx):
     commit = repository_ctx.attr._commit
     url = "https://github.com/llvm/llvm-project/archive/%s.zip" % (commit,)
     prefix = "llvm-project-" + commit
-    repository_ctx.download_and_extract(url, sha256 = repository_ctx.attr._sha256)
+    sha256 = repository_ctx.download_and_extract(
+        url,
+        sha256 = repository_ctx.attr._sha256,
+        canonical_id = commit,
+    ).sha256
 
     # Move clang into place.
     repository_ctx.execute(["mv", prefix + "/clang", prefix + "/llvm/tools/"])
@@ -33,18 +37,18 @@ def _git(repository_ctx):
         "workspace(name = \"%s\")\n" % (repository_ctx.name,),
     )
 
-    return {"_commit": commit, "name": repository_ctx.name}
+    return {"_commit": commit, "name": repository_ctx.name, "_sha256": sha256}
 
 git_llvm_repository = repository_rule(
     implementation = _git,
     attrs = {
         "_commit": attr.string(
-            default = "ce3d67009718c7d124bdf540ac830c17d689645b",
+            default = "26750a1264b3df114a1efae7cde6f0784206b2ce",
         ),
         "_sha256": attr.string(
             # Make sure to update this along with the commit as its presence will cache the download,
             # even if the rules or commit change.
-            default = "129bf656daabf6f2faf700857cf7f3b5d5b0bd19ede3054972e792eaf909b7a3",
+            default = "d68ddf44fe613b5c28cd797c3345118ad215ec698814b5e642c5059579dba0df",
         ),
     },
 )

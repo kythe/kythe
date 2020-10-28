@@ -29,6 +29,21 @@ Run `yarn test` to run the test suite. (You'll need to have built first.)
 Run `yarn run fmt` to autoformat the source code. (Better, configure your editor
 to run clang-format on save.)
 
+### Running tests
+
+To run tests use:
+
+```shell
+cd kythe/typescript
+bazel test :indexer_test
+```
+
+To run single test from file `testdata/foo.ts`:
+
+```shell
+bazel test --test_arg=foo :indexer_test
+```
+
 ### Writing tests
 
 By default in TypeScript, files are "scripts", where every declaration is in the
@@ -38,6 +53,38 @@ another, prefix each test with an `export {}` to make them modules. In larger
 TypeScript projects this doesn't come up because all files are modules.
 
 ## Design notes
+
+### Separate compilation
+
+The Google TypeScript build relies heavily on TypeScript's `--declaration` flag
+to enable separate compilation. The way this works is that after compiling
+library A, we generate -- using that flag -- the "API shape" of A into `a.d.ts`.
+Then when compiling a library B that uses A, we compile `b.ts` and `a.d.ts`
+together.  The Kythe process sees the same files as well.
+
+What this means for indexing design is that a TypeScript compilation may see
+only the generated shape of a module, and not its internals.  For example,
+given a file like
+
+```
+class C {
+  get x(): string { return 'x'; }
+}
+```
+
+The generated `.d.ts` file for it describes this getter as if it was a readonly
+property:
+
+```
+class C {
+  readonly x: string;
+}
+```
+
+In practice, what this means is that code should not assume it can to "peek into"
+another module to determine the VNames of entities. Instead, when looking at
+some hypothetical code that accesses the `x` member of an instance of `C`, we
+should use a consistent naming scheme to refer to `x`.
 
 ### Choosing VNames
 

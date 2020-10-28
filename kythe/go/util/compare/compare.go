@@ -15,15 +15,15 @@
  */
 
 // Package compare implements comparisons between Kythe values.
-package compare
+package compare // import "kythe.io/kythe/go/util/compare"
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -266,7 +266,9 @@ func (s *ByEntries) Pop() interface{} {
 
 // ValueEntries reports whether e1 is LT, GT, or EQ to e2 in entry order,
 // including fact values (if any).
-func ValueEntries(e1, e2 *spb.Entry) Order { return Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue) }
+func ValueEntries(e1, e2 *spb.Entry) Order {
+	return Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue)
+}
 
 // EntriesEqual reports whether e1 and e2 are equivalent, including their fact
 // values (if any).

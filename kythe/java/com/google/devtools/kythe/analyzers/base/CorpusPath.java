@@ -16,13 +16,22 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.devtools.kythe.proto.Storage.VName;
 
 /** Path within a particular corpus and corpus root. */
 public final class CorpusPath {
+  /** The empty {@link CorpusPath}. */
+  public static final CorpusPath EMPTY = new CorpusPath("", "", "");
+
   private final String corpus, root, path;
 
   public CorpusPath(String corpus, String root, String path) {
+    Preconditions.checkNotNull(corpus, "corpus must be non-null");
+    Preconditions.checkNotNull(root, "root must be non-null");
+    Preconditions.checkNotNull(path, "path must be non-null");
     this.corpus = corpus;
     this.root = root;
     this.path = path;
@@ -46,5 +55,20 @@ public final class CorpusPath {
 
   public String getPath() {
     return path;
+  }
+
+  /** Returns a {@link VName.Builder} equivalent to this {@link CorpusPath}. */
+  public VName.Builder toVNameBuilder() {
+    return VName.newBuilder().setCorpus(corpus).setRoot(root).setPath(path);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .omitNullValues()
+        .add("corpus", Strings.emptyToNull(corpus))
+        .add("root", Strings.emptyToNull(root))
+        .add("path", Strings.emptyToNull(path))
+        .toString();
   }
 }

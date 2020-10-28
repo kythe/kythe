@@ -42,7 +42,7 @@ VName conventions
 -----------------
 
 By default, assume that the VNames of nodes should be chosen according to the
-following rules:
+following rules (more details are given in the link:../kythe-storage.html#TermVName[storage model]):
 
   * `language`: the source language.
   * `corpus`: the node's containing corpus.
@@ -79,7 +79,7 @@ aliases
 Brief description::
   A *aliases* T if A may be used in place of T.
 Commonly arises from::
-  typedefs
+  typedefs, imports
 Points from::
   <<talias>>
 Points toward::
@@ -198,6 +198,7 @@ Notes::
 [kythe,Java,"Generic type parameters can be bound."]
 --------------------------------------------------------------------------------
 package pkg;
+import java.util.Optional;
 public class E {
   //- @"Optional<?>" ref OptionalWild
   //- OptionalWild.node/kind tapp
@@ -454,6 +455,43 @@ public class E {
 int x;
 --------------------------------------------------------------------------------
 
+[[definesimplicit]]
+defines/implicit
+~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *defines/implicit* B if A semantically defines an entity B, but that
+  definition is not explicitly related to the decorated text.
+Commonly arises from::
+  filename-based packages, C++ special member functions
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+See also::
+  <<package>>
+Notes::
+  The most common situations in which this edge should be used are in languages
+  for which modules don't have an explicit syntactic marker, deriving the module
+  name from the file or directory path and C++'s compiler-defined special member
+  functions.
+
+[kythe,C++,"Implicit destructor definition."]
+--------------------------------------------------------------------------------
+///- @X defines/implicit XDtor
+///- XDtor.subkind destructor
+class X {};
+--------------------------------------------------------------------------------
+
+[kythe,clike,"Implicit module definition."]
+--------------------------------------------------------------------------------
+///- Mod=vname(_, _, _, _, _).node/kind package
+///- ModAnchor.node/kind anchor
+///- ModAnchor./kythe/loc/start 0
+///- ModAnchor./kythe/loc/end 0
+///- ModAnchor defines/implicit Mod
+--------------------------------------------------------------------------------
+
 [[depends]]
 depends
 ~~~~~~~
@@ -510,6 +548,7 @@ class C { };
 [[exports]]
 exports
 ~~~~~~~~
+
 Brief description::
   A *exports* B if process node A exports process node B.
 Commonly arises from::
@@ -590,14 +629,15 @@ class B : public A { };
 [[generates]]
 generates
 ~~~~~~~~~
+
 Brief description::
   A *generates* B if A is related to B through some extralingual process.
 Commonly arises from::
   code generation
 Points from::
-  semantic nodes
+  semantic nodes, files
 Points toward::
-  semantic nodes
+  semantic nodes, files
 Ordinals are used::
   never
 See also::
@@ -609,8 +649,40 @@ and target languages do not share Kythe indexers, it is still semantically
 useful to connect the nodes they emit. For example, one might want to list
 all the $$C++$$ and Java uses of a particular service call, starting at the
 specification of that service. The specification and its generated artifacts
-may be joined by the *generates* edge.
+may be joined by the *generates* edge.  Either both the specification and its
+generated artifact are file nodes or both are semantic nodes.
 
+[[influences]]
+influences
+~~~~~~~~~~
+
+Brief description::
+  A *influences* B if A directly affects B during the evaluation of a program.
+Commonly arises from::
+  assignment
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  This is an experimental definition and is expected to undergo refinement.
+
+[kythe,C++,"Assignment causes influence"]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  //- @y defines/binding VarY
+  //- @z defines/binding VarZ
+  int x = 0, y = 1, z = 2;
+  //- VarZ influences VarY
+  //- VarY influences VarX
+  //- !{VarZ influences VarX}
+  //- !{VarY influences VarZ}
+  x = y = z;
+}
+--------------------------------------------------------------------------------
 
 [[instantiates]]
 instantiates
@@ -792,7 +864,7 @@ Commonly arises from::
 Points from::
   semantic nodes
 Points toward::
-  names
+  name/linkage nodes
 Ordinals are used::
   never
 See also::
@@ -801,10 +873,10 @@ See also::
 [kythe,Java,"Classes have JVM binary names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {}
+//- @E defines/binding EClass
+//- EClass named EClassName = vname("pkg.E", "kythe", "", "", "jvm")
+//- EClassName.node/kind record
+public class E {}
 --------------------------------------------------------------------------------
 
 [[overrides]]
@@ -938,6 +1010,38 @@ Ordinals are used::
 //- PtrInt param.1 IntType
 using T = int*;
 --------------------------------------------------------------------------------
+
+[[propertyreads]]
+property/reads
+~~~~~~~~~~~~~~
+
+Brief description::
+  A *property/reads* B if A is a reader of the property B
+Points from::
+  function nodes
+Points toward::
+  variable or property nodes
+Ordinals are used::
+  never
+See also::
+  <<propertywrites,[property/writes]>>
+
+// TODO(schroederc): add support for AutoValue in schema examples
+
+[[propertywrites]]
+property/writes
+~~~~~~~~~~~~~~~
+
+Brief description::
+  A *property/writes* B if A is a writer of the property B
+Points from::
+  function nodes
+Points toward::
+  variable or property nodes
+Ordinals are used::
+  never
+See also::
+  <<propertyreads,[property/reads]>>
 
 [[ref]]
 ref
@@ -1147,7 +1251,7 @@ Ordinals are used::
 
 [[refimports]]
 ref/imports
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 Brief description::
   A *ref/imports* B if B is imported at the site of A.
@@ -1166,6 +1270,44 @@ public class E {
   //- @LinkedList ref LL
   LinkedList field;
 }
+--------------------------------------------------------------------------------
+
+[[refid]]
+ref/id
+~~~~~~
+
+Brief description::
+  A *ref/id* B if A does not otherwise *ref* or *define* B but the bytes of A's
+  span are determined by the identifier of B.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+A *ref/id* edge captures a relationship between multiple objects that are
+grammatically required to share a name, such as a class and its constructors.
+
+Add a *ref/id* edge at a usage of the governed object (e.g., the constructor)
+pointing to the governing object (e.g., the class). This captures the fact that
+the two are linked, but allows a client to distinguish the cross-references of
+the constructor from those of the class.
+
+
+[kythe,C++,"Constructors and destructors are named after their classes."]
+--------------------------------------------------------------------------------
+//- @C defines/binding ClassC
+struct C {
+  //- @C defines/binding CtorC
+  //- @C ref/id ClassC
+  C(int i);
+};
+
+//- @"C(1)" ref/call CtorC
+//- @C ref CtorC
+//- @C ref/id ClassC
+void f() { auto c = C(1); }
 --------------------------------------------------------------------------------
 
 [[refincludes]]
@@ -1242,7 +1384,7 @@ Ordinals are used::
 [kythe,C++,"Initializers inside template instantiations are implicit."]
 --------------------------------------------------------------------------------
 template<typename T> class C {
-  //- @x ref/init/implicit MemberX
+  //- @"1" ref/init/implicit MemberX
   T t = {.x = 1};
 };
 //- @x defines/binding MemberX
@@ -1368,6 +1510,7 @@ template <> bool id(bool x) { return !(!x); }
 [[specializesspeculative]]
 specializes/speculative
 ~~~~~~~~~~~~~~~~~~~~~~~
+
 See <<instantiatesspeculative,[instantiates/speculative]>>.
 
 
@@ -1533,15 +1676,15 @@ template <> class C<int, float> { };
 
 [kythe,Java,"Generic classes are abs nodes."]
 --------------------------------------------------------------------------------
-//- @Generics defines/binding GAbs
-//- Class childof GAbs
-//- GAbs.node/kind abs
-//- GAbs param.0 TVar
-//- @T defines/binding TVar
-//- TVar.node/kind absvar
-public class Generics<T> {
+public class E {
+  //- @Generics defines/binding GAbs
+  //- Class childof GAbs
+  //- GAbs.node/kind abs
+  //- GAbs param.0 TVar
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  public static class Generics<T> {}
 }
-
 --------------------------------------------------------------------------------
 
 [[absvar]]
@@ -1571,6 +1714,8 @@ anchor
 
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
+  An *anchor* is within the <<file>> with the same *Path*, *Root*, *Corpus*
+  (<<file>>s do not have a *Language*, so it is not used for matching).
 Naming convention::
   Path:::
     The *Path* of the <<file>> containing this anchor (or empty if there is no
@@ -1705,6 +1850,11 @@ Brief description::
   A *diagnostic* is a node with a message concerning some aspect of the related
   <<file>> or <<anchor>>.  These can often result from errors while building or
   analyzing a compilation and allow an analyzer to surface errors to end-users.
+  Each diagnostic is linked to the related <<file>> or <<anchor>> using a
+  <<tagged>> edge (where the diagnostic node is the target of the edge).
+  In principle, a diagnostic could also be related to a semantic node;
+  but that a user-facing UI might not be able to display anything meaningful
+  without a concrete anchor.
 Facts::
   message:::
     A relatively short, one-line, human-readable string explaining the
@@ -1720,6 +1870,7 @@ Facts::
 [[doc]]
 doc
 ~~~
+
 Brief description::
   A *doc* is text that documents a node.
 Facts::
@@ -1769,7 +1920,11 @@ Naming convention::
   Signature:::
     *empty*
 Facts::
-  text:::
+  language:::
+    The source language, as used in <<_vname_conventions,VName>>
+    `language`.  This fact is optional; it is intended for use by
+    source browsers, for things like source colorization.
+text:::
     Uninterpreted content as an array of bytes.
   text/encoding:::
     Encoding of the text fact.  See
@@ -1796,9 +1951,11 @@ Brief description::
 
 [kythe,Java,"Interfaces are interfaces."]
 --------------------------------------------------------------------------------
-//- @I defines/binding Interface
-//- Interface.node/kind interface
-public interface I {}
+public class E {
+  //- @I defines/binding Interface
+  //- Interface.node/kind interface
+  public static interface I {}
+}
 --------------------------------------------------------------------------------
 
 [[function]]
@@ -1884,6 +2041,7 @@ using S = typename T<int>::D::E::F;
 [[macro]]
 macro
 ~~~~~
+
 Brief description::
   A *macro* is a metaprogram that operates on source text.
 Notes::
@@ -1904,6 +2062,7 @@ See also::
 [[meta]]
 meta
 ~~~~
+
 Brief description::
   A *meta* is a node that describes details about a particular language.
 Naming convention::
@@ -1936,21 +2095,7 @@ Naming convention::
     *empty*
 Notes::
   The namespace is some domain in which the names are expected to be unique at linkage
-  time and/or runtime, such as JVM binary names, or the Itanium C++ ABI.
-
-[kythe,Java,"JVM binary class names, as used for classloading, are names."]
---------------------------------------------------------------------------------
-package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {
-  //- @Inner defines/binding InnerClass
-  //- InnerClass named InnerClassName = vname("pkg.C$Inner", "", "", "", "jvm")
-  //- InnerClassName.node/kind name
-  public class Inner {}
-}
---------------------------------------------------------------------------------
+  time and/or runtime, such as the Itanium C++ ABI.
 
 [[package]]
 package
@@ -1958,6 +2103,10 @@ package
 
 Brief description::
   A *package* defines a module containing declarations.
+Notes::
+  Languages in which a module is implicitly defined based on the file name
+  should emit a `defines/implicit` edge from a zero-width anchor at offset 0 in
+  that file to the corresponding package node.
 
 [kythe,Java,"Top-level declarations are children of package nodes."]
 --------------------------------------------------------------------------------
@@ -2235,6 +2384,11 @@ Facts::
   complete:::
     * `incomplete` if this is only a declaration.
     * `definition` if this is a variable definition.
+Subkinds::
+  * `local` for variables in function scope.
+  * `local/parameter` for variables passed into functions.
+  * `field` for variables that are data members of some record.
+  * `import` for variables that reference objects in other modules.
 
 [kythe,C++,"Variables are variables."]
 --------------------------------------------------------------------------------
@@ -2245,9 +2399,11 @@ int x;
 
 [kythe,Java,"Fields are variables."]
 --------------------------------------------------------------------------------
+import java.util.Optional;
 public class E {
   //- @f defines/binding Field
   //- Field.node/kind variable
+  //- Field.subkind field
   Optional<String> f;
 }
 --------------------------------------------------------------------------------
@@ -2257,6 +2413,7 @@ public class E {
 public class E {
   //- @arg defines/binding Param
   //- Param.node/kind variable
+  //- Param.subkind local/parameter
   void f(String arg) {}
 }
 --------------------------------------------------------------------------------
@@ -2267,6 +2424,7 @@ public class E {
   void f() {
     //- @var defines/binding Local
     //- Local.node/kind variable
+    //- Local.subkind local
     String var;
   }
 }
@@ -2838,7 +2996,7 @@ public class E {
     //- ResourceVar.node/kind variable
     //- ResourceVar.subkind local/resource
     try (OutputStream resource = System.out) {
-      resource.write("hello");
+      resource.write("hello".getBytes());
 
       //- @exception defines/binding ExceptionVar
       //- ExceptionVar.node/kind variable

@@ -1,20 +1,22 @@
-workspace(name = "io_kythe")
+workspace(
+    name = "io_kythe",
+    managed_directories = {"@npm": ["node_modules"]},
+)
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version")
+load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.22", "0.24")
+check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "d3da5e10483e2786452a3bdfe1bc2e3e4185f5292f96a52374a1f9aacf25d308",
-    strip_prefix = "bazel-toolchains-4c1acb6eaf4a23580ac2edf56393a69614426399",
+    sha256 = "4fb3ceea08101ec41208e3df9e56ec72b69f3d11c56629d6477c0ff88d711cf7",
+    strip_prefix = "bazel-toolchains-3.6.0",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.6.0/bazel-toolchains-3.6.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.6.0/bazel-toolchains-3.6.0.tar.gz",
     ],
 )
 
@@ -27,14 +29,16 @@ kythe_rule_repositories()
 # but because we want to overload some of those dependencies, we need the go_*
 # rules before go_rules_dependencies.  Likewise, we can't precisely control
 # when loads occur within a Starlark file so we now need to load this
-# manually... https://github.com/bazelbuild/rules_go/issues/1966
-load("@io_bazel_rules_go//go/private:compat/compat_repo.bzl", "go_rules_compat")
+# manually...
+load("@io_bazel_rules_go//go/private:repositories.bzl", "go_name_hack")
 
 maybe(
-    go_rules_compat,
-    name = "io_bazel_rules_go_compat",
+    go_name_hack,
+    name = "io_bazel_rules_go_name_hack",
+    is_rules_go = False,
 )
 
+# gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
@@ -43,19 +47,41 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 
 external_tools_configure()
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
+load("@npm//@bazel/labs:package.bzl", "npm_bazel_labs_dependencies")
 
-node_repositories(package_json = ["//:package.json"])
+npm_bazel_labs_dependencies()
 
-npm_install(
-    name = "npm",
-    package_json = "//:package.json",
-    package_lock_json = "//:package-lock.json",
+load("@maven//:compat.bzl", "compat_repositories")
+
+compat_repositories()
+
+# If the configuration here changes, run tools/platforms/configs/rebuild.sh
+load("@bazel_toolchains//rules:environments.bzl", "clang_env")
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC")
+
+rbe_autoconfig(
+    name = "rbe_default",
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
 )
 
-# This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
-bind(
-    name = "error_prone_annotations",
-    actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
+rbe_autoconfig(
+    name = "rbe_bazel_minversion",
+    bazel_version = MIN_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_maxversion",
+    bazel_version = MAX_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
 )

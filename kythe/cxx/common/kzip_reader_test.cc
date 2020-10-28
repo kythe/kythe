@@ -19,9 +19,12 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"
@@ -29,6 +32,8 @@
 
 namespace kythe {
 namespace {
+
+using absl::StatusCode;
 
 /// \brief Returns an error for any command except ZIP_SOURCE_ERROR.
 zip_int64_t BadZipSource(void* state, void* data, zip_uint64_t len,
@@ -60,7 +65,7 @@ zip_source_t* ZipSourceFunctionCreate(ZipCallback* callback,
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestSourceRoot(), "kythe/cxx/common/testdata/",
+  return absl::StrCat(TestSourceRoot(), "kythe/testdata/platform/",
                       absl::StripPrefix(basename, "/"));
 }
 
@@ -71,6 +76,16 @@ TEST(KzipReaderTest, OpenFailsForMissingFile) {
 
 TEST(KzipReaderTest, OpenFailsForEmptyFile) {
   EXPECT_EQ(KzipReader::Open(TestFile("empty.kzip")).status().code(),
+            StatusCode::kInvalidArgument);
+}
+
+TEST(KzipReaderTest, OpenFailsForMissingPbUnit) {
+  EXPECT_EQ(KzipReader::Open(TestFile("missing-pbunit.kzip")).status().code(),
+            StatusCode::kInvalidArgument);
+}
+
+TEST(KzipReaderTest, OpenFailsForMissingUnit) {
+  EXPECT_EQ(KzipReader::Open(TestFile("missing-unit.kzip")).status().code(),
             StatusCode::kInvalidArgument);
 }
 
@@ -85,7 +100,8 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
   proto::GoDetails needed_for_proto_deserialization;
 
-  StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
                   ->Scan([&](absl::string_view digest) {
@@ -156,7 +172,7 @@ TEST(KzipReaderTest, SourceFreedOnEmptyFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -233,7 +249,7 @@ TEST(KzipReaderTest, SourceFreedOnInvalidFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -313,7 +329,7 @@ TEST(KzipReaderTest, SourceFreedOnEmptyZipFile) {
   {
     zip_source_t* source = ZipSourceFunctionCreate(&callback, nullptr);
     ASSERT_NE(source, nullptr);
-    StatusOr<IndexReader> reader = KzipReader::FromSource(source);
+    absl::StatusOr<IndexReader> reader = KzipReader::FromSource(source);
     ASSERT_EQ(reader.status().code(), StatusCode::kInvalidArgument);
     ASSERT_FALSE(freed);
     zip_source_free(source);
@@ -328,8 +344,9 @@ TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
   proto::GoDetails needed_for_proto_deserialization;
 
   libzip::Error error;
-  StatusOr<IndexReader> reader = KzipReader::FromSource(zip_source_file_create(
-      TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
+  absl::StatusOr<IndexReader> reader =
+      KzipReader::FromSource(zip_source_file_create(
+          TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
 
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader

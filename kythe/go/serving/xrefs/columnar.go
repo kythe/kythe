@@ -35,9 +35,9 @@ import (
 	"kythe.io/kythe/go/util/span"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -83,6 +83,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 
 	// TODO(schroederc): handle SPAN requests
 	// TODO(schroederc): handle dirty buffers
+	// TODO(schroederc): file infos
 
 	fileURI, err := kytheuri.Parse(ticket)
 	if err != nil {
@@ -221,7 +222,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 			if !defs.Contains(def.Location.Ticket) {
 				continue
 			}
-			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, emitSnippets).Anchor
+			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, nil, emitSnippets).Anchor
 		case *xspb.FileDecorations_Override_:
 			// TODO(schroederc): handle
 		case *xspb.FileDecorations_Diagnostic_:
@@ -270,6 +271,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 	}
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
+	// TODO(schroederc): file infos
 	// TODO(schroederc): implement paging xrefs in large CrossReferencesReply messages
 
 	for _, ticket := range req.Ticket {
@@ -285,6 +287,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 		if err != nil {
 			return nil, err
 		}
+		defer it.Close()
 
 		k, val, err := it.Next()
 		if err == io.EOF || !bytes.Equal(k, prefix) {
@@ -342,7 +345,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					anchors = &set.Reference
 				}
 				if anchors != nil {
-					a := a2a(ref.Location, emitSnippets).Anchor
+					a := a2a(ref.Location, nil, emitSnippets).Anchor
 					a.Ticket = ""
 					ra := &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a}
 					*anchors = append(*anchors, ra)
@@ -382,7 +385,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 				if node := reply.Nodes[relatedNode]; node != nil {
 					loc := e.NodeDefinition.Location
 					node.Definition = loc.Ticket
-					a := a2a(loc, emitSnippets).Anchor
+					a := a2a(loc, nil, emitSnippets).Anchor
 					reply.DefinitionLocations[loc.Ticket] = a
 				}
 			case *xspb.CrossReferences_Caller_:
@@ -390,7 +393,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					continue
 				}
 				c := e.Caller
-				a := a2a(c.Location, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets).Anchor
 				a.Ticket = ""
 				callerTicket := kytheuri.ToString(c.Caller)
 				caller := &xpb.CrossReferencesReply_RelatedAnchor{
@@ -411,7 +414,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					log.Printf("WARNING: missing Caller for callsite: %+v", c)
 					continue
 				}
-				a := a2a(c.Location, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets).Anchor
 				a.Ticket = ""
 				// TODO(schroederc): set anchor kind to differentiate kinds?
 				caller.Site = append(caller.Site, a)

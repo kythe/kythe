@@ -34,8 +34,10 @@ compile_commands = rule(
         ),
     },
     doc = "Generates a compile_commannds.json.in template file.",
+    incompatible_use_toolchain_transition = True,
     outputs = {
         "compile_commands": "compile_commands.json.in",
     },
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _compile_commands_impl,
 )

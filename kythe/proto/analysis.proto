@@ -23,6 +23,7 @@ option java_package = "com.google.devtools.kythe.proto";
 option cc_enable_arenas = true;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 import "kythe/proto/storage.proto";
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
@@ -95,9 +96,12 @@ message CompilationUnit {
   // do not provide their own `v_name` field.  As such, the general logic for
   // constructing VNames for entities arising a given source path should be:
   // {
-  //   corpus:   unit.required_input[path].v_name.corpus OR unit.v_name.corpus
-  //   root:     unit.required_input[path].v_name.root OR unit.v_name.root
-  //   path:     unit.required_input[path].v_name.path OR path
+  //   vname := unit.required_input[path].v_name
+  //   if vname.corpus is empty
+  //      vname.corpus := unit.v_name.corpus
+  //      vname.root := unit.v_name.root
+  //   if vname.path is empty
+  //      vname.path := path
   // }
   // The above applies generally, but specific node kinds may have rules which
   // override this logic.
@@ -175,6 +179,49 @@ message CompilationUnit {
 
   // Per-language or per-tool details.
   repeated google.protobuf.Any details = 11;
+}
+
+// KzipInfo contains a summary of the contents of a kzip. It provides a
+// breakdown of files and units by corpus and lanugage.
+message KzipInfo {
+  reserved 2, 3;
+
+  message CorpusInfo {
+    reserved 1, 2, 3;
+
+    message RequiredInputs {
+      // TODO(salguarnieri) Add count of unique inputs for this corpus?
+      int32 count = 1;
+    }
+
+    // Map from language to count of required inputs that have this corpus in
+    // their VName.
+    map<string, RequiredInputs> language_required_inputs = 4;
+    // Map from language to count of sources that have this corpus in their
+    // required_input VName.
+    map<string, RequiredInputs> language_sources = 5;
+  }
+
+  // Map from corpus name to corpus info.
+  map<string, CorpusInfo> corpora = 1;
+  // Size in bytes of all the kzips that contributed to this KzipInfo.
+  int64 size = 4;
+  // Error messages detected when computing KzipInfo. For example, source files
+  // with no corresponding required_input. If there are any items in this field,
+  // it indicates that this kzip has serious problems and should not be used.
+  repeated string critical_kzip_errors = 5;
+}
+
+// RepoMetadata provides storage for additional information about a specific
+// build from a repository. This message is stored in the
+// CompilationUnit.details field.
+message BuildMetadata {
+  // The commit_timestamp is generally the timestamp at which the source for
+  // this build was checked into version control, but can be any timestamp
+  // associated with the origin of this build. In the case that a project is
+  // made up of multiple repositories, this timestamp should be the one
+  // associated with the primary/super repository.
+  google.protobuf.Timestamp commit_timestamp = 1;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a

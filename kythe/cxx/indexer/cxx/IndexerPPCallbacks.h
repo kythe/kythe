@@ -31,7 +31,8 @@ namespace kythe {
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
  public:
-  IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO, Verbosity V);
+  IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO, Verbosity V,
+                     int UsrByteSize);
   ~IndexerPPCallbacks() override;
 
   void FileChanged(clang::SourceLocation Loc,
@@ -155,6 +156,9 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   GraphObserver& Observer;
   /// Whether we should emit all data.
   enum Verbosity Verbosity;
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
 };
 
 }  // namespace kythe

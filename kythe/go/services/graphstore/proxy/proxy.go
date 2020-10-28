@@ -16,7 +16,7 @@
 
 // Package proxy defines a proxy graphstore.Service that delegates requests to
 // other service implementations.
-package proxy
+package proxy // import "kythe.io/kythe/go/services/graphstore/proxy"
 
 import (
 	"container/heap"

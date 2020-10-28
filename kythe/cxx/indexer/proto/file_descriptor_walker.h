@@ -23,13 +23,13 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
@@ -205,7 +205,8 @@ class FileDescriptorWalker {
   // Parses a location span vector (three or four integers that protoc uses to
   // represent a location in a file) and return a sensible PartialLocation or
   // Status::INVALID_ARGUMENT if the vector cannot be properly interpreted.
-  StatusOr<PartialLocation> ParseLocation(const std::vector<int>& span) const;
+  absl::StatusOr<PartialLocation> ParseLocation(
+      const std::vector<int>& span) const;
 
   proto::VName VNameForFieldType(
       const google::protobuf::FieldDescriptor* field);

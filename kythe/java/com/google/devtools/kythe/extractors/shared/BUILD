@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 java_library(
@@ -24,8 +26,8 @@ java_library(
     deps = [
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_re2j_re2j//jar",
+        "@maven//:com_google_code_gson_gson",
+        "@maven//:com_google_re2j_re2j",
     ],
 )

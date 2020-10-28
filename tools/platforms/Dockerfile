@@ -13,12 +13,12 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/kythe-builder .
-FROM gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:9bd8ba020af33edb5f11eff0af2f63b3bcb168cd6566d7b27c6685e717787928
+FROM gcr.io/cloud-marketplace/google/rbe-ubuntu18-04@sha256:5703843282226b2f7db86afc0b1535f46d411fa72c1d540e1bd0f8064adb0bdb
 
 RUN apt-get update && \
     apt-get install -y \
       # Kythe C++ dependencies
-      cmake libssl-dev uuid-dev libcurl4-openssl-dev flex bison g++ \
+      uuid-dev flex bison g++ \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz && \
     apt-get clean

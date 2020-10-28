@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "GraphObserver.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -69,12 +70,9 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// \brief Marks a VNameRef as belonging to this token.
   /// This token must outlive the VNameRef.
   void DecorateVName(VNameRef* target) const {
-    target->corpus =
-        absl::string_view(vname_.corpus().data(), vname_.corpus().size());
-    target->root =
-        absl::string_view(vname_.root().data(), vname_.root().size());
-    target->path =
-        absl::string_view(vname_.path().data(), vname_.path().size());
+    target->set_corpus(vname_.corpus());
+    target->set_root(vname_.root());
+    target->set_path(vname_.path());
   }
 
   /// \brief Sets a VName that controls the corpus, root and path of claimed
@@ -86,6 +84,7 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   }
 
   const kythe::proto::VName& vname() const { return vname_; }
+  kythe::proto::VName* mutable_vname() { return &vname_; }
 
   /// \sa rough_claimed
   void set_rough_claimed(bool value) { rough_claimed_ = value; }
@@ -240,6 +239,14 @@ class KytheGraphObserver : public GraphObserver {
                              GraphObserver::Claimability cl,
                              GraphObserver::Implicit i) override;
 
+  void recordBlameLocation(const Range& source_range, const NodeId& blame,
+                           GraphObserver::Claimability cl,
+                           GraphObserver::Implicit i) override;
+
+  void recordSemanticDeclUseLocation(const Range& SourceRange,
+                                     const NodeId& DeclId, UseKind K,
+                                     Claimability Cl, Implicit I) override;
+
   void recordInitLocation(const Range& source_range, const NodeId& node,
                           GraphObserver::Claimability cl,
                           GraphObserver::Implicit i) override;
@@ -287,10 +294,18 @@ class KytheGraphObserver : public GraphObserver {
                                   Claimability claimability,
                                   Implicit i) override;
 
+  void recordTypeIdSpellingLocation(const Range& source_range,
+                                    const NodeId& type_id,
+                                    Claimability claimability,
+                                    Implicit i) override;
+
   void recordChildOfEdge(const NodeId& child_id,
                          const NodeId& parent_id) override;
 
   void recordTypeEdge(const NodeId& term_id, const NodeId& type_id) override;
+
+  void recordInfluences(const NodeId& influencer,
+                        const NodeId& influenced) override;
 
   void recordUpperBoundEdge(const NodeId& TypeNodeId,
                             const NodeId& TypeBoundNodeId) override;
@@ -351,6 +366,11 @@ class KytheGraphObserver : public GraphObserver {
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName& vname) { claimant_ = vname; }
 
+  void set_default_corpus(absl::string_view corpus) {
+    default_token_.mutable_vname()->set_corpus(std::string(corpus));
+    type_token_.mutable_vname()->set_corpus(std::string(corpus));
+  }
+
   bool claimNode(const NodeId& node_id) override {
     if (const auto* token =
             clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
@@ -410,6 +430,14 @@ class KytheGraphObserver : public GraphObserver {
   absl::string_view getBuildConfig() const override { return build_config_; }
 
  private:
+  /// A pair of tokens to use for namespaces.
+  struct NamespaceTokens {
+    KytheClaimToken named;      ///< Token to use for named namespaces.
+    KytheClaimToken anonymous;  ///< Token to use for anonymous namespaces.
+  };
+
+  const NamespaceTokens& getNamespaceTokens(clang::SourceLocation loc) const;
+
   void AddMarkedSource(const VNameRef& vname,
                        const absl::optional<MarkedSource>& signature) {
     if (signature) {
@@ -469,6 +497,10 @@ class KytheGraphObserver : public GraphObserver {
                        unsigned range_begin, unsigned range_end,
                        const VNameRef& decl);
 
+  /// Mark that file-scope rules are emitted for a given file.
+  bool MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
+                               const MetadataFile& meta);
+
   struct RangeHash {
     size_t operator()(const GraphObserver::Range& range) const {
       return std::hash<unsigned>()(
@@ -523,10 +555,15 @@ class KytheGraphObserver : public GraphObserver {
     llvm::sys::fs::UniqueID uid;     ///< The ID Clang uses for this file.
     bool claimed;                    ///< Whether we have claimed this file.
   };
+
   /// The files we have entered but not left.
   std::vector<FileState> file_stack_;
   /// A map from FileIDs to associated metadata.
   std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
+  /// The metadata file ids for which we have already emitted file metadata.
+  absl::flat_hash_set<
+      std::tuple<std::string, std::string, std::string, std::string>>
+      file_meta_edges_emitted_;
   /// All files that were ever reached through a header file, including header
   /// files themselves.
   std::set<llvm::sys::fs::UniqueID> transitively_reached_through_header_;
@@ -544,7 +581,7 @@ class KytheGraphObserver : public GraphObserver {
   std::map<clang::FileID, KytheClaimToken> claimed_file_specific_tokens_;
   /// Maps from claim tokens to claim tokens with path and root dropped.
   /// Used from logically const member funtions.
-  mutable std::map<const KytheClaimToken*, KytheClaimToken> namespace_tokens_;
+  mutable std::map<const KytheClaimToken*, NamespaceTokens> namespace_tokens_;
   /// The `KytheGraphRecorder` used to record graph data. Must not be null.
   KytheGraphRecorder* recorder_;
   /// A VName representing this `GraphObserver`'s claiming authority.

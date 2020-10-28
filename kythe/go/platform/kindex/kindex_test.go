@@ -162,7 +162,9 @@ func TestFetch(t *testing.T) {
 func TestAdders(t *testing.T) {
 	var cu Compilation
 
-	if err := cu.AddFile("foo", strings.NewReader(""), nil); err != nil {
+	if err := cu.AddFile("foo", strings.NewReader(""), nil, &gopb.GoPackageInfo{
+		ImportPath: "vanity.io/foo",
+	}); err != nil {
 		t.Errorf("AddFile failed: %v", err)
 	}
 	if err := cu.AddDetails(&gopb.GoDetails{
@@ -186,6 +188,10 @@ func TestAdders(t *testing.T) {
 				Path:   "foo",
 				Digest: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 			},
+			Details: []*anypb.Any{{
+				TypeUrl: "kythe.io/proto/kythe.proto.GoPackageInfo",
+				Value:   []byte("\n\rvanity.io/foo"),
+			}},
 		}},
 		SourceFile: []string{"foo"},
 		OutputKey:  "blathe.a",

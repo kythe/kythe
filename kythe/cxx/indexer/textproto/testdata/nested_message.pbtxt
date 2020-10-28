@@ -1,4 +1,4 @@
-# proto-file: example.proto
+# proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
 # proto-message: example.Message2
 
 #- @msg1 ref Msg1

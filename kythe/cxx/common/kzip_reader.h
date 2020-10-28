@@ -22,16 +22,18 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_reader.h"
-#include "kythe/cxx/common/status_or.h"
+#include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
 
 class KzipReader : public IndexReaderInterface {
  public:
-  static StatusOr<IndexReader> Open(absl::string_view path);
+  static absl::StatusOr<IndexReader> Open(absl::string_view path);
 
   /// \brief Constructs an `IndexReader` from the provided source.
   /// `zip_source_t` is reference counted, see
@@ -39,14 +41,14 @@ class KzipReader : public IndexReaderInterface {
   /// for detailed ownership semantics.
   /// Following from that, a reference will be retained on success,
   /// but the caller is responsible for `source` on error.
-  static StatusOr<IndexReader> FromSource(zip_source_t* source);
+  static absl::StatusOr<IndexReader> FromSource(zip_source_t* source);
 
-  Status Scan(const ScanCallback& callback) override;
+  absl::Status Scan(const ScanCallback& callback) override;
 
-  StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
+  absl::StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
       absl::string_view digest) override;
 
-  StatusOr<std::string> ReadFile(absl::string_view digest) override;
+  absl::StatusOr<std::string> ReadFile(absl::string_view digest) override;
 
  private:
   struct Discard {
@@ -56,12 +58,17 @@ class KzipReader : public IndexReaderInterface {
   };
   using ZipHandle = std::unique_ptr<zip_t, Discard>;
 
-  explicit KzipReader(ZipHandle archive, absl::string_view basename);
+  explicit KzipReader(ZipHandle archive, absl::string_view basename,
+                      KzipEncoding encoding);
 
   zip_t* archive() { return archive_.get(); }
 
+  absl::optional<absl::string_view> UnitDigest(absl::string_view path);
+
   ZipHandle archive_;
-  absl::string_view root_;  // Memory owned by `archive_`.
+  KzipEncoding encoding_;
+  std::string files_prefix_;
+  std::string unit_prefix_;
 };
 
 }  // namespace kythe

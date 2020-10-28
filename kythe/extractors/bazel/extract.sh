@@ -43,9 +43,13 @@
 # Also assumes you have extractors installed as per
 # kythe/extractors/bazel/extractors.bazelrc.
 
-: ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+# Print our commands for easier debugging and exit after our first failed
+# command so we avoid silent failures.
+set -ex
 
-if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
+: "${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}" "${KYTHE_KZIP_ENCODING:=JSON}"
+
+if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
   # TODO(jaysachs): unclear if we should bail if any packages fail to install
   apt-get update && \
@@ -54,11 +58,41 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
-/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
+if [[ -n "$KYTHE_PRE_BUILD_STEP" ]]; then
+  eval "$KYTHE_PRE_BUILD_STEP"
+fi
+
+KYTHE_RELEASE=/kythe
+
+if [[ -n "$KYTHE_BAZEL_TARGET" ]]; then
+  # $KYTHE_BAZEL_TARGET is unquoted because bazel_wrapper needs to see each
+  # target expression in KYTHE_BAZEL_WRAPPER as individual arguments. For
+  # example, if KYTHE_BAZEL_TARGET=//foo/... -//foo/test/..., bazel_wrapper
+  # needs to see two valid target expressions (//foo/... and -//foo/test/...)
+  # not one invalid target expression with white space
+  # ("//foo/... -//foo/test/...").
+  /kythe/bazel_wrapper.sh --bazelrc=$KYTHE_RELEASE/extractors.bazelrc "$@" --override_repository kythe_release=$KYTHE_RELEASE -- $KYTHE_BAZEL_TARGET
+else
+  # If the user supplied a bazel query, execute it and run bazel, but we have to
+  # shard the results to different bazel runs because the bazel command line
+  # cannot take many arguments. Right now we build 30 targets at a time. We can
+  # change this value or make it settable once we have more data on the
+  # implications.
+  /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | \
+    xargs -t -L 30 /kythe/bazel_wrapper.sh --bazelrc=$KYTHE_RELEASE/extractors.bazelrc "$@" --override_repository kythe_release=$KYTHE_RELEASE --
+fi
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
-  xargs -r /kythe/tools/kzip merge --append --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+  xargs -r /kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+
+# Record the timestamp of the git commit in a metadata kzip.
+/kythe/tools/kzip create_metadata \
+  --output buildmetadata.kzip \
+  --corpus "$KYTHE_CORPUS" \
+  --commit_timestamp "$(git log --pretty='%ad' -n 1 HEAD)"
+/kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip" buildmetadata.kzip
+
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
 test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"

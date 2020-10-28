@@ -2,10 +2,11 @@
   "linters": {
     "spelling": {
       "type": "spelling",
-      "exclude": "(^third_party)"
+      "exclude": "(^third_party|kythe/java/com/google/devtools/kythe/platform/java/helpers/SignatureGenerator.java)"
     },
     "chmod": {
-      "type": "chmod"
+      "type": "chmod",
+      "exclude": "!^(tools/platforms/configs/.*)$!"
     },
     "merge-conflict": {
       "type": "merge-conflict"
@@ -18,7 +19,8 @@
     "custom": {
       "type": "script-and-regex",
       "script-and-regex.script": "tools/arc/linter.sh",
-      "script-and-regex.regex": "/^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m"
+      "script-and-regex.regex": "/^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m",
+      "exclude": "!(^|/)(go\\.mod|go\\.sum|\\.[^/]*|third_party/.*|tools/platforms/configs/versions.bzl)$!"
     }
   }
 }

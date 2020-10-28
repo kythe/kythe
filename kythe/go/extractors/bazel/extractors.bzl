@@ -26,7 +26,9 @@ def kzip_extractor(
         exclude = "",
         sources = "",
         source_args = "",
-        scoped = True):
+        scoped = True,
+        encoding = None,
+        extractor = "//kythe/go/extractors/cmd/bazel:extract_kzip"):
     """This macro creates extra_action and action_listener for extract_kzip.
 
     This macro expands to an extra action listener that invokes extract_kzip
@@ -45,6 +47,8 @@ def kzip_extractor(
       source_args: optional RE2 matching arguments to consider source files in
         kzip extractor
       scoped: optional boolean whether to match source paths only in target pkg
+      encoding: optional encoding (proto|json) for the generated kzip
+      extractor: optional label of the extract_kzip tool to use
     """
 
     if not mnemonics:
@@ -55,7 +59,6 @@ def kzip_extractor(
         fail("The 'corpus' attribute must be non-empty")
 
     xa_name = name + "_extra_action"
-    xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kzip"
     xa_output = "$(ACTION_ID).%s.kzip" % language
     xa_args = {
         "corpus": corpus,
@@ -74,14 +77,16 @@ def kzip_extractor(
         xa_args["args"] = _quote_re(source_args)
     if rules:
         xa_args["rules"] = "$(location %s)" % rules
-
+    cmdprefix = ""
+    if encoding:
+        cmdprefix = "env KYTHE_KZIP_ENCODING=%s " % encoding
     native.extra_action(
         name = xa_name,
         data = [rules] if rules else [],
         out_templates = [xa_output],
-        tools = [xa_tool],
+        tools = [extractor],
         cmd = (
-            "$(location %s) " % xa_tool + " ".join(sorted([
+            cmdprefix + "$(location %s) " % extractor + " ".join(sorted([
                 "--%s=%s" % (key, value)
                 for key, value in xa_args.items()
             ]))

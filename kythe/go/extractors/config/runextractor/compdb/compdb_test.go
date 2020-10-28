@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package compdb
 
 import (
@@ -63,7 +64,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 	if err := os.Chdir(filepath.Join(root, testPath, "testdata")); err != nil {
 		t.Fatalf("Unable to change working directory: %v", err)
 	}
-	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json"); err != nil {
+	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json", nil); err != nil {
 		t.Fatalf("Error running ExtractCompilations: %v", err)
 	}
 	err = filepath.Walk(os.Getenv("KYTHE_OUTPUT_DIRECTORY"), func(path string, info os.FileInfo, err error) error {

@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
@@ -42,6 +45,7 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -72,16 +76,18 @@ cc_library(
         "//kythe/cxx/common:scope_guard",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
 
-cc_library(
-    name = "cmd_lib",
+cc_binary(
+    name = "verifier",
     srcs = [
         "verifier_main.cc",
     ],
@@ -90,31 +96,25 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":lib",
+        "//kythe/cxx/common:init",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )
 
-cc_binary(
-    name = "verifier",
-    visibility = [PUBLIC_VISIBILITY],
-    deps = [
-        ":cmd_lib",
-    ],
-)
-
-cc_library(
-    name = "testlib",
-    testonly = 1,
+cc_test(
+    name = "test",
+    size = "small",
     srcs = [
         "verifier_unit_test.cc",
-    ],
-    hdrs = [
-        "verifier.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -128,13 +128,5 @@ cc_library(
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_test(
-    name = "test",
-    size = "small",
-    deps = [
-        ":testlib",
     ],
 )

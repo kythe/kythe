@@ -1,12 +1,12 @@
 
-#- @"example.proto" ref vname(_,_,"","kythe/cxx/indexer/textproto/testdata/example.proto",_)
-# proto-file: example.proto
+#- @"kythe/cxx/indexer/textproto/testdata/example.proto" ref vname(_,_,"","kythe/cxx/indexer/textproto/testdata/example.proto",_)
+# proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
 
 #- @"example.Message2" ref Message2
 # proto-message: example.Message2
 
-#- @"any_type.proto" ref vname(_,_,"","kythe/cxx/indexer/textproto/testdata/any_type.proto",_)
-# proto-import: any_type.proto
+#- @"kythe/cxx/indexer/textproto/testdata/example.proto" ref vname(_,_,"","kythe/cxx/indexer/textproto/testdata/example.proto",_)
+# proto-import: kythe/cxx/indexer/textproto/testdata/example.proto
 
 #- @field1 ref Field1
 field1: "hello"

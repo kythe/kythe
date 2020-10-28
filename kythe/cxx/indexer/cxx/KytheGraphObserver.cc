@@ -17,7 +17,9 @@
 #include "KytheGraphObserver.h"
 
 #include "IndexerASTHooks.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
@@ -46,8 +48,8 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SHA1.h"
 
-DEFINE_bool(fail_on_unimplemented_builtin, false,
-            "Fail indexer if we encounter a builtin we do not handle");
+ABSL_FLAG(bool, fail_on_unimplemented_builtin, false,
+          "Fail indexer if we encounter a builtin we do not handle");
 
 namespace kythe {
 namespace {
@@ -61,6 +63,19 @@ struct ClaimedStringFormatter {
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
+
+EdgeKindID EdgeKindForUseKind(GraphObserver::UseKind kind,
+                              GraphObserver::Implicit i) {
+  switch (kind) {
+    case GraphObserver::UseKind::kUnknown:
+      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
+                                                : EdgeKindID::kRef);
+    case GraphObserver::UseKind::kWrite:
+      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefWritesImplicit
+                                                : EdgeKindID::kRefWrites);
+  }
+}
+
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -106,7 +121,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
       out_name.set_path(
           RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
-      out_name.set_path(file_entry->getName());
+      out_name.set_path(std::string(file_entry->getName()));
     }
     out_name.set_corpus(claimant_.corpus());
   }
@@ -410,7 +425,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
         new_signature.append(std::to_string(rule->second.anchor_begin));
         new_signature.append("-");
         new_signature.append(std::to_string(rule->second.anchor_end));
-        remote.signature = new_signature;
+        remote.set_signature(new_signature);
         recorder_->AddProperty(remote, NodeKindID::kAnchor);
         recorder_->AddProperty(remote, PropertyID::kLocationStartOffset,
                                rule->second.anchor_begin);
@@ -424,11 +439,42 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
           recorder_->AddEdge(decl, edge_kind, remote);
         }
       } else {
-        fprintf(stderr, "Unknown edge kind %s from metadata\n",
-                rule->second.edge_out.c_str());
+        absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
+                      rule->second.edge_out);
       }
     }
   }
+
+  // Emit file-scope edges, if the anchor VName directly corresponds to a file.
+  if (!anchor.path().empty()) {
+    VNameRef file_vname(anchor);
+    file_vname.set_signature("");
+    file_vname.set_language("");
+    for (const auto& rule : meta.file_scope_rules()) {
+      EdgeKindID edge_kind;
+      if (of_spelling(rule.edge_out, &edge_kind)) {
+        if (MarkFileMetaEdgeEmitted(file_vname, meta)) {
+          VNameRef remote(rule.vname);
+          if (rule.reverse_edge) {
+            recorder_->AddEdge(remote, edge_kind, file_vname);
+          } else {
+            recorder_->AddEdge(file_vname, edge_kind, remote);
+          }
+        }
+      } else {
+        absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
+                      rule.edge_out);
+      }
+    }
+  }
+}
+
+bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
+                                                 const MetadataFile& meta) {
+  return file_meta_edges_emitted_
+      .emplace(std::string(file_decl.path()), std::string(file_decl.corpus()),
+               std::string(file_decl.root()), std::string(meta.id()))
+      .second;
 }
 
 void KytheGraphObserver::ApplyMetadataRules(
@@ -570,15 +616,15 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId& node_id) const {
   VNameRef out_ref;
-  out_ref.language = absl::string_view(supported_language::kIndexerLang);
+  out_ref.set_language(absl::string_view(supported_language::kIndexerLang));
   if (const auto* token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
     if (token->language_independent()) {
-      out_ref.language = absl::string_view();
+      out_ref.set_language(absl::string_view());
     }
   }
-  out_ref.signature = ConvertRef(node_id.IdentityRef());
+  out_ref.set_signature(ConvertRef(node_id.IdentityRef()));
   return out_ref;
 }
 
@@ -599,6 +645,12 @@ void KytheGraphObserver::recordTypeEdge(const NodeId& term_id,
                                         const NodeId& type_id) {
   recorder_->AddEdge(VNameRefFromNodeId(term_id), EdgeKindID::kHasType,
                      VNameRefFromNodeId(type_id));
+}
+
+void KytheGraphObserver::recordInfluences(const NodeId& influencer,
+                                          const NodeId& influenced) {
+  recorder_->AddEdge(VNameRefFromNodeId(influencer), EdgeKindID::kInfluences,
+                     VNameRefFromNodeId(influenced));
 }
 
 void KytheGraphObserver::recordUpperBoundEdge(const NodeId& TypeNodeId,
@@ -888,8 +940,9 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
                       std::min(hash.size(), static_cast<size_t>(byte_size))));
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
-  usr_vname.signature = hex;
-  usr_vname.language = "usr";
+  usr_vname.set_corpus(type_token_.vname().corpus());
+  usr_vname.set_signature(hex);
+  usr_vname.set_language("usr");
   recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
   recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
 }
@@ -970,6 +1023,15 @@ void KytheGraphObserver::recordTypeSpellingLocation(
                claimability);
 }
 
+void KytheGraphObserver::recordTypeIdSpellingLocation(
+    const GraphObserver::Range& type_source_range, const NodeId& type_id,
+    Claimability claimability, Implicit i) {
+  RecordAnchor(
+      type_source_range, type_id,
+      i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRefId,
+      claimability);
+}
+
 void KytheGraphObserver::recordCategoryExtendsEdge(const NodeId& from,
                                                    const NodeId& to) {
   recorder_->AddEdge(VNameRefFromNodeId(from), EdgeKindID::kExtendsCategory,
@@ -1020,6 +1082,19 @@ void KytheGraphObserver::recordDeclUseLocation(
                claimability);
 }
 
+void KytheGraphObserver::recordBlameLocation(
+    const GraphObserver::Range& source_range, const NodeId& blame,
+    Claimability claimability, Implicit i) {
+  RecordAnchor(source_range, blame, EdgeKindID::kChildOf,
+               Claimability::Claimable);
+}
+
+void KytheGraphObserver::recordSemanticDeclUseLocation(
+    const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
+    Claimability claimability, Implicit i) {
+  RecordAnchor(source_range, node, EdgeKindForUseKind(kind, i), claimability);
+}
+
 void KytheGraphObserver::recordInitLocation(
     const GraphObserver::Range& source_range, const NodeId& node,
     Claimability claimability, Implicit i) {
@@ -1045,13 +1120,13 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     const llvm::StringRef& spelling) const {
   const auto& info = builtins_.find(spelling.str());
   if (info == builtins_.end()) {
-    if (FLAGS_fail_on_unimplemented_builtin) {
+    if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {
       LOG(FATAL) << "Missing builtin " << spelling.str();
     }
     LOG(ERROR) << "Missing builtin " << spelling.str();
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
-    sig.set_pre_text(spelling);
+    sig.set_pre_text(std::string(spelling));
     builtins_.emplace(spelling.str(), Builtin{NodeId::CreateUncompressed(
                                                   getDefaultClaimToken(),
                                                   spelling.str() + "#builtin"),
@@ -1069,15 +1144,15 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
 void KytheGraphObserver::applyMetadataFile(clang::FileID id,
                                            const clang::FileEntry* file,
                                            const std::string& search_string) {
-  const llvm::MemoryBuffer* buffer =
-      SourceManager->getMemoryBufferForFile(file);
+  const llvm::Optional<llvm::MemoryBufferRef> buffer =
+      SourceManager->getMemoryBufferForFileOrNone(file);
   if (!buffer) {
-    fprintf(stderr, "Couldn't get content for %s\n",
-            file->getName().str().c_str());
+    absl::FPrintF(stderr, "Couldn't get content for %s\n",
+                  file->getName().str());
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(
-          file->getName(),
+          std::string(file->getName()),
           absl::string_view(buffer->getBuffer().data(),
                             buffer->getBufferSize()),
           search_string)) {
@@ -1184,35 +1259,36 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
               if (offset_info != context_info->second.end()) {
                 state.context = offset_info->second;
               } else {
-                fprintf(stderr,
-                        "Warning: when looking for %s[%s]:%u: missing source "
-                        "offset\n",
-                        vfs_->get_debug_uid_string(previous_uid).c_str(),
-                        previous_context.c_str(), offset);
+                absl::FPrintF(
+                    stderr,
+                    "Warning: when looking for %s[%s]:%u: missing source "
+                    "offset\n",
+                    vfs_->get_debug_uid_string(previous_uid), previous_context,
+                    offset);
               }
             } else {
-              fprintf(stderr,
-                      "Warning: when looking for %s[%s]:%u: missing source "
-                      "context\n",
-                      vfs_->get_debug_uid_string(previous_uid).c_str(),
-                      previous_context.c_str(), offset);
+              absl::FPrintF(
+                  stderr,
+                  "Warning: when looking for %s[%s]:%u: missing source "
+                  "context\n",
+                  vfs_->get_debug_uid_string(previous_uid), previous_context,
+                  offset);
             }
           } else {
-            fprintf(
+            absl::FPrintF(
                 stderr,
                 "Warning: when looking for %s[%s]:%u: missing source path\n",
-                vfs_->get_debug_uid_string(previous_uid).c_str(),
-                previous_context.c_str(), offset);
+                vfs_->get_debug_uid_string(previous_uid), previous_context,
+                offset);
           }
         }
         state.vname.set_signature(absl::StrCat(
             state.context, state.vname.signature(), build_config_));
         if (client_->Claim(claimant_, state.vname)) {
           if (recorded_files_.insert(entry).second) {
-            bool was_invalid = false;
-            const llvm::MemoryBuffer* buf =
-                SourceManager->getMemoryBufferForFile(entry, &was_invalid);
-            if (was_invalid || !buf) {
+            const llvm::Optional<llvm::MemoryBufferRef> buf =
+                SourceManager->getMemoryBufferForFileOrNone(entry);
+            if (!buf) {
               // TODO(zarko): diagnostic logging.
             } else {
               recorder_->AddFileContent(VNameRef(state.base_vname),
@@ -1293,8 +1369,9 @@ void KytheGraphObserver::AddContextInformation(
     path_to_context_data_[found_file->getUniqueID()][context][offset] =
         dest_context;
   } else {
-    fprintf(stderr, "WARNING: Path %s could not be mapped to a VFS record.\n",
-            path.c_str());
+    absl::FPrintF(stderr,
+                  "WARNING: Path %s could not be mapped to a VFS record.\n",
+                  path);
   }
 }
 
@@ -1326,32 +1403,42 @@ const KytheClaimToken* KytheGraphObserver::getAnonymousNamespaceClaimToken(
     CHECK(main_source_file_token_ != nullptr);
     return main_source_file_token_;
   }
-  return getNamespaceClaimToken(loc);
+  return &getNamespaceTokens(loc).anonymous;
 }
 
 const KytheClaimToken* KytheGraphObserver::getNamespaceClaimToken(
     clang::SourceLocation loc) const {
+  return &getNamespaceTokens(loc).named;
+}
+
+const KytheGraphObserver::NamespaceTokens&
+KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
   auto* file_token = getClaimTokenForLocation(loc);
-  auto token = namespace_tokens_.find(file_token);
-  if (token != namespace_tokens_.end()) {
-    return &token->second;
+  auto [iter, inserted] =
+      namespace_tokens_.emplace(file_token, NamespaceTokens{});
+  if (inserted) {
+    // Named namespaces belong to the same corpus as structural types due to
+    // their use as extension points which may be opened from a file in any
+    // corpus, but should still refer to the same node.
+    iter->second.named.mutable_vname()->set_corpus(
+        type_token_.vname().corpus());
+    iter->second.named.set_rough_claimed(file_token->rough_claimed());
+    // Anonymous namespaces are unique to the translation in which they're
+    // defined, which we approximate by using the file's corpus.
+    iter->second.anonymous.mutable_vname()->set_corpus(
+        file_token->vname().corpus());
+    iter->second.anonymous.set_rough_claimed(file_token->rough_claimed());
   }
-  proto::VName vname;
-  vname.set_corpus(file_token->vname().corpus());
-  KytheClaimToken new_token;
-  new_token.set_vname(vname);
-  new_token.set_rough_claimed(file_token->rough_claimed());
-  namespace_tokens_.emplace(file_token, new_token);
-  return &namespace_tokens_.find(file_token)->second;
+  return iter->second;
 }
 
 void KytheGraphObserver::RegisterBuiltins() {
   auto RegisterBuiltin = [&](const std::string& name,
                              const MarkedSource& marked_source) {
-    builtins_.emplace(std::make_pair(
-        name, Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
-                                                 name + "#builtin"),
-                      marked_source, false}));
+    builtins_.emplace(name,
+                      Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
+                                                         name + "#builtin"),
+                              marked_source, false});
   };
   auto RegisterTokenBuiltin = [&](const std::string& name,
                                   const std::string& token) {

@@ -50,6 +50,9 @@ elif [[ -n "$(git diff --name-only)" ]]; then
   exit 1
 fi
 
+# Make sure https://github.com/clog-tool/clog-cli is installed.
+hash clog || { echo "ERROR: Please install clog"; exit 1; }
+
 previous_version=$(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)
 
 echo "Previous version: $previous_version"
@@ -98,8 +101,8 @@ if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUIL
 fi
 
 git checkout -b "release-$version"
-git commit -am "chore: setup release $version"
+git commit -am "release: $version"
 
 # Build and test the Kythe release archive.
-bazel --bazelrc=/dev/null test --stamp -c opt \
-  //kythe/release //kythe/release:release_test
+bazel --bazelrc=/dev/null test --config=release //kythe/release:release_test
+bazel --bazelrc=/dev/null build --config=release //kythe/release

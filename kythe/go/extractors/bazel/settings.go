@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"kythe.io/kythe/go/util/vnameutil"
+
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
@@ -131,7 +133,7 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 	pkg := PackageName(info.GetOwner())
 	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
-	rules, err := LoadRules(s.VNameRules)
+	rules, err := vnameutil.LoadRules(s.VNameRules)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading rules: %v", err)
 	}

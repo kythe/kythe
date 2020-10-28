@@ -17,7 +17,6 @@
 package kcd
 
 import (
-	"io"
 	"regexp"
 	"testing"
 	"time"
@@ -35,20 +34,8 @@ func TestHexDigest(t *testing.T) {
 		if got := HexDigest([]byte(input)); got != want {
 			t.Errorf("HexDigest(%q): got %q, want %q", input, got, want)
 		}
-
-		u := stubUnit{bits: input}
-		if got := UnitDigest(u); got != want {
-			t.Errorf("UnitDigest(%q): got %q, want %q", input, got, want)
-		}
 	}
 }
-
-type stubUnit struct {
-	bits string
-	Unit
-}
-
-func (s stubUnit) Digest(w io.Writer) { w.Write([]byte(s.bits)) }
 
 func regexps(exprs ...string) (res []*regexp.Regexp) {
 	for _, expr := range exprs {

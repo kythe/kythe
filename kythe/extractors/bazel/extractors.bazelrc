@@ -1,5 +1,13 @@
-# Setup the local repository for the Kythe extraction tools.
-build --override_repository kythe_release=/kythe
+# This file configures bazel for extraction using the binaries from a Kythe
+# release.
+
+# Example usage:
+#   KYTHE_RELEASE=/opt/kythe
+#   bazel \
+#     --bazelrc=$KYTHE_RELEASE/extractors.bazelrc
+#     build \
+#     --override_repository kythe_release=$KYTHE_RELEASE \
+#     //targets/to:extract
 
 # By default, keep building after errors.
 build --keep_going
@@ -8,7 +16,8 @@ build --keep_going
 build --experimental_extra_action_top_level_only
 
 # Generate metadata for generated protocol buffer code.
-build --proto_toolchain_for_cc=@kythe_release//:cc_proto_toolchain
+build --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
+build --proto_toolchain_for_cc=@kythe_release//:cc_native_proto_toolchain
 build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
 
 # Enable all supported Kythe extractors.

@@ -16,7 +16,7 @@
 
 // Package inmemory provides a in-memory implementation of graphstore.Service
 // and keyvalue.DB.
-package inmemory
+package inmemory // import "kythe.io/kythe/go/storage/inmemory"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/util/compare"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )

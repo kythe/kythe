@@ -18,7 +18,6 @@ package com.google.devtools.kythe.extractors.java.standalone;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Optional;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.sun.tools.javac.file.JavacFileManager;
@@ -27,8 +26,6 @@ import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -100,9 +97,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
       outputDirectory = ".";
     }
 
-    // Find generated source directory by the -s argument.
-    Optional<Path> genSrcDir = Optional.fromNullable(options.get(Option.S)).transform(Paths::get);
-
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
     return javaCompilationUnitExtractor.extract(
@@ -113,7 +107,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
         sourcePaths,
         processorPaths,
         processors,
-        genSrcDir,
         completeOptions,
         outputDirectory);
   }

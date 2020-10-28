@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -32,7 +34,7 @@ public final class KZipReader implements KZip.Reader {
 
   private final Gson gson;
   private final ZipFile zipFile;
-  private final String rootPrefix;
+  private final KZip.Descriptor descriptor;
 
   public KZipReader(File file) throws IOException {
     this(file, KZip.buildGson(new GsonBuilder()));
@@ -45,10 +47,10 @@ public final class KZipReader implements KZip.Reader {
   public KZipReader(File file, Gson gson) throws IOException {
     this.gson = gson;
     this.zipFile = new ZipFile(file, ZipFile.OPEN_READ);
-    this.rootPrefix = getRootPrefix(this.zipFile);
+    this.descriptor = getDescriptor(this.zipFile);
   }
 
-  private static String getRootPrefix(ZipFile zipFile) {
+  private static KZip.Descriptor getDescriptor(ZipFile zipFile) {
     Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
     if (!zipEntries.hasMoreElements()) {
       throw new KZipException("missing root entry");
@@ -59,19 +61,42 @@ public final class KZipReader implements KZip.Reader {
     }
     String rootPrefix = root.getName();
 
+    Set<String> jsonUnits = new HashSet<>();
+    Set<String> protoUnits = new HashSet<>();
+    String jsonPrefix = rootPrefix + KZip.Encoding.JSON.getSubdirectory() + "/";
+    String protoPrefix = rootPrefix + KZip.Encoding.PROTO.getSubdirectory() + "/";
+
     // Make sure each path in the kzip has the same root.
+    // Also accumulate potential unit digests.
     while (zipEntries.hasMoreElements()) {
       ZipEntry zipEntry = zipEntries.nextElement();
-      if (!zipEntry.getName().startsWith(rootPrefix)) {
-        throw new KZipException("Invalid entry (bad root): " + zipEntry.getName());
+      String name = zipEntry.getName();
+      if (!name.startsWith(rootPrefix)) {
+        throw new KZipException("Invalid entry (bad root): " + name);
+      }
+      if (name.startsWith(jsonPrefix)) {
+        jsonUnits.add(name.substring(jsonPrefix.length()));
+      }
+      if (name.startsWith(protoPrefix)) {
+        protoUnits.add(name.substring(protoPrefix.length()));
       }
     }
-    return rootPrefix;
+    KZip.Encoding encoding = KZip.Encoding.PROTO;
+    if (jsonUnits.isEmpty()) {
+      if (protoUnits.isEmpty()) {
+        throw new KZipException("kzip contains no compilation units");
+      }
+    } else if (protoUnits.isEmpty()) {
+      encoding = KZip.Encoding.JSON;
+    } else if (!jsonUnits.equals(protoUnits)) {
+      throw new KZipException("KZip has proto and json encoded units but they are not equal");
+    }
+    return KZip.Descriptor.create(rootPrefix, encoding);
   }
 
   @Override
   public Iterable<Analysis.IndexedCompilation> scan() {
-    String unitPrefix = KZip.getUnitsPath(rootPrefix, "/");
+    String unitPrefix = descriptor.getUnitsPath("/");
     return () ->
         zipFile.stream()
             .filter(entry -> !entry.isDirectory())
@@ -82,13 +107,17 @@ public final class KZipReader implements KZip.Reader {
 
   @Override
   public Analysis.IndexedCompilation readUnit(String unitDigest) {
-    return readUnit(zipFile.getEntry(KZip.getUnitsPath(rootPrefix, unitDigest)));
+    return readUnit(zipFile.getEntry(descriptor.getUnitsPath(unitDigest)));
   }
 
   private Analysis.IndexedCompilation readUnit(ZipEntry entry) {
-    try (InputStream input = zipFile.getInputStream(entry);
-        InputStreamReader reader = new InputStreamReader(input, KZip.DATA_CHARSET)) {
-      return gson.fromJson(reader, Analysis.IndexedCompilation.class);
+    try (InputStream input = zipFile.getInputStream(entry)) {
+      if (descriptor.encoding() == KZip.Encoding.JSON) {
+        try (InputStreamReader reader = new InputStreamReader(input, KZip.DATA_CHARSET)) {
+          return gson.fromJson(reader, Analysis.IndexedCompilation.class);
+        }
+      }
+      return Analysis.IndexedCompilation.parseFrom(input);
     } catch (IOException e) {
       throw new KZipException("Unable to read unit: " + entry.getName(), e);
     }
@@ -96,7 +125,7 @@ public final class KZipReader implements KZip.Reader {
 
   @Override
   public byte[] readFile(String fileDigest) {
-    return readFile(zipFile.getEntry(KZip.getFilesPath(rootPrefix, fileDigest)));
+    return readFile(zipFile.getEntry(descriptor.getFilesPath(fileDigest)));
   }
 
   private byte[] readFile(ZipEntry entry) {

@@ -15,26 +15,27 @@
  */
 
 // Package kythe implements the kcd.Unit interface for Kythe compilations.
-package kythe
+package kythe // import "kythe.io/kythe/go/platform/kcd/kythe"
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"io"
 	"sort"
 	"strings"
 
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/util/ptypes"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-var toJSON = &jsonpb.Marshaler{OrigName: true}
+var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 
 // Format is the format key used to denote Kythe compilations, stored
 // as kythe.proto.CompilationUnit messages.
@@ -48,7 +49,7 @@ func (u Unit) MarshalBinary() ([]byte, error) { return proto.Marshal(u.Proto) }
 
 // MarshalJSON satisfies the json.Marshaler interface.
 func (u Unit) MarshalJSON() ([]byte, error) {
-	s, err := toJSON.MarshalToString(u.Proto)
+	s, err := toJSON.Marshal(u.Proto)
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +95,16 @@ func (u Unit) Canonicalize() {
 }
 
 // Digest satisfies part of the kcd.Unit interface.
-func (u Unit) Digest(w io.Writer) {
+func (u Unit) Digest() string {
+	sha := sha256.New()
 	pb := u.Proto
 	if pb == nil {
 		pb = new(apb.CompilationUnit)
 	}
 	put := func(tag string, ss ...string) {
-		fmt.Fprintln(w, tag)
+		fmt.Fprintln(sha, tag)
 		for _, s := range ss {
-			fmt.Fprint(w, s, "\x00")
+			fmt.Fprint(sha, s, "\x00")
 		}
 	}
 	putv := func(tag string, v *spb.VName) {
@@ -124,6 +126,7 @@ func (u Unit) Digest(w io.Writer) {
 	for _, d := range pb.Details {
 		put("DET", d.TypeUrl, string(d.Value))
 	}
+	return hex.EncodeToString(sha.Sum(nil)[:])
 }
 
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if

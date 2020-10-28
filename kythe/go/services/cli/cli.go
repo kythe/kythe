@@ -15,7 +15,7 @@
  */
 
 // Package cli exposes a CLI interface to the Kythe services.
-package cli
+package cli // import "kythe.io/kythe/go/services/cli"
 
 import (
 	"context"
@@ -32,8 +32,8 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/identifiers"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
+	"google.golang.org/protobuf/proto"
 )
 
 // DisplayJSON is true if the user wants all service responses to be displayed
@@ -48,7 +48,7 @@ var (
 var jsonMarshaler = web.JSONMarshaler
 
 func init() {
-	jsonMarshaler.Indent = "  "
+	jsonMarshaler.Options.Indent = "  "
 	flag.BoolVar(&DisplayJSON, "json", DisplayJSON, "Display results as JSON")
 }
 

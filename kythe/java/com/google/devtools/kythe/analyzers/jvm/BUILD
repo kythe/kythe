@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     licenses = ["notice"],
@@ -41,10 +43,10 @@ java_library(
         "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_beust_jcommander//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
-        "@org_ow2_asm_asm//jar",
+        "@maven//:com_beust_jcommander",
+        "@maven//:org_ow2_asm_asm",
     ],
 )
 

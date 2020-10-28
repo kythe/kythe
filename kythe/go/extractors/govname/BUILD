@@ -11,6 +11,7 @@ go_library(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
         "@org_golang_x_tools//go/vcs:go_default_library",
     ],
@@ -25,6 +26,6 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/util/kytheuri",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

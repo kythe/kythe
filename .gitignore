@@ -13,6 +13,8 @@ MANIFEST-*
 \#*#
 .DS_Store
 .vscode
+.clangd
+.cache
 
 # Binary files
 *.class
@@ -21,6 +23,7 @@ MANIFEST-*
 # Build artifacts
 /bazel-*
 /doxygen-out
+/node_modules
 
 # Symlinks
 third_party/libmemcached
@@ -34,3 +37,6 @@ kythe/web/site/_vendor/
 
 # User bazelrc overrides
 /user.bazelrc
+
+# Ignore Rust build artifacts
+kythe/rust/**/target

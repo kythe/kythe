@@ -21,7 +21,7 @@
 // A stream consists of a sequence of such records packed consecutively without
 // additional padding.  There are no checksums or compression.
 // See also: kythe.io/kythe/go/platform/delimited.
-package dedup
+package dedup // import "kythe.io/kythe/go/platform/delimited/dedup"
 
 import (
 	"io"
@@ -29,7 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/dedup"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Reader implements the Reader interface.  Duplicate records are removed by

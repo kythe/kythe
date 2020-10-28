@@ -17,7 +17,7 @@
 // Package disksort implements sorting algorithms for sets of data too large to
 // fit fully in-memory.  If the number of elements becomes to large, data are
 // paged onto the disk.
-package disksort
+package disksort // import "kythe.io/kythe/go/util/disksort"
 
 import (
 	"bufio"
@@ -283,18 +283,21 @@ func (i *mergeIterator) Next() (interface{}, error) {
 	}
 
 	// While the merger heap is non-empty:
-	//   el := pop the head of the heap
-	//   pass it to the user-specific function
-	//   push the next element el.rd to the merger heap
-	x := heap.Pop(i.merger).(*mergeElement)
+	//   x := peek the head of the heap
+	//   pass x.el to the user-specific function
+	//   read the next element in x.rd; fix the merger heap order
+	x := i.merger.Slice[0].(*mergeElement)
 	el := x.el
 
-	if x.rd != nil {
+	if x.rd == nil {
+		heap.Pop(i.merger)
+	} else {
 		// Read and parse the next value on the same shard
 		rec, err := x.rd.Next()
 		if err != nil {
 			_ = x.f.Close()           // ignore errors (file is only open for reading)
 			_ = os.Remove(x.f.Name()) // ignore errors (os.RemoveAll used in Close)
+			heap.Pop(i.merger)
 			if err != io.EOF {
 				return nil, fmt.Errorf("error reading shard: %v", err)
 			}
@@ -304,9 +307,9 @@ func (i *mergeIterator) Next() (interface{}, error) {
 				return nil, fmt.Errorf("error unmarshaling element: %v", err)
 			}
 
-			// Reuse mergeElement, push it back onto the merger heap with the next value
+			// Reuse mergeElement, reorder it in the merger heap with the next value
 			x.el = next
-			heap.Push(i.merger, x)
+			heap.Fix(i.merger, 0)
 		}
 	}
 
@@ -317,10 +320,13 @@ func (i *mergeIterator) Next() (interface{}, error) {
 func (i *mergeIterator) Close() error {
 	i.buffer = nil
 	if i.merger != nil {
-		for i.merger.Len() != 0 {
-			x := heap.Pop(i.merger).(*mergeElement)
-			_ = x.f.Close() // ignore errors (file is only open for reading)
+		for _, x := range i.merger.Slice {
+			el := x.(*mergeElement)
+			if el.f != nil {
+				el.f.Close() // ignore errors (file is only open for reading)
+			}
 		}
+		i.merger = nil
 	}
 	if rmErr := os.RemoveAll(i.workDir); rmErr != nil {
 		return fmt.Errorf("error removing temporary directory %q: %v", i.workDir, rmErr)

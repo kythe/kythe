@@ -14,9 +14,9 @@ go_library(
     deps = [
         "//kythe/go/extractors/constants",
         "//kythe/proto:repo_go_proto",
-        "@com_github_ghodss_yaml//:go_default_library",
-        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
+        "@io_k8s_sigs_yaml//:go_default_library",
         "@org_golang_google_api//cloudbuild/v1:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
     ],
 )
 

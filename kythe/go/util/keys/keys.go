@@ -15,7 +15,7 @@
  */
 
 // Package keys implements orderedcode encodings for Kythe types.
-package keys
+package keys // import "kythe.io/kythe/go/util/keys"
 
 import (
 	"fmt"

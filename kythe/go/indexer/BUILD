@@ -1,4 +1,5 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -39,6 +40,12 @@ go_test(
         "//kythe/go/test/testutil",
         "@com_github_golang_protobuf//proto:go_default_library",
     ],
+)
+
+bzl_library(
+    name = "go_indexer_test_bzl",
+    srcs = ["testdata/go_indexer_test.bzl"],
+    visibility = ["//visibility:private"],
 )
 
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
@@ -103,6 +110,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "scopes_test",
+    srcs = ["testdata/basic/scopes.go"],
+    emit_anchor_scopes = True,
+)
+
+go_indexer_test(
     name = "comment_test",
     srcs = ["testdata/basic/comments.go"],
 )
@@ -134,10 +147,6 @@ go_indexer_test(
     srcs = ["testdata/code/interface.go"],
     has_marked_source = True,
     import_path = "test/iface",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(
@@ -152,10 +161,6 @@ go_indexer_test(
     srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
     import_path = "structtype",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(

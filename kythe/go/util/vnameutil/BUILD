@@ -10,7 +10,11 @@ go_library(
         "rewrite.go",
     ],
     visibility = [PUBLIC_VISIBILITY],
-    deps = ["//kythe/proto:storage_go_proto"],
+    deps = [
+        "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
 )
 
 go_test(
@@ -20,7 +24,8 @@ go_test(
     library = "vnameutil",
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_google_go_cmp//cmp:go_default_library",
+        "@com_github_google_go_cmp//cmp/cmpopts:go_default_library",
     ],
 )
 
@@ -40,6 +45,6 @@ go_binary(
     deps = [
         ":vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

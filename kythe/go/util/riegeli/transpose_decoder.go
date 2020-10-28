@@ -57,13 +57,14 @@ func newTransposedRecordReader(c *chunk) (recordReader, error) {
 		return nil, fmt.Errorf("reading header: %v", err)
 	}
 
-	header, err := newDecompressor(bytes.NewReader(headerBuf), compression)
-	if err != nil {
-		return nil, fmt.Errorf("decompressing header: %v", err)
+	if compression != noCompression {
+		headerBuf, err = decompress(bytes.NewReader(headerBuf), compression)
+		if err != nil {
+			return nil, fmt.Errorf("decompressing header: %v", err)
+		}
 	}
-	defer header.Close()
 
-	machine, err := parseTransposeStateMachine(r, header, compression)
+	machine, err := parseTransposeStateMachine(r, bytes.NewReader(headerBuf), compression)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ type stateMachine struct {
 	initial     int
 	states      []stateNode
 	buffers     []byteReader
-	transitions decompressor
+	transitions []byte
 	numRecords  int
 
 	// Sequence of varints for non-proto record sizes (only set when at least 1
@@ -122,7 +123,7 @@ type stateNode struct {
 
 	// next is the index of the following state in a stateMachine's execution.  The
 	// transition may be marked as implicit if the state does not require reading a
-	// transitional byte from a stateMachine's `transitions` reader.
+	// transitional byte from a stateMachine's `transitions`.
 	next     int
 	implicit bool
 
@@ -166,7 +167,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	}
 
 	// Read and decompress each bucket of data from `src`
-	buckets := make([]decompressor, numBuckets)
+	buckets := make([]byteReader, numBuckets)
 	for i := 0; i < int(numBuckets); i++ {
 		size, err := binary.ReadUvarint(hdr)
 		if err != nil {
@@ -176,11 +177,13 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 		if _, err := io.ReadFull(src, b); err != nil {
 			return nil, fmt.Errorf("reading bucket[%d]: %v", i, err)
 		}
-		rd := bytes.NewReader(b)
-		buckets[i], err = newDecompressor(rd, compressionType)
-		if err != nil {
-			return nil, fmt.Errorf("decompressing bucket[%d]: %v", i, err)
+		if compressionType != noCompression {
+			b, err = decompress(bytes.NewReader(b), compressionType)
+			if err != nil {
+				return nil, fmt.Errorf("decompressing bucket[%d]: %v", i, err)
+			}
 		}
+		buckets[i] = bytes.NewReader(b)
 	}
 
 	// Split the buckets into the actual data buffers that will be interpreted by
@@ -213,8 +216,6 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	for bucket, rd := range buckets {
 		if _, err := rd.ReadByte(); err != io.EOF {
 			return nil, fmt.Errorf("trailing bucket data: bucket=%d/%d", bucket, numBuckets)
-		} else if err := rd.Close(); err != nil {
-			return nil, fmt.Errorf("closing bucket decompressor: %v", err)
 		}
 	}
 
@@ -290,7 +291,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 
 			// End of submessage is encoded as protoSubmessageType.
 			if protoWireType(tag&7) == protoSubmessageType {
-				tag -= protoSubmessageType - protoBytesType
+				tag -= uint64(protoSubmessageType - protoBytesType)
 				subtype = delimitedEndOfSubmessageSubtype
 			}
 
@@ -338,10 +339,14 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 		return nil, fmt.Errorf("leftover header bytes (err: %v): %s", err, hex.EncodeToString(leftover))
 	}
 
-	// Decompress the transition bytes from the tail of `src`.
-	machine.transitions, err = newDecompressor(&trivialByteReader{src}, compressionType)
+	// Read/decompress the transition bytes from the tail of `src`.
+	if compressionType == noCompression {
+		machine.transitions, err = ioutil.ReadAll(src)
+	} else {
+		machine.transitions, err = decompress(&trivialByteReader{src}, compressionType)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("decompressing transitions: %v", err)
+		return nil, fmt.Errorf("reading transitions: %v", err)
 	}
 
 	return machine, nil
@@ -490,16 +495,12 @@ func (m *stateMachine) execute() ([][]byte, error) {
 
 		if numIters == 0 {
 			// Read a byte transition to move by an additional offset
-			trans, err := m.transitions.ReadByte()
-			if err == io.EOF {
-				if err := m.transitions.Close(); err != nil {
-					return nil, fmt.Errorf("closing transitions decompressor: %v", err)
-				}
+			if len(m.transitions) == 0 {
 				// Successful end of currentState machine
 				break
-			} else if err != nil {
-				return nil, fmt.Errorf("reading transition: %v", err)
 			}
+			trans := m.transitions[0]
+			m.transitions = m.transitions[1:]
 			offset := int(trans >> 2)
 			currentState = m.states[currentState.index+offset]
 			numIters = int(trans & 3)

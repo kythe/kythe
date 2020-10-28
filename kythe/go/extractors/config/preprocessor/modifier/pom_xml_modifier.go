@@ -188,7 +188,7 @@ func (vt versiontuple) earlierThan(other versiontuple) bool {
 // specify --Dmaven.compiler.executable on commandline and use a separate
 // compiler.
 //
-// Note this is unlike the gradle.build modification, where a separate
+// Note this is unlike the build.gradle modification, where a separate
 // commandline argument is not necessary.
 //
 // An example modification can be found in the tests.  We would expect

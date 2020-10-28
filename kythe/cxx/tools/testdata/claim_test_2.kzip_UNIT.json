@@ -1,0 +1,32 @@
+{
+        "unit":{
+                "v_name":{
+                        "signature":"claim_test_2"
+                },
+                "required_input":[
+                        {
+                                "v_name":{
+                                        "path":"a.h"
+                                },
+                                "details":[
+                                        {
+                                                "@type":"type.googleapis.com/kythe.proto.ContextDependentVersion",
+                                                "row":[
+                                                        {
+                                                                "source_context":"a.h_1"
+                                                        },
+                                                        {
+                                                                "source_context":"a.h_2"
+                                                        }
+                                                ]
+                                        }
+                                ]
+                        },
+                        {
+                                "v_name":{
+                                        "path":"b.h"
+                                }
+                        }
+                ]
+        }
+}

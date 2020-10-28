@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
@@ -21,8 +23,15 @@ filegroup(
         "vnames.cxx.json",
         "vnames.go.json",
         "vnames.java.json",
+        "vnames.proto.json",
+        # generic vnames are low precedence
         "vnames.json",
     ],
+)
+
+filegroup(
+    name = "simple_vnames_config",
+    srcs = ["simple_vnames.json"],
 )
 
 filegroup(
@@ -46,4 +55,9 @@ test_vname_rules(
     name = "go_vnames_test",
     rules = "vnames.go.json",
     tests = "vnames_test.go.json",
+)
+
+bzl_library(
+    name = "vnames_bzl",
+    srcs = ["vnames.bzl"],
 )

@@ -15,7 +15,7 @@
  */
 
 // Package constants defines relevant constants common to multiple extractors.
-package constants
+package constants // import "kythe.io/kythe/go/extractors/constants"
 
 var (
 	// KytheBuildPreprocessorImage is defiend in

@@ -16,71 +16,19 @@
 
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
-#include <libmemcached/memcached.h>
-
 #include <algorithm>
 #include <sstream>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+
 namespace kythe {
-
-bool MemcachedHashCache::OpenMemcache(const std::string& spec) {
-  if (cache_) {
-    memcached_free(cache_);
-    cache_ = nullptr;
-  }
-  std::string spec_amend = spec;
-  spec_amend.append(" --BINARY-PROTOCOL");
-  cache_ = memcached(spec_amend.c_str(), spec_amend.size());
-  if (cache_ != nullptr) {
-    memcached_return_t remote_version = memcached_version(cache_);
-    return memcached_success(remote_version);
-  }
-  return false;
-}
-
-MemcachedHashCache::~MemcachedHashCache() {
-  if (cache_) {
-    memcached_free(cache_);
-    cache_ = nullptr;
-  }
-}
-
-void MemcachedHashCache::RegisterHash(const Hash& hash) {
-  if (!cache_) {
-    return;
-  }
-  char value = 1;
-  memcached_return_t add_result =
-      memcached_add(cache_, reinterpret_cast<const char*>(hash), kHashSize,
-                    &value, sizeof(value), 0, 0);
-  if (!memcached_success(add_result) && add_result != MEMCACHED_DATA_EXISTS) {
-    fprintf(stderr, "memcached add failed: %s\n",
-            memcached_strerror(cache_, add_result));
-  }
-}
-
-bool MemcachedHashCache::SawHash(const Hash& hash) {
-  if (!cache_) {
-    return false;
-  }
-  memcached_return_t ex_result =
-      memcached_exist(cache_, reinterpret_cast<const char*>(hash), kHashSize);
-  if (ex_result == MEMCACHED_SUCCESS) {
-    return true;
-  } else if (ex_result != MEMCACHED_NOTFOUND) {
-    fprintf(stderr, "memcached exist failed: %s\n",
-            memcached_strerror(cache_, ex_result));
-  }
-  return false;
-}
-
 std::string FileOutputStream::Stats::ToString() const {
-  std::stringstream ostream;
-  ostream << buffers_merged_ << " merged " << buffers_split_ << " split "
-          << buffers_retired_ << " retired " << hashes_matched_ << " matches "
-          << (buffers_retired_ ? (total_bytes_ / buffers_retired_) : 0)
-          << " bytes/buffer";
-  return ostream.str();
+  return absl::StrCat(
+      buffers_merged_, " merged ", buffers_split_, " split ", buffers_retired_,
+      " retired ", hashes_matched_, " matches ",
+      (buffers_retired_ ? (total_bytes_ / buffers_retired_) : 0),
+      " bytes/buffer");
 }
 
 FileOutputStream::~FileOutputStream() {
@@ -89,7 +37,7 @@ FileOutputStream::~FileOutputStream() {
     EmitAndReleaseTopBuffer();
   }
   if (show_stats_) {
-    fprintf(stderr, "%s\n", stats_.ToString().c_str());
+    absl::FPrintF(stderr, "%s\n", stats_.ToString());
     fflush(stderr);
   }
 }

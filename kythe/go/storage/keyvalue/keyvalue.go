@@ -16,7 +16,7 @@
 
 // Package keyvalue implements a generic GraphStore for anything that implements
 // the DB interface.
-package keyvalue
+package keyvalue // import "kythe.io/kythe/go/storage/keyvalue"
 
 import (
 	"bytes"

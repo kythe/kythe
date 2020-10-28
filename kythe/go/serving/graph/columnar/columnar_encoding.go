@@ -15,14 +15,14 @@
  */
 
 // Package columnar implements the columnar table format for a Kythe xrefs service.
-package columnar
+package columnar // import "kythe.io/kythe/go/serving/graph/columnar"
 
 import (
 	"fmt"
 
 	"kythe.io/kythe/go/util/keys"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"

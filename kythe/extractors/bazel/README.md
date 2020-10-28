@@ -10,6 +10,7 @@ to extract Kythe `.kzip` compilations from supported targets: `gcr.io/kythe-publ
 * java_{library,binary,test,import,proto_library} (`Javac` and `JavaIjar` action mnemonics)
 * proto_library (`GenProtoDescriptorSet` action mnemonic)
 * typescript_library (`TypeScriptCompile` action mnemonic)
+* ng_module (`AngularTemplateCompile` action mnemonic)
 
 ## Building
 
@@ -31,5 +32,5 @@ docker run \
   gcr.io/kythe-public/bazel-extractor build \
   --define kythe_corpus=github.com/protocolbuffers/protobuf //...
 
-viewindex output/compilations.kzip
+kzip view output/compilations.kzip
 ```
