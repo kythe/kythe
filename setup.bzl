@@ -7,17 +7,17 @@ def maybe(repo_rule, name, **kwargs):
     if name not in native.existing_rules():
         repo_rule(name = name, **kwargs)
 
-def github_archive(name, repo_name, commit, sha256 = None, kind = "zip"):
+def github_archive(name, repo_name, commit, kind = "zip", **kwargs):
     """Defines a GitHub commit-based repository rule."""
     project = repo_name[repo_name.index("/"):]
     http_archive(
         name = name,
-        sha256 = sha256,
         strip_prefix = "{project}-{commit}".format(project = project, commit = commit),
         urls = [u.format(commit = commit, repo_name = repo_name, kind = kind) for u in [
             "https://mirror.bazel.build/github.com/{repo_name}/archive/{commit}.{kind}",
             "https://github.com/{repo_name}/archive/{commit}.{kind}",
         ]],
+        **kwargs
     )
 
 def kythe_rule_repositories():
@@ -28,18 +28,20 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_skylib",
-        sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
-        strip_prefix = "bazel-skylib-1.0.2",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
+        urls = [
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        ],
+        sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
     )
 
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "e5de048e72612598c45f564202f6a3c74616be4ffd2dbd6f7bc75045f8ecbdce",
+        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.4/rules_go-v0.23.4.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.4/rules_go-v0.23.4.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
         ],
     )
 
@@ -73,10 +75,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "bfd86b3cbe855d6c16c6fce60d76bd51f5c8dbc9cfcaef7a2bb5c1aafd0710e8",
+        sha256 = "b85f48fa105c4403326e9525ad2b2cc437babaa6e15a3fc0b1dbab0ab064bc7c",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
         ],
     )
 
