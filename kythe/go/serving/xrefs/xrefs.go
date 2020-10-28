@@ -249,9 +249,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	fileInfos := makeFileInfoMap(decor.FileInfo)
 
 	reply := &xpb.DecorationsReply{
-		Location:    loc,
-		GeneratedBy: decor.GeneratedBy,
-		Revision:    fileInfos[loc.GetTicket()].GetRevision(),
+		Location: loc,
+		Revision: fileInfos[loc.GetTicket()].GetRevision(),
 	}
 
 	for _, g := range decor.GeneratedBy {

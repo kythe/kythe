@@ -253,10 +253,6 @@ message DecorationsReply {
   // TODO(schroederc): filter spanning diagnostics by build configuration
   repeated common.Diagnostic diagnostic = 5;
 
-  // List of tickets for files that generate the requested file.
-  // Deprecated: use generated_by_file, if data available
-  repeated string generated_by = 6 [deprecated = true];
-
   // List of files that generate the requested file.
   repeated File generated_by_file = 19;
 
@@ -271,6 +267,8 @@ message DecorationsReply {
   // Maps from semantic nodes on the right-hand side of defines/binding
   // references to the list of their overrides.
   map<string, Overrides> extends_overrides = 17;
+
+  reserved 6;
 }
 
 message CrossReferencesRequest {
