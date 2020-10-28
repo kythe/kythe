@@ -14,6 +14,7 @@
 (ns ui.service
   "Namespace for functions communicating with the xrefs server"
   (:require [ajax.core :refer [GET POST]]
+            [clojure.string :as string]
             [goog.crypt.base64 :as b64]
             [ui.schema :as schema]
             [ui.util :as util]))
@@ -31,18 +32,22 @@
      :handler (comp handler unwrap-corpus-roots-response)
      :error-handler error-handler}))
 
+(defn- concat-path [& components]
+  (string/join "/" (filter #(not (empty? %)) components)))
+
 (defn- unwrap-dir-response [resp]
-  {:dirs (into {}
-           (map (fn [ticket]
-                  (let [uri (util/ticket->vname ticket)]
-                    [(:path uri) {}]))
-             (get resp "subdirectory")))
-   :files (into {}
-            (map (fn [ticket]
-                   (let [vname (util/ticket->vname ticket)]
-                     [(util/basename (:path vname)) {:ticket ticket
-                                                     :vname vname}]))
-              (get resp "file")))})
+  (let [{:strs [corpus root path entry]} resp
+        vname {:corpus corpus :root root}]
+    {:dirs (into {}
+                 (map (fn [{:strs [name]}] [(concat-path path name) {}])
+                      (filter (fn [{:strs [kind]}] (= "DIRECTORY" kind))
+                              entry)))
+     :files (into {}
+                  (map (fn [e] (let [name (get e "name")
+                                     vname (assoc vname :path (concat-path path name))]
+                                 [name {:vname vname :ticket (util/vname->ticket vname)}]))
+                       (filter (fn [{:strs [kind]}] (= "FILE" kind))
+                               entry)))}))
 
 (defn get-directory
   "Requests the contents of the given directory"
@@ -60,13 +65,15 @@
   {:facts (into {}
                 (map (juxt first
                            (comp util/fix-encoding b64/decodeString second))
-                     (:facts node)))})
+                     (:facts node)))
+   :definition (:definition node)})
 
 (defn- unwrap-xrefs-response [resp]
   {:cross-references (if (= 1 (count (:cross_references resp)))
                        (second (first (:cross_references resp)))
                        (:cross_references resp))
    :nodes (into {} (map (juxt first (comp unwrap-node second)) (:nodes resp)))
+   :definition_locations (:definition_locations resp)
    :next (:next_page_token resp)})
 
 (defn get-xrefs
@@ -78,7 +85,9 @@
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
                       :reference_kind     "NON_CALL_REFERENCES"
+                      :caller_kind        "OVERRIDE_CALLERS"
                       :snippets           "DEFAULT"
+                      :node_definitions true
                       :filter [schema/node-kind-fact]
                       :anchor_text true
                       :page_size 20}

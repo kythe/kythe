@@ -25,7 +25,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
@@ -44,6 +44,9 @@ func TestReferences(t *testing.T) {
 		}, {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("4"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
 		}},
 		Edge: []*scpb.Edge{{
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
@@ -102,6 +105,7 @@ func TestReferences(t *testing.T) {
 					ColumnOffset: 9,
 				},
 			},
+			BuildConfiguration: "test-build-config",
 		},
 	}, {
 		Source: &spb.VName{Signature: "node2"},
@@ -259,6 +263,82 @@ func TestDecorations_decoration(t *testing.T) {
 	}
 }
 
+func TestDecorations_diagnostics(t *testing.T) {
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "diagnostic"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DIAGNOSTIC},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_MESSAGE},
+			Value: []byte("msg"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_DETAILS},
+			Value: []byte("deets"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CONTEXT_URL},
+			Value: []byte("https://kythe.io"),
+		}},
+	}}
+
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{Text: []byte("some text\n")},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message:    "msg",
+			Details:    "deets",
+			ContextUrl: "https://kythe.io",
+		}, {
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+			Message:    "msg",
+			Details:    "deets",
+			ContextUrl: "https://kythe.io",
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
 func TestDecorations_targetDefinition(t *testing.T) {
 	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
@@ -370,6 +450,9 @@ func TestDecorations_targetDefinition(t *testing.T) {
 }
 
 func TestCrossReferences(t *testing.T) {
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Signature: "node1"},
+	}}
 	testRefs := []*ppb.Reference{{
 		Source: &spb.VName{Signature: "node1"},
 		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF},
@@ -439,6 +522,36 @@ func TestCrossReferences(t *testing.T) {
 				},
 			},
 		},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor2_parent"},
+		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+		Anchor: &srvpb.ExpandedAnchor{
+			Ticket: "kythe:?path=path#anchor3",
+			Text:   "text",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+			Snippet: "some text",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		},
 	}}
 	expectedSets := []*srvpb.PagedCrossReferences{{
 		SourceTicket: "kythe:#node1",
@@ -479,6 +592,65 @@ func TestCrossReferences(t *testing.T) {
 	}, {
 		SourceTicket: "kythe:#node2",
 		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "#internal/ref/call/direct",
+			Caller: []*srvpb.PagedCrossReferences_Caller{{
+				SemanticCaller: "kythe:?path=path#anchor2_parent",
+				Caller: &srvpb.ExpandedAnchor{
+					Ticket: "kythe:?path=path#anchor3",
+					Text:   "text",
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   5,
+							LineNumber:   1,
+							ColumnOffset: 5,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+					Snippet: "some text",
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							LineNumber: 1,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+				},
+				Callsite: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe:?path=path#anchor2",
+					Text:   "text",
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   5,
+							LineNumber:   1,
+							ColumnOffset: 5,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+					Snippet: "some text",
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							LineNumber: 1,
+						},
+						End: &cpb.Point{
+							ByteOffset:   9,
+							LineNumber:   1,
+							ColumnOffset: 9,
+						},
+					},
+				}},
+			}},
+		}, {
 			Kind: "/kythe/edge/ref/call",
 			Anchor: []*srvpb.ExpandedAnchor{{
 				Ticket: "kythe:?path=path#anchor2",
@@ -508,10 +680,42 @@ func TestCrossReferences(t *testing.T) {
 				},
 			}},
 		}},
+	}, {
+		SourceTicket: "kythe:?path=path#anchor2_parent",
+		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "/kythe/edge/defines/binding",
+			Anchor: []*srvpb.ExpandedAnchor{{
+				Ticket: "kythe:?path=path#anchor3",
+				Text:   "text",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   1,
+						ColumnOffset: 5,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+				Snippet: "some text",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}},
+		}},
 	}}
 
-	p, s, refs := ptest.CreateList(testRefs)
-	k := &KytheBeam{s: s, refs: refs}
+	p, s, refs, nodes := ptest.CreateList2(testRefs, testNodes)
+	k := &KytheBeam{s: s, refs: refs, nodes: nodes}
 	sets, _ := k.CrossReferences()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
@@ -742,7 +946,9 @@ func TestCrossReferences_registrations(t *testing.T) {
 func TestEdges_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
-	FromNodes(s, nodes).Edges()
+	k := FromNodes(s, nodes)
+	k.Edges()
+	k.SplitEdges()
 	beamtest.CheckRegistrations(t, p)
 }
 

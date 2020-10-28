@@ -125,6 +125,8 @@
            (display-related-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
            (display-related-anchors "Declarations:" (:declaration (:cross-references state)) file-to-view)
            (display-related-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
+           ;; TODO(schroederc): list callsites within each caller
+           (display-related-anchors "Callers:" (:caller (:cross-references state)) file-to-view)
            (display-related-anchors "References:" (:reference (:cross-references state)) file-to-view)
            (when (:related_node (:cross-references state))
              (dom/ul nil
@@ -136,7 +138,7 @@
                             (dom/strong nil relation) " "
                             (apply dom/ul nil
                               (map (fn [{:keys [ticket]}]
-                                     (dom/li nil
+                                     (apply dom/li nil
                                        (str
                                          (or
                                            (get-in (:nodes @state) [(keyword ticket)
@@ -148,7 +150,18 @@
                                                    :onClick (fn [e]
                                                               (.preventDefault e)
                                                               (put! xrefs-to-view ticket))}
-                                         ticket)))
+                                         ticket)
+                                       (when-let [defTicket (get-in (:nodes @state) [(keyword ticket) :definition])]
+                                         (when-let [def (get-in (:definition_locations @state) [(keyword defTicket)])]
+                                           [" "
+                                            (dom/a #js {:href "#"
+                                                        :onClick (fn [e]
+                                                                   (.preventDefault e)
+                                                                   (put! file-to-view
+                                                                         {:ticket (:parent def)
+                                                                          :anchor defTicket
+                                                                          :line (get-in def [:span :start :line_number])}))}
+                                                   "[def]")]))))
                                 nodes))))
                      (group-by :relation_kind (:related_node (:cross-references state))))))))
            (page-navigation xrefs-to-view (cons "" (:pages state)) (or (:current-page-token state) "") (:ticket (:cross-references state)))])))))

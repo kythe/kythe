@@ -8,7 +8,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/config/runextractor/compdb",
         "//kythe/go/util/cmdutil",
+        "//kythe/go/util/flagutil",
         "@com_github_google_subcommands//:go_default_library",
-        "@com_github_pborman_uuid//:go_default_library",
     ],
 )

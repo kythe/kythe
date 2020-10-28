@@ -16,7 +16,7 @@
 
 // Package api provides a union of the filetree, xrefs, and graph interfaces
 // and a command-line flag parser.
-package api
+package api // import "kythe.io/kythe/go/serving/api"
 
 import (
 	"context"
@@ -89,9 +89,10 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		}
 		api.closer = func(ctx context.Context) error { return db.Close(ctx) }
 
-		api.xs = xsrv.NewService(context.Background(), db)
+		ctx := context.Background()
+		api.xs = xsrv.NewService(ctx, db)
+		api.gs = gsrv.NewService(ctx, db)
 		tbl := &table.KVProto{db}
-		api.gs = gsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 		api.id = &identifiers.Table{tbl}
 	} else {

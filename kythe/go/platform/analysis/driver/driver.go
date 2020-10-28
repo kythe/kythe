@@ -16,12 +16,13 @@
 
 // Package driver contains a Driver implementation that sends analyses to a
 // CompilationAnalyzer based on a Queue of compilations.
-package driver
+package driver // import "kythe.io/kythe/go/platform/analysis/driver"
 
 import (
 	"context"
 	goerrors "errors"
 	"log"
+	"time"
 
 	"kythe.io/kythe/go/platform/analysis"
 
@@ -80,9 +81,17 @@ var (
 	ErrEndOfQueue = goerrors.New("end of queue")
 )
 
+// AnalysisOptions contains extra configuration for analysis requests.
+type AnalysisOptions struct {
+	// Timeout, if nonzero, sets the given timeout for each analysis request.
+	Timeout time.Duration
+}
+
 // Driver sends compilations sequentially from a queue to an analyzer.
 type Driver struct {
 	Analyzer        analysis.CompilationAnalyzer
+	AnalysisOptions AnalysisOptions
+
 	FileDataService string
 	Context         Context             // if nil, callbacks are no-ops
 	WriteOutput     analysis.OutputFunc // if nil, output is discarded
@@ -131,12 +140,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 			}
 			err := ErrRetry
 			for err == ErrRetry {
-				err = d.analysisError(ctx, cu, d.Analyzer.Analyze(ctx, &apb.AnalysisRequest{
-					Compilation:     cu.Unit,
-					FileDataService: d.FileDataService,
-					Revision:        cu.Revision,
-					BuildId:         cu.BuildID,
-				}, d.writeOutput))
+				err = d.analysisError(ctx, cu, d.runAnalysis(ctx, cu))
 			}
 			if terr := d.teardown(ctx, cu); terr != nil {
 				if err == nil {
@@ -151,4 +155,18 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 			return err
 		}
 	}
+}
+
+func (d *Driver) runAnalysis(ctx context.Context, cu Compilation) error {
+	if d.AnalysisOptions.Timeout != 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, d.AnalysisOptions.Timeout)
+		defer cancel()
+	}
+	return d.Analyzer.Analyze(ctx, &apb.AnalysisRequest{
+		Compilation:     cu.Unit,
+		FileDataService: d.FileDataService,
+		Revision:        cu.Revision,
+		BuildId:         cu.BuildID,
+	}, d.writeOutput)
 }

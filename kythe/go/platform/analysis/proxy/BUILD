@@ -1,4 +1,4 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -16,4 +16,5 @@ go_test(
     size = "small",
     srcs = ["proxy_test.go"],
     library = "proxy",
+    deps = ["//kythe/go/util/compare"],
 )

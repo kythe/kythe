@@ -17,7 +17,7 @@
 package schema
 
 // This is a generated file -- do not edit it by hand.
-// Input file: kythe/data/schema_index.textproto
+// Input file: kythe/proto/schema.proto
 
 import scpb "kythe.io/kythe/proto/schema_go_proto"
 
@@ -71,24 +71,26 @@ var (
 	}
 
 	factNames = map[string]scpb.FactName{
-		"/kythe/code":          1,
-		"/kythe/complete":      2,
-		"/kythe/context/url":   3,
-		"/kythe/details":       4,
-		"/kythe/doc/uri":       5,
-		"/kythe/label":         6,
-		"/kythe/loc/end":       7,
-		"/kythe/loc/start":     8,
-		"/kythe/message":       9,
-		"/kythe/node/kind":     10,
-		"/kythe/param/default": 11,
-		"/kythe/ruleclass":     12,
-		"/kythe/snippet/end":   13,
-		"/kythe/snippet/start": 14,
-		"/kythe/subkind":       15,
-		"/kythe/text":          16,
-		"/kythe/text/encoding": 17,
-		"/kythe/visibility":    18,
+		"/kythe/build/config":   19,
+		"/kythe/code":           1,
+		"/kythe/complete":       2,
+		"/kythe/context/url":    3,
+		"/kythe/details":        4,
+		"/kythe/doc/uri":        5,
+		"/kythe/label":          6,
+		"/kythe/loc/end":        7,
+		"/kythe/loc/start":      8,
+		"/kythe/message":        9,
+		"/kythe/node/kind":      10,
+		"/kythe/param/default":  11,
+		"/kythe/ruleclass":      12,
+		"/kythe/snippet/end":    13,
+		"/kythe/snippet/start":  14,
+		"/kythe/subkind":        15,
+		"/kythe/tag/deprecated": 20,
+		"/kythe/text":           16,
+		"/kythe/text/encoding":  17,
+		"/kythe/visibility":     18,
 	}
 
 	edgeKinds = map[string]scpb.EdgeKind{
@@ -116,6 +118,8 @@ var (
 		"/kythe/edge/overrides/root":           22,
 		"/kythe/edge/overrides/transitive":     23,
 		"/kythe/edge/param":                    24,
+		"/kythe/edge/property/reads":           44,
+		"/kythe/edge/property/writes":          45,
 		"/kythe/edge/ref":                      25,
 		"/kythe/edge/ref/call":                 26,
 		"/kythe/edge/ref/call/implicit":        27,
@@ -204,6 +208,8 @@ var (
 		16: "/kythe/text",
 		17: "/kythe/text/encoding",
 		18: "/kythe/visibility",
+		19: "/kythe/build/config",
+		20: "/kythe/tag/deprecated",
 	}
 
 	edgeKindsRev = map[scpb.EdgeKind]string{
@@ -250,6 +256,8 @@ var (
 		41: "/kythe/edge/tagged",
 		42: "/kythe/edge/typed",
 		43: "/kythe/edge/undefines",
+		44: "/kythe/edge/property/reads",
+		45: "/kythe/edge/property/writes",
 	}
 )
 

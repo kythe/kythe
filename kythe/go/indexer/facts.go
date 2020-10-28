@@ -73,14 +73,12 @@ type diagnostic struct {
 }
 
 func (d diagnostic) vname(src *spb.VName) *spb.VName {
-	hash := sha256.New()
-	fmt.Fprintln(hash, d.Message, d.Details, d.URL)
 	return &spb.VName{
 		Language:  govname.Language,
 		Corpus:    src.Corpus,
 		Path:      src.Path,
 		Root:      src.Root,
-		Signature: "diag " + base64.URLEncoding.EncodeToString(hash.Sum(nil)[:]),
+		Signature: "diag " + hashSignature(d.Message, d.Details, d.URL),
 	}
 }
 
@@ -101,4 +99,10 @@ func (s Sink) writeDiagnostic(ctx context.Context, src *spb.VName, d diagnostic)
 		}
 	}
 	return s.writeEdge(ctx, src, dname, edges.Tagged)
+}
+
+func hashSignature(s ...interface{}) string {
+	hash := sha256.New()
+	fmt.Fprintln(hash, s...)
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil)[:])
 }

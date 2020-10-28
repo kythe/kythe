@@ -1,5 +1,5 @@
-#!/bin/bash -e
-set -o pipefail
+#!/bin/bash
+set -eo pipefail
 
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
@@ -51,9 +51,8 @@ cd "$TMPDIR/release"
 cd kythe-*
 
 # Ensure the various tools work on test inputs
-tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
+tools/kzip view "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" | \
   jq . >/dev/null
-tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
   tools/entrystream --write_format=json | \
   tools/entrystream --read_format=json --entrysets >/dev/null
@@ -62,14 +61,18 @@ tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 # TODO(zarko): add cxx extractor tests
 
 rm -rf "$TMPDIR/java_compilation"
-export KYTHE_OUTPUT_FILE="$TMPDIR/java_compilation/util.kindex"
-export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+export KYTHE_OUTPUT_FILE="$TMPDIR/java_compilation/util.kzip"
+if (java -version |& head -1 | grep 1.8 >/dev/null);
+then
+  export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+else
+  export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/a:$JAVA_LANGTOOLS"
+fi
 JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
   KYTHE_ROOT_DIRECTORY="$TEST_REPOSRCDIR" \
   KYTHE_EXTRACT_ONLY=1 \
   extractors/javac-wrapper.sh \
   "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/util"/*.java
-cat "$TMPDIR"/javac-extractor.{out,err}
 test -r "$KYTHE_OUTPUT_FILE"
 java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
   -jar indexers/java_indexer.jar "$KYTHE_OUTPUT_FILE" | \
@@ -77,7 +80,7 @@ java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
 
 # Ensure the Java indexer works on a curated test compilation
 java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}"  \
-  -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
+  -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" > entries
 # TODO(zarko): add C++ test kindex entries
 
 # Ensure basic Kythe pipeline toolset works
@@ -90,18 +93,18 @@ tools/read_entries --graphstore gs | \
 
 # Smoke test the verifier
 echo "//- _ childof _" > any_childof_any2
-tools/verifier --ignore_dups --show_goals any_childof_any2 < entries
+tools/verifier --nofile_vnames --ignore_dups --show_goals any_childof_any2 \
+    < entries
 echo "//- _ noSuchEdge _" > any_nosuchedge_any2
-if tools/verifier --ignore_dups any_nosuchedge_any2 < entries; then
+if tools/verifier --nofile_vnames --ignore_dups any_nosuchedge_any2 < entries;\
+    then
   echo "ERROR: verifier found a non-existent edge" >&2
   exit 1
 fi
 
 # Ensure kythe tool is functional
 tools/kythe --api srv nodes 'kythe:?lang=java#pkg.Names'
-
 tools/http_server \
-  --public_resources web/ui \
   --serving_table srv \
   --listen $ADDR &
 pid=$!
@@ -113,7 +116,6 @@ while ! curl -s $ADDR >/dev/null; do
 done
 
 # Ensure basic HTTP handlers work
-curl -sf $ADDR >/dev/null
 curl -sf $ADDR/corpusRoots | jq . >/dev/null
 curl -sf $ADDR/dir | jq . >/dev/null
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "source_text": true, "references": true}' | \

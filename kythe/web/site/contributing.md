@@ -25,6 +25,29 @@ files. This commit can be part of your first Pull Request.
 The Kythe team has chosen to use GitHub [Pull Requests](https://guides.github.com/activities/forking/)
 for code review.
 
+## Linting and Testing
+
+Run `./tools/git/setup_hooks.sh` to initialize the standard Git hooks used by
+the Kythe developers.  This ensures that each commit passes all unit/lint tests
+and that commit descriptions follow the [Conventional
+Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification
+*before* a requesting code review.  If necessary, use `git commit --no-verify`
+to bypass these checks.  In addition to the tools necessary to build Kythe, the
+following are necessary to run the installed hooks:
+
+- arcanist
+- buildifier
+- clang-format
+- gofmt
+- google-java-format
+- jq
+- shellcheck
+
+Each Pull Request will also require a gambit of tests run by Kythe's instance of
+[Buildbot](https://buildbot-dot-kythe-repo.appspot.com).  All non-maintainers
+will require a Kythe team member to add the `buildbot` label to each Pull
+Request to verify the PR should be checked by Buildbot.
+
 ### Style formatting
 
 Kythe C++ code follows the Google style guide. You can run `clang-format` to do
@@ -40,6 +63,9 @@ If you forgot to do this for a commit, you can amend it easily:
 clang-format i --style=file $(git show --pretty="" --name-only <SHA1>)
 git commit --amend
 {% endhighlight %}
+
+Likewise, all Java code should be formatted by the latest version of
+`google-java-format` and Go code should pass through `gofmt`.
 
 ## Contribution Ideas
 

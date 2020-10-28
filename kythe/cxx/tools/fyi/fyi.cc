@@ -16,7 +16,9 @@
 
 #include "kythe/cxx/tools/fyi/fyi.h"
 
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
@@ -26,9 +28,9 @@
 #include "clang/Sema/ExternalSemaSource.h"
 #include "clang/Sema/Sema.h"
 #include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/common/schema/facts.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -319,9 +321,9 @@ class Action : public clang::ASTFrontendAction,
     if (tracker_->state() == FileTracker::State::kBusy) {
       tracker_->BeginPass();
       compiler.getPreprocessor().addPPCallbacks(
-          llvm::make_unique<PreprocessorHooks>(this));
+          absl::make_unique<PreprocessorHooks>(this));
     }
-    return llvm::make_unique<clang::ASTConsumer>();
+    return absl::make_unique<clang::ASTConsumer>();
   }
 
   /// \copydoc ASTFrontendAction::ExecuteAction
@@ -409,12 +411,12 @@ class Action : public clang::ASTFrontendAction,
     // We've found at least one interesting name in the graph. Now we need
     // to figure out which nodes those names are bound to.
     named_edges_request.add_kind(
-        ToStringRef(absl::StrCat("%", kythe::common::schema::kNamed)));
+        absl::StrCat("%", kythe::common::schema::kNamed));
     proto::EdgesReply named_edges_reply;
     std::string error_text;
     if (!factory_.xrefs_->Edges(named_edges_request, &named_edges_reply,
                                 &error_text)) {
-      fprintf(stderr, "Xrefs error (named): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (named): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Get information about the places where those nodes were defined.
@@ -424,10 +426,10 @@ class Action : public clang::ASTFrontendAction,
       return clang::TypoCorrection();
     }
     defined_edges_request.add_kind(
-        ToStringRef(absl::StrCat("%", kythe::common::schema::kDefines)));
+        absl::StrCat("%", kythe::common::schema::kDefines));
     if (!factory_.xrefs_->Edges(defined_edges_request, &defined_edges_reply,
                                 &error_text)) {
-      fprintf(stderr, "Xrefs error (defines): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (defines): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Finally, figure out whether we can make those definition sites visible
@@ -438,9 +440,9 @@ class Action : public clang::ASTFrontendAction,
       return clang::TypoCorrection();
     }
     childof_request.add_filter(kythe::common::schema::kFactNodeKind);
-    childof_request.add_kind(ToStringRef(kythe::common::schema::kChildOf));
+    childof_request.add_kind(kythe::common::schema::kChildOf);
     if (!factory_.xrefs_->Edges(childof_request, &childof_reply, &error_text)) {
-      fprintf(stderr, "Xrefs error (childof): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (childof): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Add those files to the set of includes to try out.
@@ -473,10 +475,9 @@ void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
             source_manager->getFileEntryForID(loc_id)) {
       if (file_entry->getName() == enclosing_pass_->tracker()->filename()) {
         enclosing_pass_->tracker()->set_file_begin(loc);
-        bool valid = true;
-        const auto* buffer =
-            source_manager->getMemoryBufferForFile(file_entry, &valid);
-        if (valid && buffer) {
+        const auto buffer =
+            source_manager->getMemoryBufferForFileOrNone(file_entry);
+        if (buffer) {
           enclosing_pass_->tracker()->SetInitialContent(buffer->getBuffer());
         }
         tracked_file_ = file_entry;
@@ -536,7 +537,8 @@ void ActionFactory::RemapFiles(
        I != E; ++I) {
     FileTracker* tracker = I->second;
     if (llvm::MemoryBuffer* buffer = tracker->memory_buffer()) {
-      remapped_buffers->push_back(std::make_pair(tracker->filename(), buffer));
+      remapped_buffers->push_back(
+          std::make_pair(std::string(tracker->filename()), buffer));
     }
   }
   for (const auto& buffer : builtin_headers_) {
@@ -586,7 +588,7 @@ bool ActionFactory::runInvocation(
   clang::ASTUnit* ast_unit = nullptr;
   // We only consider one full parse on one input file for now, so we only ever
   // need one Action.
-  auto action = llvm::make_unique<Action>(*this);
+  auto action = absl::make_unique<Action>(*this);
   do {
     BeginNextIteration();
     if (!ast_unit) {
@@ -594,7 +596,7 @@ bool ActionFactory::runInvocation(
           invocation, pch_container_ops, diags, action.get(), ast_unit,
           /*Persistent*/ false, llvm::StringRef(),
           /*OnlyLocalDecls*/ false,
-          /*CaptureDiagnostics*/ true,
+          /*CaptureDiagnostics*/ clang::CaptureDiagsKind::All,
           /*PrecompilePreamble*/ true,
           /*CacheCodeCompletionResults*/ false,
           /*IncludeBriefCommentsInCodeCompletion*/ false,
@@ -602,7 +604,7 @@ bool ActionFactory::runInvocation(
           /*ErrAST*/ nullptr);
       // The preprocessor hooks must have configured the FileTracker.
       if (action->tracker() == nullptr) {
-        fprintf(stderr, "Error: Never entered input file.\n");
+        absl::FPrintF(stderr, "Error: Never entered input file.\n");
         return false;
       }
     } else {
@@ -654,7 +656,7 @@ bool ActionFactory::runInvocation(
   if (action->tracker()->state() != FileTracker::State::kFailure) {
     const auto buffer = action->tracker()->backing_store();
     if (!buffer.empty()) {
-      printf("%s", buffer.str().c_str());
+      absl::PrintF("%s", buffer.str());
     }
   }
   return action->tracker()->state() == FileTracker::State::kSuccess;

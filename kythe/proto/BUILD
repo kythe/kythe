@@ -1,7 +1,13 @@
-package(default_visibility = ["//kythe:proto_visibility"])
-
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
+load("@npm//@bazel/labs:index.bzl", "ts_proto_library")
+load("@io_bazel_rules_rust//proto:proto.bzl", "rust_proto_library")
+
+package(default_visibility = ["//kythe:proto_visibility"])
 
 filegroup(
     name = "public",
@@ -29,7 +35,10 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
-    deps = [":storage_proto"],
+    deps = [
+        ":storage_proto",
+        "@com_google_protobuf//:descriptor_proto",
+    ],
 )
 
 go_kythe_proto(
@@ -37,14 +46,22 @@ go_kythe_proto(
     deps = [":storage_go_proto"],
 )
 
+java_proto_library(
+    name = "schema_java_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":schema_proto"],
+)
+
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
     name = "common_proto",
     srcs = ["common.proto"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 cc_proto_library(
     name = "common_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":common_proto"],
 )
 
@@ -52,8 +69,14 @@ go_kythe_proto(proto = ":common_proto")
 
 java_proto_library(
     name = "common_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":common_proto"],
+)
+
+ts_proto_library(
+    name = "common_ts_proto",
+    proto = ":common_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 # Public Kythe GraphStore analyzer output format
@@ -68,6 +91,7 @@ proto_library(
 
 cc_proto_library(
     name = "storage_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_proto"],
 )
 
@@ -75,7 +99,13 @@ go_kythe_proto(proto = ":storage_proto")
 
 java_proto_library(
     name = "storage_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":storage_proto"],
+)
+
+rust_proto_library(
+    name = "storage_rust_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_proto"],
 )
 
@@ -97,6 +127,7 @@ cc_proto_library(
 
 go_kythe_proto(
     proto = ":storage_service_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_go_proto"],
 )
 
@@ -117,26 +148,34 @@ proto_library(
         ":filecontext_proto",
         ":storage_proto",
         "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:timestamp_proto",
     ],
 )
 
 cc_proto_library(
     name = "analysis_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":analysis_proto"],
 )
 
 go_kythe_proto(
     proto = ":analysis_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
 java_proto_library(
     name = "analysis_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":analysis_proto"],
+)
+
+rust_proto_library(
+    name = "analysis_rust_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":analysis_proto"],
 )
 
@@ -167,7 +206,6 @@ go_kythe_proto(
         ":analysis_go_proto",
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
@@ -220,6 +258,7 @@ proto_library(
 
 cc_proto_library(
     name = "buildinfo_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":buildinfo_proto"],
 )
 
@@ -350,6 +389,7 @@ proto_library(
 
 cc_proto_library(
     name = "xref_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":xref_proto"],
 )
 
@@ -484,6 +524,24 @@ go_kythe_proto(
 )
 
 proto_library(
+    name = "graph_serving_proto",
+    srcs = ["graph_serving.proto"],
+    visibility = ["//kythe/go/serving:__subpackages__"],
+    deps = [
+        ":schema_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":graph_serving_proto",
+    deps = [
+        ":schema_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+proto_library(
     name = "link_proto",
     srcs = ["link.proto"],
     deps = [":common_proto"],
@@ -559,21 +617,22 @@ java_proto_library(
 proto_library(
     name = "extraction_config_proto",
     srcs = ["extraction_config.proto"],
-    visibility = [
-        "//kythe:proto_visibility",
-    ],
 )
 
-go_proto_library(
-    name = "extraction_config_go_proto",
-    importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
-    proto = ":extraction_config_proto",
+go_kythe_proto(proto = ":extraction_config_proto")
+
+proto_library(
+    name = "repo_proto",
+    srcs = ["repo.proto"],
 )
+
+go_kythe_proto(proto = ":repo_proto")
 
 proto_library(
     name = "pipeline_proto",
     srcs = ["pipeline.proto"],
     deps = [
+        ":common_proto",
         ":schema_proto",
         ":serving_proto",
         ":storage_proto",
@@ -583,6 +642,7 @@ proto_library(
 go_kythe_proto(
     proto = ":pipeline_proto",
     deps = [
+        ":common_go_proto",
         ":schema_go_proto",
         ":serving_go_proto",
         ":storage_go_proto",
@@ -606,4 +666,21 @@ go_kythe_proto(
         ":common_go_proto",
         ":storage_go_proto",
     ],
+)
+
+# Generated code metadata rule descriptor.
+proto_library(
+    name = "metadata_proto",
+    srcs = ["metadata.proto"],
+    deps = [":storage_proto"],
+)
+
+cc_proto_library(
+    name = "metadata_cc_proto",
+    deps = [":metadata_proto"],
+)
+
+bzl_library(
+    name = "go_bzl",
+    srcs = ["go.bzl"],
 )

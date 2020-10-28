@@ -17,7 +17,7 @@
 // Package ptypes is a thin wrapper around the golang.org/protobuf/ptypes
 // package that adds support for Kythe message types, and handles some type
 // format conversions.
-package ptypes
+package ptypes // import "kythe.io/kythe/go/util/ptypes"
 
 import (
 	"sort"
@@ -28,6 +28,9 @@ import (
 
 	anypb "github.com/golang/protobuf/ptypes/any"
 )
+
+// Any is an alias for the protocol buffer Any message type.
+type Any = anypb.Any
 
 // MarshalAny converts pb to a google.protobuf.Any message, fixing the URLs of
 // Kythe protobuf types as needed.

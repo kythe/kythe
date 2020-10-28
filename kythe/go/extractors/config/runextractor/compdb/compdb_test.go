@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package compdb
 
 import (
@@ -22,7 +23,7 @@ import (
 	"reflect"
 	"testing"
 
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
 )
 
 const (
@@ -55,7 +56,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 	root := setupEnvironment(t)
 	defer os.Chdir(root)
 
-	extractor, err := filepath.Abs("kythe/cxx/extractor/cxx_extractor")
+	extractor, err := filepath.Abs(extractorPath)
 	if err != nil {
 		t.Fatalf("Unable to get absolute path to extractor: %v", err)
 	}
@@ -63,7 +64,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 	if err := os.Chdir(filepath.Join(root, testPath, "testdata")); err != nil {
 		t.Fatalf("Unable to change working directory: %v", err)
 	}
-	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json"); err != nil {
+	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json", nil); err != nil {
 		t.Fatalf("Error running ExtractCompilations: %v", err)
 	}
 	err = filepath.Walk(os.Getenv("KYTHE_OUTPUT_DIRECTORY"), func(path string, info os.FileInfo, err error) error {
@@ -71,18 +72,23 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 			return err
 		} else if info.IsDir() {
 			return nil
+		} else if filepath.Ext(path) != ".kzip" {
+			t.Logf("Ignoring non-kzip file: %v", path)
+			return nil
 		}
 		reader, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer reader.Close()
-		comp, err := kindex.New(reader)
+		err = kzip.Scan(reader, func(r *kzip.Reader, unit *kzip.Unit) error {
+			if !reflect.DeepEqual(unit.Proto.SourceFile, []string{"test_file.cc"}) {
+				t.Fatalf("Invalid source_file: %v", unit.Proto.SourceFile)
+			}
+			return nil
+		})
 		if err != nil {
 			return err
-		}
-		if !reflect.DeepEqual(comp.Proto.SourceFile, []string{"test_file.cc"}) {
-			t.Fatalf("Invalid source_file: %v", comp.Proto.SourceFile)
 		}
 		return nil
 	})

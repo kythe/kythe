@@ -30,6 +30,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -38,7 +39,8 @@ func main() {
 		log.Fatal("Usage: shasum_tool <input_file>")
 	}
 
-	f, err := os.Open(flag.Arg(0))
+	inputFile := flag.Arg(0)
+	f, err := os.Open(inputFile)
 	if err != nil {
 		log.Fatal("Open: ", err)
 	}
@@ -48,5 +50,5 @@ func main() {
 	if _, err := io.Copy(hasher, f); err != nil {
 		log.Fatal("Hashing failed: ", err)
 	}
-	fmt.Println(hex.EncodeToString(hasher.Sum(nil)))
+	fmt.Printf("%s\t%s\n", hex.EncodeToString(hasher.Sum(nil)), filepath.Base(inputFile))
 }

@@ -1,0 +1,18 @@
+required_input {
+  v_name {
+    signature: "RIS"
+  }
+  info: {
+    path: "path"
+    digest: "digest"
+  }
+}
+output_key: "blah"
+environment {
+  name: "feefie"
+  value: "fofum"
+}
+details {
+    type_url: "type"
+    value: "nasaldemons"
+}

@@ -1,4 +1,53 @@
-package(default_visibility = ["//kythe:default_visibility"])
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load(":toolchain.bzl", "cxx_extractor_toolchain")
+
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
+
+cc_library(
+    name = "cxx_details",
+    srcs = [
+        "cxx_details.cc",
+    ],
+    hdrs = [
+        "cxx_details.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        "//kythe/proto:cxx_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@org_llvm//:clangBasic",
+        "@org_llvm//:clangLex",
+    ],
+)
+
+cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
+    deps = [
+        "//kythe/cxx/common:lib",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangBasic",
+        "@org_llvm//:clangLex",
+        "@org_llvm//:clangTooling",
+    ],
+)
+
+cc_library(
+    name = "supported_language",
+    srcs = ["language.cc"],
+    hdrs = ["language.h"],
+    deps = ["@org_llvm//:LLVMSupport"],
+)
 
 cc_library(
     name = "command_line_utils",
@@ -14,14 +63,15 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//third_party/llvm",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_llvm//:LLVMSupport",
     ],
 )
 
-cc_library(
-    name = "commandline_testlib",
-    testonly = 1,
+cc_test(
+    name = "commandline_test",
+    size = "small",
     srcs = [
         "CommandLineUtilsTest.cc",
     ],
@@ -33,15 +83,6 @@ cc_library(
     deps = [
         ":command_line_utils",
         "//third_party:gtest",
-        "//third_party/llvm",
-    ],
-)
-
-cc_test(
-    name = "commandline_test",
-    size = "small",
-    deps = [
-        ":commandline_testlib",
     ],
 )
 
@@ -60,99 +101,48 @@ cc_library(
     ],
     deps = [
         ":command_line_utils",
+        ":cxx_details",
+        ":path_utils",
+        ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:index_pack",
+        "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/indexer/cxx:clang_utils",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:cxx_cc_proto",
-        "//third_party/llvm",
+        "//kythe/proto:filecontext_cc_proto",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
         "@boringssl//:crypto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
+        "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangFrontend",
+        "@org_llvm//:clangLex",
+        "@org_llvm//:clangTooling",
     ],
 )
 
-cc_library(
-    name = "cmdlib",
-    srcs = [
-        "cxx_extractor_main.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
+cc_binary(
+    name = "cxx_extractor",
+    srcs = ["cxx_extractor_main.cc"],
     deps = [
         ":lib",
-        "//external:zlib",
-        "//kythe/cxx/common:supported_language",
-        "//kythe/proto:analysis_cc_proto",
-        "//third_party/llvm",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
+        ":supported_language",
+        "//kythe/cxx/common:init",
         "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-    ],
-)
-
-cc_library(
-    name = "bazelcmdlib",
-    srcs = [
-        "cxx_extractor_bazel_main.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        "//external:zlib",
-        "//kythe/cxx/common:supported_language",
-        "//third_party/bazel:extra_actions_base_cc_proto",
-        "//third_party/llvm",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-    ],
-)
-
-cc_library(
-    name = "objcbazelcmdlib",
-    srcs = [
-        "objc_extractor_bazel_main.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        ":objc_bazel_support_library",
-        "//external:zlib",
-        "//kythe/cxx/common:supported_language",
-        "//third_party/bazel:extra_actions_base_cc_proto",
-        "//third_party/llvm",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -162,8 +152,8 @@ cc_library(
     hdrs = ["objc_bazel_support.h"],
     deps = [
         "//third_party/bazel:extra_actions_base_cc_proto",
-        "//third_party/llvm",
         "@com_googlesource_code_re2//:re2",
+        "@org_llvm//:LLVMSupport",
     ],
 )
 
@@ -178,119 +168,68 @@ cc_test(
     ],
 )
 
-action_listener(
-    name = "extract_kindex",
-    extra_actions = [":extra_action"],
-    mnemonics = ["CppCompile"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action",
-    cmd = "$(location :cxx_extractor_bazel) \
-        $(EXTRA_ACTION_FILE) \
-        $(output $(ACTION_ID).c++.kindex) \
-        $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
-    out_templates = ["$(ACTION_ID).c++.kindex"],
-    tools = [":cxx_extractor_bazel"],
-)
-
-action_listener(
-    name = "extract_kindex_objc",
-    extra_actions = [":extra_action_objc"],
-    mnemonics = ["ObjcCompile"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action_objc",
-    cmd = "$(location :objc_extractor_bazel) \
-        $(EXTRA_ACTION_FILE) \
-        $(output $(ACTION_ID).objc.kindex) \
-        $(location //kythe/data:vnames_config) \
-        $(location //third_party/bazel:get_devdir) \
-        $(location //third_party/bazel:get_sdkroot)",
-    data = [
-        "//kythe/data:vnames_config",
-        "//third_party/bazel:get_devdir",
-        "//third_party/bazel:get_sdkroot",
-    ],
-    out_templates = ["$(ACTION_ID).objc.kindex"],
-    tools = [":objc_extractor_bazel"],
-)
-
-action_listener(
-    name = "extract_kzip",
-    extra_actions = [":extra_action_kzip"],
-    mnemonics = ["CppCompile"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action_kzip",
-    cmd = "$(location :cxx_extractor_bazel) \
-        $(EXTRA_ACTION_FILE) \
-        $(output $(ACTION_ID).c++.kzip) \
-        $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
-    out_templates = ["$(ACTION_ID).c++.kzip"],
-    tools = [":cxx_extractor_bazel"],
-)
-
-action_listener(
-    name = "extract_kindex_objc_kzip",
-    extra_actions = [":extra_action_objc_kzip"],
-    mnemonics = ["ObjcCompile"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action_objc_kzip",
-    cmd = "$(location :objc_extractor_bazel) \
-        $(EXTRA_ACTION_FILE) \
-        $(output $(ACTION_ID).objc.kzip) \
-        $(location //kythe/data:vnames_config) \
-        $(location //third_party/bazel:get_devdir) \
-        $(location //third_party/bazel:get_sdkroot)",
-    data = [
-        "//kythe/data:vnames_config",
-        "//third_party/bazel:get_devdir",
-        "//third_party/bazel:get_sdkroot",
-    ],
-    out_templates = ["$(ACTION_ID).objc.kzip"],
-    tools = [":objc_extractor_bazel"],
-)
-
-cc_binary(
-    name = "cxx_extractor",
-    deps = [
-        ":cmdlib",
-    ],
-)
-
 cc_binary(
     name = "cxx_extractor_bazel",
+    srcs = [
+        "cxx_extractor_bazel_main.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
-        ":bazelcmdlib",
+        ":lib",
+        ":supported_language",
+        "//external:zlib",
+        "//kythe/cxx/common:init",
+        "//kythe/cxx/common:path_utils",
+        "//third_party/bazel:extra_actions_base_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
 cc_binary(
     name = "objc_extractor_bazel",
+    srcs = [
+        "objc_extractor_bazel_main.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
-        ":objcbazelcmdlib",
+        ":lib",
+        ":objc_bazel_support_library",
+        ":supported_language",
+        "//external:zlib",
+        "//kythe/cxx/common:init",
+        "//kythe/cxx/common:path_utils",
+        "//third_party/bazel:extra_actions_base_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
-cc_library(
-    name = "testlib",
-    testonly = 1,
+cc_test(
+    name = "test",
+    size = "small",
     srcs = [
         "cxx_extractor_test.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -300,19 +239,163 @@ cc_library(
     deps = [
         ":lib",
         "//external:zlib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
-        "//third_party/llvm",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
+        "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangFrontend",
+        "@org_llvm//:clangTooling",
+    ],
+)
+
+cc_library(
+    name = "testlib",
+    testonly = 1,
+    srcs = ["testlib.cc"],
+    hdrs = ["testlib.h"],
+    data = [":cxx_extractor"],
+    deps = [
+        "//kythe/cxx/common:kzip_reader",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
+        "//third_party:gtest",
+        "@bazel_tools//tools/cpp/runfiles",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_llvm//:LLVMSupport",
+    ],
+)
+
+cc_library(
+    name = "bazel_event_reader",
+    srcs = ["bazel_event_reader.cc"],
+    hdrs = ["bazel_event_reader.h"],
+    deps = [
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:variant",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_test(
-    name = "test",
-    size = "small",
+    name = "bazel_event_reader_test",
+    srcs = ["bazel_event_reader_test.cc"],
     deps = [
-        ":testlib",
+        ":bazel_event_reader",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
+)
+
+cc_library(
+    name = "bazel_artifact_reader",
+    srcs = ["bazel_artifact_reader.cc"],
+    hdrs = ["bazel_artifact_reader.h"],
+    deps = [
+        ":bazel_event_reader",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:variant",
+    ],
+)
+
+cc_test(
+    name = "bazel_artifact_reader_test",
+    srcs = ["bazel_artifact_reader_test.cc"],
+    deps = [
+        ":bazel_artifact_reader",
+        ":bazel_event_reader",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "dump_bazel_artifacts",
+    srcs = ["dump_bazel_artifacts.cc"],
+    deps = [
+        ":bazel_artifact_reader",
+        "//kythe/cxx/common:init",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+sh_binary(
+    name = "xcode_wrapper",
+    srcs = ["xcode_wrapper.sh"],
+    data = [
+        ":cxx_extractor",
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+toolchain_type(name = "toolchain_type")
+
+alias(
+    name = "cxx_extractor_default",
+    actual = "cxx_extractor_linux",
+    visibility = [PUBLIC_VISIBILITY],
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_linux",
+)
+
+toolchain(
+    name = "linux_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    toolchain = ":cxx_extractor_linux",
+    toolchain_type = ":toolchain_type",
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_macos",
+    compiler_executable = "__KYTHE_XCODE_CLANG_PATH__",
+    extractor = ":xcode_wrapper",
+)
+
+toolchain(
+    name = "macos_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    target_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    toolchain = ":cxx_extractor_macos",
+    toolchain_type = ":toolchain_type",
+)
+
+bzl_library(
+    name = "toolchain_bzl",
+    srcs = ["toolchain.bzl"],
 )

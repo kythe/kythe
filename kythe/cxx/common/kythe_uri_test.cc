@@ -86,6 +86,9 @@ TEST(KytheUri, Parse) {
       {"kythe:?path=P", MakeURI().Path("P")},
       {"kythe:?lang=L", MakeURI().Language("L")},
 
+      // Special characters.
+      {"kythe:#-%2B_%2F", MakeURI().Signature("-+_/")},
+
       // Corner cases about relative paths. NB: MakeURI() goes through VNames.
       {"kythe://..", MakeURI().Corpus("..")},
       {"kythe://../", MakeURI().Corpus("../")},
@@ -102,6 +105,7 @@ TEST(KytheUri, Parse) {
       // Corpora with slashes.
       {"kythe:///Users/foo", MakeURI().Corpus("/Users/foo")},
       {"kythe:///", MakeURI().Corpus("/")},
+      {"kythe://kythe//branch", MakeURI().Corpus("kythe//branch")},
 
       // Corpus labels are not cleaned.
       {"//a//?lang=foo?path=b/c/..",

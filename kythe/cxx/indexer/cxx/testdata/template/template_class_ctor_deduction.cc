@@ -23,14 +23,21 @@ struct C {
 //- @S ref StructS
 C() -> C<S>;
 
+// TODO(shahms): This should not be considered an implicit ref.
 //- @#1C ref/implicit TemplC
 template <typename U> C(U, U) -> C<U>;
 
 void f() {
-  // TODO(shahms): Uncomment this test when Clang supports class template
-  // argument deduction for default construction.
-  // See: https://bugs.llvm.org/show_bug.cgi?id=32443
-  // C cz;
+  //- @C ref TemplC
+  //- @cz ref/call Ctor0App
+  //- Ctor0App param.0 Ctor0
+  C cz;
+  //- @C ref TemplC
+  //- @"ct(S{})" ref/call CtorTApp
+  //- CtorTApp param.0 CtorT
   C ct(S{});
+  //- @C ref TemplC
+  //- @"cu(S{}, S{})" ref/call CtorUApp
+  //- CtorUApp param.0 CtorU
   C cu(S{}, S{});
 }

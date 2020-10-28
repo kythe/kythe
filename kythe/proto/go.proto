@@ -18,15 +18,16 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option go_package = "go_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // Go-specific details used in a CompilationUnit.
 // Its type is "kythe.io/proto/kythe.proto.GoDetails".
 message GoDetails {
-  string goos     = 1;  // the GOOS value, e.g., "linux"
-  string goarch   = 2;  // the GOARCH value, e.g., "amd64"
-  string goroot   = 3;  // root directory of the Go installation
-  string gopath   = 4;  // root directory of the user's Go data
+  string goos = 1;      // the GOOS value, e.g., "linux"
+  string goarch = 2;    // the GOARCH value, e.g., "amd64"
+  string goroot = 3;    // root directory of the Go installation
+  string gopath = 4;    // root directory of the user's Go data
   string compiler = 5;  // the compiler used, e.g., "gc", "gccgo"
 
   // Build tags that are effective for this compilation.
@@ -35,4 +36,10 @@ message GoDetails {
 
   // Whether cgo is enabled for this compilation.
   bool cgo_enabled = 7;
+}
+
+// GoPackageInfo provides details about a Go package.  This may be in relation
+// to a CompilationUnit as a whole or specific required input.
+message GoPackageInfo {
+  string import_path = 1;
 }

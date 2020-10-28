@@ -15,9 +15,10 @@
  */
 
 // Package testutil contains common utilities to test Kythe libraries.
-package testutil
+package testutil // import "kythe.io/kythe/go/test/testutil"
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -28,8 +29,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
+	"sigs.k8s.io/yaml"
 )
 
 // DeepEqual determines if expected is deeply equal to got, returning a
@@ -162,6 +164,34 @@ func TrimmedEqual(got, want []byte) (bool, string) {
 	// diff want vs got
 	diff := cmp.Diff(gotStr, wantStr)
 	return diff == "", diff
+}
+
+// YAMLEqual compares two bytes assuming they are yaml, by converting to json
+// and doing an ordering-agnostic comparison.  Note this carries some
+// restrictions because yaml->json conversion fails for nil or binary map keys.
+func YAMLEqual(expected, got []byte) error {
+	e, err := yaml.YAMLToJSON(expected)
+	if err != nil {
+		return fmt.Errorf("yaml->json failure for expected: %v", err)
+	}
+	g, err := yaml.YAMLToJSON(got)
+	if err != nil {
+		return fmt.Errorf("yaml->json failure for got: %v", err)
+	}
+	return JSONEqual(e, g)
+}
+
+// JSONEqual compares two bytes assuming they are json, using encoding/json
+// and DeepEqual.
+func JSONEqual(expected, got []byte) error {
+	var e, g interface{}
+	if err := json.Unmarshal(expected, &e); err != nil {
+		return fmt.Errorf("decoding expected json: %v", err)
+	}
+	if err := json.Unmarshal(got, &g); err != nil {
+		return fmt.Errorf("decoding got json: %v", err)
+	}
+	return DeepEqual(e, g)
 }
 
 func caller(up int) (file string, line int) {

@@ -1,0 +1,43 @@
+// Test proto to test services.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+//- @TestRequest defines/binding RequestNode
+message TestRequest {
+  required string request = 1;
+}
+
+//- @TestReply defines/binding ReplyNode
+message TestReply {
+  required string reply = 1;
+}
+
+//- @TestService defines/binding ServiceNode
+//- ServiceNode childof _PackageNode
+//- ServiceNode.node/kind interface
+//- ServiceNode code SNRoot
+//- SNRoot child.0 SNContext
+//- SNRoot child.1 SNIdent
+//- SNIdent.pre_text "TestService"
+//- SNContext child.0 SNContext0
+//- SNContext0.pre_text "proto_kythe_test"
+service TestService {
+  //- @TestMethod defines/binding MethodNode
+  //- MethodNode childof ServiceNode
+  //- MethodNode.node/kind function
+  //- @TestRequest ref RequestNode
+  //- @TestReply ref ReplyNode
+  //- MethodNode code MNRoot
+  //- MNRoot child.0 MNContext
+  //- MNRoot child.1 MNIdent
+  //- MNIdent.pre_text "TestMethod"
+  //- MNContext child.0 MNContext0
+  //- MNContext child.1 MNContext1
+  //- MNContext0.pre_text "proto_kythe_test"
+  //- MNContext1.pre_text "TestService"
+  rpc TestMethod(TestRequest) returns (TestReply);
+}
+

@@ -20,6 +20,8 @@ package kythe.proto;
 
 import "kythe/proto/common.proto";
 
+option go_package = "graph_go_proto";
+
 // This file defines a graph service interface, based on Kythe data.
 //
 // Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
@@ -33,11 +35,13 @@ import "kythe/proto/common.proto";
 // without any facts or edges is not considered to exist.
 service GraphService {
   // Nodes returns a subset of the facts for each of the requested nodes.
-  rpc Nodes(NodesRequest) returns (NodesReply) {}
+  rpc Nodes(NodesRequest) returns (NodesReply) {
+  }
 
   // Edges returns a subset of the outbound edges for each of a set of
   // requested nodes.
-  rpc Edges(EdgesRequest) returns (EdgesReply) {}
+  rpc Edges(EdgesRequest) returns (EdgesReply) {
+  }
 }
 
 message NodesRequest {
@@ -104,9 +108,8 @@ message EdgesRequest {
   // The server is allowed to return fewer edges than the requested page_size,
   // even if more are available, save that it must return at least 1 edge if
   // any are available at all.
-  int32  page_size  = 8;
+  int32 page_size = 8;
   string page_token = 9;
-
 
   // TODO(fromberger): Should this interface support automatic indirection
   // through "name" nodes?

@@ -16,7 +16,7 @@
 
 // Package leveldb implements a graphstore.Service using a LevelDB backend
 // database.
-package leveldb
+package leveldb // import "kythe.io/kythe/go/storage/leveldb"
 
 import (
 	"bytes"
@@ -46,6 +46,25 @@ type levelDB struct {
 	readOpts      *levigo.ReadOptions
 	largeReadOpts *levigo.ReadOptions
 	writeOpts     *levigo.WriteOptions
+}
+
+// CompactRange runs a manual compaction on the Range of keys given.
+// If r == nil, the entire table will be compacted.
+func CompactRange(path string, r *keyvalue.Range) error {
+	options := levigo.NewOptions()
+	defer options.Close()
+	db, err := levigo.Open(path, options)
+	if err != nil {
+		return err
+	}
+	lr := levigo.Range{}
+	if r != nil {
+		lr.Start = r.Start
+		lr.Limit = r.End
+	}
+	db.CompactRange(lr)
+	db.Close()
+	return nil
 }
 
 // DefaultOptions is the default Options struct passed to Open when not
@@ -259,4 +278,16 @@ func (i iterator) Next() ([]byte, []byte, error) {
 	}
 	i.it.Next()
 	return key, val, nil
+}
+
+// Seek implements part of the keyvalue.Iterator interface.
+func (i *iterator) Seek(k []byte) error {
+	i.it.Seek(k)
+	if !i.it.Valid() {
+		if err := i.it.GetError(); err != nil {
+			return err
+		}
+		return io.EOF
+	}
+	return nil
 }

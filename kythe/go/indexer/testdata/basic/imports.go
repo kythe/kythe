@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	//- @"\"net/http\"" ref/imports
-	//-   NetHTTP=vname("package", "golang.org", _, "net/http", "go")
+	//-   _NetHTTP=vname("package", "golang.org", _, "net/http", "go")
 	_ "net/http"
 )
 

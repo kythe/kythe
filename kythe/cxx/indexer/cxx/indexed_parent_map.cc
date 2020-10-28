@@ -17,7 +17,7 @@
 
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "glog/logging.h"
-#include "scope_guard.h"
+#include "kythe/cxx/common/scope_guard.h"
 
 namespace kythe {
 namespace {

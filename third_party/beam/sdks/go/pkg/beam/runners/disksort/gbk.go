@@ -74,9 +74,13 @@ func (n *CoGBK) Up(ctx context.Context) error {
 	}
 
 	s, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		CompressShards: true,
-		Marshaler:      iterValueMarshaler{},
-		Lesser:         sortutil.LesserFunc(iterValueLess),
+		Name: fmt.Sprintf("beam.%s.%s", n.Edge.Name(), n.Edge.Scope()),
+
+		MaxInMemory:      1024 * 1024,
+		MaxBytesInMemory: 1024 * 1024 * 256,
+		CompressShards:   true,
+		Marshaler:        iterValueMarshaler{},
+		Lesser:           sortutil.LesserFunc(iterValueLess),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating MergeSorter: %v", err)
@@ -90,11 +94,11 @@ func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataContex
 	return n.Out.StartBundle(ctx, id, data)
 }
 
-func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exec.ReStream) error {
-	index := elm.Elm.(int)             // index of Inputs
-	value := elm.Elm2.(exec.FullValue) // actual KV<K,V>
+func (n *CoGBK) ProcessElement(ctx context.Context, elm *exec.FullValue, _ ...exec.ReStream) error {
+	index := elm.Elm.(int)              // index of Inputs
+	value := elm.Elm2.(*exec.FullValue) // actual KV<K,V>
 
-	fullVal := exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
+	fullVal := &exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
 	var buf bytes.Buffer
 	if err := n.valEnc[index].Encode(fullVal, &buf); err != nil {
 		return fmt.Errorf("failed to encode val %v for CoGBK: %v", elm, err)
@@ -104,7 +108,7 @@ func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exe
 	// Encode KV per window
 	for _, w := range elm.Windows {
 		ws := []typex.Window{w}
-		fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
+		fullKey := &exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
 
 		buf.Reset()
 		if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
@@ -149,14 +153,14 @@ func (i *iterStream) Open() (exec.Stream, error) {
 	return i, nil
 }
 
-func (i *iterStream) Read() (exec.FullValue, error) {
+func (i *iterStream) Read() (*exec.FullValue, error) {
 	iv, err := i.next()
 	if err != nil {
-		return exec.FullValue{}, err
+		return nil, err
 	}
 	val, err := i.n.valDec[i.idx].Decode(bytes.NewBuffer(iv.Value))
 	if err != nil {
-		return exec.FullValue{}, fmt.Errorf("error decoding value: %v", err)
+		return nil, fmt.Errorf("error decoding value: %v", err)
 	}
 	return val, nil
 }
@@ -210,6 +214,8 @@ type iterValue struct {
 	Index int
 	Value []byte
 }
+
+func (v *iterValue) Size() int { return len(v.Key) + len(v.Value) + 3*binary.MaxVarintLen64 }
 
 func (v *iterValue) String() string {
 	return fmt.Sprintf("key=%q index=%d len(val)=%d", string(v.Key), v.Index, len(v.Value))
@@ -269,7 +275,10 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 			if err := iter.Close(); err != nil {
 				return fmt.Errorf("error closing disksort.Iterator: %v", err)
 			}
-			return nil
+			if *verbose {
+				log.Printf("CoGBK = %d", totalKeys)
+			}
+			return n.Out.FinishBundle(ctx)
 		} else if iterErr != nil {
 			return fmt.Errorf("error reading disksort.Iterator: %v", iterErr)
 		}
@@ -322,11 +331,6 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 			}
 		}
 	}
-
-	if *verbose {
-		log.Printf("CoGBK = %d", totalKeys)
-	}
-	return n.Out.FinishBundle(ctx)
 }
 
 func (n *CoGBK) Down(ctx context.Context) error {

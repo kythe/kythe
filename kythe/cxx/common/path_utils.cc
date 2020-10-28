@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 The Kythe Authors. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,110 +14,316 @@
  * limitations under the License.
  */
 
-#include "path_utils.h"
-#include "clang/Basic/FileManager.h"
-#include "clang/Lex/HeaderSearch.h"
-#include "clang/Lex/LexDiagnostic.h"
-#include "clang/Lex/Preprocessor.h"
-#include "clang/Tooling/Tooling.h"
-#include "llvm/Support/Path.h"
+#include "kythe/cxx/common/path_utils.h"
+
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <vector>
+
+#include "absl/memory/memory.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
+#include "glog/logging.h"
+#include "kythe/cxx/common/status.h"
 
 namespace kythe {
-std::string CleanPath(llvm::StringRef in_path) {
-  llvm::SmallString<1024> out_path = in_path;
-  llvm::sys::path::remove_dots(out_path, true);
-  return out_path.str();
-}
+namespace {
 
-std::string JoinPath(llvm::StringRef a, llvm::StringRef b) {
-  llvm::SmallString<1024> out_path = a;
-  llvm::sys::path::append(out_path, b);
-  return out_path.str();
-}
+// Predicate used in CleanPath for skipping empty components
+// and components consistening of a single '.'.
+struct SkipEmptyDot {
+  bool operator()(absl::string_view sp) { return !(sp.empty() || sp == "."); }
+};
 
-std::string MakeCleanAbsolutePath(const std::string& in_path) {
-  std::string abs_path = clang::tooling::getAbsolutePath(in_path);
-  return CleanPath(abs_path);
-}
-
-std::string RelativizePath(const std::string& to_relativize,
-                           const std::string& relativize_against) {
-  std::string to_relativize_abs = MakeCleanAbsolutePath(to_relativize);
-  std::string relativize_against_abs =
-      MakeCleanAbsolutePath(relativize_against);
-  llvm::StringRef to_relativize_parent =
-      llvm::sys::path::parent_path(to_relativize_abs);
-  std::string ret =
-      to_relativize_parent.startswith(relativize_against_abs)
-          ? to_relativize_abs.substr(relativize_against_abs.size() +
-                                     llvm::sys::path::get_separator().size())
-          : to_relativize_abs;
-  return ret;
-}
-
-const clang::FileEntry* LookupFileForIncludePragma(
-    clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
-    llvm::SmallVectorImpl<char>* relative_path,
-    llvm::SmallVectorImpl<char>* result_filename) {
-  clang::Token filename_token;
-  clang::SourceLocation filename_end;
-  llvm::StringRef filename;
-  llvm::SmallString<128> filename_buffer;
-  preprocessor->getCurrentLexer()->LexIncludeFilename(filename_token);
-  switch (filename_token.getKind()) {
-    case clang::tok::eod:
-      return nullptr;
-    case clang::tok::angle_string_literal:
-    case clang::tok::string_literal:
-      filename = preprocessor->getSpelling(filename_token, filename_buffer);
-      break;
-    case clang::tok::less:
-      filename_buffer.push_back('<');
-      if (preprocessor->ConcatenateIncludeName(filename_buffer, filename_end))
-        return nullptr;
-      filename = filename_buffer;
-      break;
+// Deal with relative paths as well as '/' and '//'.
+absl::string_view PathPrefix(absl::string_view path) {
+  int slash_count = 0;
+  for (char ch : path) {
+    if (ch == '/' && ++slash_count <= 2) continue;
+    break;
+  }
+  switch (slash_count) {
+    case 0:
+      return "";
+    case 2:
+      return "//";
     default:
-      preprocessor->DiscardUntilEndOfDirective();
-      fprintf(stderr, "Bad include-style pragma.\n");
-      return nullptr;
+      return "/";
   }
-  bool is_angled = preprocessor->GetIncludeFilenameSpelling(
-      filename_token.getLocation(), filename);
-  if (filename.empty()) {
-    preprocessor->DiscardUntilEndOfDirective();
-    return nullptr;
+}
+
+absl::string_view TrimPathPrefix(const absl::string_view path,
+                                 absl::string_view prefix) {
+  absl::string_view result = path;
+  if (absl::ConsumePrefix(&result, prefix) &&
+      (result.empty() || prefix == "/" || absl::ConsumePrefix(&result, "/"))) {
+    return result;
   }
-  preprocessor->CheckEndOfDirective("pragma", true);
-  if (preprocessor->getHeaderSearchInfo().HasIncludeAliasMap()) {
-    auto mapped =
-        preprocessor->getHeaderSearchInfo().MapHeaderToIncludeAlias(filename);
-    if (!mapped.empty()) {
-      filename = mapped;
+  return path;
+}
+
+absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
+    PathCanonicalizer::Policy policy, absl::string_view root) {
+  switch (policy) {
+    case PathCanonicalizer::Policy::kCleanOnly:
+      return {absl::nullopt};
+    case PathCanonicalizer::Policy::kPreferRelative:
+    case PathCanonicalizer::Policy::kPreferReal:
+      if (auto realizer = PathRealizer::Create(root); realizer.ok()) {
+        return {*std::move(realizer)};
+      } else {
+        return realizer.status();
+      }
+  }
+  return {absl::nullopt};
+}
+
+absl::optional<std::string> MaybeRealPath(
+    const absl::optional<PathRealizer>& realizer, absl::string_view root) {
+  if (realizer.has_value()) {
+    if (auto result = realizer->Relativize(root); result.ok()) {
+      return *std::move(result);
+    } else {
+      LOG(ERROR) << "Unable to resolve " << root << ": " << result.status();
     }
   }
-  const clang::DirectoryLookup* cur_dir = nullptr;
-  llvm::SmallString<1024> normalized_path;
-  if (preprocessor->getLangOpts().MSVCCompat) {
-    normalized_path = filename.str();
-#ifndef LLVM_ON_WIN32
-    llvm::sys::path::native(normalized_path);
-#endif
-    *result_filename = normalized_path;
+  return absl::nullopt;
+}
+
+struct PathParts {
+  absl::string_view dir, base;
+};
+
+PathParts SplitPath(absl::string_view path) {
+  std::string::difference_type pos = path.find_last_of('/');
+
+  // Handle the case with no '/' in 'path'.
+  if (pos == absl::string_view::npos) return {path.substr(0, 0), path};
+
+  // Handle the case with a single leading '/' in 'path'.
+  if (pos == 0) return {path.substr(0, 1), absl::ClippedSubstr(path, 1)};
+
+  return {path.substr(0, pos), absl::ClippedSubstr(path, pos + 1)};
+}
+
+}  // namespace
+
+absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
+  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(root);
+      resolved.ok()) {
+    return PathCleaner(*std::move(resolved));
   } else {
-    result_filename->append(filename.begin(), filename.end());
+    return resolved.status();
   }
-  const clang::FileEntry* file = preprocessor->LookupFile(
-      filename_token.getLocation(),
-      preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
-                                             : filename,
-      is_angled, nullptr /* FromDir */, nullptr /* FromFile */, cur_dir,
-      search_path, relative_path, nullptr /* SuggestedModule */,
-      nullptr /* IsMapped */, false /* SkipCache */);
-  if (file == nullptr) {
-    fprintf(stderr, "Missing required file %s.\n", filename.str().c_str());
+}
+
+absl::StatusOr<std::string> PathCleaner::Relativize(
+    absl::string_view path) const {
+  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(path);
+      resolved.ok()) {
+    return std::string(TrimPathPrefix(*std::move(resolved), root_));
+  } else {
+    return resolved.status();
   }
-  return file;
+}
+
+absl::StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
+  if (absl::StatusOr<std::string> resolved = RealPath(root); resolved.ok()) {
+    return PathRealizer(*std::move(resolved));
+  } else {
+    return resolved.status();
+  }
+}
+
+// We do not copy the cache on assignment or construction to retain thread
+// safety.
+PathRealizer::PathRealizer(const PathRealizer& other) : root_(other.root_) {}
+PathRealizer& PathRealizer::operator=(const PathRealizer& other) {
+  root_ = other.root_;
+  return *this;
+}
+
+template <typename K, typename Fn>
+absl::StatusOr<std::string> PathRealizer::PathCache::FindOrInsert(K&& key,
+                                                                  Fn&& make) {
+  absl::MutexLock lock(&mu_);
+  auto [iter, inserted] = cache_.try_emplace(std::forward<K>(key), "");
+  if (inserted) {
+    iter->second = std::forward<Fn>(make)();
+  }
+  return iter->second;
+}
+
+absl::StatusOr<std::string> PathRealizer::Relativize(
+    absl::string_view path) const {
+  return cache_->FindOrInsert(
+      CleanPath(path), [this, path]() -> absl::StatusOr<std::string> {
+        if (absl::StatusOr<std::string> resolved = RealPath(path);
+            resolved.ok()) {
+          return std::string(TrimPathPrefix(*std::move(resolved), root_));
+        } else {
+          return resolved.status();
+        }
+      });
+}
+
+absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
+    absl::string_view root, Policy policy) {
+  absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(root);
+  if (!cleaner.ok()) {
+    return cleaner.status();
+  }
+  absl::StatusOr<absl::optional<PathRealizer>> realizer =
+      MaybeMakeRealizer(policy, root);
+  if (!realizer.ok()) {
+    return realizer.status();
+  }
+  return PathCanonicalizer(policy, *std::move(cleaner), *std::move(realizer));
+}
+
+absl::StatusOr<std::string> PathCanonicalizer::Relativize(
+    absl::string_view path) const {
+  switch (policy_) {
+    case Policy::kPreferRelative:
+      if (auto resolved = MaybeRealPath(realizer_, path)) {
+        if (!IsAbsolutePath(*resolved)) {
+          return *std::move(resolved);
+        }
+      }
+      return cleaner_.Relativize(path);
+    case Policy::kPreferReal:
+      if (auto resolved = MaybeRealPath(realizer_, path)) {
+        return *std::move(resolved);
+      }
+      return cleaner_.Relativize(path);
+    case Policy::kCleanOnly:
+      return cleaner_.Relativize(path);
+  }
+  LOG(FATAL) << "Unknown policy: " << static_cast<int>(policy_);
+  return std::string(path);
+}
+
+absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+    absl::string_view policy) {
+  using Policy = PathCanonicalizer::Policy;
+  if (policy == "0" || policy == "clean-only") {
+    return Policy::kCleanOnly;
+  }
+  if (policy == "1" || policy == "prefer-relative") {
+    return Policy::kPreferRelative;
+  }
+  if (policy == "2" || policy == "prefer-real") {
+    return Policy::kPreferReal;
+  }
+  return absl::nullopt;
+}
+
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
+                   std::string* error) {
+  if (auto parsed = ParseCanonicalizationPolicy(text)) {
+    *policy = *parsed;
+    return true;
+  }
+  *error = "policy not one of: clean-only, prefer-relative, prefer-real";
+  return false;
+}
+
+std::string AbslUnparseFlag(PathCanonicalizer::Policy policy) {
+  using Policy = PathCanonicalizer::Policy;
+  switch (policy) {
+    case Policy::kCleanOnly:
+      return "clean-only";
+    case Policy::kPreferRelative:
+      return "prefer-relative";
+    case Policy::kPreferReal:
+      return "prefer-real";
+  }
+  LOG(FATAL) << "Invalid path policy provided: " << static_cast<int>(policy);
+  return "(unknown)";
+}
+
+std::string JoinPath(absl::string_view a, absl::string_view b) {
+  return absl::StrCat(absl::StripSuffix(a, "/"), "/",
+                      absl::StripPrefix(b, "/"));
+}
+
+std::string CleanPath(absl::string_view input) {
+  const bool is_absolute_path = absl::StartsWith(input, "/");
+  std::vector<absl::string_view> parts;
+  for (absl::string_view comp : absl::StrSplit(input, '/', SkipEmptyDot{})) {
+    if (comp == "..") {
+      if (!parts.empty() && parts.back() != "..") {
+        parts.pop_back();
+        continue;
+      }
+      if (is_absolute_path) continue;
+    }
+    parts.push_back(comp);
+  }
+  // Deal with leading '//' as well as '/'.
+  return absl::StrCat(PathPrefix(input), absl::StrJoin(parts, "/"));
+}
+
+bool IsAbsolutePath(absl::string_view path) {
+  return absl::StartsWith(path, "/");
+}
+
+absl::StatusOr<std::string> GetCurrentDirectory() {
+  std::string result(128, '\0');
+  while (::getcwd(&result.front(), result.size() + 1) == nullptr) {
+    if (errno != ERANGE) {
+      return ErrnoToStatus(errno);
+    }
+    result.resize(result.size() * 2);
+  }
+  result.resize(::strlen(result.data()));
+  return result;
+}
+
+absl::StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path) {
+  if (IsAbsolutePath(path)) {
+    return CleanPath(path);
+  }
+  if (absl::StatusOr<std::string> dir = GetCurrentDirectory(); dir.ok()) {
+    return CleanPath(JoinPath(*std::move(dir), path));
+  } else {
+    return dir.status();
+  }
+}
+
+absl::string_view Dirname(absl::string_view path) {
+  return SplitPath(path).dir;
+}
+
+absl::string_view Basename(absl::string_view path) {
+  return SplitPath(path).base;
+}
+
+std::string RelativizePath(absl::string_view to_relativize,
+                           absl::string_view relativize_against) {
+  absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(relativize_against);
+  if (!cleaner.ok()) {
+    return "";
+  }
+  return cleaner->Relativize(to_relativize).value_or("");
+}
+
+absl::StatusOr<std::string> RealPath(absl::string_view path) {
+  // realpath requires a null-terminated cstring, but string_view may not be.
+  // checking whether or not it is null-terminated is potentially UB.
+  std::string zpath(path);
+
+  std::string result(PATH_MAX, '\0');
+  if (::realpath(zpath.c_str(), &result.front()) == nullptr) {
+    return ErrnoToStatus(errno);
+  }
+  result.resize(::strlen(result.c_str()));
+  return result;
 }
 
 }  // namespace kythe

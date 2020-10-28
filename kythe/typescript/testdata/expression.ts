@@ -13,7 +13,7 @@ let y = x + 3;
 // Check indexing through object literal values.
 {
   // TODO: - @age defines/binding Age
-  //- @obj defines/binding Obj
+  //- @obj defines/binding _Obj
   //- @x ref X
   let obj = {age: x};
 

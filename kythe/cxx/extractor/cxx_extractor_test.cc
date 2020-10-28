@@ -23,6 +23,7 @@
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -38,7 +39,7 @@ class CxxExtractorTest : public testing::Test {
     CHECK_EQ(0,
              llvm::sys::fs::createUniqueDirectory("cxx_extractor_test", root_)
                  .value());
-    directories_to_remove_.insert(root_.str());
+    directories_to_remove_.insert(std::string(root_.str()));
   }
 
   ~CxxExtractorTest() {
@@ -106,7 +107,7 @@ class CxxExtractorTest : public testing::Test {
                      .value());
     ASSERT_EQ(code.size(), ::write(write_fd, code.c_str(), code.size()));
     ASSERT_EQ(0, ::close(write_fd));
-    files_to_remove_.insert(path);
+    files_to_remove_.insert(std::string(path));
   }
 
   /// \brief Creates a link named `from` pointing at `to`. Destroys it
@@ -125,7 +126,7 @@ class CxxExtractorTest : public testing::Test {
     llvm::SmallString<256> appended_path;
     llvm::sys::path::append(appended_path, llvm::Twine(root_), relative_path);
     CHECK_EQ(0, llvm::sys::fs::make_absolute(appended_path).value());
-    return appended_path.str();
+    return std::string(appended_path.str());
   }
 
   /// \brief Adds a file at relative path `path` with content `code`.
@@ -194,11 +195,11 @@ class CxxExtractorTest : public testing::Test {
     final_arguments.insert(final_arguments.end(), arguments.begin(),
                            arguments.end());
     kythe::CompilationWriter index_writer;
-    index_writer.set_root_directory(root_.str());
+    index_writer.set_root_directory(std::string(root_.str()));
     index_writer.set_args(final_arguments);
     kythe::proto::CompilationUnit unit;
     clang::FileSystemOptions file_system_options;
-    file_system_options.WorkingDir = root_.str();
+    file_system_options.WorkingDir = std::string(root_.str());
     llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
         new clang::FileManager(file_system_options));
     auto extractor = kythe::NewExtractor(
@@ -215,7 +216,7 @@ class CxxExtractorTest : public testing::Test {
               had_errors, ".");
         });
     clang::tooling::ToolInvocation invocation(
-        final_arguments, extractor.release(), file_manager.get());
+        final_arguments, std::move(extractor), file_manager.get());
     invocation.run();
   }
 

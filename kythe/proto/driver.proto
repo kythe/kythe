@@ -20,13 +20,15 @@ import "kythe/proto/analysis.proto";
 import "kythe/proto/common.proto";
 import "kythe/proto/storage.proto";
 
+option go_package = "driver_go_proto";
+
 // This package defines messages used to implement JSON-RPC 2.0 message
 // exchange between a Kythe analyzer and its pipeline driver.  These messages
 // are designed so that their canonical proto3 JSON encoding corresponds to the
 // format in the spec. The encoding rules are defined by:
 // https://developers.google.com/protocol-buffers/docs/proto3#json.
 //
-// Spec: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2966.md
+// Spec: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2966.md
 package kythe.driver;
 
 // A request from the analyzer to establish the version of the driver protocol.

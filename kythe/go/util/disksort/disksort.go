@@ -17,7 +17,7 @@
 // Package disksort implements sorting algorithms for sets of data too large to
 // fit fully in-memory.  If the number of elements becomes to large, data are
 // paged onto the disk.
-package disksort
+package disksort // import "kythe.io/kythe/go/util/disksort"
 
 import (
 	"bufio"
@@ -29,6 +29,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/sortutil"
@@ -87,6 +88,8 @@ type mergeSorter struct {
 	workDir string
 	shards  []string
 
+	bufferSize int
+
 	finalized bool
 }
 
@@ -94,8 +97,15 @@ type mergeSorter struct {
 // a merge sort.
 const DefaultMaxInMemory = 32000
 
+// DefaultMaxBytesInMemory is the default maximum total size of elements to keep
+// in-memory during a merge sort.
+const DefaultMaxBytesInMemory = 1024 * 1024 * 256
+
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
+	// Name is optionally used as part of the path for temporary file shards.
+	Name string
+
 	// Lesser is the comparison function for sorting the given elements.
 	Lesser sortutil.Lesser
 	// Marshaler is used for encoding/decoding elements in temporary file shards.
@@ -110,10 +120,18 @@ type MergeOptions struct {
 	// is used.
 	MaxInMemory int
 
+	// MaxBytesInMemory is the maximum total size of elements to keep in-memory
+	// before paging them to a temporary file shard.  An element's size is
+	// determined by its `Size() int` method. If non-positive,
+	// DefaultMaxBytesInMemory is used.
+	MaxBytesInMemory int
+
 	// CompressShards determines whether the temporary file shards should be
 	// compressed.
 	CompressShards bool
 }
+
+type sizer interface{ Size() int }
 
 // NewMergeSorter returns a new disk sorter using a mergesort algorithm.
 func NewMergeSorter(opts MergeOptions) (Interface, error) {
@@ -123,13 +141,20 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 		return nil, errors.New("missing Marshaler")
 	}
 
-	dir, err := ioutil.TempDir(opts.WorkDir, "external.merge.sort")
+	name := strings.Replace(opts.Name, string(filepath.Separator), ".", -1)
+	if name == "" {
+		name = "external.merge.sort"
+	}
+	dir, err := ioutil.TempDir(opts.WorkDir, name)
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary work directory: %v", err)
 	}
 
 	if opts.MaxInMemory <= 0 {
 		opts.MaxInMemory = DefaultMaxInMemory
+	}
+	if opts.MaxBytesInMemory <= 0 {
+		opts.MaxBytesInMemory = DefaultMaxBytesInMemory
 	}
 
 	return &mergeSorter{
@@ -152,7 +177,11 @@ func (m *mergeSorter) Add(i interface{}) error {
 	}
 
 	m.buffer = append(m.buffer, i)
-	if len(m.buffer) >= m.opts.MaxInMemory {
+	if sizer, ok := i.(sizer); ok {
+		m.bufferSize += sizer.Size()
+	}
+
+	if len(m.buffer) >= m.opts.MaxInMemory || m.bufferSize >= m.opts.MaxBytesInMemory {
 		return m.dumpShard()
 	}
 	return nil
@@ -254,18 +283,21 @@ func (i *mergeIterator) Next() (interface{}, error) {
 	}
 
 	// While the merger heap is non-empty:
-	//   el := pop the head of the heap
-	//   pass it to the user-specific function
-	//   push the next element el.rd to the merger heap
-	x := heap.Pop(i.merger).(*mergeElement)
+	//   x := peek the head of the heap
+	//   pass x.el to the user-specific function
+	//   read the next element in x.rd; fix the merger heap order
+	x := i.merger.Slice[0].(*mergeElement)
 	el := x.el
 
-	if x.rd != nil {
+	if x.rd == nil {
+		heap.Pop(i.merger)
+	} else {
 		// Read and parse the next value on the same shard
 		rec, err := x.rd.Next()
 		if err != nil {
 			_ = x.f.Close()           // ignore errors (file is only open for reading)
 			_ = os.Remove(x.f.Name()) // ignore errors (os.RemoveAll used in Close)
+			heap.Pop(i.merger)
 			if err != io.EOF {
 				return nil, fmt.Errorf("error reading shard: %v", err)
 			}
@@ -275,9 +307,9 @@ func (i *mergeIterator) Next() (interface{}, error) {
 				return nil, fmt.Errorf("error unmarshaling element: %v", err)
 			}
 
-			// Reuse mergeElement, push it back onto the merger heap with the next value
+			// Reuse mergeElement, reorder it in the merger heap with the next value
 			x.el = next
-			heap.Push(i.merger, x)
+			heap.Fix(i.merger, 0)
 		}
 	}
 
@@ -288,10 +320,13 @@ func (i *mergeIterator) Next() (interface{}, error) {
 func (i *mergeIterator) Close() error {
 	i.buffer = nil
 	if i.merger != nil {
-		for i.merger.Len() != 0 {
-			x := heap.Pop(i.merger).(*mergeElement)
-			_ = x.f.Close() // ignore errors (file is only open for reading)
+		for _, x := range i.merger.Slice {
+			el := x.(*mergeElement)
+			if el.f != nil {
+				el.f.Close() // ignore errors (file is only open for reading)
+			}
 		}
+		i.merger = nil
 	}
 	if rmErr := os.RemoveAll(i.workDir); rmErr != nil {
 		return fmt.Errorf("error removing temporary directory %q: %v", i.workDir, rmErr)
@@ -332,6 +367,7 @@ const shardFileMode = 0600 | os.ModeExclusive | os.ModeAppend | os.ModeTemporary
 func (m *mergeSorter) dumpShard() (err error) {
 	defer func() {
 		m.buffer = make([]interface{}, 0, m.opts.MaxInMemory)
+		m.bufferSize = 0
 	}()
 
 	// Create a new shard file

@@ -1,4 +1,5 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -8,6 +9,7 @@ go_library(
         "emit.go",
         "facts.go",
         "indexer.go",
+        "markedsource.go",
     ],
     deps = [
         "//kythe/go/extractors/govname",
@@ -40,11 +42,22 @@ go_test(
     ],
 )
 
+bzl_library(
+    name = "go_indexer_test_bzl",
+    srcs = ["testdata/go_indexer_test.bzl"],
+    visibility = ["//visibility:private"],
+)
+
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 
 go_indexer_test(
     name = "syntax_test",
     srcs = ["testdata/syntax.go"],
+)
+
+go_indexer_test(
+    name = "deprecation_test",
+    srcs = ["testdata/basic/deprecation.go"],
 )
 
 go_indexer_test(
@@ -97,6 +110,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "scopes_test",
+    srcs = ["testdata/basic/scopes.go"],
+    emit_anchor_scopes = True,
+)
+
+go_indexer_test(
     name = "comment_test",
     srcs = ["testdata/basic/comments.go"],
 )
@@ -128,10 +147,6 @@ go_indexer_test(
     srcs = ["testdata/code/interface.go"],
     has_marked_source = True,
     import_path = "test/iface",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(
@@ -146,10 +161,6 @@ go_indexer_test(
     srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
     import_path = "structtype",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(
@@ -197,8 +208,14 @@ go_indexer_test(
     import_path = "test/pkginit",
 )
 
+go_indexer_test(
+    name = "types_test",
+    srcs = ["testdata/types.go"],
+    has_marked_source = True,
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
-# TODO(T270): requires MarkedSource resolution in pipeline
+# TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(
 #     name = "marked_source_integration_test",
 #     srcs = ["testdata/integration/marked_source.go"],

@@ -32,23 +32,26 @@
 //     }
 //   }
 //
-package golang
+package golang // import "kythe.io/kythe/go/extractors/golang"
 
 import (
 	"context"
 	"fmt"
 	"go/build"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
-	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
+
+	anypb "github.com/golang/protobuf/ptypes/any"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
@@ -63,6 +66,9 @@ func init() {
 	}
 }
 
+// PackageVNameOptions re-exports govname.PackageVNameOptions.
+type PackageVNameOptions = govname.PackageVNameOptions
+
 // An Extractor contains the state needed to extract Go compilations from build
 // information.  The zero value is ready for use with default settings.
 type Extractor struct {
@@ -72,12 +78,8 @@ type Extractor struct {
 	// The packages that have been extracted so far (initially empty).
 	Packages []*Package
 
-	// The name of the corpus that should be attributed to packages whose
-	// corpus is not specified and cannot be inferred (e.g., local imports).
-	Corpus string
-
-	// The local path against which relative imports should be resolved.
-	LocalPath string
+	// The configuration for constructing VNames for packages.
+	PackageVNameOptions
 
 	// An alternative installation path for compiled packages.  If this is set,
 	// and a compiled package cannot be found in the normal location, the
@@ -87,17 +89,12 @@ type Extractor struct {
 	// Extra file paths to include in each compilation record.
 	ExtraFiles []string
 
-	// A function to generate a vname from a package's import path.  If nil,
-	// the extractor will use govname.ForPackage.
-	PackageVName func(corpus string, bp *build.Package) *spb.VName
-
 	// A function to convert a directory path to an import path.  If nil, the
 	// path is made relative to the first matching element of the build
 	// context's GOROOT or GOPATH or the current working directory.
 	DirToImport func(path string) (string, error)
 
 	pmap map[string]*build.Package // Map of import path to build package
-	fmap map[string]string         // Map of file path to content digest
 }
 
 // addPackage imports the specified package, if it has not already been
@@ -122,43 +119,6 @@ func (e *Extractor) mapPackage(importPath string, bp *build.Package) {
 	}
 }
 
-// readFile reads the contents of path as resolved through the extracted settings.
-func (e *Extractor) readFile(ctx context.Context, path string) ([]byte, error) {
-	data, err := vfs.ReadFile(ctx, path)
-	if err != nil {
-		// If there's an alternative installation path, and this is a path that
-		// could potentially be there, try that.
-		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
-			alt := e.AltInstallPath + path[i:]
-			return vfs.ReadFile(ctx, alt)
-		}
-	}
-	return data, err
-}
-
-// fetchAndStore reads the contents of path and stores them into a, returning
-// the digest of the contents.  The path to digest mapping is cached so that
-// repeated uses of the same file will avoid redundant work.
-func (e *Extractor) fetchAndStore(ctx context.Context, path string, a *indexpack.Archive) (string, error) {
-	if digest, ok := e.fmap[path]; ok {
-		return digest, nil
-	}
-	data, err := e.readFile(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	name, err := a.WriteFile(ctx, data)
-	if err != nil {
-		return "", err
-	}
-	digest := strings.TrimSuffix(name, filepath.Ext(name))
-	if e.fmap == nil {
-		e.fmap = make(map[string]string)
-	}
-	e.fmap[path] = digest
-	return digest, err
-}
-
 // findPackages returns the first *Package value in Packages having the given
 // import path, or nil if none is found.
 func (e *Extractor) findPackage(importPath string) *Package {
@@ -170,12 +130,9 @@ func (e *Extractor) findPackage(importPath string) *Package {
 	return nil
 }
 
-// vnameFor returns a vname for the specified package, handling the default.
+// vnameFor returns a vname for the specified package.
 func (e *Extractor) vnameFor(bp *build.Package) *spb.VName {
-	if e.PackageVName != nil {
-		return e.PackageVName(e.Corpus, bp)
-	}
-	v := govname.ForPackage(e.Corpus, bp)
+	v := govname.ForPackage(bp, &e.PackageVNameOptions)
 	v.Signature = "" // not useful in this context
 	return v
 }
@@ -196,25 +153,41 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 	return dir, nil
 }
 
-// Locate attempts to locate the specified import path in the build context.
-// If the package has already been located, its existing package is returned.
-// Otherwise, if importing succeeds, a new *Package value is returned, and also
-// appended to the Packages field.
-func (e *Extractor) Locate(importPath string) (*Package, error) {
-	if pkg := e.findPackage(importPath); pkg != nil {
-		return pkg, nil
+// Locate attempts to resolve and locate the specified import path in the build
+// context.  If a package has already been located, its existing *Package is
+// returned.  Otherwise, a new *Package value is returned and appended to the
+// Packages field.
+//
+// Note: multiple packages may be resolved for "/..." import paths
+func (e *Extractor) Locate(importPath string) ([]*Package, error) {
+	listedPackages, listErr := e.listPackages(importPath)
+
+	var pkgs []*Package
+	for _, pkg := range listedPackages {
+		if pkg.ForTest != "" || strings.HasSuffix(pkg.ImportPath, ".test") {
+			// ignore constructed test packages
+			continue
+		} else if pkg.Error != nil {
+			return nil, pkg.Error
+		}
+
+		importPath := pkg.ImportPath
+		p := e.findPackage(importPath)
+		if p == nil {
+			p = &Package{
+				ext:          e,
+				Path:         importPath,
+				DepOnly:      pkg.DepOnly,
+				BuildPackage: pkg.buildPackage(),
+			}
+			e.Packages = append(e.Packages, p)
+			e.mapPackage(importPath, p.BuildPackage)
+		}
+		if !pkg.DepOnly {
+			pkgs = append(pkgs, p)
+		}
 	}
-	bp, err := e.addPackage(importPath, e.LocalPath)
-	if err != nil {
-		return nil, err
-	}
-	pkg := &Package{
-		ext:          e,
-		Path:         importPath,
-		BuildPackage: bp,
-	}
-	e.Packages = append(e.Packages, pkg)
-	return pkg, nil
+	return pkgs, listErr
 }
 
 // ImportDir attempts to import the Go package located in the given directory.
@@ -249,6 +222,9 @@ func (e *Extractor) ImportDir(dir string) (*Package, error) {
 func (e *Extractor) Extract() error {
 	var err error
 	for _, pkg := range e.Packages {
+		if pkg.DepOnly {
+			continue
+		}
 		pkg.Err = pkg.Extract()
 		if pkg.Err != nil && err == nil {
 			err = pkg.Err
@@ -262,7 +238,9 @@ type Package struct {
 	ext  *Extractor    // pointer back to the extractor that generated this package
 	seen stringset.Set // input files already added to this package
 
+	CorpusRoot   string                 // Corpus package root path
 	Path         string                 // Import or directory path
+	DepOnly      bool                   // Whether the package is only seen as a dependency
 	Err          error                  // Error discovered during processing
 	BuildPackage *build.Package         // Package info from the go/build library
 	VName        *spb.VName             // The package's Kythe vname
@@ -277,6 +255,11 @@ type Package struct {
 // by the Store method.
 func (p *Package) Extract() error {
 	p.VName = p.ext.vnameFor(p.BuildPackage)
+	if r, err := govname.RepoRoot(p.Path); err == nil {
+		p.CorpusRoot = r.Root
+	} else {
+		p.CorpusRoot = p.VName.GetCorpus()
+	}
 	cu := &apb.CompilationUnit{
 		VName:    p.VName,
 		Argument: []string{"go", "build"},
@@ -293,9 +276,20 @@ func (p *Package) Extract() error {
 		cu.Details = append(cu.Details, info)
 	}
 
+	if govname.ImportPath(cu.VName, bc.GOROOT) != p.Path {
+		// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+		if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+			ImportPath: p.Path,
+		}); err == nil {
+			cu.Details = append(cu.Details, info)
+		} else {
+			log.Printf("WARNING: failed to marshal GoPackageInfo for CompilationUnit: %v", err)
+		}
+	}
+
 	// Add required inputs from this package (source files of various kinds).
 	bp := p.BuildPackage
-	srcBase := filepath.Join(bp.SrcRoot, bp.ImportPath)
+	srcBase := bp.Dir
 	p.addSource(cu, bp.Root, srcBase, bp.GoFiles)
 	p.addFiles(cu, bp.Root, srcBase, bp.CgoFiles)
 	p.addFiles(cu, bp.Root, srcBase, bp.CFiles)
@@ -335,48 +329,6 @@ func (p *Package) Extract() error {
 	return nil
 }
 
-// Store writes the compilation units of p to the specified archive and returns
-// its unit file names.  This has the side-effect of updating the required
-// inputs of the compilations so that they contain the proper digest values.
-func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, error) {
-	const formatKey = "kythe"
-
-	var unitFiles []string
-	for _, cu := range p.Units {
-		// Pack the required inputs into the archive.
-		for _, ri := range cu.RequiredInput {
-			// Check whether we already did this, so Store can be idempotent.
-			//
-			// When addFiles first adds the required input to the record, we
-			// know its path but have not yet fetched its contents -- that step
-			// is deferred until we are ready to store them for output (i.e.,
-			// now).  Once we have fetched the file contents, we'll update the
-			// field with the correct digest value.  We only want to do this
-			// once, per input, however.
-			path := ri.Info.Digest
-			if !strings.Contains(path, "/") {
-				continue
-			}
-
-			// Fetch the file and store it into the archive.  We may get a
-			// cache hit here, handled by fetchAndStore.
-			digest, err := p.ext.fetchAndStore(ctx, path, a)
-			if err != nil {
-				return nil, err
-			}
-			ri.Info.Digest = digest
-		}
-
-		// Pack the compilation unit into the archive.
-		fn, err := a.WriteUnit(ctx, formatKey, cu)
-		if err != nil {
-			return nil, err
-		}
-		unitFiles = append(unitFiles, fn)
-	}
-	return unitFiles, nil
-}
-
 // mapFetcher implements analysis.Fetcher by dispatching to a preloaded map
 // from digests to contents.
 type mapFetcher map[string][]byte
@@ -391,7 +343,7 @@ func (m mapFetcher) Fetch(_, digest string) ([]byte, error) {
 
 // EachUnit calls f with a compilation record for each unit in p.  If f reports
 // an error, that error is returned by EachUnit.
-func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) error) error {
+func (p *Package) EachUnit(ctx context.Context, f func(cu *apb.CompilationUnit, fetcher analysis.Fetcher) error) error {
 	fetcher := make(mapFetcher)
 	for _, cu := range p.Units {
 		// Ensure all the file contents are loaded, and update the digests.
@@ -412,11 +364,7 @@ func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) erro
 			ri.Info.Digest = fd.Info.Digest
 		}
 
-		idx, err := kindex.FromUnit(cu, fetcher)
-		if err != nil {
-			return fmt.Errorf("loading compilation: %v", err)
-		}
-		if err := f(idx); err != nil {
+		if err := f(cu, fetcher); err != nil {
 			return err
 		}
 	}
@@ -429,21 +377,66 @@ func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) erro
 // The digest will be the complete path as written -- this will be replaced
 // with the content digest in the fetcher.
 func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []string) {
+	// If a root directory is specified, use it instead of the the root from the
+	// go package loader.
+	if p.ext.RootDirectory != "" {
+		root = p.ext.RootDirectory
+	}
+	if !strings.HasSuffix(root, "/") {
+		root += "/"
+	}
+
 	for _, name := range names {
 		path := name
 		if base != "" {
 			path = filepath.Join(base, name)
 		}
-		trimmed := strings.TrimPrefix(path, root+"/")
+		trimmed := strings.TrimPrefix(path, root)
+		vn := &spb.VName{
+			Corpus: p.ext.DefaultCorpus,
+			Path:   trimmed,
+		}
+
+		var details []*anypb.Any
+		if p.ext.Rules != nil {
+			v2, ok := p.ext.Rules.Apply(trimmed)
+			if ok {
+				vn.Corpus = v2.Corpus
+				vn.Root = v2.Root
+				vn.Path = v2.Path
+
+				if govname.ImportPath(vn, p.ext.BuildContext.GOROOT) != p.BuildPackage.ImportPath {
+					// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+					if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+						ImportPath: p.BuildPackage.ImportPath,
+					}); err == nil {
+						details = append(details, info)
+					} else {
+						log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+					}
+				}
+			}
+		}
+
+		if vn.Corpus == "" {
+			// If no default corpus is specified, use the package's corpus for each of
+			// its files.  The package corpus is based on the rules in
+			// kythe/go/extractors/govname and is usually the package's
+			// repository root (e.g. github.com/golang/protobuf).
+			vn.Corpus = p.VName.Corpus
+			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
+			vn.Path = strings.TrimPrefix(components[1], p.CorpusRoot+"/")
+			if components[0] != "src" {
+				vn.Root = components[0]
+			}
+		}
 		cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
-			VName: &spb.VName{
-				Corpus: p.ext.Corpus,
-				Path:   trimmed,
-			},
+			VName: vn,
 			Info: &apb.FileInfo{
 				Path:   trimmed,
 				Digest: path, // provisional, until the file is loaded
 			},
+			Details: details,
 		})
 	}
 }
@@ -467,6 +460,20 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 		// Populate the vname for the input based on the corpus of the package.
 		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 		fi.VName = p.ext.vnameFor(bp)
+		// Because the VName has changed, a previously-added details message (if
+		// any) is no longer valid.
+		fi.Details = nil
+
+		if govname.ImportPath(fi.VName, p.ext.BuildContext.GOROOT) != bp.ImportPath {
+			// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+			if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+				ImportPath: bp.ImportPath,
+			}); err == nil {
+				fi.Details = append(fi.Details, info)
+			} else {
+				log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+			}
+		}
 	}
 }
 
@@ -485,7 +492,10 @@ func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string, localPa
 	for _, ip := range importPaths {
 		if ip == "unsafe" {
 			// package unsafe is intrinsic; nothing to do
-		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil {
+		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil || dep.PkgObj == "" {
+			// Package was either literally missing or could not be built properly.
+			// Note: Locate could have added a dependency package that could not be
+			// built as part of its earlier analysis.
 			missing = append(missing, ip)
 		} else {
 			p.addInput(cu, dep)

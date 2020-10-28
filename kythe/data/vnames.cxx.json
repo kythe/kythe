@@ -1,0 +1,34 @@
+[
+  {
+    "pattern": "(/usr/include/c\\+\\+/[^/]+)/(.*)",
+    "vname": {
+      "corpus": "libstdcxx",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "(third_party/llvm/lib/clang/[^/]+/include)/(.*)",
+    "vname": {
+      "corpus": "cstdlib",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "(/kythe_builtins/include)/(.*)",
+    "vname": {
+      "corpus": "cstdlib",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "/usr/include/(.*)",
+    "vname": {
+      "corpus": "cstdlib",
+      "root": "/usr/include",
+      "path": "@1@"
+    }
+  }
+]

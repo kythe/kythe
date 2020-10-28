@@ -16,8 +16,6 @@
 
 // A simple unit test for KytheIndexer.
 
-#include "IndexerFrontendAction.h"
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,23 +25,20 @@
 #include <string>
 #include <utility>
 
+#include "IndexerFrontendAction.h"
 #include "absl/memory/memory.h"
-
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
-
-#include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Twine.h"
-
 #include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
-
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/RecordingOutputStream.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
 
 namespace kythe {
 namespace {
@@ -417,7 +412,7 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
     }
     if (const clang::FileEntry* file_entry =
             SourceManager->getFileEntryForID(File)) {
-      FileNames.push(file_entry->getName());
+      FileNames.push(std::string(file_entry->getName()));
     } else {
       FileNames.push("null-file");
     }

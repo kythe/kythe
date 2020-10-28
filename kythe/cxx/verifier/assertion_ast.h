@@ -17,14 +17,18 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 #define KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 
+#include <ctype.h>
+
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
 
+#include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
 #include "glog/logging.h"
-
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace verifier {
@@ -36,6 +40,8 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
+  explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
+
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
     const auto old = symbols_.find(string);
@@ -58,11 +64,11 @@ class SymbolTable {
   std::string PrettyText(Symbol symbol) const {
     auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
-      return "(unique#" + std::to_string(symbol) + ")";
-    } else if (!text->empty()) {
+      return absl::StrCat("(unique#", std::to_string(symbol), ")");
+    } else if (!text->empty() && RE2::FullMatch(*text, id_regex_)) {
       return *text;
     } else {
-      return "\"\"";
+      return absl::StrCat("\"", absl::CHexEscape(*text), "\"");
     }
   }
 
@@ -80,6 +86,8 @@ class SymbolTable {
   std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
   std::string unique_symbol_ = "(unique)";
+  /// Used for quoting strings - see assertions.lex:
+  RE2 id_regex_;
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.
@@ -200,19 +208,41 @@ class AstNode : public ArenaObject {
 /// \brief A range specification that can unify with one or more ranges.
 class Range : public AstNode {
  public:
-  Range(const yy::location& location, size_t begin, size_t end)
-      : AstNode(location), begin_(begin), end_(end) {}
+  Range(const yy::location& location, size_t begin, size_t end, Symbol path,
+        Symbol root, Symbol corpus)
+      : AstNode(location),
+        begin_(begin),
+        end_(end),
+        path_(path),
+        root_(root),
+        corpus_(corpus) {}
   Range* AsRange() override { return this; }
   void Dump(const SymbolTable&, PrettyPrinter*) override;
   size_t begin() const { return begin_; }
   size_t end() const { return end_; }
+  size_t path() const { return path_; }
+  size_t corpus() const { return corpus_; }
+  size_t root() const { return root_; }
 
  private:
   /// The start of the range in bytes.
   size_t begin_;
   /// The end of the range in bytes.
   size_t end_;
+  /// The source file path.
+  Symbol path_;
+  /// The source file root.
+  Symbol root_;
+  /// The source file corpus.
+  Symbol corpus_;
 };
+
+inline bool operator==(const Range& l, const Range& r) {
+  return l.begin() == r.begin() && l.end() == r.end() && l.path() == r.path() &&
+         l.root() == r.root() && l.corpus() == r.corpus();
+}
+
+inline bool operator!=(const Range& l, const Range& r) { return !(l == r); }
 
 /// \brief A tuple of zero or more elements.
 class Tuple : public AstNode {

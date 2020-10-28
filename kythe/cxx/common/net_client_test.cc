@@ -15,19 +15,24 @@
  */
 
 #include "kythe/cxx/common/net_client.h"
+
+#include <string>
+
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/memory/memory.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/graph.pb.h"
 
-DEFINE_string(xrefs, "http://localhost:8080", "Base URI for xrefs service");
+ABSL_FLAG(std::string, xrefs, "http://localhost:8080",
+          "Base URI for xrefs service");
 
 namespace {
 void TestNodeRequest() {
   kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
-                                FLAGS_xrefs);
+                                absl::GetFlag(FLAGS_xrefs));
   kythe::proto::NodesRequest request;
   kythe::proto::NodesReply response;
   // TODO(zarko): Use kythe::URI once it's merged in.
@@ -49,7 +54,7 @@ void TestNodeRequest() {
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   kythe::JsonClient::InitNetwork();
   TestNodeRequest();
   return 0;

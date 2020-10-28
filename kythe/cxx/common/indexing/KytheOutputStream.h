@@ -17,8 +17,9 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -27,26 +28,44 @@ namespace kythe {
 using MarkedSource = kythe::proto::common::MarkedSource;
 
 /// A collection of references to the components of a VName.
-struct VNameRef {
-  absl::string_view signature;
-  absl::string_view corpus;
-  absl::string_view root;
-  absl::string_view path;
-  absl::string_view language;
+class VNameRef {
+ public:
+  absl::string_view signature() const { return signature_; }
+  absl::string_view corpus() const { return corpus_; }
+  absl::string_view root() const { return root_; }
+  absl::string_view path() const { return path_; }
+  absl::string_view language() const { return language_; }
+  void set_signature(absl::string_view s) { signature_ = s; }
+  void set_corpus(absl::string_view s) { corpus_ = s; }
+  void set_root(absl::string_view s) { root_ = s; }
+  void set_path(absl::string_view s) { path_ = s; }
+  void set_language(absl::string_view s) { language_ = s; }
+
   explicit VNameRef(const proto::VName& vname)
-      : signature(vname.signature().data(), vname.signature().size()),
-        corpus(vname.corpus().data(), vname.corpus().size()),
-        root(vname.root().data(), vname.root().size()),
-        path(vname.path().data(), vname.path().size()),
-        language(vname.language().data(), vname.language().size()) {}
+      : signature_(vname.signature().data(), vname.signature().size()),
+        corpus_(vname.corpus().data(), vname.corpus().size()),
+        root_(vname.root().data(), vname.root().size()),
+        path_(vname.path().data(), vname.path().size()),
+        language_(vname.language().data(), vname.language().size()) {}
   VNameRef() {}
   void Expand(proto::VName* vname) const {
-    vname->mutable_signature()->assign(signature.data(), signature.size());
-    vname->mutable_corpus()->assign(corpus.data(), corpus.size());
-    vname->mutable_root()->assign(root.data(), root.size());
-    vname->mutable_path()->assign(path.data(), path.size());
-    vname->mutable_language()->assign(language.data(), language.size());
+    vname->mutable_signature()->assign(signature_.data(), signature_.size());
+    vname->mutable_corpus()->assign(corpus_.data(), corpus_.size());
+    vname->mutable_root()->assign(root_.data(), root_.size());
+    vname->mutable_path()->assign(path_.data(), path_.size());
+    vname->mutable_language()->assign(language_.data(), language_.size());
   }
+  std::string DebugString() const {
+    return absl::StrCat("{", corpus_, ",", root_, ",", path_, ",", signature_,
+                        ",", language_, "}");
+  }
+
+ private:
+  absl::string_view signature_;
+  absl::string_view corpus_;
+  absl::string_view root_;
+  absl::string_view path_;
+  absl::string_view language_;
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
@@ -84,12 +103,7 @@ struct OrdinalEdgeRef {
   /// Overwrites all of the fields in `entry` that can differ between edges with
   /// ordinals.
   void Expand(proto::Entry* entry) const {
-    char digits[12];  // strlen("4294967295") + 2
-    int dot_ordinal_length = ::sprintf(digits, ".%u", ordinal);
-    entry->mutable_edge_kind()->clear();
-    entry->mutable_edge_kind()->reserve(dot_ordinal_length + edge_kind.size());
-    entry->mutable_edge_kind()->append(edge_kind.data(), edge_kind.size());
-    entry->mutable_edge_kind()->append(digits, dot_ordinal_length);
+    entry->set_edge_kind(absl::StrCat(edge_kind, ".", ordinal));
     source->Expand(entry->mutable_source());
     target->Expand(entry->mutable_target());
   }

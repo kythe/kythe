@@ -28,18 +28,95 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link MarkedSource} utility class. */
 public final class MarkedSources {
   private MarkedSources() {}
 
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C<T1, T2, T3...>}. */
+  public static final MarkedSource GENERIC_TAPP;
+
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C[]}. */
+  public static final MarkedSource ARRAY_TAPP;
+
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code R(T1, T2, T3...)}. */
+  public static final MarkedSource FN_TAPP;
+
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code R C::(T1, T2, T3...)}. */
+  public static final MarkedSource METHOD_TAPP;
+
+  static {
+    MarkedSource.Builder genericTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    genericTAppBuilder.addChildBuilder().setKind(MarkedSource.Kind.LOOKUP_BY_PARAM);
+    genericTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(1)
+        .setPreText("<")
+        .setPostText(">")
+        .setPostChildText(", ");
+    GENERIC_TAPP = genericTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder arrayTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    arrayTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(1)
+        .setPostText("[]");
+    ARRAY_TAPP = arrayTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder fnTAppBuilder = MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    fnTAppBuilder.addChildBuilder().setKind(MarkedSource.Kind.LOOKUP_BY_PARAM).setLookupIndex(1);
+    fnTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(2)
+        .setPreText("(")
+        .setPostText(")")
+        .setPostChildText(", ");
+    FN_TAPP = fnTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder methodTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.BOX)
+        .setPostText(" ")
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
+        .setLookupIndex(1);
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.BOX)
+        .setPostText("::")
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
+        .setLookupIndex(2);
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(3)
+        .setPreText("(")
+        .setPostText(")")
+        .setPostChildText(", ");
+    METHOD_TAPP = methodTAppBuilder.build();
+  }
+
   /** Returns a {@link MarkedSource} instance for a {@link Symbol}. */
   static MarkedSource construct(
       SignatureGenerator signatureGenerator,
       Symbol sym,
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren,
       Function<Symbol, Optional<VName>> symNames) {
     MarkedSource markedType = markType(signatureGenerator, sym, symNames);
@@ -49,7 +126,7 @@ public final class MarkedSources {
   private static MarkedSource construct(
       SignatureGenerator signatureGenerator,
       Symbol sym,
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren,
       @Nullable MarkedSource markedType) {
     MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
@@ -264,7 +341,7 @@ public final class MarkedSources {
         case PCK:
         case MTH:
           return sym;
-          // TODO(T227): resolve non-exhaustive switch statements w/o defaults
+          // TODO(#1845): resolve non-exhaustive switch statements w/o defaults
         default:
           break;
       }

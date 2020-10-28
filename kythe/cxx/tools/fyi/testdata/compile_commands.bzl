@@ -1,6 +1,6 @@
 """Rule for generating compile_commands.json.in with appropriate inlcude directories."""
 
-load("//tools/build_rules/verifier_test:toolchain_utils.bzl", "find_cpp_toolchain")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 _TEMPLATE = """  {{
     "directory": "OUT_DIR",
@@ -34,8 +34,10 @@ compile_commands = rule(
         ),
     },
     doc = "Generates a compile_commannds.json.in template file.",
+    incompatible_use_toolchain_transition = True,
     outputs = {
         "compile_commands": "compile_commands.json.in",
     },
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _compile_commands_impl,
 )

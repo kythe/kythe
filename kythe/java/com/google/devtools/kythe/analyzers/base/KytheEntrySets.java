@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
-import com.google.common.flogger.FluentLogger;
+import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Diagnostic;
@@ -27,13 +27,12 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Factory for Kythe-compliant node and edge {@link EntrySet}s. In general, this class provides two
@@ -46,8 +45,6 @@ import javax.annotation.Nullable;
  * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
   public static final String NODE_PREFIX = "/kythe/";
 
   private final StatisticsCollector statistics;
@@ -76,12 +73,6 @@ public class KytheEntrySets {
       if (name.getSignature().isEmpty()) {
         // Ensure file VName has digest signature
         name = name.setSignature(digest);
-      }
-      if (inputVNames.containsKey(digest)) {
-        statistics.incrementCounter("file-digest-collision");
-        logger.atWarning().log(
-            "Found two files with the same digest [%s]: %s and %s",
-            digest, name, inputVNames.get(digest));
       }
       inputVNames.put(digest, name.build());
     }
@@ -173,7 +164,7 @@ public class KytheEntrySets {
       return null;
     }
     EntrySet.Builder builder =
-        newNode(NodeKind.ANCHOR)
+        newNode(loc.getStart() == loc.getEnd() ? NodeKind.ANCHOR_IMPLICIT : NodeKind.ANCHOR)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .addSignatureSalt(fileVName)
             .setProperty("loc/start", "" + loc.getStart())
@@ -185,14 +176,6 @@ public class KytheEntrySets {
     }
     EntrySet anchor = builder.build();
     return emitAndReturn(anchor);
-  }
-
-  /**
-   * Emits and returns a NAME node representing the specified JVM binary name (See
-   * https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1).
-   */
-  public EntrySet getJvmNameAndEmit(String name) {
-    return emitAndReturn(new NodeBuilder(NodeKind.NAME, "jvm").setSignature(name).build());
   }
 
   /** Emits and returns a DIAGNOSTIC node attached to no file. */
@@ -338,15 +321,24 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
-  public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
-    List<VName> tArgs = new ArrayList<>(arguments);
-    tArgs.add(0, returnType);
-    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs);
+  public EntrySet newFunctionTypeAndEmit(
+      VName returnType, VName receiverType, List<VName> arguments, MarkedSource ms) {
+    List<VName> tArgs =
+        ImmutableList.<VName>builderWithExpectedSize(2 + arguments.size())
+            .add(returnType)
+            .add(receiverType)
+            .addAll(arguments)
+            .build();
+    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs, ms);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
-  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments) {
-    EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
+  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments, MarkedSource ms) {
+    NodeBuilder builder = newApplyNode(NodeKind.TAPPLY, head, arguments);
+    if (ms != null) {
+      builder.setProperty("code", ms);
+    }
+    EntrySet node = emitAndReturn(builder);
     emitEdge(node.getVName(), EdgeKind.PARAM, head, 0);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, arguments, 1);
     return node;

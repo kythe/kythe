@@ -1,53 +1,16 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+exports_files(
+    ["test_vnames.json"],
+    visibility = ["//kythe:default_visibility"],
+)
+
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
+    "cc_extract_kzip",
+    "cc_extractor_test",
     "cc_indexer_test",
     "objc_indexer_test",
-)
-load("//tools:build_rules/testing.bzl", "shell_tool_test")
-
-sh_test(
-    name = "kindex",
-    size = "small",
-    srcs = [
-        "test_kindex.sh",
-    ],
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.header2",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/verifier",
-    ],
-)
-
-shell_tool_test(
-    name = "index_pack",
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-    ],
-    scriptfile = "test_index_pack.sh",
-    tools = {
-        "INDEXER": "//kythe/cxx/indexer/cxx:indexer",
-        "INDEX_PACK_BIN": "//kythe/go/platform/tools/indexpack",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-        "VERIFIER": "//kythe/cxx/verifier",
-    },
 )
 
 cc_indexer_test(
@@ -686,6 +649,66 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "usr_alias",
+    srcs = ["basic/usr_alias.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_enum",
+    srcs = ["basic/usr_enum.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_function",
+    srcs = ["basic/usr_function.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_macro",
+    srcs = ["basic/usr_macro.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_record",
+    srcs = ["basic/usr_record.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_var",
+    srcs = ["basic/usr_var.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "vardecl_double_shadowed_local_anchor",
     srcs = ["basic/vardecl_double_shadowed_local_anchor.cc"],
     check_for_singletons = True,
@@ -829,8 +852,40 @@ cc_indexer_test(
     ignore_dups = True,
     tags = [
         "basic",
-        "manual",  # https://github.com/google/kythe/issues/2899
+        "manual",  # https://github.com/kythe/kythe/issues/2899
     ],
+)
+
+cc_indexer_test(
+    name = "build_config",
+    srcs = ["basic/build_config.cc"],
+    ibuild_config = "test-build-config",
+    tags = [
+        "basic",
+    ],
+)
+
+cc_extract_kzip(
+    name = "vname_corpus_kzip",
+    srcs = ["basic/vname_corpus.cc"],
+    corpus = "unit",
+    vnames_config = "basic/vname_corpus.json",
+)
+
+cc_indexer_test(
+    name = "vname_corpus",
+    srcs = [":vname_corpus_kzip"],
+    tags = [
+        "basic",
+    ],
+    use_compilation_corpus_as_default = True,
+)
+
+cc_indexer_test(
+    name = "macro_body",
+    srcs = ["basic/macro_body.cc"],
+    ignore_dups = True,
+    tags = ["basic"],
 )
 
 test_suite(
@@ -943,6 +998,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_defines",
+    srcs = ["function/function_defines.cc"],
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_direct_call",
     srcs = ["function/function_direct_call.cc"],
     tags = ["function"],
@@ -1037,6 +1098,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_member_defines",
+    srcs = ["function/function_member_defines.cc"],
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_member_operator",
     srcs = ["function/function_member_operator.cc"],
     tags = ["function"],
@@ -1058,7 +1125,6 @@ cc_indexer_test(
     name = "function_operator_overload_names",
     size = "small",
     srcs = ["function/function_operator_overload_names.cc"],
-    ignore_dups = True,
     tags = ["function"],
 )
 
@@ -1529,6 +1595,14 @@ cc_indexer_test(
     tags = ["libraries"],
 )
 
+# Note: this depends on the platform <memory> header and
+# as such is a cc_extractor_test rather than hermetic cc_indexer_test.
+cc_extractor_test(
+    name = "make_shared_factories",
+    srcs = ["libraries/make_shared_factories.cc"],
+    tags = ["libraries"],
+)
+
 test_suite(
     name = "indexer_libraries",
     tags = ["libraries"],
@@ -1537,7 +1611,11 @@ test_suite(
 cc_indexer_test(
     name = "rec_agg_init",
     srcs = ["rec/rec_agg_init.cc"],
-    tags = ["rec"],
+    std = "c++17",
+    tags = [
+        "c++17",
+        "rec",
+    ],
 )
 
 cc_indexer_test(
@@ -1611,7 +1689,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "rec_designated_initializer",
     srcs = ["rec/rec_designated_initializer.c"],
-    ignore_dups = True,  # clang visits these expressions multiple times.
     std = "c99",
     tags = ["rec"],
 )
@@ -1674,10 +1751,7 @@ cc_indexer_test(
     srcs = ["rec/rec_implicit_ctor_calls_conversion.cc"],
     check_for_singletons = True,
     ignore_dups = True,
-    tags = [
-        "manual",  # https://github.com/google/kythe/issues/2894
-        "rec",
-    ],
+    tags = ["rec"],
 )
 
 cc_indexer_test(
@@ -1750,6 +1824,19 @@ cc_indexer_test(
     tags = ["rec"],
 )
 
+cc_indexer_test(
+    name = "rec_class_member_ptr",
+    srcs = ["rec/rec_class_member_ptr.cc"],
+    check_for_singletons = True,
+    tags = ["rec"],
+)
+
+cc_indexer_test(
+    name = "rec_ctor_dtor_ref_class",
+    srcs = ["rec/rec_ctor_dtor_ref_class.cc"],
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],
@@ -1758,6 +1845,13 @@ test_suite(
 cc_indexer_test(
     name = "template_alias",
     srcs = ["template/template_alias.cc"],
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_decl_arg",
+    srcs = ["template/template_decl_arg.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -1947,6 +2041,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template/template_dependent_name_ref",
+    srcs = ["template/template_dependent_name_ref.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_dependent_sized_array",
     srcs = ["template/template_dependent_sized_array.cc"],
     tags = ["template"],
@@ -1992,6 +2093,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_depname_path_graph",
     srcs = ["template/template_depname_path_graph.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -2029,6 +2131,19 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_exclude",
+    srcs = ["template/template_exclude.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = ["template"],
+    template_instance_exclude_path_pattern = ".*exclude.*",
+    deps = [
+        "template/exclude_this_file.h",
+        "template/include_this_file.h",
+    ],
+)
+
+cc_indexer_test(
     name = "template_field",
     srcs = ["template/template_field.cc"],
     tags = ["template"],
@@ -2061,6 +2176,12 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_fn_decl_defn",
     srcs = ["template/template_fn_decl_defn.cc"],
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_fn_defines",
+    srcs = ["template/template_fn_defines.cc"],
     tags = ["template"],
 )
 
@@ -2511,6 +2632,17 @@ cc_indexer_test(
 )
 
 objc_indexer_test(
+    name = "objc_marked_source_category",
+    srcs = ["objc/categories/marked_category.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
     name = "objc_marked_source_class",
     srcs = ["objc/marked_class.m"],
     convert_marked_source = True,
@@ -2523,7 +2655,20 @@ objc_indexer_test(
 objc_indexer_test(
     name = "objc_marked_source_method",
     srcs = ["objc/marked_method.m"],
+    check_for_singletons = True,
     convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
+    name = "objc_marked_source_property",
+    srcs = ["objc/marked_property.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    ignore_dups = True,
     tags = [
         "marked_source",
         "objc",
@@ -2594,6 +2739,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
+    ignore_dups = True,
     tags = ["objc"],
     deps = [
         "objc/categories/base.h",
@@ -2695,13 +2841,12 @@ objc_indexer_test(
     deps = ["objc/categories/extension.h"],
 )
 
-# This test passes on darwin but fails on Linux.
 objc_indexer_test(
-    name = "extension_property_xcode",
-    srcs = ["objc/categories/extension_property_xcode.m"],
-    restricted_to = ["//buildenv:darwin"],
+    name = "extension_property",
+    srcs = ["objc/categories/extension_property.m"],
+    ignore_dups = True,
     tags = ["objc"],
-    deps = ["objc/categories/extension_property_xcode.h"],
+    deps = ["objc/categories/extension_property.h"],
 )
 
 objc_indexer_test(
@@ -2978,33 +3123,35 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_custom_getter_setter",
     srcs = ["objc/property_custom_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_decl_defn_class",
     srcs = ["objc/property_decl_defn_class.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
-# This test passes on darwin but fails on linux. The version of syntax
-# supported appears to be dependent on the machine.
 objc_indexer_test(
-    name = "property_decl_defn_xcode_only",
-    srcs = ["objc/property_decl_defn_xcode_only.m"],
-    restricted_to = ["//buildenv:darwin"],
+    name = "property_decl_defn_synth",
+    srcs = ["objc/property_decl_defn_synth.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_getter_setter",
     srcs = ["objc/property_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3072,24 +3219,101 @@ objc_indexer_test(
 objc_indexer_test(
     name = "selector",
     srcs = ["objc/selector.m"],
-    restricted_to = ["//buildenv:darwin"],
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "single_file_category",
     srcs = ["objc/categories/single_file_category.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "subscript_ref",
     srcs = ["objc/subscript_ref.m"],
-    restricted_to = ["//buildenv:darwin"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 test_suite(
     name = "indexer_objc",
     tags = ["objc"],
+)
+
+cc_indexer_test(
+    name = "df_field_ref_blame",
+    srcs = ["df/df_field_ref_blame.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_field_rw",
+    srcs = ["df/df_field_rw.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence",
+    srcs = ["df/df_fncall_influence.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_defaultargs",
+    srcs = ["df/df_fncall_influence_defaultargs.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_pack",
+    size = "medium",
+    srcs = ["df/df_fncall_influence_pack.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_vararg",
+    srcs = ["df/df_fncall_influence_vararg.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_var_ref_blame",
+    srcs = ["df/df_var_ref_blame.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_var_ref_file_blame",
+    srcs = ["df/df_var_ref_file_blame.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_var_rw",
+    srcs = ["df/df_var_rw.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_var_influence",
+    srcs = ["df/df_var_influence.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+test_suite(
+    name = "indexer_df",
+    tags = ["df"],
 )

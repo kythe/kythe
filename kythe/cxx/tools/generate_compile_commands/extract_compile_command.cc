@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
-#include <vector>
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <string>
+#include <vector>
+
+#include "absl/strings/str_format.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
@@ -66,20 +68,6 @@ std::string JoinCommand(const std::vector<std::string>& command) {
   return output;
 }
 
-std::string GetBuildDirectory() {
-  std::string build_dir;
-  {
-    char cwd[MAXPATHLEN];
-    build_dir = getcwd(cwd, MAXPATHLEN);
-  }
-  auto sandbox_start = build_dir.find("/bazel-sandbox/");
-  if (sandbox_start == std::string::npos) return build_dir;
-  auto sandbox_end =
-      build_dir.find("/", sandbox_start + strlen("/bazel-sandbox/"));
-
-  return build_dir.erase(sandbox_start, sandbox_end - sandbox_start);
-}
-
 std::string FormatCompilationCommand(const std::string& source_file,
                                      const std::vector<std::string>& command) {
   rapidjson::StringBuffer buffer;
@@ -88,7 +76,7 @@ std::string FormatCompilationCommand(const std::string& source_file,
   writer.Key("file");
   writer.String(source_file.c_str());
   writer.Key("directory");
-  writer.String(GetBuildDirectory().c_str());
+  writer.String("@BAZEL_ROOT@");
   writer.Key("command");
   writer.String(JoinCommand(command).c_str());
   writer.EndObject();
@@ -98,9 +86,9 @@ std::string FormatCompilationCommand(const std::string& source_file,
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  kythe::InitializeProgram(argv[0]);
   if (argc != 3) {
-    fprintf(stderr, "usage: %s extra-action-file output-file\n", argv[0]);
+    absl::FPrintF(stderr, "usage: %s extra-action-file output-file\n", argv[0]);
     return 1;
   }
   std::string extra_action_file = argv[1];

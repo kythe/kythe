@@ -1,27 +1,15 @@
-load("@bazel_gazelle//:deps.bzl", _git_repository = "git_repository", _go_repository = "go_repository")
-
-def go_repository(name, commit, importpath, custom = None, custom_git = None, **kwargs):
-    """Macro wrapping the Gazelle go_repository rule.  Works identically, except
-    if custom is provided, an extra git_repository of that name is declared with
-    an overlay built using the "third_party/go:<custom>.BUILD" file.
-    """
-    _go_repository(
-        name = name,
-        commit = commit,
-        importpath = importpath,
-        **kwargs
-    )
-    if custom != None:
-        if custom_git == None:
-            custom_git = "https://" + importpath + ".git"
-        _git_repository(
-            name = "go_" + custom,
-            commit = commit,
-            remote = custom_git,
-            overlay = {"@io_kythe//third_party/go:" + custom + ".BUILD": "BUILD"},
-        )
-
+load("@bazel_gazelle//:deps.bzl", _go_repository = "go_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
+
+def go_repository(name, **kwargs):
+    """Macro wrapping the Gazelle go_repository rule.
+
+    This conditionally defines the repository if it hasn't already been.
+    """
+    if name in native.existing_rules():
+        return
+    _go_repository(name = name, **kwargs)
 
 # Go importpath prefix shared by all Kythe libraries
 go_prefix = "kythe.io/"

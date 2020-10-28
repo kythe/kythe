@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.devtools.kythe.util.schema.Schema;
+
 /** Schema-defined Kythe edge kinds. */
 public enum EdgeKind {
   DEFINES(true, "defines"),
@@ -60,6 +62,8 @@ public enum EdgeKind {
   OVERRIDES_ROOT("overrides/root"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),
   PARAM("param"),
+  PROPERTY_READS("property/reads"),
+  PROPERTY_WRITES("property/writes"),
   SATISFIES("satisfies"),
   SPECIALIZES("specializes"),
   SPECIALIZES_SPECULATIVE("specializes/speculative"),
@@ -87,6 +91,11 @@ public enum EdgeKind {
   /** Returns the edge kind's Kythe GraphStore value. */
   public final String getValue() {
     return kind;
+  }
+
+  /** Returns the edge kind's proto enum value. */
+  public final com.google.devtools.kythe.proto.Schema.EdgeKind getProtoEdgeKind() {
+    return Schema.edgeKind(getValue());
   }
 
   @Override

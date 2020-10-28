@@ -40,6 +40,10 @@ public final class Span implements Comparable<Span> {
     return start <= end && start >= 0;
   }
 
+  public boolean isValidAndNonZero() {
+    return isValid() && start != end;
+  }
+
   /** Determines if the given integer is contained within {@code this} {@link Span}. */
   public boolean contains(int n) {
     return getStart() <= n && n < getEnd();

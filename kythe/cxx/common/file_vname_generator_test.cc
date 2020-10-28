@@ -15,6 +15,7 @@
  */
 
 #include "file_vname_generator.h"
+
 #include "gtest/gtest.h"
 
 extern const char kTestFile[];
@@ -41,6 +42,9 @@ TEST(FileVNameGenerator, EmptyLookup) {
 TEST(FileVNameGenerator, DefaultLookup) {
   FileVNameGenerator generator;
   kythe::proto::VName default_vname;
+  default_vname.set_root("root");
+  default_vname.set_corpus("corpus");
+  generator.set_default_base_vname(default_vname);
   ASSERT_EQ(default_vname.DebugString(),
             generator.LookupBaseVName("").DebugString());
 }

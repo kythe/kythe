@@ -35,9 +35,9 @@ import (
 	"kythe.io/kythe/go/util/span"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -54,7 +54,7 @@ const ColumnarTableKeyMarker = "kythe:columnar"
 func NewService(ctx context.Context, t keyvalue.DB) xrefs.Service {
 	_, err := t.Get(ctx, []byte(ColumnarTableKeyMarker), nil)
 	if err == nil {
-		log.Println("WARNING: detected a experimental columnar table")
+		log.Println("WARNING: detected a experimental columnar xrefs table")
 		return NewColumnarTable(t)
 	}
 	return NewCombinedTable(&table.KVProto{t})
@@ -83,6 +83,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 
 	// TODO(schroederc): handle SPAN requests
 	// TODO(schroederc): handle dirty buffers
+	// TODO(schroederc): file infos
 
 	fileURI, err := kytheuri.Parse(ticket)
 	if err != nil {
@@ -124,6 +125,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 	var norm *span.Normalizer                                          // span normalizer for references
 	refsByTarget := make(map[string][]*xpb.DecorationsReply_Reference) // target -> set<Reference>
 	defs := stringset.New()                                            // set<needed definition tickets>
+	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
@@ -168,12 +170,17 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 				continue
 			}
 			t := e.Target
+			// Filter decorations by requested build configs.
+			if len(buildConfigs) != 0 && !buildConfigs.Contains(t.BuildConfig) {
+				continue
+			}
 			kind := t.GetGenericKind()
 			if kind == "" {
 				kind = schema.EdgeKindString(t.GetKytheKind())
 			}
 			ref := &xpb.DecorationsReply_Reference{
 				TargetTicket: kytheuri.ToString(t.Target),
+				BuildConfig:  t.BuildConfig,
 				Kind:         kind,
 				Span:         norm.SpanOffsets(t.StartOffset, t.EndOffset),
 			}
@@ -215,11 +222,14 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 			if !defs.Contains(def.Location.Ticket) {
 				continue
 			}
-			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, emitSnippets).Anchor
+			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, nil, emitSnippets).Anchor
 		case *xspb.FileDecorations_Override_:
 			// TODO(schroederc): handle
 		case *xspb.FileDecorations_Diagnostic_:
-			// TODO(schroederc): handle
+			if !req.Diagnostics {
+				continue
+			}
+			reply.Diagnostic = append(reply.Diagnostic, e.Diagnostic.Diagnostic)
 		default:
 			return nil, fmt.Errorf("unknown FileDecorations entry: %T", e)
 		}
@@ -256,8 +266,12 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 	if len(patterns) > 0 {
 		reply.Nodes = make(map[string]*cpb.NodeInfo)
 	}
+	if req.NodeDefinitions {
+		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+	}
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
+	// TODO(schroederc): file infos
 	// TODO(schroederc): implement paging xrefs in large CrossReferencesReply messages
 
 	for _, ticket := range req.Ticket {
@@ -273,6 +287,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 		if err != nil {
 			return nil, err
 		}
+		defer it.Close()
 
 		k, val, err := it.Next()
 		if err == io.EOF || !bytes.Equal(k, prefix) {
@@ -319,12 +334,21 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 			switch e := e.Entry.(type) {
 			case *xspb.CrossReferences_Reference_:
 				ref := e.Reference
-				if xrefs.IsRefKind(req.ReferenceKind, getRefKind(ref)) {
-					a := a2a(ref.Location, emitSnippets).Anchor
+				kind := getRefKind(ref)
+				var anchors *[]*xpb.CrossReferencesReply_RelatedAnchor
+				switch {
+				case xrefs.IsDefKind(req.DefinitionKind, kind, false):
+					anchors = &set.Definition
+				case xrefs.IsDeclKind(req.DeclarationKind, kind, false):
+					anchors = &set.Declaration
+				case xrefs.IsRefKind(req.ReferenceKind, kind):
+					anchors = &set.Reference
+				}
+				if anchors != nil {
+					a := a2a(ref.Location, nil, emitSnippets).Anchor
 					a.Ticket = ""
-					set.Reference = append(set.Reference, &xpb.CrossReferencesReply_RelatedAnchor{
-						Anchor: a,
-					})
+					ra := &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a}
+					*anchors = append(*anchors, ra)
 				}
 			case *xspb.CrossReferences_Relation_:
 				if len(patterns) == 0 {
@@ -352,12 +376,24 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 				if relatedNodes.Contains(relatedNode) {
 					addXRefNode(reply, patterns, e.RelatedNode.Node)
 				}
+			case *xspb.CrossReferences_NodeDefinition_:
+				if !req.NodeDefinitions || len(reply.Nodes) == 0 {
+					continue
+				}
+
+				relatedNode := kytheuri.ToString(e.NodeDefinition.Node)
+				if node := reply.Nodes[relatedNode]; node != nil {
+					loc := e.NodeDefinition.Location
+					node.Definition = loc.Ticket
+					a := a2a(loc, nil, emitSnippets).Anchor
+					reply.DefinitionLocations[loc.Ticket] = a
+				}
 			case *xspb.CrossReferences_Caller_:
 				if req.CallerKind == xpb.CrossReferencesRequest_NO_CALLERS {
 					continue
 				}
 				c := e.Caller
-				a := a2a(c.Location, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets).Anchor
 				a.Ticket = ""
 				callerTicket := kytheuri.ToString(c.Caller)
 				caller := &xpb.CrossReferencesReply_RelatedAnchor{
@@ -378,7 +414,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					log.Printf("WARNING: missing Caller for callsite: %+v", c)
 					continue
 				}
-				a := a2a(c.Location, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets).Anchor
 				a.Ticket = ""
 				// TODO(schroederc): set anchor kind to differentiate kinds?
 				caller.Site = append(caller.Site, a)

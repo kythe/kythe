@@ -24,7 +24,6 @@ set -o pipefail
 #   LANGUAGE
 #   LABEL
 #   JAVA_INDEXER_BIN
-#   KINDEX_TOOL_BIN
 #   VERIFIER_BIN
 #   VERIFIER_ARGS
 #   SHASUM_TOOL
@@ -38,20 +37,15 @@ TEST_FILE="$TMP/E.java"
 tee "$TEST_FILE.orig" > "$TEST_FILE"
 FILE_SHA=$($SHASUM_TOOL "${TEST_FILE}.orig" | cut -c 1-64)
 
-# Convert to ascii proto format; escape backslashes, quotes, and newlines.
-python <<EOF > "${TEST_FILE}.FileData"
-print "content: '%s'" % open('${TEST_FILE}').read().encode('string_escape')
-EOF
-
-sed "s/DIGEST/${FILE_SHA}/g" "${SCHEMA_ROOT}/java-schema-file-data-template.FileData" >>"${TEST_FILE}.FileData"
-
-sed "s/DIGEST/${FILE_SHA}/g" "${SCHEMA_ROOT}/java-schema-unit-template.CompilationUnit" >"${TEST_FILE}.Unit"
-
-# Put together the kindex file.
-"$KINDEX_TOOL_BIN" -assemble "${TEST_FILE}".{kindex,Unit,FileData}
+if ! env \
+  KYTHE_OUTPUT_FILE="${TEST_FILE}.kzip" \
+  KYTHE_ROOT_DIRECTORY="$PWD" \
+  "$JAVA_EXTRACTOR_BIN" "$TEST_FILE"; then
+  error EXTRACT
+fi
 
 # Index the file.
-if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kindex" >"${TEST_FILE}.entries"; then
+if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kzip" >"${TEST_FILE}.entries"; then
   error INDEX
 fi
 

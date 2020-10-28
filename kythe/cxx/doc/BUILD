@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 licenses(["notice"])
 
@@ -30,6 +33,8 @@ cc_library(
     deps = [
         ":markup_handler",
         "//third_party:gtest",
+        "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -70,6 +75,8 @@ cc_library(
         ":markup_handler",
         "//kythe/proto:common_cc_proto",
         "//third_party:gtest",
+        "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -81,28 +88,26 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "doclib",
+cc_binary(
+    name = "doc",
     srcs = [
         "doc.cc",
     ],
     deps = [
         ":html_renderer",
         ":markup_handler",
+        "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
         "//kythe/cxx/common/schema:edges",
         "//kythe/cxx/common/schema:facts",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/memory",
-    ],
-)
-
-cc_binary(
-    name = "doc",
-    deps = [
-        ":doclib",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf",
     ],
 )

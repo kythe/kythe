@@ -30,20 +30,21 @@
 #include <string>
 #include <utility>
 
+#include "GraphObserver.h"
+#include "IndexerASTHooks.h"
+#include "IndexerPPCallbacks.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/cxx_details.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
+#include "kythe/cxx/extractor/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
-
-#include "GraphObserver.h"
-#include "IndexerASTHooks.h"
-#include "IndexerPPCallbacks.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace proto {
@@ -104,6 +105,17 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \param B Behavior to use.
   void setCppFwdDeclEmitDocs(BehaviorOnFwdDeclComments B) { CppFwdDocs = B; }
 
+  /// \brief Use this many raw bytes for USRs.
+  void setUsrByteSize(int S) { UsrByteSize = S; }
+
+  /// \brief Emit dataflow edges?
+  void setEmitDataflowEdges(EmitDataflowEdges EDE) { DataflowEdges = EDE; }
+
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  void setTemplateInstanceExcludePathPattern(std::shared_ptr<re2::RE2> P) {
+    TemplateInstanceExcludePathPattern = P;
+  }
+
  private:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& CI, llvm::StringRef Filename) override {
@@ -113,11 +125,10 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
       for (const auto& Path : HeaderConfig.paths) {
-        const clang::DirectoryEntry* DirEnt =
-            FileManager.getDirectory(Path.path);
-        if (DirEnt != nullptr) {
+        auto DirEnt = FileManager.getDirectoryRef(Path.path);
+        if (DirEnt) {
           Lookups.push_back(clang::DirectoryLookup(
-              DirEnt, Path.characteristic_kind, Path.is_framework));
+              DirEnt.get(), Path.characteristic_kind, Path.is_framework));
           ++CurrentIdx;
         } else {
           // This can happen if a path was included in the HeaderSearchInfo,
@@ -141,15 +152,16 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(
+    return absl::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
-        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist);
+        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize,
+        DataflowEdges, TemplateInstanceExcludePathPattern);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
-      CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
-          CI.getPreprocessor(), *Observer, Verbosity));
+      CI.getPreprocessor().addPPCallbacks(absl::make_unique<IndexerPPCallbacks>(
+          CI.getPreprocessor(), *Observer, Verbosity, UsrByteSize));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
     CI.getLangOpts().RetainCommentsFromSystemHeaders = true;
@@ -181,6 +193,13 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \return a new worklist for the given visitor.
   std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
       CreateWorklist;
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
+  /// \brief Controls whether dataflow edges are emitted.
+  EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
@@ -224,7 +243,9 @@ class StdinAdjustSingleFrontendActionFactory
 
   /// Note that FrontendActionFactory::create() specifies that the
   /// returned action is owned by the caller.
-  clang::FrontendAction* create() override { return Action.release(); }
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::move(Action);
+  }
 };
 
 /// \brief Options that control how the indexer behaves.
@@ -240,9 +261,9 @@ struct IndexerOptions {
   /// \brief Whether to emit all data.
   enum Verbosity Verbosity = kythe::Verbosity::Classic;
   /// \brief Should we emit documentation for forward class decls in ObjC?
-  BehaviorOnFwdDeclComments ObjCFwdDocs;
+  BehaviorOnFwdDeclComments ObjCFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Should we emit documentation for forward decls in C++?
-  BehaviorOnFwdDeclComments CppFwdDocs;
+  BehaviorOnFwdDeclComments CppFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
   /// \brief Whether to drop data found to be template instantiation
@@ -255,6 +276,16 @@ struct IndexerOptions {
   /// as possible.
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
+  /// \brief Whether to use the CompilationUnit VName corpus as the default
+  /// corpus.
+  bool UseCompilationCorpusAsDefault = false;
+  /// \brief Whether to emit dataflow edges.
+  EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Pattern used to exclude paths from template instance indexing.
+  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

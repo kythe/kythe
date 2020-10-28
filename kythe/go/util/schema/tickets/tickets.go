@@ -15,7 +15,7 @@
  */
 
 // Package tickets defines functions for manipulating Kythe tickets.
-package tickets
+package tickets // import "kythe.io/kythe/go/util/schema/tickets"
 
 import "kythe.io/kythe/go/util/kytheuri"
 

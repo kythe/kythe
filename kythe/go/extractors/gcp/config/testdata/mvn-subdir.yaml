@@ -1,0 +1,69 @@
+artifacts:
+  objects:
+    location: gs://${_BUCKET_NAME}/${_CORPUS}/
+    paths:
+    - /workspace/output/${_COMMIT}.kzip
+steps:
+- args:
+  - clone
+  - ${_REPO}
+  - /workspace/code
+  name: gcr.io/cloud-builders/git
+  id: CLONE
+  waitFor:
+  - '-'
+- args:
+  - checkout
+  - ${_COMMIT}
+  name: gcr.io/cloud-builders/git
+  dir: /workspace/code
+  id: CHECKOUT
+  waitFor:
+   - CLONE
+- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
+  id: JAVA-ARTIFACTS
+  volumes:
+  - name: kythe_extractors
+    path: /opt/kythe/extractors
+  waitFor:
+  - '-'
+- args:
+  - /workspace/code/somesubdir/pom.xml
+  id: PREPROCESS
+  name: gcr.io/kythe-public/build-preprocessor:stable
+  waitFor:
+    - CHECKOUT
+- args:
+  - clean
+  - compile
+  - test-compile
+  - -f
+  - /workspace/code/somesubdir/pom.xml
+  - -Dmaven.compiler.forceJavacCompilerUse=true
+  - -Dmaven.compiler.fork=true
+  - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
+  entrypoint: mvn
+  env:
+  - KYTHE_CORPUS=${_CORPUS}
+  - KYTHE_OUTPUT_DIRECTORY=/workspace/output
+  - KYTHE_ROOT_DIRECTORY=/workspace/code/somesubdir
+  - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
+  - REAL_JAVAC=/usr/bin/javac
+  - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+  id: EXTRACT
+  name: maven:3.6.0-jdk-8-slim
+  volumes:
+  - name: kythe_extractors
+    path: /opt/kythe/extractors
+  waitFor:
+    - JAVA-ARTIFACTS
+    - PREPROCESS
+- args:
+  - -c
+  - /opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip
+  entrypoint: bash
+  id: MERGE
+  name: gcr.io/kythe-public/kzip-tools:stable
+tags:
+  - ${_CORPUS}
+  - kythe_extract_maven

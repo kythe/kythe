@@ -1,0 +1,39 @@
+[
+  {
+    "pattern": "bazel-out/[^/]+/bin/external/([^/]+)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@.java"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/([^/]+)/external/([^/]+)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "@2@",
+      "root": "bazel-out/@1@",
+      "path": "@3@.java"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "CORPUS",
+      "path": "@1@/@2@.java"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/(.*?/java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "CORPUS",
+      "path": "@1@/@2@.java"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/bin/java",
+      "path": "@1@.java"
+    }
+  }
+]

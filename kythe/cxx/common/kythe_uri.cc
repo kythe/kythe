@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/kythe_uri.h"
+
 #include <utility>
 
-#include "absl/strings/match.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {
 namespace {
@@ -57,46 +57,6 @@ std::pair<absl::string_view, absl::string_view> Split(absl::string_view input,
   return absl::StrSplit(input, absl::MaxSplits(ch, 1));
 }
 
-// Predicate used in CleanPath for skipping empty components
-// and components consistening of a single '.'.
-struct SkipEmptyDot {
-  bool operator()(absl::string_view sp) { return !(sp.empty() || sp == "."); }
-};
-
-// Deal with relative paths as well as '/' and '//'.
-absl::string_view PathPrefix(absl::string_view path) {
-  int slash_count = 0;
-  for (char ch : path) {
-    if (ch == '/' && ++slash_count <= 2) continue;
-    break;
-  }
-  switch (slash_count) {
-    case 0:
-      return "";
-    case 2:
-      return "//";
-    default:
-      return "/";
-  }
-}
-
-// TODO(shahms): Use path_utils.h when it doesn't depend on LLVM.
-std::string CleanPath(absl::string_view input) {
-  const bool is_absolute_path = absl::StartsWith(input, "/");
-  std::vector<absl::string_view> parts;
-  for (absl::string_view comp : absl::StrSplit(input, '/', SkipEmptyDot{})) {
-    if (comp == "..") {
-      if (!parts.empty() && parts.back() != "..") {
-        parts.pop_back();
-        continue;
-      }
-      if (is_absolute_path) continue;
-    }
-    parts.push_back(comp);
-  }
-  // Deal with leading '//' as well as '/'.
-  return absl::StrCat(PathPrefix(input), absl::StrJoin(parts, "/"));
-}
 }  // namespace
 
 std::string UriEscape(UriEscapeMode mode, absl::string_view uri) {

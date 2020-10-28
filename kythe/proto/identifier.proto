@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option go_package = "identifier_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 service IdentifierService {
@@ -37,23 +38,23 @@ message FindRequest {
 }
 
 message FindReply {
-    message Match {
-        // Kythe ticket for the matched node.
-        string ticket = 1;
+  message Match {
+    // Kythe ticket for the matched node.
+    string ticket = 1;
 
-        // Kind of the node being referenced.
-        string node_kind = 2;
+    // Kind of the node being referenced.
+    string node_kind = 2;
 
-        // Subkind of the node being referenced.
-        string node_subkind = 3;
+    // Subkind of the node being referenced.
+    string node_subkind = 3;
 
-        // The local identifier for the node.
-        string base_name = 4;
+    // The local identifier for the node.
+    string base_name = 4;
 
-        // The fully qualified identifier for the node.
-        string qualified_name = 5;
-    }
+    // The fully qualified identifier for the node.
+    string qualified_name = 5;
+  }
 
-    // The list of matches found
-    repeated Match matches = 1;
+  // The list of matches found
+  repeated Match matches = 1;
 }

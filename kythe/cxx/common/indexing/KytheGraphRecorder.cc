@@ -21,24 +21,24 @@
 namespace kythe {
 
 static const std::string* const kNodeKindSpellings[] = {
-    new std::string("anchor"),    new std::string("file"),
-    new std::string("variable"),  new std::string("talias"),
-    new std::string("tapp"),      new std::string("tnominal"),
-    new std::string("record"),    new std::string("sum"),
-    new std::string("constant"),  new std::string("abs"),
-    new std::string("absvar"),    new std::string("function"),
-    new std::string("lookup"),    new std::string("macro"),
-    new std::string("interface"), new std::string("package"),
-    new std::string("tsigma"),    new std::string("doc"),
-    new std::string("tbuiltin"),  new std::string("meta"),
-    new std::string("diagnostic"),
-};
+    new std::string("anchor"),     new std::string("file"),
+    new std::string("variable"),   new std::string("talias"),
+    new std::string("tapp"),       new std::string("tnominal"),
+    new std::string("record"),     new std::string("sum"),
+    new std::string("constant"),   new std::string("abs"),
+    new std::string("absvar"),     new std::string("function"),
+    new std::string("lookup"),     new std::string("macro"),
+    new std::string("interface"),  new std::string("package"),
+    new std::string("tsigma"),     new std::string("doc"),
+    new std::string("tbuiltin"),   new std::string("meta"),
+    new std::string("diagnostic"), new std::string("clang/usr")};
 
 static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
     new std::string("/kythe/edge/typed"),
     new std::string("/kythe/edge/ref"),
     new std::string("/kythe/edge/ref/implicit"),
+    new std::string("/kythe/edge/ref/imports"),
     new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/aliases/root"),
@@ -77,7 +77,13 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/init/implicit"),
     new std::string("/kythe/edge/imputes"),
     new std::string("/kythe/edge/tagged"),
-};
+    new std::string("/kythe/edge/property/reads"),
+    new std::string("/kythe/edge/property/writes"),
+    new std::string("/clang/usr"),
+    new std::string("/kythe/edge/ref/id"),
+    new std::string("/kythe/edge/ref/writes"),
+    new std::string("/kythe/edge/ref/writes/implicit"),
+    new std::string("/kythe/edge/influences")};
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
   size_t edge_index = 0;
@@ -112,6 +118,8 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/message"),
     new std::string("/kythe/details"),
     new std::string("/kythe/context/url"),
+    new std::string("/kythe/doc/uri"),
+    new std::string("/kythe/build/config"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");

@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving;
 
+option go_package = "serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
@@ -29,6 +30,8 @@ message Node {
 
   // This node's definition location (anchor).
   ExpandedAnchor definition_location = 3;
+
+  double rank = 4;
 }
 
 // Full representation of a Kythe edge; useful during post-processing.
@@ -64,7 +67,7 @@ message PagedEdgeSet {
   repeated EdgeGroup group = 2;
 
   // Total number of edges in all of the EdgePages, including this one.
-  int32 total_edges = 3 [deprecated=true];
+  int32 total_edges = 3 [deprecated = true];
 
   // Page indices for other EdgePages, sorted by edge kind.
   repeated PageIndex page_index = 4;
@@ -94,11 +97,30 @@ message EdgePage {
 
 // FileDirectory describes a virtual directory of file nodes.
 message FileDirectory {
-  // Set of URIs for each contained sub-directory's corpus, root, and full path.
-  repeated string subdirectory = 1;
+  // Each known entry in the directory.
+  repeated Entry entry = 3;
 
+  message Entry {
+    // The kind of entry.
+    Kind kind = 1;
+
+    // The basename of the entry within the directory.
+    string name = 2;
+
+    // Set of known build configurations of this FILE or all files recursively
+    // contained in/below this DIRECTORY.
+    repeated string build_config = 3;
+  }
+  enum Kind {
+    UNKNOWN = 0;
+    FILE = 1;
+    DIRECTORY = 2;
+  }
+
+  // Set of URIs for each contained sub-directory's corpus, root, and full path.
+  repeated string subdirectory = 1 [deprecated = true];
   // Set of file node tickets contained within this directory.
-  repeated string file_ticket = 2;
+  repeated string file_ticket = 2 [deprecated = true];
 }
 
 // CorpusRoots describes all of the known corpus/root pairs that contain file
@@ -107,6 +129,7 @@ message CorpusRoots {
   message Corpus {
     string corpus = 1;
     repeated string root = 2;
+    repeated string build_config = 3;
   }
   repeated Corpus corpus = 1;
 }
@@ -116,6 +139,8 @@ message File {
   string ticket = 1;
   bytes text = 2;
   string encoding = 3;
+
+  FileInfo info = 4;
 }
 
 // A RawAnchor is a specialized Node structure for anchor nodes.
@@ -126,6 +151,8 @@ message RawAnchor {
 
   int32 snippet_start = 4;
   int32 snippet_end = 5;
+
+  string build_configuration = 6;
 }
 
 // ExpandedAnchors are constructed from an RawAnchor and its associated File.
@@ -141,6 +168,20 @@ message ExpandedAnchor {
 
   string snippet = 6;
   kythe.proto.common.Span snippet_span = 7;
+
+  string build_configuration = 8;
+
+  double rank = 9;
+
+  // Info for parent file
+  FileInfo file_info = 10;
+}
+
+message FileInfo {
+  // Structured path of the file
+  kythe.proto.common.CorpusPath corpus_path = 1;
+
+  string revision = 2;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
@@ -154,6 +195,7 @@ message FileDecorations {
     string target = 5;
 
     string target_definition = 4;
+    string semantic_scope = 6;
   }
 
   // The decorations located in the file, sorted by starting offset.
@@ -176,8 +218,8 @@ message FileDecorations {
   message Override {
     // What kind of override this is.
     enum Kind {
-      OVERRIDES  = 0;
-      EXTENDS    = 1;
+      OVERRIDES = 0;
+      EXTENDS = 1;
     }
 
     // Ticket of overriding node (i.e. a Decoration target for a definition)
@@ -198,11 +240,17 @@ message FileDecorations {
 
   // List of file diagnostics.
   repeated kythe.proto.common.Diagnostic diagnostic = 6;
+
+  // List of tickets for files that generate this file.
+  repeated string generated_by = 7;
+
+  // List of files referenced in the decorations
+  repeated FileInfo file_info = 8;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
-// CrossReferencesReply.{definition,reference,documentation} anchors.  Related
-// nodes can be retrieved from edge sets/pages.
+// CrossReferencesReply.{definition,reference,caller} anchors and related
+// nodes.
 message PagedCrossReferences {
   reserved 10;
 
@@ -235,10 +283,16 @@ message PagedCrossReferences {
   message Group {
     string kind = 1;
 
+    // Build configuration for all anchors contained within the group.
+    string build_config = 5;
+
     // A group is composed entirely of anchors, related nodes, or callers.
     repeated ExpandedAnchor anchor = 2;
-    repeated RelatedNode related_node = 3; // feature: RELATED_NODES
-    repeated Caller caller = 4; // feature: CALLERS
+    repeated RelatedNode related_node = 3;
+    repeated Caller caller = 4;
+
+    // List of files referenced in the group
+    repeated FileInfo file_info = 6;
   }
 
   message Page {
@@ -252,13 +306,14 @@ message PagedCrossReferences {
     string kind = 1;
     int32 count = 2;
     string page_key = 3;
+    string build_config = 4;
   }
 
   string source_ticket = 1;
   Node source_node = 8;
   repeated Group group = 2;
   repeated PageIndex page_index = 3;
-  int32 total_references = 4 [deprecated=true];
+  int32 total_references = 4 [deprecated = true];
 
   // Whether the source node is incomplete.  This changes whether
   // /kythe/edge/defines edges are considered declarations or definitions.
@@ -266,7 +321,7 @@ message PagedCrossReferences {
   bool incomplete = 5;
 
   // The source node's MarkedSource.
-  kythe.proto.common.MarkedSource marked_source = 6; // feature: MARKED_SOURCE
+  kythe.proto.common.MarkedSource marked_source = 6;
 }
 
 // A single node's documentation for the xrefs Documentation API.
@@ -324,9 +379,9 @@ message IdentifierMatch {
 // Used by ExploreService for the Parents and Children APIs.
 message Relatives {
   enum Type {
-    UNKNOWN = 0;  // never a valid value
-    PARENTS = 1;  // the reference node is a childOf each element of 'tickets'
-    CHILDREN = 2; // each element of 'tickets' is a childOf the reference node
+    UNKNOWN = 0;   // never a valid value
+    PARENTS = 1;   // the reference node is a childOf each element of 'tickets'
+    CHILDREN = 2;  // each element of 'tickets' is a childOf the reference node
   }
 
   // Nodes connected to a reference node via childOf edges.

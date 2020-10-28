@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,4 +14,5 @@
 # limitations under the License.
 
 # This file is expected to be unchanged.
+set -e
 . ./kythe/cxx/tools/fyi/testdata/test_case.sh nothing.cc

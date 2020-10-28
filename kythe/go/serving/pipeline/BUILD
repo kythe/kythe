@@ -15,6 +15,7 @@ go_library(
         "//kythe/go/services/graphstore",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
+        "//kythe/go/serving/graph/columnar",
         "//kythe/go/serving/pipeline/nodes",
         "//kythe/go/serving/xrefs",
         "//kythe/go/serving/xrefs/assemble",
@@ -33,6 +34,7 @@ go_library(
         "//kythe/go/util/span",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:filetree_go_proto",
+        "//kythe/proto:graph_serving_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:pipeline_go_proto",
         "//kythe/proto:schema_go_proto",
@@ -40,7 +42,9 @@ go_library(
         "//kythe/proto:storage_go_proto",
         "//kythe/proto:xref_serving_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/transforms/filter:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 
@@ -62,14 +66,15 @@ go_test(
     srcs = ["beam_integration_test.go"],
     library = ":pipeline",
     deps = [
+        "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/inmemory",
         "//kythe/proto:common_go_proto",
+        "//kythe/proto:graph_go_proto",
         "//kythe/proto:xref_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
-        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
 

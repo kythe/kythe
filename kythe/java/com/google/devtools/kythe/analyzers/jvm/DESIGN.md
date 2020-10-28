@@ -51,20 +51,17 @@ languages together.  Each JVM VName will have its language component set to
 "jvm" and have a well-defined signature corresponding to a JVM entity using the
 entity's qualified named (and possibly a differentiating JVM type descriptor).
 These VName signatures are unrelated to the JVM concept of a signature.  All
-other VName fields (i.e.  corpus/root/path) are empty.  See below for
+other VName fields (i.e.  corpus/root/path) can be left empty.  See below for
 descriptions of each signature per node kind.
 
 ```
 signature: <qualified_name> + <type_descriptor>?
 language: "jvm"
-corpus: <empty>
-root: <empty>
-path: <empty>
 ```
 
-It is left to future iterations to use the corpus/root/path components to
-possibly differentiate between same-named JVM entities generated across corpora
-(or Java modules).
+A JVM VName *may* be refined by a corpus/root/path to distinguish between JVM
+nodes that share a signature but should not be considered identical.  Usually
+only a non-empty corpus is necessary to make these distinctions.
 
 #### JVM nodes
 
@@ -100,57 +97,39 @@ class member -[childof]-> class
 #### Relations with higher-level JVM languages
 
 For each **definition** in a source file of a higher-level language targeting
-the JVM (such as Java, Scala, Clojure, Kotlin, etc.), a Kythe `generates` edge
+the JVM (such as Java, Scala, Clojure, Kotlin, etc.), a Kythe `named` edge
 should exist between the higher-level semantic node and the corresponding JVM
-semantic node (i.e. a Java class definition generates the JVM class node, a Java
-method definition generates the JVM method node, etc.).
+semantic node (i.e. a Java class definition is named by the JVM class node, a
+Java method definition is named by the JVM method node, etc.).
 
 ```
-Java node    -[generates]-> JVM node
+Java node    -[named]-> JVM node
             .. OR ..
-Scala node   -[generates]-> JVM node
+Scala node   -[named]-> JVM node
             .. OR ..
-Clojure node -[generates]-> JVM node
+Clojure node -[named]-> JVM node
             .. OR ..
-Kotlin node  -[generates]-> JVM node
+Kotlin node  -[named]-> JVM node
 ```
 
-For each **reference** to a semantic entity in higher-level source code, if the
-entity referenced is **known to be defined within the same higher-level
-language**, then reference edges should target the higher-level semantic Kythe
-node (e.g. Java references a Java node).  For all other references, edges should
-target the corresponding JVM semantic Kythe node (e.g. Java references a JVM
-node).
+Each **reference** to a semantic entity in higher-level source code also emits a
+`named` edge between the referenced higher-level semantic Kythe node and its
+corresponding JVM semantic Kythe node.  This must happen at least once per
+compilation containing a reference to the higher-level semantic Kythe node but
+may be cached afterwards to reduce duplicate outputs.
 
 ```
-Java anchor  -[ref]-> Java semantic node
-            .. OR ..
-Java anchor  -[ref]-> JVM semantic node
+Java anchor  -[ref]-> Java semantic node -[named]-> JVM semantic node
 
-Scala anchor -[ref]-> Scala semantic node
-            .. OR ..
-Scala anchor -[ref]-> JVM semantic node
+Scala anchor -[ref]-> Scala semantic node -[named]-> JVM semantic node
 ```
 
-It can be non-trivial to know whether a referenced entity was also defined
-within the same language, but there are multiple possible methods to make the
-determination.  First of all, it is usually trivial to determine if a node is
-defined within the same compilation as a reference.  For references across
-compilations, it is often possible for the build system to determine which
-source file generates a `.class` file and the Kythe extractor will pack that
-info into the `CompilationUnit`.  Each compiled `.class` file can also contain a
-source file path (depending on the build system used).  In either of these
-cases, checking the source file's path extension is usually sufficient to
-determine the source language.  Finally, at the discretion of the user, it is
-possible to simply default to the higher-level language of the compilation
-rather than the JVM language if cross-language support is not desired.
-
-Together, these edges tie the cross-language references of a Kythe node in one
+The `named` edges tie the cross-language references of a Kythe node in one
 higher-level language to the definition/references in another higher-level
 language by joining across the shared JVM node.
 
 ```
-Java anchor -[defines/binding]-> Java class -[generates]-> JVM class <-[ref]- Scala anchor
+Java anchor -[defines/binding]-> Java class -[named]-> JVM class <-[named]- Scala class <- Scala anchor
 ```
 
 ## JVM `.class` file indexer

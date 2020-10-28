@@ -3,7 +3,7 @@ export {}
 interface HasIterator {
   // Just verify we index into the computed property:
   //- @Symbol ref Sym=VName("Symbol", _, _, _, _)
-  //- @iterator ref Iter=VName("SymbolConstructor.iterator", _, _, _, _)
+  //- @iterator ref _Iter=VName("SymbolConstructor.iterator", _, _, _, _)
   [Symbol.iterator](): number;
 }
 

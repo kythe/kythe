@@ -7,12 +7,13 @@ go_binary(
     srcs = ["entrystream.go"],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/storage/entryset",
         "//kythe/go/storage/stream",
         "//kythe/go/util/compare",
         "//kythe/go/util/disksort",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

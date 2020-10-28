@@ -7,13 +7,12 @@ def _expand_template_impl(ctx):
 
 expand_template = rule(
     attrs = {
+        "out": attr.output(mandatory = True),
+        "substitutions": attr.string_dict(mandatory = True),
         "template": attr.label(
             mandatory = True,
-            allow_files = True,
-            single_file = True,
+            allow_single_file = True,
         ),
-        "substitutions": attr.string_dict(mandatory = True),
-        "out": attr.output(mandatory = True),
     },
     output_to_genfiles = True,
     implementation = _expand_template_impl,

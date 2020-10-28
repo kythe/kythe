@@ -25,54 +25,49 @@ public class JavaIndexerConfig extends IndexerConfig {
   private boolean emitJvmSignatures;
 
   @Parameter(
-    names = "--ignore_vname_paths",
-    description =
-        "Determines whether the analyzer should ignore the path components of the"
-            + " {@link VName}s in each compilation.  This can be used to \"fix\" the coherence"
-            + " of {@link VName}s across compilations when the extractor was not (or could not be)"
-            + " supplied with a proper {@link VName}s configuration file.  Each path will instead be"
-            + " set to the qualified name of each node's enclosing class (e.g. \"java.lang.String\""
-            + " or \"com.google.common.base.Predicate\")."
-  )
+      names = "--ignore_vname_paths",
+      description =
+          "Determines whether the analyzer should ignore the path components of the {@link VName}s"
+              + " in each compilation.  This can be used to \"fix\" the coherence of {@link"
+              + " VName}s across compilations when the extractor was not (or could not be)"
+              + " supplied with a proper {@link VName}s configuration file.  Each path will"
+              + " instead be set to the qualified name of each node's enclosing class (e.g."
+              + " \"java.lang.String\" or \"com.google.common.base.Predicate\").")
   private boolean ignoreVNamePaths;
 
   @Parameter(
-    names = "--ignore_vname_roots",
-    description =
-        "Determines whether the analyzer should ignore the root components of the"
-            + " {@link VName}s in each compilation.  This can be used to \"fix\" the coherence"
-            + " of {@link VName}s across compilations when the extractor was not (or could not be)"
-            + " supplied with a proper {@link VName}s configuration file."
-  )
+      names = "--ignore_vname_roots",
+      description =
+          "Determines whether the analyzer should ignore the root components of the {@link VName}s"
+              + " in each compilation.  This can be used to \"fix\" the coherence of {@link"
+              + " VName}s across compilations when the extractor was not (or could not be)"
+              + " supplied with a proper {@link VName}s configuration file.")
   private boolean ignoreVNameRoots;
 
   @Parameter(
-    names = "--override_jdk_corpus",
-    description =
-        "If set, use this as the corpus for classes from java.*, javax.*, com.sun.*, and sun.*. "
-            + " Anchor and file VNames are not affected."
-  )
+      names = "--override_jdk_corpus",
+      description =
+          "If set, use this as the corpus for classes from java.*, javax.*, com.sun.*, and sun.*. "
+              + " Anchor and file VNames are not affected.")
   private String overrideJdkCorpus;
 
   @Parameter(
-    names = "--emit_jvm",
-    description =
-        "Whether to emit name nodes or full JVM language semantic nodes for each Java class"
-            + "(must be either \"names\" or \"semantic\"; \"names\" is the default and deprecated)"
-  )
-  private JvmMode jvmMode = JvmMode.NAMES;
-
-  @Parameter(
-    names = "--emit_anchor_scopes",
-    description =
-        "Whether to emit childof edges from anchors to their lexical scope's semantic node"
-  )
+      names = "--emit_anchor_scopes",
+      description =
+          "Whether to emit childof edges from anchors to their lexical scope's semantic node")
   private boolean emitAnchorScopes;
 
-  public static enum JvmMode {
-    NAMES,
-    SEMANTIC;
-  }
+  @Parameter(
+      names = "--experimental_use_path_file_manager",
+      description = "Use the experimental Path-based FileManager on JDK9+")
+  private boolean useExperimentalPathFileManager;
+
+  @Parameter(
+      names = "--temp_directory",
+      description =
+          "Directory on the local file system that can be used to store files that the java"
+              + " compiler insists on being read from the local file system.")
+  private String temporaryDirectory;
 
   public JavaIndexerConfig(String programName) {
     super(programName);
@@ -94,12 +89,16 @@ public class JavaIndexerConfig extends IndexerConfig {
     return emitJvmSignatures;
   }
 
-  public JvmMode getJvmMode() {
-    return jvmMode;
-  }
-
   public boolean getEmitAnchorScopes() {
     return emitAnchorScopes;
+  }
+
+  public boolean getUseExperimentalPathFileManager() {
+    return useExperimentalPathFileManager;
+  }
+
+  public String getTemporaryDirectory() {
+    return temporaryDirectory;
   }
 
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
@@ -117,11 +116,6 @@ public class JavaIndexerConfig extends IndexerConfig {
     return this;
   }
 
-  public JavaIndexerConfig setJvmMode(JvmMode jvmMode) {
-    this.jvmMode = jvmMode;
-    return this;
-  }
-
   public JavaIndexerConfig setEmitAnchorScopes(boolean emitAnchorScopes) {
     this.emitAnchorScopes = emitAnchorScopes;
     return this;
@@ -129,6 +123,17 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setEmitJvmSignatures(boolean emitJvmSignatures) {
     this.emitJvmSignatures = emitJvmSignatures;
+    return this;
+  }
+
+  public JavaIndexerConfig setUseExperimentalPathFileManager(
+      boolean useExperimentalPathFileManager) {
+    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
+    return this;
+  }
+
+  public JavaIndexerConfig setTemporaryDirectory(String temporaryDirectory) {
+    this.temporaryDirectory = temporaryDirectory;
     return this;
   }
 }

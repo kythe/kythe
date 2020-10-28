@@ -17,15 +17,15 @@
 #ifndef KYTHE_CXX_COMMON_KYTHE_METADATA_FILE_H_
 #define KYTHE_CXX_COMMON_KYTHE_METADATA_FILE_H_
 
-#include "kythe/proto/storage.pb.h"
-
-#include "absl/memory/memory.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/MemoryBuffer.h"
-#include "rapidjson/document.h"
-
 #include <map>
 #include <memory>
+
+#include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
+#include "kythe/proto/metadata.pb.h"
+#include "kythe/proto/storage.pb.h"
+#include "rapidjson/document.h"
 
 namespace kythe {
 
@@ -43,26 +43,48 @@ class MetadataFile {
     bool generate_anchor;  ///< If this rule should generate an anchor.
     unsigned anchor_begin;  ///< The beginning of the anchor.
     unsigned anchor_end;    ///< The end of the anchor.
+    bool whole_file;        ///< Whether to ignore begin/end
   };
 
   /// Creates a new MetadataFile from a list of rules ranging from `begin` to
   /// `end`.
   template <typename InputIterator>
-  static std::unique_ptr<MetadataFile> LoadFromRules(InputIterator begin,
+  static std::unique_ptr<MetadataFile> LoadFromRules(absl::string_view id,
+                                                     InputIterator begin,
                                                      InputIterator end) {
     std::unique_ptr<MetadataFile> meta_file = absl::make_unique<MetadataFile>();
+    meta_file->id_ = std::string(id);
     for (auto rule = begin; rule != end; ++rule) {
-      meta_file->rules_.emplace(rule->begin, *rule);
+      if (rule->whole_file) {
+        meta_file->file_scope_rules_.push_back(*rule);
+      } else {
+        meta_file->rules_.emplace(rule->begin, *rule);
+      }
     }
     return meta_file;
   }
 
+  //// Attempts to convert `mapping` to a `Rule`.
+  static absl::optional<MetadataFile::Rule> LoadMetaElement(
+      const kythe::proto::metadata::MappingRule& mapping);
+
   /// Rules to apply keyed on `begin`.
   const std::multimap<unsigned, Rule>& rules() const { return rules_; }
+
+  /// File-scoped rules.
+  const std::vector<Rule>& file_scope_rules() const {
+    return file_scope_rules_;
+  }
+
+  absl::string_view id() const { return id_; }
 
  private:
   /// Rules to apply keyed on `begin`.
   std::multimap<unsigned, Rule> rules_;
+
+  std::vector<Rule> file_scope_rules_;
+
+  std::string id_;
 };
 
 /// \brief Provides interested MetadataSupport classes with the ability to
@@ -87,7 +109,7 @@ class MetadataSupport {
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      const llvm::MemoryBuffer* buffer) {
+      absl::string_view buffer) {
     return nullptr;
   }
 
@@ -122,7 +144,7 @@ class MetadataSupports {
   }
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string& filename, const llvm::MemoryBuffer* buffer,
+      const std::string& filename, absl::string_view buffer,
       const std::string& search_string) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
@@ -136,16 +158,13 @@ class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      const llvm::MemoryBuffer* buffer) override;
+      absl::string_view buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.
   /// \return null on failure.
-  static std::unique_ptr<MetadataFile> LoadFromJSON(llvm::StringRef json);
-  /// \brief Load the metadata rule from `value` into the Rule `rule`.
-  /// \return false on failure.
-  static bool LoadMetaElement(const rapidjson::Value& value,
-                              MetadataFile::Rule* rule);
+  static std::unique_ptr<MetadataFile> LoadFromJSON(absl::string_view id,
+                                                    absl::string_view json);
 };
 
 }  // namespace kythe

@@ -51,16 +51,16 @@ automatically, but in cases where that is not possible, a user-friendly interfac
 may be added to allow users to control the extraction behavior directly. For the
 time being, this intermediate configuration schema can be utilized by users who
 would like to get a head-start on enabling Kythe on their repositories. The
-configuration schema is defined within https://github.com/google/kythe/blob/master/kythe/proto/extraction_config.proto[extraction_config.proto].
+configuration schema is defined within https://github.com/kythe/kythe/blob/master/kythe/proto/extraction_config.proto[extraction_config.proto].
 
 == Extraction Configuration Usage
 
 Instances of this configuration schema can be placed in the root directory of
 the repository in a file named: ".kythe-extraction-config", formatted as a https://developers.google.com/protocol-buffers/docs/proto3#json[JSON encoded protobuf].
-An example of an existing extraction configuration can be found here: https://github.com/google/kythe/blob/master/kythe/go/extractors/config/testdata/mvn_config.json[mvn_config.json].
+An example of an existing extraction configuration can be found here: https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/base/testdata/mvn_config.json[mvn_config.json].
 The corresponding extraction image which gets generated from the mvn_config.json
-file can be found here: https://github.com/google/kythe/blob/master/kythe/go/extractors/config/testdata/expected_mvn_config.Dockerfile[expected_mvn_config.Dockerfile].
-This configuration serves as an input to the https://github.com/google/kythe/blob/master/kythe/go/platform/tools/extraction/extractrepo.go[extractrepo]
+file can be found here: https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/base/testdata/expected_mvn_config.Dockerfile[expected_mvn_config.Dockerfile].
+This configuration serves as an input to the https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/extraction/extractrepo.go[extractrepo]
 tool which executes the Kythe extraction process on a given repository.
 
 === Extraction Configuration Components
@@ -80,7 +80,7 @@ image will have:
  ENV <image.env_var.name>=<image.env_var.value>
 ....
 
-The https://github.com/google/kythe/blob/006fd1149173162df2b6670f4bf3d4a38204ca4c/kythe/proto/extraction_config.proto#L38[Image]
+The https://github.com/kythe/kythe/blob/006fd1149173162df2b6670f4bf3d4a38204ca4c/kythe/proto/extraction_config.proto#L38[Image]
 message has the following parts:
 
 `repeated CopySpec copy_spec` defines a list of artifacts to be copied from the
@@ -114,7 +114,7 @@ This field defines the entry point for the generated image. The entry point is
 the logic which is run when the generated image's container is started. This is
 typically a script or binary which intiates the build and extraction process. An
 example entry point binary can be found here:
-https://github.com/google/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
+https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
 For each listed `entry_point` the Docker image will have:
 ....
 ENTRYPOINT ["<entrypoint[0]>", "<entrypoint[1]>", ...]
@@ -160,22 +160,22 @@ generated extraction image. This wrapper is responsible for any pre-processing
 of build configuration files which might be necessary, as well as invoking the
 build system with the arguments necessary to hook the extractor into the build
 system's compilation step. An example of such a wrapper can be found here:
-https://github.com/google/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
+https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
 
 A common pattern is to have the wrapper as well as any language specific
 extraction binaries bundled within an extraction artifacts base image for use
 in the extraction configuration. An example of such an artifacts base image can
-be found here: https://github.com/google/kythe/blob/master/kythe/java/com/google/devtools/kythe/extractors/java/artifacts/Dockerfile[kythe/extractors/java/artifacts].
+be found here: https://github.com/kythe/kythe/blob/master/kythe/java/com/google/devtools/kythe/extractors/java/artifacts/Dockerfile[kythe/extractors/java/artifacts].
 
 == Extraction Tools
 
 The Kythe project contains a collection of tools available for running and
 testing extraction manually. The documentation for these tools can be found
-here: https://github.com/google/kythe/blob/master/kythe/go/platform/tools/extraction/README.md[README.md].
+here: https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/extraction/README.md[README.md].
 These tools require the following to programs to be locally installed and
 accessible on the $PATH: https://www.docker.com/get-docker[Docker], https://git-scm.com/downloads[Git].
 
-The https://github.com/google/kythe/blob/master/kythe/go/platform/tools/extraction/extractrepo.go[extractrepo]
+The https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/extraction/extractrepo/extractrepo.go[extractrepo]
 binary provides a tool for running an extraction manually. It consumes an extraction configuration file either specified as a command line argument, or else contained within the ".kythe-extraction-config" file in the root of the repository. The
 binary generates the extraction image, clones the repository, and then runs the
 extraction image's container to perform the Kythe extraction on its contents.
@@ -184,7 +184,7 @@ The usage for the binary is as follows:
 extractrepo -repo <repo_uri> -output <output_file_path> -config [config_file_path]
 ....
 
-The https://github.com/google/kythe/blob/master/kythe/go/platform/tools/extraction/repotester.go[repostester]
+The https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/extraction/repotester/repotester.go[repostester]
 binary provides a tool which runs an extraction on a given repository, and then
 runs a smoke test to verify adequate file coverage on the extraction's output.
 The usage for the binary is as follows:

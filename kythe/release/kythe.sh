@@ -20,8 +20,7 @@ export SHELL=/bin/bash
 usage() {
   cat >&2 <<EOF
 usage: kythe [--repo git-url] [--extract extractor] [--index]
-             [--index_pack] [--ignore-unhandled]
-             [--files config-path] [--files-excludes re1,re2]
+             [--ignore-unhandled] [--files config-path] [--files-excludes re1,re2]
 
 example: docker run --rm -t -v "$HOME/repo:/repo" -v "$HOME/gs:/graphstore" \
            google/kythe --extract maven --index --files --files-excludes '(^|/)\.,^third_party'
@@ -29,9 +28,7 @@ example: docker run --rm -t -v "$HOME/repo:/repo" -v "$HOME/gs:/graphstore" \
 Extraction:
   If given an --extract type, the compilations in the mounted /repo VOLUME (or the given --repo
   which will copied to /repo) will be extracted to the /compilations VOLUME w/ subdirectories for
-  each compilation's language (e.g. /compilations/java, /compilations/go).  If --index_pack is
-  given, each sub-directory of /compilations will be treated as an indexpack root instead of a
-  collection of .kindex files.
+  each compilation's language (e.g. /compilations/java, /compilations/go).
 
   Supported Extractors: maven
 
@@ -43,7 +40,7 @@ Indexing:
 
   To emit file nodes for the entire repository, use the --files flag to specify a JSON file VNames
   configuration relative to the repository root.  --files-excludes can be used to exclude certain
-  paths by a comma-separated list regex patterns.  It is highly recommended to blacklist build
+  paths by a comma-separated list regex patterns.  It is highly recommended to exclude build
   output directories such as '(^|/)target'.  The --index flag is required for --files to be handled.
 
   Supported Languages: java,c++
@@ -72,7 +69,6 @@ trap cleanup EXIT
 REPO=
 IGNORE_UNHANDLED=
 EXTRACTOR=
-KYTHE_INDEX_PACK=
 INDEXING=
 FILES_CONFIG=
 FILES_EXCLUDES='(^|/)\.'
@@ -85,8 +81,6 @@ while [[ $# -gt 0 ]]; do
     --extract|-e)
       EXTRACTOR="$2"
       shift ;;
-    --index_pack)
-      KYTHE_INDEX_PACK=1 ;;
     --files|-f)
       FILES_CONFIG="$2"
       shift ;;
@@ -114,7 +108,6 @@ if [[ -n "$REPO" ]]; then
   git clone "$REPO" /repo
 fi
 
-export KYTHE_INDEX_PACK
 case "$EXTRACTOR" in
   maven)
     echo 'Extracting compilations' >&2
@@ -130,23 +123,7 @@ if [[ -z "$INDEXING" ]]; then
   exit
 fi
 
-drive_indexer_indexpack() {
-  local root="$(dirname "$(dirname "$1")")"
-  local lang="$(basename "$root")"
-  local analyzer="/kythe/bin/${lang}_indexer"
-  if [[ ! -x "$analyzer" ]]; then
-    if [[ -n "$IGNORE_UNHANDLED" ]]; then
-      return 0
-    else
-      echo "Unhandled index file for '$lang': $*" >&2
-      return 1
-    fi
-  fi
-  echo "Indexing $1" >&2
-  "$analyzer" --index_pack "$root" "$(basename "$1" .unit)"
-}
-
-drive_indexer_kindex() {
+drive_indexer_kzip() {
   local lang="$(basename "$(dirname "$1")")"
   local analyzer="/kythe/bin/${lang}_indexer"
   if [[ ! -x "$analyzer" ]]; then
@@ -160,18 +137,13 @@ drive_indexer_kindex() {
   echo "Indexing $*" >&2
   "$analyzer" "$@"
 }
-export -f drive_indexer_kindex drive_indexer_indexpack
+export -f drive_indexer_kzip
 export IGNORE_UNHANDLED
 
-if [[ -n "$KYTHE_INDEX_PACK" ]]; then
-  find /compilations -name '*.unit' | sort -R | \
-    { parallel --gnu -L1 drive_indexer_indexpack || echo "$? analysis failures" >&2; }
-else
-  find /compilations -name '*.kindex' | sort -R | \
-    { parallel --gnu -L1 drive_indexer_kindex || echo "$? analysis failures" >&2; }
-fi | \
-  dedup_stream | \
-  write_entries --workers 12 --graphstore /graphstore
+find /compilations -name '*.kzip' | sort -R | \
+  { parallel --gnu -L1 drive_indexer_kzip || echo "$? analysis failures" >&2; } | \
+    dedup_stream | \
+    write_entries --workers 12 --graphstore /graphstore
 
 if [[ -z "$FILES_CONFIG" ]]; then
   echo "Skipping repository files indexing" >&2

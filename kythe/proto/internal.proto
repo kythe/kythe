@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.internal;
 
+option go_package = "internal_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/serving.proto";
@@ -99,33 +100,39 @@ message SortedKeyValue {
 // Example Path representing a FileDecorations_Decoration:
 //    pivot: <
 //      file: <
-//        ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//        ticket:
+//        "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
 //        text: "..."
 //        encoding: "UTF-8"
 //      >
-//      ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//      ticket:
+//      "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
 //      node_kind: "file"
 //    >
 //    edges: <
 //      kind: "%/kythe/edge/childof"
 //      target: <
 //        expanded_anchor: <
-//          ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//          ticket:
+//          "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
 //          kind: "%/kythe/edge/childof"
-//          parent: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//          parent:
+//          "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
 //          text: "edgeOrdinal"
 //          span: <...>
 //          snippet: "this.edgeOrdinal = -1"
 //          snippet_span: <...>
 //        >
-//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//        ticket:
+//        "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
 //        node_kind: "anchor"
 //      >
 //    >
 //    edges: <
 //      kind: "/kythe/edge/ref"
 //      target: <
-//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#3397da0c78948141fc85aa634e6d42e4461968ad33409c104e3a5e566306b8c5"
+//        ticket:
+//        "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#3397da0c78948141fc85aa634e6d42e4461968ad33409c104e3a5e566306b8c5"
 //        node_kind: "variable"
 //        original: <...>
 //      >

@@ -16,9 +16,10 @@
 
 #include "KytheVFS.h"
 
-#include "kythe/cxx/common/proto_conversions.h"
-
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -27,26 +28,57 @@ namespace kythe {
 
 static inline std::pair<uint64_t, uint64_t> PairFromUid(
     const llvm::sys::fs::UniqueID& uid) {
-  return std::make_pair(uid.getDevice(), uid.getFile());
+  return {uid.getDevice(), uid.getFile()};
 }
+
+absl::optional<llvm::sys::path::Style>
+IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
+  if (llvm::sys::path::is_absolute(awd, llvm::sys::path::Style::posix)) {
+    return llvm::sys::path::Style::posix;
+  } else if (llvm::sys::path::is_absolute(awd,
+                                          llvm::sys::path::Style::windows)) {
+    return llvm::sys::path::Style::windows;
+  }
+  absl::FPrintF(stderr, "warning: could not detect path style for %s\n", awd);
+  return absl::nullopt;
+}
+
+namespace {
+/// \brief normalizes `path` to POSIX style.
+std::string FixupPath(llvm::StringRef path, llvm::sys::path::Style style) {
+  if (style == llvm::sys::path::Style::windows &&
+      llvm::sys::path::is_absolute(path, style)) {
+    return absl::StrCat("/", path.str());
+  }
+  return std::string(path);
+}
+}  // anonymous namespace
 
 IndexVFS::IndexVFS(const std::string& working_directory,
                    const std::vector<proto::FileData>& virtual_files,
-                   const std::vector<llvm::StringRef>& virtual_dirs)
-    : virtual_files_(virtual_files), working_directory_(working_directory) {
-  assert(llvm::sys::path::is_absolute(working_directory) &&
-         "Working directory must be absolute.");
+                   const std::vector<llvm::StringRef>& virtual_dirs,
+                   llvm::sys::path::Style style)
+    : virtual_files_(virtual_files),
+      working_directory_(FixupPath(working_directory, style)) {
+  if (!llvm::sys::path::is_absolute(working_directory_,
+                                    llvm::sys::path::Style::posix)) {
+    absl::FPrintF(stderr, "warning: working directory %s is not absolute\n",
+                  working_directory_);
+  }
   for (const auto& data : virtual_files_) {
-    if (auto* record = FileRecordForPath(ToStringRef(data.info().path()),
-                                         BehaviorOnMissing::kCreateFile,
+    std::string path = FixupPath(ToStringRef(data.info().path()), style);
+    if (auto* record = FileRecordForPath(path, BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
       record->data =
           llvm::StringRef(data.content().data(), data.content().size());
     }
   }
   for (llvm::StringRef dir : virtual_dirs) {
-    FileRecordForPath(dir, BehaviorOnMissing::kCreateDirectory, 0);
+    FileRecordForPath(FixupPath(dir, style),
+                      BehaviorOnMissing::kCreateDirectory, 0);
   }
+  // Clang always expects to be able to find a directory at .
+  FileRecordForPath(".", BehaviorOnMissing::kCreateDirectory, 0);
 }
 
 IndexVFS::~IndexVFS() {
@@ -87,8 +119,8 @@ llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> IndexVFS::openFileForRead(
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-llvm::vfs::directory_iterator IndexVFS::dir_begin(
-    const llvm::Twine& dir, std::error_code& error_code) {
+llvm::vfs::directory_iterator IndexVFS::dir_begin(const llvm::Twine& dir,
+                                                  std::error_code& error_code) {
   return llvm::vfs::directory_iterator();
 }
 
@@ -119,7 +151,7 @@ bool IndexVFS::get_vname(const clang::FileEntry* entry,
 std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID& uid) {
   auto record = uid_to_record_map_.find(PairFromUid(uid));
   if (record != uid_to_record_map_.end()) {
-    return record->second->status.getName();
+    return std::string(record->second->status.getName());
   }
   return "uid(device: " + std::to_string(uid.getDevice()) +
          " file: " + std::to_string(uid.getFile()) + ")";
@@ -129,17 +161,21 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
                                                       bool create_if_missing) {
   std::string path_str(path.str());
   bool is_absolute = true;
-  auto root_name = llvm::sys::path::root_name(path_str);
+  auto root_name =
+      llvm::sys::path::root_name(path_str, llvm::sys::path::Style::posix);
   if (root_name.empty()) {
-    root_name = llvm::sys::path::root_name(working_directory_);
+    root_name = llvm::sys::path::root_name(working_directory_,
+                                           llvm::sys::path::Style::posix);
     if (!root_name.empty()) {
       // This index comes from a filesystem with significant root names.
       is_absolute = false;
     }
   }
-  auto root_dir = llvm::sys::path::root_directory(path_str);
+  auto root_dir =
+      llvm::sys::path::root_directory(path_str, llvm::sys::path::Style::posix);
   if (root_dir.empty()) {
-    root_dir = llvm::sys::path::root_directory(working_directory_);
+    root_dir = llvm::sys::path::root_directory(working_directory_,
+                                               llvm::sys::path::Style::posix);
     is_absolute = false;
   }
   if (!is_absolute) {
@@ -151,7 +187,7 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
                              0);
   }
   FileRecord* name_record = nullptr;
-  auto name_found = root_name_to_root_map_.find(root_name);
+  auto name_found = root_name_to_root_map_.find(std::string(root_name));
   if (name_found != root_name_to_root_map_.end()) {
     name_record = name_found->second;
   } else if (!create_if_missing) {
@@ -159,11 +195,11 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
   } else {
     name_record = new FileRecord(
         {llvm::vfs::Status(root_name, llvm::vfs::getNextVirtualUniqueID(),
-                            llvm::sys::TimePoint<>(), 0, 0, 0,
-                            llvm::sys::fs::file_type::directory_file,
-                            llvm::sys::fs::all_read),
-         false, root_name});
-    root_name_to_root_map_[root_name] = name_record;
+                           llvm::sys::TimePoint<>(), 0, 0, 0,
+                           llvm::sys::fs::file_type::directory_file,
+                           llvm::sys::fs::all_read),
+         false, std::string(root_name)});
+    root_name_to_root_map_[std::string(root_name)] = name_record;
     uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
         name_record;
   }
@@ -187,12 +223,15 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPath(llvm::StringRef path,
 
   llvm::SmallString<1024> path_storage;
   if (llvm::sys::path::is_relative(path)) {
-    llvm::sys::path::append(path_storage, ToStringRef(working_directory_),
-                            path);
+    llvm::sys::path::append(
+        path_storage, llvm::sys::path::Style::posix,
+        llvm::StringRef(working_directory_.data(), working_directory_.size()),
+        path);
     path = llvm::StringRef(path_storage);
   }
 
-  for (auto node = llvm::sys::path::rbegin(path), node_end = rend(path);
+  for (auto node = llvm::sys::path::rbegin(path, llvm::sys::path::Style::posix),
+            node_end = rend(path);
        node != node_end; ++node) {
     if (*node == "..") {
       ++skip_count;
@@ -251,9 +290,12 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
     if (record->label == label) {
       if (create_if_missing && (record->status.getSize() != size ||
                                 record->status.getType() != type)) {
-        fprintf(stderr, "Warning: path %s/%s: defined inconsistently (%s/%s)\n",
-                parent->status.getName().str().c_str(), label.str().c_str(),
-                NameOfFileType(type), NameOfFileType(record->status.getType()));
+        absl::FPrintF(
+            stderr,
+            "Warning: path %s/%s: defined inconsistently (%s:%d/%s:%d)\n",
+            parent->status.getName().str(), label.str(), NameOfFileType(type),
+            size, NameOfFileType(record->status.getType()),
+            record->status.getSize());
         return nullptr;
       }
       return record;
@@ -263,12 +305,12 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
     return nullptr;
   }
   llvm::SmallString<1024> out_path(llvm::StringRef(parent->status.getName()));
-  llvm::sys::path::append(out_path, label);
+  llvm::sys::path::append(out_path, llvm::sys::path::Style::posix, label);
   FileRecord* new_record = new FileRecord{
       llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
-                         llvm::sys::TimePoint<>(), 0, 0, size, type,
-                         llvm::sys::fs::all_read),
-      false, label};
+                        llvm::sys::TimePoint<>(), 0, 0, size, type,
+                        llvm::sys::fs::all_read),
+      false, std::string(label)};
   parent->children.push_back(new_record);
   uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =
       new_record;

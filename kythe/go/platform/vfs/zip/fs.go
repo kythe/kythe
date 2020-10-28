@@ -16,7 +16,7 @@
 
 // Package zip defines a VFS implementation that understands a zip archive as an
 // isolated, read-only file system.
-package zip
+package zip // import "kythe.io/kythe/go/platform/vfs/zip"
 
 import (
 	"archive/zip"
@@ -70,15 +70,19 @@ func (z FS) Stat(_ context.Context, path string) (os.FileInfo, error) {
 	return f.FileInfo(), nil
 }
 
-// Open implements part of vfs.Reader, returning a io.ReadCloser owned by
+// Open implements part of vfs.Reader, returning a vfs.FileReader owned by
 // the underlying zip archive. It is safe to open multiple files concurrently,
 // as documented by the zip package.
-func (z FS) Open(_ context.Context, path string) (io.ReadCloser, error) {
+func (z FS) Open(_ context.Context, path string) (vfs.FileReader, error) {
 	f := z.find(path)
 	if f == nil {
 		return nil, os.ErrNotExist
 	}
-	return f.Open()
+	fo, err := f.Open()
+	if err != nil {
+		return nil, err
+	}
+	return vfs.UnseekableFileReader{fo}, nil
 }
 
 // Glob implements part of vfs.Reader using filepath.Match to compare the

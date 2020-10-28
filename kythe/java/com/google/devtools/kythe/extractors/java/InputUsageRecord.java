@@ -18,7 +18,7 @@ package com.google.devtools.kythe.extractors.java;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import javax.annotation.Nullable;
+import java.util.Optional;
 import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
 
@@ -30,14 +30,14 @@ import javax.tools.JavaFileObject;
 public class InputUsageRecord {
 
   private final JavaFileObject fileObject;
-  private final Location location;
+  private Optional<Location> location;
 
   private boolean isUsed = false;
 
-  /** @param location of a class file object, or {@code null} for source files. */
-  public InputUsageRecord(JavaFileObject fileObject, @Nullable Location location) {
+  /** @param location of a java file object, if known. */
+  public InputUsageRecord(JavaFileObject fileObject, Optional<Location> location) {
     this.fileObject = checkNotNull(fileObject);
-    this.location = location;
+    this.location = checkNotNull(location);
   }
 
   /** Record that the compiler used this file as input. */
@@ -55,8 +55,15 @@ public class InputUsageRecord {
     return fileObject;
   }
 
-  /** Return the file's {@link Location}. */
-  public Location location() {
+  /** Return the file's {@link Optional<Location>}. */
+  public Optional<Location> location() {
     return location;
+  }
+
+  /** Update the location, preferring a non-empty location. */
+  public void updateLocation(Optional<Location> value) {
+    if (value.isPresent()) {
+      location = value;
+    }
   }
 }

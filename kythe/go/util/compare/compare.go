@@ -15,12 +15,15 @@
  */
 
 // Package compare implements comparisons between Kythe values.
-package compare
+package compare // import "kythe.io/kythe/go/util/compare"
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -263,8 +266,37 @@ func (s *ByEntries) Pop() interface{} {
 
 // ValueEntries reports whether e1 is LT, GT, or EQ to e2 in entry order,
 // including fact values (if any).
-func ValueEntries(e1, e2 *spb.Entry) Order { return Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue) }
+func ValueEntries(e1, e2 *spb.Entry) Order {
+	return Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue)
+}
 
 // EntriesEqual reports whether e1 and e2 are equivalent, including their fact
 // values (if any).
 func EntriesEqual(e1, e2 *spb.Entry) bool { return ValueEntries(e1, e2) == EQ }
+
+// ProtoDiff returns a human-readable report of the differences between two
+// values, ensuring that any proto.Message values are compared correctly with
+// proto.Equal.
+//
+// See github.com/google/go-cmp/cmp for more details.
+func ProtoDiff(x, y interface{}, opts ...cmp.Option) string {
+	return cmp.Diff(x, y, makeProtoOpts(opts)...)
+}
+
+func makeProtoOpts(opts []cmp.Option) []cmp.Option {
+	protoOpts := append([]cmp.Option{}, opts...)
+	protoOpts = append(protoOpts,
+		cmp.Comparer(proto.Equal),
+		ignoreProtoXXXFields,
+	)
+	return protoOpts
+}
+
+var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
+	for _, s := range p {
+		if strings.HasPrefix(s.String(), ".XXX_") {
+			return true
+		}
+	}
+	return false
+}, cmp.Ignore())

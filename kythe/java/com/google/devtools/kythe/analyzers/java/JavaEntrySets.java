@@ -43,23 +43,24 @@ import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import java.util.Set;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
+  private final Set<Symbol> symbolsDocumented = new HashSet<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
-  private final boolean ignoreVNamePaths;
-  private final boolean ignoreVNameRoots;
-  private final String overrideJdkCorpus;
+  private final JavaIndexerConfig config;
   private final Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
   public JavaEntrySets(
@@ -67,13 +68,9 @@ public class JavaEntrySets extends KytheEntrySets {
       FactEmitter emitter,
       VName compilationVName,
       List<FileInput> requiredInputs,
-      boolean ignoreVNamePaths,
-      boolean ignoreVNameRoots,
-      String overrideJdkCorpus) {
+      JavaIndexerConfig config) {
     super(statistics, emitter, compilationVName, requiredInputs);
-    this.ignoreVNamePaths = ignoreVNamePaths;
-    this.ignoreVNameRoots = ignoreVNameRoots;
-    this.overrideJdkCorpus = overrideJdkCorpus;
+    this.config = config;
   }
 
   /**
@@ -86,7 +83,7 @@ public class JavaEntrySets extends KytheEntrySets {
       Symbol sym,
       String signature,
       // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren) {
     return getNode(
         signatureGenerator,
@@ -118,16 +115,17 @@ public class JavaEntrySets extends KytheEntrySets {
       String signature,
       MarkedSource markedSource) {
     EntrySet node;
-    if (symbolNodes.containsKey(sym)) {
+    if (symbolNodes.containsKey(sym) && (markedSource == null || symbolsDocumented.contains(sym))) {
       return symbolNodes.get(sym);
     }
 
     ClassSymbol enclClass = sym.enclClass();
     VName v = lookupVName(enclClass);
-    if ((v == null || overrideJdkCorpus != null) && fromJDK(sym)) {
+    if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
       v =
           VName.newBuilder()
-              .setCorpus(overrideJdkCorpus != null ? overrideJdkCorpus : "jdk")
+              .setCorpus(
+                  config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk")
               .build();
     }
 
@@ -135,22 +133,29 @@ public class JavaEntrySets extends KytheEntrySets {
       getStatisticsCollector().incrementCounter("unextracted-input-file");
       String msg =
           String.format(
-              "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen during extraction.",
+              "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen"
+                  + " during extraction.",
               sym, enclClass);
-      logger.atWarning().log(msg);
+      if (config.getVerboseLogging()) {
+        logger.atWarning().log(msg);
+      }
       Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
       return emitDiagnostic(d.build()).getVName();
     } else {
-      if (ignoreVNamePaths) {
+      if (config.getIgnoreVNamePaths()) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
-      if (ignoreVNameRoots) {
+      if (config.getIgnoreVNameRoots()) {
         v = v.toBuilder().clearRoot().build();
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
-      builder.setCorpusPath(CorpusPath.fromVName(v)).setProperty("code", markedSource);
+      builder.setCorpusPath(CorpusPath.fromVName(v));
+      if (markedSource != null) {
+        builder.setProperty("code", markedSource);
+        symbolsDocumented.add(sym);
+      }
 
       if (signatureGenerator.getUseJvmSignatures()) {
         builder.setSignature(signature);
@@ -189,6 +194,11 @@ public class JavaEntrySets extends KytheEntrySets {
     EntrySet node = emitAndReturn(builder);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, params);
     return node;
+  }
+
+  /** Returns the {@link VName} for the given file. */
+  public VName getFileVName(JavaFileObject sourceFile) {
+    return getFileVName(getDigest(sourceFile));
   }
 
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
@@ -279,7 +289,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
-        // TODO(T227): handle all cases, make this exceptional, and remove all null checks
+        // TODO(#1845): handle all cases, make this exceptional, and remove all null checks
         return null;
     }
   }
@@ -323,6 +333,12 @@ public class JavaEntrySets extends KytheEntrySets {
     return h;
   }
 
+  /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
+  public CorpusPath jvmCorpusPath(Symbol sym) {
+    return new CorpusPath(
+        Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
+  }
+
   @Nullable
   private VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
@@ -341,14 +357,20 @@ public class JavaEntrySets extends KytheEntrySets {
     return sourceFile.toUri().getHost();
   }
 
-  private static boolean fromJDK(@Nullable Symbol sym) {
-    if (sym == null || sym.enclClass() == null) {
+  static boolean fromJDK(@Nullable Symbol sym) {
+    if (sym == null) {
       return false;
     }
-    String cls = sym.enclClass().className();
+    ClassSymbol enclClass = sym.enclClass();
+    if (enclClass == null
+        || enclClass.classfile == null
+        || enclClass.classfile.getKind() == JavaFileObject.Kind.SOURCE) {
+      return false;
+    }
+    String cls = enclClass.className();
     // For performance, first check common package prefixes, then delegate
     // to the slower loadedByJDKClassLoader() method.
-    return SignatureGenerator.isArrayHelperClass(sym.enclClass())
+    return SignatureGenerator.isArrayHelperClass(enclClass)
         || cls.startsWith("java.")
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")

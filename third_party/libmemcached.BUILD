@@ -1,4 +1,4 @@
-load("@//tools:build_rules/expand_template.bzl", "expand_template")
+load("@io_kythe//tools:build_rules/expand_template.bzl", "expand_template")
 
 package(
     default_visibility = ["//visibility:private"],
@@ -6,7 +6,7 @@ package(
 
 genrule(
     name = "configure",
-    srcs = ["@//third_party:libmemcached.mem_config.h"],
+    srcs = ["@io_kythe//third_party:libmemcached.mem_config.h"],
     outs = ["mem_config.h"],
     cmd = "cp \"$<\" \"$@\"",
 )
@@ -151,9 +151,9 @@ expand_template(
     out = "headers/libmemcached-1.0/configure.h",
     substitutions = {
         "@DEPRECATED@": "",
-        "@LIBMEMCACHED_WITH_SASL_SUPPORT@": "#define LIBMEMCACHED_WITH_SASL_SUPPORT 0",
-        "@LIBMEMCACHED_VERSION_STRING@": "1.0.18",
         "@LIBMEMCACHED_VERSION_HEX@": "0x01000018",
+        "@LIBMEMCACHED_VERSION_STRING@": "1.0.18",
+        "@LIBMEMCACHED_WITH_SASL_SUPPORT@": "#define LIBMEMCACHED_WITH_SASL_SUPPORT 0",
     },
     template = "libmemcached-1.0/configure.h.in",
 )
@@ -283,14 +283,14 @@ cc_library(
     ],
     copts = [
         "-DBUILDING_MEMCACHED",
-        "-Wno-deprecated-register",
+        "-Dregister=",
     ] + select({
+        "@io_kythe//:darwin": [],
         "//conditions:default": [
             "-DHAVE_MSG_MORE=1",
             "-DHAVE_MSG_NOSIGNAL=1",
             "-DSTRERROR_R_CHAR_P=1",
         ],
-        "@//:darwin": [],
     }),
     includes = ["headers"],
     visibility = ["//visibility:public"],

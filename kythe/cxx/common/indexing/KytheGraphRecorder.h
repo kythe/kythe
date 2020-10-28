@@ -17,9 +17,8 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 
-#include "absl/strings/string_view.h"
-
 #include "KytheOutputStream.h"
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 
@@ -45,7 +44,8 @@ enum class NodeKindID {
   kDoc,
   kTBuiltin,
   kMeta,
-  kDiagnostic
+  kDiagnostic,
+  kClangUsr
 };
 
 /// \brief Known properties of nodes. See the schema for details.
@@ -69,7 +69,9 @@ enum class PropertyID {
   kTagDeprecated,
   kDiagnosticMessage,
   kDiagnosticDetails,
-  kDiagnosticContextOrUrl
+  kDiagnosticContextOrUrl,
+  kDocUri,
+  kBuildConfig
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -78,6 +80,7 @@ enum class EdgeKindID {
   kHasType,
   kRef,
   kRefImplicit,
+  kRefImports,
   kParam,
   kAliases,
   kAliasesRoot,
@@ -115,7 +118,14 @@ enum class EdgeKindID {
   kRefInit,
   kRefInitImplicit,
   kImputes,
-  kTagged
+  kTagged,
+  kPropertyReads,
+  kPropertyWrites,
+  kClangUsr,
+  kRefId,
+  kRefWrites,
+  kRefWritesImplicit,
+  kInfluences
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

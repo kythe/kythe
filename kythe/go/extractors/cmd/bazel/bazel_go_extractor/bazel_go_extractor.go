@@ -27,8 +27,8 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -71,14 +71,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading extra action: %v", err)
 	}
-	if m := info.GetMnemonic(); m != "GoCompile" {
+	if m := info.GetMnemonic(); m != "GoCompilePkg" {
 		log.Fatalf("Extractor is not applicable to this action: %q", m)
 	}
 
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := bazel.LoadRules(vnameRuleFile)
+	rules, err := vnameutil.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}
@@ -100,7 +100,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 }
@@ -155,6 +155,19 @@ func (*extractor) isSource(name string) bool { return filepath.Ext(name) == ".go
 func (*extractor) checkEnv(name, _ string) bool { return name != "PATH" }
 
 func (e *extractor) fixup(unit *apb.CompilationUnit) error {
+	// Add GoPackageInfo to record canonical import paths of packages.
+	for _, ri := range unit.RequiredInput {
+		if ip, ok := e.compileArgs.archiveImportMap[ri.Info.Path]; ok {
+			any, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+				ImportPath: ip,
+			})
+			if err != nil {
+				return fmt.Errorf("error adding GoPackageInfo details: %v", err)
+			}
+			ri.Details = append(ri.Details, any)
+		}
+	}
+
 	// Try to infer a unit vname from the output.
 	if vname, ok := e.rules.Apply(e.compileArgs.outputPath); ok {
 		vname.Language = govname.Language
@@ -169,25 +182,27 @@ func (e *extractor) fixup(unit *apb.CompilationUnit) error {
 	})
 }
 
-// compileArgs records the build information extracted from the GoCompile
+// compileArgs records the build information extracted from the GoCompilePkg
 // action's argument list.
 type compileArgs struct {
-	original    []string          // the original args, as provided
-	srcs        []string          // source file to be compiled
-	deps        []string          // import paths of direct dependencies
-	tags        []string          // build tags to assert
-	importMap   map[string]string // import map for direct dependencies
-	outputPath  string            // output object file
-	packageList string            // file containing the list of standard library packages
-	include     []string          // additional include directories
-	importPath  string            // output package import path
-	trimPrefix  string            // prefix to trim from source paths
+	original         []string          // the original args, as provided
+	srcs             []string          // source file to be compiled
+	deps             []string          // import paths of direct dependencies
+	tags             []string          // build tags to assert
+	importMap        map[string]string // import map for direct dependencies
+	archiveImportMap map[string]string // import map for direct dependencies of archives
+	outputPath       string            // output object file
+	packageList      string            // file containing the list of standard library packages
+	include          []string          // additional include directories
+	importPath       string            // output package import path
+	trimPrefix       string            // prefix to trim from source paths
 }
 
 func parseCompileArgs(args []string) *compileArgs {
 	c := &compileArgs{
-		original:  args,
-		importMap: make(map[string]string),
+		original:         args,
+		importMap:        make(map[string]string),
+		archiveImportMap: make(map[string]string),
 	}
 
 	var tail []string // left-over non-flag arguments
@@ -214,6 +229,17 @@ func parseCompileArgs(args []string) *compileArgs {
 			if len(ps) == 2 && ps[0] != ps[1] {
 				c.importMap[ps[0]] = ps[1]
 			}
+		case "arc":
+			// Example -arc arg:
+			//   "github.com/google/subcommands=github.com/google/subcommands=bazel-out/k8-fastbuild/bin/external/com_github_google_subcommands/linux_amd64_stripped/go_default_library%/github.com/google/subcommands.a=",
+			//
+			// Only record the mappings that change something.
+			ps := strings.SplitN(strings.TrimSuffix(arg, "="), "=", 3)
+			if len(ps) == 3 {
+				// map from file path to desired importpath
+				c.archiveImportMap[ps[2]] = ps[1]
+			}
+
 		case "o":
 			c.outputPath = arg
 		case "package_list":

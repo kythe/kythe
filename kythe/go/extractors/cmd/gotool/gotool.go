@@ -16,7 +16,7 @@
 
 // Binary gotool extracts Kythe compilation information for Go packages named
 // by import path on the command line.  The output compilations are written
-// into an index pack directory.
+// into a kzip.
 package main
 
 import (
@@ -31,29 +31,36 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/golang"
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/vnameutil"
+
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 var (
 	bc = build.Default // A shallow copy of the default build settings
 
 	corpus     = flag.String("corpus", "", "Default corpus name to use")
-	localPath  = flag.String("local_path", "", "Directory where relative imports are resolved")
-	outputPath = flag.String("output", "", "Output path (indexpack directory or .kzip filename)")
+	rulesFile  = flag.String("rules", "", "Path to vnames.json file that maps file paths to output corpus, root, and path.")
+	outputPath = flag.String("output", "", "KZip output path")
 	extraFiles = flag.String("extra_files", "", "Additional files to include in each compilation (CSV)")
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
+
+	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
+
+	buildTags flagutil.StringList
 )
 
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <import-path>...
 Extract Kythe compilation records from Go import paths specified on the command line.
-Outputs are written to an index pack unless --kindex is set, in which case they
-are written to individual .kindex files in the output directory.
+Output is written to a .kzip file specified by --output.
 
 Options:
 `, filepath.Base(os.Args[0]))
@@ -68,6 +75,7 @@ Options:
 	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT, "Go system root")
 	flag.BoolVar(&bc.CgoEnabled, "gocgo", bc.CgoEnabled, "Whether to allow cgo")
 	flag.StringVar(&bc.Compiler, "gocompiler", bc.Compiler, "Which Go compiler to use")
+	flag.Var(&buildTags, "buildtags", "Comma-separated list of Go +build tags to enable during extraction.")
 
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
@@ -88,30 +96,61 @@ func maybeLog(msg string, args ...interface{}) {
 func main() {
 	flag.Parse()
 
+	bc.BuildTags = buildTags
+
 	if *outputPath == "" {
 		log.Fatal("You must provide a non-empty --output path")
+	}
+
+	// Rules for rewriting package and file VNames.
+	var rules vnameutil.Rules
+	if *rulesFile != "" {
+		var err error
+		rules, err = vnameutil.LoadRules(*rulesFile)
+		if err != nil {
+			log.Fatalf("loading rules file: %v", err)
+		}
 	}
 
 	ctx := context.Background()
 	ext := &golang.Extractor{
 		BuildContext: bc,
-		Corpus:       *corpus,
-		LocalPath:    *localPath,
+
+		PackageVNameOptions: golang.PackageVNameOptions{
+			DefaultCorpus:             *corpus,
+			Rules:                     rules,
+			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
+			RootDirectory:             os.Getenv("KYTHE_ROOT_DIRECTORY"),
+		},
 	}
 	if *extraFiles != "" {
 		ext.ExtraFiles = strings.Split(*extraFiles, ",")
+		for i, path := range ext.ExtraFiles {
+			var err error
+			ext.ExtraFiles[i], err = filepath.Abs(path)
+			if err != nil {
+				log.Fatalf("Error finding absolute path of %s: %v", path, err)
+			}
+		}
 	}
 
 	locate := ext.Locate
 	if *byDir {
-		locate = ext.ImportDir
+		locate = func(path string) ([]*golang.Package, error) {
+			pkg, err := ext.ImportDir(path)
+			if err != nil {
+				return nil, err
+			}
+			return []*golang.Package{pkg}, nil
+		}
 	}
 	for _, path := range flag.Args() {
-		pkg, err := locate(path)
-		if err == nil {
-			maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
-		} else {
+		pkgs, err := locate(path)
+		if err != nil {
 			maybeFatal("Error locating %q: %v", path, err)
+		}
+		for _, pkg := range pkgs {
+			maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
 		}
 	}
 
@@ -126,12 +165,16 @@ func main() {
 	}
 	for _, pkg := range ext.Packages {
 		maybeLog("Package %q:\n\t// %s", pkg.Path, pkg.BuildPackage.Doc)
-		if err := pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
-			if _, err := w.AddUnit(cu.Proto, nil); err != nil {
+		if err := pkg.EachUnit(ctx, func(cu *apb.CompilationUnit, fetcher analysis.Fetcher) error {
+			if _, err := w.AddUnit(cu, nil); err != nil {
 				return err
 			}
-			for _, fd := range cu.Files {
-				if _, err := w.AddFile(bytes.NewReader(fd.Content)); err != nil {
+			for _, ri := range cu.RequiredInput {
+				fd, err := fetcher.Fetch(ri.Info.Path, ri.Info.Digest)
+				if err != nil {
+					return err
+				}
+				if _, err := w.AddFile(bytes.NewReader(fd)); err != nil {
 					return err
 				}
 			}

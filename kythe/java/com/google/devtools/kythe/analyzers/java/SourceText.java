@@ -225,7 +225,9 @@ public final class SourceText {
 
     /** Returns the byte span for the given tree in the source text. */
     public Span getSpan(JCTree tree) {
-      return new Span(getStart(tree), getEnd(tree));
+      int start = getStart(tree);
+      int end = getEnd(tree);
+      return start >= 0 && end == -1 ? new Span(start, start) : new Span(start, end);
     }
 
     /**

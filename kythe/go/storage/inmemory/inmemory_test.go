@@ -170,6 +170,109 @@ func TestKeyValueDB_scanRange(t *testing.T) {
 	}
 }
 
+func TestKeyValueDB_scanPrefixSeek(t *testing.T) {
+	db := NewKeyValueDB()
+
+	entries := []entry{
+		{"k4", "val4"},
+		{"k3", "val3"},
+		{"k2", "val2"},
+	}
+	writeEntries(t, db, entries)
+	writeEntries(t, db, []entry{
+		{"k", "val"},
+		{"k0", "val0"},
+		{"k1", "val1"},
+		{"j1", "val1"},
+		{"j0", "val0"},
+	})
+
+	it, err := db.ScanPrefix(ctx, []byte("k"), nil)
+	if err != nil {
+		t.Fatalf("ScanPrefix error: %v", err)
+	}
+
+	// Seek past k1 key
+	if err := it.Seek([]byte("k10")); err != nil {
+		t.Fatalf("Seek error: %v", err)
+	}
+
+	var found []entry
+	for {
+		k, v, err := it.Next()
+		if err == io.EOF {
+			break
+		}
+		found = append(found, entry{string(k), string(v)})
+	}
+
+	if err := it.Close(); err != nil {
+		t.Fatalf("Iterator close error: %v", err)
+	}
+
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
+	if diff := cmp.Diff(entries, found); diff != "" {
+		t.Fatalf("Found entry differences: (- expected; + found)\n%s", diff)
+	}
+
+	if err := db.Close(ctx); err != nil {
+		t.Fatalf("DB close error: %v", err)
+	}
+}
+
+func TestKeyValueDB_scanRangeSeek(t *testing.T) {
+	db := NewKeyValueDB()
+
+	entries := []entry{
+		{"k1", "val1"},
+		{"k2", "val2"},
+	}
+	writeEntries(t, db, entries)
+	writeEntries(t, db, []entry{
+		{"k0", "val0"},
+		{"k3", "val3"},
+		{"k", "val"},
+		{"j1", "val1"},
+		{"k4", "val4"},
+		{"j0", "val0"},
+	})
+
+	it, err := db.ScanRange(ctx, &keyvalue.Range{
+		Start: []byte("k0"),
+		End:   []byte("k3"),
+	}, nil)
+	if err != nil {
+		t.Fatalf("ScanRange error: %v", err)
+	}
+
+	// Seek past k0 key
+	if err := it.Seek([]byte("k1")); err != nil {
+		t.Fatalf("Seek error: %v", err)
+	}
+
+	var found []entry
+	for {
+		k, v, err := it.Next()
+		if err == io.EOF {
+			break
+		}
+		found = append(found, entry{string(k), string(v)})
+	}
+
+	if err := it.Close(); err != nil {
+		t.Fatalf("Iterator close error: %v", err)
+	}
+
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
+	if diff := cmp.Diff(entries, found); diff != "" {
+		t.Fatalf("Found entry differences: (- expected; + found)\n%s", diff)
+	}
+
+	if err := db.Close(ctx); err != nil {
+		t.Fatalf("DB close error: %v", err)
+	}
+}
+
 func writeEntries(t *testing.T, db *KeyValueDB, entries []entry) {
 	for _, e := range entries {
 		write(t, db, e.Key, e.Value)

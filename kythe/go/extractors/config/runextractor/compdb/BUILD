@@ -23,6 +23,6 @@ go_test(
     library = ":compdb",
     rundir = ".",  # Use Bazel conventions for PWD.
     deps = [
-        "//kythe/go/platform/kindex",
+        "//kythe/go/platform/kzip",
     ],
 )

@@ -40,7 +40,7 @@ std::string FileVNameGenerator::ApplyRule(const StringConsRule& rule,
         break;
       case StringConsNode::Kind::kUseSubstitution:
         // Invariant: 0 <= node.capture_index < argc
-        ret.append(argv[node.capture_index].ToString());
+        ret.append(std::string(argv[node.capture_index]));
         break;
     }
   }
@@ -63,13 +63,13 @@ bool FileVNameGenerator::ParseRule(const std::string& rule, int max_capture,
     if (!prefix.empty()) {
       StringConsNode node;
       node.kind = StringConsNode::Kind::kEmitText;
-      node.raw_text = prefix.ToString();
+      node.raw_text = std::string(prefix);
       result->push_back(node);
     }
     if (!substitution.empty()) {
       StringConsNode node;
       node.kind = StringConsNode::Kind::kUseSubstitution;
-      node.capture_index = std::stoi(substitution.ToString());
+      node.capture_index = std::stoi(std::string(substitution));
       if (node.capture_index == 0 || node.capture_index > max_capture) {
         *error_text =
             "Capture index out of range: " + std::to_string(node.capture_index);
@@ -111,7 +111,7 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
       return result;
     }
   }
-  return kythe::proto::VName();
+  return default_vname_;
 }
 
 kythe::proto::VName FileVNameGenerator::LookupVName(

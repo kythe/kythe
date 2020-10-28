@@ -19,7 +19,7 @@
 //
 // C++ implementation: https://github.com/google/riegeli
 // Format spec: https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md
-package riegeli
+package riegeli // import "kythe.io/kythe/go/util/riegeli"
 
 import (
 	"errors"
@@ -29,14 +29,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 // Defaults for the WriterOptions.
 const (
-	DefaultChunkSize = 1 << 20
+	DefaultChunkSize uint64 = 1 << 20
 
 	DefaultBrotliLevel = 9
 	DefaultZSTDLevel   = 9
@@ -71,6 +71,8 @@ func (c *compressionLevel) String() string {
 			return fmt.Sprintf("%s:%d", zstdOption, c.level)
 		}
 		return zstdOption
+	case snappyCompression:
+		return snappyOption
 	default:
 		panic(fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c.compressionType)}))
 	}
@@ -81,6 +83,9 @@ func (*compressionLevel) isCompressionType() {}
 var (
 	// NoCompression indicates that no compression will be used to encode chunks.
 	NoCompression CompressionType = &compressionLevel{noCompression, 0}
+
+	// SnappyCompression indicates to use Snappy compression.
+	SnappyCompression CompressionType = &compressionLevel{snappyCompression, 0}
 )
 
 // BrotliCompression returns a CompressionType for Brotli compression with the
@@ -117,7 +122,7 @@ type WriterOptions struct {
 }
 
 // Textual WriterOptions format:
-// https://github.com/google/riegeli/blob/4a321b2/riegeli/records/record_writer.h#L98
+// https://github.com/google/riegeli/blob/master/doc/record_writer_options.md
 const (
 	brotliOption       = "brotli"
 	chunkSizeOption    = "chunk_size"
@@ -125,6 +130,7 @@ const (
 	transposeOption    = "transpose"
 	uncompressedOption = "uncompressed"
 	zstdOption         = "zstd"
+	snappyOption       = "snappy"
 )
 
 // ParseOptions decodes a WriterOptions from text:
@@ -149,6 +155,8 @@ func ParseOptions(s string) (*WriterOptions, error) {
 		kv := strings.SplitN(opt, ":", 2)
 		switch kv[0] {
 		case defaultOptions: // ignore
+		case snappyOption:
+			opts.Compression = SnappyCompression
 		case brotliOption:
 			level := DefaultBrotliLevel
 			if len(kv) != 1 {
@@ -178,6 +186,16 @@ func ParseOptions(s string) (*WriterOptions, error) {
 			default:
 				return nil, fmt.Errorf("malformed option: %q", opt)
 			}
+		case chunkSizeOption:
+			chunkSize := DefaultChunkSize
+			if len(kv) != 1 {
+				var err error
+				chunkSize, err = strconv.ParseUint(kv[1], 10, 0)
+				if err != nil {
+					return nil, fmt.Errorf("malformed option: %q: %v", opt, err)
+				}
+			}
+			opts.ChunkSize = chunkSize
 		case uncompressedOption:
 			if len(kv) != 1 {
 				return nil, fmt.Errorf("malformed option: %q", opt)
@@ -327,8 +345,18 @@ func (w *Writer) Close() error {
 	return nil
 }
 
+// Position returns the current position of the Writer.
+func (w *Writer) Position() RecordPosition {
+	if !w.fileHeaderWritten {
+		return RecordPosition{ChunkBegin: int64(w.w.pos) + blockHeaderSize}
+	}
+	return RecordPosition{
+		ChunkBegin:  int64(w.w.pos),
+		RecordIndex: int64(w.recordWriter.numRecords),
+	}
+}
+
 // TODO(schroederc): add concatenation function
-// TODO(schroederc): return positions from Writer
 
 // A RecordPosition is a pointer to the starting offset of a record within a
 // Riegeli file.
@@ -385,4 +413,6 @@ func (errSeeker) Seek(offset int64, whence int) (int64, error) {
 func NewReader(r io.Reader) Reader { return NewReadSeeker(&errSeeker{r}) }
 
 // NewReadSeeker returns a Riegeli ReadSeeker for r.
-func NewReadSeeker(r io.ReadSeeker) ReadSeeker { return &reader{r: &chunkReader{r: &blockReader{r: r}}} }
+func NewReadSeeker(r io.ReadSeeker) ReadSeeker {
+	return &reader{r: &chunkReader{r: &blockReader{r: r}}}
+}

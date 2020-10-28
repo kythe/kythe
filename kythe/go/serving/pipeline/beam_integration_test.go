@@ -18,21 +18,26 @@ package pipeline
 
 import (
 	"context"
-	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
-	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
@@ -61,6 +66,10 @@ func TestServingSimpleDecorations(t *testing.T) {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT_ENCODING},
 			Value: []byte("ascii"),
 		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
 	}, {
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
@@ -87,6 +96,9 @@ func TestServingSimpleDecorations(t *testing.T) {
 		}, {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("9"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
 		}},
 		Edge: []*scpb.Edge{{
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
@@ -112,6 +124,19 @@ func TestServingSimpleDecorations(t *testing.T) {
 		Fact: []*scpb.Fact{{
 			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("def\n"),
+		}},
+	}, {
+		Source: &spb.VName{Signature: "diagnostic"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DIAGNOSTIC},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_MESSAGE},
+			Value: []byte("msg"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_DETAILS},
+			Value: []byte("dtails"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CONTEXT_URL},
+			Value: []byte("https://kythe.io/schema"),
 		}},
 	}}
 
@@ -180,6 +205,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 					LineNumber:   1,
 				},
 			},
+			BuildConfig:  "test-build-config",
 			Kind:         "/kythe/edge/ref",
 			TargetTicket: "kythe:#decorWithDef",
 			// TargetDefinition: explicitly not requested
@@ -220,6 +246,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 					LineNumber:   1,
 				},
 			},
+			BuildConfig:  "test-build-config",
 			Kind:         "/kythe/edge/ref",
 			TargetTicket: "kythe:#decorWithDef",
 			// TargetDefinition: explicitly not requested
@@ -266,6 +293,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 					LineNumber:   1,
 				},
 			},
+			BuildConfig:      "test-build-config",
 			Kind:             "/kythe/edge/ref",
 			TargetTicket:     "kythe:#decorWithDef",
 			TargetDefinition: "kythe:#def1", // expected definition
@@ -300,9 +328,21 @@ func TestServingSimpleDecorations(t *testing.T) {
 		},
 	}))
 
+	// TODO(schroederc): test diagnostics (w/ span)
+	t.Run("diagnostics", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: fileTicket},
+		Diagnostics: true,
+	}, &xpb.DecorationsReply{
+		Location: &xpb.Location{Ticket: fileTicket},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message:    "msg",
+			Details:    "dtails",
+			ContextUrl: "https://kythe.io/schema",
+		}},
+	}))
+
 	// TODO(schroederc): test split file contents
 	// TODO(schroederc): test overrides
-	// TODO(schroederc): test diagnostics (w/ or w/o span)
 }
 
 func TestServingSimpleCrossReferences(t *testing.T) {
@@ -332,7 +372,30 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			Value: []byte("9"),
 		}},
 		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "caller"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "interface"},
+		}, {
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: src,
+		}},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor2"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("0"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("4"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Target: &spb.VName{Signature: "caller"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF_CALL},
 			Target: src,
 		}},
 	}, {
@@ -342,10 +405,17 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_CODE},
 			Value: encodeMarkedSource(ms),
 		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "interface"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_INTERFACE},
 	}}
 
-	p, s, nodes := ptest.CreateList(testNodes)
-	xrefs := FromNodes(s, nodes).SplitCrossReferences()
+	p, s, rawNodes := ptest.CreateList(testNodes)
+	xrefs := FromNodes(s, rawNodes).SplitCrossReferences()
 
 	db := inmemory.NewKeyValueDB()
 	w, err := db.Writer(ctx)
@@ -392,9 +462,9 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 		},
 	}))
 
-	t.Run("refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+	t.Run("non_call_refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
 		Ticket:        []string{ticket},
-		ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+		ReferenceKind: xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
@@ -431,6 +501,405 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			},
 		},
 	}))
+
+	t.Run("related_nodes", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket: []string{ticket},
+		Filter: []string{"**"},
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#interface",
+					RelationKind: edges.Extends,
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Record),
+					facts.Code:     encodeMarkedSource(ms),
+				},
+			},
+			"kythe:#interface": {
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Interface),
+				},
+			},
+		},
+	}))
+
+	t.Run("node_definitions", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{facts.NodeKind},
+		NodeDefinitions: true,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#interface",
+					RelationKind: edges.Extends,
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:#interface": {
+				Facts:      map[string][]byte{facts.NodeKind: []byte(nodes.Interface)},
+				Definition: "kythe:?path=path#anchor1",
+			},
+		},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=path#anchor1": {
+				Ticket: "kythe:?path=path#anchor1",
+				Parent: "kythe:?path=path",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						ColumnOffset: 5,
+						LineNumber:   1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
+				},
+				Snippet: "blah blah",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
+				},
+			},
+		},
+	}))
+
+	t.Run("call_refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_CALL_REFERENCES,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+				}},
+			},
+		},
+	}))
+
+	t.Run("direct_callers", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   5,
+								ColumnOffset: 5,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					}},
+				}},
+			},
+		},
+	}))
+
+	// TODO(schroederc): add override caller
+	t.Run("override_callers", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   5,
+								ColumnOffset: 5,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					}},
+				}},
+			},
+		},
+	}))
+}
+
+func TestServingSimpleEdges(t *testing.T) {
+	src := &spb.VName{Path: "path", Signature: "signature"}
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("blah blah\n"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT_ENCODING},
+			Value: []byte("ascii"),
+		}},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: src,
+		}},
+	}, {
+		Source:  src,
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface1"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface2"},
+		}},
+	}, {
+		Source:  &spb.VName{Signature: "child"},
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Target: src,
+		}},
+	}, {
+		Source: &spb.VName{Signature: "interface"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_INTERFACE},
+	}}
+
+	p, s, rawNodes := ptest.CreateList(testNodes)
+	edgeEntries := FromNodes(s, rawNodes).SplitEdges()
+
+	db := inmemory.NewKeyValueDB()
+	w, err := db.Writer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mark table as columnar
+	if err := w.Write([]byte(gsrv.ColumnarTableKeyMarker), []byte{}); err != nil {
+		t.Fatal(err)
+	}
+	// Write columnar data to inmemory.KeyValueDB
+	beam.ParDo(s, &writeTo{w}, edgeEntries)
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	gs := gsrv.NewService(ctx, db)
+	ticket := kytheuri.ToString(src)
+
+	t.Run("source_node", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Kind:   []string{"non_existent_kind"},
+		Filter: []string{"**"},
+	}, &gpb.EdgesReply{
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: &cpb.NodeInfo{
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Record),
+					facts.Subkind:  []byte(nodes.Class),
+				},
+			},
+		},
+	}))
+
+	t.Run("edges", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+	}, &gpb.EdgesReply{
+		EdgeSets: map[string]*gpb.EdgeSet{
+			ticket: {
+				Groups: map[string]*gpb.EdgeSet_Group{
+					edges.Extends: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#interface1",
+						}, {
+							TargetTicket: "kythe:#interface2",
+						}},
+					},
+					"%" + edges.ChildOf: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#child",
+						}},
+					},
+				},
+			},
+		},
+	}))
+
+	t.Run("edge_targets", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Filter: []string{facts.NodeKind},
+	}, &gpb.EdgesReply{
+		EdgeSets: map[string]*gpb.EdgeSet{
+			ticket: {
+				Groups: map[string]*gpb.EdgeSet_Group{
+					edges.Extends: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#interface1",
+						}, {
+							TargetTicket: "kythe:#interface2",
+						}},
+					},
+					"%" + edges.ChildOf: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#child",
+						}},
+					},
+				},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket:         &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:#child": &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+		},
+	}))
 }
 
 type writeTo struct{ w keyvalue.Writer }
@@ -445,7 +914,7 @@ func makeDecorTestCase(ctx context.Context, xs xrefs.Service, req *xpb.Decoratio
 		if err != nil {
 			t.Fatalf("Decorations error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("DecorationsReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
@@ -457,17 +926,20 @@ func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossRefer
 		if err != nil {
 			t.Fatalf("CrossReferences error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
 
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
+func makeEdgesTestCase(ctx context.Context, gs graph.Service, req *gpb.EdgesRequest, expected *gpb.EdgesReply) func(*testing.T) {
+	return func(t *testing.T) {
+		reply, err := gs.Edges(ctx, req)
+		if err != nil {
+			t.Fatalf("Edges error: %v", err)
+		}
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
+			t.Fatalf("EdgesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
-	return false
-}, cmp.Ignore())
+}

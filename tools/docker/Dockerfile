@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t gcr.io/kythe_repo/kythe-builder .
+# docker build -t gcr.io/kythe-repo/kythe-builder .
 FROM ubuntu:xenial
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -29,13 +29,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.6 flex asciidoc source-highlight graphviz \
-      zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev bazel cmake \
-      ca-certificates-java libcurl4-openssl-dev libsasl2-dev && \
+      zlib1g-dev libarchive-dev uuid-dev bazel \
+      ca-certificates-java libsasl2-dev && \
     apt-get clean
 
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-ENV CLANG=/usr/bin/clang-3.6
+ENV CC=/usr/bin/clang-3.6
 
 # Bison
 RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \

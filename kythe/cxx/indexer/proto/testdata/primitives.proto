@@ -1,0 +1,14 @@
+// Test proto for primitive message fields.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+message Primitives {
+  required double double_test = 1;
+  optional int32 int32_test = 2;
+  repeated int64 int64_test = 3;
+  optional string string_test = 4;
+}
+

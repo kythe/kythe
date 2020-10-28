@@ -20,9 +20,9 @@
 /// \file
 /// \brief Defines the class kythe::GraphObserver
 
-#include <openssl/sha.h>  // for SHA256
+#include <string>
 
-#include "absl/strings/escaping.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
@@ -30,37 +30,19 @@
 #include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
-
 namespace kythe {
 
 // TODO(zarko): Most of the documentation for this interface belongs here.
 
-// base64 has a 4:3 overhead and SHA256_DIGEST_LENGTH is 32. 32*4/3 = 42.
-constexpr size_t kSha256DigestBase64MaxEncodingLength = 42;
-
 /// \brief A one-way hash for `InString`.
-template <typename String>
-String CompressString(const String& InString, bool Force = false) {
-  if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
-    return InString;
-  }
-  ::SHA256_CTX Sha;
-  ::SHA256_Init(&Sha);
-  ::SHA256_Update(&Sha, reinterpret_cast<const unsigned char*>(InString.data()),
-                  InString.size());
-  String Hash(SHA256_DIGEST_LENGTH, '\0');
-  ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
-  String Result;
-  absl::Base64Escape(Hash, &Result);
-  return Result;
-}
+std::string CompressString(absl::string_view InString, bool Force = false);
 
 enum class ProfilingEvent {
   Enter,  ///< A profiling section was entered.
@@ -537,6 +519,13 @@ class GraphObserver {
       FunctionSubkind Subkind,
       const absl::optional<MarkedSource>& MarkedSource) {}
 
+  /// \brief Assigns a USR to node.
+  /// \param Node The target node.
+  /// \param Usr The raw USR.
+  /// \param ByteSize Number of significant bytes to use.
+  virtual void assignUsr(const NodeId& Node, llvm::StringRef Usr,
+                         int ByteSize) {}
+
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {
     Scoped,   ///< This enum is scoped (an `enum class`).
@@ -726,6 +715,10 @@ class GraphObserver {
   virtual void recordTypeEdge(const NodeId& TermNodeId,
                               const NodeId& TypeNodeId) {}
 
+  /// \brief Records that `Influencer` influences `Influenced`.
+  virtual void recordInfluences(const NodeId& Influencer,
+                                const NodeId& Influenced) {}
+
   /// \brief Records an upper bound for the type of a node as an edge in the
   /// graph.
   /// \param TypeNodeId The identifier for the node to given a bounded type.
@@ -831,6 +824,25 @@ class GraphObserver {
                                      const NodeId& DeclId, Claimability Cl,
                                      Implicit I) {}
 
+  /// \brief Blames a given source range on the given context.
+  virtual void recordBlameLocation(const Range& SourceRange,
+                                   const NodeId& BlameId, Claimability Cl,
+                                   Implicit I) {}
+
+  /// \brief Classifies a use site.
+  enum class UseKind {
+    /// No specific determination. Similar to a read.
+    kUnknown,
+    /// This use site is a write.
+    kWrite
+  };
+
+  /// \brief Records a use site for some decl with additional semantic
+  /// information.
+  virtual void recordSemanticDeclUseLocation(const Range& SourceRange,
+                                             const NodeId& DeclId, UseKind K,
+                                             Claimability Cl, Implicit I) {}
+
   /// \brief Records an init site for some decl.
   virtual void recordInitLocation(const Range& SourceRange,
                                   const NodeId& DeclId, Claimability Cl,
@@ -843,6 +855,15 @@ class GraphObserver {
   virtual void recordTypeSpellingLocation(const Range& SourceRange,
                                           const NodeId& TypeId, Claimability Cl,
                                           Implicit I) {}
+
+  /// \brief Records that a type was spelled out at a particular location, while
+  /// referencing a different entity.
+  /// \param SourceRange The source range covering the type spelling.
+  /// \param TypeNode The identifier for the type being spelled out.
+  /// \param Cr Whether this information can be dropped by claiming.
+  virtual void recordTypeIdSpellingLocation(const Range& SourceRange,
+                                            const NodeId& TypeId,
+                                            Claimability Cl, Implicit I) {}
 
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId& MacroNode) {}
@@ -1053,6 +1074,9 @@ class GraphObserver {
   /// If `iter` returns false, terminates iteration.
   virtual void iterateOverClaimedFiles(
       std::function<bool(clang::FileID, const NodeId&)> iter) const {}
+
+  /// Name of the platform or build configuration to emit on anchors.
+  virtual absl::string_view getBuildConfig() const { return ""; }
 
  protected:
   clang::SourceManager* SourceManager = nullptr;

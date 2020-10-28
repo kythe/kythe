@@ -16,7 +16,7 @@
 
 // Package dedup implements a utility to determine if a record has not been seen
 // before (whether it's unique).
-package dedup
+package dedup // import "kythe.io/kythe/go/util/dedup"
 
 import (
 	"crypto/sha512"

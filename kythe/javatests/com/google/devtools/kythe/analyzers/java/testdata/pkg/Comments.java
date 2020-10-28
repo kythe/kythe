@@ -1,16 +1,21 @@
+//- @pkg ref Package
 package pkg;
 
-//- @+6"java.lang.Integer" ref/doc IntegerClass
-//- @+5String ref/doc StringClass
-//- @+5Inner ref/doc InnerClass
+//- @+7"java.lang.Integer" ref/doc IntegerClass
+//- @+6String ref/doc StringClass
+//- @+6Inner ref/doc InnerClass
+//- @+5pkg ref/doc Package
 //- @+6Comments defines/binding CommentsClass
 
 /**
- * This is a Javadoc comment with links to {@link String}, {@link java.lang.Integer}, and
- * {@link Inner}.
+ * This is a Javadoc comment with links to {@link String}, {@link java.lang.Integer},
+ * {@link Inner}, and {@link pkg}. It references {@value IM_A_LONG}.
  */
 public class Comments
     implements Comparable<Comments> {
+
+  /** This is a {@link long} with a value of {@value}. */
+  public static final long IM_A_LONG = 4;
 
   //- DocNode.node/kind doc
   //- DocNode.subkind "javadoc"
@@ -18,7 +23,8 @@ public class Comments
   //- DocNode param.0 StringClass
   //- DocNode param.1 IntegerClass
   //- DocNode param.2 InnerClass
-  //- DocNode.text " This is a Javadoc comment with links to {@link [String]}, {@link [java.lang.Integer]}, and\n {@link [Inner]}.\n"
+  //- DocNode param.3 Package
+  //- DocNode.text " This is a Javadoc comment with links to {@link [String]}, {@link [java.lang.Integer]},\n {@link [Inner]}, and {@link [pkg]}. It references {@value [IM_A_LONG]}.\n"
 
   //- @fieldOne defines/binding _FieldOne
   private static int fieldOne; // inline comment here
@@ -126,4 +132,12 @@ public class Comments
   //- OverrideDoc.node/kind doc
   //- OverrideDoc param.0 _Override
   //- OverrideDoc.text "This documents {@link #compareTo()} over {@link [Override]}. "
+
+  //- @+3fooFunction defines/binding FooFunction
+
+  // This documents FooFunction
+  void fooFunction() { return; }
+  //- FooFunctionDoc documents FooFunction
+  //- FooFunctionDoc.node/kind doc
+  //- FooFunctionDoc.text "This documents FooFunction"
 }

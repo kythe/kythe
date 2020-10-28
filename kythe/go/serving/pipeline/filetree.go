@@ -18,21 +18,29 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"reflect"
 	"sort"
 
+	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/serving/pipeline/nodes"
-	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/compare"
+	"kythe.io/kythe/go/util/schema/facts"
+	kinds "kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 
+	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func init() {
 	beam.RegisterFunction(addCorpusRootsKey)
+	beam.RegisterFunction(anchorToBuildConfig)
+	beam.RegisterFunction(anchorToCorpusRoot)
+	beam.RegisterFunction(anchorToFileBuildConfig)
 	beam.RegisterFunction(fileToCorpusRoot)
 	beam.RegisterFunction(fileToDirectories)
 
@@ -45,11 +53,34 @@ func (k *KytheBeam) getFileVNames() beam.PCollection {
 		return k.fileVNames
 	}
 	k.fileVNames = beam.DropValue(k.s, beam.Seq(k.s, k.nodes, &nodes.Filter{
-		FilterByKind: []string{"file"},
+		FilterByKind: []string{kinds.File},
 		IncludeFacts: []string{},
 		IncludeEdges: []string{},
 	}, moveSourceToKey))
 	return k.fileVNames
+}
+
+func (k *KytheBeam) getAnchorBuildConfigs() beam.PCollection {
+	if k.anchorBuildConfigs.IsValid() {
+		return k.anchorBuildConfigs
+	}
+	k.anchorBuildConfigs = beam.Seq(k.s, k.nodes, &nodes.Filter{
+		FilterByKind: []string{kinds.Anchor},
+		IncludeFacts: []string{facts.BuildConfig},
+		IncludeEdges: []string{},
+	}, anchorToBuildConfig)
+	return k.anchorBuildConfigs
+}
+
+func anchorToBuildConfig(anchor *scpb.Node) (*spb.VName, string) {
+	var buildConfig string
+	for _, f := range anchor.Fact {
+		if f.GetKytheName() == scpb.FactName_BUILD_CONFIG {
+			buildConfig = string(f.Value)
+			break
+		}
+	}
+	return anchor.Source, buildConfig
 }
 
 // CorpusRoots returns the single *srvpb.CorpusRoots key-value for the Kythe
@@ -58,8 +89,12 @@ func (k *KytheBeam) getFileVNames() beam.PCollection {
 func (k *KytheBeam) CorpusRoots() beam.PCollection {
 	s := k.s.Scope("CorpusRoots")
 	files := k.getFileVNames()
+	anchors := k.getAnchorBuildConfigs()
 	return beam.ParDo(s, addCorpusRootsKey,
-		beam.Combine(s, &combineCorpusRoots{}, beam.ParDo(s, fileToCorpusRoot, files)))
+		beam.Combine(s, &combineCorpusRoots{}, beam.Flatten(s,
+			beam.ParDo(s, fileToCorpusRoot, files),
+			beam.ParDo(s, anchorToCorpusRoot, anchors),
+		)))
 }
 
 // Directories returns a Kythe *srvpb.FileDirectory table for the Kythe FileTree
@@ -68,31 +103,70 @@ func (k *KytheBeam) CorpusRoots() beam.PCollection {
 func (k *KytheBeam) Directories() beam.PCollection {
 	s := k.s.Scope("Directories")
 	files := k.getFileVNames()
-	return beam.CombinePerKey(s, &combineDirectories{}, beam.ParDo(s, fileToDirectories, files))
+	anchors := k.getAnchorBuildConfigs()
+	return beam.CombinePerKey(s, &combineDirectories{}, beam.Flatten(s,
+		beam.ParDo(s, fileToDirectories, files),
+		beam.ParDo(s, anchorToFileBuildConfig, anchors),
+	))
 }
 
 // addCorpusRootsKey returns the given value with the Kythe corpus roots key constant.
 func addCorpusRootsKey(val beam.T) (string, beam.T) { return "dirs:corpusRoots", val }
+
+func dirTicket(corpus, root, dir string) string {
+	return fmt.Sprintf("dirs:%s\n%s\n%s", corpus, root, dir)
+}
+
+// anchorToFileBuildConfig emits a FileDirectory for each path component in the
+// given anchor VName with its specified build config.
+func anchorToFileBuildConfig(anchor *spb.VName, buildConfig string, emit func(string, *srvpb.FileDirectory)) {
+	// Clean the file path and remove any leading slash.
+	path := filepath.Clean(filepath.Join("/", anchor.GetPath()))[1:]
+	dir := currentAsEmpty(filepath.Dir(path))
+	buildConfigs := []string{buildConfig}
+
+	corpus, root := anchor.GetCorpus(), anchor.GetRoot()
+	emit(dirTicket(corpus, root, dir), &srvpb.FileDirectory{
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Name:        filepath.Base(path),
+			Kind:        srvpb.FileDirectory_FILE,
+			BuildConfig: buildConfigs,
+		}},
+	})
+
+	for dir != "" {
+		name := filepath.Base(dir)
+		dir = currentAsEmpty(filepath.Dir(dir))
+		emit(dirTicket(corpus, root, dir), &srvpb.FileDirectory{
+			Entry: []*srvpb.FileDirectory_Entry{{
+				Name:        name,
+				Kind:        srvpb.FileDirectory_DIRECTORY,
+				BuildConfig: buildConfigs,
+			}},
+		})
+	}
+}
 
 // fileToDirectories emits a FileDirectory for each path component in the given file VName.
 func fileToDirectories(file *spb.VName, emit func(string, *srvpb.FileDirectory)) {
 	// Clean the file path and remove any leading slash.
 	path := filepath.Clean(filepath.Join("/", file.GetPath()))[1:]
 
-	dir := &spb.VName{
-		Corpus: file.Corpus,
-		Root:   file.Root,
-		Path:   currentAsEmpty(filepath.Dir(path)),
-	}
-	dirTicket := func() string { return fmt.Sprintf("dirs:%s\n%s\n%s", dir.Corpus, dir.Root, dir.Path) }
-	emit(dirTicket(), &srvpb.FileDirectory{
-		FileTicket: []string{kytheuri.ToString(file)},
+	dir := currentAsEmpty(filepath.Dir(path))
+	emit(dirTicket(file.Corpus, file.Root, dir), &srvpb.FileDirectory{
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Name: filepath.Base(path),
+			Kind: srvpb.FileDirectory_FILE,
+		}},
 	})
-	for dir.Path != "" {
-		ticket := kytheuri.ToString(dir)
-		dir.Path = currentAsEmpty(filepath.Dir(dir.Path))
-		emit(dirTicket(), &srvpb.FileDirectory{
-			Subdirectory: []string{ticket},
+	for dir != "" {
+		name := filepath.Base(dir)
+		dir = currentAsEmpty(filepath.Dir(dir))
+		emit(dirTicket(file.Corpus, file.Root, dir), &srvpb.FileDirectory{
+			Entry: []*srvpb.FileDirectory_Entry{{
+				Name: name,
+				Kind: srvpb.FileDirectory_DIRECTORY,
+			}},
 		})
 	}
 }
@@ -114,6 +188,17 @@ func fileToCorpusRoot(file *spb.VName) *srvpb.CorpusRoots {
 	}
 }
 
+// anchorToCorpusRoot returns a CorpusRoots for the anchor VName and build config.
+func anchorToCorpusRoot(anchor *spb.VName, buildConfig string) *srvpb.CorpusRoots {
+	return &srvpb.CorpusRoots{
+		Corpus: []*srvpb.CorpusRoots_Corpus{{
+			Corpus:      anchor.Corpus,
+			Root:        []string{anchor.Root},
+			BuildConfig: []string{buildConfig},
+		}},
+	}
+}
+
 type combineCorpusRoots struct{}
 
 func (combineCorpusRoots) MergeAccumulators(accum, cr *srvpb.CorpusRoots) *srvpb.CorpusRoots {
@@ -130,6 +215,7 @@ func (combineCorpusRoots) MergeAccumulators(accum, cr *srvpb.CorpusRoots) *srvpb
 			accum.Corpus = append(accum.Corpus, corpus)
 		}
 		corpus.Root = append(corpus.Root, c.Root...)
+		corpus.BuildConfig = append(corpus.BuildConfig, c.BuildConfig...)
 	}
 	return accum
 }
@@ -138,6 +224,7 @@ func (combineCorpusRoots) ExtractOutput(cr *srvpb.CorpusRoots) *srvpb.CorpusRoot
 	sort.Slice(cr.Corpus, func(i, j int) bool { return cr.Corpus[i].Corpus < cr.Corpus[j].Corpus })
 	for _, c := range cr.Corpus {
 		c.Root = removeDuplicates(c.Root)
+		c.BuildConfig = removeDuplicates(c.BuildConfig)
 	}
 	return cr
 }
@@ -145,15 +232,51 @@ func (combineCorpusRoots) ExtractOutput(cr *srvpb.CorpusRoots) *srvpb.CorpusRoot
 type combineDirectories struct{}
 
 func (combineDirectories) MergeAccumulators(accum, dir *srvpb.FileDirectory) *srvpb.FileDirectory {
-	accum.Subdirectory = append(accum.Subdirectory, dir.Subdirectory...)
-	accum.FileTicket = append(accum.FileTicket, dir.FileTicket...)
+	accum.Entry = append(accum.Entry, dir.Entry...)
 	return accum
 }
 
 func (combineDirectories) ExtractOutput(dir *srvpb.FileDirectory) *srvpb.FileDirectory {
-	dir.FileTicket = removeDuplicates(dir.FileTicket)
-	dir.Subdirectory = removeDuplicates(dir.Subdirectory)
-	return dir
+	files := make(map[string]stringset.Set)
+	subdirs := make(map[string]stringset.Set)
+	for _, e := range dir.Entry {
+		switch e.Kind {
+		case srvpb.FileDirectory_FILE:
+			if configs, ok := files[e.Name]; ok {
+				configs.Add(e.BuildConfig...)
+			} else {
+				files[e.Name] = stringset.New(e.BuildConfig...)
+			}
+		case srvpb.FileDirectory_DIRECTORY:
+			if configs, ok := subdirs[e.Name]; ok {
+				configs.Add(e.BuildConfig...)
+			} else {
+				subdirs[e.Name] = stringset.New(e.BuildConfig...)
+			}
+		default:
+			log.Printf("WARNING: unknown FileDirectory kind: %v", e.Kind)
+		}
+	}
+	entries := make([]*srvpb.FileDirectory_Entry, 0, len(files)+len(subdirs))
+	for file, configs := range files {
+		entries = append(entries, &srvpb.FileDirectory_Entry{
+			Kind:        srvpb.FileDirectory_FILE,
+			Name:        file,
+			BuildConfig: configs.Elements(),
+		})
+	}
+	for subdir, configs := range subdirs {
+		entries = append(entries, &srvpb.FileDirectory_Entry{
+			Kind:        srvpb.FileDirectory_DIRECTORY,
+			Name:        subdir,
+			BuildConfig: configs.Elements(),
+		})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return compare.Ints(int(entries[i].Kind), int(entries[j].Kind)).
+			AndThen(entries[i].Name, entries[j].Name) == compare.LT
+	})
+	return &srvpb.FileDirectory{Entry: entries}
 }
 
 func removeDuplicates(strs []string) []string {

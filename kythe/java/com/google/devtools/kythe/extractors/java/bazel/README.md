@@ -41,13 +41,13 @@ certain filepaths. For example in Bazel project java files often stored in
 `com/some/domain/Foo.java` with the `java` prefix omitted. `vnames.json` file
 tells extractor how to rename certain filepaths during extraction. As an example
 check `vnames.json` from Kythe repo:
-[link](https://github.com/google/kythe/blob/master/kythe/data/vnames.json).
+[link](https://github.com/kythe/kythe/blob/master/kythe/data/vnames.json).
 
 ```shell
 cd $YOUR_BAZEL_PROJECT
 # As example copy vnames.json from Kythe repo. But you should change it for your project
 # later.
-curl https://raw.githubusercontent.com/google/kythe/master/kythe/data/vnames.json > vnames.json
+curl https://raw.githubusercontent.com/kythe/kythe/master/kythe/data/vnames.json > vnames.json
 ```
 
 Run extractor:

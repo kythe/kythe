@@ -40,7 +40,7 @@ func init() {
 func imported() {
 	//- @cmd defines/binding Cmd
 	//- @exec ref OSExec
-	//- @Command ref ExecCommand
+	//- @Command ref _ExecCommand
 	cmd := exec.Command("pwd")
 
 	//- @cmd ref Cmd

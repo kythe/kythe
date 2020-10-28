@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include "pretty_printer.h"
+
 #include <bitset>
 
-#include "pretty_printer.h"
+#include "absl/strings/str_format.h"
 
 namespace kythe {
 namespace verifier {
@@ -36,15 +38,15 @@ void StringPrettyPrinter::Print(const void* ptr) {
 }
 
 void FileHandlePrettyPrinter::Print(const std::string& string) {
-  fprintf(file_, "%s", string.c_str());
+  absl::FPrintF(file_, "%s", string);
 }
 
 void FileHandlePrettyPrinter::Print(const char* string) {
-  fprintf(file_, "%s", string);
+  absl::FPrintF(file_, "%s", string);
 }
 
 void FileHandlePrettyPrinter::Print(const void* ptr) {
-  fprintf(file_, "0x%016llx", reinterpret_cast<unsigned long long>(ptr));
+  absl::FPrintF(file_, "0x%016llx", reinterpret_cast<unsigned long long>(ptr));
 }
 
 void QuoteEscapingPrettyPrinter::Print(const std::string& string) {

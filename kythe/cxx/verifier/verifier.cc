@@ -16,12 +16,17 @@
 
 #include "verifier.h"
 
-#include "glog/logging.h"
-#include "google/protobuf/text_format.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "absl/memory/memory.h"
 #include "assertions.h"
+#include "glog/logging.h"
+#include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/common/scope_guard.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -375,7 +380,7 @@ class Solver {
       }
     } else if (Range* sr = s->AsRange()) {
       if (Range* tr = t->AsRange()) {
-        if (sr->begin() == tr->begin() && sr->end() == tr->end()) {
+        if (*sr == *tr) {
           return f();
         }
       }
@@ -544,9 +549,7 @@ class Solver {
         highest_goal_reached_ = 0;
         highest_group_reached_ = cur;
       }
-      ThunkRet result = SolveGoalArray(
-          group, 0, cut,
-          [this, context, group, cur, cut, &f]() { return cut; });
+      ThunkRet result = SolveGoalArray(group, 0, cut, [cut]() { return cut; });
       // Lots of unwinding later...
       if (result == cut) {
         // That last goal group succeeded.
@@ -618,6 +621,8 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
       IdentifierFor(builtin_location_, "LOOKUP_BY_PARAM");
   marked_source_parameter_lookup_by_param_with_defaults_id_ = IdentifierFor(
       builtin_location_, "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS");
+  marked_source_lookup_by_typed_id_ =
+      IdentifierFor(builtin_location_, "LOOKUP_BY_TYPED");
   marked_source_kind_id_ = IdentifierFor(builtin_location_, "/kythe/kind");
   marked_source_pre_text_id_ =
       IdentifierFor(builtin_location_, "/kythe/pre_text");
@@ -681,24 +686,69 @@ bool Verifier::LoadInlineProtoFile(const std::string& file_data) {
       return false;
     }
   }
-  return parser_.ParseInlineRuleString(file_data, *kStandardIn,
-                                       "\\s*\\#\\-(.*)");
+  Symbol empty = symbol_table_.intern("");
+  return parser_.ParseInlineRuleString(file_data, *kStandardIn, empty, empty,
+                                       empty, "\\s*\\#\\-(.*)");
 }
 
 bool Verifier::LoadInlineRuleFile(const std::string& filename) {
-  bool parsed = parser_.ParseInlineRuleFile(filename, *goal_comment_regex_);
-  if (!parsed) {
+  int fd = ::open(filename.c_str(), 0);
+  if (fd < 0) {
+    LOG(ERROR) << "Can't open " << filename;
     return false;
   }
-  return true;
+  auto guard = MakeScopeGuard([&] { ::close(fd); });
+  struct stat fd_stat;
+  if (::fstat(fd, &fd_stat) < 0) {
+    LOG(ERROR) << "Can't stat " << filename;
+    return false;
+  }
+  std::string content;
+  content.resize(fd_stat.st_size);
+  if (::read(fd, const_cast<char*>(content.data()), fd_stat.st_size) !=
+      fd_stat.st_size) {
+    LOG(ERROR) << "Can't read " << filename;
+    return false;
+  }
+  Symbol content_sym = symbol_table_.intern(content);
+  if (file_vnames_) {
+    auto vname = content_to_vname_.find(content_sym);
+    if (vname == content_to_vname_.end()) {
+      LOG(ERROR) << "Could not find a file node for " << filename;
+      return false;
+    }
+    return LoadInMemoryRuleFile(filename, vname->second, content_sym);
+  } else {
+    kythe::proto::VName empty;
+    auto* vname = ConvertVName(yy::location{}, empty);
+    return LoadInMemoryRuleFile(filename, vname, content_sym);
+  }
 }
 
-bool Verifier::LoadInMemoryRuleFile(AstNode* vname, Symbol text) {
+bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
+                                    Symbol text) {
+  Tuple* checked_tuple = nullptr;
+  if (auto* app = vname->AsApp()) {
+    if (auto* tuple = app->rhs()->AsTuple()) {
+      if (tuple->size() == 5 && tuple->element(1)->AsIdentifier() &&
+          tuple->element(2)->AsIdentifier() &&
+          tuple->element(3)->AsIdentifier()) {
+        checked_tuple = tuple;
+      }
+    }
+  }
+  if (checked_tuple == nullptr) {
+    return false;
+  }
   StringPrettyPrinter printer;
   vname->Dump(symbol_table_, &printer);
   fake_files_[printer.str()] = text;
-  return parser_.ParseInlineRuleString(symbol_table_.text(text), printer.str(),
-                                       *goal_comment_regex_);
+  return parser_.ParseInlineRuleString(
+      symbol_table_.text(text), filename.empty() ? printer.str() : filename,
+      checked_tuple->element(3)->AsIdentifier()->symbol(),
+      checked_tuple->element(2)->AsIdentifier()->symbol(),
+      checked_tuple->element(1)->AsIdentifier()->symbol(),
+      *goal_comment_regex_);
 }
 
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
@@ -1037,23 +1087,27 @@ bool Verifier::PrepareDatabase() {
       bool is_kind_fact = EncodedIdentEqualTo(tb->element(3), kind_id_);
       // Check to see if this fact entry describes part of a file.
       // NB: kind_id_ is ordered before text_id_.
-      if (assertions_from_file_nodes_) {
-        if (is_kind_fact) {
-          if (EncodedIdentEqualTo(tb->element(4), file_id_)) {
-            last_file_vname = tb->element(0);
-          } else {
-            last_file_vname = nullptr;
-          }
-        } else if (last_file_vname != nullptr &&
-                   EncodedIdentEqualTo(tb->element(3), text_id_)) {
-          if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
-            if (!LoadInMemoryRuleFile(
-                    tb->element(0), tb->element(4)->AsIdentifier()->symbol())) {
-              is_ok = false;
-            }
-          }
+      if (is_kind_fact) {
+        if (EncodedIdentEqualTo(tb->element(4), file_id_)) {
+          last_file_vname = tb->element(0);
+        } else {
           last_file_vname = nullptr;
         }
+      } else if (last_file_vname != nullptr &&
+                 EncodedIdentEqualTo(tb->element(3), text_id_)) {
+        if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
+          if (assertions_from_file_nodes_) {
+            if (!LoadInMemoryRuleFile(
+                    "", tb->element(0),
+                    tb->element(4)->AsIdentifier()->symbol())) {
+              is_ok = false;
+            }
+          } else {
+            content_to_vname_[tb->element(4)->AsIdentifier()->symbol()] =
+                tb->element(0);
+          }
+        }
+        last_file_vname = nullptr;
       }
       // Check to see if this fact entry describes part of an anchor.
       // We've arranged via EncodedFactLessThan to sort kind_id_ before
@@ -1116,7 +1170,7 @@ bool Verifier::PrepareDatabase() {
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
       if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
-        // TODO(zarko): Add documentation for these new edges (T195).
+        // TODO(#1553): (closed?) Add documentation for these new edges.
         printer.Print(
             "Two /kythe/code facts about a node differed in value:\n  ");
         ta->element(0)->Dump(symbol_table_, &printer);
@@ -1253,6 +1307,9 @@ AstNode* Verifier::ConvertMarkedSource(
     case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
       emit_fact(marked_source_kind_id_,
                 marked_source_parameter_lookup_by_param_with_defaults_id_);
+      break;
+    case proto::common::MarkedSource::LOOKUP_BY_TYPED:
+      emit_fact(marked_source_kind_id_, marked_source_lookup_by_typed_id_);
       break;
     // The proto enum is polluted with enumerators like
     // MarkedSource_Kind_MarkedSource_Kind_INT_MIN_SENTINEL_DO_NOT_USE_.

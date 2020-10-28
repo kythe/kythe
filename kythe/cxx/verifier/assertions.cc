@@ -18,21 +18,18 @@
 
 #include <sstream>
 
+#include "kythe/cxx/common/file_utils.h"
 #include "verifier.h"
 
 namespace kythe {
 namespace verifier {
 
 void EVar::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
-  printer->Print("EVar(");
-  printer->Print(this);
-  printer->Print(" = ");
   if (AstNode* node = current()) {
     node->Dump(symbol_table, printer);
   } else {
-    printer->Print("<nullptr>");
+    printer->Print("<null>");
   }
-  printer->Print(")");
 }
 
 void Identifier::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
@@ -41,6 +38,12 @@ void Identifier::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
 
 void Range::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("Range(");
+  printer->Print(symbol_table.PrettyText(corpus_));
+  printer->Print(",");
+  printer->Print(symbol_table.PrettyText(root_));
+  printer->Print(",");
+  printer->Print(symbol_table.PrettyText(path_));
+  printer->Print(",");
   printer->Print(std::to_string(begin_));
   printer->Print(",");
   printer->Print(std::to_string(end_));
@@ -59,16 +62,19 @@ void Tuple::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
 }
 
 void App::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
-  printer->Print("App(");
   lhs_->Dump(symbol_table, printer);
-  printer->Print(", ");
+  // rhs_ should be a Tuple, which outputs "(...)" around itself.
   rhs_->Dump(symbol_table, printer);
-  printer->Print(")");
 }
 
 bool AssertionParser::ParseInlineRuleString(const std::string& content,
                                             const std::string& fake_filename,
+                                            Symbol path, Symbol root,
+                                            Symbol corpus,
                                             const RE2& goal_comment_regex) {
+  path_ = path;
+  root_ = root;
+  corpus_ = corpus;
   had_errors_ = false;
   files_.push_back(fake_filename);
   ResetLine();
@@ -81,7 +87,12 @@ bool AssertionParser::ParseInlineRuleString(const std::string& content,
 }
 
 bool AssertionParser::ParseInlineRuleFile(const std::string& filename,
+                                          Symbol path, Symbol root,
+                                          Symbol corpus,
                                           const RE2& goal_comment_regex) {
+  path_ = path;
+  root_ = root;
+  corpus_ = corpus;
   files_.push_back(filename);
   had_errors_ = false;
   ResetLine();
@@ -327,10 +338,10 @@ bool AssertionParser::ValidateTopLocationSpec(const yy::location& location,
 }
 
 AstNode* AssertionParser::CreateAnchorSpec(const yy::location& location) {
-  size_t line_number;
-  bool use_line_number;
-  bool must_be_unambiguous;
-  int match_number;
+  size_t line_number = -1;
+  bool use_line_number = false;
+  bool must_be_unambiguous = false;
+  int match_number = -1;
   if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
@@ -346,10 +357,10 @@ AstNode* AssertionParser::CreateAnchorSpec(const yy::location& location) {
 
 AstNode* AssertionParser::CreateOffsetSpec(const yy::location& location,
                                            bool at_end) {
-  size_t line_number;
-  bool use_line_number;
-  bool must_be_unambiguous;
-  int match_number;
+  size_t line_number = -1;
+  bool use_line_number = false;
+  bool must_be_unambiguous = false;
+  int match_number = -1;
   if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
@@ -446,7 +457,8 @@ bool AssertionParser::ResolveLocations(const yy::location& end_of_line,
                                  location, verifier_.eq_id(),
                                  {new (verifier_.arena())
                                       Range(location, line_start + col,
-                                            line_start + col + token.size()),
+                                            line_start + col + token.size(),
+                                            path_, root_, corpus_),
                                   evar}));
         break;
     }
@@ -542,21 +554,11 @@ void AssertionParser::ScanBeginString(const RE2& goal_comment_regex,
 
 void AssertionParser::ScanBeginFile(const RE2& goal_comment_regex,
                                     bool trace_scanning) {
-  std::string buffer;
   if (file().empty() || file() == "-") {
     Error("will not read goals from stdin");
     exit(EXIT_FAILURE);
   }
-  FILE* input = ::fopen(file().c_str(), "r");
-  CHECK(input != nullptr) << "Couldn't open " << file();
-  CHECK(!::fseek(input, 0, SEEK_END));
-  auto file_len = ::ftell(input);
-  CHECK(file_len >= 0);
-  CHECK(!::fseek(input, 0, SEEK_SET));
-  buffer.resize(file_len);
-  CHECK(::fread(const_cast<char*>(buffer.data()), 1, file_len, input) ==
-        file_len);
-  ::fclose(input);
+  std::string buffer = LoadFileOrDie(file());
   ScanBeginString(goal_comment_regex, buffer, trace_scanning);
 }
 

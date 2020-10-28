@@ -19,7 +19,11 @@ package com.google.devtools.kythe.extractors.shared;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.Streams;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRule;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRules;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -36,13 +40,15 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 /**
  * Utility for configuring base {@link VName}s to use for particular file paths. Useful for
  * populating the {@link VName}s for each required input in a {@link CompilationUnit}.
  *
- * JSON format:
- *   <pre>[
+ * <p>JSON format:
+ *
+ * <pre>[
  *     {
  *       "pattern": "pathRegex",
  *       "vname": {
@@ -55,7 +61,7 @@ import java.util.Stack;
  * The {@link VName} template values can contain markers such as @1@ or @2@ that will be replaced by
  * the first or second regex groups in the pathRegex.
  *
- * NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
+ * <p>NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
  */
 public class FileVNames {
   private static final Gson GSON =
@@ -83,18 +89,45 @@ public class FileVNames {
             new BaseFileVName(Pattern.compile(".*"), new VNameTemplate(corpus, null, null))));
   }
 
+  /** Returns a {@link FileVNames} parsed from the given JSON-encoded file. */
   public static FileVNames fromFile(String configFile) throws IOException {
     return fromFile(Paths.get(configFile));
   }
 
+  /** Returns a {@link FileVNames} parsed from the given JSON-encoded file. */
   public static FileVNames fromFile(Path configFile) throws IOException {
     return new FileVNames(
         GSON.<List<BaseFileVName>>fromJson(
             Files.newBufferedReader(configFile, UTF_8), CONFIG_TYPE));
   }
 
+  /** Returns a {@link FileVNames} parsed from the given JSON-encoded {@link String}. */
   public static FileVNames fromJson(String json) {
     return new FileVNames(GSON.<List<BaseFileVName>>fromJson(json, CONFIG_TYPE));
+  }
+
+  /**
+   * Returns an equivalent {@link FileVNames} from the given sequence of {@link VNameRewriteRule}s.
+   */
+  public static FileVNames fromProto(VNameRewriteRules rules) {
+    return fromProto(rules.getRuleList());
+  }
+
+  /**
+   * Returns an equivalent {@link FileVNames} from the given sequence of {@link VNameRewriteRule}s.
+   */
+  public static FileVNames fromProto(Iterable<VNameRewriteRule> rules) {
+    return new FileVNames(
+        Streams.stream(rules)
+            .map(
+                r ->
+                    new BaseFileVName(
+                        Pattern.compile(r.getPattern()),
+                        new VNameTemplate(
+                            Strings.emptyToNull(r.getVName().getCorpus()),
+                            Strings.emptyToNull(r.getVName().getRoot()),
+                            Strings.emptyToNull(r.getVName().getPath()))))
+            .collect(Collectors.toList()));
   }
 
   /**
@@ -113,6 +146,26 @@ public class FileVNames {
     return VName.getDefaultInstance();
   }
 
+  /** Returns an equivalent {@link VNameRewriteRules}. */
+  public VNameRewriteRules toProto() {
+    return VNameRewriteRules.newBuilder()
+        .addAllRule(
+            baseVNames.stream()
+                .map(
+                    b ->
+                        VNameRewriteRule.newBuilder()
+                            .setPattern(b.pattern.toString())
+                            .setVName(
+                                VName.newBuilder()
+                                    .setCorpus(Strings.nullToEmpty(b.vname.corpus))
+                                    .setRoot(Strings.nullToEmpty(b.vname.root))
+                                    .setPath(Strings.nullToEmpty(b.vname.path))
+                                    .build())
+                            .build())
+                .collect(Collectors.toList()))
+        .build();
+  }
+
   /** Base {@link VName} to use for files matching {@code pattern}. */
   private static class BaseFileVName {
     public final Pattern pattern;
@@ -121,6 +174,11 @@ public class FileVNames {
     public BaseFileVName(Pattern pattern, VNameTemplate vname) {
       this.pattern = pattern;
       this.vname = vname;
+    }
+
+    // GSON-required no-args constructor.
+    private BaseFileVName() {
+      this(null, null);
     }
   }
 
@@ -134,6 +192,11 @@ public class FileVNames {
       this.corpus = corpus;
       this.root = root;
       this.path = path;
+    }
+
+    // GSON-required no-args constructor.
+    private VNameTemplate() {
+      this(null, null, null);
     }
 
     /**

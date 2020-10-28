@@ -16,7 +16,7 @@
 
 // Package smoke is a basic harness for testing the validity of
 // config.ExtractRepo output.
-package smoke
+package smoke // import "kythe.io/kythe/go/extractors/config/smoke"
 
 import (
 	"context"
@@ -29,6 +29,8 @@ import (
 
 	"kythe.io/kythe/go/extractors/config"
 	"kythe.io/kythe/go/platform/kindex"
+
+	"bitbucket.org/creachadair/stringset"
 )
 
 // Tester checks the validity of config.ExtractRepo.
@@ -136,7 +138,7 @@ func (h Harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 			Extracted:     false,
 			Indexed:       false,
 			DownloadCount: len(fromRepo),
-			ExtractCount:  len(fromExtraction),
+			ExtractCount:  fromExtraction.Len(),
 		}, nil
 	}
 
@@ -144,7 +146,7 @@ func (h Harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 	var coverageCount int32
 	for k := range fromRepo {
 		coverageTotal = coverageTotal + 1
-		if _, ok := fromExtraction[k]; ok {
+		if fromExtraction.Contains(k) {
 			coverageCount = coverageCount + 1
 		}
 	}
@@ -156,13 +158,13 @@ func (h Harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 	return Result{
 		Downloaded:    true,
 		Extracted:     true,
-		DownloadCount: len(fromRepo),
-		ExtractCount:  len(fromExtraction),
+		DownloadCount: fromRepo.Len(),
+		ExtractCount:  fromExtraction.Len(),
 		FileCoverage:  coverage,
 	}, nil
 }
 
-func (h Harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[string]bool, error) {
+func (h Harness) filenamesFromRepo(ctx context.Context, repoURI string) (stringset.Set, error) {
 	repoName := pathTail(repoURI)
 
 	repoDir, err := ioutil.TempDir("", repoName)
@@ -175,7 +177,7 @@ func (h Harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[str
 		return nil, err
 	}
 
-	ret := map[string]bool{}
+	ret := stringset.New()
 	err = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
 		// TODO(danielmoy): make this parameterized based on the
 		// extractor, e.g. supporting other languages.
@@ -185,14 +187,14 @@ func (h Harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[str
 			if err != nil {
 				return err
 			}
-			ret[rp] = true
+			ret.Add(rp)
 		}
 		return err
 	})
 	return ret, err
 }
 
-func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (map[string]bool, error) {
+func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (stringset.Set, error) {
 	repoName := pathTail(repoURI)
 	tmpOutDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
@@ -207,7 +209,7 @@ func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (m
 	}); err != nil {
 		return nil, err
 	}
-	ret := map[string]bool{}
+	ret := stringset.New()
 	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && filepath.Ext(path) == ".kindex" {
 			cu, err := kindex.Open(ctx, path)
@@ -217,7 +219,7 @@ func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (m
 			if cu.Proto != nil {
 				for _, v := range cu.Proto.SourceFile {
 					if strings.HasSuffix(v, ".java") {
-						ret[v] = true
+						ret.Add(v)
 					}
 				}
 			}

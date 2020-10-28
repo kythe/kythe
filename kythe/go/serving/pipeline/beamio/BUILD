@@ -5,14 +5,15 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "beamio",
     srcs = [
+        "beamio.go",
         "entries.go",
         "leveldb.go",
     ],
     deps = [
         "//kythe/go/storage/stream",
+        "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/core/runtime/exec:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/io/filesystem:go_default_library",
         "@com_github_syndtr_goleveldb//leveldb/comparer:go_default_library",
         "@com_github_syndtr_goleveldb//leveldb/journal:go_default_library",
@@ -27,9 +28,9 @@ go_test(
     library = "beamio",
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/util/compare",
         "@com_github_apache_beam//sdks/go/pkg/beam/io/filesystem/local:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
 
@@ -40,6 +41,6 @@ go_test(
     deps = [
         "@com_github_apache_beam//sdks/go/pkg/beam/io/filesystem/local:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@go_levigo//:levigo",
+        "@com_github_jmhodges_levigo//:go_default_library",
     ],
 )

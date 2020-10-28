@@ -18,12 +18,10 @@ package columnar
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/keys"
-
-	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -137,7 +135,7 @@ func TestDecorationsEncodingRoundtrip(t *testing.T) {
 			found, err := DecodeDecorationsEntry(&file, string(key), kv.Value)
 			if err != nil {
 				t.Errorf("Error decoding %T: %v", test.Entry, err)
-			} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
+			} else if diff := compare.ProtoDiff(test, found); diff != "" {
 				t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
 			}
 		})
@@ -219,6 +217,18 @@ func TestCrossReferencesEncodingRoundtrip(t *testing.T) {
 				Source: &spb.VName{Signature: "relatedNode"},
 			},
 		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+			Node: &spb.VName{Signature: "relatedNode"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#relatedNodeDef",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 32},
+					End:   &cpb.Point{ByteOffset: 256},
+				},
+			},
+		}},
 	}}
 
 	for _, test := range tests {
@@ -237,18 +247,9 @@ func TestCrossReferencesEncodingRoundtrip(t *testing.T) {
 			found, err := DecodeCrossReferencesEntry(&src, string(key), kv.Value)
 			if err != nil {
 				t.Errorf("Error decoding %T: %v", test.Entry, err)
-			} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
+			} else if diff := compare.ProtoDiff(test, found); diff != "" {
 				t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
 			}
 		})
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

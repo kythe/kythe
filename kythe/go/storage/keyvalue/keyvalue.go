@@ -16,7 +16,7 @@
 
 // Package keyvalue implements a generic GraphStore for anything that implements
 // the DB interface.
-package keyvalue
+package keyvalue // import "kythe.io/kythe/go/storage/keyvalue"
 
 import (
 	"bytes"
@@ -124,6 +124,12 @@ type Iterator interface {
 	// entry. If there is no key-value entry to return, an io.EOF error is
 	// returned.
 	Next() (key, val []byte, err error)
+
+	// Seeks positions the Iterator to the given key.  The key must be further
+	// than the current Iterator's position.  If the key does not exist, the
+	// Iterator is positioned at the next existing key.  If no such key exists,
+	// io.EOF is returned.
+	Seek(key []byte) error
 }
 
 // Writer provides write access to a DB. Writes must be Closed when no longer

@@ -1,4 +1,4 @@
-load("@bazel_skylib//:lib.bzl", "shell")
+load("@bazel_skylib//lib:shell.bzl", "shell")
 
 _toolchain_type = "//tools/build_rules/external_tools:external_tools_toolchain_type"
 
@@ -65,6 +65,9 @@ def _asciidoc_impl(ctx):
             "if [[ $? -ne 1 ]]; then",
             "exit 1",
             "fi",
+
+            # Move any generated images to the out directory.
+            "find . -name '*.svg' -maxdepth 1 -exec mv '{}' out/ \;",
 
             # Package up the outputs into the zip file.
             "(cd out; zip -9qr ../%s *)" % ctx.outputs.out.path,

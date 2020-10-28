@@ -16,7 +16,7 @@
 
 // Package testutil provides support functions for unit testing implementations
 // of the kcd.ReadWriter interface.
-package testutil
+package testutil // import "kythe.io/kythe/go/platform/kcd/testutil"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"

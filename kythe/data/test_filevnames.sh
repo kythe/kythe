@@ -1,5 +1,4 @@
-#!/bin/bash -e
-
+#!/bin/bash
 # Copyright 2014 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +15,10 @@
 
 # Ensures that vnames.json can be read by the //kythe/storage/go/filevnames library
 
+set -e
+
 DIRECTORY_INDEXER="$PWD/${DIR_INDEXER?:missing directory_indexer}"
-CONFIG="$PWD/kythe/data/vnames.json"
+CONFIG="$PWD/$1"
 OUT="$TEST_TMPDIR/file_entries"
 
 # Directory tree with some (but not many) files

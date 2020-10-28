@@ -20,30 +20,42 @@
 #include <string>
 #include <utility>
 
+#include "KytheGraphObserver.h"
+#include "KytheVFS.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
-#include "kythe/cxx/common/indexing/KytheClaimClient.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/json_proto.h"
-#include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/indexer/cxx/KytheClaimClient.h"
 #include "kythe/cxx/indexer/cxx/KytheVFS.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "kythe/proto/filecontext.pb.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Twine.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
-
-#include "KytheGraphObserver.h"
 
 namespace kythe {
 
 bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
                    llvm::Twine code, const std::string& filename) {
   if (tool_action == nullptr) return false;
-  return clang::tooling::runToolOnCode(tool_action.release(), code, filename);
+  return clang::tooling::runToolOnCode(std::move(tool_action), code, filename);
 }
 
 namespace {
+
+// Message type URI for the build details message.
+constexpr absl::string_view kBuildDetailsURI =
+    "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
@@ -78,14 +90,27 @@ bool DecodeDetails(const proto::CompilationUnit& Unit,
   return false;
 }
 
+std::string ExtractBuildConfig(const proto::CompilationUnit& Unit) {
+  proto::BuildDetails details;
+  for (const auto& Any : Unit.details()) {
+    if (Any.type_url() == kBuildDetailsURI) {
+      if (UnpackAny(Any, &details)) {
+        return details.build_config();
+      }
+    }
+  }
+  return "";
+}
+
 bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails& Details,
                             HeaderSearchInfo& Info) {
   if (!Details.has_header_search_info()) {
     return false;
   }
   if (!Info.CopyFrom(Details)) {
-    fprintf(stderr,
-            "Warning: unit has header search info, but it is ill-formed.\n");
+    absl::FPrintF(
+        stderr,
+        "Warning: unit has header search info, but it is ill-formed.\n");
     return false;
   }
   return true;
@@ -115,6 +140,41 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit& Unit,
   }
   return "-resource-dir=/kythe_builtins";
 }
+
+std::string FormatLocation(clang::FullSourceLoc loc) {
+  if (!loc.isValid()) {
+    return "";
+  }
+  return absl::StrCat(loc.printToString(loc.getManager()), ": ");
+}
+
+// Collects text-formatted errors for later.
+class TextErrorBuffer : public clang::DiagnosticConsumer {
+ public:
+  void HandleDiagnostic(clang::DiagnosticsEngine::Level level,
+                        const clang::Diagnostic& info) override {
+    DiagnosticConsumer::HandleDiagnostic(level, info);
+
+    llvm::SmallString<100> buf;
+    info.FormatDiagnostic(buf);
+    switch (level) {
+      case clang::DiagnosticsEngine::Error:
+      case clang::DiagnosticsEngine::Fatal:
+        errors_.push_back(
+            absl::StrCat(FormatLocation(clang::FullSourceLoc(
+                             info.getLocation(), info.getSourceManager())),
+                         buf.c_str()));
+        break;
+      default:
+        break;
+    }
+  }
+
+  const std::vector<std::string>& errors() const { return errors_; }
+
+ private:
+  std::vector<std::string> errors_;
+};
 }  // anonymous namespace
 
 std::string IndexCompilationUnit(
@@ -124,6 +184,10 @@ std::string IndexCompilationUnit(
     const LibrarySupports* LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
         CreateWorklist) {
+  llvm::sys::path::Style Style =
+      kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
+          Unit.working_directory())
+          .value_or(llvm::sys::path::Style::posix);
   HeaderSearchInfo HSI;
   proto::CxxCompilationUnitDetails Details;
   bool HSIValid = false;
@@ -140,14 +204,18 @@ std::string IndexCompilationUnit(
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
+  if (Style == llvm::sys::path::Style::windows) {
+    FSO.WorkingDir = absl::StrCat("/", FSO.WorkingDir);
+  }
   for (auto& Path : HSI.paths) {
     Dirs.push_back(ToStringRef(Path.path));
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
-      new IndexVFS(FSO.WorkingDir, Files, Dirs));
+      new IndexVFS(Options.EffectiveWorkingDirectory, Files, Dirs, Style));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
-                              Options.ReportProfileEvent);
+                              Options.ReportProfileEvent,
+                              ExtractBuildConfig(Unit));
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();
@@ -156,6 +224,9 @@ std::string IndexCompilationUnit(
     Observer.DropRedundantWraiths();
   }
   Observer.set_claimant(Unit.v_name());
+  if (Options.UseCompilationCorpusAsDefault) {
+    Observer.set_default_corpus(Unit.v_name().corpus());
+  }
   Observer.set_starting_context(Unit.entry_context());
   for (const auto& Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
@@ -191,15 +262,18 @@ std::string IndexCompilationUnit(
   Action->setVerbosity(Options.Verbosity);
   Action->setObjCFwdDeclEmitDocs(Options.ObjCFwdDocs);
   Action->setCppFwdDeclEmitDocs(Options.CppFwdDocs);
+  Action->setUsrByteSize(Options.UsrByteSize);
+  Action->setTemplateInstanceExcludePathPattern(
+      Options.TemplateInstanceExcludePathPattern);
+  Action->setEmitDataflowEdges(Options.DataflowEdges);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());
-  Args.insert(Args.begin() + 1, "-fsyntax-only");
-  Args.insert(Args.begin() + 1, "-w");
-  Args.insert(Args.begin() + 1, "-nocudalib");
+  Args.insert(Args.begin() + 1, {"-nocudalib", "-w", "-fsyntax-only"});
   if (!FixupArgument.empty()) {
     Args.insert(Args.begin() + 1, FixupArgument);
   }
+
   // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
   std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool =
       absl::make_unique<StdinAdjustSingleFrontendActionFactory>(
@@ -208,9 +282,14 @@ std::string IndexCompilationUnit(
   clang::tooling::ToolInvocation Invocation(
       Args, Tool.get(), FileManager.get(),
       std::make_shared<clang::PCHContainerOperations>());
+
+  TextErrorBuffer Diags;
+  Invocation.setDiagnosticConsumer(&Diags);
+
   ProfileBlock block(Observer.getProfilingCallback(), "run_invocation");
   if (!Invocation.run()) {
-    return "Errors during indexing.";
+    return absl::StrCat("Errors during indexing:",
+                        absl::StrJoin(Diags.errors(), "\n"));
   }
   return "";
 }

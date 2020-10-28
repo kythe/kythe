@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_COMMON_INDEX_WRITER_H_
 #define KYTHE_CXX_COMMON_INDEX_WRITER_H_
 
-#include "kythe/cxx/common/status_or.h"
-#include "kythe/proto/analysis.pb.h"
-
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
 
@@ -36,15 +36,15 @@ class IndexWriterInterface {
 
   /// \brief Write the `IndexedCompilation` to the index. Returns the
   /// hex-encoded SHA256 digest of the unit's contents.
-  virtual StatusOr<std::string> WriteUnit(
+  virtual absl::StatusOr<std::string> WriteUnit(
       const kythe::proto::IndexedCompilation& unit) = 0;
 
   /// \brief Write the file data to the index. Returns the hex-encoded
   /// SHA256 digest of the file's contents.
-  virtual StatusOr<std::string> WriteFile(absl::string_view content) = 0;
+  virtual absl::StatusOr<std::string> WriteFile(absl::string_view content) = 0;
 
   /// \brief Flush and finalize any outstanding writes.
-  virtual Status Close() = 0;
+  virtual absl::Status Close() = 0;
 };
 
 /// \brief Pimpl wrapper around IndexWriterInterface.
@@ -59,18 +59,18 @@ class IndexWriter final {
   IndexWriter& operator=(IndexWriter&&) = default;
 
   /// \brief Write the `IndexedCompilation` to the index.
-  StatusOr<std::string> WriteUnit(
+  absl::StatusOr<std::string> WriteUnit(
       const kythe::proto::IndexedCompilation& unit) {
     return impl_->WriteUnit(unit);
   }
 
   /// \brief Write the file data to the index.
-  StatusOr<std::string> WriteFile(absl::string_view content) {
+  absl::StatusOr<std::string> WriteFile(absl::string_view content) {
     return impl_->WriteFile(content);
   }
 
   /// \brief Flush and finalize any outstanding writes.
-  Status Close() { return impl_->Close(); }
+  absl::Status Close() { return impl_->Close(); }
 
  private:
   std::unique_ptr<IndexWriterInterface> impl_;

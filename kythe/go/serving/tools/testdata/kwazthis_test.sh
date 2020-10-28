@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-set -o pipefail
-set -x
+set -eox pipefail
 
 BASE_DIR="$PWD/kythe/go/serving/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
@@ -26,11 +25,12 @@ kwazthis() { "$KWAZTHIS" --local_repo=NONE --api "http://$LISTEN_AT" "$@" | tee 
 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
-JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 934)
-jq --slurp 'length == 3'
+JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 965)
+jq --slurp 'length == 4'
 # .[0] is Generics class def
 # .[1] is f method def
 # .[2] is gs variable def
+# .[3] is gs variable defines/binding
 jq --slurp '.[] | (.kind == "ref" or .kind == "defines" or .kind == "defines/binding")'
 jq --slurp '.[].node.ticket
         and .[].node.ticket != ""'

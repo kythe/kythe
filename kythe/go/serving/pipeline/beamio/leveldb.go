@@ -27,10 +27,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
-	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
 	"github.com/apache/beam/sdks/go/pkg/beam/io/filesystem"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/journal"
@@ -39,7 +39,6 @@ import (
 )
 
 func init() {
-	beam.RegisterType(reflect.TypeOf((*encodeKeyValue)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*shardKeyValue)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*writeManifest)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*writeTable)(nil)).Elem())
@@ -54,24 +53,24 @@ func WriteLevelDB(s beam.Scope, path string, numShards int, tables ...beam.PColl
 	filesystem.ValidateScheme(path)
 	s = s.Scope("WriteLevelDB")
 
-	// Encode each PCollection of KVs into ([]byte, []byte) key-values (*keyValue)
-	// and flatten all entries into a single PCollection.
-	var encodings []beam.PCollection
-	for _, table := range tables {
-		encoded := beam.ParDo(s, &encodeKeyValue{beam.EncodedCoder{table.Coder()}}, table)
-		encodings = append(encodings, encoded)
-	}
-	encoded := beam.Flatten(s, encodings...)
+	tableMetadata := writeShards(s, path, numShards, tables...)
+
+	// Write all SSTable metadata to the LevelDB's MANIFEST journal.
+	s = s.Scope("Manifest")
+	beam.ParDo(s, &writeManifest{Path: path}, beam.GroupByKey(s, beam.AddFixedKey(s, tableMetadata)))
+}
+
+func writeShards(s beam.Scope, path string, numShards int, tables ...beam.PCollection) beam.PCollection {
+	s = s.Scope("Shards")
+
+	encoded := EncodeKeyValues(s, tables...)
 
 	// Group each key-value by a shard number based on its key's byte encoding.
 	shards := beam.GroupByKey(s, beam.ParDo(s, &shardKeyValue{Shards: numShards}, encoded))
 
 	// Write each shard to a separate SSTable.  The resulting PCollection contains
 	// each SSTable's metadata (*tableMetadata).
-	tableMetadata := beam.ParDo(s, &writeTable{path}, shards)
-
-	// Write all SSTable metadata to the LevelDB's MANIFEST journal.
-	beam.ParDo(s, &writeManifest{Path: path}, beam.GroupByKey(s, beam.AddFixedKey(s, tableMetadata)))
+	return beam.ParDo(s, &writeTable{path}, shards)
 }
 
 type writeManifest struct{ Path string }
@@ -121,7 +120,7 @@ func (w *writeManifest) ProcessElement(ctx context.Context, _ beam.T, e func(*ta
 	defer func(start time.Time) { log.Printf("Manifest written in %s", time.Since(start)) }(time.Now())
 
 	// Write the CURRENT manifest to the 0'th LevelDB file.
-	f, err := openWrite(ctx, filepath.Join(w.Path, manifestName))
+	f, err := openWrite(ctx, schemePreservingPathJoin(w.Path, manifestName))
 	if err != nil {
 		return 0, err
 	}
@@ -175,7 +174,7 @@ func (w *writeManifest) ProcessElement(ctx context.Context, _ beam.T, e func(*ta
 	}
 
 	// Write the CURRENT pointer to the freshly written manifest file.
-	currentFile, err := openWrite(ctx, filepath.Join(w.Path, "CURRENT"))
+	currentFile, err := openWrite(ctx, schemePreservingPathJoin(w.Path, "CURRENT"))
 	if err != nil {
 		return 0, err
 	} else if _, err := io.WriteString(currentFile, manifestName+"\n"); err != nil {
@@ -228,10 +227,22 @@ var (
 	conflictingLevelDBValuesCounter = beam.NewCounter("kythe.beamio.leveldb", "conflicting-values")
 )
 
-// ProcessElement writes a set of keyValues to the an SSTable per shard.  Shards
+const schemaSeparator = "://"
+
+// schemePreservingPathJoin is like filepath.Join, but doesn't collapse
+// the double-slash in the schema prefix, if any.
+func schemePreservingPathJoin(p, f string) string {
+	parts := strings.SplitN(p, schemaSeparator, 2)
+	if len(parts) == 2 {
+		return parts[0] + schemaSeparator + filepath.Join(parts[1], f)
+	}
+	return filepath.Join(p, f)
+}
+
+// ProcessElement writes a set of KeyValues to the an SSTable per shard.  Shards
 // should be small enough to fit into memory so that they can be sorted.
 // TODO(BEAM-4405): use SortValues extension to remove in-memory requirement
-func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(*keyValue) bool, emit func(tableMetadata)) error {
+func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(*KeyValue) bool, emit func(tableMetadata)) error {
 	opts := &opt.Options{
 		BlockSize: 5 * opt.MiB,
 		Comparer:  keyComparer{},
@@ -243,8 +254,8 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 	}(time.Now())
 	md := tableMetadata{Shard: shard + 1}
 
-	var els []keyValue
-	var kv keyValue
+	var els []KeyValue
+	var kv KeyValue
 	for kvIter(&kv) {
 		els = append(els, kv)
 	}
@@ -278,7 +289,7 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 	md.Last = els[len(els)-1].Key
 
 	// Write each sorted key-value to an SSTable.
-	f, err := openWrite(ctx, filepath.Join(w.Path, fmt.Sprintf("%06d.ldb", md.Shard)))
+	f, err := openWrite(ctx, schemePreservingPathJoin(w.Path, fmt.Sprintf("%06d.ldb", md.Shard)))
 	if err != nil {
 		return err
 	}
@@ -301,39 +312,10 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 
 type shardKeyValue struct{ Shards int }
 
-func (s *shardKeyValue) ProcessElement(kv keyValue) (int, keyValue) {
+func (s *shardKeyValue) ProcessElement(kv KeyValue) (int, KeyValue) {
 	h := crc32.NewIEEE()
 	h.Write(kv.Key)
 	return int(h.Sum32()) % s.Shards, kv
-}
-
-type encodeKeyValue struct {
-	Coder beam.EncodedCoder
-}
-
-func (e *encodeKeyValue) ProcessElement(key beam.T, val beam.U) (keyValue, error) {
-	c := beam.UnwrapCoder(e.Coder.Coder)
-	keyEnc := exec.MakeElementEncoder(c.Components[0])
-	var keyBuf bytes.Buffer
-	if err := keyEnc.Encode(exec.FullValue{Elm: key}, &keyBuf); err != nil {
-		return keyValue{}, err
-	} else if _, err := binary.ReadUvarint(&keyBuf); err != nil {
-		return keyValue{}, fmt.Errorf("error removing varint prefix from key encoding: %v", err)
-	}
-	valEnc := exec.MakeElementEncoder(c.Components[1])
-	var valBuf bytes.Buffer
-	if err := valEnc.Encode(exec.FullValue{Elm: val}, &valBuf); err != nil {
-		return keyValue{}, err
-	} else if _, err := binary.ReadUvarint(&valBuf); err != nil {
-		return keyValue{}, fmt.Errorf("error removing varint prefix from value encoding: %v", err)
-	}
-	return keyValue{Key: keyBuf.Bytes(), Value: valBuf.Bytes()}, nil
-}
-
-// A keyValue is a concrete form of a Beam KV.
-type keyValue struct {
-	Key   []byte `json:"k"`
-	Value []byte `json:"v"`
 }
 
 const keySuffixSize = 8

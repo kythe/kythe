@@ -19,6 +19,7 @@ package com.google.devtools.kythe.util;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.devtools.kythe.proto.CorpusPath;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.net.URISyntaxException;
 import junit.framework.TestCase;
@@ -28,9 +29,9 @@ public class KytheURITest extends TestCase {
 
   public void testParse() throws URISyntaxException {
     // Empty URIs.
-    assertThat(parse("")).isSameAs(KytheURI.EMPTY);
-    assertThat(parse("kythe:")).isSameAs(KytheURI.EMPTY);
-    assertThat(parse("kythe://")).isSameAs(KytheURI.EMPTY);
+    assertThat(parse("")).isSameInstanceAs(KytheURI.EMPTY);
+    assertThat(parse("kythe:")).isSameInstanceAs(KytheURI.EMPTY);
+    assertThat(parse("kythe://")).isSameInstanceAs(KytheURI.EMPTY);
 
     // Individual components.
     assertThat(parse("#sig")).isEqualTo(builder().setSignature("sig").build());
@@ -89,6 +90,7 @@ public class KytheURITest extends TestCase {
     checkToString("kythe:?path=%20", "kythe://?path=%20");
     checkToString("kythe:?path=a%2Bb", "kythe://?path=a+b");
     checkToString("kythe:?path=%2B", "kythe://?path=%2B");
+    checkToString("kythe://somecorpus//branch", "kythe://somecorpus//branch");
     String hairyUri =
         "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8";
     checkToString(hairyUri, hairyUri);
@@ -107,12 +109,29 @@ public class KytheURITest extends TestCase {
         "kythe://a?path=c#sig", "kythe://a?path=b/../c#sig", "kythe://a?path=./d/.././c#sig");
   }
 
+  public void testCorpusPath() {
+    assertThat(KytheURI.asString(cp("", "", ""))).isEqualTo("kythe:");
+    assertThat(KytheURI.asString(cp("c", "", ""))).isEqualTo("kythe://c");
+    assertThat(KytheURI.asString(cp("c", "r", ""))).isEqualTo("kythe://c?root=r");
+    assertThat(KytheURI.asString(cp("c", "r", "p"))).isEqualTo("kythe://c?path=p?root=r");
+    assertThat(KytheURI.asString(cp("c", "", "p"))).isEqualTo("kythe://c?path=p");
+    assertThat(KytheURI.asString(cp("", "r", "p"))).isEqualTo("kythe:?path=p?root=r");
+    assertThat(KytheURI.asString(cp("", "", "p"))).isEqualTo("kythe:?path=p");
+  }
+
   public void testToStringGoCompatibility() {
     // Test cases added when an incompatibility with Go's kytheuri library is found.
     assertThat(builder().setSignature("a=").build().toString()).isEqualTo("kythe:#a%3D");
     assertThat(builder().setCorpus("kythe").setSignature("a=").build().toString())
         .isEqualTo("kythe://kythe#a%3D");
     assertThat(builder().setSignature("広").build().toString()).isEqualTo("kythe:#%E5%BA%83");
+
+    assertThat(builder().setCorpus("kythe").setPath("unrooted/path").build().toString())
+        .isEqualTo("kythe://kythe?path=unrooted/path");
+    assertThat(builder().setCorpus("kythe").setPath("/rooted/path").build().toString())
+        .isEqualTo("kythe://kythe?path=/rooted/path");
+    assertThat(builder().setCorpus("kythe").setPath("//rooted//path").build().toString())
+        .isEqualTo("kythe://kythe?path=/rooted/path");
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {
@@ -176,5 +195,9 @@ public class KytheURITest extends TestCase {
 
   private static KytheURI parse(String str) throws URISyntaxException {
     return KytheURI.parse(str);
+  }
+
+  private static CorpusPath cp(String corpus, String root, String path) {
+    return CorpusPath.newBuilder().setCorpus(corpus).setRoot(root).setPath(path).build();
   }
 }

@@ -24,24 +24,22 @@ import com.beust.jcommander.Parameters;
 @Parameters(separators = "=")
 public class IndexerConfig {
   @Parameter(
-    names = {"--help", "-h"},
-    description = "Help requested",
-    help = true
-  )
+      names = {"--help", "-h"},
+      description = "Help requested",
+      help = true)
   private boolean help;
 
   @Parameter(
-    names = "--verbose",
-    description =
-        "Determines whether the analyzer should emit verbose logging messages for debugging."
-  )
+      names = "--verbose",
+      description =
+          "Determines whether the analyzer should emit verbose logging messages for debugging.")
   private boolean verboseLogging;
 
   @Parameter(
-    names = "--default_metadata_corpus",
-    description =
-        "If set, use this as the corpus for VNames generated from metadata (if a corpus cannot otherwise be determined)."
-  )
+      names = "--default_metadata_corpus",
+      description =
+          "If set, use this as the corpus for VNames generated from metadata (if a corpus cannot"
+              + " otherwise be determined).")
   private String defaultMetadataCorpus;
 
   private final JCommander jc;

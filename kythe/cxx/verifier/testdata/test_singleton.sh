@@ -5,7 +5,7 @@ VERIFIER="../verifier"
 TEST_INPUT="$1"
 TEST_EXPECTED="$2"
 cd "$(dirname "$0")"
-"${VERIFIER}" --check_for_singletons=true \
+"${VERIFIER}" --file_vnames=false --check_for_singletons=true \
     "${TEST_INPUT}" < /dev/null 2>&1 \
     | sed '/0x[0-9a-fA-F]*/d' \
     | diff - "${TEST_EXPECTED}"

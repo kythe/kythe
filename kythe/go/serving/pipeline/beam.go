@@ -18,6 +18,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -33,46 +34,66 @@ import (
 	"kythe.io/kythe/go/util/span"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
-	"github.com/golang/protobuf/proto"
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/filter"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
+	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
 func init() {
+	beam.RegisterFunction(bareRevEdge)
+	beam.RegisterFunction(callEdge)
+	beam.RegisterFunction(combineEdgesIndex)
 	beam.RegisterFunction(completeDocument)
+	beam.RegisterFunction(constructCaller)
 	beam.RegisterFunction(defToDecorPiece)
+	beam.RegisterFunction(diagToDecor)
+	beam.RegisterFunction(edgeTargets)
+	beam.RegisterFunction(edgeToCrossRefRelation)
+	beam.RegisterFunction(emitRelatedDefs)
 	beam.RegisterFunction(fileToDecorPiece)
+	beam.RegisterFunction(fileToTags)
+	beam.RegisterFunction(filterAnchorNodes)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
 	beam.RegisterFunction(keyByPath)
+	beam.RegisterFunction(keyCrossRef)
 	beam.RegisterFunction(keyNode)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
 	beam.RegisterFunction(nodeToChildren)
 	beam.RegisterFunction(nodeToDecorPiece)
+	beam.RegisterFunction(nodeToDiagnostic)
 	beam.RegisterFunction(nodeToDocs)
 	beam.RegisterFunction(nodeToEdges)
 	beam.RegisterFunction(nodeToReverseEdges)
 	beam.RegisterFunction(parseMarkedSource)
+	beam.RegisterFunction(refToCallsite)
+	beam.RegisterFunction(refToCrossRef)
 	beam.RegisterFunction(refToDecorPiece)
+	beam.RegisterFunction(refToTag)
 	beam.RegisterFunction(reverseEdge)
+	beam.RegisterFunction(splitEdge)
+	beam.RegisterFunction(targetToFile)
 	beam.RegisterFunction(toDefinition)
-	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
 	beam.RegisterFunction(toRefs)
 
 	beam.RegisterType(reflect.TypeOf((*combineDecorPieces)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
 
+	beam.RegisterType(reflect.TypeOf((*cpb.Diagnostic)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*cpb.MarkedSource)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*scpb.Edge)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*scpb.Node)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
@@ -96,13 +117,18 @@ type KytheBeam struct {
 	nodes      beam.PCollection // *scpb.Node
 	files      beam.PCollection // *srvpb.File
 	refs       beam.PCollection // *ppb.Reference
+	edges      beam.PCollection // *gspb.Edges
 
 	markedSources beam.PCollection // KV<*spb.VName, *cpb.MarkedSource>
+
+	anchorBuildConfigs beam.PCollection // KV<*spb.VName, string>
 }
 
 // FromNodes creates a KytheBeam pipeline from an input collection of
 // *spb.Nodes.
-func FromNodes(s beam.Scope, nodes beam.PCollection) *KytheBeam { return &KytheBeam{s: s, nodes: nodes} }
+func FromNodes(s beam.Scope, nodes beam.PCollection) *KytheBeam {
+	return &KytheBeam{s: s, nodes: nodes}
+}
 
 // FromEntries creates a KytheBeam pipeline from an input collection of
 // *spb.Entry messages.
@@ -125,12 +151,133 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		// TODO(schroederc): merge_with
 	))
 
+	callgraph := k.callGraph()
+
+	edges := k.edgeRelations()
+	relatedDefs := beam.ParDo(s, emitRelatedDefs, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, bareRevEdge, edges))),
+	))
+	relations := beam.ParDo(s, edgeToCrossRefRelation, edges)
+
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
 		idx,
 		refs,
-		// TODO(schroederc): related nodes
-		// TODO(schroederc): callers
+		relations,
+		relatedDefs,
+		callgraph,
 	))
+}
+
+func (k *KytheBeam) callGraph() beam.PCollection {
+	s := k.s.Scope("CallGraph")
+	callsites := beam.ParDo(s, refToCallsite, k.References())
+	// TODO(schroederc): override callers
+	callers := beam.ParDo(s, constructCaller, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		k.getMarkedSources(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, callEdge, callsites))),
+	))
+	return beam.Flatten(s, callsites, callers)
+}
+
+func emitRelatedDefs(target *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, srcStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
+	var def *srvpb.ExpandedAnchor
+	if !defStream(&def) {
+		return // no related node definition found
+	}
+	nodeDef := &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+		Node:     target,
+		Location: def,
+	}}
+
+	var src *spb.VName
+	for srcStream(&src) {
+		emit(&xspb.CrossReferences{Source: src, Entry: nodeDef})
+	}
+}
+
+func bareRevEdge(eg *gspb.Edges, emit func(*scpb.Edge)) error {
+	switch e := eg.Entry.(type) {
+	case *gspb.Edges_Edge_:
+		edge := e.Edge
+		emit(&scpb.Edge{Target: eg.Source, Source: edge.Target})
+	}
+	return nil
+}
+
+func constructCaller(caller *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, msStream func(**cpb.MarkedSource) bool, calleeStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
+	var def *srvpb.ExpandedAnchor
+	if !defStream(&def) {
+		return // no caller definition found
+	}
+	var ms *cpb.MarkedSource
+	for msStream(&ms) {
+		break
+	}
+
+	var callee *spb.VName
+	for calleeStream(&callee) {
+		emit(&xspb.CrossReferences{
+			Source: callee,
+			Entry: &xspb.CrossReferences_Caller_{&xspb.CrossReferences_Caller{
+				Caller:       caller,
+				Location:     def,
+				MarkedSource: ms,
+			}},
+		})
+	}
+}
+
+func refToCallsite(r *ppb.Reference, emit func(*xspb.CrossReferences)) {
+	if r.GetKytheKind() != scpb.EdgeKind_REF_CALL || r.Scope == nil {
+		return
+	}
+	emit(&xspb.CrossReferences{
+		Source: r.Source,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Kind:     xspb.CrossReferences_Callsite_DIRECT,
+			Caller:   r.Scope,
+			Location: r.Anchor,
+		}},
+	})
+}
+
+func callEdge(x *xspb.CrossReferences) *scpb.Edge {
+	return &scpb.Edge{Source: x.GetCallsite().GetCaller(), Target: x.GetSource()}
+}
+
+func edgeToCrossRefRelation(eg *gspb.Edges, emit func(*xspb.CrossReferences)) error {
+	switch e := eg.Entry.(type) {
+	case *gspb.Edges_Edge_:
+		edge := e.Edge
+		r := &xspb.CrossReferences_Relation{
+			Ordinal: edge.Ordinal,
+			Reverse: edge.Reverse,
+			Node:    edge.Target,
+		}
+		if k := edge.GetGenericKind(); k != "" {
+			r.Kind = &xspb.CrossReferences_Relation_GenericKind{k}
+		} else {
+			r.Kind = &xspb.CrossReferences_Relation_KytheKind{edge.GetKytheKind()}
+		}
+		emit(&xspb.CrossReferences{
+			Source: eg.Source,
+			Entry:  &xspb.CrossReferences_Relation_{r},
+		})
+		return nil
+	case *gspb.Edges_Target_:
+		target := e.Target
+		emit(&xspb.CrossReferences{
+			Source: eg.Source,
+			Entry: &xspb.CrossReferences_RelatedNode_{&xspb.CrossReferences_RelatedNode{
+				Node: target.Node,
+			}},
+		})
+		return nil
+	default:
+		return fmt.Errorf("unexpected Edges entry: %T", e)
+	}
 }
 
 // CrossReferences returns a Kythe file decorations table derived from the Kythe
@@ -139,37 +286,112 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 // KV<string, *srvpb.PagedCrossReferences_Page>, respectively.
 func (k *KytheBeam) CrossReferences() (sets, pages beam.PCollection) {
 	s := k.s.Scope("CrossReferences")
-	refs := beam.GroupByKey(s, beam.ParDo(s, keyRef, k.References()))
+	refs := beam.CoGroupByKey(s,
+		beam.ParDo(s, keyRef, k.References()),
+		beam.ParDo(s, keyCrossRef, k.callGraph()),
+	)
 	// TODO(schroederc): related nodes
-	// TODO(schroederc): callers
 	// TODO(schroederc): MarkedSource
 	// TODO(schroederc): source_node
 	return beam.ParDo2(s, groupCrossRefs, refs)
 }
 
+var callerKinds = map[xspb.CrossReferences_Callsite_Kind]string{
+	xspb.CrossReferences_Callsite_DIRECT:   "#internal/ref/call/direct",
+	xspb.CrossReferences_Callsite_OVERRIDE: "#internal/ref/call/override",
+}
+
 // groupCrossRefs emits *srvpb.PagedCrossReferences and *srvpb.PagedCrossReferences_Pages for a
-// single node's collection of *ppb.References.
-func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSet func(string, *srvpb.PagedCrossReferences), emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
+// single node's collection of *ppb.References and callsites.
+func groupCrossRefs(
+	key *spb.VName,
+	refStream func(**ppb.Reference) bool,
+	callStream func(**xspb.CrossReferences) bool,
+	emitSet func(string, *srvpb.PagedCrossReferences),
+	emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
 	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
 	// TODO(schroederc): add paging
 
-	groups := make(map[string]*srvpb.PagedCrossReferences_Group)
+	// kind -> build_config -> group
+	groups := make(map[string]map[string]*srvpb.PagedCrossReferences_Group)
 
 	var ref *ppb.Reference
 	for refStream(&ref) {
 		kind := refKind(ref)
-		g, ok := groups[kind]
+		configs, ok := groups[kind]
 		if !ok {
-			g = &srvpb.PagedCrossReferences_Group{Kind: kind}
-			groups[kind] = g
+			configs = make(map[string]*srvpb.PagedCrossReferences_Group)
+			groups[kind] = configs
+		}
+		config := ref.Anchor.BuildConfiguration
+		g, ok := configs[config]
+		if !ok {
+			g = &srvpb.PagedCrossReferences_Group{Kind: kind, BuildConfig: config}
+			configs[config] = g
 			set.Group = append(set.Group, g)
 		}
 		g.Anchor = append(g.Anchor, ref.Anchor)
 	}
 
-	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })
+	callers := make(map[string]*xspb.CrossReferences_Caller)
+	callsites := make(map[string][]*xspb.CrossReferences_Callsite)
+	var call *xspb.CrossReferences
+	for callStream(&call) {
+		switch e := call.Entry.(type) {
+		case *xspb.CrossReferences_Caller_:
+			callers[kytheuri.ToString(e.Caller.Caller)] = e.Caller
+		case *xspb.CrossReferences_Callsite_:
+			ticket := kytheuri.ToString(e.Callsite.Caller)
+			callsites[ticket] = append(callsites[ticket], e.Callsite)
+		}
+	}
+	for ticket, caller := range callers {
+		for _, site := range callsites[ticket] {
+			kind := callerKinds[site.Kind]
+			configs, ok := groups[kind]
+			if !ok {
+				configs = make(map[string]*srvpb.PagedCrossReferences_Group)
+				groups[kind] = configs
+			}
+			config := site.Location.BuildConfiguration
+			g, ok := configs[config]
+			if !ok {
+				g = &srvpb.PagedCrossReferences_Group{
+					Kind:        kind,
+					BuildConfig: config,
+				}
+				configs[config] = g
+				set.Group = append(set.Group, g)
+			}
+
+			var groupCaller *srvpb.PagedCrossReferences_Caller
+			for _, c := range g.Caller {
+				if c.SemanticCaller == ticket {
+					groupCaller = c
+					break
+				}
+			}
+			if groupCaller == nil {
+				groupCaller = &srvpb.PagedCrossReferences_Caller{
+					Caller:         caller.Location,
+					SemanticCaller: ticket,
+					MarkedSource:   caller.MarkedSource,
+				}
+				g.Caller = append(g.Caller, groupCaller)
+			}
+			groupCaller.Callsite = append(groupCaller.Callsite, site.Location)
+		}
+	}
+
+	sort.Slice(set.Group, func(i, j int) bool {
+		return compare.Strings(set.Group[i].BuildConfig, set.Group[j].BuildConfig).
+			AndThen(set.Group[i].Kind, set.Group[j].Kind) == compare.LT
+	})
 	for _, g := range set.Group {
 		sort.Slice(g.Anchor, func(i, j int) bool { return g.Anchor[i].Ticket < g.Anchor[j].Ticket })
+		for _, caller := range g.Caller {
+			sort.Slice(caller.Callsite, func(i, j int) bool { return caller.Callsite[i].Ticket < caller.Callsite[j].Ticket })
+		}
 	}
 
 	emitSet("xrefs:"+set.SourceTicket, set)
@@ -182,20 +404,104 @@ func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
 	}
 }
 
+func keyCrossRef(xr *xspb.CrossReferences) (*spb.VName, *xspb.CrossReferences) {
+	return xr.Source, &xspb.CrossReferences{Entry: xr.Entry}
+}
+
 func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {
-	targets := beam.ParDo(s, toEnclosingFile, k.References())
+	decor := beam.ParDo(s, refToDecorPiece, k.References())
+
+	targets := beam.ParDo(s, targetToFile, decor)
 	bareNodes := beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.nodes)
 
-	decor := beam.ParDo(s, refToDecorPiece, k.References())
 	files := beam.ParDo(s, fileToDecorPiece, k.getFiles())
-	nodes := beam.ParDo(s, nodeToDecorPiece,
+	targetNodes := beam.ParDo(s, nodeToDecorPiece,
 		beam.CoGroupByKey(s, beam.ParDo(s, moveSourceToKey, bareNodes), targets))
 	defs := beam.ParDo(s, defToDecorPiece,
 		beam.CoGroupByKey(s, k.directDefinitions(), targets))
 	// TODO(schroederc): overrides
-	// TODO(schroederc): diagnostics
+	decorDiagnostics := k.diagnostics()
 
-	return beam.Flatten(s, decor, files, nodes, defs)
+	return beam.Flatten(s, decor, files, targetNodes, defs, decorDiagnostics)
+}
+
+func (k *KytheBeam) diagnostics() beam.PCollection {
+	s := k.s.Scope("Diagnostics")
+	diagnostics := beam.Seq(s, k.Nodes(), &nodes.Filter{
+		FilterByKind: []string{kinds.Diagnostic},
+		IncludeFacts: []string{facts.Message, facts.Details, facts.ContextURL},
+	}, nodeToDiagnostic)
+	refTags := beam.ParDo(s, refToTag, k.References())
+	fileTags := beam.Seq(s, k.Nodes(), &nodes.Filter{
+		FilterByKind: []string{kinds.File},
+		IncludeFacts: []string{},
+		IncludeEdges: []string{edges.Tagged},
+	}, fileToTags)
+	return beam.ParDo(s, diagToDecor, beam.CoGroupByKey(s, diagnostics, refTags, fileTags))
+}
+
+func fileToTags(n *scpb.Node, emit func(*spb.VName, *spb.VName)) {
+	for _, e := range n.Edge {
+		emit(e.Target, n.Source)
+	}
+}
+
+func diagToDecor(src *spb.VName, diagStream func(**cpb.Diagnostic) bool, refTagStream func(**srvpb.ExpandedAnchor) bool, fileTagStream func(**spb.VName) bool, emit func(*spb.VName, *ppb.DecorationPiece)) error {
+	var d *cpb.Diagnostic
+	if !diagStream(&d) {
+		return nil
+	}
+
+	var ref *srvpb.ExpandedAnchor
+	for refTagStream(&ref) {
+		uri, err := kytheuri.Parse(ref.Ticket)
+		if err != nil {
+			return err
+		}
+		file := &spb.VName{
+			Corpus: uri.Corpus,
+			Root:   uri.Root,
+			Path:   uri.Path,
+		}
+		diagWithSpan := *d
+		diagWithSpan.Span = ref.Span
+		emit(file, &ppb.DecorationPiece{
+			Piece: &ppb.DecorationPiece_Diagnostic{
+				Diagnostic: &diagWithSpan,
+			},
+		})
+	}
+
+	var file *spb.VName
+	for fileTagStream(&file) {
+		emit(file, &ppb.DecorationPiece{
+			Piece: &ppb.DecorationPiece_Diagnostic{Diagnostic: d},
+		})
+	}
+
+	return nil
+}
+
+func refToTag(r *ppb.Reference, emit func(*spb.VName, *srvpb.ExpandedAnchor)) {
+	if r.GetKytheKind() != scpb.EdgeKind_TAGGED {
+		return
+	}
+	emit(r.Source, r.Anchor)
+}
+
+func nodeToDiagnostic(n *scpb.Node) (*spb.VName, *cpb.Diagnostic) {
+	d := &cpb.Diagnostic{}
+	for _, f := range n.Fact {
+		switch f.GetKytheName() {
+		case scpb.FactName_MESSAGE:
+			d.Message = string(f.Value)
+		case scpb.FactName_DETAILS:
+			d.Details = string(f.Value)
+		case scpb.FactName_CONTEXT_URL:
+			d.ContextUrl = string(f.Value)
+		}
+	}
+	return n.Source, d
 }
 
 // SplitDecorations returns a columnar Kythe file decorations table derived from
@@ -221,13 +527,8 @@ func (t *ticketKey) ProcessElement(key *spb.VName, val beam.T) (string, beam.T) 
 	return t.Prefix + kytheuri.ToString(key), val
 }
 
-func toEnclosingFile(r *ppb.Reference) (*spb.VName, *spb.VName, error) {
-	anchor, err := kytheuri.ToVName(r.Anchor.Ticket)
-	if err != nil {
-		return nil, nil, err
-	}
-	file := fileVName(anchor)
-	return r.Source, file, nil
+func targetToFile(file *spb.VName, p *ppb.DecorationPiece) (*spb.VName, *spb.VName, error) {
+	return p.GetReference().Source, file, nil
 }
 
 // combineDecorPieces combines *ppb.DecorationPieces into a single *srvpb.FileDecorations.
@@ -249,6 +550,8 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Anchor: &srvpb.RawAnchor{
 				StartOffset: ref.Anchor.Span.Start.ByteOffset,
 				EndOffset:   ref.Anchor.Span.End.ByteOffset,
+
+				BuildConfiguration: ref.Anchor.BuildConfiguration,
 			},
 			Kind:   refKind(ref),
 			Target: kytheuri.ToString(ref.Source),
@@ -268,6 +571,8 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Ticket:             kytheuri.ToString(def.Node),
 			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: def.Definition.Ticket},
 		})
+	case *ppb.DecorationPiece_Diagnostic:
+		accum.Diagnostic = append(accum.Diagnostic, p.Diagnostic)
 	default:
 		panic(fmt.Errorf("unhandled DecorationPiece: %T", p))
 	}
@@ -330,6 +635,13 @@ func (c *combineDecorPieces) ExtractOutput(fd *srvpb.FileDecorations) *srvpb.Fil
 		return fd.Decoration[i].Target < fd.Decoration[j].Target
 	})
 	sort.Slice(fd.Target, func(i, j int) bool { return fd.Target[i].Ticket < fd.Target[j].Ticket })
+
+	sort.Slice(fd.Diagnostic, func(i, j int) bool {
+		a, b := fd.Diagnostic[i], fd.Diagnostic[j]
+		return compare.Compare(a.Span.GetStart().GetByteOffset(), b.Span.GetStart().GetByteOffset()).
+			AndThen(a.Span.GetEnd().GetByteOffset(), b.Span.GetEnd().GetByteOffset()).
+			AndThen(a.Message, b.Message) == compare.LT
+	})
 	return fd
 }
 
@@ -337,18 +649,31 @@ func fileToDecorPiece(src *spb.VName, f *srvpb.File) (*spb.VName, *ppb.Decoratio
 	return src, &ppb.DecorationPiece{Piece: &ppb.DecorationPiece_File{f}}
 }
 
-func refToDecorPiece(r *ppb.Reference) (*spb.VName, *ppb.DecorationPiece, error) {
-	_, file, err := toEnclosingFile(r)
-	if err != nil {
-		return nil, nil, err
+func refToDecorPiece(r *ppb.Reference, emit func(*spb.VName, *ppb.DecorationPiece)) error {
+	if r.GetKytheKind() == scpb.EdgeKind_TAGGED {
+		return nil
 	}
-	return file, &ppb.DecorationPiece{
+	p := &ppb.DecorationPiece{
 		Piece: &ppb.DecorationPiece_Reference{&ppb.Reference{
 			Source: r.Source,
 			Kind:   r.Kind,
 			Anchor: r.Anchor,
 		}},
-	}, nil
+	}
+	file, err := anchorToFileVName(r.Anchor.Ticket)
+	if err != nil {
+		return err
+	}
+	emit(file, p)
+	return nil
+}
+
+func anchorToFileVName(anchorTicket string) (*spb.VName, error) {
+	anchor, err := kytheuri.ToVName(anchorTicket)
+	if err != nil {
+		return nil, err
+	}
+	return fileVName(anchor), nil
 }
 
 func fileVName(anchor *spb.VName) *spb.VName {
@@ -420,6 +745,7 @@ func (k *KytheBeam) References() beam.PCollection {
 			IncludeFacts: []string{
 				facts.AnchorStart, facts.AnchorEnd,
 				facts.SnippetStart, facts.SnippetEnd,
+				facts.BuildConfig,
 			},
 		}, k.nodes))
 	k.refs = beam.ParDo(s, toRefs, beam.CoGroupByKey(s, k.getFiles(), anchors))
@@ -473,12 +799,14 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		}
 		a, err := assemble.ExpandAnchor(raw, file, norm, "")
 		if err != nil {
-			return err
+			log.Printf("error expanding anchor {%+v}: %v", raw, err)
+			break
 		}
 
 		var parent *spb.VName
 		for _, e := range n.Edge {
 			if e.GetKytheKind() == scpb.EdgeKind_CHILD_OF {
+				// There should only be a single parent for each anchor.
 				parent = e.Target
 				break
 			}
@@ -507,27 +835,35 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 func toRawAnchor(n *scpb.Node) (*srvpb.RawAnchor, error) {
 	var a srvpb.RawAnchor
 	for _, f := range n.Fact {
-		i, err := strconv.Atoi(string(f.Value))
-		if err != nil {
-			return nil, fmt.Errorf("invalid integer fact value for %q: %v", f.GetKytheName(), err)
-		}
-		n := int32(i)
-
+		var err error
 		switch f.GetKytheName() {
+		case scpb.FactName_BUILD_CONFIG:
+			a.BuildConfiguration = string(f.Value)
 		case scpb.FactName_LOC_START:
-			a.StartOffset = n
+			a.StartOffset, err = factValueToInt(f)
 		case scpb.FactName_LOC_END:
-			a.EndOffset = n
+			a.EndOffset, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_START:
-			a.SnippetStart = n
+			a.SnippetStart, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_END:
-			a.SnippetEnd = n
+			a.SnippetEnd, err = factValueToInt(f)
 		default:
 			return nil, fmt.Errorf("unhandled fact: %v", f)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	a.Ticket = kytheuri.ToString(n.Source)
 	return &a, nil
+}
+
+func factValueToInt(f *scpb.Fact) (int32, error) {
+	i, err := strconv.Atoi(string(f.Value))
+	if err != nil {
+		return 0, fmt.Errorf("invalid integer fact value for %q: %v", schema.GetFactName(f), err)
+	}
+	return int32(i), nil
 }
 
 func moveSourceToKey(n *scpb.Node) (*spb.VName, *scpb.Node) {
@@ -570,12 +906,69 @@ func (k *KytheBeam) Edges() (beam.PCollection, beam.PCollection) {
 	return beam.ParDo2(s, groupEdges, beam.CoGroupByKey(s, nodes, edges, rev))
 }
 
+// edgeRelations returns a beam.PCollection of gspb.Edges for all Kythe graph
+// relations.
+func (k *KytheBeam) edgeRelations() beam.PCollection {
+	if !k.edges.IsValid() {
+		s := k.s.Scope("Relations")
+
+		nodeEdges := beam.Seq(s, k.nodes, filterAnchorNodes, &nodes.Filter{IncludeFacts: []string{}})
+		sourceNodes := beam.ParDo(s, moveSourceToKey, k.nodes)
+
+		targetNodes := beam.ParDo(s, encodeEdgeTarget, beam.CoGroupByKey(s,
+			sourceNodes,
+			beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, edgeTargets, nodeEdges)))))
+		edges := beam.ParDo(s, encodeEdges, nodeEdges)
+
+		k.edges = beam.Flatten(s, edges, targetNodes)
+	}
+	return k.edges
+}
+
+// SplitEdges returns a columnar Kythe edges table derived from the Kythe input
+// graph.  The beam.PCollection have elements of type KV<[]byte, []byte>.
+func (k *KytheBeam) SplitEdges() beam.PCollection {
+	s := k.s.Scope("SplitEdges")
+
+	idx := beam.ParDo(s, combineEdgesIndex,
+		// TODO(schroederc): counts; also needed for presence with only rev edges
+		beam.ParDo(s, keyNode, beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.Nodes())))
+
+	return beam.ParDo(s, encodeEdgesEntry, beam.Flatten(s, idx, k.edgeRelations()))
+}
+
+func filterAnchorNodes(n *scpb.Node, emit func(*scpb.Node)) {
+	if n.GetKytheKind() == scpb.NodeKind_ANCHOR {
+		return
+	}
+	emit(n)
+}
+
+func edgeTargets(n *scpb.Node, emit func(*scpb.Edge)) {
+	for _, e := range n.Edge {
+		emit(&scpb.Edge{Source: n.Source, Target: e.Target})
+		emit(&scpb.Edge{Target: n.Source, Source: e.Target})
+	}
+}
+
+func splitEdge(e *scpb.Edge) (*spb.VName, *spb.VName) { return e.Source, e.Target }
+
+func combineEdgesIndex(src *spb.VName, node *scpb.Node) *gspb.Edges {
+	return &gspb.Edges{
+		Source: src,
+		Entry: &gspb.Edges_Index_{&gspb.Edges_Index{
+			Node: node,
+		}},
+	}
+}
+
 // nodeToReverseEdges emits an *scpb.Edge with its SourceNode populated for each of n's edges.  The
 // key for each *scpb.Edge is its Target VName.
 func nodeToReverseEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
+	node := nodeWithoutEdges(n)
 	for _, e := range n.Edge {
 		emit(e.Target, &scpb.Edge{
-			SourceNode: n,
+			SourceNode: node,
 			Target:     e.Target,
 			Kind:       e.Kind,
 			Ordinal:    e.Ordinal,
@@ -596,12 +989,24 @@ func nodeToEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
 	}
 }
 
+func nodeWithoutEdges(n *scpb.Node) *scpb.Node {
+	return &scpb.Node{
+		Source:  n.Source,
+		Kind:    n.Kind,
+		Subkind: n.Subkind,
+		Fact:    n.Fact,
+	}
+}
+
 // reverseEdge emits the reverse of each *scpb.Edge, embedding the associated TargetNode.
 func reverseEdge(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream func(**scpb.Edge) bool, emit func(*spb.VName, *scpb.Edge)) {
 	var node *scpb.Node
 	if !nodeStream(&node) {
-		node = &scpb.Node{Source: src}
+		node = &scpb.Node{}
+	} else {
+		node = nodeWithoutEdges(node)
 	}
+	node.Source = src
 
 	var e *scpb.Edge
 	for edgeStream(&e) {

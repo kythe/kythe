@@ -1,4 +1,4 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -22,6 +22,7 @@ go_test(
     library = "entryset",
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
         "//kythe/go/util/kytheuri",
     ],
 )

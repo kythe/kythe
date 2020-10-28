@@ -17,17 +17,19 @@
 
 #include "CommandLineUtils.h"
 
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Regex.h"
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <algorithm>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include "absl/strings/str_format.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Regex.h"
 
 namespace kythe {
 namespace common {
@@ -46,7 +48,7 @@ class FullMatchRegex {
       : InnerRegex("^(" + Regex.str() + ")$", llvm::Regex::NoFlags) {
     std::string st;
     if (!InnerRegex.isValid(st)) {
-      fprintf(stderr, "%s (regex was %s)\n", st.c_str(), Regex.str().c_str());
+      absl::FPrintF(stderr, "%s (regex was %s)\n", st, Regex.str());
       assert(0 && "!InnerRegex.isValid()");
     }
   }
@@ -187,7 +189,6 @@ std::vector<std::string> GCCArgsToClangArgs(
       "|-W(no-)?(error=)?unused-but-set-parameter"
       "|-W(no-)?(error=)?unused-but-set-variable"
       "|-W(no-)?(error=)?unused-local-typedefs"
-      "|-Xgcc-only=.*"
       "|-enable-libstdcxx-debug"
       "|-f(no-)?align-functions.*"
       "|-f(no-)?asynchronous-unwind-tables"
@@ -217,6 +218,7 @@ std::vector<std::string> GCCArgsToClangArgs(
       "|-f(no-)?rounding-math"
       "|-f(no-)?ripa"
       "|-f(no-)?ripa-disallow-asm-modules"
+      "|-f(no-)?sanitize.*"
       "|-f(no-)?see"
       "|-f(no-)?strict-enum-precision"
       "|-f(no-)?tracer"
@@ -364,11 +366,9 @@ std::vector<std::string> ClangArgsToGCCArgs(
   // It's important to remove the matches that have followers first -- those
   // followers might match one of the flag regular expressions, and removing
   // just the follower completely changes the semantics of the command.
-  return StripPrefix(
-      "-Xgcc-only=",
-      CopyOmittingMatches(unsupported_args_re,
-                          CopyOmittingMatchesAndFollowers(
-                              unsupported_args_with_values_re, clang_args)));
+  return CopyOmittingMatches(unsupported_args_re,
+                             CopyOmittingMatchesAndFollowers(
+                                 unsupported_args_with_values_re, clang_args));
 }
 
 std::vector<std::string> AdjustClangArgsForAddressSanitizer(

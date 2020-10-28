@@ -1,46 +1,46 @@
-//- ClassJvm=vname("pkg.Jvm", "", "", "", "jvm").node/kind record
+//- ClassJvm=vname("pkg.Jvm", "kythe", "", "", "jvm").node/kind record
 //- ClassJvm.subkind class
 
-//- ConstructorJvm=vname("pkg.Jvm.<init>()V", "", "", "", "jvm").node/kind function
+//- ConstructorJvm=vname("pkg.Jvm.<init>()V", "kythe", "", "", "jvm").node/kind function
 //- ConstructorJvm.subkind constructor
 
-//- IntFieldJvm=vname("pkg.Jvm.intField", "", "", "", "jvm").node/kind variable
+//- IntFieldJvm=vname("pkg.Jvm.intField", "kythe", "", "", "jvm").node/kind variable
 //- IntFieldJvm.subkind field
 
-//- NestedJvm=vname("pkg.Jvm$Nested", "", "", "", "jvm").node/kind record
+//- NestedJvm=vname("pkg.Jvm$Nested", "kythe", "", "", "jvm").node/kind record
 //- NestedJvm.subkind class
-//- NestedCtorJvm=vname("pkg.Jvm$Nested.<init>()V", "", "", "", "jvm").node/kind function
+//- NestedCtorJvm=vname("pkg.Jvm$Nested.<init>()V", "kythe", "", "", "jvm").node/kind function
 
-//- InnerJvm=vname("pkg.Jvm$Inner", "", "", "", "jvm").node/kind record
+//- InnerJvm=vname("pkg.Jvm$Inner", "kythe", "", "", "jvm").node/kind record
 //- InnerJvm.subkind class
-//- InnerCtorJvm=vname("pkg.Jvm$Inner.<init>(Lpkg/Jvm;)V", "", "", "", "jvm").node/kind function
+//- InnerCtorJvm=vname("pkg.Jvm$Inner.<init>(Lpkg/Jvm;)V", "kythe", "", "", "jvm").node/kind function
 
-//- InnerInnerJvm=vname("pkg.Jvm$Inner$InnerInner", "", "", "", "jvm").node/kind record
+//- InnerInnerJvm=vname("pkg.Jvm$Inner$InnerInner", "kythe", "", "", "jvm").node/kind record
 //- InnerInnerJvm.subkind class
-//- InnerInnerCtorJvm=vname("pkg.Jvm$Inner$InnerInner.<init>(Lpkg/Jvm$Inner;)V", "", "", "", "jvm").node/kind function
+//- InnerInnerCtorJvm=vname("pkg.Jvm$Inner$InnerInner.<init>(Lpkg/Jvm$Inner;)V", "kythe", "", "", "jvm").node/kind function
 
-//- MethodWithInnerParamJvm=vname("pkg.Jvm.methodWithInnerParam(Lpkg/Jvm$Inner;)V", "", "", "", "jvm").node/kind function
+//- MethodWithInnerParamJvm=vname("pkg.Jvm.methodWithInnerParam(Lpkg/Jvm$Inner;)V", "kythe", "", "", "jvm").node/kind function
 
-//- FuncJvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V", "", "", "", "jvm").node/kind function
-//- Param0Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param0", "", "", "", "jvm").node/kind variable
-//- Param1Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param1", "", "", "", "jvm").node/kind variable
+//- FuncJvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V", "kythe", "", "", "jvm").node/kind function
+//- Param0Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param0", "kythe", "", "", "jvm").node/kind variable
+//- Param1Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param1", "kythe", "", "", "jvm").node/kind variable
 //- Param0Jvm.subkind local/parameter
 //- Param1Jvm.subkind local/parameter
 
-//- GenericJvm=vname("pkg.Jvm$Generic", "", "", "", "jvm").node/kind record
-//- TFieldJvm=vname("pkg.Jvm$Generic.tfield", "", "", "", "jvm").node/kind variable
-//- TMethodJvm=vname("pkg.Jvm$Generic.tmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function
-//- TListMethodJvm=vname("pkg.Jvm$Generic.tlistmethod(Ljava/util/List;)V", "", "", "", "jvm").node/kind function
-//- TListRetMethodJvm=vname("pkg.Jvm$Generic.tlistretmethod()Ljava/util/List;", "", "", "", "jvm").node/kind function
+//- GenericJvm=vname("pkg.Jvm$Generic", "kythe", "", "", "jvm").node/kind record
+//- TFieldJvm=vname("pkg.Jvm$Generic.tfield", "kythe", "", "", "jvm").node/kind variable
+//- TMethodJvm=vname("pkg.Jvm$Generic.tmethod(Ljava/lang/Integer;)V", "kythe", "", "", "jvm").node/kind function
+//- TListMethodJvm=vname("pkg.Jvm$Generic.tlistmethod(Ljava/util/List;)V", "kythe", "", "", "jvm").node/kind function
+//- TListRetMethodJvm=vname("pkg.Jvm$Generic.tlistretmethod()Ljava/util/List;", "kythe", "", "", "jvm").node/kind function
 
-//- MBGenericJvm=vname("pkg.Jvm$MultipleBoundGeneric", "", "", "", "jvm").node/kind record
-//- MBTMethodJvm=vname("pkg.Jvm$MultipleBoundGeneric.mbtmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function
+//- MBGenericJvm=vname("pkg.Jvm$MultipleBoundGeneric", "kythe", "", "", "jvm").node/kind record
+//- MBTMethodJvm=vname("pkg.Jvm$MultipleBoundGeneric.mbtmethod(Ljava/lang/Integer;)V", "kythe", "", "", "jvm").node/kind function
 
-//- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function
+//- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "kythe", "", "", "jvm").node/kind function
 
-//- GJvm=vname("pkg.Jvm.g([IZBCDFIJS)V", "", "", "", "jvm").node/kind function
+//- GJvm=vname("pkg.Jvm.g([IZBCDFIJS)V", "kythe", "", "", "jvm").node/kind function
 
-//- VarArgsParamJvm=vname("pkg.Jvm.varargs([I)V.param0", "", "", "", "jvm").node/kind variable
+//- VarArgsParamJvm=vname("pkg.Jvm.varargs([I)V.param0", "kythe", "", "", "jvm").node/kind variable
 //- VarArgsParamJvm.subkind local/parameter
 
 Marked Source tests:

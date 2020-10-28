@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_DOC_MARKUP_HANDLER_H_
 #define KYTHE_CXX_DOC_MARKUP_HANDLER_H_
 
+#include <functional>
+
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/xref.pb.h"
-
-#include <functional>
 
 namespace kythe {
 class PrintableSpan {

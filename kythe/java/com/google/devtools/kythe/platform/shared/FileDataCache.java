@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -31,8 +30,6 @@ import java.util.Set;
  */
 public class FileDataCache implements FileDataProvider {
 
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
   private final Map<String, byte[]> fileContents;
 
   public FileDataCache(Iterable<FileData> fileData) {
@@ -40,12 +37,7 @@ public class FileDataCache implements FileDataProvider {
     Set<String> addedFiles = new HashSet<>();
     for (FileData data : fileData) {
       String digest = data.getInfo().getDigest();
-      if (addedFiles.contains(digest)) {
-        logger.atWarning().log(
-            "File %s with digest %s occurs multiple times in compilation unit.",
-            data.getInfo().getPath(), digest);
-      } else {
-        addedFiles.add(digest);
+      if (addedFiles.add(digest)) {
         builder.put(digest, data.getContent().toByteArray());
       }
     }

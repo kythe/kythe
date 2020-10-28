@@ -1,0 +1,29 @@
+# This file configures bazel for extraction using the binaries from a Kythe
+# release.
+
+# Example usage:
+#   KYTHE_RELEASE=/opt/kythe
+#   bazel \
+#     --bazelrc=$KYTHE_RELEASE/extractors.bazelrc
+#     build \
+#     --override_repository kythe_release=$KYTHE_RELEASE \
+#     //targets/to:extract
+
+# By default, keep building after errors.
+build --keep_going
+
+# By default, only extract specified top level targets.
+build --experimental_extra_action_top_level_only
+
+# Generate metadata for generated protocol buffer code.
+build --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
+build --proto_toolchain_for_cc=@kythe_release//:cc_native_proto_toolchain
+build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
+
+# Enable all supported Kythe extractors.
+build --experimental_action_listener=@kythe_release//:extract_kzip_cxx
+build --experimental_action_listener=@kythe_release//:extract_kzip_go
+build --experimental_action_listener=@kythe_release//:extract_kzip_java
+build --experimental_action_listener=@kythe_release//:extract_kzip_jvm
+build --experimental_action_listener=@kythe_release//:extract_kzip_protobuf
+build --experimental_action_listener=@kythe_release//:extract_kzip_typescript

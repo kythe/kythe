@@ -18,8 +18,12 @@ package beamio
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"strings"
 
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/riegeli"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/io/filesystem"
@@ -28,14 +32,56 @@ import (
 )
 
 func init() {
-	beam.RegisterFunction(readStream)
+	beam.RegisterFunction(readFile)
 }
 
-// ReadEntries reads a delimited stream of *spb.Entry messages into a
-// PCollection from the given file.  The file can be part of any filesystem
-// registered with the beam/io/filesystem package.
-func ReadEntries(s beam.Scope, file string) beam.PCollection {
-	return beam.ParDo(s, readStream, beam.Create(s, file))
+// ReadEntries reads a set of *spb.Entry messages into a PCollection from the
+// given file, or files stored in a directory.  The file can be part of any
+// filesystem registered with the beam/io/filesystem package and can either be a
+// delimited protobuf stream or a Riegeli file.
+func ReadEntries(ctx context.Context, s beam.Scope, fileOrDir string) (beam.PCollection, error) {
+	if strings.HasSuffix(fileOrDir, "/") {
+		var errv beam.PCollection
+		fs, err := filesystem.New(ctx, fileOrDir)
+		if err != nil {
+			return errv, err
+		}
+		defer fs.Close()
+		files, err := fs.List(ctx, fileOrDir+"*")
+		if err != nil {
+			return errv, err
+		}
+		if len(files) == 0 {
+			return errv, fmt.Errorf("no entries found in %s - maybe mistyped path?", fileOrDir)
+		}
+		return beam.ParDo(s, readFile, beam.CreateList(s, files)), nil
+	}
+	return beam.ParDo(s, readFile, beam.Create(s, fileOrDir)), nil
+}
+
+func readFile(ctx context.Context, file string, emit func(*spb.Entry)) error {
+	if isRiegeli(ctx, file) {
+		return readRiegeli(ctx, file, emit)
+	}
+	return readStream(ctx, file, emit)
+}
+
+func isRiegeli(ctx context.Context, file string) bool {
+	fs, err := filesystem.New(ctx, file)
+	if err != nil {
+		return false
+	}
+	defer fs.Close()
+	f, err := fs.OpenRead(ctx, file)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	rd := riegeli.NewReader(f)
+	if _, err := rd.RecordsMetadata(); err != nil {
+		return false
+	}
+	return true
 }
 
 func readStream(ctx context.Context, filename string, emit func(*spb.Entry)) error {
@@ -52,4 +98,28 @@ func readStream(ctx context.Context, filename string, emit func(*spb.Entry)) err
 		emit(e)
 	}
 	return fs.Close()
+}
+
+func readRiegeli(ctx context.Context, filename string, emit func(*spb.Entry)) error {
+	fs, err := filesystem.New(ctx, filename)
+	if err != nil {
+		return err
+	}
+	defer fs.Close()
+	f, err := fs.OpenRead(ctx, filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	rd := riegeli.NewReader(f)
+	for {
+		var e spb.Entry
+		if err := rd.NextProto(&e); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		emit(&e)
+	}
 }

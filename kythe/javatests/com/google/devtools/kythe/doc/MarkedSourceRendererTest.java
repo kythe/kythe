@@ -71,7 +71,8 @@ public class MarkedSourceRendererTest extends TestCase {
     MarkedSource markedSource = input.build();
     assertThat(MarkedSourceRenderer.renderSignature(makeLink, markedSource).getSafeHtmlString())
         .isEqualTo(
-            "<span>void H(<a href=\"a\">String </a>message, <a href=\"b\">Throwable </a>cause)</span>");
+            "<span>void H(<a href=\"a\">String </a>message, <a href=\"b\">Throwable"
+                + " </a>cause)</span>");
   }
 
   public void testRenderingLists() throws IOException {

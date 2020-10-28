@@ -1,0 +1,13 @@
+{
+  "extractions": [
+    {
+      "build_system": "GRADLE",
+      "targets": [
+        {
+          "path": "othersubdir/build.gradle"
+        }
+      ]
+    }
+  ]
+}
+

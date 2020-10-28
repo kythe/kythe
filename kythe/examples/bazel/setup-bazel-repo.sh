@@ -20,22 +20,17 @@ EXAMPLE_ROOT="$(realpath -s "$(dirname "$0")")"
 
 usage() {
   cat <<EOF
-Usage: setup-bazel-repo.sh <bazel-root> [kythe-release-root]
+Usage: setup-bazel-repo.sh <bazel_root>
 
-Utility script to setup the Bazel repository to work with the kythe-index.sh script.  The assumed
-Kythe release root is /opt/kythe if unspecified.
+Utility script to setup the Bazel repository to work with the kythe-index.sh script.
 EOF
 }
 
 BAZEL_ROOT=
-KYTHE_RELEASE=/opt/kythe
 
 case $# in
   1)
     BAZEL_ROOT="$1" ;;
-  2)
-    BAZEL_ROOT="$1"
-    KYTHE_RELEASE="$(realpath -s $2)" ;;
   *)
     usage
     exit 1 ;;
@@ -43,24 +38,13 @@ esac
 
 cd "$BAZEL_ROOT"
 
-if [[ -d third_party/kythe ]]; then
+if grep -q 'Kythe extraction setup' WORKSPACE; then
   echo "ERROR: $BAZEL_ROOT looks setup already" >&2
-  echo "Maybe run \`git clean -fd\` in $BAZEL_ROOT?" >&2
+  echo "Maybe run \`git checkout . && git clean -fd\` in $BAZEL_ROOT?" >&2
   exit 1
 fi
 
-if [[ ! -d "$KYTHE_RELEASE/indexers" ]]; then
-  echo "ERROR: $KYTHE_RELEASE doesn't look like a Kythe release" >&2
-  exit 1
-elif [[ ! -x "$KYTHE_RELEASE/extractors/bazel_cxx_extractor" ]]; then
-  echo "ERROR: the Kythe release at $KYTHE_RELEASE is too old; please update it" >&2
-  exit 1
-fi
+# TODO(#3272): Kythe's protobuf dependency conflicts with Bazel's vendoring
+sed -i 's/"com_google_protobuf"/"com_google_protobuf_vendored"/' WORKSPACE
 
-mkdir third_party/kythe
-cp "$KYTHE_RELEASE/LICENSE" "$KYTHE_RELEASE"/extractors/bazel_* third_party/kythe/
-cp "$EXAMPLE_ROOT/BUILD.third_party" third_party/kythe/BUILD
-
-mkdir src/data
-cp "$EXAMPLE_ROOT/BUILD.src.data" src/data/BUILD
-cp "$EXAMPLE_ROOT/kythe_config.json" src/data/
+cat "${EXAMPLE_ROOT}/bazel.WORKSPACE" >> WORKSPACE

@@ -16,10 +16,11 @@
 
 // Package inmemory provides a in-memory implementation of graphstore.Service
 // and keyvalue.DB.
-package inmemory
+package inmemory // import "kythe.io/kythe/go/storage/inmemory"
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -29,7 +30,7 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/util/compare"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -159,6 +160,17 @@ func (p *kvPrefixIterator) Next() (key, val []byte, err error) {
 	return []byte(k), []byte(v), nil
 }
 
+// Seek implements part of the keyvalue.Iterator interface.
+func (p *kvPrefixIterator) Seek(k []byte) error {
+	s := string(k)
+	i := sort.Search(len(p.db.keys), func(i int) bool { return strings.Compare(p.db.keys[i], s) >= 0 })
+	if i < p.idx {
+		return fmt.Errorf("given key before current iterator position: %q", k)
+	}
+	p.idx = i
+	return nil
+}
+
 // Close implements part of the keyvalue.Iterator interface.
 func (p *kvPrefixIterator) Close() error {
 	p.db.mu.RUnlock()
@@ -169,7 +181,7 @@ func (p *kvPrefixIterator) Close() error {
 func (k *KeyValueDB) ScanPrefix(ctx context.Context, prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
 	k.mu.RLock()
 	p := string(prefix)
-	i := sort.Search(len(k.keys), func(i int) bool { return strings.HasPrefix(k.keys[i], p) })
+	i := sort.Search(len(k.keys), func(i int) bool { return strings.Compare(k.keys[i], p) >= 0 })
 	return &kvPrefixIterator{k, p, i}, nil
 }
 
@@ -189,6 +201,17 @@ func (p *kvRangeIterator) Next() (key, val []byte, err error) {
 	v := p.db.db[k]
 	p.idx++
 	return []byte(k), []byte(v), nil
+}
+
+// Seek implements part of the keyvalue.Iterator interface.
+func (p *kvRangeIterator) Seek(k []byte) error {
+	s := string(k)
+	i := sort.Search(len(p.db.keys), func(i int) bool { return strings.Compare(p.db.keys[i], s) >= 0 })
+	if i < p.idx {
+		return fmt.Errorf("given key before current iterator position: %q", k)
+	}
+	p.idx = i
+	return nil
 }
 
 // Close implements part of the keyvalue.Iterator interface.

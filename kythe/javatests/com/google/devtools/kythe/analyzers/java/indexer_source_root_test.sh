@@ -1,5 +1,5 @@
-#!/bin/bash -e
-set -o pipefail
+#!/bin/bash
+set -eo pipefail
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,13 @@ set -o pipefail
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This script checks for the existance of https://kythe.io/phabricator/T70
+# This script checks for the existance of #818
 
 : ${indexer?:missing indexer}
 : ${entrystream?:missing entrystream}
 test_kindex="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/corner_case.kindex"
 
-# This line removes the precondition for T70 (allowing the test to pass).
+# This line removes the precondition for #818 (allowing the test to pass).
 # find -L -name KytheEntrySets.java -delete
 
 # This will emit an error if https://kythe.io/phabricator/T70 is not solved.

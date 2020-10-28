@@ -21,6 +21,7 @@
 #include "absl/types/optional.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Stmt.h"
 #include "indexed_parent_map.h"
 
 namespace kythe {
@@ -95,19 +96,28 @@ class RootTraversal {
   // the node indicated in `decl`.
   explicit RootTraversal(const IndexedParentMap* parent_map,
                          const clang::Decl* decl)
-      : start_(parent_map, decl) {}
+      : start_(Start(parent_map, decl)) {}
 
   // Constructs a RootTraversal range over `parent_map` beginning at
   // the node indicated in `stmt`.
   explicit RootTraversal(const IndexedParentMap* parent_map,
                          const clang::Stmt* stmt)
-      : start_(parent_map,
-               clang::ast_type_traits::DynTypedNode::create(*stmt)) {}
+      : start_(Start(parent_map, stmt)) {}
 
   iterator begin() const { return start_; }
   iterator end() const { return iterator(); }
 
  private:
+  static iterator Start(const IndexedParentMap* parent_map,
+                        const clang::Decl* decl) {
+    return decl ? iterator(parent_map, decl) : iterator();
+  }
+  static iterator Start(const IndexedParentMap* parent_map,
+                        const clang::Stmt* stmt) {
+    return stmt ? iterator(parent_map,
+                           clang::ast_type_traits::DynTypedNode::create(*stmt))
+                : iterator();
+  }
   iterator start_;
 };
 

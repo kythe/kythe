@@ -25,6 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
+import com.google.devtools.kythe.proto.CorpusPath;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URLDecoder;
@@ -47,6 +48,10 @@ public class KytheURI implements Serializable {
   private static final String SAFE_CHARS = ".-_~";
   private static final Escaper PATH_ESCAPER = new PercentEscaper(SAFE_CHARS + "/", false);
   private static final Escaper ALL_ESCAPER = new PercentEscaper(SAFE_CHARS, false);
+  private static final Splitter SIGNATURE_SPLITTER = Splitter.on('#');
+  private static final Splitter.MapSplitter PARAMS_SPLITTER =
+      Splitter.on('?').withKeyValueSeparator("=");
+  private static final Splitter PATH_SPLITTER = Splitter.on('/');
 
   private final VName vName;
 
@@ -70,6 +75,16 @@ public class KytheURI implements Serializable {
   /** Unpacks a {@link VName} into a new {@link KytheURI}. */
   public KytheURI(VName vName) {
     this.vName = vName;
+  }
+
+  /** Unpacks a {@link CorpusPath} into a new {@link KytheURI}. */
+  public KytheURI(CorpusPath cp) {
+    this(
+        VName.newBuilder()
+            .setCorpus(cp.getCorpus())
+            .setRoot(cp.getRoot())
+            .setPath(cp.getPath())
+            .build());
   }
 
   /** Returns the {@link KytheURI}'s signature. */
@@ -143,6 +158,11 @@ public class KytheURI implements Serializable {
     return new KytheURI(vName).toString();
   }
 
+  /** Returns an equivalent Kythe ticket for the given {@link CorpusPath}. */
+  public static String asString(CorpusPath cp) {
+    return new KytheURI(cp).toString();
+  }
+
   /** Parses the given string to produce a new {@link KytheURI}. */
   public static KytheURI parse(String str) {
     checkNotNull(str, "str must be non-null");
@@ -164,7 +184,7 @@ public class KytheURI implements Serializable {
     String lang = null;
 
     // Split corpus/attributes from signature.
-    Iterator<String> parts = Splitter.on('#').split(str).iterator();
+    Iterator<String> parts = SIGNATURE_SPLITTER.split(str).iterator();
     String head = parts.next();
     if (parts.hasNext()) {
       signature = parts.next();
@@ -184,8 +204,7 @@ public class KytheURI implements Serializable {
     // If there are any attributes, parse them.  We allow valid attributes to
     // occur in any order, even if it is not canonical.
     if (!head.isEmpty()) {
-      Map<String, String> params =
-          Splitter.on('?').withKeyValueSeparator("=").split(head.substring(1));
+      Map<String, String> params = PARAMS_SPLITTER.split(head.substring(1));
 
       for (Map.Entry<String, String> e : params.entrySet()) {
         switch (e.getKey()) {
@@ -207,6 +226,11 @@ public class KytheURI implements Serializable {
 
     return new KytheURI(
         decode(signature), decode(corpus), decode(root), decode(path), decode(lang));
+  }
+
+  /** Parses the given Kythe ticket string to produce a new {@link VName}. */
+  public static VName parseVName(String ticket) {
+    return parse(ticket).toVName();
   }
 
   private static String decode(String str) {
@@ -274,7 +298,10 @@ public class KytheURI implements Serializable {
    */
   private static String cleanPath(String path) {
     ArrayList<String> clean = new ArrayList<>();
-    for (String part : Splitter.on('/').split(path)) {
+    if (!path.isEmpty() && path.charAt(0) == '/') {
+      clean.add("");
+    }
+    for (String part : PATH_SPLITTER.split(path)) {
       if (part.isEmpty() || part.equals(".")) {
         continue; // skip empty path components and "here" markers.
       } else if (part.equals("..") && !clean.isEmpty()) {

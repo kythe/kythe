@@ -17,6 +17,8 @@
 package riegeli
 
 import (
+	"fmt"
+
 	"github.com/minio/highwayhash"
 )
 
@@ -76,6 +78,7 @@ const (
 	noCompression     compressionType = 0
 	brotliCompression compressionType = 0x62
 	zstdCompression   compressionType = 0x7a
+	snappyCompression compressionType = 0x73
 )
 
 // A recordChunk is the standard chunk type for user records in a Riegeli file.
@@ -96,12 +99,14 @@ const (
 )
 
 func interveningBlockHeaders(pos, size int) int {
+	if pos%blockSize == blockHeaderSize {
+		panic(fmt.Errorf("invalid chunk boundary: %d", pos))
+	}
 	return (size + (pos+usableBlockSize-1)%blockSize) / usableBlockSize
 }
 
 func paddingSize(pos int, h *chunkHeader) int {
 	size := chunkHeaderSize + int(h.DataSize)
-	size += interveningBlockHeaders(pos, size)
 	if int(h.NumRecords) <= size {
 		return 0
 	}

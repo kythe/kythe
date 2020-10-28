@@ -1,12 +1,12 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 shell_tool_test(
     name = "indexer_test",
-    data = ["//kythe/testdata:test.kindex"],
+    data = ["//kythe/testdata:test.kzip"],
     scriptfile = "indexer_test.sh",
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
-        "indexpack": "//kythe/go/platform/tools/indexpack",
         "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
     },
 )
@@ -21,12 +21,12 @@ shell_tool_test(
     },
 )
 
-# See https://kythe.io/phabricator/T70
+# See #818
 shell_tool_test(
     name = "indexer_source_root_test",
     data = [
         "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex",
-        # Having the following sources in the Java indexer's source path caused T70.  The
+        # Having the following sources in the Java indexer's source path caused #818.  The
         # indexer read the .java file instead of the .class file found in corner_case.kindex,
         # causing javac to compile these sources without their depedencies (the transitive
         # dependencies of corner_case.kindex's compilation).
@@ -48,7 +48,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 

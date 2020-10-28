@@ -25,19 +25,23 @@
 #   https://secure.phabricator.com/book/phabricator/article/arcanist_lint_script_and_regex/
 
 readonly file="$1"
+readonly fullpath="$PWD/$file"
 readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
 case $file in
-  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum)
+  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|*BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum|*bazelrc|*.yml|.bazel*version|*.lock)
     ;; # skip copyright checks
   *)
-    if ! grep -q 'Copyright 201[4-9] The Kythe Authors. All rights reserved.' "$file"; then
+    if ! grep -q 'Copyright 20[12][0-9] The Kythe Authors. All rights reserved.' "$file"; then
       echo 'copyright header::error:1 File missing copyright header'
     fi ;;
 esac
 
-case $name in
+# Ensure consistent code style
+case $file in
+  */testdata/*)
+    ;; # skip style checks over testdata
   BUILD|*.BUILD|*.bzl)
     if command -v buildifier &>/dev/null; then
       buildifier --mode=check "$file" | sed 's/^/buildifier::error:1 /'
@@ -46,6 +50,27 @@ case $name in
     if command -v shellcheck &>/dev/null && command -v jq &>/dev/null; then
       shellcheck -f json "$file" | \
         jq -r '.[] | "shellcheck::" + (if .level == "info" then "advice" else .level end) + ":" + (.line | tostring) + " " + .message'
+    fi ;;
+  *.java)
+    if command -v google-java-format &>/dev/null; then
+      google-java-format -n "$file" | sed 's/^/google-java-format::error:1 /'
+    fi ;;
+  *.go)
+    if command -v jq &>/dev/null && command -v staticcheck &>/dev/null; then
+      staticcheck -f json "./$dir" | jq -r --arg file "$fullpath" \
+        'select(.location.file == $file) | "staticcheck::" + .severity + ":" + (.location.line | tostring) + " " + (.message | gsub("\n"; " "))'
+    fi
+    if command -v gofmt &>/dev/null; then
+      gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
+    fi ;;
+  *.h|*.cc|*.c|*.proto|*.js)
+    cf="$(command -v clang-format-7 clang-format 2>/dev/null | head -n1)"
+    if [[ -n "$cf" ]]; then
+      diff \
+        --unchanged-line-format='' \
+        --new-line-format='clang-format::error:%dn -%L' \
+        --old-line-format='clang-format::error:%dn +%L' \
+        <("$cf" --style=file "$file") "$file" || true
     fi ;;
 esac
 

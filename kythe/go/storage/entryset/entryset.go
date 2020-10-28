@@ -56,7 +56,7 @@
 //
 // When rendered in wire format, the protobuf encoding is considerably more
 // compact than a naive entry stream.
-package entryset
+package entryset // import "kythe.io/kythe/go/storage/entryset"
 
 import (
 	"fmt"
@@ -79,8 +79,8 @@ type Set struct {
 
 	symid map[string]id
 	nodes map[node]nid
-	facts map[nid]map[fact]bool
-	edges map[nid]map[edge]bool
+	facts map[nid]map[fact]struct{}
+	edges map[nid]map[edge]struct{}
 	canon bool // true if this set is canonicalized
 	opts  *Options
 
@@ -109,8 +109,8 @@ func New(opts *Options) *Set {
 	s := &Set{
 		symid: make(map[string]id),
 		nodes: make(map[node]nid),
-		facts: make(map[nid]map[fact]bool),
-		edges: make(map[nid]map[edge]bool),
+		facts: make(map[nid]map[fact]struct{}),
+		edges: make(map[nid]map[edge]struct{}),
 		opts:  opts,
 	}
 	s.enter("") // pre-assign "" as ID 0
@@ -561,7 +561,7 @@ func (f fact) compare(o fact) int {
 }
 
 // sortedFacts unpacks the keys of m and returns them canonically ordered.
-func sortedFacts(m map[fact]bool) []fact {
+func sortedFacts(m map[fact]struct{}) []fact {
 	facts := make([]fact, 0, len(m))
 	for f := range m {
 		facts = append(facts, f)
@@ -583,7 +583,7 @@ func (e edge) compare(o edge) int {
 }
 
 // sortedEdges unpacks the keys of m and returns them canonically ordered.
-func sortedEdges(m map[edge]bool) []edge {
+func sortedEdges(m map[edge]struct{}) []edge {
 	edges := make([]edge, 0, len(m))
 	for e := range m {
 		edges = append(edges, e)
@@ -712,10 +712,10 @@ func (s *Set) ticket(n node) string {
 // addFact adds f as a fact related to n.
 func (s *Set) addFact(n nid, f fact) {
 	if s.facts[n] == nil {
-		s.facts[n] = map[fact]bool{f: true}
+		s.facts[n] = map[fact]struct{}{f: struct{}{}}
 		s.canon = false
-	} else if !s.facts[n][f] {
-		s.facts[n][f] = true
+	} else if _, ok := s.facts[n][f]; !ok {
+		s.facts[n][f] = struct{}{}
 		s.canon = false
 	}
 }
@@ -723,10 +723,10 @@ func (s *Set) addFact(n nid, f fact) {
 // addEdge adds e as an outbound edges from n.
 func (s *Set) addEdge(n nid, e edge) {
 	if s.edges[n] == nil {
-		s.edges[n] = map[edge]bool{e: true}
+		s.edges[n] = map[edge]struct{}{e: struct{}{}}
 		s.canon = false
-	} else if !s.edges[n][e] {
-		s.edges[n][e] = true
+	} else if _, ok := s.edges[n][e]; !ok {
+		s.edges[n][e] = struct{}{}
 		s.canon = false
 	}
 }

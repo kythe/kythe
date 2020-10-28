@@ -1,3 +1,5 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 # TODO(fromberger): The baseline proto_library rule does not have a hook to
@@ -36,8 +38,10 @@ cc_binary(
     ],
     deps = [
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/common/indexing:caching_output",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
         "@com_google_protobuf//:cc_wkt_protos",
     ],
 )

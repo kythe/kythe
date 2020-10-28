@@ -25,6 +25,7 @@ import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JarDetails;
@@ -93,11 +94,10 @@ public class JvmExtractor {
     JarDetails.Builder jarDetails = JarDetails.newBuilder();
     for (Path path : options.jarOrClassFiles) {
       compilation.addArgument(path.toString());
-      compilation.addSourceFile(path.toString());
       if (path.toString().endsWith(JAR_FILE_EXT)) {
         VName jarVName = ExtractorUtils.lookupVName(fileVNames, relativizer, path.toString());
         int jarIndex = jarDetails.getJarCount();
-        JarDetails.Jar.Builder jar = jarDetails.addJarBuilder().setVName(jarVName);
+        jarDetails.addJarBuilder().setVName(jarVName);
         List<FileData> jarContents = new ArrayList<>();
         for (FileData file : extractClassFiles(path)) {
           jarContents.add(file);
@@ -109,11 +109,13 @@ public class JvmExtractor {
                 .setValue(
                     JarEntryDetails.newBuilder().setJarContainer(jarIndex).build().toByteString())
                 .build();
-        compilation.addAllRequiredInput(
-            ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents)
-                .stream()
+        List<FileInput> inputs =
+            ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents).stream()
                 .map(i -> i.toBuilder().addDetails(jarEntryDetails).build())
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+        compilation.addAllRequiredInput(inputs);
+        compilation.addAllSourceFile(
+            inputs.stream().map(i -> i.getVName().getPath()).collect(Collectors.toList()));
       } else {
         classFiles.add(path.toString());
       }
@@ -176,22 +178,19 @@ public class JvmExtractor {
    */
   public static class Options {
     @Parameter(
-      names = {"--help", "-h"},
-      description = "Help requested",
-      help = true
-    )
+        names = {"--help", "-h"},
+        description = "Help requested",
+        help = true)
     public boolean help;
 
     @Parameter(
-      names = "--max_required_inputs",
-      description = "Maximum allowed number of required_inputs per CompilationUnit"
-    )
+        names = "--max_required_inputs",
+        description = "Maximum allowed number of required_inputs per CompilationUnit")
     public int maxRequiredInputs = 1024 * 16;
 
     @Parameter(
-      names = "--max_total_file_size",
-      description = "Maximum allowed total size (bytes) of all input files per CompilationUnit"
-    )
+        names = "--max_total_file_size",
+        description = "Maximum allowed total size (bytes) of all input files per CompilationUnit")
     public long maxTotalFileSize = 1024 * 1024 * 64;
 
     @Parameter(names = "--build_target", description = "Name of build target being extracted")
@@ -201,9 +200,8 @@ public class JvmExtractor {
     public String defaultCorpus = System.getenv("KYTHE_CORPUS");
 
     @Parameter(
-      names = "--root_directory",
-      description = "Root directory for compilation (defaults to $PWD)"
-    )
+        names = "--root_directory",
+        description = "Root directory for compilation (defaults to $PWD)")
     public Path rootDirectory =
         Paths.get(Optional.ofNullable(System.getenv("KYTHE_ROOT_DIRECTORY")).orElse(""));
 

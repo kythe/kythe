@@ -1,4 +1,9 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
+
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 
 cc_library(
     name = "output",
@@ -9,16 +14,14 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
-    visibility = [
-        "//visibility:public",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
     ],
@@ -28,50 +31,23 @@ cc_library(
     name = "caching_output",
     srcs = [
         "KytheCachingOutput.cc",
+        "MemcachedHashCache.cc",
     ],
     hdrs = [
         "KytheCachingOutput.h",
+        "MemcachedHashCache.h",
     ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":output",
         "//external:libmemcached",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "//third_party/llvm",
         "@boringssl//:crypto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
-    name = "lib",
-    srcs = [
-        "KytheClaimClient.cc",
-    ],
-    hdrs = [
-        "KytheClaimClient.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":caching_output",
-        "//external:libmemcached",
-        "//kythe/cxx/common:index_pack",
-        "//kythe/cxx/common:json_proto",
-        "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:common_cc_proto",
-        "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
     ],
@@ -82,29 +58,5 @@ cc_library(
     hdrs = [
         "RecordingOutputStream.h",
     ],
-    deps = [
-        ":lib",
-    ],
-)
-
-cc_library(
-    name = "frontend",
-    srcs = [
-        "frontend.cc",
-    ],
-    hdrs = [
-        "frontend.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        "//kythe/cxx/common:kzip_reader",
-        "//kythe/proto:buildinfo_cc_proto",
-        "//kythe/proto:claim_cc_proto",
-        "@com_google_absl//absl/memory",
-    ],
+    deps = [":output"],
 )

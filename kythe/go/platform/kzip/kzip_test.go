@@ -22,21 +22,37 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"kythe.io/kythe/go/test/testutil"
+
+	"google.golang.org/protobuf/proto"
 	"kythe.io/kythe/go/platform/kzip"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-func TestRoundTrip(t *testing.T) {
+func TestRoundTrip_Proto(t *testing.T) {
+	testRoundTrip(kzip.EncodingProto, t)
+}
+
+func TestRoundTrip_All(t *testing.T) {
+	testRoundTrip(kzip.EncodingAll, t)
+}
+
+func TestRoundTrip_JSON(t *testing.T) {
+	testRoundTrip(kzip.EncodingJSON, t)
+}
+
+func testRoundTrip(encoding kzip.Encoding, t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 
 	// Create a kzip with some interesting data.
-	w, err := kzip.NewWriter(buf)
+	w, err := kzip.NewWriter(buf, kzip.WithEncoding(encoding))
 	if err != nil {
 		t.Fatalf("NewWriter: unexpected error: %v", err)
 	}
@@ -267,5 +283,116 @@ func TestScanHelper(t *testing.T) {
 	}
 	if numUnits != 1 {
 		t.Errorf("Scan found %d units, want 1", numUnits)
+	}
+}
+
+func TestScanError(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	w, err := kzip.NewWriter(buf)
+	if err != nil {
+		t.Fatalf("Creating kzip writer: %v", err)
+	}
+
+	const fileData = "fweep"
+	fdigest, err := w.AddFile(strings.NewReader(fileData))
+	if err != nil {
+		t.Fatalf("AddFile failed: %v", err)
+	}
+
+	if _, err := w.AddUnit(&apb.CompilationUnit{
+		OutputKey: fdigest,
+	}, &apb.IndexedCompilation_Index{
+		Revisions: []string{"alphawozzle"},
+	}); err != nil {
+		t.Fatalf("AddUnit failed: %v", err)
+	}
+
+	if _, err := w.AddUnit(&apb.CompilationUnit{
+		OutputKey: fdigest + "2",
+	}, &apb.IndexedCompilation_Index{
+		Revisions: []string{"alphawozzle"},
+	}); err != nil {
+		t.Fatalf("AddUnit failed: %v", err)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Closing kzip: %v", err)
+	}
+
+	expected := errors.New("expected error")
+	var unitCount int
+	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(r *kzip.Reader, unit *kzip.Unit) error {
+		unitCount++
+		return expected
+	}); err == nil {
+		t.Errorf("Scan succeeded unexpectedly")
+	} else if err != expected {
+		t.Errorf("Scan failed unexpectedly: %v", err)
+	} else if unitCount != 1 {
+		t.Errorf("Scanned %d units; expected: 1", unitCount)
+	}
+}
+
+func TestScanConcurrency(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	w, err := kzip.NewWriter(buf)
+	if err != nil {
+		t.Fatalf("Creating kzip writer: %v", err)
+	}
+
+	const fileData = "fweep"
+	fdigest, err := w.AddFile(strings.NewReader(fileData))
+	if err != nil {
+		t.Fatalf("AddFile failed: %v", err)
+	}
+
+	const N = 128
+	for i := 0; i < N; i++ {
+		if _, err := w.AddUnit(&apb.CompilationUnit{
+			OutputKey: fmt.Sprintf("%s%d", fdigest, i),
+		}, &apb.IndexedCompilation_Index{
+			Revisions: []string{"alphawozzle"},
+		}); err != nil {
+			t.Fatalf("AddUnit %d failed: %v", i, err)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Closing kzip: %v", err)
+	}
+
+	var numUnits int
+	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(r *kzip.Reader, unit *kzip.Unit) error {
+		numUnits++
+		return nil
+	}, kzip.ReadConcurrency(16)); err != nil {
+		t.Errorf("Scan failed: %v", err)
+	}
+	if numUnits != N {
+		t.Errorf("Scan found %d units, want %d", numUnits, N)
+	}
+}
+
+const testDataDir = "../../../testdata/platform"
+
+func TestMissingJSONUnitFails(t *testing.T) {
+	b, err := ioutil.ReadFile(testutil.TestFilePath(t, filepath.Join(testDataDir, "missing-unit.kzip")))
+	if err != nil {
+		t.Fatalf("Unable to read test file missing-unit.kzip: %s", err)
+	}
+	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
+		t.Errorf("Unexpected error: %s", err)
+	}
+}
+
+func TestMissingProtoUnitFails(t *testing.T) {
+	b, err := ioutil.ReadFile(testutil.TestFilePath(t, filepath.Join(testDataDir, "missing-pbunit.kzip")))
+	if err != nil {
+		t.Fatalf("Unable to read test file missing-pbunit.kzip: %s", err)
+	}
+	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
+		t.Errorf("Unexpected error: %s", err)
 	}
 }

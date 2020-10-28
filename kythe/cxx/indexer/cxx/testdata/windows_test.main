@@ -1,0 +1,5 @@
+content: "#include \"inc/test.h\"\nHeader* header;\n#ifndef _MSC_VER\n#error This isn't clang-cl.\n#endif\n"
+info {
+  path: "../../src/main/main.cc"
+  digest: "uncheckedcc"
+}

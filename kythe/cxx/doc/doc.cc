@@ -20,11 +20,17 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <string>
+
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/memory/memory.h"
-#include "gflags/gflags.h"
+#include "absl/strings/str_format.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
+#include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/common/schema/edges.h"
@@ -34,17 +40,19 @@
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 #include "kythe/cxx/doc/markup_handler.h"
 
-DEFINE_string(xrefs, "http://localhost:8080", "Base URI for xrefs service");
-DEFINE_string(corpus, "test", "Default corpus to use");
-DEFINE_string(path, "",
-              "Look up this path in the xrefs service and process all "
-              "documented nodes inside");
-DEFINE_string(save_response, "",
-              "Save the initial documentation response to this file as an "
-              "ASCII protobuf.");
-DEFINE_string(css, "", "Include this stylesheet path in the resulting HTML.");
-DEFINE_bool(common_signatures, false,
-            "Render the MarkedSource proto from standard in.");
+ABSL_FLAG(std::string, xrefs, "http://localhost:8080",
+          "Base URI for xrefs service");
+ABSL_FLAG(std::string, corpus, "test", "Default corpus to use");
+ABSL_FLAG(std::string, path, "",
+          "Look up this path in the xrefs service and process all "
+          "documented nodes inside");
+ABSL_FLAG(std::string, save_response, "",
+          "Save the initial documentation response to this file as an "
+          "ASCII protobuf.");
+ABSL_FLAG(std::string, css, "",
+          "Include this stylesheet path in the resulting HTML.");
+ABSL_FLAG(bool, common_signatures, false,
+          "Render the MarkedSource proto from standard in.");
 
 namespace kythe {
 namespace {
@@ -64,9 +72,10 @@ constexpr char kDocFooter[] = R"(
 
 int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   ::fputs(kDocHeaderPrefix, stdout);
-  if (!FLAGS_css.empty()) {
-    ::fprintf(stdout, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
-              FLAGS_css.c_str());
+  if (!absl::GetFlag(FLAGS_css).empty()) {
+    absl::FPrintF(stdout,
+                  "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
+                  absl::GetFlag(FLAGS_css));
   }
   ::fputs(kDocHeaderSuffix, stdout);
   DocumentHtmlRendererOptions options(doc_reply);
@@ -106,16 +115,16 @@ int RenderMarkedSourceFromStdin() {
   google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
   CHECK(
       google::protobuf::TextFormat::Parse(&file_input_stream, &marked_source));
-  ::printf("      RenderSimpleIdentifier: \"%s\"\n",
-           RenderSimpleIdentifier(marked_source).c_str());
+  absl::PrintF("      RenderSimpleIdentifier: \"%s\"\n",
+               RenderSimpleIdentifier(marked_source));
   auto params = RenderSimpleParams(marked_source);
   for (const auto& param : params) {
-    ::printf("          RenderSimpleParams: \"%s\"\n", param.c_str());
+    absl::PrintF("          RenderSimpleParams: \"%s\"\n", param);
   }
-  ::printf("RenderSimpleQualifiedName-ID: \"%s\"\n",
-           RenderSimpleQualifiedName(marked_source, false).c_str());
-  ::printf("RenderSimpleQualifiedName+ID: \"%s\"\n",
-           RenderSimpleQualifiedName(marked_source, true).c_str());
+  absl::PrintF("RenderSimpleQualifiedName-ID: \"%s\"\n",
+               RenderSimpleQualifiedName(marked_source, false));
+  absl::PrintF("RenderSimpleQualifiedName+ID: \"%s\"\n",
+               RenderSimpleQualifiedName(marked_source, true));
   return 0;
 }
 
@@ -133,25 +142,28 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
       doc_request.add_ticket(reference.target_ticket());
     }
   }
-  fprintf(stderr, "Looking for %d tickets\n", doc_request.ticket_size());
+  absl::FPrintF(stderr, "Looking for %d tickets\n", doc_request.ticket_size());
   CHECK(client->Documentation(doc_request, &doc_reply, &error)) << error;
-  if (!FLAGS_save_response.empty()) {
-    int saved =
-        open(FLAGS_save_response.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0640);
+  if (!absl::GetFlag(FLAGS_save_response).empty()) {
+    int saved = open(absl::GetFlag(FLAGS_save_response).c_str(),
+                     O_CREAT | O_TRUNC | O_WRONLY, 0640);
     if (saved < 0) {
-      fprintf(stderr, "Couldn't open %s\n", FLAGS_save_response.c_str());
+      absl::FPrintF(stderr, "Couldn't open %s\n",
+                    absl::GetFlag(FLAGS_save_response));
       return 1;
     }
     {
       google::protobuf::io::FileOutputStream outfile(saved);
       if (!google::protobuf::TextFormat::Print(doc_reply, &outfile)) {
-        fprintf(stderr, "Coudln't print to %s\n", FLAGS_save_response.c_str());
+        absl::FPrintF(stderr, "Coudln't print to %s\n",
+                      absl::GetFlag(FLAGS_save_response).c_str());
         close(saved);
         return 1;
       }
     }
     if (close(saved) < 0) {
-      fprintf(stderr, "Couldn't close %s\n", FLAGS_save_response.c_str());
+      absl::FPrintF(stderr, "Couldn't close %s\n",
+                    absl::GetFlag(FLAGS_save_response));
       return 1;
     }
   }
@@ -162,8 +174,8 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(R"(perform simple documentation formatting
+  kythe::InitializeProgram(argv[0]);
+  absl::SetProgramUsageMessage(R"(perform simple documentation formatting
 
 doc -corpus foo -file bar.cc
   Formats documentation for all nodes attached via defines/binding anchors to
@@ -175,25 +187,28 @@ doc -common_signatures
   Renders the text-format proto::common::MarkedSource message provided on standard
   input into several common forms.
 )");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_common_signatures) {
+  absl::ParseCommandLine(argc, argv);
+  if (absl::GetFlag(FLAGS_common_signatures)) {
     return kythe::RenderMarkedSourceFromStdin();
-  } else if (FLAGS_path.empty()) {
+  } else if (absl::GetFlag(FLAGS_path).empty()) {
     return kythe::DocumentNodesFromStdin();
   } else {
     kythe::JsonClient::InitNetwork();
     kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
-                                  FLAGS_xrefs);
-    auto ticket = kythe::URI::FromString(FLAGS_path);
+                                  absl::GetFlag(FLAGS_xrefs));
+    auto ticket = kythe::URI::FromString(absl::GetFlag(FLAGS_path));
     if (!ticket.first) {
       ticket = kythe::URI::FromString(
           "kythe://" +
-          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_corpus) +
+          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths,
+                           absl::GetFlag(FLAGS_corpus)) +
           "?path=" +
-          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_path));
+          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths,
+                           absl::GetFlag(FLAGS_path)));
     }
     if (!ticket.first) {
-      ::fprintf(stderr, "Couldn't parse URI %s\n", FLAGS_path.c_str());
+      absl::FPrintF(stderr, "Couldn't parse URI %s\n",
+                    absl::GetFlag(FLAGS_path));
       return 1;
     }
     return kythe::DocumentNodesFrom(&client, ticket.second.v_name());

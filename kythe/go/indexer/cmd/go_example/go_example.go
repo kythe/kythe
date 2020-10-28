@@ -31,10 +31,11 @@ import (
 
 	"kythe.io/kythe/go/extractors/golang"
 	"kythe.io/kythe/go/indexer"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -45,7 +46,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT,
+	flag.StringVar(&bc.GOROOT, "goroot", filepath.Join(filepath.Dir(os.Args[0]), "go_example.runfiles/go_sdk"),
 		"Use this directory as the root for Go library packages")
 
 	flag.Usage = func() {
@@ -72,15 +73,16 @@ func main() {
 	}
 
 	ctx := context.Background()
-	base, err := ioutil.TempDir("", "src")
+	base, err := ioutil.TempDir("", "go_example")
 	if err != nil {
 		log.Fatalf("Error creating temporary directory: %v", err)
 	}
 	defer os.RemoveAll(base) // best-effort
-	dir := filepath.Join(base, *importPath)
+	dir := filepath.Join(base, "src", *importPath)
 	if err := vfs.MkdirAll(ctx, dir, 0755); err != nil {
 		log.Fatalf("Error creating output directory: %v", err)
 	}
+	bc.GOPATH = base
 
 	for _, path := range flag.Args() {
 		if err := copyFile(ctx, path, dir); err != nil {
@@ -92,7 +94,7 @@ func main() {
 	if err := os.Chdir(base); err != nil {
 		log.Fatalf("Error changing directory to %q: %v", dir, err)
 	}
-	pkg, err := ext.ImportDir(*importPath)
+	pkgs, err := ext.Locate(*importPath)
 	if err != nil {
 		log.Fatalf("Error locating package: %v", err)
 	}
@@ -101,18 +103,20 @@ func main() {
 	}
 
 	rw := delimited.NewWriter(os.Stdout)
-	if err := pkg.EachUnit(ctx, func(unit *kindex.Compilation) error {
-		pi, err := indexer.Resolve(unit.Proto, unit, &indexer.ResolveOptions{
-			Info: indexer.XRefTypeInfo(),
-		})
-		if err != nil {
-			return err
+	for _, pkg := range pkgs {
+		if err := pkg.EachUnit(ctx, func(unit *apb.CompilationUnit, f analysis.Fetcher) error {
+			pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
+				Info: indexer.XRefTypeInfo(),
+			})
+			if err != nil {
+				return err
+			}
+			return pi.Emit(ctx, func(_ context.Context, entry *spb.Entry) error {
+				return rw.PutProto(entry)
+			}, nil)
+		}); err != nil {
+			log.Fatalf("Error indexing: %v", err)
 		}
-		return pi.Emit(ctx, func(_ context.Context, entry *spb.Entry) error {
-			return rw.PutProto(entry)
-		}, nil)
-	}); err != nil {
-		log.Fatalf("Error indexing: %v", err)
 	}
 }
 

@@ -1,4 +1,5 @@
-github: 'https://github.com/google/kythe'
+github: 'https://github.com/kythe/kythe'
 mailing_list: 'https://groups.google.com/forum/#!forum/kythe-dev'
-source_browser: 'https://github.com/google/kythe/blob/master'
-issue_tracker: 'https://github.com/google/kythe/issues'
+source_browser: 'https://github.com/kythe/kythe/blob/master'
+issue_tracker: 'https://github.com/kythe/kythe/issues'
+slack_channel: 'https://kythe-project.slack.com/archives/CF6FRM8EA'

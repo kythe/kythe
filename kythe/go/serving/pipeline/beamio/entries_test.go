@@ -17,16 +17,16 @@
 package beamio
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/compare"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
-	"github.com/google/go-cmp/cmp"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
@@ -66,7 +66,10 @@ func TestReadEntries(t *testing.T) {
 
 	p, s := beam.NewPipelineWithRoot()
 
-	coll := ReadEntries(s, f.Name())
+	coll, err := ReadEntries(context.Background(), s, f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var found []*spb.Entry
 	beam.ParDo(s, func(e *spb.Entry, emit func(*spb.Entry)) { found = append(found, e) }, coll)
@@ -75,16 +78,7 @@ func TestReadEntries(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(entries, found, ignoreProtoXXXFields); diff != "" {
+	if diff := compare.ProtoDiff(entries, found); diff != "" {
 		t.Fatalf("Diff found (-expected; +found):\n%s", diff)
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

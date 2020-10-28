@@ -48,10 +48,13 @@ import java.util.function.Function;
 /**
  * A class containing common utilities used by language extractors.
  *
- * This class is a bit of a mishmash. It includes helpers for:
- *  - dealing with Google 3 specific file paths
- *  - loading files into FileData
- *  - converting from byte[] to FileData
+ * <p>This class is a bit of a mishmash. It includes helpers for:
+ *
+ * <ul>
+ *   <li>dealing with Google 3 specific file paths
+ *   <li>loading files into FileData
+ *   <li>converting from byte[] to FileData
+ * </ul>
  */
 // TODO: Split this class by domain.
 public class ExtractorUtils {
@@ -63,15 +66,12 @@ public class ExtractorUtils {
    *
    * @param filePathToFileDatas map with file contents.
    * @return fully populated FileInput protos
-   * @throws ExtractionException
    */
   public static List<FileData> convertBytesToFileDatas(
-      final Map<String, byte[]> filePathToFileContents) throws ExtractionException {
+      final Map<String, byte[]> filePathToFileContents) {
     checkNotNull(filePathToFileContents);
 
-    return filePathToFileContents
-        .keySet()
-        .stream()
+    return filePathToFileContents.keySet().stream()
         .map(path -> createFileData(path, filePathToFileContents.get(path)))
         .collect(toCollection(ArrayList::new));
   }

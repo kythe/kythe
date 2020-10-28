@@ -17,7 +17,7 @@
 // cxx_extractor is meant to be a drop-in replacement for clang/gcc's frontend.
 // It collects all of the resources that clang would use to compile a single
 // source file (as determined by the command line arguments) and produces a
-// .kindex file.
+// .kzip file.
 //
 // We read environment variables KYTHE_CORPUS (to set the default corpus),
 // KYTHE_ROOT_DIRECTORY (to set the default root directory and to configure
@@ -36,21 +36,22 @@
 // compiler header files embedded into the extractor's executable will be
 // mapped to /kythe_builtins and used.
 
-#include "gflags/gflags.h"
-#include "google/protobuf/stubs/common.h"
-#include "kythe/cxx/common/language.h"
+#include <string>
+#include <vector>
 
-#include "cxx_extractor.h"
+#include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/init.h"
+#include "kythe/cxx/extractor/cxx_extractor.h"
+#include "kythe/cxx/extractor/language.h"
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  std::vector<std::string> args(argv, argv + argc);
+  kythe::InitializeProgram(argv[0]);
+
   kythe::ExtractorConfiguration config;
-  config.SetArgs(args);
+  config.SetArgs(std::vector<std::string>(argv, argv + argc));
   config.InitializeFromEnvironment();
-  config.Extract(kythe::supported_language::Language::kCpp);
+  bool success = config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
-  return 0;
+  return success ? 0 : 1;
 }

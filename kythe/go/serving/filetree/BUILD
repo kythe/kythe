@@ -7,6 +7,7 @@ go_library(
     srcs = ["filetree.go"],
     deps = [
         "//kythe/go/storage/table",
+        "//kythe/go/util/kytheuri",
         "//kythe/proto:filetree_go_proto",
         "//kythe/proto:serving_go_proto",
     ],

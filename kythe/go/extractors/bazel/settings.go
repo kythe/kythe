@@ -25,13 +25,15 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"kythe.io/kythe/go/util/vnameutil"
+
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 // Settings control the construction of an extractor config from common path
 // and name filtering settings.
 type Settings struct {
-	Corpus      string // the corpus label to assign (required)
+	Corpus      string // the corpus label to assign
 	Language    string // the language label to assign (required)
 	ExtraAction string // path of blaze.ExtraActionInfo file (required)
 	VNameRules  string // path of vnames.json file (optional)
@@ -103,8 +105,6 @@ Options:
 
 func (s *Settings) validate() error {
 	switch {
-	case s.Corpus == "":
-		return errors.New("you must provide a non-empty corpus label")
 	case s.Language == "":
 		return errors.New("you must provide a non-empty language label")
 	case s.ExtraAction == "":
@@ -133,7 +133,7 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 	pkg := PackageName(info.GetOwner())
 	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
-	rules, err := LoadRules(s.VNameRules)
+	rules, err := vnameutil.LoadRules(s.VNameRules)
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading rules: %v", err)
 	}

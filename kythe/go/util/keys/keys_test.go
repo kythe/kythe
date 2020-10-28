@@ -19,7 +19,7 @@ package keys
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"kythe.io/kythe/go/util/compare"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -45,7 +45,7 @@ func TestVName(t *testing.T) {
 		t.Errorf("Unexpected remaining key: %q", remaining)
 	}
 
-	if diff := cmp.Diff(v, &found); diff != "" {
+	if diff := compare.ProtoDiff(v, &found); diff != "" {
 		t.Fatalf("VName differences: (- expected; found +)\n%s", diff)
 	}
 }

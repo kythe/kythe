@@ -16,8 +16,9 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.devtools.kythe.util.schema.Schema;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Schema-defined Kythe node kinds. */
 public enum NodeKind {
@@ -67,9 +68,19 @@ public enum NodeKind {
     return kind;
   }
 
-  /** Returns the node's subkind Kythe GraphStore value (or {@code null}). */
+  /** Returns the node's subkind Kythe GraphStore value. */
   public final Optional<String> getSubkind() {
     return Optional.ofNullable(subkind);
+  }
+
+  /** Returns the node kind's proto enum value. */
+  public final com.google.devtools.kythe.proto.Schema.NodeKind getProtoNodeKind() {
+    return Schema.nodeKind(getKind());
+  }
+
+  /** Returns the node subkind's proto enum value. */
+  public final Optional<com.google.devtools.kythe.proto.Schema.Subkind> getProtoSubkind() {
+    return getSubkind().map(Schema::subkind);
   }
 
   @Override

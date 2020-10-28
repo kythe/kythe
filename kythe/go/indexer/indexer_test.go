@@ -182,26 +182,6 @@ func TestResolveErrors(t *testing.T) {
 	}
 }
 
-func TestImportPaths(t *testing.T) {
-	tests := []struct {
-		vname       *spb.VName
-		root, ipath string
-	}{
-		// A vname in the standard library corpus, with or without GOROOT set.
-		{&spb.VName{Corpus: "golang.org", Path: "foo/bar", Language: "go"}, "", "foo/bar"},
-		{&spb.VName{Corpus: "golang.org", Path: "foo/bar", Language: "go"}, "foo", "foo/bar"},
-		// A vname in some other corpus with the default GOROOT.
-		{&spb.VName{Corpus: "whatever.io", Path: "alpha/bravo.a"}, "", "whatever.io/alpha/bravo"},
-		// A vname in a nonstandard GOROOT of another corpus.
-		{&spb.VName{Corpus: "foo.com", Path: "odd/duck/pkg/linux_amd64/io/ioutil.a"}, "odd/duck", "io/ioutil"},
-	}
-	for _, test := range tests {
-		if got := vnameToImport(test.vname, test.root); got != test.ipath {
-			t.Errorf("vnameToImport(%v, %q): got %q, want %q", test.vname, test.root, got, test.ipath)
-		}
-	}
-}
-
 func TestSpan(t *testing.T) {
 	const input = `package main
 
@@ -271,25 +251,25 @@ func TestSink(t *testing.T) {
 	}
 
 	// Verify that the entries we push into the sink are preserved in encoding.
-	him := &spb.VName{Language: "peeps", Signature: "him"}
-	her := &spb.VName{Language: "peeps", Signature: "her"}
+	them := &spb.VName{Language: "peeps", Signature: "him"}
+	they := &spb.VName{Language: "peeps", Signature: "her"}
 	ctx := context.Background()
-	sink.writeFact(ctx, him, "/name", "John")
-	sink.writeEdge(ctx, him, her, "/friendof")
-	sink.writeFact(ctx, her, "/name", "Mary")
-	sink.writeEdge(ctx, him, him, "/loves")
-	sink.writeEdge(ctx, her, him, "/suspiciousof")
-	sink.writeFact(ctx, him, "/name/full", "Jonathan Q. Public")
-	sink.writeFact(ctx, her, "/name/full", "Mary M. Q. Contrary")
+	sink.writeFact(ctx, them, "/name", "Alex")
+	sink.writeEdge(ctx, them, they, "/friendof")
+	sink.writeFact(ctx, they, "/name", "Jordan")
+	sink.writeEdge(ctx, them, them, "/loves")
+	sink.writeEdge(ctx, they, them, "/suspiciousof")
+	sink.writeFact(ctx, them, "/name/full", "Alex Q. Public")
+	sink.writeFact(ctx, they, "/name/full", "Jordan M. Q. Contrary")
 
 	for _, want := range []struct {
 		who         *spb.VName
 		name, value string
 	}{
-		{him, "/name", "John"},
-		{him, "/name/full", "Jonathan Q. Public"},
-		{her, "/name", "Mary"},
-		{her, "/name/full", "Mary M. Q. Contrary"},
+		{them, "/name", "Alex"},
+		{them, "/name/full", "Alex Q. Public"},
+		{they, "/name", "Jordan"},
+		{they, "/name/full", "Jordan M. Q. Contrary"},
 	} {
 		if !hasFact(want.who, want.name, want.value) {
 			t.Errorf("Missing fact %q=%q for %+v", want.name, want.value, want.who)
@@ -300,9 +280,9 @@ func TestSink(t *testing.T) {
 		src, tgt *spb.VName
 		kind     string
 	}{
-		{him, her, "/friendof"},
-		{her, him, "/suspiciousof"},
-		{him, him, "/loves"},
+		{them, they, "/friendof"},
+		{they, them, "/suspiciousof"},
+		{them, them, "/loves"},
 	} {
 
 		if !hasEdge(want.src, want.tgt, want.kind) {

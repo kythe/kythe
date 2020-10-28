@@ -16,7 +16,7 @@
 
 // Package assemble provides functions to build the various components (nodes,
 // edges, and decorations) of an xrefs serving table.
-package assemble
+package assemble // import "kythe.io/kythe/go/serving/xrefs/assemble"
 
 import (
 	"context"
@@ -702,6 +702,8 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *span.Normaliz
 			Start: p2p(ssp),
 			End:   p2p(sep),
 		},
+
+		BuildConfiguration: anchor.BuildConfiguration,
 	}, nil
 }
 

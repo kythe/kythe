@@ -69,7 +69,7 @@ Options:
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	checkFlags()
 
 	w := csv.NewWriter(os.Stdout)
 	w.Write([]string{"downloads", "extracts", "downloadfilecount", "extractfilecount", "coverage", "repo"})
@@ -108,7 +108,7 @@ func main() {
 	}
 }
 
-func verifyFlags() {
+func checkFlags() {
 	if flag.NArg() > 0 {
 		log.Fatalf("Unknown arguments: %v", flag.Args())
 	}
@@ -124,7 +124,7 @@ func getRepos() ([]string, error) {
 	case *reposFile != "":
 		return getReposFromFile()
 	default:
-		return nil, fmt.Errorf("Invalid state - need a source of repos")
+		return nil, fmt.Errorf("invalid state - need a source of repos")
 	}
 }
 

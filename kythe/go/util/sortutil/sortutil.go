@@ -15,7 +15,7 @@
  */
 
 // Package sortutil implements utilities for sorting.
-package sortutil
+package sortutil // import "kythe.io/kythe/go/util/sortutil"
 
 import "sort"
 

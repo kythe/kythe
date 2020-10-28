@@ -17,7 +17,7 @@
 // Package profile provides a simple method for exposing profile information
 // through a --cpu_profile flag.  This package also implicitly adds the
 // /debug/pprof/... HTTP handlers.
-package profile
+package profile // import "kythe.io/kythe/go/util/profile"
 
 import (
 	"context"

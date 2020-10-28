@@ -20,8 +20,9 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
@@ -41,16 +42,16 @@ class IndexReaderInterface {
 
   /// \brief Invokes `scan` for each IndexedCompilation unit digest or until it
   /// returns false.
-  virtual Status Scan(const ScanCallback& scan) = 0;
+  virtual absl::Status Scan(const ScanCallback& scan) = 0;
 
   /// \brief Reads and returns requested IndexCompilation.
   ///  Returns kNotFound if the digest isn't present.
-  virtual StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
+  virtual absl::StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
       absl::string_view digest) = 0;
 
   /// \brief Reads and returns the requested file data.
   ///  Returns kNotFound if the digest isn't present.
-  virtual StatusOr<std::string> ReadFile(absl::string_view digest) = 0;
+  virtual absl::StatusOr<std::string> ReadFile(absl::string_view digest) = 0;
 };
 
 /// \brief Pimpl wrapper around IndexReaderInterface.
@@ -68,18 +69,18 @@ class IndexReader {
 
   /// \brief Invokes `scan` for each IndexedCompilation unit digest or until it
   /// returns false.
-  Status Scan(const ScanCallback& scan) { return impl_->Scan(scan); }
+  absl::Status Scan(const ScanCallback& scan) { return impl_->Scan(scan); }
 
   /// \brief Reads and returns requested IndexCompilation.
   ///  Returns kNotFound if the digest isn't present.
-  StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
+  absl::StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
       absl::string_view digest) {
     return impl_->ReadUnit(digest);
   }
 
   /// \brief Reads and returns the requested file data.
   ///  Returns kNotFound if the digest isn't present.
-  StatusOr<std::string> ReadFile(absl::string_view digest) {
+  absl::StatusOr<std::string> ReadFile(absl::string_view digest) {
     return impl_->ReadFile(digest);
   }
 

@@ -16,8 +16,8 @@
 // static_claim: a tool to assign ownership for indexing dependencies
 //
 // static_claim
-//   reads the names of .kindex files from standard input or an
-//   index pack and emits a static claim assignment to standard output
+//   reads the names of .kzip files from standard input and emits a static claim
+//   assignment to standard output
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -25,24 +25,30 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <string>
+#include <vector>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/strings/str_format.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "kythe/cxx/common/index_pack.h"
+#include "kythe/cxx/common/init.h"
+#include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 
 using kythe::proto::ClaimAssignment;
 using kythe::proto::CompilationUnit;
 using kythe::proto::VName;
 
-DEFINE_bool(text, false, "Dump output as text instead of protobuf.");
-DEFINE_bool(show_stats, false, "Show some statistics.");
-DEFINE_string(index_pack, "", "Read from an index pack instead of stdin.");
+ABSL_FLAG(bool, text, false, "Dump output as text instead of protobuf.");
+ABSL_FLAG(bool, show_stats, false, "Show some statistics.");
 
 struct Claimable;
 
@@ -73,27 +79,20 @@ struct Claimable {
   std::set<Claimant*, ClaimantPointerLess> claimants;
 };
 
-/// \brief Populates the compilation unit from a kindex.
-/// \param path Path to the .kindex file.
-/// \param unit Unit proto to fill.
-static void ReadCompilationUnit(const std::string& path,
-                                CompilationUnit* unit) {
-  namespace io = google::protobuf::io;
-  CHECK(unit != nullptr);
-  int in_fd = ::open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
-  CHECK_GE(in_fd, 0) << "Couldn't open input file " << path;
-  io::FileInputStream file_input_stream(in_fd);
-  io::GzipInputStream gzip_input_stream(&file_input_stream);
-  io::CodedInputStream coded_input_stream(&gzip_input_stream);
-  google::protobuf::uint32 byte_size;
-  bool decoded_unit = false;
-  CHECK(coded_input_stream.ReadVarint32(&byte_size))
-      << "Couldn't find length of compilation unit in " << path;
-  auto limit = coded_input_stream.PushLimit(byte_size);
-  CHECK(unit->ParseFromCodedStream(&coded_input_stream))
-      << "Couldn't parse compilation unit from " << path;
-  coded_input_stream.PopLimit(limit);
-  CHECK(file_input_stream.Close());
+/// \brief Populates the compilation units from a kzip.
+/// \param path Path to the .kzip file.
+/// \return Vector of collected CompilationUnits.
+static std::vector<CompilationUnit> ReadCompilationUnits(
+    const std::string& path) {
+  kythe::IndexReader reader = kythe::KzipReader::Open(path).value();
+  std::vector<CompilationUnit> result;
+  auto status = reader.Scan([&](const auto digest) {
+    const auto compilation = reader.ReadUnit(digest);
+    CHECK(compilation.ok()) << compilation.status();
+    result.push_back(compilation->unit());
+    return true;
+  });
+  return result;
 }
 
 /// \brief Maps from vnames to claimants (like compilation units).
@@ -154,20 +153,20 @@ class ClaimTool {
   /// \brief Export claim data to `out_fd` in the format specified by
   /// `FLAGS_text`.
   void WriteClaimFile(int out_fd) {
-    if (FLAGS_text) {
+    if (absl::GetFlag(FLAGS_text)) {
       for (auto& claimable : claimables_) {
         if (claimable.second.elected_claimant) {
           ClaimAssignment claim;
           claim.mutable_compilation_v_name()->CopyFrom(
               claimable.second.elected_claimant->vname);
           claim.mutable_dependency_v_name()->CopyFrom(claimable.second.vname);
-          ::printf("%s", claim.DebugString().c_str());
+          absl::PrintF("%s", claim.DebugString());
         }
       }
       return;
     }
-    namespace io = google::protobuf::io;
     {
+      namespace io = google::protobuf::io;
       io::FileOutputStream file_output_stream(out_fd);
       io::GzipOutputStream::Options options;
       options.format = io::GzipOutputStream::GZIP;
@@ -184,7 +183,7 @@ class ClaimTool {
         }
       }
       CHECK(!coded_stream.HadError());
-    }  // namespace io=google::protobuf::io;
+    }
     CHECK(::close(out_fd) == 0) << "errno was: " << errno;
   }
 
@@ -253,59 +252,32 @@ class ClaimTool {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::SetUsageMessage("static_claim: assign ownership for analysis");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  kythe::InitializeProgram(argv[0]);
+  absl::SetProgramUsageMessage("static_claim: assign ownership for analysis");
+  absl::ParseCommandLine(argc, argv);
   std::string next_index_file;
   ClaimTool tool;
-  if (FLAGS_index_pack.empty()) {
-    while (getline(std::cin, next_index_file)) {
-      if (next_index_file.empty()) {
-        continue;
-      }
-      CompilationUnit unit;
-      ReadCompilationUnit(next_index_file, &unit);
+  while (std::getline(std::cin, next_index_file)) {
+    if (next_index_file.empty()) {
+      continue;
+    }
+    for (CompilationUnit unit : ReadCompilationUnits(next_index_file)) {
       tool.HandleCompilationUnit(unit);
     }
-    if (!std::cin.eof()) {
-      ::fprintf(stderr, "Error reading from standard input.\n");
-      return 1;
-    }
-  } else {
-    std::string error_text;
-    auto filesystem = kythe::IndexPackPosixFilesystem::Open(
-        FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
-        &error_text);
-    if (!filesystem) {
-      ::fprintf(stderr, "Error reading index pack: %s\n", error_text.c_str());
-      return 1;
-    }
-    kythe::IndexPack pack(std::move(filesystem));
-    if (!pack.ScanData(
-            kythe::IndexPackFilesystem::DataKind::kCompilationUnit,
-            [&tool, &pack](const std::string& file_id) {
-              std::string error_text;
-              CompilationUnit unit;
-              CHECK(pack.ReadCompilationUnit(file_id, &unit, &error_text))
-                  << "Error reading unit " << file_id << ": " << error_text;
-              tool.HandleCompilationUnit(unit);
-              return true;
-            },
-            &error_text)) {
-      ::fprintf(stderr, "Error scanning index pack: %s\n", error_text.c_str());
-      return 1;
-    }
+  }
+  if (!std::cin.eof()) {
+    absl::FPrintF(stderr, "Error reading from standard input.\n");
+    return 1;
   }
   tool.AssignClaims();
   tool.WriteClaimFile(STDOUT_FILENO);
-  if (FLAGS_show_stats) {
-    ::printf("Number of claimables: %lu\n", tool.claimables().size());
-    ::printf(" Number of claimants: %lu\n", tool.claimants().size());
-    ::printf("   Total input count: %lu\n", tool.total_input_count());
-    ::printf(" Total include count: %lu\n", tool.total_include_count());
-    ::printf("%%claimables/includes: %f\n",
-             tool.claimables().size() * 100.0 / tool.total_include_count());
+  if (absl::GetFlag(FLAGS_show_stats)) {
+    absl::PrintF("Number of claimables: %lu\n", tool.claimables().size());
+    absl::PrintF(" Number of claimants: %lu\n", tool.claimants().size());
+    absl::PrintF("   Total input count: %lu\n", tool.total_input_count());
+    absl::PrintF(" Total include count: %lu\n", tool.total_include_count());
+    absl::PrintF("%%claimables/includes: %f\n",
+                 tool.claimables().size() * 100.0 / tool.total_include_count());
   }
   return 0;
 }

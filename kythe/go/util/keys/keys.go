@@ -15,9 +15,11 @@
  */
 
 // Package keys implements orderedcode encodings for Kythe types.
-package keys
+package keys // import "kythe.io/kythe/go/util/keys"
 
 import (
+	"fmt"
+
 	"github.com/google/orderedcode"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -39,6 +41,9 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 		switch x := item.(type) {
 		case *spb.VName:
 			// Split into strings based on http://kythe.io/docs/kythe-storage.html ordering
+			if x == nil {
+				return nil, fmt.Errorf("cannot append nil %T", x)
+			}
 			expanded = append(expanded, x.Corpus, x.Language, x.Path, x.Root, x.Signature)
 		case int32:
 			// Convert to orderedcode supported int64 type

@@ -21,8 +21,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/test/testutil"
@@ -40,6 +42,8 @@ type mock struct {
 	Outputs      []*apb.AnalysisOutput
 	AnalyzeError error
 	OutputError  error
+
+	AnalysisDuration time.Duration
 
 	OutputIndex int
 	Requests    []*apb.AnalysisRequest
@@ -63,6 +67,10 @@ const buildID = "aabbcc"
 
 // Analyze implements the analysis.CompilationAnalyzer interface.
 func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) error {
+	if m.AnalysisDuration != 0 {
+		log.Printf("Waiting %s for analysis request", m.AnalysisDuration)
+		time.Sleep(m.AnalysisDuration)
+	}
 	m.OutputIndex = 0
 	m.Requests = append(m.Requests, req)
 	for _, o := range m.Outputs {
@@ -76,6 +84,9 @@ func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analys
 	}
 	if req.BuildId != buildID {
 		m.t.Errorf("Missing build ID")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	return m.AnalyzeError
 }
@@ -116,7 +127,7 @@ func (t testContext) AnalysisError(ctx context.Context, unit Compilation, err er
 	if t.analysisError != nil {
 		return t.analysisError(ctx, unit, err)
 	}
-	return nil
+	return err
 }
 
 func TestDriverInvalid(t *testing.T) {
@@ -290,6 +301,29 @@ func TestDriverTeardown(t *testing.T) {
 	}
 	if teardownIdx != len(m.Compilations) {
 		t.Errorf("Expected %d calls to Teardown; found %d", len(m.Compilations), teardownIdx)
+	}
+}
+
+func TestDriverTimeout(t *testing.T) {
+	timeout := 10 * time.Millisecond
+	m := &mock{
+		t:            t,
+		Outputs:      outs("a", "b", "c"),
+		Compilations: comps("target1", "target2"),
+
+		AnalysisDuration: timeout * 3,
+	}
+	d := &Driver{
+		Analyzer:        m,
+		AnalysisOptions: AnalysisOptions{Timeout: timeout},
+		WriteOutput:     m.out(),
+		Context:         testContext{},
+	}
+	if err := d.Run(context.Background(), m); !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("Expected error %v; found %v", context.DeadlineExceeded, err)
+	}
+	if len(m.Requests) != 1 {
+		t.Errorf("Expected 1 AnalysisRequest; found %v", m.Requests)
 	}
 }
 

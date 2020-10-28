@@ -1,0 +1,26 @@
+// Regression test for enum vnames with option java_java5_enums = false
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+option java_api_version = 1;
+option java_java5_enums = false;
+
+message EnumMessage {
+  enum EnumTest {
+    PROTO = 1;
+    GROK = 2;
+    TEST = 3;
+    FOR = 4;
+    ENUMS = 5;
+  }
+  optional EnumTest enum_field = 1;
+}
+
+enum TopLevel {
+  ALPHA = 12;
+  BRAVO = 6;
+  CHARLIE = 15;
+  DELTA = 7;
+}

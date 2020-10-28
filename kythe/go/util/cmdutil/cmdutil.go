@@ -16,7 +16,7 @@
 
 // Package cmdutil exports shared logic for implementing command-line
 // subcommands using the github.com/google/subcommands package.
-package cmdutil
+package cmdutil // import "kythe.io/kythe/go/util/cmdutil"
 
 import (
 	"context"

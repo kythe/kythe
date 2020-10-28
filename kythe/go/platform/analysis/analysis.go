@@ -21,13 +21,13 @@
 // processes kythe.proto.CompilationUnit messages and their associated inputs.
 // The Fetcher interface expresses the ability to fetch required files from
 // storage based on their corpus-relative paths and digests.
-package analysis
+package analysis // import "kythe.io/kythe/go/platform/analysis"
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"

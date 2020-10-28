@@ -23,7 +23,6 @@ import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
-import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.util.JsonUtil;
 import java.io.IOException;
 
@@ -53,7 +52,8 @@ public class JarExtractor {
       if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
         IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
       } else {
-        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+        throw new IllegalArgumentException(
+            String.format("Unsupported output file: %s%n", outputFile));
       }
       return;
     }
@@ -64,13 +64,8 @@ public class JarExtractor {
           "required KYTHE_OUTPUT_FILE or KYTHE_OUTPUT_DIRECTORY environment variable is unset");
     }
 
-    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-      String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();
-      String path = IndexInfoUtils.getKindexPath(outputDir, name).toString();
-      IndexInfoUtils.writeKindexToFile(indexInfo, path);
-      return;
-    }
-
-    new Archive(outputDir).writeDescription(indexInfo);
+    String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();
+    String path = IndexInfoUtils.getKzipPath(outputDir, name).toString();
+    IndexInfoUtils.writeKzipToFile(indexInfo, path);
   }
 }

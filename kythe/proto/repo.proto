@@ -1,0 +1,83 @@
+/*
+ * Copyright 2018 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto.repo;
+
+option go_package = "repo_go_proto";
+
+// Represents configuration data on how to extract a repo.
+message Config {
+  // ExtractionHint encapsulates all extraction steps for a single corpus.
+  repeated ExtractionHint extractions = 1;
+  // Location of the repository to fetch from.  This can be a mirror, if you
+  // prefer the build to fetch from that mirror.
+  string repo = 2;
+}
+
+// Settings specific to extracting a single root and build system in this repo.
+message ExtractionHint {
+  BuildSystem build_system = 1;
+  // Optionally specify a corpus for this extraction.  If unset, then we will
+  // try to determine corpus from the repository name.
+  string corpus = 2;
+
+  JavaOptions java_options = 3;
+
+  // Optionally specify one or more targets for extraction.  By default, we will
+  // assume there is one target specified by root (above), but this can be
+  // configured by specifying target manually.
+  //
+  // Note that each separate target in a single ExtractionHint will be combined
+  // together into a single corpus.  If you need separate corpora, you must
+  // specify multiple ExtractionHint above.
+  //
+  // Each individual ExtractionTarget provided will have a separate build
+  // execution.  To specify multiple targets to build inside a single execution
+  // (for example bazel build //target:first //target:second), you must specify
+  // multiple individual_targets below.
+  repeated ExtractionTarget targets = 4;
+}
+
+enum BuildSystem {
+  UNKNOWN = 0;
+
+  MAVEN = 1;
+  GRADLE = 2;
+  BAZEL = 3;
+}
+
+message JavaOptions {
+  enum Version {
+    UNKNOWN = 0;
+
+    JAVA_1_8 = 1;
+  }
+  // The java version supported, such as 1.8.
+  Version version = 1;
+}
+
+message ExtractionTarget {
+  // A file relative to the repository root that configures extraction for this
+  // target.  E.g.: a pom.xml file in maven, or build.gradle file in gradle.
+  string path = 1;
+
+  // Build targets for builders that require explicit targets instead of just
+  // invoking build inside of a directory.  For example in bazel this could be
+  // //kythe/go/... to extract all of the kythe golang code.
+  repeated string individual_targets = 2;
+}

@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":asciidoc.bzl", "asciidoc")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -5,11 +6,6 @@ package(default_visibility = ["//kythe:default_visibility"])
 asciidoc(
     name = "kythe-compatible-compilers",
     src = "kythe-compatible-compilers.txt",
-)
-
-asciidoc(
-    name = "kythe-index-pack",
-    src = "kythe-index-pack.txt",
 )
 
 asciidoc(
@@ -65,4 +61,9 @@ asciidoc(
 asciidoc(
     name = "schema-overview",
     src = "schema-overview.txt",
+)
+
+bzl_library(
+    name = "asciidoc_bzl",
+    srcs = ["asciidoc.bzl"],
 )

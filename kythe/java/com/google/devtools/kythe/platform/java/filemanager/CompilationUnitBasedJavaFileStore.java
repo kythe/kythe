@@ -83,8 +83,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   /**
    * {@inheritDoc}
    *
-   * TODO: recurse option does not work yet. This method only returns the classes inside
-   * {@code packageName} and ignores the sub-packages.
+   * <p>TODO: recurse option does not work yet. This method only returns the classes inside {@code
+   * packageName} and ignores the sub-packages.
    */
   @Override
   public Set<CustomJavaFileObject> list(

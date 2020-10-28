@@ -15,7 +15,7 @@
  */
 
 // Package facts defines constants for Kythe facts.
-package facts
+package facts // import "kythe.io/kythe/go/util/schema/facts"
 
 const prefix = "/kythe/" // duplicated to avoid a circular import
 
@@ -23,9 +23,11 @@ const prefix = "/kythe/" // duplicated to avoid a circular import
 const (
 	AnchorEnd    = prefix + "loc/end"
 	AnchorStart  = prefix + "loc/start"
+	BuildConfig  = prefix + "build/config"
 	Code         = prefix + "code"
 	Complete     = prefix + "complete"
 	ContextURL   = prefix + "context/url"
+	Deprecated   = prefix + "tag/deprecated"
 	Details      = prefix + "details"
 	DocURI       = prefix + "doc/uri"
 	Message      = prefix + "message"

@@ -66,10 +66,10 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
     // Quote each file to make it safe in case it has special characters in it.
     $files = array_map(function($s) { return '"'.$s.'"'; }, $files);
-    $files = join($files, " ");
+    $files = join(" ", $files);
     $this->debugPrint("files: " . $files);
 
-    $cmd = $this->bazelCommand("query", ["%s"]);
+    $cmd = $this->bazelCommand("query", ["-k", "%s"]);
     $tag_filter = join("|", self::$omit_tags);
     $query = 'rdeps(//..., set('.$files.')) except attr(tags, "'.$tag_filter.'", //...)';
     $this->debugPrint($query);
@@ -111,10 +111,11 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function runTests($targets) {
-    $this->debugPrint("runTests(" . join($targets, ", ") . ")");
+    $this->debugPrint("runTests(" . join(", ", $targets) . ")");
 
     $tag_filters = join(",", array_map(function($s) { return "-$s"; }, self::$omit_tags));
     $future = new ExecFuture($this->bazelCommand("test", array_merge([
+        "--config=prepush",
         "--verbose_failures",
         "--test_tag_filters=$tag_filters",
         "--noshow_loading_progress",

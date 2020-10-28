@@ -18,11 +18,12 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
-import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
@@ -46,6 +47,8 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -70,7 +73,6 @@ public class JavaIndexer {
       URLClassLoader classLoader = new URLClassLoader(new URL[] {fileURL(config.getPlugin())});
       for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
         final Class<? extends Plugin> clazz = plugin.getClass();
-        System.err.println("Registering plugin: " + clazz);
         plugins.add(
             () -> {
               try {
@@ -90,17 +92,12 @@ public class JavaIndexer {
       statistics = new MemoryStatisticsCollector();
     }
 
-    if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
-      // java_indexer --index_pack=archive-root unit-key+
-      logger.atWarning().log(
-          "index pack files are deprecated; "
-              + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
-      Archive archive = new Archive(config.getIndexPackRoot());
-      for (String unitDigest : config.getCompilation()) {
-        CompilationDescription desc = archive.readDescription(unitDigest);
-        analyzeCompilation(config, plugins, statistics, desc);
-      }
-    } else {
+    try (OutputStream stream =
+            Strings.isNullOrEmpty(config.getOutputPath())
+                ? System.out
+                : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()));
+        FactEmitter emitter = new StreamFactEmitter(stream)) {
+
       // java_indexer compilation-file+
       for (String compilationPath : config.getCompilation()) {
         if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
@@ -113,7 +110,7 @@ public class JavaIndexer {
               CompilationDescription desc =
                   IndexInfoUtils.indexedCompilationToCompilationDescription(
                       indexedCompilation, reader);
-              analyzeCompilation(config, plugins, statistics, desc);
+              analyzeCompilation(config, plugins, statistics, desc, emitter);
             }
           } catch (KZipException e) {
             throw new IllegalArgumentException("Unable to read kzip", e);
@@ -129,7 +126,7 @@ public class JavaIndexer {
                   + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
           try {
             CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
-            analyzeCompilation(config, plugins, statistics, desc);
+            analyzeCompilation(config, plugins, statistics, desc, emitter);
           } catch (EOFException e) {
             if (config.getIgnoreEmptyKIndex()) {
               return;
@@ -151,7 +148,8 @@ public class JavaIndexer {
       StandaloneConfig config,
       List<Supplier<Plugin>> plugins,
       StatisticsCollector statistics,
-      CompilationDescription desc)
+      CompilationDescription desc,
+      FactEmitter emitter)
       throws AnalysisException, IOException {
     if (!desc.getFileContents().iterator().hasNext()) {
       // Skip empty compilations.
@@ -163,21 +161,21 @@ public class JavaIndexer {
         new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
     metadataLoaders.addLoader(new KytheMetadataLoader());
 
-    try (OutputStream stream =
-        Strings.isNullOrEmpty(config.getOutputPath())
-            ? System.out
-            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath(), true))) {
-      KytheJavacAnalyzer analyzer =
-          new KytheJavacAnalyzer(
-              config,
-              new StreamFactEmitter(stream),
-              statistics == null ? NullStatisticsCollector.getInstance() : statistics,
-              metadataLoaders);
-      plugins.forEach(analyzer::registerPlugin);
+    KytheJavacAnalyzer analyzer =
+        new KytheJavacAnalyzer(
+            config,
+            emitter,
+            statistics == null ? NullStatisticsCollector.getInstance() : statistics,
+            metadataLoaders);
+    plugins.forEach(analyzer::registerPlugin);
 
-      new JavacAnalysisDriver()
-          .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
-    }
+    Path tempPath =
+        Strings.isNullOrEmpty(config.getTemporaryDirectory())
+            ? null
+            : FileSystems.getDefault().getPath(config.getTemporaryDirectory());
+    new JavacAnalysisDriver(
+            ImmutableList.of(), config.getUseExperimentalPathFileManager(), tempPath)
+        .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
   }
 
   private static URL fileURL(String path) throws MalformedURLException {
@@ -202,11 +200,6 @@ public class JavaIndexer {
         names = "--print_statistics",
         description = "Print final analyzer statistics to stderr")
     private boolean printStatistics;
-
-    @Parameter(
-        names = {"--index_pack", "-index_pack"},
-        description = "Retrieve the specified compilation from the given index pack (deprecated)")
-    private String indexPackRoot;
 
     @Parameter(
         names = "--ignore_empty_kindex",
@@ -237,10 +230,6 @@ public class JavaIndexer {
 
     public final boolean getPrintStatistics() {
       return printStatistics;
-    }
-
-    public final String getIndexPackRoot() {
-      return indexPackRoot;
     }
 
     public final boolean getIgnoreEmptyKIndex() {

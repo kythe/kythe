@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +15,22 @@
 #
 # This test checks that the extractor will emit kzip files.
 # It should be run from the Kythe root.
+set -e
 TEST_NAME="test_index_pack"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 KYTHE_OUTPUT_FILE="${OUT_DIR}/compilations.kzip" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 # Storing redundant extractions should fail if the file exists.
 # TODO(shahms): Test this.
 #KYTHE_OUTPUT_FILE="${OUT_DIR}/compilations.kzip" \
-#    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+#    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
 #    -I./kythe/cxx/extractor/testdata \
 #    ./kythe/cxx/extractor/testdata/transcript_main.cc
 test -f "${OUT_DIR}/compilations.kzip" || exit 1
 [[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/files/.' | wc -l) -eq 3 ]]
-[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/units/.' | wc -l) -eq 1 ]]
+[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/pbunits/.' | wc -l) -eq 1 ]]

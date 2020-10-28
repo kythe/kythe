@@ -53,7 +53,8 @@ public abstract class AbstractCompilationAnalyzer {
    * Analyzes the given {@link AnalysisRequest}, emitting all facts with the given {@link
    * FactEmitter}.
    */
-  public void analyzeRequest(AnalysisRequest req, FactEmitter emitter) throws AnalysisException {
+  public void analyzeRequest(AnalysisRequest req, FactEmitter emitter)
+      throws AnalysisException, InterruptedException {
     Preconditions.checkNotNull(req, "AnalysisRequest must be non-null");
     Stopwatch timer = Stopwatch.createStarted();
     try (FileDataProvider fileData = parseFileDataService(req.getFileDataService())) {
@@ -65,6 +66,8 @@ public abstract class AbstractCompilationAnalyzer {
           "Analyzing compilation: {%s}",
           TextFormat.shortDebugString(req.getCompilation().getVName()));
       analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
+    } catch (InterruptedException e) {
+      throw e;
     } catch (Throwable t) {
       logger.atWarning().withCause(t).log("Uncaught exception");
       t.printStackTrace();
@@ -95,7 +98,7 @@ public abstract class AbstractCompilationAnalyzer {
       Optional<String> revision,
       FileDataProvider fileDataProvider,
       FactEmitter emitter)
-      throws AnalysisException;
+      throws AnalysisException, InterruptedException;
 
   /**
    * {@link FactEmitter} that emits an {@link AnalysisOutput} with an embedded {@link Entry} for

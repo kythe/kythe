@@ -1,0 +1,42 @@
+{
+    "argument": [
+        "kythe/cxx/extractor/textproto/testdata/extra_imports.pbtxt",
+        "--proto_message",
+        "textproto_test.MyMessage",
+        "--",
+        "--proto_path",
+        "kythe/cxx/extractor/textproto/testdata"
+    ],
+    "required_input": [
+        {
+            "info": {
+                "digest": "79c8f75a937c637a84f2a839ebcef7de60427d22b9e951c9ae8d9cf3c143756f",
+                "path": "kythe/cxx/extractor/textproto/testdata/dep.proto"
+            },
+            "v_name": {
+                "path": "kythe/cxx/extractor/textproto/testdata/dep.proto"
+            }
+        },
+        {
+            "info": {
+                "digest": "b51fdc6bd2a3b2cbb0c1609cb8d62dcc8940853d6dfd0147c26f73a402e4cc3a",
+                "path": "kythe/cxx/extractor/textproto/testdata/example.proto"
+            },
+            "v_name": {
+                "path": "kythe/cxx/extractor/textproto/testdata/example.proto"
+            }
+        },
+        {
+            "info": {
+                "digest": "b3462a501dafa3eea3d3fd7e8ed1ae6be6b3fba38849b20effeeea4cd8448c3e",
+                "path": "kythe/cxx/extractor/textproto/testdata/extra_imports.pbtxt"
+            },
+            "v_name": {
+                "path": "kythe/cxx/extractor/textproto/testdata/extra_imports.pbtxt"
+            }
+        }
+    ],
+    "source_file": [
+        "kythe/cxx/extractor/textproto/testdata/extra_imports.pbtxt"
+    ],
+}

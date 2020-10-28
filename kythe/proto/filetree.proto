@@ -18,23 +18,33 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option go_package = "filetree_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // FileTreeService provides an interface to explore a tree of files.
 service FileTreeService {
   // CorpusRoots returns all known corpus/root pairs for stored files.
-  rpc CorpusRoots(CorpusRootsRequest) returns (CorpusRootsReply) {}
+  rpc CorpusRoots(CorpusRootsRequest) returns (CorpusRootsReply) {
+  }
 
   // Directory returns the file/sub-directory contents of the given directory.
-  rpc Directory(DirectoryRequest) returns (DirectoryReply) {}
+  rpc Directory(DirectoryRequest) returns (DirectoryReply) {
+  }
 }
 
-message CorpusRootsRequest {}
+message CorpusRootsRequest {
+}
 
 message CorpusRootsReply {
   message Corpus {
+    // Name of the corpus.
     string name = 1;
+
+    // Each known root within the corpus.
     repeated string root = 2;
+
+    // Each known build configuration within the corpus.
+    repeated string build_config = 3;
   }
   repeated Corpus corpus = 1;
 }
@@ -46,9 +56,33 @@ message DirectoryRequest {
 }
 
 message DirectoryReply {
-  // Set of tickets for each contained sub-directory's corpus, root, and path.
-  repeated string subdirectory = 1;
+  // The corpus of the requested directory.
+  string corpus = 3;
+  // The root of the requested directory.
+  string root = 4;
+  // The path of the requested directory.
+  string path = 5;
 
-  // Set of file tickets contained within this directory.
-  repeated string file = 2;
+  // Each known entry in the requested directory.  Each entry shares the above
+  // corpus, root, and path prefix.
+  repeated Entry entry = 6;
+
+  message Entry {
+    // The kind of entry.
+    Kind kind = 1;
+
+    // The basename of the entry within the directory.
+    string name = 2;
+
+    // Set of known build configurations of this FILE or all files recursively
+    // contained in/below this DIRECTORY.
+    repeated string build_config = 3;
+  }
+  enum Kind {
+    UNKNOWN = 0;
+    FILE = 1;
+    DIRECTORY = 2;
+  }
+
+  reserved 1, 2;
 }

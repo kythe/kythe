@@ -1,70 +1,87 @@
-workspace(name = "io_kythe")
+workspace(
+    name = "io_kythe",
+    managed_directories = {"@npm": ["node_modules"]},
+)
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version")
+load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.16", "0.18")
+check_version(MIN_VERSION, MAX_VERSION)
 
-load("//:setup.bzl", "kythe_rule_repositories")
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "4fb3ceea08101ec41208e3df9e56ec72b69f3d11c56629d6477c0ff88d711cf7",
+    strip_prefix = "bazel-toolchains-3.6.0",
+    urls = [
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.6.0/bazel-toolchains-3.6.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.6.0/bazel-toolchains-3.6.0.tar.gz",
+    ],
+)
+
+load("//:setup.bzl", "kythe_rule_repositories", "maybe")
 
 kythe_rule_repositories()
 
+# TODO(schroederc): remove this.  This needs to be loaded before loading the
+# go_* rules.  Normally, this is done by go_rules_dependencies in external.bzl,
+# but because we want to overload some of those dependencies, we need the go_*
+# rules before go_rules_dependencies.  Likewise, we can't precisely control
+# when loads occur within a Starlark file so we now need to load this
+# manually...
+load("@io_bazel_rules_go//go/private:repositories.bzl", "go_name_hack")
+
+maybe(
+    go_name_hack,
+    name = "io_bazel_rules_go_name_hack",
+    is_rules_go = False,
+)
+
+# gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
 
-load("//tools/cpp:clang_configure.bzl", "clang_configure")
-
-clang_configure()
-
-http_archive(
-    name = "bazel_toolchains",
-    sha256 = "529f6763716f91e5b62bd14eeb5389b376126ecb276b127a78c95f8721280c11",
-    strip_prefix = "bazel-toolchains-f95842b60173ce5f931ae7341488b6cb2610fd94",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
-    ],
-)
-
-bind(
-    name = "libuuid",
-    actual = "//third_party:libuuid",
-)
-
-bind(
-    name = "libmemcached",
-    actual = "@org_libmemcached_libmemcached//:libmemcached",
-)
-
-bind(
-    name = "guava",  # required by @com_google_protobuf
-    actual = "//third_party/guava",
-)
-
-bind(
-    name = "gson",  # required by @com_google_protobuf
-    actual = "@com_google_code_gson_gson//jar",
-)
-
-bind(
-    name = "zlib",  # required by @com_google_protobuf
-    actual = "@net_zlib//:zlib",
-)
-
-# Kept for third_party license
-# TODO(schroederc): override bazel_rules_go dep once
-#                   https://github.com/bazelbuild/rules_go/issues/1533 is fixed
-new_git_repository(
-    name = "go_protobuf",
-    build_file = "@io_kythe//third_party/go:protobuf.BUILD",
-    commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
-    remote = "https://github.com/golang/protobuf.git",
-)
-
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()
+
+load("@npm//@bazel/labs:package.bzl", "npm_bazel_labs_dependencies")
+
+npm_bazel_labs_dependencies()
+
+load("@maven//:compat.bzl", "compat_repositories")
+
+compat_repositories()
+
+# If the configuration here changes, run tools/platforms/configs/rebuild.sh
+load("@bazel_toolchains//rules:environments.bzl", "clang_env")
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC")
+
+rbe_autoconfig(
+    name = "rbe_default",
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_minversion",
+    bazel_version = MIN_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_maxversion",
+    bazel_version = MAX_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)

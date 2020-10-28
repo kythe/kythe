@@ -16,7 +16,7 @@
 
 // Package graph defines the graph Service interface and some useful utility
 // functions.
-package graph
+package graph // import "kythe.io/kythe/go/services/graph"
 
 import (
 	"context"

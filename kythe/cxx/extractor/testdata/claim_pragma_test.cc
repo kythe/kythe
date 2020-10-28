@@ -1,5 +1,3 @@
-#include "kythe/cxx/extractor/cxx_extractor.h"
-
 #include <algorithm>
 #include <memory>
 #include <unordered_set>
@@ -11,7 +9,8 @@
 #include "google/protobuf/util/field_comparator.h"
 #include "google/protobuf/util/message_differencer.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/cxx_extractor.h"
+#include "kythe/cxx/extractor/language.h"
 
 namespace kythe {
 namespace {
@@ -238,7 +237,7 @@ class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
 
     EXPECT_THAT(
         unit.argument(),
-        ElementsAre("dummy-executable", "-target", ::testing::_,
+        ElementsAre("/dummy/path/to/g++", "-target", ::testing::_,
                     "-DKYTHE_IS_RUNNING=1", "-resource-dir", "/kythe_builtins",
                     "--driver-mode=g++", "-I./kythe/cxx/extractor/testdata",
                     "./kythe/cxx/extractor/testdata/claim_main.cc",

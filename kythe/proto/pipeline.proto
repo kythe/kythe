@@ -18,8 +18,10 @@ syntax = "proto3";
 
 package kythe.proto.pipeline;
 
+option go_package = "pipeline_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
+import "kythe/proto/common.proto";
 import "kythe/proto/schema.proto";
 import "kythe/proto/serving.proto";
 import "kythe/proto/storage.proto";
@@ -32,7 +34,7 @@ message Reference {
   }
   kythe.proto.serving.ExpandedAnchor anchor = 4;
 
-  kythe.proto.VName scope = 5; // anchor scope
+  kythe.proto.VName scope = 5;  // anchor scope
 }
 
 // A DecorationPiece is an independent component of a larger
@@ -51,7 +53,7 @@ message DecorationPiece {
     Reference reference = 3;
     kythe.proto.schema.Node node = 4;
     Definition definition = 5;
-    // TODO(schroederc): diagnostics
+    kythe.proto.common.Diagnostic diagnostic = 6;
     // TODO(schroederc): overrides
   }
 }

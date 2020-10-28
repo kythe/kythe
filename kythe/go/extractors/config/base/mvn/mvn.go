@@ -16,7 +16,7 @@
 
 // Package mvn defines a default kythe.proto.ExtractionConfiguration for Java
 // using Maven.
-package mvn
+package mvn // import "kythe.io/kythe/go/extractors/config/base/mvn"
 
 // DefaultConfig describes a kythe.proto.ExtractionConfiguration object for a
 // basic Maven repository, including the extractor entrypoint using a pom.xml
@@ -46,7 +46,7 @@ const DefaultConfig = `{
       ]
     },
     {
-      "uri": "gcr.io/kythe_repo/kythe-javac-extractor-artifacts",
+      "uri": "gcr.io/kythe-public/kythe-javac-extractor-artifacts",
       "name": "javac-extractor-artifacts",
       "copy_spec": [
         {

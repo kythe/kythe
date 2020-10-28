@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option go_package = "explore_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 
@@ -32,12 +33,13 @@ import "kythe/proto/xref.proto";
 
 // ExploreService provides read-only access to aspects of the Kythe code graph,
 // such as type hierarchies, call graphs, function parameters, and
-// parents/children relationships.  Requests should generally take time proportional
-// to the size of the response (in the absence of filtering, at least).
+// parents/children relationships.  Requests should generally take time
+// proportional to the size of the response (in the absence of filtering, at
+// least).
 
-// In cases where properties of a node are requested (e.g. callers of a function)
-// for which there are no such (e.g., the function has no callers), the response
-// will not include that node.
+// In cases where properties of a node are requested (e.g. callers of a
+// function) for which there are no such (e.g., the function has no callers),
+// the response will not include that node.
 
 // THIS API IS EXPERIMENTAL; IMPLEMENTATION IS IN PROGRESS, AND THE API AND
 // IMPLEMENTATION ARE SUBJECT TO CHANGE.  PLEASE DO NOT USE WITHOUT CONTACTING
@@ -49,29 +51,35 @@ service ExploreService {
   // The Callers/Callees functions are distinct from XrefService.CrossReferences
   // in that these functions capture the semantic relationships between methods,
   // rather than the locations in the code base where a method is called.
-  rpc Callers(CallersRequest) returns (CallersReply) {}
+  rpc Callers(CallersRequest) returns (CallersReply) {
+  }
 
   // Returns the (recursive) callees of a specified function (that is, what
   // functions this function calls), as a directed graph.
-  rpc Callees(CalleesRequest) returns (CalleesReply) {}
+  rpc Callees(CalleesRequest) returns (CalleesReply) {
+  }
 
   // Returns the parents of a specified node (for example,
   // the file for a class, or the class for a function).
   // Note that in some cases a node may have more than one parent.
-  rpc Parents(ParentsRequest) returns (ParentsReply) {}
+  rpc Parents(ParentsRequest) returns (ParentsReply) {
+  }
 
   // Returns the children of a specified node (for example,
   // the classes contained in a file, or the functions contained in a class).
-  rpc Children(ChildrenRequest) returns (ChildrenReply) {}
+  rpc Children(ChildrenRequest) returns (ChildrenReply) {
+  }
 
   // Returns the hierarchy (supertypes and subtypes, including implementations)
   // of a specified type, as a directed acyclic graph.
   // NOT YET IMPLEMENTED
-  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {}
+  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {
+  }
 
   // Returns the parameters of a specified function.
   // NOT YET IMPLEMENTED
-  rpc Parameters(ParametersRequest) returns (ParametersReply) {}
+  rpc Parameters(ParametersRequest) returns (ParametersReply) {
+  }
 }
 
 // Shared/utility messages
@@ -130,7 +138,6 @@ message Tickets {
   repeated string tickets = 1;
 }
 
-
 // Type hierarchy
 // The type hierarchy is represented in the response as a graph, with the
 // input ticket marked.  The graph will be acyclic.
@@ -153,11 +160,10 @@ message TypeHierarchyReply {
   Graph graph = 2;
 }
 
-
 // Call graph
-// These APIs are for capturing the graphs induced by the _semantic_ relations between
-// calling/callable nodes (for example, the functions that call, or are called by,
-// this function node).
+// These APIs are for capturing the graphs induced by the _semantic_ relations
+// between calling/callable nodes (for example, the functions that call, or are
+// called by, this function node).
 //
 // If you’re looking for a one-ply relationship between functions and the
 // _locations_ in the code at which they are called, Kythe XRefService's
@@ -187,7 +193,6 @@ message CalleesReply {
   Graph graph = 1;
 }
 
-
 // Function parameters
 // node types: function
 // edge types: TBD
@@ -197,7 +202,6 @@ message ParametersRequest {
   repeated string function_tickets = 1;
 }
 
-
 message ParametersReply {
   map<string, Tickets> function_to_parameters = 1;
 
@@ -206,7 +210,6 @@ message ParametersReply {
   // data for functions and parameters
   map<string, NodeData> node_data = 3;
 }
-
 
 // Parents and children
 // node types: package, record (class), interface, function, ...
@@ -226,13 +229,11 @@ message ParentsReply {
   map<string, Tickets> input_to_parents = 1;
 }
 
-
 // Fetches the tickets for which the specified ticket is the enclosing context
 // (e.g. what files are in this package?  what functions are in this class?).
 message ChildrenRequest {
   repeated string tickets = 1;
 }
-
 
 message ChildrenReply {
   // associates each input ticket with the set of tickets contained by it

@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+//- @"package proto_kythe_test;" ref ThePackage
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+import "kythe/cxx/indexer/proto/testdata/basic/nested-message.proto";
+
+//- @TestMessage defines/binding TestMessageNode
+//- TestMessageNode childof ThePackage
+message TestMessage {
+  //- @"ParentMessage.NestedMessage" ref NestedMessageNode
+  //- @test_nested_import defines/binding ImportFieldNode
+  //- ImportFieldNode childof TestMessageNode
+  optional ParentMessage.NestedMessage test_nested_import = 1;
+}

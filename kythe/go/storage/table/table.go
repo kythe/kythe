@@ -15,7 +15,7 @@
  */
 
 // Package table implements lookup table interfaces for protobufs.
-package table
+package table // import "kythe.io/kythe/go/storage/table"
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 
 	"kythe.io/kythe/go/storage/keyvalue"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Proto is a key-value direct lookup table with protobuf values.
@@ -70,8 +70,9 @@ func (t *KVProto) Lookup(ctx context.Context, key []byte, msg proto.Message) err
 	v, err := t.Get(ctx, key, nil)
 	if err == io.EOF {
 		return ErrNoSuchKey
-	}
-	if err := proto.Unmarshal(v, msg); err != nil {
+	} else if err != nil {
+		return err
+	} else if err := proto.Unmarshal(v, msg); err != nil {
 		return fmt.Errorf("proto unmarshal error: %v", err)
 	}
 	return nil

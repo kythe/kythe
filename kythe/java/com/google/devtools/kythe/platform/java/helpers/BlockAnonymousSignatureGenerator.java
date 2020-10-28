@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
+import com.google.common.flogger.FluentLogger;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.CatchTree;
 import com.sun.source.tree.ClassTree;
@@ -41,25 +42,26 @@ import javax.lang.model.element.Element;
  */
 public class BlockAnonymousSignatureGenerator
     extends TreeScanner<Void, BlockAnonymousSignatureGenerator.BlockAnonymousData> {
-  // Blocks are numbered sequentially from zero within a class scope or a method scope.
-  // Here is an example of block numbering:
   /*
-   class A {// block 0
-   {// block 1
-   {// block 2
-   }
-   }
-   {// block 3
-   }
-   void method() {// block 0
-   {// block 1
-   }
-   if (true) {// block 2
-
-   } else {// block 3
-   }
-   }
-   }
+   * Blocks are numbered sequentially from zero within a class scope or a method scope.
+   * Here is an example of block numbering:
+   * <code><pre>
+   *  class A {// block 0
+   *    {// block 1
+   *      {// block 2
+   *      }
+   *    }
+   *    {// block 3
+   *    }
+   *    void method() {// block 0
+   *      {// block 1
+   *      }
+   *      if (true) {// block 2
+   *      } else {// block 3
+   *      }
+   *    }
+   *  }
+   *  </code></pre>
    */
 
   static class BlockAnonymousData {
@@ -74,6 +76,7 @@ public class BlockAnonymousSignatureGenerator
     }
   }
 
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final SignatureGenerator signatureGenerator;
 
   BlockAnonymousSignatureGenerator(SignatureGenerator signatureGenerator) {
@@ -168,6 +171,10 @@ public class BlockAnonymousSignatureGenerator
   public Void visitMethod(MethodTree methodTree, BlockAnonymousData blockData) {
     JCMethodDecl methodDecl = (JCMethodDecl) methodTree;
     StringBuilder methodSignature = new StringBuilder();
+    if (methodDecl.sym == null) {
+      logger.atInfo().log("methodDecl symbol was null");
+      return null;
+    }
     methodDecl.sym.accept(signatureGenerator, methodSignature);
     return super.visitMethod(methodTree, new BlockAnonymousData(-1, 0, methodSignature.toString()));
   }

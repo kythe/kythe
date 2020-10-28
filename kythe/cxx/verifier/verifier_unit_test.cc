@@ -16,11 +16,10 @@
 
 #include <regex>
 
-#include "verifier.h"
-
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
+#include "verifier.h"
 
 namespace kythe {
 namespace verifier {
@@ -2510,7 +2509,7 @@ fact_value: ""
   bool path = false;
   bool language = false;
   ASSERT_TRUE(v.VerifyAllGoals(
-      [&signature, &corpus, &root, &path, &language](
+      [&signature, &corpus, &root, &language](
           Verifier* cxt, const AssertionParser::Inspection& inspection) {
         if (AstNode* node = inspection.evar->current()) {
           if (Identifier* ident = node->AsIdentifier()) {

@@ -91,9 +91,41 @@ public class MarkedSource {
   //- @methodWithParams defines/binding MethodWithParams
   //- MethodWithParams typed MPType
   //- MPType param.1 Void
-  //- MPType param.2 String
-  //- MPType param.3 Int
+  //- MPType param.3 String
+  //- MPType param.4 Int
+  //- MPType code MethodTypeCode
   void methodWithParams(String a, int b) {}
+
+  //- FnTypeCode.kind "TYPE"
+  //- FnTypeCode child.0 FnTypeRetCode
+  //- FnTypeRetCode.kind "LOOKUP_BY_PARAM"
+  //- FnTypeRetCode.lookup_index 1
+  //- FnTypeCode child.1 FnTypeParamsCode
+  //- FnTypeParamsCode.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- FnTypeParamsCode.pre_text "("
+  //- FnTypeParamsCode.post_text ")"
+  //- FnTypeParamsCode.post_child_text ", "
+  //- FnTypeParamsCode.lookup_index 2
+
+  //- MethodTypeCode.kind "TYPE"
+  //- MethodTypeCode child.0 MethodTypeRetBox
+  //- MethodTypeRetBox.kind "BOX"
+  //- MethodTypeRetBox.post_text " "
+  //- MethodTypeRetBox child.0 MethodTypeRetCode
+  //- MethodTypeRetCode.kind "LOOKUP_BY_PARAM"
+  //- MethodTypeRetCode.lookup_index 1
+  //- MethodTypeCode child.1 MethodTypeRecvBox
+  //- MethodTypeRecvBox.kind "BOX"
+  //- MethodTypeRecvBox.post_text "::"
+  //- MethodTypeRecvBox child.0 MethodTypeRecvCode
+  //- MethodTypeRecvCode.kind "LOOKUP_BY_PARAM"
+  //- MethodTypeRecvCode.lookup_index 2
+  //- MethodTypeCode child.2 MethodTypeParamsCode
+  //- MethodTypeParamsCode.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- MethodTypeParamsCode.pre_text "("
+  //- MethodTypeParamsCode.post_text ")"
+  //- MethodTypeParamsCode.post_child_text ", "
+  //- MethodTypeParamsCode.lookup_index 3
 
   //- @pa defines/binding AParam
   //- @pb defines/binding BParam
@@ -183,6 +215,10 @@ public class MarkedSource {
   //- ObjId.pre_text "Object"
   void methodWithGeneric(List<Object> lst) {}
 
+  // Ensure documentation is emitted for nodes referenced before their definitions.
+  //- @Inner ref InnerClass
+  static Inner refClassBeforeDef() { return null; }
+
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
   public class Inner {
@@ -248,6 +284,20 @@ public class MarkedSource {
     List<? super Object> superBoundedList;
   }
 
+  //- @staticTApplyVar defines/binding StaticTApplyVar
+  //- StaticTApplyVar typed InnerStaticType
+  //- InnerStaticType code TAppCode
+  //- TAppCode.kind "TYPE"
+  //- TAppCode child.0 TAppCtor
+  //- TAppCtor.kind "LOOKUP_BY_PARAM"
+  //- TAppCode child.1 TAppParams
+  //- TAppParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- TAppParams.pre_text "<"
+  //- TAppParams.post_text ">"
+  //- TAppParams.post_child_text ", "
+  //- TAppParams.lookup_index "1"
+  static InnerStatic<MarkedSource> staticTApplyVar;
+
   Object o = new Object() {
     //- @field defines/binding AnonField
     //- AnonField childof AnonClass
@@ -296,6 +346,8 @@ public class MarkedSource {
   }
 
   //- @func defines/binding Func
+  //- Func typed FuncType
+  //- FuncType code FnTypeCode
   public static Object func() {
     //- @LocalClass defines/binding LocalClass
     //- LocalClass childof Func
@@ -316,17 +368,44 @@ public class MarkedSource {
     return new LocalClass();
   }
 
+  // TODO(schroederc): make verifier emit ArrayTAppCode{,2} with the same VName
+
+  //- @arry defines/binding ArrayParameter
+  //- ArrayParameter typed IntArrayArrayType
+  //- IntArrayArrayType code ArrayTAppCode
+  //- ArrayTAppCode.kind "TYPE"
+  //- ArrayTAppCode child.0 ArrayTAppChild
+  //- ArrayTAppChild.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- ArrayTAppChild.lookup_index "1"
+  //- ArrayTAppChild.post_text "[]"
+  //- IntArrayArrayType param.1 IntArrayType
+  //- IntArrayType code ArrayTAppCode2
+  //- ArrayTAppCode2.kind "TYPE"
+  //- ArrayTAppCode2 child.0 ArrayTAppChild2
+  //- ArrayTAppChild2.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- ArrayTAppChild2.lookup_index "1"
+  //- ArrayTAppChild2.post_text "[]"
+  //- IntArrayType param.1 IntType
+  //- IntType code IntCode
+  //- IntCode.kind "IDENTIFIER"
+  //- IntCode.pre_text "int"
   static Object referencesArrayMember(int[][] arry) {
+    // No marked source emitted for node defined outside of compilation.
     //- @clone ref ArrayCloneMethod
-    //- ArrayCloneMethod.node/kind function
-    //- ArrayCloneMethod code ACMRoot
-    //- ACMRoot child.1 ACMContext
-    //- ACMContext.kind "CONTEXT"
-    //- ACMContext child.0 ACMContextIdent
-    //- ACMContextIdent.kind "IDENTIFIER"
-    //- ACMContextIdent.pre_text "int[][]"
+    //- !{ArrayCloneMethod code _}
     return arry.clone();
   }
+
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  //- TVar code TVarCode
+  //- TVarCode.kind "BOX"
+  //- TVarCode child.0 TVarContext
+  //- TVarContext.kind "CONTEXT"
+  //- TVarCode child.1 TVarIdent
+  //- TVarIdent.kind "IDENTIFIER"
+  //- TVarIdent.pre_text "<T>"
+  static class Generic<T> {}
 
   //- Void code VoidId
   //- VoidId.kind "IDENTIFIER"

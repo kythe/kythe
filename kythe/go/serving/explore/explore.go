@@ -22,13 +22,15 @@
 //   <child ticket>    -> srvpb.Relatives (parents)
 //   <called ticket>   -> srvpb.Callgraph (callers)
 //   <calling ticket>  -> srvpb.Callgraph (callees)
-package explore
+package explore // import "kythe.io/kythe/go/serving/explore"
 
 import (
 	"context"
 	"fmt"
 
 	"kythe.io/kythe/go/storage/table"
+
+	"bitbucket.org/creachadair/stringset"
 
 	epb "kythe.io/kythe/proto/explore_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -67,7 +69,7 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 	}
 
 	// succMap maps nodes onto sets of successor nodes
-	succMap := make(map[string]map[string]bool)
+	succMap := make(map[string]stringset.Set)
 
 	// At the moment, this is our policy for missing data: if an input ticket has
 	// no record in the table, we don't include data for that ticket in the response.
@@ -88,17 +90,18 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
 		for _, predTicket := range callgraph.Tickets {
-			if succMap[predTicket] == nil {
-				succMap[predTicket] = make(map[string]bool)
+			if _, ok := succMap[predTicket]; !ok {
+				succMap[predTicket] = stringset.New()
 			}
-			succMap[predTicket][ticket] = true
+			set := succMap[predTicket]
+			set.Add(ticket)
 		}
 	}
 
 	return &epb.CallersReply{Graph: convertSuccMapToGraph(succMap)}, nil
 }
 
-func convertSuccMapToGraph(succMap map[string]map[string]bool) *epb.Graph {
+func convertSuccMapToGraph(succMap map[string]stringset.Set) *epb.Graph {
 	graph := &epb.Graph{
 		Nodes: make(map[string]*epb.GraphNode, len(succMap)),
 	}
@@ -133,7 +136,7 @@ func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.Cal
 	}
 
 	// succMap maps nodes onto sets of successor nodes
-	succMap := make(map[string]map[string]bool)
+	succMap := make(map[string]stringset.Set)
 
 	// At the moment, this is our policy for missing data: if an input ticket has
 	// no record in the table, we don't include data for that ticket in the response.
@@ -153,9 +156,10 @@ func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.Cal
 
 		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
-		succMap[ticket] = make(map[string]bool)
+		succMap[ticket] = stringset.New()
 		for _, succTicket := range callgraph.Tickets {
-			succMap[ticket][succTicket] = true
+			set := succMap[ticket]
+			set.Add(succTicket)
 		}
 	}
 

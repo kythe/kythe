@@ -66,7 +66,7 @@ http://www.kythe.io/docs/schema/#refexpands[macro expansion], and more.
 
 Kythe indexers emit many useful edges.  By clicking on the `JsonUtil` class name
 on
-https://xrefs-dot-kythe-repo.appspot.com/#kythe/java/com/google/devtools/kythe/util/JsonUtil.java?line=36[line
+https://xrefs-dot-kythe-repo.appspot.com/#kythe/java/com/google/devtools/kythe/util/JsonUtil.java?corpus=kythe&line=36[line
 36 of kythe/java/com/google/devtools/kythe/util/JsonUtil.java], one can see even
 the simple `JsonUtil` Java class has the following edges:
 
@@ -93,7 +93,10 @@ http://www.kythe.io/docs/schema/#named[/kythe/edge/named]:: associated
   that have `JsonUtil` as a parameter (in this case, where `JsonUtil` is used a
   part of a function http://www.kythe.io/docs/schema/#tapp[tapp] type)
 
-By clicking on `GCCArgsToClangArgs` on https://xrefs-dot-kythe-repo.appspot.com/#kythe/cxx/common/CommandLineUtils.h?line=61[line 61 of kythe/cxx/common/CommandLineUtils.h], one can see some other simple examples of edges from C++'s perspective:
+By clicking on `GCCArgsToClangArgs` on
+https://xrefs-dot-kythe-repo.appspot.com/#kythe/cxx/common/CommandLineUtils.h?corpus=kythe&line=61[line
+61 of kythe/cxx/common/CommandLineUtils.h], one can see some other simple
+examples of edges from C++'s perspective:
 
 %link:http://www.kythe.io/docs/schema/#completes[/kythe/edge/completes]:: anchor
   location of definitions for the `GCCArgsToClangArgs`
@@ -107,6 +110,6 @@ http://www.kythe.io/docs/schema/#param[/kythe/edge/param]:: declared parameters
 
 These examples are just a taste of the data exposed in our sample web UI.  With
 other specialized interfaces such as the
-https://kythe.io/repo/kythe/go/serving/tools/kythe.go[Kythe command-line],
+https://kythe.io/repo/kythe/go/serving/tools/kythe/kythe.go[Kythe command-line],
 Kythe's data can lead to some very useful tools for viewing, editing, and
 grokking source code across multiple languages.

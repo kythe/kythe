@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving.xrefs;
 
+option go_package = "xref_serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
@@ -27,7 +28,7 @@ import "kythe/proto/storage.proto";
 
 // Columnar protocol buffer format for FileDecorations.
 //
-// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+// Design: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2909.md
 //
 // Columnar key prefix: "fd"-file
 message FileDecorations {
@@ -66,7 +67,7 @@ message FileDecorations {
 
   // File decoration target
   //
-  // Columnar key: 10-start-end-kind-target
+  // Columnar key: 10-build_config-start-end-kind-target
   message Target {
     // Starting offset of this file decoration.
     int32 start_offset = 1;
@@ -79,6 +80,8 @@ message FileDecorations {
     }
 
     kythe.proto.VName target = 5;
+
+    string build_config = 6;
   }
 
   // Override per file decoration target node.
@@ -86,9 +89,9 @@ message FileDecorations {
   // Columnar key: 20-target-kind-override
   message TargetOverride {
     enum Kind {
-      UNKNOWN   = 0;
+      UNKNOWN = 0;
       OVERRIDES = 1;
-      EXTENDS   = 2;
+      EXTENDS = 2;
     }
 
     // File decorations target node marked as overridden.
@@ -131,6 +134,7 @@ message FileDecorations {
   // Diagnostic per file span
   //
   // Columnar key: 70-start-end-hash
+  // TODO(schroederc): add build_config to spanning Diagnostics and key
   message Diagnostic {
     kythe.proto.common.Diagnostic diagnostic = 1;
   }
@@ -138,7 +142,7 @@ message FileDecorations {
 
 // Columnar protocol buffer format for CrossReferences.
 //
-// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+// Design: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2909.md
 //
 // Columnar key prefix: "xr"-source
 message CrossReferences {
@@ -151,6 +155,7 @@ message CrossReferences {
     Caller caller = 5;
     Callsite callsite = 6;
     RelatedNode related_node = 7;
+    NodeDefinition node_definition = 8;
   }
 
   // Index for columnar cross-references data.
@@ -215,8 +220,8 @@ message CrossReferences {
     Kind kind = 3;
 
     enum Kind {
-      UNKNOWN  = 0;
-      DIRECT   = 1;
+      UNKNOWN = 0;
+      DIRECT = 1;
       OVERRIDE = 2;
     }
   }
@@ -226,5 +231,13 @@ message CrossReferences {
   // Columnar key: 30-node
   message RelatedNode {
     kythe.proto.schema.Node node = 1;
+  }
+
+  // Definition location for each RelatedNode
+  //
+  // Columnar key: 40-node
+  message NodeDefinition {
+    kythe.proto.VName node = 1;
+    kythe.proto.serving.ExpandedAnchor location = 2;
   }
 }

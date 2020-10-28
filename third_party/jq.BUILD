@@ -53,7 +53,10 @@ cc_library(
         "jv.h",
         ":version",
     ],
-    copts = ["-Wno-unused-function"],
+    copts = [
+        "-Wno-unused-function",
+        "-Wno-unused-variable",
+    ],
     includes = ["."],
     visibility = ["//visibility:private"],
 )

@@ -21,7 +21,7 @@ Writing a New Indexer
 
 This document is an overview of the steps to take to add support for a new
 language to Kythe. We assume that you have the
-link:https://github.com/google/kythe/releases[Kythe release package] extracted
+link:https://github.com/kythe/kythe/releases[Kythe release package] extracted
 to `/opt/kythe`. You can also build the tools from source (but it is not
 necessary to build Kythe to provide it with graph data). Sample code snippets
 are written in JavaScript, but this document is not about indexing any
@@ -62,7 +62,7 @@ directories `//graphstore` and `//tables`.
 #!/bin/bash -e
 set -o pipefail
 BROWSE_PORT="${BROWSE_PORT:-8080}"
-# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# You can find prebuilt binaries at https://github.com/kythe/kythe/releases.
 # This script assumes that they are installed to /opt/kythe.
 # If you build the tools yourself or install them to a different location,
 # make sure to pass the correct public_resources directory to http_server.
@@ -76,11 +76,11 @@ mkdir -p graphstore tables
 # Host the browser UI.
 /opt/kythe/tools/http_server -serving_table tables \
   -public_resources="/opt/kythe/web/ui" \
-  -listen="localhost:${BROWSE_PORT}"
+  -listen="localhost:${BROWSE_PORT}"  # ":${BROWSE_PORT}" allows access from other machines
 ----
 
 TIP: The
-link:https://github.com/google/kythe/blob/master/kythe/proto/storage.proto[protocol buffer]
+link:https://github.com/kythe/kythe/blob/master/kythe/proto/storage.proto[protocol buffer]
 encoding of Kythe facts is more efficient than the JSON encoding we're using
 here. Kythe supports JSON because some languages do not have good support for
 protocol buffers. This only comes into play for languages that emit a large
@@ -337,16 +337,13 @@ function anchor(file_vname, begin, end) {
     fact(anchor_vname, "node/kind", "anchor"),
     fact(anchor_vname, "loc/start", begin.toString()),
     fact(anchor_vname, "loc/end", end.toString()),
-    // This edge is required in the current Kythe release, but it will not be
-    // required in a future release.
-    edge(anchor_vname, "childof", file_vname)
   ];
 }
 ----
 
 The anchor covering the definition of `foo` in our example file, assuming the
 file has the same `VName` as the earlier file, is represented by these three
-facts (leaving out the deprecated `childof` edge mentioned in the code):
+facts:
 
 [source,js]
 ----
@@ -439,12 +436,13 @@ standard in and passes them (and its arguments) to the verifier:
 ----
 #!/bin/bash -e
 set -o pipefail
-# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# You can find prebuilt binaries at https://github.com/kythe/kythe/releases.
 # This script assumes that they are installed to /opt/kythe.
 # Read JSON entries from standard in and pass them to the verifier.
 # The entrystream tool turns the JSON into length-delimited protocol buffers,
 # described at http://godoc.org/kythe.io/kythe/go/platform/delimited
-/opt/kythe/tools/entrystream --read_json | /opt/kythe/tools/verifier "$@"
+/opt/kythe/tools/entrystream --read_format=json | \
+/opt/kythe/tools/verifier --nofile_vnames "$@"
 ----
 
 We can write a rule file that checks whether we have any file nodes at all and
@@ -452,7 +450,7 @@ call it `test.goals`:
 
 [source,c]
 ----
-//- FileNode.node/kind file
+//- FileNode?.node/kind file
 ----
 
 The `//-` prefix tells the verifier which lines to look for goals on. It's meant
@@ -481,7 +479,7 @@ and asked for a node with kind `elif` instead:
 
 [source,c]
 ----
-//- FileNode.node/kind elif
+//- FileNode?.node/kind elif
 ----
 
 the verifier will protest (and return a nonzero exit code):
@@ -588,10 +586,8 @@ digraph G {
 "App(vname, (foo#0, example, \"\", hello, ex))" [ label=<<TABLE><TR><TD COLSPAN="2">(foo#0, example, &quot;&quot;, hello, ex) = VarFoo</TD></TR><TR><TD>/kythe/node/kind</TD><TD>variable</TD></TR></TABLE>> shape=plaintext  color=blue ];
 "App(vname, (@66:69, example, \"\", hello, ex))" [ shape=circle, label="@foo:1.4", color="blue" ];
 "App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/defines/binding" ];
-"App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
 "App(vname, (@100:103, example, \"\", hello, ex))" [ shape=circle, label="@foo:4.6", color="blue" ];
 "App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/ref" ];
-"App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
 }
 ----
 

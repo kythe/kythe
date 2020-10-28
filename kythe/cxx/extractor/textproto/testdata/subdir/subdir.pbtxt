@@ -1,0 +1,4 @@
+# proto-file: subdir.proto
+# proto-message: textproto_test.MyMessage
+
+str_field: "testing, testing..."

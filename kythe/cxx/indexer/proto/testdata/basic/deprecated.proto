@@ -1,0 +1,70 @@
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+//- @M defines/binding Message
+//- Message.node/kind record
+//- Message.tag/deprecated ""
+message M {
+
+  option deprecated = true;
+
+  //- @field1 defines/binding F1
+  //- F1.tag/deprecated ""
+  optional string field1 = 1 [deprecated=true];
+
+  //- @field2 defines/binding F2
+  //- !{ F2.tag/deprecated "" }
+  optional string field2 = 2;
+
+  // Fields that are annotated with [deprecated=true] should be tagged as
+  // deprecated by the proto indexer.
+
+  //- @N1 defines/binding Nested1
+  //- Nested1.node/kind record
+  //- Nested1.tag/deprecated ""
+  message N1 {
+    option deprecated = true;
+
+    //- @field3 defines/binding F3
+    //- F3.tag/deprecated ""
+    optional string field3 = 1 [deprecated = true];
+  }
+
+  //- @N2 defines/binding Nested2
+  //- Nested2.node/kind record
+  //- !{ Nested2.tag/deprecated "" }
+  message N2 {
+
+    //- @field4 defines/binding F4
+    //- F4.tag/deprecated ""
+    optional string field4 = 1 [deprecated = true];
+  }
+
+
+  //- @D defines/binding EnumD
+  //- EnumD.node/kind sum
+  //- EnumD.tag/deprecated ""
+  enum D {
+    option deprecated = true;
+    //- @VAL1 defines/binding Value1Node
+    //- ! { Value1Node.tag/deprecated "" }
+    VAL1 = 1;
+    //- @VAL2 defines/binding Value2Node
+    //- Value2Node.tag/deprecated ""
+    VAL2 = 2 [ deprecated = true ];
+  }
+
+  //- @E defines/binding EnumE
+  //- EnumE.node/kind sum
+  //- ! { EnumE.tag/deprecated "" }
+  enum E {
+    //- @VAL3 defines/binding Value3Node
+    //- ! { Value3Node.tag/deprecated "" }
+    VAL3 = 3;
+    //- @VAL4 defines/binding Value4Node
+    //- Value4Node.tag/deprecated ""
+    VAL4 = 4 [ deprecated = true ];
+  }
+}

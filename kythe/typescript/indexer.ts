@@ -15,19 +15,87 @@
  */
 
 import 'source-map-support/register';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+import {MarkedSource} from '../proto/common_pb';
+import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
-/** VName is the type of Kythe node identities. */
-export interface VName {
-  signature: string;
-  corpus: string;
-  root: string;
-  path: string;
-  language: string;
+const LANGUAGE = 'typescript';
+
+/**
+ * An indexer host holds information about the program indexing and methods
+ * used by the TypeScript indexer that may also be useful to plugins, reducing
+ * code duplication.
+ */
+export interface IndexerHost {
+  /**
+   * Gets the offset table for a file path.
+   * These are used to lookup UTF-8 offsets (used by Kythe) from UTF-16 offsets
+   * (used by TypeScript), and vice versa.
+   */
+  getOffsetTable(path: string): Readonly<utf8.OffsetTable>;
+  /**
+   * getSymbolAtLocation is the same as ts.TypeChecker.getSymbolAtLocation,
+   * except that it has a return type that properly captures that
+   * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
+   * not yet null-safe, so it hasn't been annotated with full types.)
+   */
+  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined;
+  /**
+   * Computes the VName (and signature) of a ts.Symbol. A Context can be
+   * optionally specified to help disambiguate nodes with multiple declarations.
+   * See the documentation of Context for more information.
+   */
+  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName
+      |undefined;
+  /**
+   * scopedSignature computes a scoped name for a ts.Node.
+   * E.g. if you have a function `foo` containing a block containing a variable
+   * `bar`, it might return a VName like
+   *   signature: "foo.block0.bar""
+   *   path: <appropriate path to module>
+   */
+  scopedSignature(startNode: ts.Node): VName;
+  /**
+   * Converts a file path into a file VName.
+   */
+  pathToVName(path: string): VName;
+  /**
+   * Returns the module name of a TypeScript source file.
+   * See moduleName() for more details.
+   */
+  moduleName(path: string): string;
+  /**
+   * Paths to index.
+   */
+  paths: string[];
+  /**
+   * TypeScript program.
+   */
+  program: ts.Program;
+  /**
+   * Strategy to emit Kythe entries by.
+   */
+  emit(obj: JSONFact|JSONEdge): void;
+}
+
+/**
+ * A indexer plugin adds extra functionality with the same inputs as the base
+ * indexer.
+ */
+export interface Plugin {
+  /** Name of the plugin. It will be printed to stderr when running plugin. */
+  name: string;
+  /**
+   * Indexes a TypeScript program with extra functionality.
+   * Takes a indexer host, which provides useful properties and methods that
+   * the plugin can defer to rather than reimplementing.
+   */
+  index(context: IndexerHost): void;
 }
 
 /**
@@ -36,7 +104,7 @@ export interface VName {
  * don't iterate through Iterators.
  */
 function toArray<T>(it: Iterator<T>): T[] {
-  let array: T[] = [];
+  const array: T[] = [];
   for (let next = it.next(); !next.done; next = it.next()) {
     array.push(next.value);
   }
@@ -52,164 +120,212 @@ function stripExtension(path: string): string {
 }
 
 /**
- * TSNamespace represents the two namespaces of TypeScript: types and values.
- * A given symbol may be a type, it may be a value, and the two may even
- * be unrelated.
+ * TSNamespace represents the three declaration namespaces of TypeScript: types,
+ * values, and (confusingly) namespaces. A given symbol may be a type, and/or a
+ * value, and/or a namespace.
  *
  * See the table at
  *   https://www.typescriptlang.org/docs/handbook/declaration-merging.html
- *
- * TODO: there are actually three namespaces; the third is (confusingly)
- * itself called namespaces.  Implement those in this enum and other places.
+ * for a listing of namespace groups for various declaration types and further
+ * discussion.
  */
-enum TSNamespace {
+export enum TSNamespace {
   TYPE,
   VALUE,
+  NAMESPACE,
 }
 
-/** Visitor manages the indexing process for a single TypeScript SourceFile. */
-class Vistor {
-  /** The file we're visiting. */
-  file: ts.SourceFile;
+/**
+ * Context represents the environment a node is declared in, and may be used for
+ * disambiguating a node's declarations if it has multiple.
+ */
+export enum Context {
+  /**
+   * No disambiguation about a node's declarations. May be lazily generated
+   * from other contexts; see SymbolVNameStore documentation.
+   */
+  Any,
+  /** The node is declared as a getter. */
+  Getter,
+  /** The node is declared as a setter. */
+  Setter,
+}
 
-  /** kFile is the VName for the source file. */
-  kFile: VName;
+/**
+ * Determines if a node is a variable-like declaration.
+ *
+ * TODO(https://github.com/microsoft/TypeScript/issues/33115): Replace this with
+ * a native `ts.isHasExpressionInitializer` if TypeScript ever adds it.
+ */
+function hasExpressionInitializer(node: ts.Node):
+    node is ts.HasExpressionInitializer {
+  return ts.isVariableDeclaration(node) || ts.isParameter(node) ||
+      ts.isBindingElement(node) || ts.isPropertySignature(node) ||
+      ts.isPropertyDeclaration(node) || ts.isPropertyAssignment(node) ||
+      ts.isEnumMember(node);
+}
+
+/**
+ * Determines if a node is a static member of a class.
+ */
+function isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
+  return ts.isPropertyDeclaration(node) && node.parent === klass &&
+      ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
+}
+
+function todo(sourceRoot: string, node: ts.Node, message: string) {
+  const sourceFile = node.getSourceFile();
+  const file = path.relative(sourceRoot, sourceFile.fileName);
+  const {line, character} =
+      ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+  console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
+}
+
+type NamespaceAndContext = string&{__brand: 'nsctx'};
+/**
+ * A SymbolVNameStore stores a mapping of symbols to the (many) VNames it may
+ * have. Each TypeScript symbol can be be of a different TypeScript namespace
+ * and be declared in a unique context, leading to a total (`TSNamespace` *
+ * `Context`) number of possible VNames for the symbol.
+ *
+ *              TSNamespace + Context
+ *              -----------   -------
+ *              TYPE          Any
+ * ts.Symbol -> VALUE         Getter  -> VName
+ *              NAMESPACE     Setter
+ *                            ...
+ *
+ * The `Any` context makes no guarantee of symbol declaration disambiguation.
+ * As a result, unless explicitly set for a given symbol and namespace, the
+ * VName of an `Any` context is lazily set to the VName of an arbitrary context.
+ */
+class SymbolVNameStore {
+  private readonly store =
+      new Map<ts.Symbol, Map<NamespaceAndContext, Readonly<VName>>>();
 
   /**
-   * symbolNames maps ts.Symbols to their assigned VNames.
-   * The value is a tuple of the separate TypeScript namespaces, and entries
-   * in it correspond to TSNamespace values.  See the documentation of
-   * TSNamespace.
+   * Serializes a namespace and context as a string to lookup in the store.
+   *
+   * Each instance of a JavaScript object is unique, so using one as a key fails
+   * because a new object would be generated every time the store is queried.
    */
-  symbolNames = new Map<ts.Symbol, [VName | null, VName|null]>();
+  private serialize(ns: TSNamespace, context: Context): NamespaceAndContext {
+    return `${ns}${context}` as NamespaceAndContext;
+  }
+
+  /** Get a symbol VName for a given namespace and context, if it exists. */
+  get(symbol: ts.Symbol, ns: TSNamespace, context: Context): VName|undefined {
+    if (this.store.has(symbol)) {
+      const nsCtx = this.serialize(ns, context);
+      return this.store.get(symbol)!.get(nsCtx);
+    }
+    return undefined;
+  }
 
   /**
-   * anonId increments for each anonymous block, to give them unique
-   * signatures.
+   * Set a symbol VName for a given namespace and context. Throws if a VName
+   * already exists.
    */
-  anonId = 0;
+  set(symbol: ts.Symbol, ns: TSNamespace, context: Context, vname: VName) {
+    let vnameMap = this.store.get(symbol);
+    const nsCtx = this.serialize(ns, context);
+    if (vnameMap) {
+      if (vnameMap.has(nsCtx)) {
+        throw new Error(`VName already set with signature ${
+            vnameMap.get(nsCtx)!.signature}`);
+      }
+      vnameMap.set(nsCtx, vname);
+    } else {
+      this.store.set(symbol, new Map([[nsCtx, vname]]));
+    }
 
-  /**
-   * anonNames maps nodes to the anonymous names assigned to them.
-   */
-  anonNames = new Map<ts.Node, string>();
+    // Set the symbol VName for the given namespace and `Any` context, if it has
+    // not already been set.
+    const nsAny = this.serialize(ns, Context.Any);
+    vnameMap = this.store.get(symbol)!;
+    if (!vnameMap.has(nsAny)) {
+      vnameMap.set(nsAny, vname);
+    }
+  }
+}
 
-  typeChecker: ts.TypeChecker;
+/**
+ * isParameterPropertyDeclaration wraps ts.isParameterPropertyDeclaration and
+ * exposes an API that's compatible across TypeScript 3.5 & 3.6.
+ */
+function isParameterPropertyDeclaration(
+    node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
+  // TODO: remove/inline once fully on TypeScript 3.6+
+  return (ts.isParameterPropertyDeclaration as any)(node, parent);
+}
+
+/**
+ * StandardIndexerContext provides the standard definition of information about
+ * a TypeScript program and common methods used by the TypeScript indexer and
+ * its plugins. See the IndexerContext interface definition for more details.
+ */
+class StandardIndexerContext implements IndexerHost {
+  private offsetTables = new Map<string, utf8.OffsetTable>();
 
   /** A shorter name for the rootDir in the CompilerOptions. */
-  sourceRoot: string;
+  private sourceRoot: string;
 
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
    */
-  rootDirs: string[];
+  private rootDirs: string[];
+
+  /** symbolNames is a store of ts.Symbols to their assigned VNames. */
+  private symbolNames = new SymbolVNameStore();
 
   /**
-   * Tracks whether we've emitted the module anchor yet;
-   * see emitModuleAnchorForFirstExport.
+   * anonId increments for each anonymous block, to give them unique
+   * signatures.
    */
-  emittedModuleAnchor = false;
+  private anonId = 0;
+
+  /**
+   * anonNames maps nodes to the anonymous names assigned to them.
+   */
+  private anonNames = new Map<ts.Node, string>();
+
+  private typeChecker: ts.TypeChecker;
 
   constructor(
-      /** Corpus name for produced VNames. */
-      private corpus: string, program: ts.Program,
-      private getOffsetTable: (path: string) => utf8.OffsetTable) {
-    this.typeChecker = program.getTypeChecker();
-
+      /**
+       * The VName for the CompilationUnit, containing compilation-wide info.
+       */
+      private readonly compilationUnit: VName,
+      /**
+       * A map of path to path-specific VName.
+       */
+      private readonly pathVNames: Map<string, VName>,
+      /** All source file paths in the TypeScript program. */
+      public paths: string[],
+      public program: ts.Program,
+      private readFile: (path: string) => Buffer = fs.readFileSync,
+  ) {
     this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
     let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
+    this.typeChecker = this.program.getTypeChecker();
   }
 
-  /**
-   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
-   * emitting to stdout but users may replace it.
-   */
-  emit = (obj: {}) => {
-    console.log(JSON.stringify(obj));
-  };
-
-  todo(node: ts.Node, message: string) {
-    const sourceFile = node.getSourceFile();
-    const file = path.relative(this.sourceRoot, sourceFile.fileName);
-    const {line, character} =
-        ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
-  }
-
-  /**
-   * moduleName returns the ES6 module name of a path to a source file.
-   * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
-   * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
-   * See README.md for a discussion of this.
-   */
-  moduleName(sourcePath: string): string {
-    // Compute sourcePath as relative to one of the rootDirs.
-    // This canonicalizes e.g. bazel-bin/foo to just foo.
-    // Note that this.rootDirs is sorted longest first, so we'll use the
-    // longest match.
-    for (const rootDir of this.rootDirs) {
-      if (sourcePath.startsWith(rootDir)) {
-        sourcePath = path.relative(rootDir, sourcePath);
-        break;
-      }
+  getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
+    let table = this.offsetTables.get(path);
+    if (!table) {
+      const buf = this.readFile(path);
+      table = new utf8.OffsetTable(buf);
+      this.offsetTables.set(path, table);
     }
-    return stripExtension(sourcePath);
+    return table;
   }
 
-  /**
-   * newVName returns a new VName with a given signature and path.
-   */
-  newVName(signature: string, path: string): VName {
-    return {
-      signature,
-      corpus: this.corpus,
-      root: '',
-      path,
-      language: 'typescript',
-    };
-  }
-
-  /** newAnchor emits a new anchor entry that covers a TypeScript node. */
-  newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
-    let name = this.newVName(
-        `@${start}:${end}`,
-        // An anchor refers to specific text, so its path is the file path,
-        // not the module name.
-        path.relative(this.sourceRoot, node.getSourceFile().fileName));
-    this.emitNode(name, 'anchor');
-    let offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
-    this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
-    this.emitFact(name, 'loc/end', offsetTable.lookup(end).toString());
-    this.emitEdge(name, 'childof', this.kFile);
-    return name;
-  }
-
-  /** emitNode emits a new node entry, declaring the kind of a VName. */
-  emitNode(source: VName, kind: string) {
-    this.emitFact(source, 'node/kind', kind);
-  }
-
-  /** emitFact emits a new fact entry, tying an attribute to a VName. */
-  emitFact(source: VName, name: string, value: string) {
-    this.emit({
-      source,
-      fact_name: '/kythe/' + name,
-      fact_value: new Buffer(value).toString('base64'),
-    });
-  }
-
-  /** emitEdge emits a new edge entry, relating two VNames. */
-  emitEdge(source: VName, name: string, target: VName) {
-    this.emit({
-      source,
-      edge_kind: '/kythe/edge/' + name,
-      target,
-      fact_name: '/',
-    });
+  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
+    return this.typeChecker.getSymbolAtLocation(node);
   }
 
   /**
@@ -234,12 +350,21 @@ class Vistor {
    */
   scopedSignature(startNode: ts.Node): VName {
     let moduleName: string|undefined;
-    let parts: string[] = [];
+    const parts: string[] = [];
 
     // Traverse the containing blocks upward, gathering names from nodes that
     // introduce scopes.
-    for (let node: ts.Node|undefined = startNode; node != null;
-         node = node.parent) {
+    for (let node: ts.Node|undefined = startNode,
+                   lastNode: ts.Node|undefined = undefined;
+         node != null; lastNode = node, node = node.parent) {
+      // Nodes that are rvalues of a named initialization should not introduce a
+      // new scope. For instance, in `const a = class A {}`, `A` should
+      // contribute nothing to the scoped signature.
+      if (node.parent && hasExpressionInitializer(node.parent) &&
+          node.parent.name.kind === ts.SyntaxKind.Identifier) {
+        continue;
+      }
+
       switch (node.kind) {
         case ts.SyntaxKind.ExportAssignment:
           const exportDecl = node as ts.ExportAssignment;
@@ -249,22 +374,45 @@ class Vistor {
             // named 'default'.
             parts.push('default');
           } else {
-            this.todo(node, 'handle ExportAssignment with =');
+            parts.push('export=');
           }
           break;
         case ts.SyntaxKind.ArrowFunction:
           // Arrow functions are anonymous, so generate a unique id.
           parts.push(`arrow${this.anonId++}`);
           break;
+        case ts.SyntaxKind.FunctionExpression:
+          // Function expressions look like
+          //   (function() {})
+          // which have no name but introduce an anonymous scope.
+          parts.push(`func${this.anonId++}`);
+          break;
         case ts.SyntaxKind.Block:
+          // Blocks need their own scopes for contained variable declarations.
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
-               node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
-            // A block that's an immediate child of a function is the
-            // function's body, so it doesn't need a separate name.
+               node.parent.kind === ts.SyntaxKind.MethodDeclaration ||
+               node.parent.kind === ts.SyntaxKind.Constructor ||
+               node.parent.kind === ts.SyntaxKind.ForStatement ||
+               node.parent.kind === ts.SyntaxKind.ForInStatement ||
+               node.parent.kind === ts.SyntaxKind.ForOfStatement)) {
+            // A block that's an immediate child of the above node kinds
+            // already has a scoped name generated by that parent.
+            // (It would be fine to not handle this specially and just fall
+            // through to the below code, but avoiding it here makes the names
+            // simpler.)
             continue;
           }
           parts.push(`block${this.anonId++}`);
+          break;
+        case ts.SyntaxKind.ForStatement:
+        case ts.SyntaxKind.ForInStatement:
+        case ts.SyntaxKind.ForOfStatement:
+          // Introduce a naming scope for all variables declared within the
+          // statement, so that the two 'x's declared here get different names:
+          //   for (const x in y) { ... }
+          //   for (const x in y) { ... }
+          parts.push(`for${this.anonId++}`);
           break;
         case ts.SyntaxKind.BindingElement:
         case ts.SyntaxKind.ClassDeclaration:
@@ -273,6 +421,7 @@ class Vistor {
         case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
+        case ts.SyntaxKind.ImportEqualsDeclaration:
         case ts.SyntaxKind.ImportSpecifier:
         case ts.SyntaxKind.ExportSpecifier:
         case ts.SyntaxKind.MethodDeclaration:
@@ -280,22 +429,87 @@ class Vistor {
         case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.ObjectLiteralExpression:
         case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertyAccessExpression:
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
         case ts.SyntaxKind.TypeAliasDeclaration:
         case ts.SyntaxKind.TypeParameter:
         case ts.SyntaxKind.VariableDeclaration:
+        case ts.SyntaxKind.GetAccessor:
+        case ts.SyntaxKind.SetAccessor:
+        case ts.SyntaxKind.ShorthandPropertyAssignment:
           const decl = node as ts.NamedDeclaration;
-          if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
-            parts.push(decl.name.text);
+          if (decl.name) {
+            switch (decl.name.kind) {
+              case ts.SyntaxKind.Identifier:
+              case ts.SyntaxKind.StringLiteral:
+              case ts.SyntaxKind.NumericLiteral:
+              case ts.SyntaxKind.ComputedPropertyName:
+              case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+                let part;
+                if (ts.isComputedPropertyName(decl.name)) {
+                  const sym = this.getSymbolAtLocation(decl.name);
+                  part = sym ? sym.name : this.anonName(decl.name);
+                } else {
+                  part = decl.name.text;
+                }
+                // Wrap literals in quotes, so that characters used in other
+                // signatures do not interfere with the signature created by a
+                // literal. For instance, a literal
+                //   obj.prop
+                // may interefere with the signature of `prop` on an object
+                // `obj`. The literal receives a signature
+                //   "obj.prop"
+                // to avoid this.
+                if (ts.isStringLiteral(decl.name)) {
+                  part = `"${part}"`;
+                }
+                // Instance members of a class are scoped to the type of the
+                // class.
+                if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
+                    ts.isClassElement(lastNode) &&
+                    !isStaticMember(lastNode, decl)) {
+                  part += '#type';
+                }
+                // Getters and setters semantically refer to the same entities
+                // but are declared differently, so they are differentiated.
+                if (ts.isGetAccessor(decl)) {
+                  part += ':getter';
+                } else if (ts.isSetAccessor(decl)) {
+                  part += ':setter';
+                }
+                parts.push(part);
+                break;
+              default:
+                // Skip adding an anonymous scope for variables declared in an
+                // array or object binding pattern like `const [a] = [0]`.
+                break;
+            }
           } else {
-            // TODO: handle other declarations, e.g. binding patterns.
             parts.push(this.anonName(node));
           }
           break;
         case ts.SyntaxKind.Constructor:
-          parts.push('constructor');
+          // Class members declared with a shorthand in the constructor should
+          // be scoped to the class, not the constructor.
+          if (!isParameterPropertyDeclaration(startNode, startNode.parent)) {
+            parts.push('constructor');
+          }
+          break;
+        case ts.SyntaxKind.ImportClause:
+          // An import clause can have one of two forms:
+          //   import foo from './bar';
+          //   import {foo as far} from './bar';
+          // In the first case the clause has a name "foo". In this case add the
+          // name of the clause to the signature.
+          // In the second case the clause has no explicit name. This
+          // contributes nothing to the signature without risk of naming
+          // conflicts because TS imports are essentially file-global lvalues.
+          const importClause = node as ts.ImportClause;
+          if (importClause.name) {
+            parts.push(importClause.name.text);
+          }
           break;
         case ts.SyntaxKind.ModuleDeclaration:
           const modDecl = node as ts.ModuleDeclaration;
@@ -321,6 +535,16 @@ class Vistor {
             moduleName = this.moduleName((node as ts.SourceFile).fileName);
           }
           break;
+        case ts.SyntaxKind.JsxElement:
+        case ts.SyntaxKind.JsxSelfClosingElement:
+        case ts.SyntaxKind.JsxAttribute:
+          // Given a unique anonymous name to all JSX nodes. This prevents
+          // conflicts in cases where attributes would otherwise have the same
+          // name, like `src` in
+          //   <img src={a} />
+          //   <img src={b} />
+          parts.push(`jsx${this.anonId++}`);
+          break;
         default:
           // Most nodes are children of other nodes that do not introduce a
           // new namespace, e.g. "return x;", so ignore all other parents
@@ -331,8 +555,8 @@ class Vistor {
           // it's likely this function should have handled it.  Dynamically
           // probe for this case and warn if we missed one.
           if ('name' in (node as any)) {
-            this.todo(
-                node,
+            todo(
+                this.sourceRoot, node,
                 `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
                     `has unused 'name' property`);
           }
@@ -340,56 +564,307 @@ class Vistor {
     }
 
     // The names were gathered from bottom to top, so reverse before joining.
-    const sig = parts.reverse().join('.');
-    return this.newVName(sig, moduleName!);
+    const signature = parts.reverse().join('.');
+    return Object.assign(
+        this.pathToVName(moduleName!), {signature, language: LANGUAGE});
   }
 
   /**
-   * getSymbolAtLocation is the same as this.typeChecker.getSymbolAtLocation,
-   * except that it has a return type that properly captures that
-   * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
-   * not yet null-safe, so it hasn't been annotated with full types.)
+   * getSymbolName computes the VName of a ts.Symbol. A Context can be
+   * optionally specified to help disambiguate nodes with multiple declarations.
+   * See the documentation of Context for more information.
    */
-  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
-    return this.typeChecker.getSymbolAtLocation(node);
-  }
+  getSymbolName(
+      sym: ts.Symbol, ns: TSNamespace, context: Context = Context.Any): VName
+      |undefined {
+    const stored = this.symbolNames.get(sym, ns, context);
+    if (stored) return stored;
 
-  /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace): VName {
-    let vnames = this.symbolNames.get(sym);
-    if (vnames && vnames[ns]) return vnames[ns]!;
-
-    if (!sym.declarations || sym.declarations.length < 1) {
-      throw new Error('TODO: symbol has no declarations?');
+    let declarations = sym.declarations;
+    if (!declarations || declarations.length < 1) {
+      return undefined;
     }
-    // TODO: think about symbols with multiple declarations.
 
-    let decl = sym.declarations[0];
-    let vname = this.scopedSignature(decl);
-    // The signature of a value is undecorated;
-    // the signature of a type has the #type suffix.
+    // Disambiguate symbols with multiple declarations using a context.
+    if (sym.declarations.length > 1) {
+      switch (context) {
+        case Context.Getter:
+          declarations = declarations.filter(ts.isGetAccessor);
+          break;
+        case Context.Setter:
+          declarations = declarations.filter(ts.isSetAccessor);
+          break;
+        default:
+          break;
+      }
+    }
+
+    const decl = declarations[0];
+    const vname = this.scopedSignature(decl);
+    // The signature of a value is undecorated.
+    // The signature of a type has the #type suffix.
+    // The signature of a namespace has the #namespace suffix.
     if (ns === TSNamespace.TYPE) {
       vname.signature += '#type';
+    } else if (ns === TSNamespace.NAMESPACE) {
+      vname.signature += '#namespace';
     }
 
-    // Save it in the appropriate slot in the symbolNames table.
-    if (!vnames) vnames = [null, null];
-    vnames[ns] = vname;
-    this.symbolNames.set(sym, vnames);
-
+    // Cache the VName for future lookups.
+    this.symbolNames.set(sym, ns, context, vname);
     return vname;
+  }
+
+  /**
+   * moduleName returns the ES6 module name of a path to a source file.
+   * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
+   * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
+   * See README.md for a discussion of this.
+   */
+  moduleName(sourcePath: string): string {
+    // Compute sourcePath as relative to one of the rootDirs.
+    // This canonicalizes e.g. bazel-bin/foo to just foo.
+    // Note that this.rootDirs is sorted longest first, so we'll use the
+    // longest match.
+    for (const rootDir of this.rootDirs) {
+      if (sourcePath.startsWith(rootDir)) {
+        sourcePath = path.relative(rootDir, sourcePath);
+        break;
+      }
+    }
+    return stripExtension(sourcePath);
+  }
+
+  /**
+   * pathToVName returns the VName for a given file path.
+   */
+  pathToVName(path: string): VName {
+    const vname = this.pathVNames.get(path);
+    return {
+      signature: '',
+      language: '',
+      corpus: vname && vname.corpus ? vname.corpus :
+                                      this.compilationUnit.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+      path: vname && vname.path ? vname.path : path,
+    };
+  }
+
+  /**
+   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
+   * emitting to stdout but users may replace it.
+   */
+  emit = (obj: JSONFact|JSONEdge) => {
+    console.log(JSON.stringify(obj));
+  };
+}
+
+const RE_FIRST_NON_WS = /\S|$/;
+const RE_NEWLINE = /\r?\n/;
+const MAX_MS_TEXT_LENGTH = 1_000;
+/**
+ * Formats a MarkedSource text component by
+ * - stripping the text to its first MAX_MS_TEXT_LENGTH characters
+ * - trimming the text
+ * - stripping the leading whitespace of each line in multi-line string by the
+ *   shortest non-zero whitespace length. For example,
+ *   [
+ *       1,
+ *       2,
+ *     ]
+ *   becomes
+ *   [
+ *     1,
+ *     2,
+ *   ]
+ */
+function fmtMarkedSource(s: string) {
+  if (s.search(RE_FIRST_NON_WS) === s.length) {
+    // String is all whitespace, keep as-is
+    return s;
+  }
+  let isChopped = false;
+  if (s.length > MAX_MS_TEXT_LENGTH) {
+    // Trim left first to pick up more chars before chopping the string
+    s = s.trimLeft();
+    s = s.substring(0, MAX_MS_TEXT_LENGTH);
+    isChopped = true;
+  }
+  s = s.replace(/\t/g, '    ');  // normalize tabs for display
+  const lines = s.split(RE_NEWLINE);
+  let shortestLeading = lines[lines.length - 1].search(RE_FIRST_NON_WS);
+  for (let i = 1; i < lines.length - 1; ++i) {
+    shortestLeading =
+        Math.min(shortestLeading, lines[i].search(RE_FIRST_NON_WS));
+  }
+  for (let i = 1; i < lines.length; ++i) {
+    lines[i] = lines[i].substring(shortestLeading);
+  }
+  s = lines.join('\n');
+  if (isChopped) {
+    s += '...';
+  }
+  return s;
+}
+
+function makeMarkedSource({
+  kind,
+  preText,
+  postText,
+  childList,
+}: {
+  kind?: keyof typeof MarkedSource.Kind,
+  preText?: string,
+  postText?: string,
+  childList?: MarkedSource[]
+}): MarkedSource {
+  const ms = new MarkedSource();
+  if (kind !== undefined) ms.setKind(MarkedSource.Kind[kind]);
+  if (preText !== undefined) ms.setPreText(fmtMarkedSource(preText));
+  if (postText !== undefined) ms.setPostText(fmtMarkedSource(postText));
+  if (childList !== undefined) ms.setChildList(childList);
+  return ms;
+}
+
+function isNonNullableArray<T>(arr: Array<T>): arr is Array<NonNullable<T>> {
+  return arr.findIndex(el => el === undefined || el === null) === -1;
+}
+
+/** Visitor manages the indexing process for a single TypeScript SourceFile. */
+class Visitor {
+  /** kFile is the VName for the 'file' node representing the source file. */
+  kFile: VName;
+
+  /** A shorter name for the rootDir in the CompilerOptions. */
+  sourceRoot: string;
+
+  typeChecker: ts.TypeChecker;
+
+  constructor(
+      private readonly host: IndexerHost,
+      private file: ts.SourceFile,
+  ) {
+    this.sourceRoot =
+        this.host.program.getCompilerOptions().rootDir || process.cwd();
+
+    this.typeChecker = this.host.program.getTypeChecker();
+
+    this.kFile = this.newFileVName(file.fileName);
+  }
+
+  /**
+   * newFileVName returns a new VName for the given file path.
+   */
+  newFileVName(path: string): VName {
+    return this.host.pathToVName(path);
+  }
+
+  /**
+   * newVName returns a new VName with a given signature and path.
+   */
+  newVName(signature: string, path: string): VName {
+    return Object.assign(
+        this.newFileVName(path), {signature: signature, language: LANGUAGE});
+  }
+
+  /** newAnchor emits a new anchor entry that covers a TypeScript node. */
+  newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
+    const name = Object.assign(
+        {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
+    this.emitNode(name, NodeKind.ANCHOR);
+    const offsetTable = this.host.getOffsetTable(node.getSourceFile().fileName);
+    this.emitFact(
+        name, FactName.LOC_START, offsetTable.lookupUtf8(start).toString());
+    this.emitFact(
+        name, FactName.LOC_END, offsetTable.lookupUtf8(end).toString());
+    return name;
+  }
+
+  /** emitNode emits a new node entry, declaring the kind of a VName. */
+  emitNode(source: VName, kind: NodeKind) {
+    this.emitFact(source, FactName.NODE_KIND, kind);
+  }
+
+  /** emitSubkind emits a new fact entry, declaring the subkind of a VName. */
+  emitSubkind(source: VName, subkind: Subkind) {
+    this.emitFact(source, FactName.SUBKIND, subkind);
+  }
+
+  /** emitFact emits a new fact entry, tying an attribute to a VName. */
+  emitFact(source: VName, name: FactName, value: string|Uint8Array) {
+    this.host.emit({
+      source,
+      fact_name: name,
+      fact_value: Buffer.from(value).toString('base64'),
+    });
+  }
+
+  /** emitEdge emits a new edge entry, relating two VNames. */
+  emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
+    this.host.emit({
+      source,
+      edge_kind: kind,
+      target,
+      fact_name: '/',
+    });
   }
 
   visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
-      const sym = this.getSymbolAtLocation(param.name);
+      const sym = this.host.getSymbolAtLocation(param.name);
       if (!sym) {
-        this.todo(param, `type param ${param.getText()} has no symbol`);
+        todo(
+            this.sourceRoot, param,
+            `type param ${param.getText()} has no symbol`);
         return;
       }
-      const kType = this.getSymbolName(sym, TSNamespace.TYPE);
-      this.emitNode(kType, 'absvar');
-      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kType);
+      const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
+      if (!kType) continue;
+      this.emitNode(kType, NodeKind.ABSVAR);
+      this.emitEdge(
+          this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kType);
+      // ...<T extends A>
+      if (param.constraint) {
+        const superType = this.visitType(param.constraint);
+        if (superType) this.emitEdge(kType, EdgeKind.BOUNDED_UPPER, superType);
+      }
+      // ...<T = A>
+      if (param.default) this.visitType(param.default);
+    }
+  }
+
+  /**
+   * Emits `ref/call` edges required for call graph:
+   * https://kythe.io/docs/schema/callgraph.html
+   */
+  visitCallOrNewExpression(node: ts.CallExpression|ts.NewExpression) {
+    ts.forEachChild(node, n => {
+      this.visit(n);
+    });
+    const callAnchor = this.newAnchor(node);
+    const symbol = this.host.getSymbolAtLocation(node.expression);
+    if (!symbol) {
+      return;
+    }
+    const name = this.host.getSymbolName(symbol, TSNamespace.VALUE);
+    if (!name) {
+      return;
+    }
+    this.emitEdge(callAnchor, EdgeKind.REF_CALL, name);
+
+    // Each call should have a childof edge to its containing function
+    // scope.
+    const containingFunction = this.getContainingFunctionNode(node);
+    let containingVName: VName|undefined;
+    if (ts.isSourceFile(containingFunction)) {
+      containingVName = this.getSyntheticFileInitVName();
+    } else {
+      containingVName =
+          this.getSymbolAndVNameForFunctionDeclaration(containingFunction)
+              .vname;
+    }
+    if (containingVName) {
+      this.emitEdge(callAnchor, EdgeKind.CHILD_OF, containingVName);
     }
   }
 
@@ -411,7 +886,9 @@ class Vistor {
    * - class implements => type
    * - interface implements => illegal
    */
-  visitHeritage(heritageClauses: ReadonlyArray<ts.HeritageClause>) {
+  visitHeritage(
+      classOrInterface: VName|undefined,
+      heritageClauses: ReadonlyArray<ts.HeritageClause>) {
     for (const heritage of heritageClauses) {
       if (heritage.token === ts.SyntaxKind.ExtendsKeyword && heritage.parent &&
           heritage.parent.kind !== ts.SyntaxKind.InterfaceDeclaration) {
@@ -419,43 +896,70 @@ class Vistor {
       } else {
         this.visitType(heritage);
       }
+      // Add extends edges.
+      if (classOrInterface == null) {
+        // classOrInterface is null for anonymous classes.
+        // But anonymous classes can implement and extends other
+        // classes and interfaces. So currently this edge
+        // is missing. Once we have nodes for anonymous classes -
+        // we can add this missing edges.
+        continue;
+      }
+      for (const baseType of heritage.types) {
+        const type = this.typeChecker.getTypeAtLocation(baseType);
+        if (!type || !type.symbol) {
+          continue;
+        }
+        const vname = this.host.getSymbolName(type.symbol, TSNamespace.TYPE);
+        if (vname) {
+          this.emitEdge(classOrInterface, EdgeKind.EXTENDS, vname);
+        }
+      }
     }
   }
 
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
-    let sym = this.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) {
-      this.todo(decl.name, `interface ${decl.name.getText()} has no symbol`);
+      todo(
+          this.sourceRoot, decl.name,
+          `interface ${decl.name.getText()} has no symbol`);
       return;
     }
-    let kType = this.getSymbolName(sym, TSNamespace.TYPE);
-    this.emitNode(kType, 'interface');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+    const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
+    if (kType) {
+      this.emitNode(kType, NodeKind.INTERFACE);
+      this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+      this.visitJSDoc(decl, kType);
+    }
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
+    if (decl.heritageClauses) this.visitHeritage(kType, decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
-    let sym = this.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) {
-      this.todo(decl.name, `type alias ${decl.name.getText()} has no symbol`);
+      todo(
+          this.sourceRoot, decl.name,
+          `type alias ${decl.name.getText()} has no symbol`);
       return;
     }
-    let kType = this.getSymbolName(sym, TSNamespace.TYPE);
-    this.emitNode(kType, 'talias');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+    const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
+    if (!kType) return;
+    this.emitNode(kType, NodeKind.TALIAS);
+    this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+    this.visitJSDoc(decl, kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    this.visitType(decl.type);
-    // TODO: in principle right here we emit an "aliases" edge.
-    // However, it's complicated by the fact that some types don't have
-    // specific names to alias, e.g.
-    //   type foo = number|string;
-    // Just punt for now.
+    const kAlias = this.visitType(decl.type);
+    // Emit an "aliases" edge if the aliased type has a singular VName.
+    if (kAlias) {
+      this.emitEdge(kType, EdgeKind.ALIASES, kAlias);
+    }
   }
 
   /**
@@ -463,22 +967,61 @@ class Vistor {
    * It's separate from visit() because bare ts.Identifiers within a normal
    * expression are values (handled by visit) but bare ts.Identifiers within
    * a type are types (handled here).
+   *
+   * @return the VName of the type, if available.  (For more complex types,
+   *    e.g. Array<string>, we might not have a VName for the specific type.)
    */
-  visitType(node: ts.Node): void {
+  visitType(node: ts.Node): VName|undefined {
     switch (node.kind) {
-      case ts.SyntaxKind.Identifier:
-        let sym = this.getSymbolAtLocation(node);
-        if (!sym) {
-          this.todo(node, `type ${node.getText()} has no symbol`);
+      case ts.SyntaxKind.TypeReference:
+        const ref = node as ts.TypeReferenceNode;
+        const kType = this.visitType((node as ts.TypeReferenceNode).typeName);
+
+        // Return no VName for types with type arguments because their VName is
+        // not qualified. E.g.
+        //   Array<string>
+        //   Array<number>
+        // have the same VName signature "Array"
+        if (ref.typeArguments) {
+          ref.typeArguments.forEach(type => this.visitType(type));
           return;
         }
-        let name = this.getSymbolName(sym, TSNamespace.TYPE);
-        this.emitEdge(this.newAnchor(node), 'ref', name);
-        return;
-      default:
-        // Default recursion, but using visitType(), not visit().
-        return ts.forEachChild(node, n => this.visitType(n));
+        return kType;
+      case ts.SyntaxKind.Identifier:
+        const sym = this.host.getSymbolAtLocation(node);
+        if (!sym) {
+          todo(this.sourceRoot, node, `type ${node.getText()} has no symbol`);
+          return;
+        }
+        const name = this.host.getSymbolName(sym, TSNamespace.TYPE);
+        if (!name) return;
+        this.emitEdge(this.newAnchor(node), EdgeKind.REF, name);
+        return name;
+      case ts.SyntaxKind.TypeReference:
+        const typeRef = node as ts.TypeReferenceNode;
+        if (!typeRef.typeArguments) {
+          // If it's an direct type reference, e.g. SomeInterface
+          // as opposed to SomeInterface<T>, then the VName for the type
+          // reference is just the inner type name.
+          return this.visitType(typeRef.typeName);
+        }
+        // Otherwise, leave it to the default handling.
+        break;
+      case ts.SyntaxKind.TypeQuery:
+        // This is a 'typeof' expression, which takes a value as its argument,
+        // so use visit() instead of visitType().
+        const typeQuery = node as ts.TypeQueryNode;
+        this.visit(typeQuery.exprName);
+        return;  // Avoid default recursion.
     }
+
+    // Default recursion, but using visitType(), not visit().
+    ts.forEachChild(node, n => {
+      this.visitType(n);
+    });
+    // Because we don't know the specific thing we visited, give the caller
+    // back no name.
+    return undefined;
   }
 
   /**
@@ -490,29 +1033,112 @@ class Vistor {
    * getPathFromModule(the './foo' node) might return a string like
    * 'path/to/project/foo'.  See this.moduleName().
    */
-  getModulePathFromModuleReference(sym: ts.Symbol): string {
-    let name = sym.name;
-    // TODO: this is hacky; it may be the case we need to use the TypeScript
-    // module resolver to get the real path (?).  But it appears the symbol
-    // name is the quoted(!) path to the module.
-    if (!(name.startsWith('"') && name.endsWith('"'))) {
-      throw new Error(`TODO: handle module symbol ${name}`);
-    }
-    const sourcePath = name.substr(1, name.length - 2);
-    return this.moduleName(sourcePath);
+  getModulePathFromModuleReference(sym: ts.Symbol): string|undefined {
+    const sf = sym.valueDeclaration;
+    // If the module is not a source file, it does not have a unique file path.
+    // This can happen in cases of importing local modules, like
+    //   declare namespace Foo {}
+    //   import foo = Foo;
+    if (!sf || !ts.isSourceFile(sf)) return undefined;
+    return this.host.moduleName(sf.fileName);
   }
 
   /**
-   * visitImportSpecifier handles a single entry in an import statement, e.g.
+   * Returns the location of a text in the source code of a node.
+   */
+  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
+    const ofs = node.getText().indexOf(text);
+    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
+    const start = node.getStart() + ofs;
+    const end = start + text.length;
+    return {start, end};
+  }
+
+  /**
+   * Returns the symbol of a class constructor if it exists, otherwise nothing.
+   */
+  getCtorSymbol(klass: ts.ClassDeclaration): ts.Symbol|undefined {
+    if (klass.name) {
+      const sym = this.host.getSymbolAtLocation(klass.name);
+      if (sym && sym.members) {
+        return sym.members.get(ts.InternalSymbolName.Constructor);
+      }
+    }
+    return undefined;
+  }
+
+  getSymbolAndVNameForFunctionDeclaration(node: ts.FunctionLikeDeclaration):
+      {sym?: ts.Symbol, vname?: VName} {
+    let context: Context|undefined = undefined;
+    if (ts.isGetAccessor(node)) {
+      context = Context.Getter;
+    } else if (ts.isSetAccessor(node)) {
+      context = Context.Setter;
+    }
+    if (node.name) {
+      const sym = this.host.getSymbolAtLocation(node.name);
+      if (!sym) {
+        return {};
+      }
+      const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
+      return {sym, vname};
+    } else {
+      // TODO: choose VName for anonymous functions and return symbol
+      return {vname: this.newVName('TODO', 'TODOPath')};
+    }
+  }
+
+  /**
+   * Given a node finds a function node that contains given node and returns it.
+   * If the node is not inside a function - returns SourceFile node. Examples:
+   *
+   * function foo() {
+   *   var b = 123;
+   * }
+   * var c = 567;
+   *
+   * For 'b' node this function will return 'foo' node.
+   * For 'c' node this function will return SourceFile node.
+   */
+  getContainingFunctionNode(node: ts.Node): ts.FunctionLikeDeclaration
+      |ts.SourceFile {
+    node = node.parent;
+    for (; node.kind !== ts.SyntaxKind.SourceFile; node = node.parent) {
+      const kind = node.kind;
+      if (kind === ts.SyntaxKind.FunctionDeclaration ||
+          kind === ts.SyntaxKind.ArrowFunction ||
+          kind === ts.SyntaxKind.MethodDeclaration ||
+          kind === ts.SyntaxKind.Constructor ||
+          kind === ts.SyntaxKind.GetAccessor ||
+          kind === ts.SyntaxKind.SetAccessor ||
+          kind === ts.SyntaxKind.MethodSignature) {
+        return node as ts.FunctionLikeDeclaration;
+      }
+    }
+    return node as ts.SourceFile;
+  }
+
+  getSyntheticFileInitVName(): VName {
+    return this.newVName(
+        'fileInit:synthetic', this.host.moduleName(this.file.fileName));
+  }
+
+  /**
+   * visitImport handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
    * See visitImportDeclaration for the code handling the entire statement.
    *
-   * @return The VName for the import.
+   * @param name TypeScript import declaration node
+   * @param bindingAnchor anchor that "defines/binding" the local import
+   *     definition
+   * @param refAnchor anchor that "ref" the import's remote declaration
    */
-  visitImport(name: ts.Node): VName {
+  visitImport(
+      name: ts.Node, bindingAnchor: Readonly<VName>,
+      refAnchor: Readonly<VName>) {
     // An import both aliases a symbol from another module
-    // (call it the "remote" symbol) and it defines a local symbol.
+    // (call it the remote symbol) and it defines a local symbol.
     //
     // Those two symbols often have the same name, with statements like:
     //   import {foo} from 'bar';
@@ -524,65 +1150,143 @@ class Vistor {
     // one for the local and one for the remote.  In principle for the
     // simple import statement
     //   import {foo} from 'bar';
-    // the "foo" should be both:
-    // - a ref/imports to the remote symbol
-    // - a defines/binding for the local symbol
-    //
-    // But in Kythe the UI for stacking multiple references out from a single
-    // anchor isn't great, so this code instead unifies all references
-    // (including renaming imports) to a single VName.
+    // "foo" should both:
+    //   - "ref/imports" the remote symbol
+    //   - "defines/binding" the local symbol
 
-    const localSym = this.getSymbolAtLocation(name);
+    const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
-
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-    // This imported symbol can refer to a type, a value, or both.
-    const kImportValue = remoteSym.flags & ts.SymbolFlags.Value ?
-        this.getSymbolName(remoteSym, TSNamespace.VALUE) :
-        null;
-    const kImportType = remoteSym.flags & ts.SymbolFlags.Type ?
-        this.getSymbolName(remoteSym, TSNamespace.TYPE) :
-        null;
-    // Mark the local symbol with the remote symbol's VName so that all
-    // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [kImportType, kImportValue]);
 
-    // The name anchor must link somewhere.  In rare cases a symbol is both
-    // a type and a value that resolve to two different locations; for now,
-    // because we must choose one, just prefer linking to the value.
-    // One of the value or type reference should be non-null.
-    const kImport = (kImportValue || kImportType)!;
-    this.emitEdge(this.newAnchor(name), 'ref/imports', kImport);
-    return kImport;
+    // The imported symbol can refer to a type, a value, or both. Attempt to
+    // define local imports and reference remote definitions in both cases.
+    if (remoteSym.flags & ts.SymbolFlags.Value) {
+      const kRemoteValue =
+          this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+      const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
+      if (!kRemoteValue || !kLocalValue) return;
+
+      // The local import value is a "variable" with an "import" subkind, and
+      // aliases its remote definition.
+      this.emitNode(kLocalValue, NodeKind.VARIABLE);
+      this.emitFact(kLocalValue, FactName.SUBKIND, Subkind.IMPORT);
+      this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
+
+      // Emit edges from the binding and referencing anchors to the import's
+      // local and remote definition, respectively.
+      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
+      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
+    }
+    if (remoteSym.flags & ts.SymbolFlags.Type) {
+      const kRemoteType = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+      const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
+      if (!kRemoteType || !kLocalType) return;
+
+      // The local import value is a "talias" (type alias) with an "import"
+      // subkind, and aliases its remote definition.
+      this.emitNode(kLocalType, NodeKind.TALIAS);
+      this.emitFact(kLocalType, FactName.SUBKIND, Subkind.IMPORT);
+      this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
+
+      // Emit edges from the binding and referencing anchors to the import's
+      // local and remote definition, respectively.
+      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
+      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
+    }
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
-  visitImportDeclaration(decl: ts.ImportDeclaration) {
+  visitImportDeclaration(decl: ts.ImportDeclaration|
+                         ts.ImportEqualsDeclaration) {
     // All varieties of import statements reference a module on the right,
     // so start by linking that.
-    let moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
+    let moduleRef;
+    if (ts.isImportDeclaration(decl)) {
+      // This is a regular import declaration
+      //     import ... from ...;
+      // where the module name is moduleSpecifier.
+      moduleRef = decl.moduleSpecifier;
+    } else {
+      // This is an import equals declaration, which has two cases:
+      //     import foo = require('./bar');
+      //     import foo = M.bar;
+      // In the first case the moduleReference is an ExternalModuleReference
+      // whose module name is the expression inside the `require` call.
+      // In the second case the moduleReference is the module name.
+      moduleRef = ts.isExternalModuleReference(decl.moduleReference) ?
+          decl.moduleReference.expression :
+          decl.moduleReference;
+    }
+    const moduleSym = this.host.getSymbolAtLocation(moduleRef);
     if (!moduleSym) {
       // This can occur when the module failed to resolve to anything.
       // See testdata/import_missing.ts for more on how that could happen.
       return;
     }
-    let kModule = this.newVName(
-        'module', this.getModulePathFromModuleReference(moduleSym));
-    this.emitEdge(this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+    const modulePath = this.getModulePathFromModuleReference(moduleSym);
+    if (modulePath) {
+      const kModule = this.newVName('module', modulePath);
+      this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+    } else {
+      // Check if module being imported is declared via `declare module`
+      // and if so - output ref to that statement.
+      const decl = moduleSym.valueDeclaration;
+      if (decl && ts.isModuleDeclaration(decl)) {
+        const kModule =
+            this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
+        if (!kModule) return;
+        this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+      }
+    }
+
+    // TODO(#4021): See discussion.
+    // Pending changes, an anchor in a Code Search UI cannot currently be
+    // displayed as a node definition and as referencing other nodes.  Instead,
+    // for non-renamed imports the local node definition is placed on the
+    // "import" text:
+    //   //- @foo ref BarFoo
+    //   //- @import defines/binding LocalFoo
+    //   //- LocalFoo aliases BarFoo
+    //   import {foo} from 'bar';
+    // For renamed imports the definition and references are separated as
+    // expected:
+    //   //- @foo ref BarFoo
+    //   //- @baz defines/binding LocalBaz
+    //   //- @baz aliases BarFoo
+    //   import {foo as baz} from 'bar';
+    //
+    // Create an anchor for the import text.
+    const importTextSpan = this.getTextSpan(decl, 'import');
+    const importTextAnchor =
+        this.newAnchor(decl, importTextSpan.start, importTextSpan.end);
+
+    if (ts.isImportEqualsDeclaration(decl)) {
+      // This is an equals import, e.g.:
+      //   import foo = require('./bar');
+      //
+      // TODO(#4021): Bind the local definition and reference the remote
+      // definition on the import name.
+      this.visitImport(decl.name, importTextAnchor, this.newAnchor(decl.name));
+      return;
+    }
 
     if (!decl.importClause) {
       // This is a side-effecting import that doesn't declare anything, e.g.:
       //   import 'foo';
       return;
     }
-    let clause = decl.importClause;
+    const clause = decl.importClause;
 
     if (clause.name) {
       // This is a default import, e.g.:
       //   import foo from './bar';
-      this.visitImport(clause.name);
+      //
+      // TODO(#4021): Bind the local definition and reference the remote
+      // definition on the import name.
+      this.visitImport(
+          clause.name, importTextAnchor, this.newAnchor(clause.name));
       return;
     }
 
@@ -595,51 +1299,99 @@ class Vistor {
       case ts.SyntaxKind.NamespaceImport:
         // This is a namespace import, e.g.:
         //   import * as foo from 'foo';
-        let name = clause.namedBindings.name;
-        let sym = this.getSymbolAtLocation(name);
+        const name = clause.namedBindings.name;
+        const sym = this.host.getSymbolAtLocation(name);
         if (!sym) {
-          this.todo(
-              clause, `namespace import ${clause.getText()} has no symbol`);
+          todo(
+              this.sourceRoot, clause,
+              `namespace import ${clause.getText()} has no symbol`);
           return;
         }
-        let kModuleObject = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitNode(kModuleObject, 'variable');
-        this.emitEdge(this.newAnchor(name), 'defines/binding', kModuleObject);
+        const kModuleObject = this.host.getSymbolName(sym, TSNamespace.VALUE);
+        if (!kModuleObject) return;
+        this.emitNode(kModuleObject, NodeKind.VARIABLE);
+        this.emitEdge(
+            this.newAnchor(name), EdgeKind.DEFINES_BINDING, kModuleObject);
         break;
       case ts.SyntaxKind.NamedImports:
         // This is named imports, e.g.:
         //   import {bar, baz} from 'foo';
-        let imports = clause.namedBindings.elements;
-        for (let imp of imports) {
-          const kImport = this.visitImport(imp.name);
+        const imports = clause.namedBindings.elements;
+        for (const imp of imports) {
+          // If the named import has a property name, e.g. `bar` in
+          //   import {bar as baz} from 'foo';
+          // bind the local definition on the import name "baz" and reference
+          // the remote definition on the property name "bar". Otherwise, bind
+          // the local definition on "import" and reference the remote
+          // definition on the import name.
+          //
+          // TODO(#4021): Unify binding and reference anchors.
+          let bindingAnchor, refAnchor;
           if (imp.propertyName) {
-            this.emitEdge(
-                this.newAnchor(imp.propertyName), 'ref/imports', kImport);
+            bindingAnchor = this.newAnchor(imp.name);
+            refAnchor = this.newAnchor(imp.propertyName);
+          } else {
+            bindingAnchor = importTextAnchor;
+            refAnchor = this.newAnchor(imp.name);
           }
+          this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
         break;
     }
   }
 
   /**
-   * When we first encounter an 'export' statement (making the file a
-   * module), we tag the 'export' as anchoring the module.
+   * When a file imports another file, with syntax like
+   *   import * as x from 'some/path';
+   * we wants 'some/path' to refer to a VName that just means "the entire
+   * file".  It doesn't refer to any text in particular, so we just mark
+   * the first letter in the file as the anchor for this.
    */
-  emitModuleAnchorForFirstExport(node: ts.Node) {
-    // Emit metadata defining only the first export in the file to be
-    // the source of the module, so check if we've emitted the module
-    // anchor before.
-    if (this.emittedModuleAnchor) return;
+  emitModuleAnchor(sf: ts.SourceFile) {
+    const kMod =
+        this.newVName('module', this.host.moduleName(this.file.fileName));
+    this.emitFact(kMod, FactName.NODE_KIND, 'record');
+    this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
-    // Emit a "record" node, representing the module object.
-    let kMod = this.newVName('module', this.moduleName(this.file.fileName));
-    this.emitFact(kMod, 'node/kind', 'record');
-    this.emitEdge(this.kFile, 'childof', kMod);
+    // Emit the anchor, bound to the beginning of the file.
+    const anchor = this.newAnchor(this.file, 0, 1);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kMod);
+  }
 
-    // Emit the anchor, bound to the "export" keyword
-    const anchor = this.newAnchor(node.getFirstToken(this.file));
-    this.emitEdge(anchor, 'defines/binding', kMod);
-    this.emittedModuleAnchor = true;
+  /**
+   * Emits an implicit property for a getter or setter.
+   * For instance, a getter/setter `foo` in class `A` will emit an implicit
+   * property on that class with signature `A.foo`, and create "property/reads"
+   * and "property/writes" from the getters/setters to the implicit property.
+   */
+  emitImplicitProperty(
+      decl: ts.GetAccessorDeclaration|ts.SetAccessorDeclaration, anchor: VName,
+      funcVName: VName) {
+    // Remove trailing ":getter"/":setter" suffix
+    const propSignature = funcVName.signature.split(':').slice(0, -1).join(':');
+    const implicitProp = {...funcVName, signature: propSignature};
+
+    this.emitNode(implicitProp, NodeKind.VARIABLE);
+    this.emitSubkind(implicitProp, Subkind.IMPLICIT);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
+
+    const sym = this.host.getSymbolAtLocation(decl.name);
+    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+
+    if (sym.declarations.find(ts.isGetAccessor)) {
+      // Emit a "property/reads" edge between the getter and the property
+      const getter =
+          this.host.getSymbolName(sym, TSNamespace.VALUE, Context.Getter);
+      if (!getter) return;
+      this.emitEdge(getter, EdgeKind.PROPERTY_READS, implicitProp);
+    }
+    if (sym.declarations.find(ts.isSetAccessor)) {
+      // Emit a "property/writes" edge between the setter and the property
+      const setter =
+          this.host.getSymbolName(sym, TSNamespace.VALUE, Context.Setter);
+      if (!setter) return;
+      this.emitEdge(setter, EdgeKind.PROPERTY_WRITES, implicitProp);
+    }
   }
 
   /**
@@ -649,7 +1401,10 @@ class Vistor {
    */
   visitExportAssignment(assign: ts.ExportAssignment) {
     if (assign.isExportEquals) {
-      this.todo(assign, `handle export = statement`);
+      const span = this.getTextSpan(assign, 'export =');
+      const anchor = this.newAnchor(assign, span.start, span.end);
+      this.emitEdge(
+          anchor, EdgeKind.DEFINES_BINDING, this.host.scopedSignature(assign));
     } else {
       // export default <expr>;
       // is the same as exporting the expression under the symbol named
@@ -657,11 +1412,10 @@ class Vistor {
       // So instead we link the keyword "default" itself to the VName.
       // The TypeScript AST does not expose the location of the 'default'
       // keyword so we just find it in the source text to link it.
-      const ofs = assign.getText().indexOf('default');
-      if (ofs < 0) throw new Error(`'export default' without 'default'?`);
-      const start = assign.getStart() + ofs;
-      const anchor = this.newAnchor(assign, start, start + 'default'.length);
-      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
+      const span = this.getTextSpan(assign, 'default');
+      const anchor = this.newAnchor(assign, span.start, span.end);
+      this.emitEdge(
+          anchor, EdgeKind.DEFINES_BINDING, this.host.scopedSignature(assign));
     }
   }
 
@@ -674,27 +1428,51 @@ class Vistor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
-    this.emitModuleAnchorForFirstExport(decl);
-    if (decl.exportClause) {
+    if (decl.exportClause && ts.isNamedExports(decl.exportClause)) {
       for (const exp of decl.exportClause.elements) {
-        const localSym = this.getSymbolAtLocation(exp.name);
+        const localSym = this.host.getSymbolAtLocation(exp.name);
         if (!localSym) {
-          console.error(`TODO: export ${name} has no symbol`);
+          console.error(`TODO: export ${exp.name} has no symbol`);
           continue;
         }
-        // TODO: import a type, not just a value.
         const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-        const kExport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
-        this.emitEdge(this.newAnchor(exp.name), 'ref', kExport);
-        if (exp.propertyName) {
-          // Aliased export; propertyName is the 'as <...>' bit.
-          this.emitEdge(this.newAnchor(exp.propertyName), 'ref', kExport);
+        const anchor = this.newAnchor(exp.name);
+        // Aliased export; propertyName is the 'as <...>' bit.
+        const propertyAnchor =
+            exp.propertyName ? this.newAnchor(exp.propertyName) : null;
+        // Symbol is a value.
+        if (remoteSym.flags & ts.SymbolFlags.Value) {
+          const kExport = this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+          if (kExport) {
+            this.emitEdge(anchor, EdgeKind.REF, kExport);
+            if (propertyAnchor) {
+              this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
+            }
+          }
+        }
+        // Symbol is a type.
+        if (remoteSym.flags & ts.SymbolFlags.Type) {
+          const kExport = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+          if (kExport) {
+            this.emitEdge(anchor, EdgeKind.REF, kExport);
+            if (propertyAnchor) {
+              this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
+            }
+          }
         }
       }
     }
     if (decl.moduleSpecifier) {
-      this.todo(
-          decl.moduleSpecifier, `handle module specifier in ${decl.getText()}`);
+      const moduleSym = this.host.getSymbolAtLocation(decl.moduleSpecifier);
+      if (moduleSym) {
+        const moduleName = this.getModulePathFromModuleReference(moduleSym);
+        if (moduleName) {
+          const kModule = this.newVName('module', moduleName);
+          this.emitEdge(
+              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+              kModule);
+        }
+      }
     }
   }
 
@@ -703,14 +1481,16 @@ class Vistor {
     // as in:
     //   var x = 3, y = 4;
     // In the (common) case where there's a single variable declared, we look
-    // for documentation for that variable above the statement.
-    let vname: VName|undefined;
-    for (const decl of stmt.declarationList.declarations) {
-      vname = this.visitVariableDeclaration(decl);
+    // for documentation for that variable above the entire statement.
+    if (stmt.declarationList.declarations.length === 1) {
+      const vname =
+          this.visitVariableDeclaration(stmt.declarationList.declarations[0]);
+      if (vname) this.visitJSDoc(stmt, vname);
+      return;
     }
-    if (stmt.declarationList.declarations.length === 1 && vname !== undefined) {
-      this.visitJSDoc(stmt, vname);
-    }
+
+    // Otherwise, use default recursion over the statement.
+    ts.forEachChild(stmt, n => this.visit(n));
   }
 
   /**
@@ -722,20 +1502,27 @@ class Vistor {
     name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression, kind: ts.SyntaxKind,
-  }): VName|undefined {
+  }&ts.Node): VName|undefined {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
-        let sym = this.getSymbolAtLocation(decl.name);
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+        const sym = this.host.getSymbolAtLocation(decl.name);
         if (!sym) {
-          this.todo(
-              decl.name, `declaration ${decl.name.getText()} has no symbol`);
+          todo(
+              this.sourceRoot, decl.name,
+              `declaration ${decl.name.getText()} has no symbol`);
           return undefined;
         }
-        vname = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitNode(vname, 'variable');
+        vname = this.host.getSymbolName(sym, TSNamespace.VALUE);
+        if (vname) {
+          this.emitNode(vname, NodeKind.VARIABLE);
+          this.emitEdge(
+              this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, vname);
+        }
 
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
+        decl.name.forEachChild(child => this.visit(child));
         break;
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
@@ -743,92 +1530,305 @@ class Vistor {
           this.visit(element);
         }
         break;
+      case ts.SyntaxKind.ComputedPropertyName:
+        decl.name.forEachChild(child => this.visit(child));
+        break;
       default:
-        this.todo(
-            decl.name,
-            `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
+        break;
     }
+
+    if (vname) {
+      if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
+          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl)) {
+        this.emitDeclarationCode(decl, vname);
+      } else {
+        todo(this.sourceRoot, decl, 'Emit variable delaration code');
+      }
+    }
+
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
-      let declNode = decl as ts.PropertyDeclaration;
-      if (ts.getCombinedModifierFlags(declNode) & ts.ModifierFlags.Static) {
-        this.emitFact(vname, 'tag/static', '');
+      const declNode = decl as ts.PropertyDeclaration;
+      if (isStaticMember(declNode, declNode.parent)) {
+        this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
     return vname;
   }
 
-  visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
-    this.visitDecorators(decl.decorators || []);
-    let kFunc: VName|undefined = undefined;
-    if (decl.name) {
-      let sym = this.getSymbolAtLocation(decl.name);
-      if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
-        // TODO: it's not clear what to do with computed property named
-        // functions.  They don't have a symbol.
-        this.visit((decl.name as ts.ComputedPropertyName).expression);
-      } else {
-        if (!sym) {
-          this.todo(
-              decl.name,
-              `function declaration ${decl.name.getText()} has no symbol`);
-          return;
-        }
-        kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitNode(kFunc, 'function');
-
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
-
-        this.visitJSDoc(decl, kFunc);
+  /**
+   * Emits a code fact for a variable or property declaration, specifying how
+   * the declaration should be presented to users.
+   *
+   * The form of the code fact is
+   *     ((property)|(local var)|const|let) <name>: <type>( = <initializer>)?
+   * where `(local var)` is the declaration of a variable in a catch clause.
+   */
+  emitDeclarationCode(
+      decl: ts.VariableDeclaration|ts.PropertyAssignment|
+      ts.PropertyDeclaration|ts.BindingElement,
+      declVName: VName) {
+    const codeParts: MarkedSource[] = [];
+    const initializerList = decl.parent;
+    let varDecl;
+    const bindingPath: Array<string|number|undefined> = [];
+    if (ts.isBindingElement(decl)) {
+      // The node we want to emit code for is a BindingElement. This parent of
+      // this is always a BindingPattern; the parent of the BindingPattern is
+      // another BindingPattern, a ParameterDeclaration, or VariableDeclaration.
+      // We handle ParameterDeclarations in `visitParameters`, so here we only
+      // care about the declaration from a VariableDeclaration.
+      bindingPath.push(this.bindingElemIndex(decl));
+      varDecl = decl.parent.parent;
+      while (!ts.isVariableDeclaration(varDecl) && varDecl !== undefined) {
+        if (ts.isParameter(varDecl)) return;
+        bindingPath.push(this.bindingElemIndex(varDecl));
+        varDecl = varDecl.parent.parent;
+      }
+      if (varDecl === undefined) {
+        todo(
+            this.sourceRoot, decl,
+            `Does not have variable and parameter declaration.`);
       }
     } else {
-      // TODO: choose VName for anonymous functions.
-      kFunc = this.newVName('TODO', 'TODOPath');
+      varDecl = decl;
     }
 
-    if (kFunc && decl.parent) {
-      // Emit a "childof" edge on class/interface members.
-      if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
-          decl.parent.kind === ts.SyntaxKind.ClassExpression ||
-          decl.parent.kind === ts.SyntaxKind.InterfaceDeclaration) {
-        let parentName = (decl.parent as ts.ClassLikeDeclaration).name;
-        if (parentName !== undefined) {
-          let parentSym = this.getSymbolAtLocation(parentName);
-          if (!parentSym) {
-            this.todo(parentName, `parent ${parentName} has no symbol`);
-            return;
+    let declKw;
+    if (ts.isVariableDeclaration(varDecl)) {
+      declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
+          '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+    } else {
+      declKw = '(property)';
+    }
+    const ty = this.typeChecker.getTypeAtLocation(decl);
+    const tyStr = this.typeChecker.typeToString(ty, decl);
+    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
+    codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' '}));
+    codeParts.push(
+        makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
+    codeParts.push(
+        makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
+    if (varDecl.initializer) {
+      let init: ts.Node = varDecl.initializer;
+
+      if (ts.isObjectLiteralExpression(init) ||
+          ts.isArrayLiteralExpression(init)) {
+        const narrowedInit = isNonNullableArray(bindingPath) &&
+            this.walkObjectLikeLiteral(init, bindingPath.reverse());
+        init = narrowedInit || init;
+      }
+
+      codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
+      codeParts.push(
+          makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
+    }
+
+    const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
+    this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
+  }
+
+  /**
+   * Given a path of properties, walks the properties/elements of an
+   * object/array literal, yielding the final node along the path.
+   *
+   * If the path or object literal is malformed (i.e. the property does not
+   * exist or the object to walk is not a literal), nothing is returned.
+   */
+  walkObjectLikeLiteral(
+      objLiteral: ts.ArrayLiteralExpression|ts.ObjectLiteralExpression,
+      path: Array<string|number>,
+      ): ts.Node|undefined {
+    let node: ts.Node = objLiteral;
+    for (const prop of path) {
+      let next: ts.Node|undefined;
+      if (ts.isObjectLiteralExpression(node)) {
+        // The property name node text is the "index" of the property. See
+        // `bindingElemIndex` for more details.
+        next = node.properties.find(
+            p => p.name && this.getPropertyNameStr(p.name) === prop);
+        if (next && ts.isPropertyAssignment(next)) {
+          next = next.initializer;
+        }
+      } else if (
+          ts.isArrayLiteralExpression(node) && typeof prop === 'number') {
+        next = (node as ts.ArrayLiteralExpression).elements[prop];
+      }
+      if (!next) {
+        todo(
+            this.sourceRoot, node,
+            `expected to be an object-like literal with property '${prop}'`)
+        return;
+      }
+      node = next;
+    }
+    return node;
+  }
+
+  /**
+   * Returns the property "index" of a bound element in a binding pattern, if
+   * known. For example,
+   * - `1` has index `2` in the binding pattern `[3, 2, 1]`
+   * - `c` has index `c` in the binding pattern `{a, b, c}`
+   * - `calias` has index `c` in the binding pattern `{a, b, c: calias}`
+   */
+  bindingElemIndex(elem: ts.BindingElement): string|number|undefined {
+    const bindingPat = elem.parent;
+    if (ts.isObjectBindingPattern(bindingPat)) {
+      if (elem.propertyName) {
+        return this.getPropertyNameStr(elem.propertyName);
+      }
+      switch (elem.name.kind) {
+        case ts.SyntaxKind.Identifier:
+          return elem.name.text;
+        case ts.SyntaxKind.ArrayBindingPattern:
+        case ts.SyntaxKind.ObjectBindingPattern:
+          return undefined;
+      }
+    } else {
+      return bindingPat.elements.indexOf(elem);
+    }
+  }
+
+  /**
+   * Returns the string content of a property name, if known.
+   * The name of complex computed properties is often not known.
+   */
+  getPropertyNameStr(elem: ts.PropertyName): string|undefined {
+    switch (elem.kind) {
+      case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+      case ts.SyntaxKind.PrivateIdentifier:
+        return elem.text;
+      case ts.SyntaxKind.ComputedPropertyName:
+        const name = this.host.getSymbolAtLocation(elem)?.name;
+        // If the computed property expression is more complicated than an
+        // identifier (e.g. `['red' + 'cat']` or `[fn()]`), the name isn't
+        // resolved and the symbol name is marked as "__computed". This doesn't
+        // help us for indexing, so return "undefined" in such cases.
+        // Constant evaluation of the computed property name is not always
+        // possible (e.g. the expression may be a function call), and usage of
+        // computed properties is probably rare enough that handling the "simple
+        // case" is good enough for now.
+        return name !== '__computed' ? name : undefined;
+    }
+  }
+
+  /**
+   * Emit "overrides" edges if this method overrides extended classes or
+   * implemented interfaces, which are listed in the Heritage Clauses of
+   * a class or interface.
+   *     class X extends A implements B, C {}
+   *             ^^^^^^^^^-^^^^^^^^^^^^^^^----- `HeritageClause`s
+   * Look at each type listed in the heritage clauses and traverse its
+   * members. If the type has a member that matches the method visited in
+   * this function (`kFunc`), emit an "overrides" edge to that member.
+   */
+  emitOverridesEdgeForFunction(
+      funcSym: ts.Symbol, funcVName: VName,
+      parent: ts.ClassLikeDeclaration|ts.InterfaceDeclaration) {
+    if (parent.heritageClauses == null) {
+      return;
+    }
+    for (const heritage of parent.heritageClauses) {
+      for (const baseType of heritage.types) {
+        const type = this.typeChecker.getTypeAtLocation(baseType.expression);
+        if (!type || !type.symbol || !type.symbol.members) {
+          continue;
+        }
+
+        const funcName = funcSym.name;
+        const funcFlags = funcSym.flags;
+
+        // Find a member of with the same type (same flags) and same name
+        // as the overriding method.
+        const overriddenCondition = (sym: ts.Symbol) =>
+            Boolean(sym.flags & funcFlags) && sym.name === funcName;
+
+        const overridden =
+            toArray(type.symbol.members.values()).find(overriddenCondition);
+        if (overridden) {
+          const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
+          if (base) {
+            this.emitEdge(funcVName, EdgeKind.OVERRIDES, base);
           }
-          let kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
-          this.emitEdge(kFunc, 'childof', kParent);
         }
       }
+    }
+  }
 
-      // TODO: emit an "overrides" edge if this method overrides.
-      // It appears the TS API doesn't make finding that information easy,
-      // perhaps because it mostly cares about whether types are structrually
-      // compatible.  But I think you can start from the parent class/iface,
-      // then from there follow the "implements"/"extends" chain to other
-      // classes/ifaces, and then from there look for methods with matching
-      // names.
+  visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
+    this.visitDecorators(decl.decorators || []);
+    const {sym, vname} = this.getSymbolAndVNameForFunctionDeclaration(decl);
+    if (!vname) {
+      todo(
+          this.sourceRoot, decl,
+          `function declaration ${decl.getText()} has no symbol`);
+      return;
+    }
+    const isNameComputedProperty =
+        decl.name && decl.name.kind === ts.SyntaxKind.ComputedPropertyName;
+    if (isNameComputedProperty) {
+      this.visit((decl.name as ts.ComputedPropertyName).expression);
     }
 
-    for (const [index, param] of toArray(decl.parameters.entries())) {
-      this.visitDecorators(param.decorators || []);
-      let sym = this.getSymbolAtLocation(param.name);
+    // Treat functions with computed names as anonymous. From developer point of view in the
+    // following expression:
+    // `const k = {[foo]() {}};`
+    // the part `[foo]` isn't a separate symbol that you can click. Only `foo` should be xref'ed
+    // and lead to the `foo` definition.
+    if (decl.name && !isNameComputedProperty) {
       if (!sym) {
-        this.todo(param.name, `param ${param.name.getText()} has no symbol`);
-        continue;
+        todo(
+            this.sourceRoot, decl.name,
+            `function declaration ${decl.name.getText()} has no symbol`);
+        return;
       }
-      let kParam = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kParam, 'variable');
-      if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
 
-      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
-      if (param.type) this.visitType(param.type);
+      const declAnchor = this.newAnchor(decl.name);
+      this.emitNode(vname, NodeKind.FUNCTION);
+      this.emitEdge(declAnchor, EdgeKind.DEFINES_BINDING, vname);
 
-      if (param.initializer) this.visit(param.initializer);
+      // Getters/setters also emit an implicit class property entry. If a
+      // getter is present, it will bind this entry; otherwise a setter will.
+      if (ts.isGetAccessor(decl) ||
+          (ts.isSetAccessor(decl) &&
+           !sym.declarations.find(ts.isGetAccessor))) {
+        this.emitImplicitProperty(decl, declAnchor, vname);
+      }
+
+      this.visitJSDoc(decl, vname);
     }
+    this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
+
+    if (decl.parent) {
+      // Emit a "childof" edge on class/interface members.
+      if (ts.isClassLike(decl.parent) ||
+          ts.isInterfaceDeclaration(decl.parent)) {
+        const parentName = decl.parent.name;
+        if (parentName !== undefined) {
+          const parentSym = this.host.getSymbolAtLocation(parentName);
+          if (!parentSym) {
+            todo(
+                this.sourceRoot, parentName,
+                `parent ${parentName} has no symbol`);
+            return;
+          }
+          const kParent = this.host.getSymbolName(parentSym, TSNamespace.TYPE);
+          if (kParent) {
+            this.emitEdge(vname, EdgeKind.CHILD_OF, kParent);
+          }
+        }
+        if (sym) {
+          this.emitOverridesEdgeForFunction(sym, vname, decl.parent);
+        }
+      }
+    }
+
+    this.visitParameters(decl.parameters, vname);
 
     if (decl.type) {
       // "type" here is the return type of the function.
@@ -839,7 +1839,80 @@ class Vistor {
     if (decl.body) {
       this.visit(decl.body);
     } else {
-      if (kFunc) this.emitFact(kFunc, 'complete', 'incomplete');
+      this.emitFact(vname, FactName.COMPLETE, 'incomplete');
+    }
+  }
+
+  /**
+   * Visits a function parameters, which can be recursive in the case of
+   * parameters created via bound elements:
+   *    function foo({a, b: {c, d}}, e, f) {}
+   * In this code, a, c, d, e, f are all parameters with increasing parameter
+   * numbers [0, 4].
+   */
+  visitParameters(
+      parameters: ReadonlyArray<ts.ParameterDeclaration>, kFunc: VName) {
+    let paramNum = 0;
+    const recurseVisit =
+        (param: ts.ParameterDeclaration|ts.BindingElement) => {
+          this.visitDecorators(param.decorators || []);
+
+          switch (param.name.kind) {
+            case ts.SyntaxKind.Identifier:
+              const sym = this.host.getSymbolAtLocation(param.name);
+              if (!sym) {
+                todo(
+                    this.sourceRoot, param.name,
+                    `param ${param.name.getText()} has no symbol`);
+                return;
+              }
+              const kParam = this.host.getSymbolName(sym, TSNamespace.VALUE);
+              if (!kParam) return;
+              this.emitNode(kParam, NodeKind.VARIABLE);
+
+              this.emitEdge(
+                  kFunc, makeOrdinalEdge(EdgeKind.PARAM, paramNum), kParam);
+              ++paramNum;
+
+              if (isParameterPropertyDeclaration(param, param.parent)) {
+                // Class members defined in the parameters of a constructor are
+                // children of the class type.
+                const parentName = param.parent.parent.name;
+                if (parentName !== undefined) {
+                  const parentSym = this.host.getSymbolAtLocation(parentName);
+                  if (parentSym !== undefined) {
+                    const kClass =
+                        this.host.getSymbolName(parentSym, TSNamespace.TYPE);
+                    if (!kClass) return;
+                    this.emitEdge(kParam, EdgeKind.CHILD_OF, kClass);
+                  }
+                }
+              } else {
+                this.emitEdge(kParam, EdgeKind.CHILD_OF, kFunc);
+              }
+
+              this.emitEdge(
+                  this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kParam);
+              break;
+            case ts.SyntaxKind.ObjectBindingPattern:
+            case ts.SyntaxKind.ArrayBindingPattern:
+              const elements = toArray(param.name.elements.entries());
+              for (const [index, element] of elements) {
+                if (ts.isBindingElement(element)) {
+                  recurseVisit(element);
+                }
+              }
+              break;
+            default:
+              break;
+          }
+
+          if (ts.isParameter(param) && param.type) this.visitType(param.type);
+          if (param.initializer) this.visit(param.initializer);
+        }
+
+    for (const element of parameters) {
+      recurseVisit(element);
     }
   }
 
@@ -849,60 +1922,166 @@ class Vistor {
     }
   }
 
+  /**
+   * Visits a module declaration, which can look like any of the following:
+   *     declare module 'foo';
+   *     declare module 'foo' {}
+   *     declare module foo {}
+   *     namespace Foo {}
+   */
+  visitModuleDeclaration(decl: ts.ModuleDeclaration) {
+    let sym = this.host.getSymbolAtLocation(decl.name);
+    if (!sym) {
+      todo(
+          this.sourceRoot, decl.name,
+          `module declaration ${decl.name.getText()} has no symbol`);
+      return;
+    }
+    // A TypeScript module declaration declares both a namespace (a Kythe
+    // "record") and a value (most similar to a "package", which defines a
+    // module with declarations).
+    const kNamespace = this.host.getSymbolName(sym, TSNamespace.NAMESPACE);
+    const kValue = this.host.getSymbolName(sym, TSNamespace.VALUE);
+    if (!kNamespace || !kValue) return;
+    // It's possible that same namespace appears multiple time. We need to
+    // emit only single node for that namespace and single defines/binding
+    // edge.
+    if (sym.valueDeclaration === decl) {
+      this.emitNode(kNamespace, NodeKind.RECORD);
+      this.emitSubkind(kNamespace, Subkind.NAMESPACE);
+      this.emitNode(kValue, NodeKind.PACKAGE);
+
+      const nameAnchor = this.newAnchor(decl.name);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
+      // If no body then it is incomplete module definition, like declare module
+      // 'foo';
+      this.emitFact(
+          kNamespace, FactName.COMPLETE,
+          decl.body ? 'definition' : 'incomplete');
+    }
+
+    // The entire module declaration defines the created namespace.
+    this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
+
+    if (decl.decorators) this.visitDecorators(decl.decorators);
+    if (decl.body) this.visit(decl.body);
+  }
+
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     this.visitDecorators(decl.decorators || []);
+    let kClass: VName|undefined;
     if (decl.name) {
-      let sym = this.getSymbolAtLocation(decl.name);
+      const sym = this.host.getSymbolAtLocation(decl.name);
       if (!sym) {
-        this.todo(decl.name, `class ${decl.name.getText()} has no symbol`);
+        todo(
+            this.sourceRoot, decl.name,
+            `class ${decl.name.getText()} has no symbol`);
         return;
       }
       // A 'class' declaration declares both a type (a 'record', representing
-      // instances of the class) and a value (the constructor).
-      const kClass = this.getSymbolName(sym, TSNamespace.TYPE);
-      this.emitNode(kClass, 'record');
-      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kClassCtor, 'function');
-      // TODO: the specific constructor() should really be the thing tagged
-      // with constructor, but we also need to handle classes that don't declare
-      // a constructor.  Fix me later.
-      this.emitFact(kClassCtor, 'subkind', 'constructor');
+      // instances of the class) and a value (least ambigiously, also the
+      // class declaration).
+      kClass = this.host.getSymbolName(sym, TSNamespace.TYPE);
+      if (!kClass) return;
+      this.emitNode(kClass, NodeKind.RECORD);
+      const kClassCtor = this.host.getSymbolName(sym, TSNamespace.VALUE);
+      if (!kClassCtor) return;
+      this.emitNode(kClassCtor, NodeKind.FUNCTION);
 
       const anchor = this.newAnchor(decl.name);
-      this.emitEdge(anchor, 'defines/binding', kClass);
-      this.emitEdge(anchor, 'defines/binding', kClassCtor);
+      this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClass);
+      this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClassCtor);
+
+      // If the class has a constructor, emit an entry for it.
+      const ctorSymbol = this.getCtorSymbol(decl);
+      if (ctorSymbol) {
+        const ctorDecl = ctorSymbol.declarations[0];
+        const span = this.getTextSpan(ctorDecl, 'constructor');
+        const classCtorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
+
+        const ctorVName =
+            this.host.getSymbolName(ctorSymbol, TSNamespace.VALUE);
+        if (!ctorVName) return;
+
+        this.emitNode(ctorVName, NodeKind.FUNCTION);
+        this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
+        this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
+      }
 
       this.visitJSDoc(decl, kClass);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
+    if (decl.heritageClauses) this.visitHeritage(kClass, decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }
   }
 
   visitEnumDeclaration(decl: ts.EnumDeclaration) {
-    let sym = this.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) return;
-    const kType = this.getSymbolName(sym, TSNamespace.TYPE);
-    this.emitNode(kType, 'record');
-    const kValue = this.getSymbolName(sym, TSNamespace.VALUE);
-    this.emitNode(kValue, 'constant');
+    const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
+    if (!kType) return;
+    this.emitNode(kType, NodeKind.RECORD);
+    const kValue = this.host.getSymbolName(sym, TSNamespace.VALUE);
+    if (!kValue) return;
+    this.emitNode(kValue, NodeKind.CONSTANT);
 
     const anchor = this.newAnchor(decl.name);
-    this.emitEdge(anchor, 'defines/binding', kType);
-    this.emitEdge(anchor, 'defines/binding', kValue);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kType);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kValue);
     for (const member of decl.members) {
       this.visit(member);
     }
   }
 
   visitEnumMember(decl: ts.EnumMember) {
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) return;
-    const kMember = this.getSymbolName(sym, TSNamespace.VALUE);
-    this.emitNode(kMember, 'constant');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
+    const kMember = this.host.getSymbolName(sym, TSNamespace.VALUE);
+    if (!kMember) return;
+    this.emitNode(kMember, NodeKind.CONSTANT);
+    this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kMember);
+  }
+
+  visitExpressionMember(node: ts.Node) {
+    const sym = this.host.getSymbolAtLocation(node);
+    if (!sym) {
+      // E.g. a field of an "any".
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // An undeclared symbol, e.g. "undefined".
+      return;
+    }
+    const name = this.host.getSymbolName(sym, TSNamespace.VALUE);
+    if (!name) return;
+    const anchor = this.newAnchor(node);
+    this.emitEdge(anchor, EdgeKind.REF, name);
+  }
+
+  /**
+   * Emits a reference from a "this" keyword to the type of the "this" object.
+   */
+  visitThisKeyword(keyword: ts.ThisExpression) {
+    const sym = this.host.getSymbolAtLocation(keyword);
+    if (!sym) {
+      // "this" refers to an object with no particular type, e.g.
+      //   let obj = {
+      //     foo() { this.foo(); }
+      //   };
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // "this" keyword is `globalThis`, which has no declarations.
+      return;
+    }
+
+    const type = this.host.getSymbolName(sym, TSNamespace.TYPE);
+    if (!type) return;
+    const thisAnchor = this.newAnchor(keyword);
+    this.emitEdge(thisAnchor, EdgeKind.REF, type);
   }
 
   /**
@@ -910,6 +2089,8 @@ class Vistor {
    * for JSDoc comments.
    */
   visitJSDoc(node: ts.Node, target: VName) {
+    this.maybeTagDeprecated(node, target);
+
     const text = node.getFullText();
     const comments = ts.getLeadingCommentRanges(text, 0);
     if (!comments) return;
@@ -932,30 +2113,44 @@ class Vistor {
     // Strip leading and trailing whitespace.
     jsdoc = jsdoc.replace(/^\s+/, '').replace(/\s+$/, '');
     const doc = this.newVName(target.signature + '#doc', target.path);
-    this.emitNode(doc, 'doc');
-    this.emitEdge(doc, 'documents', target);
-    this.emitFact(doc, 'text', jsdoc);
+    this.emitNode(doc, NodeKind.DOC);
+    this.emitEdge(doc, EdgeKind.DOCUMENTS, target);
+    this.emitFact(doc, FactName.TEXT, jsdoc);
+  }
+
+  /**
+   * Tags a node as deprecated if its JSDoc marks it as so.
+   * TODO(TS 4.0): TS 4.0 exposes a JSDocDeprecatedTag.
+   */
+  maybeTagDeprecated(node: ts.Node, nodeVName: VName) {
+    const deprecatedTag =
+        ts.getJSDocTags(node).find(tag => tag.tagName.text === 'deprecated');
+    if (deprecatedTag) {
+      this.emitFact(
+          nodeVName, FactName.TAG_DEPRECATED, deprecatedTag.comment || '');
+    }
   }
 
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
-    // Ensure that the first 'export' seen in the file gets tagged as
-    // the anchor attributed as the definition site for the module.
-    if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) {
-      this.emitModuleAnchorForFirstExport(node);
-    }
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
-        return this.visitImportDeclaration(node as ts.ImportDeclaration);
+      case ts.SyntaxKind.ImportEqualsDeclaration:
+        return this.visitImportDeclaration(
+            node as ts.ImportDeclaration | ts.ImportEqualsDeclaration);
       case ts.SyntaxKind.ExportAssignment:
         return this.visitExportAssignment(node as ts.ExportAssignment);
       case ts.SyntaxKind.ExportDeclaration:
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableStatement:
         return this.visitVariableStatement(node as ts.VariableStatement);
+      case ts.SyntaxKind.VariableDeclaration:
+        this.visitVariableDeclaration(node as ts.VariableDeclaration);
+        return;
       case ts.SyntaxKind.PropertyAssignment:  // property in object literal
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
+      case ts.SyntaxKind.ShorthandPropertyAssignment:
         const vname =
             this.visitVariableDeclaration(node as ts.PropertyDeclaration);
         if (vname) this.visitJSDoc(node, vname);
@@ -965,6 +2160,8 @@ class Vistor {
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:
+      case ts.SyntaxKind.GetAccessor:
+      case ts.SyntaxKind.SetAccessor:
         return this.visitFunctionLikeDeclaration(
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
@@ -978,25 +2175,30 @@ class Vistor {
       case ts.SyntaxKind.EnumMember:
         return this.visitEnumMember(node as ts.EnumMember);
       case ts.SyntaxKind.TypeReference:
-        return this.visitType(node as ts.TypeNode);
+        this.visitType(node as ts.TypeNode);
+        return;
       case ts.SyntaxKind.BindingElement:
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
+      case ts.SyntaxKind.JsxAttribute:
+        this.visitVariableDeclaration(node as ts.JsxAttribute);
+        return;
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.
-        let sym = this.getSymbolAtLocation(node);
-        if (!sym) {
-          // E.g. a field of an "any".
-          return;
-        }
-        if (!sym.declarations || sym.declarations.length === 0) {
-          // An undeclared symbol, e.g. "undefined".
-          return;
-        }
-        let name = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitEdge(this.newAnchor(node), 'ref', name);
+        this.visitExpressionMember(node);
+        return;
+      case ts.SyntaxKind.ThisKeyword:
+        return this.visitThisKeyword(node as ts.ThisExpression);
+      case ts.SyntaxKind.ModuleDeclaration:
+        return this.visitModuleDeclaration(node as ts.ModuleDeclaration);
+      case ts.SyntaxKind.CallExpression:
+      case ts.SyntaxKind.NewExpression:
+        this.visitCallOrNewExpression(
+            node as ts.CallExpression | ts.NewExpression);
         return;
       default:
         // Use default recursive processing.
@@ -1004,19 +2206,21 @@ class Vistor {
     }
   }
 
-  /** indexFile is the main entry point, starting the recursive visit. */
-  indexFile(file: ts.SourceFile) {
-    this.file = file;
+  /** index is the main entry point, starting the recursive visit. */
+  index() {
+    this.emitFact(this.kFile, FactName.NODE_KIND, 'file');
+    this.emitFact(this.kFile, FactName.TEXT, this.file.text);
 
-    // Emit a "file" node, containing the source text.
-    this.kFile = this.newVName(
-        /* empty signature */ '',
-        path.relative(this.sourceRoot, file.fileName));
-    this.kFile.language = '';
-    this.emitFact(this.kFile, 'node/kind', 'file');
-    this.emitFact(this.kFile, 'text', file.text);
+    this.emitModuleAnchor(this.file);
 
-    ts.forEachChild(file, n => this.visit(n));
+    // Emit file-level init function to contain all call anchors that
+    // don't have parent functions.
+    const fileInitFunc = this.getSyntheticFileInitVName();
+    this.emitFact(fileInitFunc, FactName.NODE_KIND, 'function');
+    this.emitEdge(
+        this.newAnchor(this.file, 0, 0), EdgeKind.DEFINES, fileInitFunc);
+
+    ts.forEachChild(this.file, n => this.visit(n));
   }
 }
 
@@ -1029,64 +2233,65 @@ class Vistor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
+ * @param compilationUnit A VName for the entire compilation, containing e.g.
+ *     corpus name.
+ * @param pathVNames A map of file path to path-specific VName.
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
+ * @param plugins If provided, a list of plugin indexers to run after the
+ *     TypeScript program has been indexed.
  * @param readFile If provided, a function that reads a file as bytes to a
  *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
  *     unfortunately that returns a (Unicode) string and we need to get at
  *     each file's raw bytes for UTF-8<->UTF-16 conversions.
  */
 export function index(
-    corpus: string, paths: string[], program: ts.Program,
-    emit?: (obj: {}) => void,
-    readFile: (path: string) => Buffer = fs.readFileSync) {
+    vname: VName, pathVNames: Map<string, VName>, paths: string[],
+    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
+    readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
-  let diags = new Set<ts.Diagnostic>();
+  const diags: ts.Diagnostic[] = [];
   for (const path of paths) {
     for (const diag of ts.getPreEmitDiagnostics(
              program, program.getSourceFile(path))) {
-      diags.add(diag);
+      diags.push(diag);
     }
   }
-  if (diags.size > 0) {
-    let message = ts.formatDiagnostics(Array.from(diags), {
-      getCurrentDirectory() {
-        return program.getCompilerOptions().rootDir!;
-      },
-      getCanonicalFileName(fileName: string) {
-        return fileName;
-      },
-      getNewLine() {
-        return '\n';
-      },
-    });
-    throw new Error(message);
-  }
+  // Note: don't abort if there are diagnostics.  This allows us to
+  // index programs with errors.  We return these diagnostics at the end
+  // so the caller can act on them if it wants.
 
-  let offsetTables = new Map<string, utf8.OffsetTable>();
-  const getOffsetTable =
-      (path: string): utf8.OffsetTable => {
-        let table = offsetTables.get(path);
-        if (!table) {
-          let buf = readFile(path);
-          table = new utf8.OffsetTable(buf);
-          offsetTables.set(path, table);
-        }
-        return table;
-      }
+  const indexingContext =
+      new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
+  if (emit != null) {
+    indexingContext.emit = emit;
+  }
 
   for (const path of paths) {
-    let sourceFile = program.getSourceFile(path);
-    let visitor = new Vistor(corpus, program, getOffsetTable);
-    if (emit != null) {
-      visitor.emit = emit;
+    const sourceFile = program.getSourceFile(path);
+    if (!sourceFile) {
+      throw new Error(`requested indexing ${path} not found in program`);
     }
-    // N.B. The assertion here is redundant for TS 2.6, but will be
-    // required with TS 2.7.
-    visitor.indexFile(sourceFile!);
+    const visitor = new Visitor(
+        indexingContext,
+        sourceFile,
+    );
+    visitor.index();
   }
+
+  if (plugins) {
+    for (const plugin of plugins) {
+      try {
+        plugin.index(indexingContext);
+      } catch (err) {
+        console.error(`Plugin ${plugin.name} errored: ${err}`);
+      }
+    }
+  }
+
+  return diags;
 }
 
 /**
@@ -1097,11 +2302,11 @@ export function loadTsConfig(
     tsconfigPath: string, projectPath: string,
     host: ts.ParseConfigHost = ts.sys): ts.ParsedCommandLine {
   projectPath = path.resolve(projectPath);
-  let {config: json, error} = ts.readConfigFile(tsconfigPath, host.readFile);
+  const {config: json, error} = ts.readConfigFile(tsconfigPath, host.readFile);
   if (error) {
     throw new Error(ts.formatDiagnostics([error], ts.createCompilerHost({})));
   }
-  let config = ts.parseJsonConfigFileContent(json, host, projectPath);
+  const config = ts.parseJsonConfigFileContent(json, host, projectPath);
   if (config.errors.length > 0) {
     throw new Error(
         ts.formatDiagnostics(config.errors, ts.createCompilerHost({})));
@@ -1115,14 +2320,22 @@ function main(argv: string[]) {
     return 1;
   }
 
-  let config = loadTsConfig(argv[0], path.dirname(argv[0]));
+  const config = loadTsConfig(argv[0], path.dirname(argv[0]));
   let inPaths = argv.slice(1);
   if (inPaths.length === 0) {
     inPaths = config.fileNames;
   }
 
-  let program = ts.createProgram(inPaths, config.options);
-  index('TODOcorpus', inPaths, program);
+  // This program merely demonstrates the API, so use a fake corpus/root/etc.
+  const compilationUnit: VName = {
+    corpus: 'corpus',
+    root: '',
+    path: '',
+    signature: '',
+    language: '',
+  };
+  const program = ts.createProgram(inPaths, config.options);
+  index(compilationUnit, new Map(), inPaths, program);
   return 0;
 }
 

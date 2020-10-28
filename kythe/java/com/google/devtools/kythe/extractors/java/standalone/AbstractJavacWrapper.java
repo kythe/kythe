@@ -27,7 +27,6 @@ import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
-import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
@@ -53,13 +52,11 @@ import java.util.List;
  * <p>KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
  * the {@link CompilationUnit} will be made to be relative to this directory
  *
- * <p>KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kindex file to this path
+ * <p>KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kzip file to this path
  * instead of using KYTHE_OUTPUT_DIRECTORY
  *
- * <p>KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
- *
- * <p>KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
- * an indexpack instead of a collection of .kindex files
+ * <p>KYTHE_OUTPUT_DIRECTORY: directory path to store the resulting .kzip file, if KYTHE_OUTPUT_FILE
+ * is not set
  */
 public abstract class AbstractJavacWrapper {
   public static final String DEFAULT_CORPUS = "kythe";
@@ -72,8 +69,8 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file or indexpack. Parameters to the extraction logic are passed by environment
-   * variables (see class comment).
+   * a .kindex file. Parameters to the extraction logic are passed by environment variables (see
+   * class comment).
    */
   public void process(String[] args) {
     JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
@@ -122,18 +119,25 @@ public abstract class AbstractJavacWrapper {
       if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
         IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
       } else {
-        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+        System.err.printf("Unsupported output file: %s%n", outputFile);
+        System.exit(2);
       }
       return;
     }
 
     String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
-    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-      writeIndexInfoToFile(outputDir, indexInfo);
-      return;
-    }
-
-    new Archive(outputDir).writeDescription(indexInfo);
+    // Just rely on the underlying compilation unit's signature to get the filename, if we're not
+    // writing to a single kzip file.
+    String name =
+        indexInfo
+            .getCompilationUnit()
+            .getVName()
+            .getSignature()
+            .trim()
+            .replaceAll("^/+|/+$", "")
+            .replace('/', '_');
+    String path = IndexInfoUtils.getKzipPath(outputDir, name).toString();
+    IndexInfoUtils.writeKzipToFile(indexInfo, path);
   }
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
@@ -155,27 +159,17 @@ public abstract class AbstractJavacWrapper {
       } else if (!(skipArg
           || arg.startsWith("-J")
           || arg.startsWith("-XD")
-          || arg.startsWith("-Werror"))) {
+          || arg.startsWith("-Werror")
+          // The errorprone plugin complicates the build due to certain other
+          // flags it requires (such as -XDcompilePolicy=byfile) and is not
+          // necessary for extraction.
+          || arg.startsWith("-Xplugin:ErrorProne"))) {
         cleanedUpArgs.add(arg);
       }
       skipArg = false;
     }
     String[] cleanedUpArgsArray = new String[cleanedUpArgs.size()];
     return cleanedUpArgs.toArray(cleanedUpArgsArray);
-  }
-
-  private static void writeIndexInfoToFile(String rootDirectory, CompilationDescription indexInfo)
-      throws IOException {
-    String name =
-        indexInfo
-            .getCompilationUnit()
-            .getVName()
-            .getSignature()
-            .trim()
-            .replaceAll("^/+|/+$", "")
-            .replace('/', '_');
-    String path = IndexInfoUtils.getKindexPath(rootDirectory, name).toString();
-    IndexInfoUtils.writeKindexToFile(indexInfo, path);
   }
 
   private boolean passThroughIfAnalysisOnly(String[] args) throws Exception {

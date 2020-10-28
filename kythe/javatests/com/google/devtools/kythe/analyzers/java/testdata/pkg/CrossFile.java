@@ -22,13 +22,15 @@ public class CrossFile {
   //- @Inner ref InnerClass
   Files.Inner f2;
 
-  //- @OtherDecl ref _ODecl
+  //- @OtherDecl ref ODecl
   OtherDecl f3;
 
-  //- @Inter ref _InterRaw
+  //- @Inter ref Inter
   Inter i;
 
-  public static void main(String[] args) {
+  //- @Exception ref Exception
+  //- Exception named _JVMException=vname(_, _, _, _, "jvm")
+  public static void main(String[] args) throws Exception {
     //- @staticMethod ref StaticMethod
     Files.staticMethod();
     //- @staticMethod ref StaticMethod

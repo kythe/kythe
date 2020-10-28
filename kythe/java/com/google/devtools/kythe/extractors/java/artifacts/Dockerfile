@@ -16,10 +16,9 @@
 # Usage:
 #   This container houses java extraction artifacts which can be drawn upon in an a la
 #   carte fashion for building customized extraction images.
-# 
+#
 FROM debian:jessie
 
-ADD kythe/go/extractors/config/runextractor/runextractor /opt/kythe/extractors/runextractor
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh /opt/kythe/extractors/javac-wrapper.sh
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/kythe/extractors/javac_extractor.jar
-ADD third_party/javac/javac-9-dev-r4023-1.jar /opt/kythe/extractors/javac8_extractor.jar
+ADD third_party/javac/javac-9+181-r4173-1.jar /opt/kythe/extractors/javac9_tools.jar

@@ -18,20 +18,16 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_CACHING_OUTPUT_H_
 
 #include <openssl/sha.h>
+
 #include <memory>
 #include <vector>
 
 #include "absl/strings/string_view.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-
-extern "C" {
-struct memcached_st;
-}
 
 namespace kythe {
 /// \brief Keeps track of whether hashes have been seen before.
@@ -57,22 +53,6 @@ class HashCache {
  private:
   size_t min_size_ = 0;
   size_t max_size_ = 32 * 1024;
-};
-
-/// \brief A `HashCache` that uses a memcached server.
-class MemcachedHashCache : public HashCache {
- public:
-  ~MemcachedHashCache() override;
-
-  /// \brief Use a memcached instance (e.g. "--SERVER=foo:1234")
-  bool OpenMemcache(const std::string& spec);
-
-  void RegisterHash(const Hash& hash) override;
-
-  bool SawHash(const Hash& hash) override;
-
- private:
-  ::memcached_st* cache_ = nullptr;
 };
 
 // Interface for receiving Kythe data.
@@ -121,7 +101,7 @@ class BufferStack {
         size_t to_copy = std::min(static_cast<size_t>(proto_size),
                                   joined->slab.size() - write_at);
         memcpy(proto_data, joined->slab.data() + write_at, to_copy);
-        if (proto_size > to_copy) {
+        if (static_cast<size_t>(proto_size) > to_copy) {
           stream->BackUp(proto_size - to_copy);
         }
         write_at += to_copy;

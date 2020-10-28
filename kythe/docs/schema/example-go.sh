@@ -20,7 +20,6 @@ set -o pipefail
 #
 # The script assumes its working directory is the schema output directory and
 # requires the following environment variables:
-#   GOROOT
 #   TMP
 #   LANGUAGE
 #   LABEL
@@ -35,8 +34,9 @@ mkdir "$PKGDIR"
 cat > "$SRCFILE"
 
 readonly ENTRIES="$TMP/example.entries"
-"$GO_INDEXER_BIN" --package kythe/schema "$SRCFILE" > "$ENTRIES"
-"$VERIFIER_BIN" --use_file_nodes < "$ENTRIES"
+GOCACHE="$TMP/gocache" \
+  "$GO_INDEXER_BIN" --package kythe/schema "$SRCFILE" > "$ENTRIES"
+"$VERIFIER_BIN" --nocheck_for_singletons --use_file_nodes < "$ENTRIES"
 
 trap 'error FORMAT' ERR
 readonly EXAMPLE_ID=$($SHASUM_TOOL "$SRCFILE" | cut -c 1-64)
@@ -50,7 +50,7 @@ fi
 echo "<h5 id=\"_${LABEL}\">${LABEL}"
 
 if [[ "${SHOWGRAPH}" == 1 ]] ; then
-  "$VERIFIER_BIN" --use_file_nodes --graphviz \
+  "$VERIFIER_BIN" --nocheck_for_singletons --use_file_nodes --graphviz \
     < "$ENTRIES" > "$TMP/${EXAMPLE_ID}.dot"
   dot -Tsvg -o "${EXAMPLE_ID}.svg" "$TMP/${EXAMPLE_ID}.dot"
   echo "(<a href=\"${EXAMPLE_ID}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"

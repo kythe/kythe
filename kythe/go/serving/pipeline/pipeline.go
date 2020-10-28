@@ -16,7 +16,7 @@
 
 // Package pipeline implements an in-process pipeline to create a combined
 // filetree and xrefs serving table from a stream of GraphStore-ordered entries.
-package pipeline
+package pipeline // import "kythe.io/kythe/go/serving/pipeline"
 
 import (
 	"bytes"
@@ -43,7 +43,7 @@ import (
 	"kythe.io/kythe/go/util/sortutil"
 	"kythe.io/kythe/go/util/span"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	ipb "kythe.io/kythe/proto/internal_go_proto"
@@ -225,7 +225,21 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	for corpus, roots := range tree.M {
 		for root, dirs := range roots {
 			for path, dir := range dirs {
-				if err := buffer.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), dir); err != nil {
+				fd := &srvpb.FileDirectory{}
+				for _, e := range dir.Entry {
+					kind := srvpb.FileDirectory_UNKNOWN
+					switch e.Kind {
+					case ftpb.DirectoryReply_FILE:
+						kind = srvpb.FileDirectory_FILE
+					case ftpb.DirectoryReply_DIRECTORY:
+						kind = srvpb.FileDirectory_DIRECTORY
+					}
+					fd.Entry = append(fd.Entry, &srvpb.FileDirectory_Entry{
+						Kind: kind,
+						Name: e.Name,
+					})
+				}
+				if err := buffer.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), fd); err != nil {
 					return err
 				}
 			}
@@ -430,7 +444,8 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				targets[n.Ticket] = n
 			}
 			if file == nil {
-				return errors.New("missing file for anchors")
+				log.Printf("Warning: no file set for anchor. fileTicket:[%v] curFile:[%v] fragment:[%v]", fileTicket, curFile, fragment)
+				return nil
 			}
 
 			// Reverse each fragment.Decoration to create a *ipb.CrossReference
