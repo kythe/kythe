@@ -128,6 +128,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_github_google_glog",
         repo_name = "google/glog",
+        # Updates newer than this break due to our use of layering_check.
+        # See https://github.com/google/glog/issues/596
         commit = "ba8a9f6952d04d1403b97df24e6836227751454e",
         sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
         build_file_content = "\n".join([
@@ -152,14 +154,11 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_google_riegeli",
-        sha256 = "762b838bcf3ddc02e1b334103ef21f02316e57be373444ff7c7461781935c8b6",
-        strip_prefix = "riegeli-a624e7f8e98aff394904685ecbba2e5ee664606a",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/riegeli/archive/a624e7f8e98aff394904685ecbba2e5ee664606a.zip",
-            "https://github.com/google/riegeli/archive/a624e7f8e98aff394904685ecbba2e5ee664606a.zip",
-        ],
+        repo_name = "google/riegeli",
+        commit = "e68237a48ad60896e18d7899b01293751960c1d2",
+        sha256 = "fa22ce5dd42712dad6f9d47ffe0d416461ec4f8b8ad7def4fad12dbb0614e59f",
     )
 
     maybe(
@@ -187,14 +186,11 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_googlesource_code_re2",
-        sha256 = "ae9b962dbd6427565efd3e9503acb40a1385b21962c29050546c9347ac7fa93f",
-        strip_prefix = "re2-2019-01-01",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/re2/archive/2019-01-01.zip",
-            "https://github.com/google/re2/archive/2019-01-01.zip",
-        ],
+        repo_name = "google/re2",
+        sha256 = "b6d299a2e91ebe78a222e45228449f3ba569f83c6bd59d582fcb3cd425656c38",
+        commit = "2020-10-01",
     )
 
     maybe(
@@ -210,15 +206,12 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_github_google_snappy",
+        repo_name = "google/snappy",
         build_file = "@io_kythe//third_party:snappy.BUILD",
-        sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
-        strip_prefix = "snappy-1.1.7",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/snappy/archive/1.1.7.zip",
-            "https://github.com/google/snappy/archive/1.1.7.zip",
-        ],
+        sha256 = "38b4aabf88eb480131ed45bfb89c19ca3e2a62daeb081bdf001cfb17ec4cd303",
+        commit = "1.1.8",
     )
 
     maybe(
