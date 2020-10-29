@@ -969,8 +969,7 @@ func TestDecorationsGeneratedBy(t *testing.T) {
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 	expected := &xpb.DecorationsReply{
-		Location:    &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
-		GeneratedBy: []string{"kythe://corpus?path=/some/proto.proto"},
+		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
 		GeneratedByFile: []*xpb.File{{
 			CorpusPath: &cpb.CorpusPath{
 				Corpus: "corpus",
@@ -994,9 +993,8 @@ func TestDecorationsRevisions(t *testing.T) {
 		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
-			Location:    &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
-			Revision:    "overallFileRev",
-			GeneratedBy: []string{"kythe://corpus?path=some/proto.proto"},
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
 			GeneratedByFile: []*xpb.File{{
 				CorpusPath: &cpb.CorpusPath{
 					Corpus: "corpus",
@@ -1019,9 +1017,8 @@ func TestDecorationsRevisions(t *testing.T) {
 		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
-			Location:    &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
-			Revision:    "overallFileRev",
-			GeneratedBy: []string{"kythe://corpus?path=some/proto.proto"},
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
 			GeneratedByFile: []*xpb.File{{
 				CorpusPath: &cpb.CorpusPath{
 					Corpus: "corpus",
@@ -1077,9 +1074,8 @@ func TestDecorationsRevisions(t *testing.T) {
 		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
-			Location:    &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
-			Revision:    "overallFileRev",
-			GeneratedBy: []string{"kythe://corpus?path=some/proto.proto"},
+			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+			Revision: "overallFileRev",
 			GeneratedByFile: []*xpb.File{{
 				CorpusPath: &cpb.CorpusPath{
 					Corpus: "corpus",
