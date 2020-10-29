@@ -206,15 +206,12 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_github_google_snappy",
+        repo_name = "google/snappy",
         build_file = "@io_kythe//third_party:snappy.BUILD",
         sha256 = "38b4aabf88eb480131ed45bfb89c19ca3e2a62daeb081bdf001cfb17ec4cd303",
-        strip_prefix = "snappy-1.1.8",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/snappy/archive/1.1.8.zip",
-            "https://github.com/google/snappy/archive/1.1.8.zip",
-        ],
+        commit = "1.1.8",
     )
 
     maybe(
