@@ -2,15 +2,19 @@ package pkg;
 
 public final class SpecialMembers {
   public static void main(String[] args) {
-    // TODO(schroederc): handle special members better than not crashing
-
     //- @length ref Length
-    //- Length.node/kind diagnostic
+    //- Length.node/kind variable
     System.err.println(args.length);
 
     //- @clone ref Clone
-    //- Clone.node/kind diagnostic
+    //- Clone.node/kind function
     String[] arrayClone = args.clone();
+
+    int[] intArray = new int[]{1, 2, 3};
+    //- @clone ref Clone
+    intArray.clone();
+    //- @length ref Length
+    System.err.println(intArray.length);
 
     //- @getClass ref GetClass
     //- GetClass.node/kind function
