@@ -57,6 +57,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class JavaEntrySets extends KytheEntrySets {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static final String ARRAY_BUILTIN_CLASS = "Array";
+
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
   private final Set<Symbol> symbolsDocumented = new HashSet<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
@@ -353,6 +355,8 @@ public class JavaEntrySets extends KytheEntrySets {
   private VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
       return null;
+    } else if (cls.getQualifiedName().toString().equals(ARRAY_BUILTIN_CLASS)) {
+      return newBuiltinAndEmit("array").getVName();
     }
     VName clsVName = lookupVName(getDigest(cls.classfile));
     return clsVName != null ? clsVName : lookupVName(getDigest(cls.sourcefile));
