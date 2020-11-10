@@ -355,7 +355,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
       return null;
-    } else if (cls.getQualifiedName().toString().equals(ARRAY_BUILTIN_CLASS)) {
+    } else if (cls.getQualifiedName().contentEquals(ARRAY_BUILTIN_CLASS)) {
       return newBuiltinAndEmit("array").getVName();
     }
     VName clsVName = lookupVName(getDigest(cls.classfile));
