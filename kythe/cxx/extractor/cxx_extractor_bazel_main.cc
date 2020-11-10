@@ -53,7 +53,7 @@ static void LoadExtraAction(const std::string& path,
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
   FileInputStream file_input_stream(fd);
   CodedInputStream coded_input_stream(&file_input_stream);
-  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+  coded_input_stream.SetTotalBytesLimit(INT_MAX);
   CHECK(info->ParseFromCodedStream(&coded_input_stream));
   close(fd);
   CHECK(info->HasExtension(blaze::CppCompileInfo::cpp_compile_info));

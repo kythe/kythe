@@ -111,7 +111,7 @@ Example:
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
   for (;;) {
     google::protobuf::io::CodedInputStream coded_input(&raw_input);
-    coded_input.SetTotalBytesLimit(INT_MAX, -1);
+    coded_input.SetTotalBytesLimit(INT_MAX);
     if (!coded_input.ReadVarint32(&byte_size)) {
       break;
     }

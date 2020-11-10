@@ -104,7 +104,7 @@ void DecodeStaticClaimTable(const std::string& path,
   google::protobuf::uint32 byte_size;
   for (;;) {
     CodedInputStream coded_input_stream(&gzip_input_stream);
-    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX);
     if (!coded_input_stream.ReadVarint32(&byte_size)) {
       break;
     }
@@ -145,7 +145,7 @@ void DecodeIndexFile(const std::string& path,
   google::protobuf::uint32 byte_size;
   for (;;) {
     CodedInputStream coded_input_stream(&gzip_input_stream);
-    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX);
     if (!coded_input_stream.ReadVarint32(&byte_size)) {
       break;
     }
