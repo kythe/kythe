@@ -185,7 +185,7 @@ public class JavaEntrySets extends KytheEntrySets {
         newNode(NodeKind.FUNCTION)
             .setCorpusPath(CorpusPath.fromVName(classNode))
             .addSignatureSalt(classNode)
-            .addSignatureSalt("cinit")
+            .addSignatureSalt("clinit")
             .build());
   }
 
