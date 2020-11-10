@@ -178,7 +178,7 @@ class ClaimTool {
           ClaimAssignment claim;
           claim.mutable_compilation_v_name()->CopyFrom(elected_claimant->vname);
           claim.mutable_dependency_v_name()->CopyFrom(claimable.second.vname);
-          coded_stream.WriteVarint32(claim.ByteSize());
+          coded_stream.WriteVarint32(claim.ByteSizeLong());
           CHECK(claim.SerializeToCodedStream(&coded_stream));
         }
       }

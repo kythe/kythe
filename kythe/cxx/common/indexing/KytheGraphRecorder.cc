@@ -155,7 +155,7 @@ void KytheGraphRecorder::AddProperty(const VNameRef& node_vname,
 
 void KytheGraphRecorder::AddMarkedSource(const VNameRef& node_vname,
                                          const MarkedSource& marked_source) {
-  auto size = marked_source.ByteSize();
+  auto size = marked_source.ByteSizeLong();
   std::vector<char> buffer(size);
   marked_source.SerializeToArray(buffer.data(), size);
   stream_->Emit(FactRef{&node_vname, spelling_of(PropertyID::kCode),
