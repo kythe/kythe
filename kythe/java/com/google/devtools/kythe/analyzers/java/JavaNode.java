@@ -29,7 +29,7 @@ class JavaNode {
   private final VName vName;
   private JavaNode type;
 
-  private List<VName> classConstructors = ImmutableList.of();
+  private ImmutableList<VName> classConstructors = ImmutableList.of();
   private Optional<VName> classInit = Optional.empty();
 
   // I think order matters for the wildcards because the abs node will be connected to them with
@@ -72,11 +72,11 @@ class JavaNode {
   }
 
   JavaNode setClassConstructors(List<VName> constructors) {
-    this.classConstructors = constructors;
+    this.classConstructors = ImmutableList.copyOf(constructors);
     return this;
   }
 
-  List<VName> getClassConstructors() {
+  ImmutableList<VName> getClassConstructors() {
     return classConstructors;
   }
 

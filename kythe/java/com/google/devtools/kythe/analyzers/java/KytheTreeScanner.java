@@ -1229,7 +1229,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return node;
   }
 
-  private static List<VName> getCallScope(TreeContext ctx) {
+  private static ImmutableList<VName> getCallScope(TreeContext ctx) {
     TreeContext parent = ctx.getScope();
     if (parent.getTree() instanceof JCClassDecl) {
       // Special-case callsites in non-static initializer blocks to scope to all constructors.
@@ -1238,7 +1238,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return getScope(ctx);
   }
 
-  private static List<VName> getScope(TreeContext ctx) {
+  private static ImmutableList<VName> getScope(TreeContext ctx) {
     return Optional.ofNullable(ctx.getScope())
         .map(TreeContext::getNode)
         .map(JavaNode::getVName)
@@ -1311,27 +1311,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
   }
 
-  // Creates/emits an anchor and an associated edge
-  private EntrySet emitAnchor(TreeContext anchorContext, EdgeKind kind, VName node) {
-    return emitAnchor(
-        entrySets.newAnchorAndEmit(
-            filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
-        kind,
-        node,
-        kind == EdgeKind.REF_CALL ? getCallScope(anchorContext) : getScope(anchorContext));
-  }
-
-  // Creates/emits an anchor (for an identifier) and an associated edge
-  private EntrySet emitAnchor(
-      Name name, int startOffset, EdgeKind kind, VName node, Span snippet, List<VName> scope) {
-    EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, name, startOffset, snippet);
-    if (anchor == null) {
-      // TODO(schroederc): Special-case these anchors (most come from visitSelect)
-      return null;
-    }
-    return emitAnchor(anchor, kind, node, scope);
-  }
-
   private void emitMetadata(Span span, VName node) {
     for (Metadata data : metadata) {
       for (Metadata.Rule rule : data.getRulesForLocation(span.getStart())) {
@@ -1363,6 +1342,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(anchor, EdgeKind.DEFINES_BINDING, node, scope);
   }
 
+  // Creates/emits an anchor and an associated edge
+  private EntrySet emitAnchor(TreeContext anchorContext, EdgeKind kind, VName node) {
+    return emitAnchor(
+        entrySets.newAnchorAndEmit(
+            filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
+        kind,
+        node,
+        kind == EdgeKind.REF_CALL ? getCallScope(anchorContext) : getScope(anchorContext));
+  }
+
+  // Creates/emits an anchor (for an identifier) and an associated edge
+  private EntrySet emitAnchor(
+      Name name, int startOffset, EdgeKind kind, VName node, Span snippet, List<VName> scope) {
+    EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, name, startOffset, snippet);
+    if (anchor == null) {
+      // TODO(schroederc): Special-case these anchors (most come from visitSelect)
+      return null;
+    }
+    return emitAnchor(anchor, kind, node, scope);
+  }
   // Creates/emits an anchor and an associated edge
   private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {
     Preconditions.checkArgument(
