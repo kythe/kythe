@@ -11,14 +11,22 @@ public class Callgraph {
   //- ClassInit childof Class
   //- !{ ClassInit.subkind "constructor" }
 
+  //- NonStaticGCall.loc/start @^"g()"
+  //- NonStaticGCall.loc/end @$"g()"
+  //- NonStaticGCall ref/call G
+  //- NonStaticGCall childof ECtor
+  //- NonStaticGCall childof SCtor
+  //- !{ NonStaticGCall childof Class }
+  //- !{ NonStaticGCall childof ClassInit }
+  final int ZERO = g();
+
   //- StaticGCall.loc/start @^"g()"
   //- StaticGCall.loc/end @$"g()"
   //- StaticGCall ref/call G
-  //- StaticGCall childof ECtor
-  //- StaticGCall childof SCtor
-  //- !{ StaticGCall childof Class }
-  //- !{ StaticGCall childof ClassInit }
-  final int ZERO = g();
+  //- StaticGCall childof ClassInit
+  //- !{ StaticGCall childof ECtor }
+  //- !{ StaticGCall childof SCtor }
+  static final int ZERO_TWO = g();
 
   static {
     //- StaticBlockGCall.loc/start @^"g()"
