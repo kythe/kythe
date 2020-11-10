@@ -698,7 +698,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
                 .build());
       }
     }
-    scan(varDef.getInitializer(), ctx);
 
     VName varNode =
         entrySets.getNode(
@@ -727,7 +726,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (varDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
       entrySets.getEmitter().emitFact(varNode, "/kythe/tag/static", "");
+
+      if (varDef.sym.getKind().isField() && owner.getNode().getClassInit().isPresent()) {
+        ctx.setNode(new JavaNode(owner.getNode().getClassInit().get()));
+      }
     }
+    scan(varDef.getInitializer(), ctx);
 
     JavaNode typeNode = scan(varDef.getType(), ctx);
     if (typeNode != null) {
