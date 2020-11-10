@@ -1,6 +1,9 @@
 package pkg;
 
 //- @Callgraph defines/binding Class
+//- ClassInitDef.loc/start @^"Callgraph"
+//- ClassInitDef.loc/end @^"Callgraph"
+//- ClassInitDef defines ClassInit
 public class Callgraph {
 
   // Implicit static class initializer

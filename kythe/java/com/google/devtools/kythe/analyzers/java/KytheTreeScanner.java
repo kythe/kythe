@@ -446,8 +446,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     node.setClassConstructors(constructors);
 
     // TODO(schroeder): flesh out cinit w/ MarkedSource
-    node.setClassInit(entrySets.newClassInitAndEmit(classNode).getVName());
-    entrySets.emitEdge(node.getClassInit().get(), EdgeKind.CHILDOF, classNode);
+    VName classInit = entrySets.newClassInitAndEmit(classNode).getVName();
+    node.setClassInit(classInit);
+    entrySets.emitEdge(classInit, EdgeKind.CHILDOF, classNode);
+    if (classIdent != null) {
+      // Emit implicit zero-length definition for the class static initializer.
+      emitAnchor(
+          entrySets.newAnchorAndEmit(
+              filePositions,
+              new Span(classIdent.getStart(), classIdent.getStart()),
+              ctx.getSnippet()),
+          EdgeKind.DEFINES,
+          classInit,
+          ImmutableList.of(classNode));
+    }
 
     for (JCTree member : classDef.getMembers()) {
       if (member instanceof JCMethodDecl) {
