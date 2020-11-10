@@ -179,6 +179,16 @@ public class JavaEntrySets extends KytheEntrySets {
             .addSignatureSalt("" + filePositions.getSpan(lambda)));
   }
 
+  /** Emits and returns a new {@link EntrySet} representing a static class initializer. */
+  public EntrySet newClassInitAndEmit(VName classNode) {
+    return emitAndReturn(
+        newNode(NodeKind.FUNCTION)
+            .setCorpusPath(CorpusPath.fromVName(classNode))
+            .addSignatureSalt(classNode)
+            .addSignatureSalt("clinit")
+            .build());
+  }
+
   /**
    * Emits and returns a new {@link EntrySet} representing a Java comment with an optional subkind.
    */

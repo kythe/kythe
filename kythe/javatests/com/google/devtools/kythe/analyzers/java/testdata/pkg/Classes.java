@@ -77,10 +77,13 @@ public class Classes {
     class LocalClass {};
   }
 
-
+  //- ClassInit.node/kind function
+  //- ClassInit childof N
+  // !{ ClassInit.subkind "constructor" }
+  
   static {
     //- @LocalClassInStaticInitializer defines/binding LCISI
-    //- LCISI childof N
+    //- LCISI childof ClassInit
     class LocalClassInStaticInitializer {};
   }
 }
