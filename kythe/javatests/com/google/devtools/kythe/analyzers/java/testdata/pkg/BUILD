@@ -485,3 +485,13 @@ java_verifier_test(
     name = "special_members_test",
     compilation = ":special_members",
 )
+
+java_library(
+    name = "abstract_class",
+    srcs = ["AbstractClass.java"],
+)
+
+java_verifier_test(
+    name = "abstract_class_test",
+    compilation = ":abstract_class",
+)
