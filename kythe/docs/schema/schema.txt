@@ -1642,6 +1642,40 @@ Brief description::
 Attached to::
   semantic nodes
 
+[[tagstatic]]
+tag/static
+~~~~~~~~~~~~~~
+
+Brief description::
+  In languages which make a distinction between class-bound and instance-bound
+  members, members which are bound to the class should be marked with `tag/static`.
+Attached to::
+  semantic nodes
+
+[kythe,Java,"Static members are tagged."]
+--------------------------------------------------------------------------------
+class Wrapper {
+  //- @A defines/binding StaticField
+  //- StaticField.tag/static _
+  public static int A = 1;
+  //- @field defines/binding InstanceField
+  //- !{ InstanceField.tag/static _ }
+  public int field = 2;
+}
+--------------------------------------------------------------------------------
+
+
+[[tagabstract]]
+tag/abstract
+~~~~~~~~~~~~~~
+
+Brief description::
+  In languages which have the concept of a non-instantiable class or method
+  which must be defined by subclasses, such classes and methods should be marked
+  with `tag/abstract`.
+Attached to::
+  semantic nodes
+
 Node kinds
 ----------
 
