@@ -122,6 +122,12 @@ public class JavaEntrySets extends KytheEntrySets {
     }
 
     ClassSymbol enclClass = sym.enclClass();
+    if (enclClass == null && sym.asType().isPrimitive()) {
+      VName v = newBuiltinAndEmit(sym.asType().toString()).getVName();
+      symbolNodes.put(sym, v);
+      return v;
+    }
+
     VName v = lookupVName(enclClass);
     if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
       v =

@@ -14,6 +14,8 @@ package pkg;
 public class Comments
     implements Comparable<Comments> {
 
+  //- @long ref/doc LongBuiltin
+  //- LongBuiltin.node/kind tbuiltin
   /** This is a {@link long} with a value of {@value}. */
   public static final long IM_A_LONG = 4;
 
