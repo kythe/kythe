@@ -161,13 +161,9 @@ cc_library(
 
 genrule(
     name = "clang_basic_version_inc_gen",
+    srcs = [":git_origin_rev_id"],
     outs = ["tools/clang/lib/Basic/VCSVersion.inc"],
-    cmd = ("printf " +
-           "\"#define CLANG_VERSION 9999.0\n\"" +
-           "\"#define CLANG_VERSION_MAJOR 9999\n\"" +
-           "\"#define CLANG_VERSION_MINOR 0\n\"" +
-           "\"#define CLANG_VERSION_PATCHLEVEL 0\n\"" +
-           "\"#define CLANG_VERSION_STRING \\\"google3-trunk\\\"\n\" > $@"),
+    cmd = "echo \"#define CLANG_REVISION \\\"$$(cat $<)\\\"\" > $@",
 )
 
 load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
