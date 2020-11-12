@@ -1,6 +1,6 @@
 package pkg;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "MultiVariableDeclaration"})
 //- @Callgraph defines/binding Class
 //- ClassInitDef.loc/start @^"Callgraph"
 //- ClassInitDef.loc/end @^"Callgraph"
@@ -19,7 +19,7 @@ public class Callgraph {
   //- NonStaticGCall childof SCtor
   //- !{ NonStaticGCall childof Class }
   //- !{ NonStaticGCall childof ClassInit }
-  final int ZERO = g();
+  final int zero = g();
 
   //- StaticGCall.loc/start @^"g()"
   //- StaticGCall.loc/end @$"g()"
@@ -62,7 +62,7 @@ public class Callgraph {
   //- CtorCall ref/call ECtor
   //- CtorCall childof ECtor
   //- CtorCall childof SCtor
-  final Callgraph INSTANCE = new Callgraph();
+  final Callgraph instance = new Callgraph();
 
   //- @Callgraph defines/binding ECtor
   //- ECtor.node/kind function
@@ -119,7 +119,7 @@ public class Callgraph {
     //- NestedClassCall.loc/start @^"g()"
     //- NestedClassCall.loc/end   @$"g()"
     //- NestedClassCall  childof  ImplicitConstructor
-    final int INT = g();
+    final int someInt = g();
 
     static {
       //- NestedClassStaticCall.loc/start @^"g()"

@@ -19,6 +19,10 @@ java_library(
             "PrivateInterfaceMethods.java",
         ],
     ),
+    javacopts = [
+        "-Xep:MultipleTopLevelClasses:OFF",
+        "-Xep:WildcardImport:OFF",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "@maven//:com_google_code_findbugs_jsr305",
@@ -455,6 +459,9 @@ java_verifier_test(
 java_library(
     name = "cross_file",
     srcs = ["CrossFile.java"],
+    javacopts = [
+        "-Xep:WildcardImport:OFF",
+    ],
     deps = [":files"],
 )
 
