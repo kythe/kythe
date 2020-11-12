@@ -81,6 +81,13 @@ public class ExtractorUtils {
     return createFileData(path, getContentDigest(content), content);
   }
 
+  private static FileData createFileData(String path, String digest, byte[] content) {
+    return FileData.newBuilder()
+        .setContent(ByteString.copyFrom(content))
+        .setInfo(FileInfo.newBuilder().setDigest(digest).setPath(path))
+        .build();
+  }
+
   public static List<FileData> processRequiredInputs(Iterable<String> files)
       throws ExtractionException {
     final SettableFuture<ExtractionException> exception = SettableFuture.create();
@@ -117,12 +124,12 @@ public class ExtractorUtils {
     return result;
   }
 
-  public static ImmutableList<FileInput> toFileInputs(Iterable<FileData> fileDatas) {
-    return toFileInputs(FileVNames.staticCorpus(""), p -> p, fileDatas);
-  }
-
   public static Function<String, String> makeRelativizer(final Path rootDir) {
     return p -> tryMakeRelative(rootDir, Paths.get(p));
+  }
+
+  public static ImmutableList<FileInput> toFileInputs(Iterable<FileData> fileDatas) {
+    return toFileInputs(FileVNames.staticCorpus(""), p -> p, fileDatas);
   }
 
   public static ImmutableList<FileInput> toFileInputs(
@@ -189,12 +196,5 @@ public class ExtractorUtils {
     builder.addAllRequiredInput(oldRequiredInputs);
     existingCompilationUnit = builder.build();
     return existingCompilationUnit;
-  }
-
-  private static FileData createFileData(String path, String digest, byte[] content) {
-    return FileData.newBuilder()
-        .setContent(ByteString.copyFrom(content))
-        .setInfo(FileInfo.newBuilder().setDigest(digest).setPath(path))
-        .build();
   }
 }

@@ -175,10 +175,6 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
     }
   }
 
-  public R scanAll(P p, JCTree tree, JCTree... others) {
-    return scan(Lists.asList(tree, others), p);
-  }
-
   public R scan(Iterable<? extends JCTree> trees, P p) {
     R r = null;
     if (trees != null) {
@@ -189,6 +185,10 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
       }
     }
     return r;
+  }
+
+  public R scanAll(P p, JCTree tree, JCTree... others) {
+    return scan(Lists.asList(tree, others), p);
   }
 
   public R reduce(R r1, R r2) {

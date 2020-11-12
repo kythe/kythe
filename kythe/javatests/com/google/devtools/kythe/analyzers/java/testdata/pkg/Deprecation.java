@@ -9,7 +9,7 @@ package pkg;
  * @author this is an author tag, not the {@code @deprecated} tag.
  */
 @Deprecated
-@SuppressWarnings({"MissingSummary", "ClassCanBeStatic", "EmptyBlockTag"})
+@SuppressWarnings({"MissingSummary", "ClassCanBeStatic", "EmptyBlockTag", "DepAnn"})
 public class Deprecation {
   //- DeprecationClass.tag/deprecated "this class is obsolete; prefer {@link Comments}"
 

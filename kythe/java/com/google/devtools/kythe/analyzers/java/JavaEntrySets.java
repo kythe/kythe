@@ -75,6 +75,10 @@ public class JavaEntrySets extends KytheEntrySets {
     this.config = config;
   }
 
+  Map<Symbol, VName> getSymbolNodes() {
+    return Collections.unmodifiableMap(symbolNodes);
+  }
+
   /**
    * Returns a node for the given {@link Symbol} and its signature. A new node is created and
    * emitted if necessary. If non-null, msBuilder will be used to generate a signature.
@@ -101,10 +105,6 @@ public class JavaEntrySets extends KytheEntrySets {
                 signatureGenerator
                     .getSignature(s)
                     .map(sig -> getNode(signatureGenerator, s, sig, null, null))));
-  }
-
-  Map<Symbol, VName> getSymbolNodes() {
-    return Collections.unmodifiableMap(symbolNodes);
   }
 
   /**

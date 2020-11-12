@@ -89,6 +89,18 @@ public class KytheEntrySets {
   }
 
   /**
+   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
+   * EntrySet} dependency.
+   */
+  public NodeBuilder newNode(NodeKind kind, Iterable<VName> dependencies) {
+    NodeBuilder builder = newNode(kind);
+    for (VName d : dependencies) {
+      builder.addSignatureSalt(d);
+    }
+    return builder;
+  }
+
+  /**
    * Returns a new {@link NodeBuilder} with the given node kind set.
    *
    * <p>Note: use {@link #newNode(NodeKind)} for schema-defined kinds
@@ -241,18 +253,6 @@ public class KytheEntrySets {
         new NodeBuilder(NodeKind.FILE, name)
             .setProperty("text", contents)
             .setProperty("text/encoding", encoding.name()));
-  }
-
-  /**
-   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
-   * EntrySet} dependency.
-   */
-  public NodeBuilder newNode(NodeKind kind, Iterable<VName> dependencies) {
-    NodeBuilder builder = newNode(kind);
-    for (VName d : dependencies) {
-      builder.addSignatureSalt(d);
-    }
-    return builder;
   }
 
   /** Emits an edge of the given kind from {@code source} to {@code target}. */

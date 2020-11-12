@@ -41,6 +41,15 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   }
 
   @Override
+  public CustomJavaFileObject findByPath(String path, Kind kind) {
+    String digest = fileTree.lookup(path);
+    if (digest != null) {
+      return new CustomJavaFileObject(contentProvider, path, digest, null, kind, encoding);
+    }
+    return null;
+  }
+
+  @Override
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes) {
     Path file = Paths.get(className.replace('.', '/') + kind.extension);
     String dirname = file.getParent() == null ? "." : file.getParent().toString();
@@ -52,15 +61,6 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
         return new CustomJavaFileObject(
             contentProvider, join(prefix, file.toString()), digest, className, kind, encoding);
       }
-    }
-    return null;
-  }
-
-  @Override
-  public CustomJavaFileObject findByPath(String path, Kind kind) {
-    String digest = fileTree.lookup(path);
-    if (digest != null) {
-      return new CustomJavaFileObject(contentProvider, path, digest, null, kind, encoding);
     }
     return null;
   }
