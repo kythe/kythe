@@ -307,8 +307,8 @@ public class MarkedSourceRenderer {
     /** True if the buffer is non-empty. */
     private boolean bufferIsNonempty;
     /**
-     * Unescaped text that should be escaped and appended before any other text is appended to
-     * the buffer.
+     * Unescaped text that should be escaped and appended before any other text is appended to the
+     * buffer.
      */
     private StringBuilder prependBuffer;
 
