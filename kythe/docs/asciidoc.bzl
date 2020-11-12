@@ -67,7 +67,7 @@ def _asciidoc_impl(ctx):
             "fi",
 
             # Move any generated images to the out directory.
-            "find . -name '*.svg' -maxdepth 1 -exec mv '{}' out/ \;",
+            "find . -name '*.svg' -maxdepth 1 -exec mv '{}' out/ \\;",
 
             # Package up the outputs into the zip file.
             "(cd out; zip -9qr ../%s *)" % ctx.outputs.out.path,
