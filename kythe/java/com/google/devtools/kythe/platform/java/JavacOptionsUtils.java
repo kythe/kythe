@@ -154,8 +154,6 @@ public class JavacOptionsUtils {
     };
   }
 
-  private static final Consumer<String> NO_OP = (val) -> {};
-
   /** A useful container for modifying javac commandline arguments, in the style of a builder. */
   public static class ModifiableOptions {
     private List<String> internal = new ArrayList<>();
@@ -219,9 +217,9 @@ public class JavacOptionsUtils {
       final List<String> replacements = new ArrayList<>(internal.size());
       Consumer<String> placer = (value) -> replacements.add(value);
       if (matched) {
-        acceptOptions(handler, placer, NO_OP);
+        acceptOptions(handler, placer, x -> {});
       } else {
-        acceptOptions(handler, NO_OP, placer);
+        acceptOptions(handler, x -> {}, placer);
       }
       internal = replacements;
       return this;
@@ -229,7 +227,7 @@ public class JavacOptionsUtils {
 
     private ModifiableOptions acceptOptions(
         OptionHandler handler, final Consumer<String> matched, final Consumer<String> unmatched) {
-      return acceptOptions(handler, matched, unmatched, NO_OP);
+      return acceptOptions(handler, matched, unmatched, x -> {});
     }
 
     private ModifiableOptions acceptOptions(
@@ -358,7 +356,7 @@ public class JavacOptionsUtils {
       List<String> replacements = new ArrayList<>(internal.size());
       Consumer<String> matched = (value) -> paths.addAll(PATH_SPLITTER.split(value));
       Consumer<String> unmatched = (value) -> replacements.add(value);
-      acceptOptions(handleOpts(ImmutableList.of(option)), NO_OP, unmatched, matched);
+      acceptOptions(handleOpts(ImmutableList.of(option)), x -> {}, unmatched, matched);
       internal = replacements;
       return paths.build();
     }

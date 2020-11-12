@@ -25,7 +25,7 @@ import java.io.IOException;
 /** Emitter of facts. */
 public interface FactEmitter extends Closeable {
   /**
-   * Emits a single fact to some data sink. {@link edgeKind} and {@link target} must both be either
+   * Emits a single fact to some data sink. {@code edgeKind} and {@code target} must both be either
    * {@code null} (for a node entry) or non-{@code null} (for an edge entry).
    */
   public void emit(VName source, String edgeKind, VName target, String factName, byte[] factValue);

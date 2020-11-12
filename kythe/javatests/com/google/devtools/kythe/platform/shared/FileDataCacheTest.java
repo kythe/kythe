@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
+@SuppressWarnings("TestExceptionChecker")
 public final class FileDataCacheTest {
   @Test(expected = IllegalArgumentException.class)
   public void testNullDigestLookupThrows() throws Throwable {

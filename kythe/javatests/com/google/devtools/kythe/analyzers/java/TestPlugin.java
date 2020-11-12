@@ -68,6 +68,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
     return super.visitMethodDef(tree, v);
   }
 
+  @Override
   public Void visitVarDef(JCVariableDecl tree, Void v) {
     visitMember(tree, tree.name, tree.sym, tree.getModifiers().getAnnotations());
     return super.visitVarDef(tree, v);

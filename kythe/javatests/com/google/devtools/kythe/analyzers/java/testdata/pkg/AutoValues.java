@@ -9,6 +9,7 @@ import com.google.auto.value.AutoValue;
 //- GeneratedDef=vname(_, GenCorpus, GenRoot, GenPath, _).node/kind anchor
 //- GeneratedDef defines/binding AutoStringPair
 
+@SuppressWarnings("unused")
 //- @AutoValues=vname(_, Corpus, Root, Path, _).node/kind anchor
 public final class AutoValues {
   @AutoValue

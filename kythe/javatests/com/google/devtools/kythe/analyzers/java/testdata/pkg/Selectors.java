@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("ClassCanBeStatic")
 public class Selectors {
   //- @field defines/binding Field
   //- @String ref String
@@ -70,6 +71,7 @@ public class Selectors {
     }
   }
 
+  @SuppressWarnings("HidingField")
   //- @B defines/binding BRecord
   //- BThis typed BRecord
   //- BSuper typed ARecord

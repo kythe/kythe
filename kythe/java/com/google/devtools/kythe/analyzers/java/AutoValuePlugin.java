@@ -311,7 +311,8 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
     return null;
   }
 
-  private static Map<String, GeneratedSymbol> trimPropertyNames(Map<String, GeneratedSymbol> syms) {
+  private static ImmutableMap<String, GeneratedSymbol> trimPropertyNames(
+      Map<String, GeneratedSymbol> syms) {
     ImmutableMap.Builder<String, GeneratedSymbol> unprefixed = ImmutableMap.builder();
     for (Map.Entry<String, GeneratedSymbol> sym : syms.entrySet()) {
       unprefixed.put(propertyName(sym.getKey()), sym.getValue());

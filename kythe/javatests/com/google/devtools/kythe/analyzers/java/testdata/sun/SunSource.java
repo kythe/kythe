@@ -7,6 +7,7 @@ import org.xml.sax.SAXException;
 
 public class SunSource {
 
+  @SuppressWarnings("ClassCanBeStatic")
   class SomeUserClass {};
 
   //- @s defines/binding S

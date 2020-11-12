@@ -19,7 +19,6 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -762,7 +761,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
     List<VName> argVNames = new ArrayList<>();
-    Builder<VName> childWildcards = ImmutableList.builder();
+    ImmutableList.Builder<VName> childWildcards = ImmutableList.builder();
     for (JavaNode n : arguments) {
       argVNames.add(n.getVName());
       childWildcards.addAll(n.childWildcards);
@@ -963,7 +962,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(wild);
 
     EntrySet node = entrySets.newWildcardNodeAndEmit(wild, owner.getSourcePath());
-    Builder<VName> wildcards = ImmutableList.builder();
+    ImmutableList.Builder<VName> wildcards = ImmutableList.builder();
     wildcards.add(node.getVName());
 
     if (wild.getKind() != Kind.UNBOUNDED_WILDCARD) {

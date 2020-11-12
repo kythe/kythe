@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 //- @Callgraph defines/binding Class
 //- ClassInitDef.loc/start @^"Callgraph"
 //- ClassInitDef.loc/end @^"Callgraph"

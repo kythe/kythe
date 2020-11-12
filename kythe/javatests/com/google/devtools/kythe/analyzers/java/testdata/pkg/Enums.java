@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 //- @Enums defines/binding Enum
 //- Enum.node/kind sum
 //- Enum.subkind enumClass

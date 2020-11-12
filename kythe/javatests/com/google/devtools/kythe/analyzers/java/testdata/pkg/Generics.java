@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 //- @Generics=vname(_, Corpus, Root, Path, _) defines/binding GAbs
 //- Class childof GAbs=vname(_, Corpus, Root, Path, _)
 //- GAbs.node/kind abs

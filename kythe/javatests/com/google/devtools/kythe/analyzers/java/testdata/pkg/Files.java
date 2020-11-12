@@ -2,6 +2,7 @@
 //- Package.node/kind package
 package pkg;
 
+@SuppressWarnings("unused")
 //- @Files defines/binding FilesClass
 public class Files {
 
@@ -9,8 +10,8 @@ public class Files {
   int 錨;
   //- Anchor=vname(_,"kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","java") defines/binding UV
   //- Anchor.node/kind anchor
-  //- Anchor.loc/start 163
-  //- Anchor.loc/end 166
+  //- Anchor.loc/start 191
+  //- Anchor.loc/end 194
 
   //- @Inner defines/binding InnerClass
   //- InnerClass childof FilesClass

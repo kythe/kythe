@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 public final class SpecialMembers {
   public static void main(String[] args) {
     //- @length ref Length

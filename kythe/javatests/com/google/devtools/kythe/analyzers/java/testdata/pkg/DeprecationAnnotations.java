@@ -1,6 +1,6 @@
 package pkg;
 
-//- @+8DeprecationAnnotations defines/binding DeprecationClass
+//- @+9DeprecationAnnotations defines/binding DeprecationClass
 
 /**
  * This the javadoc summary fragment, not the {@code @deprecated} tag.
@@ -8,6 +8,7 @@ package pkg;
  * @author this is an author tag, not the {@code @deprecated} tag.
  */
 @Deprecated
+@SuppressWarnings("ClassCanBeStatic")
 public class DeprecationAnnotations {
   //- DeprecationClass.tag/deprecated ""
 
