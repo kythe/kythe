@@ -1297,8 +1297,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  // Cached common java.lang.* nodes.
-  private JavaNode javaLangObjectNode, javaLangEnumNode;
+  // Cached common java.lang.Object node.
+  private JavaNode javaLangObjectNode;
+  // Cached common java.lang.Enum node.
+  private JavaNode javaLangEnumNode;
 
   // Returns a JavaNode representing java.lang.Object.
   private JavaNode getJavaLangObjectNode() {

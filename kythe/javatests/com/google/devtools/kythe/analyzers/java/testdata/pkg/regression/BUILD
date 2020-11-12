@@ -5,6 +5,10 @@ load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", 
 java_library(
     name = "regression",
     srcs = glob(["**/*.java"]),
+    javacopts = [
+        "-Xep:AnnotationPosition:OFF",
+        "-Xep:MultipleTopLevelClasses:OFF",
+    ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
 )
 
@@ -17,6 +21,10 @@ extract_java(
 java_library(
     name = "nullable",
     srcs = ["Nullable.java"],
+    javacopts = [
+        "-Xep:AnnotationPosition:OFF",
+        "-Xep:MultipleTopLevelClasses:OFF",
+    ],
 )
 
 java_library(

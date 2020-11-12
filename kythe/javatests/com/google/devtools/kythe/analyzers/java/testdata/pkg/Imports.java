@@ -3,9 +3,9 @@ package pkg;
 //- @CASE_INSENSITIVE_ORDER ref/imports StringConst
 //- @String ref String
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
-//- @hashCode ref/imports _HashCodeMethod
+//- @isNull ref/imports IsNullMethod
 //- @"java.util" ref UtilPackage
-import static java.util.Objects.hashCode;
+import static java.util.Objects.isNull;
 
 //- @staticMethod ref/imports StaticBool
 //- @staticMethod ref/imports StaticInt
@@ -45,6 +45,13 @@ public class Imports {
     System.err.println(java.util.Map.Entry.class);
     //- @Entry ref MapEntryClass
     System.err.println(Entry.class);
+
+    //- @isNull ref IsNullMethod
+    isNull(CASE_INSENSITIVE_ORDER);
+    isNull(new LinkedList<>());
+
+    //- @staticMethod ref StaticBool
+    staticMethod(member() == staticMember());
   }
 }
 

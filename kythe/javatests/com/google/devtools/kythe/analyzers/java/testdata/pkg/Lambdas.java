@@ -1,8 +1,5 @@
 package pkg;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Function;
 
 @SuppressWarnings({"unused", "JavaLangClash", "UnnecessaryLambda"})

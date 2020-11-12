@@ -7,11 +7,11 @@ package pkg;
 // - @+6pkg ref/doc Package
 // - @+7Comments defines/binding CommentsClass
 
-@SuppressWarnings("unused")
 /**
  * This is a Javadoc comment with links to {@link String}, {@link java.lang.Integer}, {@link Inner},
  * and {@link pkg}. It references {@value IM_A_LONG}.
  */
+@SuppressWarnings({"unused", "MultiVariableDeclaration"})
 public class Comments implements Comparable<Comments> {
 
   // - @long ref/doc LongBuiltin
