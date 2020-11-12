@@ -6,6 +6,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
+load("@io_kythe//:autotools.bzl", "autotools_repository")
 load("@io_kythe//:setup.bzl", "github_archive", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
@@ -56,6 +57,23 @@ def _proto_dependencies():
     )
 
 def _cc_dependencies():
+    autotools_repository(
+        name = "org_sourceware_libffi",
+        build_file = "@io_kythe//third_party:libffi.BUILD",
+        sha256 = "653ffdfc67fbb865f39c7e5df2a071c0beb17206ebfb0a9ecb18a18f63f6b263",  # 2019-11-02
+        strip_prefix = "libffi-3.3-rc2",
+        urls = ["https://github.com/libffi/libffi/releases/download/v3.3-rc2/libffi-3.3-rc2.tar.gz"],
+    )
+
+    maybe(
+        autotools_repository,
+        name = "souffle",
+        urls = ["https://github.com/souffle-lang/souffle/archive/fbb4c4b967bf58cccb7aca58e3d200a799218d98.zip"],
+        build_file = "@io_kythe//third_party:souffle.BUILD",
+        sha256 = "654c1b33b2b3f20fdc1f0983dfed562c24a0baa230fd431401cc0004464c6b4d",
+        strip_prefix = "souffle-fbb4c4b967bf58cccb7aca58e3d200a799218d98",
+    )
+
     maybe(
         http_archive,
         name = "net_zlib",
