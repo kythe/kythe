@@ -47,15 +47,6 @@ final class SystemExploder {
     copySystemModules(systemDir, Paths.get(outputDir));
   }
 
-  // Returns a stream of paths from the specified --system directory, beginning with the appropriate
-  // modules subdirectory.
-  public static ImmutableList<Path> walkSystemModules(String systemDir) throws IOException {
-    StandardJavaFileManager fileManager =
-        ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null);
-    fileManager.handleOption("--system", Iterators.singletonIterator(systemDir));
-    return walkSystemModules(wrap(fileManager));
-  }
-
   // In order to work around the lack of the required JDK9 methods in google3, wrap
   // StandardJavaFileManagers before use (for now).
   private static ForwardingStandardJavaFileManager wrap(StandardJavaFileManager fileManager) {
@@ -63,6 +54,15 @@ final class SystemExploder {
       return (ForwardingStandardJavaFileManager) fileManager;
     }
     return new ForwardingStandardJavaFileManager(fileManager) {};
+  }
+
+  // Returns a stream of paths from the specified --system directory, beginning with the appropriate
+  // modules subdirectory.
+  public static ImmutableList<Path> walkSystemModules(String systemDir) throws IOException {
+    StandardJavaFileManager fileManager =
+        ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null);
+    fileManager.handleOption("--system", Iterators.singletonIterator(systemDir));
+    return walkSystemModules(wrap(fileManager));
   }
 
   private static ImmutableList<Path> walkSystemModules(

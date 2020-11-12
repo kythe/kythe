@@ -29,11 +29,6 @@ public class DeleteRecursively extends SimpleFileVisitor<Path> {
 
   private DeleteRecursively() {}
 
-  /** Deletes {@code path}, and if a {@code path} is a directory, all contained files. */
-  public static void delete(Path path) throws IOException {
-    Files.walkFileTree(path, INSTANCE);
-  }
-
   @Override
   public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
     return delete(dir, exc);
@@ -42,6 +37,10 @@ public class DeleteRecursively extends SimpleFileVisitor<Path> {
   @Override
   public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
     return delete(file, null);
+  }
+  /** Deletes {@code path}, and if a {@code path} is a directory, all contained files. */
+  public static void delete(Path path) throws IOException {
+    Files.walkFileTree(path, INSTANCE);
   }
 
   private static FileVisitResult delete(Path p, IOException exc) throws IOException {

@@ -153,11 +153,6 @@ public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileMan
   }
 
   @Override
-  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
-    return getJavaFileObjectsFromFiles(Arrays.asList(files));
-  }
-
-  @Override
   public FileObject getFileForInput(Location location, String packageName, String relativeName)
       throws IOException {
     FileObject fileObject = javaFileStore.find(packageName, relativeName, getSearchPaths(location));
@@ -173,14 +168,19 @@ public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileMan
   }
 
   @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
+      @SuppressWarnings("IterablePathParameter") Iterable<? extends Path> paths) {
+    return getJavaFileObjectsFromFiles(Iterables.transform(paths, Path::toFile));
+  }
+
+  @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjects(String... names) {
     return getJavaFileObjectsFromStrings(Arrays.asList(names));
   }
 
   @Override
-  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
-      @SuppressWarnings("IterablePathParameter") Iterable<? extends Path> paths) {
-    return getJavaFileObjectsFromFiles(Iterables.transform(paths, Path::toFile));
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
+    return getJavaFileObjectsFromFiles(Arrays.asList(files));
   }
 
   @Override
