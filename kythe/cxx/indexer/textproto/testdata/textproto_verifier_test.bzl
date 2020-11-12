@@ -158,7 +158,7 @@ def textproto_verifier_test(
         deps = [proto_kzip],
     )
 
-    vopts = verifier_opts + ["--ignore_dups", "--show_goals", "--goal_regex=\"\s*(?:#|//)-(.*)\""]
+    vopts = verifier_opts + ["--ignore_dups", "--show_goals", "--goal_regex=\"\\s*(?:#|//)-(.*)\""]
     if convert_marked_source:
         vopts += ["--convert_marked_source"]
     return _invoke(
