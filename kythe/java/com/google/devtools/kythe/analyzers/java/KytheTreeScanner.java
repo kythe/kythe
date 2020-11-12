@@ -386,6 +386,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitComment(classDef, classNode);
     }
 
+    if (classDef.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
+      entrySets.getEmitter().emitFact(classNode, "/kythe/tag/abstract", "");
+    }
+
     visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
     JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
@@ -605,6 +609,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
+
+    if (methodDef.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
+      entrySets.getEmitter().emitFact(methodNode, "/kythe/tag/abstract", "");
+    }
 
     VName recv = null;
     if (!methodDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
