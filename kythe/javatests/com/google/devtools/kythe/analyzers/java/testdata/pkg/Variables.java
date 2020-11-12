@@ -5,6 +5,7 @@ package pkg;
 import java.io.IOException;
 import java.io.OutputStream;
 
+@SuppressWarnings("unused")
 //- @Variables defines/binding Class
 public class Variables {
 

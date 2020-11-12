@@ -110,7 +110,8 @@ public class CompilationUnits {
     List<FileInput> ri = Lists.newArrayList(orig);
     Collections.sort(ri, (a, b) -> a.getInfo().getDigest().compareTo(b.getInfo().getDigest()));
     // Invariant: All elements at or before i are unique (no duplicates).
-    int i = 0, j = 1;
+    int i = 0;
+    int j = 1;
     while (j < ri.size()) {
       // If ri[j] ≠ ri[i], it is a new element, not a duplicate.  Move it
       // next in sequence after i and advance i; this ensures we keep the

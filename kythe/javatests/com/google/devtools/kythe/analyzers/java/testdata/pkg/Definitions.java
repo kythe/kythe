@@ -1,9 +1,10 @@
 package pkg;
 
-//- @Definitions defines/binding Definitions
 //- DefinitionsDef defines Definitions
 //- DefinitionsDef.node/kind anchor
-//- DefinitionsDef.loc/start @^public
+//- DefinitionsDef.loc/start @^"@Suppress"
+@SuppressWarnings("unused")
+//- @Definitions defines/binding Definitions
 public class Definitions {
 
   //- @HELLO defines/binding HelloConstant

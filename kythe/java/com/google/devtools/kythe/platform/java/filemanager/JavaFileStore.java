@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.java.filemanager;
 
 import java.util.Set;
 import javax.tools.JavaFileObject.Kind;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * JavaFileStore is a service for finding Java compiler related files such as {@code .class} or
@@ -35,47 +36,30 @@ public interface JavaFileStore {
    * Finds and returns the Java file object associated with the {@code className} and {@code kind}.
    * {@code pathPrefixes} are used to limit possible search paths. There is no limitation on the
    * format of a path. It is up to implementation to decide what it should be.
-   *
-   * @param className
-   * @param kind
-   * @param pathPrefixes
-   * @return the found Java file object as {@link CustomJavaFileObject} or null if no match is found
    */
+  @Nullable
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes);
 
   /**
    * Finds and returns the file object in a package, {@code packageName}, with name {@code
    * relativeName}. {@code pathPrefixes} are used to limit possible search paths. There is no
    * limitation on the format of a path. It is up to implementation to decide what it should be.
-   *
-   * @param packageName
-   * @param relativeName
-   * @param pathPrefixes
-   * @return the found Java file object as {@link CustomFileObject} or null if no match is found
    */
+  @Nullable
   public CustomFileObject find(String packageName, String relativeName, Set<String> pathPrefixes);
 
   /**
    * Finds and returns the Java file object with the exact path matching {@code path} and {@code
    * kind}. There is no limitation on the format of a path. It is up to implementation to decide
    * what it should be.
-   *
-   * @param path
-   * @param kind
-   * @return the found Java file object as {@link CustomJavaFileObject} or null if no match is found
    */
+  @Nullable
   public CustomJavaFileObject findByPath(String path, Kind kind);
 
   /**
    * Finds and returns all the Java file objects in a package, {@code packageName}. {@code
    * pathPrefixes} are used to limit possible search paths. There is no limitation on the format of
    * a path. It is up to implementation to decide what it should be.
-   *
-   * @param packageName
-   * @param kinds
-   * @param pathPrefixes
-   * @param recurse
-   * @return all the found Java file objects or an empty set if none can be found
    */
   public Set<CustomJavaFileObject> list(
       String packageName, Set<Kind> kinds, Set<String> pathPrefixes, boolean recurse);

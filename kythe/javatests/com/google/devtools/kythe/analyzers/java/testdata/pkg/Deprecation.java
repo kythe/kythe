@@ -1,6 +1,6 @@
 package pkg;
 
-//- @+9Deprecation defines/binding DeprecationClass
+//- @+10Deprecation defines/binding DeprecationClass
 
 /**
  * This the javadoc summary fragment, not the {@code @deprecated} tag.
@@ -9,6 +9,7 @@ package pkg;
  * @author this is an author tag, not the {@code @deprecated} tag.
  */
 @Deprecated
+@SuppressWarnings({"MissingSummary", "ClassCanBeStatic", "EmptyBlockTag", "DepAnn"})
 public class Deprecation {
   //- DeprecationClass.tag/deprecated "this class is obsolete; prefer {@link Comments}"
 

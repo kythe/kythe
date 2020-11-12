@@ -24,7 +24,6 @@ import com.google.common.html.types.SafeHtmlBuilder;
 import com.google.common.html.types.SafeUrl;
 import com.google.devtools.kythe.proto.Link;
 import com.google.devtools.kythe.proto.MarkedSource;
-import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -34,7 +33,7 @@ public class MarkedSourceRenderer {
   private static final int MAX_RENDER_DEPTH = 10;
 
   /**
-   * Render {@link signature} as a full signature.
+   * Render {@code signature} as a full signature.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.
@@ -51,7 +50,7 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render a plaintext initializer from {@link signature}.
+   * Extract and render a plaintext initializer from {@code signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.
@@ -65,7 +64,7 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render the simple qualified name from {@link signature}.
+   * Extract and render the simple qualified name from {@code signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.
@@ -85,7 +84,7 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render the simple qualified name from {@link signature} as plaintext.
+   * Extract and render the simple qualified name from {@code signature} as plaintext.
    *
    * @param signature the {@link MarkedSource} to render from.
    * @param includeIdentifier if true, include the identifier on the qualified name.
@@ -103,7 +102,7 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render a the simple identifier from {@link signature}.
+   * Extract and render a the simple identifier from {@code signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.
@@ -117,7 +116,7 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render a the simple identifier from {@link signature} as plaintext.
+   * Extract and render a the simple identifier from {@code signature} as plaintext.
    *
    * @param signature the {@link MarkedSource} to render from.
    * @return "" if there is no such identifier.
@@ -128,14 +127,14 @@ public class MarkedSourceRenderer {
   }
 
   /**
-   * Extract and render the simple identifiers for parameters in {@link signature}.
+   * Extract and render the simple identifiers for parameters in {@code signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.
    * @param signature the {@link MarkedSource} to render from.
    * @return SafeHtml.EMPTY for those parameters without simple identifiers.
    */
-  public static List<SafeHtml> renderSimpleParams(
+  public static ImmutableList<SafeHtml> renderSimpleParams(
       Function<String, SafeUrl> makeLink, MarkedSource signature) {
     ImmutableList.Builder<SafeHtml> builder = ImmutableList.builder();
     RenderSimpleIdentifierState.renderSimpleParams(makeLink, signature, builder, 0);
@@ -281,7 +280,7 @@ public class MarkedSourceRenderer {
       }
     }
     /**
-     * Escapes and adds {@link text} before the (non-empty) text that would be added by the next
+     * Escapes and adds {@code text} before the (non-empty) text that would be added by the next
      * call to {@link append}.
      */
     private void appendFinalListToken(String text) {
@@ -308,8 +307,8 @@ public class MarkedSourceRenderer {
     /** True if the buffer is non-empty. */
     private boolean bufferIsNonempty;
     /**
-     * Unescaped text that should be escaped and appended before any other text is appended to
-     * {@link buffer}.
+     * Unescaped text that should be escaped and appended before any other text is appended to the
+     * buffer.
      */
     private StringBuilder prependBuffer;
 

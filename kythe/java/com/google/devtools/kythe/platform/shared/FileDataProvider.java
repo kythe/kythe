@@ -25,8 +25,8 @@ import com.google.devtools.kythe.proto.Analysis.FileInfo;
  */
 public interface FileDataProvider extends AutoCloseable {
   /**
-   * Returns a {@link Future<byte[]>} for the contents of the file described by the given path and
-   * digest. If the file cannot be found (and there was no exception), the future will return null.
+   * Returns a {@link Future} for the contents of the file described by the given path and digest.
+   * If the file cannot be found (and there was no exception), the future will return null.
    *
    * <p>If both digest and path are non-null, they should correspond to each other. Implementations
    * can choose to ignore path, digest, or require them both to be present. If an implementation
@@ -36,8 +36,7 @@ public interface FileDataProvider extends AutoCloseable {
   ListenableFuture<byte[]> startLookup(String path, String digest);
 
   /**
-   * Returns a {@link Future<byte[]>} for the contents of the file described by the given {@link
-   * FileInfo}.
+   * Returns a {@link Future} for the contents of the file described by the given {@link FileInfo}.
    *
    * @see startLookup(String, String)
    */

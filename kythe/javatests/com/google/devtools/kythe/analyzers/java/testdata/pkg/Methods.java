@@ -3,6 +3,7 @@ package pkg;
 //- @IOException ref/imports IOE
 import java.io.IOException;
 
+@SuppressWarnings("unused")
 //- @Methods defines/binding Class
 public class Methods {
 

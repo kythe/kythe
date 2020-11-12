@@ -26,7 +26,9 @@ public final class CorpusPath {
   /** The empty {@link CorpusPath}. */
   public static final CorpusPath EMPTY = new CorpusPath("", "", "");
 
-  private final String corpus, root, path;
+  private final String corpus;
+  private final String root;
+  private final String path;
 
   public CorpusPath(String corpus, String root, String path) {
     Preconditions.checkNotNull(corpus, "corpus must be non-null");

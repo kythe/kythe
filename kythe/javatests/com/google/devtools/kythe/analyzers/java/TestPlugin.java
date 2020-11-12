@@ -32,11 +32,11 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import java.util.Optional;
 
-@AutoService(Plugin.class)
 /**
  * Kythe {@link Plugin} that emits "special" Kythe nodes for Java methods and fields annotated with
  * {@code @pkg.PluginTests.SpecialAnnotation}.
  */
+@AutoService(Plugin.class)
 public class TestPlugin extends Plugin.Scanner<Void, Void> {
   public TestPlugin() {}
 
@@ -68,6 +68,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
     return super.visitMethodDef(tree, v);
   }
 
+  @Override
   public Void visitVarDef(JCVariableDecl tree, Void v) {
     visitMember(tree, tree.name, tree.sym, tree.getModifiers().getAnnotations());
     return super.visitVarDef(tree, v);

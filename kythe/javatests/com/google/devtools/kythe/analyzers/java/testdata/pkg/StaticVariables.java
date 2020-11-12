@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 public class StaticVariables {
   //- @foo defines/binding StaticFoo
   private static String foo;

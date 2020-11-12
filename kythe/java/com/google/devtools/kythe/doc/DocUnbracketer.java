@@ -28,7 +28,7 @@ public class DocUnbracketer {
   private static final String ALLOWED_ESCAPES = "[]\\";
 
   /**
-   * Unbracket {@link printable}, following the rules for text in {@link Printable} messages.
+   * Unbracket {@code printable}, following the rules for text in {@link Printable} messages.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
    *     node tickets. It may return null if there is no available URI.

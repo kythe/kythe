@@ -4,13 +4,13 @@ package pkg;
 
 //- @CONSTANT ref/imports ConstantMember
 import static pkg.Files.CONSTANT;
-//- @Inner ref/imports InnerClass
-import static pkg.Files.Inner;
 //- @staticMethod ref/imports StaticMethod
 import static pkg.Files.staticMethod;
 //- @INSTANCE ref/imports InstanceMember
 import static pkg.Files.INSTANCE;
 
+//- @Inner ref/imports InnerClass
+import pkg.Files.Inner;
 import pkg.Files.Inter;
 import pkg.Files.OtherDecl;
 
@@ -43,6 +43,9 @@ public class JvmCrossFile {
   //- @OtherDecl ref ODecl
   OtherDecl f3;
 
+  //- @Inner ref InnerClass
+  Inner in;
+
   //- @Inter ref Inter
   Inter i;
 
@@ -57,6 +60,8 @@ public class JvmCrossFile {
     //- @staticMethod ref StaticMethod
     staticMethod();
     //- @CONSTANT ref ConstantMember
-    System.out.println(Files.CONSTANT);
+    System.out.println(CONSTANT);
+    //- @INSTANCE ref InstanceMember
+    System.out.println(INSTANCE);
   }
 }

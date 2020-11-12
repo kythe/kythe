@@ -6,7 +6,7 @@ import org.xml.sax.SAXException;
 
 public class JDK {
 
-  class SomeUserClass {};
+  static class SomeUserClass {};
 
   //- @s defines/binding S
   //- S typed vname(_,"jdk","","","java")

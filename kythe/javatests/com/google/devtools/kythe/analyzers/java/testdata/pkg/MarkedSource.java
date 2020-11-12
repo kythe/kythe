@@ -6,6 +6,7 @@ package pkg;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 //- @MarkedSource defines/binding Class
 //- Class childof Package
 //- Class code ClassId
@@ -221,7 +222,7 @@ public class MarkedSource {
 
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
-  public class Inner {
+  public static class Inner {
     //- @field defines/binding IField
     //- IField code CIField
     //- CIField child.1 CIFieldCxt
@@ -332,7 +333,7 @@ public class MarkedSource {
     };
   }
 
-  public class InnerAnon {
+  public static class InnerAnon {
     Object o = new Object() {
       //- @field defines/binding IIAField
       //- IIAField code CIIAField

@@ -3,6 +3,7 @@ package pkg;
 import java.util.Formattable;
 import java.util.List;
 
+@SuppressWarnings({"unused", "ClassCanBeStatic"})
 //- @Jvm defines/binding ClassJava
 //- ClassJava generates ClassJvm
 //- ClassJava named ClassJvm
@@ -108,6 +109,7 @@ public class Jvm {
     private void mbtmethod(T targ) {}
   }
 
+  @SuppressWarnings("TypeParameterUnusedInFormals")
   //- @nope defines/binding NopeJava
   //- NopeJava generates NopeJvm
   //- NopeJava named NopeJvm

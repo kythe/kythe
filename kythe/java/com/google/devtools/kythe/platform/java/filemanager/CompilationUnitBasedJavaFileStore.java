@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import javax.tools.JavaFileObject.Kind;
 
@@ -42,6 +41,15 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   }
 
   @Override
+  public CustomJavaFileObject findByPath(String path, Kind kind) {
+    String digest = fileTree.lookup(path);
+    if (digest != null) {
+      return new CustomJavaFileObject(contentProvider, path, digest, null, kind, encoding);
+    }
+    return null;
+  }
+
+  @Override
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes) {
     Path file = Paths.get(className.replace('.', '/') + kind.extension);
     String dirname = file.getParent() == null ? "." : file.getParent().toString();
@@ -53,15 +61,6 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
         return new CustomJavaFileObject(
             contentProvider, join(prefix, file.toString()), digest, className, kind, encoding);
       }
-    }
-    return null;
-  }
-
-  @Override
-  public CustomJavaFileObject findByPath(String path, Kind kind) {
-    String digest = fileTree.lookup(path);
-    if (digest != null) {
-      return new CustomJavaFileObject(contentProvider, path, digest, null, kind, encoding);
     }
     return null;
   }
@@ -108,7 +107,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private Set<CustomJavaFileObject> getFiles(
       String dirToLookIn, Map<String, String> entries, Set<Kind> kinds, String packageName) {
     Set<CustomJavaFileObject> files = new HashSet<>();
-    for (Entry<String, String> entry : entries.entrySet()) {
+    for (Map.Entry<String, String> entry : entries.entrySet()) {
       String fileName = entry.getKey();
       String digest = entry.getValue();
       if (digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {

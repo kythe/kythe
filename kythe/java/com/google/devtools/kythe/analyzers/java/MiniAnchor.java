@@ -43,17 +43,17 @@ public class MiniAnchor<T> {
     this.end = end;
   }
 
-  /** @return the inclusive beginning of the text span */
+  /** Returns the inclusive beginning of the text span */
   public int getBegin() {
     return begin;
   }
 
-  /** @return the non-exclusive end of the text span */
+  /** Returns the non-exclusive end of the text span */
   public int getEnd() {
     return end;
   }
 
-  /** @return the object this span is anchored to */
+  /** Returns the object this span is anchored to */
   public T getAnchoredTo() {
     return anchoredTo;
   }

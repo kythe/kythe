@@ -2,6 +2,7 @@ package pkg;
 
 // Checks that classes are record/class nodes and enums are sum/enumClass nodes
 
+@SuppressWarnings({"unused", "JavaLangClash", "ClassCanBeStatic"})
 //- @Classes defines/binding N
 //- N.node/kind record
 //- N.subkind class

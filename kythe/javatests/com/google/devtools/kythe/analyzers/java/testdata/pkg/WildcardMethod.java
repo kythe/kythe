@@ -1,6 +1,6 @@
 package pkg;
 
-
+@SuppressWarnings("unused")
 public final class WildcardMethod {
   public static final class Optional<T> {}
 

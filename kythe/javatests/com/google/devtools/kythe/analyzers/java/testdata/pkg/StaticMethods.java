@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 public class StaticMethods {
 
   //- @member defines/binding PrivateMember

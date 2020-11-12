@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 //- @Generics=vname(_, Corpus, Root, Path, _) defines/binding GAbs
 //- Class childof GAbs=vname(_, Corpus, Root, Path, _)
 //- GAbs.node/kind abs
@@ -62,13 +63,13 @@ public class Generics<T> {
   //- OptionalTVar.node/kind absvar
   private static class Optional<T> {}
 
-  //- @BV defines/binding BVar
-  //- BVar.node/kind absvar
+  //- @U defines/binding UVar
+  //- UVar.node/kind absvar
   //- @List ref List
   //- @Inter ref Inter
-  //- BVar bounded/upper.0 List
-  //- BVar bounded/upper.1 Inter
-  private static class Bounded<BV extends java.util.List & Inter> {}
+  //- UVar bounded/upper.0 List
+  //- UVar bounded/upper.1 Inter
+  private static class Bounded<U extends java.util.List & Inter> {}
 
   //- @classTypeVarBound defines/binding _ClassTypeVarBoundFunc
   //- @E defines/binding EVar

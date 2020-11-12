@@ -1,6 +1,7 @@
 package pkg;
 
 /** Tests Kythe inheritance-related nodes/edges. */
+@SuppressWarnings("MissingOverride")
 public class Inheritance {
   //- @obj defines/binding V
   //- V typed Obj
