@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 //- @GenericClass defines/binding GAbs
 //- Class childof GAbs
 //- GAbs.node/kind abs

@@ -36,6 +36,7 @@ import javax.tools.StandardJavaFileManager;
  * Forwards the full suite of {@link StandardJavaFileManager} methods to an underlying {@link
  * StandardJavaFileManager}, including methods introduced in JDK9.
  */
+@SuppressWarnings("MissingOverride")
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class ForwardingStandardJavaFileManager
     extends ForwardingJavaFileManager<StandardJavaFileManager> implements StandardJavaFileManager {

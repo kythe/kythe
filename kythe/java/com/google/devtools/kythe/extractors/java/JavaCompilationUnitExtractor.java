@@ -513,7 +513,7 @@ public class JavaCompilationUnitExtractor {
    * is needed as the sharded analysis will need to resolve dependent source files. Also locates
    * sources that do not follow the package == path convention and list them as explicit sources.
    */
-  private Collection<String> getAdditionalSourcePaths(
+  private ImmutableList<String> getAdditionalSourcePaths(
       Iterable<? extends CompilationUnitTree> compilationUnits) {
     ImmutableList.Builder<String> results = new ImmutableList.Builder<>();
     for (CompilationUnitTree compilationUnit : compilationUnits) {

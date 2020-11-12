@@ -68,14 +68,15 @@ public class Metadata {
   }
 
   /**
+   * Returns all rules with spans starting at that offset.
+   *
    * @param location the starting byte offset in the source file to check.
-   * @return all rules with spans starting at that offset.
    */
   public Iterable<Rule> getRulesForLocation(int location) {
     return rules.get(location);
   }
 
-  /** @return the file-scope rules */
+  /** Returns the file-scope rules */
   public Iterable<Rule> getFileScopeRules() {
     return fileRules;
   }

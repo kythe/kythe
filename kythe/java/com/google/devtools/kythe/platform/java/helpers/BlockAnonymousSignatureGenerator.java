@@ -92,18 +92,12 @@ public class BlockAnonymousSignatureGenerator
   // block. They are numbered from zero.
   private final Map<Tree, String> blockAnonymousMap = new HashMap<>();
 
-  /**
-   * @param element
-   * @return the block signature of the corresponding element
-   */
+  /** Returns the block signature of the corresponding element */
   String getBlockSignature(Element element) {
     return getBlockSignature(signatureGenerator.getPath(element));
   }
 
-  /**
-   * @param path
-   * @return the block signature of the corresponding path
-   */
+  /** Returns the block signature of the corresponding path */
   String getBlockSignature(TreePath path) {
     this.process(path.getCompilationUnit());
     path = path.getParentPath();

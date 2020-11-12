@@ -37,7 +37,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -126,7 +125,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   @Override
-  public Iterable<Path> getRootDirectories() {
+  public ImmutableList<Path> getRootDirectories() {
     return ImmutableList.of(rootDirectory);
   }
 
@@ -135,12 +134,12 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   @Override
-  public Iterable<FileStore> getFileStores() {
+  public ImmutableList<FileStore> getFileStores() {
     return ImmutableList.of();
   }
 
   @Override
-  public Set<String> supportedFileAttributeViews() {
+  public ImmutableSet<String> supportedFileAttributeViews() {
     return SUPPORTED_VIEWS;
   }
 

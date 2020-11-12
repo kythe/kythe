@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+@SuppressWarnings({"unused", "JavaLangClash", "UnnecessaryLambda"})
 //- @Lambdas defines/binding LambdasClass
 public class Lambdas {
   //- @Function ref FuncAbs

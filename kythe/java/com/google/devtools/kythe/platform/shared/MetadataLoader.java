@@ -16,13 +16,17 @@
 
 package com.google.devtools.kythe.platform.shared;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /** Attempts to parse metadata from a file. */
 public interface MetadataLoader {
   /**
+   * Returns a Metadata instance on success; {@code null} on failure.
+   *
    * @param fileName The name of the metadata file, used to distinguish between different formats
    *     using file extensions.
    * @param data The raw data that composes the metadata file.
-   * @return a Metadata instance on success; null on failure.
    */
+  @Nullable
   Metadata parseFile(String fileName, byte[] data);
 }

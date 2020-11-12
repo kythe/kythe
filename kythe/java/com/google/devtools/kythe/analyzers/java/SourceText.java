@@ -34,6 +34,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.lang.model.element.Name;
@@ -164,7 +165,7 @@ public final class SourceText {
     private final JavaFileObject sourceFile;
     private final EndPosTable endPositions;
     private final Map<Name, List<Span>> identTable = new HashMap<>();
-    private final SortedSet<Span> bracketGroups = new TreeSet<>();
+    private final NavigableSet<Span> bracketGroups = new TreeSet<>();
 
     private final CharSequence text;
     private final PositionMappings mappings;

@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import javax.tools.JavaFileObject.Kind;
 
@@ -108,7 +107,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private Set<CustomJavaFileObject> getFiles(
       String dirToLookIn, Map<String, String> entries, Set<Kind> kinds, String packageName) {
     Set<CustomJavaFileObject> files = new HashSet<>();
-    for (Entry<String, String> entry : entries.entrySet()) {
+    for (Map.Entry<String, String> entry : entries.entrySet()) {
       String fileName = entry.getKey();
       String digest = entry.getValue();
       if (digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {

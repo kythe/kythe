@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
+@SuppressWarnings("TestExceptionChecker")
 public final class FileDataDirectoryTest {
   @Test(expected = IllegalArgumentException.class)
   public void testNullPathLookupThrows() throws Throwable {

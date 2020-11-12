@@ -38,7 +38,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -153,12 +153,14 @@ public final class Nodes {
       b.setSource(edges.get(0).getSource());
     }
     for (Fact f : facts) {
-      if (b.hasSource() != f.hasSource() || b.hasSource() && !b.getSource().equals(f.getSource())) {
+      if (b.hasSource() != f.hasSource()
+          || (b.hasSource() && !b.getSource().equals(f.getSource()))) {
         throw new IllegalArgumentException("source VName mismatch in entry facts");
       }
     }
     for (Edge e : edges) {
-      if (b.hasSource() != e.hasSource() || b.hasSource() && !b.getSource().equals(e.getSource())) {
+      if (b.hasSource() != e.hasSource()
+          || (b.hasSource() && !b.getSource().equals(e.getSource()))) {
         throw new IllegalArgumentException("source VName mismatch in entry edges");
       }
     }
@@ -235,7 +237,7 @@ public final class Nodes {
               : Schema.factNameString(f.getKytheName()),
           f.getValue());
     }
-    Map<String, SortedSet<Source.Edge>> edgeGroups = new HashMap<>();
+    Map<String, NavigableSet<Source.Edge>> edgeGroups = new HashMap<>();
     for (Edge e : node.getEdgeList()) {
       edgeGroups
           .computeIfAbsent(

@@ -25,14 +25,6 @@ import junit.framework.TestCase;
 
 /** Tests {@link MiniAnchor} */
 public class MiniAnchorTest extends TestCase {
-  private static final MiniAnchor.PositionTransform identityTransform =
-      new MiniAnchor.PositionTransform() {
-        @Override
-        public int transform(int pos) {
-          return pos;
-        }
-      };
-
   private static MiniAnchor<String> makeAnchor(String anchoredTo, int begin, int end) {
     return new MiniAnchor<>(anchoredTo, begin, end);
   }
@@ -42,7 +34,7 @@ public class MiniAnchorTest extends TestCase {
       List<MiniAnchor<String>> anchors,
       String resultText,
       List<String> resultAnchors) {
-    String output = MiniAnchor.bracket(text, identityTransform, anchors);
+    String output = MiniAnchor.bracket(text, pos -> pos, anchors);
     assertThat(output).isEqualTo(resultText);
     assertThat(anchors).hasSize(resultAnchors.size());
     for (int i = 0; i < resultAnchors.size(); ++i) {
@@ -113,7 +105,7 @@ public class MiniAnchorTest extends TestCase {
   public void testOverlappingMiddleNest() {
     List<MiniAnchor<String>> anchors =
         newArrayList(makeAnchor("bbb", 1, 2), makeAnchor("aaa", 0, 3), makeAnchor("ccc", 1, 2));
-    String output = MiniAnchor.bracket("aba", identityTransform, anchors);
+    String output = MiniAnchor.bracket("aba", pos -> pos, anchors);
     assertThat(output).isEqualTo("[a[[b]]a]");
     assertThat(anchors.get(0).getAnchoredTo()).isEqualTo("aaa");
     String second = anchors.get(1).getAnchoredTo();

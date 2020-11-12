@@ -19,7 +19,6 @@ package com.google.devtools.kythe.platform.java;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
@@ -60,9 +59,6 @@ public class JavaCompilationDetails implements AutoCloseable {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final Charset DEFAULT_ENCODING = UTF_8;
-
-  private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
-      diag -> diag.getKind() == Kind.ERROR;
 
   /**
    * Create a compilation details object. {@code temporaryDirectory} specifies a directory that can
@@ -158,11 +154,13 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   public boolean hasCompileErrors() {
-    return diagnostics.getDiagnostics().stream().anyMatch(ERROR_DIAGNOSTIC);
+    return diagnostics.getDiagnostics().stream()
+        .anyMatch(JavaCompilationDetails::isErrorDiagnostic);
   }
 
   public Iterable<Diagnostic<? extends JavaFileObject>> getCompileErrors() {
-    return Iterables.filter(diagnostics.getDiagnostics(), ERROR_DIAGNOSTIC);
+    return Iterables.filter(
+        diagnostics.getDiagnostics(), JavaCompilationDetails::isErrorDiagnostic);
   }
 
   /** Returns the Javac compiler instance initialized for current analysis target. */
@@ -200,7 +198,7 @@ public class JavaCompilationDetails implements AutoCloseable {
     return encoding;
   }
 
-  /** @return The file manager for the source files in this compilation */
+  /** Returns The file manager for the source files in this compilation */
   public StandardJavaFileManager getFileManager() {
     return fileManager;
   }
@@ -240,5 +238,9 @@ public class JavaCompilationDetails implements AutoCloseable {
       logger.atInfo().log("Falling back to legacy FileManager on JDK8 or older");
       return false;
     }
+  }
+
+  private static boolean isErrorDiagnostic(Diagnostic<?> diag) {
+    return diag.getKind() == Kind.ERROR;
   }
 }

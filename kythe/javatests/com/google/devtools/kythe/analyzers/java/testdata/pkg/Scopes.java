@@ -1,5 +1,6 @@
 package com.google.devtools.kythe.analyzers.java.testdata.pkg;
 
+@SuppressWarnings("unused")
 //- @Scopes defines/binding ScopesClass
 public class Scopes {
 

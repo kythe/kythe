@@ -10,6 +10,7 @@ public @interface Annotations {
   Class<?> withDef() default String.class;
 }
 
+@SuppressWarnings("unused")
 //- @Annotations ref Annotation
 @Annotations(
   //- @C ref C

@@ -15,7 +15,7 @@ public class GenericComments<T> {
 
   //- @+2GenericMethod defines/binding GAbsFunction
   /** M */
-  public static <T> T GenericMethod() { return null; }
+  public static <T> T GenericMethod(T x) { return x; }
 
   //- GAbsFunction.node/kind abs
   //- GFunction childof GAbsFunction

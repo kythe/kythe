@@ -62,7 +62,7 @@ public final class EntrySet {
   /** Used to detect when an {@link EntrySet} was not emitted exactly once. */
   private boolean emitted;
 
-  protected EntrySet(
+  EntrySet(
       VName source,
       String edgeKind,
       int edgeOrdinal,
@@ -278,7 +278,7 @@ public final class EntrySet {
   private static final ImmutableSet<String> SALT_IGNORED_FACT_VALUES =
       ImmutableSet.of("/kythe/code");
 
-  protected static String buildSignature(
+  static String buildSignature(
       ImmutableList<String> salts, ImmutableSortedMap<String, byte[]> properties) {
     Hasher signature = SIGNATURE_HASH_FUNCTION.newHasher();
     logger.atFinest().log(">>>>>>>> Building signature");

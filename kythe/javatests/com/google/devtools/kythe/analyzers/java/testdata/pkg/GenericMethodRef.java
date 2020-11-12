@@ -1,5 +1,6 @@
 package pkg;
 
+@SuppressWarnings("unused")
 public final class GenericMethodRef {
   public static final class Optional<T> {}
 
