@@ -834,7 +834,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (sym == null) {
       scan(field.getExpression(), ctx);
-      if (!field.name.toString().equals("*")) {
+      if (!field.name.contentEquals("*")) {
         String msg = "Could not determine selected Symbol for " + field;
         if (config.getVerboseLogging()) {
           logger.atWarning().log(msg);
@@ -849,7 +849,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else {
       scan(field.getExpression(), ctx);
       return emitNameUsage(
-          ctx, sym, field.name, imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
+          ctx,
+          sym,
+          field.name.contentEquals("class") ? Keyword.CLASS : field.name,
+          imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
     }
   }
 
@@ -860,7 +863,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return emitNameUsage(
         ctx,
         reference.sym,
-        reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
+        reference.getMode() == ReferenceMode.NEW ? Keyword.NEW : reference.name);
   }
 
   @Override
@@ -1572,6 +1575,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } catch (UnsupportedOperationException
         | IllegalArgumentException
         | NullPointerException unused) {
+      // Do nothing; perform fallback below
     }
     // Fallback to URI-based path resolution when asPath is unsupported.
     URI uri = filePositions.getSourceFile().toUri();
