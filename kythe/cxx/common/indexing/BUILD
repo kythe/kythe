@@ -45,6 +45,7 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@boringssl//:crypto",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
