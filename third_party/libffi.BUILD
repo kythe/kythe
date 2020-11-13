@@ -13,9 +13,43 @@
 # limitations under the License.
 
 cc_library(
-    name = "libffi",
+    name = "libffi_common_headers",
+    hdrs = [
+        "configure-bazel-gen/fficonfig.h",
+        "configure-bazel-gen/include/ffi.h",
+        "configure-bazel-gen/include/ffitarget.h",
+        "include/ffi_common.h",
+    ],
+    includes = [
+        "configure-bazel-gen",
+        "configure-bazel-gen/include",
+        "include",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "libffi_closures",
     srcs = [
         "src/closures.c",
+    ],
+    copts = [
+        # libffi-3.3-rc0 uses variable length arrays for closures on all
+        # platforms.
+        "-Wno-vla",
+        # libffi does not check the result of ftruncate.
+        "-Wno-unused-result",
+    ],
+    textual_hdrs = ["src/dlmalloc.c"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":libffi_common_headers",
+    ],
+)
+
+cc_library(
+    name = "libffi",
+    srcs = [
         "src/debug.c",
         "src/java_raw_api.c",
         "src/prep_cif.c",
@@ -48,14 +82,11 @@ cc_library(
             "src/aarch64/sysv.S",
         ],
         "//conditions:default": [
+            # TODO(zarko): add Darwin configuration here if necessary
         ],
     }),
     hdrs = [
-        "configure-bazel-gen/fficonfig.h",
-        "configure-bazel-gen/include/ffi.h",
-        "configure-bazel-gen/include/ffitarget.h",
         "include/ffi_cfi.h",
-        "include/ffi_common.h",
     ],
     copts = [
         # libffi-3.3-rc0 uses variable length arrays for closures on all
@@ -64,11 +95,9 @@ cc_library(
         # libffi does not check the result of ftruncate.
         "-Wno-unused-result",
     ],
-    includes = [
-        "configure-bazel-gen",
-        "configure-bazel-gen/include",
-        "include",
-    ],
-    textual_hdrs = ["src/dlmalloc.c"],
     visibility = ["//visibility:public"],
+    deps = [
+        ":libffi_closures",
+        ":libffi_common_headers",
+    ],
 )
