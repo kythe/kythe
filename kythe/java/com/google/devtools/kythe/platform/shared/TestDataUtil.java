@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.shared;
 import java.io.File;
 
 public final class TestDataUtil {
+  private TestDataUtil() {}
 
   // This must match the name from the workspace(name={name}) rule in the root WORKSPACE file.
   private static final String DEFAULT_WORKSPACE = "io_kythe";

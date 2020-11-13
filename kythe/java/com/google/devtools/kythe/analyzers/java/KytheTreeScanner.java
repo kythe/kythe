@@ -190,8 +190,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       StandardJavaFileManager fileManager,
       MetadataLoaders metadataLoaders,
-      JavaIndexerConfig config)
-      throws IOException {
+      JavaIndexerConfig config) {
     new KytheTreeScanner(
             entrySets,
             statistics,

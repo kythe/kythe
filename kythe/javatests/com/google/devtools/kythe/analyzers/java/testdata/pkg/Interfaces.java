@@ -1,6 +1,6 @@
 package pkg;
 
-@SuppressWarnings("MissingOverride")
+@SuppressWarnings({"MissingOverride", "InterfaceWithOnlyStatics"})
 //- @Interfaces defines/binding Inter
 //- Inter.node/kind interface
 public interface Interfaces {

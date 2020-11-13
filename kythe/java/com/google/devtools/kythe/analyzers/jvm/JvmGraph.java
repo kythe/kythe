@@ -301,7 +301,7 @@ public class JvmGraph {
   /**
    * JVM type descriptor.
    *
-   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.3
+   * <p>See https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.3
    */
   public static class Type extends VoidableType {
     private static final PrimitiveType BOOL = new PrimitiveType("Z");

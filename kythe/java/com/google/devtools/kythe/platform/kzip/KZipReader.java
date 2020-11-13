@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -51,11 +51,11 @@ public final class KZipReader implements KZip.Reader {
   }
 
   private static KZip.Descriptor getDescriptor(ZipFile zipFile) {
-    Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
-    if (!zipEntries.hasMoreElements()) {
+    Iterator<ZipEntry> zipEntries = entries(zipFile).iterator();
+    if (!zipEntries.hasNext()) {
       throw new KZipException("missing root entry");
     }
-    ZipEntry root = zipEntries.nextElement();
+    ZipEntry root = zipEntries.next();
     if (!root.isDirectory()) {
       throw new KZipException("invalid root entry: " + root.getName());
     }
@@ -68,8 +68,8 @@ public final class KZipReader implements KZip.Reader {
 
     // Make sure each path in the kzip has the same root.
     // Also accumulate potential unit digests.
-    while (zipEntries.hasMoreElements()) {
-      ZipEntry zipEntry = zipEntries.nextElement();
+    while (zipEntries.hasNext()) {
+      ZipEntry zipEntry = zipEntries.next();
       String name = zipEntry.getName();
       if (!name.startsWith(rootPrefix)) {
         throw new KZipException("Invalid entry (bad root): " + name);
@@ -92,6 +92,11 @@ public final class KZipReader implements KZip.Reader {
       throw new KZipException("KZip has proto and json encoded units but they are not equal");
     }
     return KZip.Descriptor.create(rootPrefix, encoding);
+  }
+
+  @SuppressWarnings("JdkObsolete")
+  private static Iterable<ZipEntry> entries(ZipFile zip) {
+    return () -> (Iterator<ZipEntry>) zip.entries().asIterator();
   }
 
   @Override

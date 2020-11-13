@@ -44,6 +44,7 @@ import java.util.List;
  * <p>Usage: bazel_jvm_extractor <extra_action_file> <output_file>
  */
 public class BazelJvmExtractor {
+  private BazelJvmExtractor() {}
 
   public static void main(String[] args) throws IOException, ExtractionException {
     JsonUtil.usingTypeRegistry(JvmExtractor.JSON_TYPE_REGISTRY);

@@ -11,6 +11,8 @@ public @interface Nullable {}
  * infinite loop while generating type variable's signature.
  */
 class TestNullable {
+  private TestNullable() {}
+
   //- @genericT defines/binding GenericT
   //- GenericT.node/kind function
   static <T> @Nullable T genericT(@Nullable T x) { return x; }

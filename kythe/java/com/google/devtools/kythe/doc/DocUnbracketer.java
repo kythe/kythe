@@ -25,6 +25,8 @@ import java.util.function.Function;
 
 /** Unescapes text from Kythe doc nodes into SafeHtml. */
 public class DocUnbracketer {
+  private DocUnbracketer() {}
+
   private static final String ALLOWED_ESCAPES = "[]\\";
 
   /**
@@ -34,6 +36,7 @@ public class DocUnbracketer {
    *     node tickets. It may return null if there is no available URI.
    * @param printable the document text to unbracket.
    */
+  @SuppressWarnings("JdkObsolete") // Stack needed for nulls
   public static SafeHtml unbracket(Function<String, SafeUrl> makeLink, Printable printable) {
     int size = printable.getRawText().length();
     String raw = printable.getRawText();

@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 /** Renders MarkedSource messages into user-printable {@link SafeHtml}. */
 public class MarkedSourceRenderer {
+  private MarkedSourceRenderer() {}
   /** Don't recurse more than this many times when rendering MarkedSource. */
   private static final int MAX_RENDER_DEPTH = 10;
 

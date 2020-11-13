@@ -38,7 +38,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -57,8 +56,9 @@ import java.util.function.Function;
  *   <li>converting from byte[] to FileData
  * </ul>
  */
-// TODO: Split this class by domain.
 public class ExtractorUtils {
+  private ExtractorUtils() {}
+
   public static final Comparator<FileInput> FILE_INPUT_COMPARATOR =
       Comparator.comparing(FileInput::getInfo, Comparator.comparing(FileInfo::getPath));
 
@@ -174,11 +174,11 @@ public class ExtractorUtils {
     return USER_DIR.value();
   }
 
-  public static String digestForPath(String path) throws NoSuchAlgorithmException, IOException {
+  public static String digestForPath(String path) throws IOException {
     return digestForFile(new File(path));
   }
 
-  public static String digestForFile(File file) throws NoSuchAlgorithmException, IOException {
+  public static String digestForFile(File file) throws IOException {
     return getContentDigest(Files.toByteArray(file));
   }
 
