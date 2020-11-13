@@ -61,7 +61,9 @@ public final class SourceText {
       if (token.kind == TokenKind.IDENTIFIER) {
         positions.addIdentifier(token.name(), scanner.spanForToken(token));
       } else if (token.kind == TokenKind.NEW) {
-        positions.addIdentifier(Keyword.of("new"), scanner.spanForToken(token));
+        positions.addIdentifier(Keyword.NEW, scanner.spanForToken(token));
+      } else if (token.kind == TokenKind.CLASS) {
+        positions.addIdentifier(Keyword.CLASS, scanner.spanForToken(token));
       } else if (token.kind == TokenKind.LT) {
         starts.addFirst(token);
       } else if (token.kind == TokenKind.GT) {
@@ -108,13 +110,11 @@ public final class SourceText {
   }
 
   /** Names for keywords that must act as anchors. */
-  public static final class Keyword implements Name {
-    private final String keyword;
+  public static enum Keyword implements Name {
+    NEW("new"),
+    CLASS("class");
 
-    /** Factory method that can do something smarter if/when we need it to. */
-    public static Keyword of(String keyword) {
-      return new Keyword(keyword);
-    }
+    private final String keyword;
 
     private Keyword(String keyword) {
       this.keyword = keyword;
@@ -143,20 +143,6 @@ public final class SourceText {
     @Override
     public String toString() {
       return keyword;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof Keyword) {
-        return ((Keyword) obj).contentEquals(keyword);
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      return 1 + keyword.hashCode();
     }
   }
 
