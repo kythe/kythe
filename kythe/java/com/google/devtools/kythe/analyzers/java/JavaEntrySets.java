@@ -137,6 +137,11 @@ public class JavaEntrySets extends KytheEntrySets {
               .build();
     }
 
+    if (v == null && sym.owner != null && sym.owner.asType().isPrimitive()) {
+      // Handle primitive .class reference
+      v = newBuiltinAndEmit(sym.asType().toString()).getVName();
+    }
+
     if (v == null) {
       getStatisticsCollector().incrementCounter("unextracted-input-file");
       String msg =
