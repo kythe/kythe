@@ -193,12 +193,25 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing a static class initializer. */
-  public EntrySet newClassInitAndEmit(VName classNode) {
+  public EntrySet newClassInitAndEmit(String classSignature, VName classNode) {
     return emitAndReturn(
         newNode(NodeKind.FUNCTION)
             .setCorpusPath(CorpusPath.fromVName(classNode))
             .addSignatureSalt(classNode)
             .addSignatureSalt("clinit")
+            .setProperty(
+                "code",
+                MarkedSource.newBuilder()
+                    .addChild(
+                        MarkedSource.newBuilder()
+                            .setKind(MarkedSource.Kind.CONTEXT)
+                            .setPreText(classSignature))
+                    .addChild(
+                        MarkedSource.newBuilder()
+                            .setPreText("<clinit>")
+                            .setKind(MarkedSource.Kind.IDENTIFIER))
+                    .setPostChildText(".")
+                    .build())
             .build());
   }
 
