@@ -60,6 +60,8 @@ import java.util.function.Supplier;
  * file or STDOUT.
  */
 public class JavaIndexer {
+  private JavaIndexer() {}
+
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException, IOException {
@@ -150,7 +152,7 @@ public class JavaIndexer {
       StatisticsCollector statistics,
       CompilationDescription desc,
       FactEmitter emitter)
-      throws AnalysisException, IOException {
+      throws AnalysisException {
     if (!desc.getFileContents().iterator().hasNext()) {
       // Skip empty compilations.
       return;

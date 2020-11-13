@@ -56,7 +56,7 @@ final class CompilationUnitFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
+  public FileSystem newFileSystem(URI uri, Map<String, ?> env) {
     throw new UnsupportedOperationException();
   }
 
@@ -84,37 +84,37 @@ final class CompilationUnitFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
+  public void createDirectory(Path dir, FileAttribute<?>... attrs) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void delete(Path path) throws IOException {
+  public void delete(Path path) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void copy(Path source, Path target, CopyOption... options) throws IOException {
+  public void copy(Path source, Path target, CopyOption... options) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void move(Path source, Path target, CopyOption... options) throws IOException {
+  public void move(Path source, Path target, CopyOption... options) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean isSameFile(Path a, Path b) throws IOException {
+  public boolean isSameFile(Path a, Path b) {
     return toCompilationUnitPath(a).isSameFile(b);
   }
 
   @Override
-  public boolean isHidden(Path path) throws IOException {
+  public boolean isHidden(Path path) {
     return false;
   }
 
   @Override
-  public FileStore getFileStore(Path path) throws IOException {
+  public FileStore getFileStore(Path path) {
     throw new UnsupportedOperationException();
   }
 
@@ -144,14 +144,12 @@ final class CompilationUnitFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options)
-      throws IOException {
+  public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void setAttribute(Path path, String attribute, Object value, LinkOption... options)
-      throws IOException {
+  public void setAttribute(Path path, String attribute, Object value, LinkOption... options) {
     throw new UnsupportedOperationException();
   }
 

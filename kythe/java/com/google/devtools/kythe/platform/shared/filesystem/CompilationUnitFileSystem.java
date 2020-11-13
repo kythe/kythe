@@ -100,7 +100,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     synchronized (this) {
       if (closed) return;
       fileDataProvider = null;
@@ -159,7 +159,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   @Override
-  public WatchService newWatchService() throws IOException {
+  public WatchService newWatchService() {
     throw new UnsupportedOperationException();
   }
 

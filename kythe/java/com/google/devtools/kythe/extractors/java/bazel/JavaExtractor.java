@@ -43,7 +43,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
@@ -51,6 +51,7 @@ import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
+  private JavaExtractor() {}
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -178,11 +179,9 @@ public class JavaExtractor {
       throws IOException {
     List<String> files = new ArrayList<>();
     try {
-      Enumeration<? extends ZipEntry> entries = zipFile.entries();
       // Zip Slip fix courtesy of snyk.io/research/zip-slip-vulnerability.
       String canonicalDirPath = targetDirectory.getCanonicalPath() + File.separator;
-      while (entries.hasMoreElements()) {
-        final ZipEntry entry = entries.nextElement();
+      for (ZipEntry entry : entries(zipFile)) {
         File targetFile = new File(targetDirectory, entry.getName());
         String canonicalFilePath = targetFile.getCanonicalPath();
         if (!canonicalFilePath.startsWith(canonicalDirPath)) {
@@ -214,6 +213,11 @@ public class JavaExtractor {
       zipFile.close();
     }
     return files;
+  }
+
+  @SuppressWarnings("JdkObsolete")
+  private static Iterable<ZipEntry> entries(ZipFile zip) {
+    return () -> (Iterator<ZipEntry>) zip.entries().asIterator();
   }
 
   private static final String SOURCEGENDIR_FLAG = "--sourcegendir";

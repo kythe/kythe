@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -60,6 +59,8 @@ public class JvmExtractor {
           .add(JarEntryDetails.getDescriptor())
           .add(BuildDetails.getDescriptor())
           .build();
+
+  private JvmExtractor() {}
 
   /**
    * Returns a JVM {@link CompilationDescription} for the {@code .jar}/{@code .class} file paths
@@ -157,8 +158,7 @@ public class JvmExtractor {
   private static List<FileData> extractClassFiles(Path jarPath) throws IOException {
     List<FileData> files = new ArrayList<>();
     try (JarFile jar = new JarFile(jarPath.toFile())) {
-      for (Enumeration<JarEntry> entries = jar.entries(); entries.hasMoreElements(); ) {
-        JarEntry entry = entries.nextElement();
+      for (JarEntry entry : entries(jar)) {
         if (!entry.getName().endsWith(CLASS_FILE_EXT)) {
           continue;
         }
@@ -170,6 +170,11 @@ public class JvmExtractor {
       }
     }
     return files;
+  }
+
+  @SuppressWarnings("JdkObsolete")
+  private static Iterable<JarEntry> entries(JarFile jar) {
+    return () -> jar.entries().asIterator();
   }
 
   /**

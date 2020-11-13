@@ -43,5 +43,7 @@ public class CrossFile {
     System.out.println(Files.CONSTANT);
     //- @CONSTANT ref ConstantMember
     System.out.println(CONSTANT);
+
+    throw new Exception();
   }
 }

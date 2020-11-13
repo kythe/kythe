@@ -218,6 +218,7 @@ public final class SourceText {
       return null;
     }
 
+    @SuppressWarnings("JdkObsolete")
     public Span findBracketGroup(int startCharOffset) {
       int startOffset = charToByteOffset(startCharOffset);
       SortedSet<Span> grps = bracketGroups.tailSet(new Span(startOffset, startOffset));

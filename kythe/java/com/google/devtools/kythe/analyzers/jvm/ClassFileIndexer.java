@@ -57,7 +57,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
@@ -70,6 +69,8 @@ import java.util.jar.JarFile;
  */
 public class ClassFileIndexer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  private ClassFileIndexer() {}
 
   public static void main(String[] args) throws AnalysisException {
     // Necessary to allow the kzip library to read the any fields in the proto.
@@ -202,11 +203,15 @@ public class ClassFileIndexer {
     return enclosingJars.get(idx);
   }
 
+  @SuppressWarnings("JdkObsolete")
+  private static Iterable<JarEntry> entries(JarFile jar) {
+    return () -> jar.entries().asIterator();
+  }
+
   private static void visitJarClassFiles(File jarFile, KytheClassVisitor visitor)
       throws AnalysisException {
     try (JarFile jar = new JarFile(jarFile)) {
-      for (Enumeration<JarEntry> entries = jar.entries(); entries.hasMoreElements(); ) {
-        JarEntry entry = entries.nextElement();
+      for (JarEntry entry : entries(jar)) {
         if (!entry.getName().endsWith(CLASS_FILE_EXT)) {
           continue;
         }

@@ -57,6 +57,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>To make modifications to javac commandline arguments, use {@code ModifiableOptions.of(args)}.
  */
 public class JavacOptionsUtils {
+  private JavacOptionsUtils() {}
 
   private static final Path JAVA_HOME = Paths.get(StandardSystemProperty.JAVA_HOME.value());
   private static final ImmutableList<String> JRE_JARS =
@@ -97,7 +98,7 @@ public class JavacOptionsUtils {
   }
 
   /** Returns the JRE 9-style bootclasspath. */
-  private static ImmutableList<String> getBootclassPath() throws IOException {
+  private static ImmutableList<String> getBootclassPath() {
     StandardJavaFileManager fileManager =
         JavacTool.create().getStandardFileManager(null, null, null);
 

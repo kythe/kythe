@@ -50,6 +50,7 @@ import java.util.zip.GZIPOutputStream;
 
 /** Utilities to read and write compilation index information in .kindex files. */
 public class IndexInfoUtils {
+  private IndexInfoUtils() {}
 
   public static final String KINDEX_FILE_EXT = ".kindex";
   public static final String KZIP_FILE_EXT = ".kzip";
