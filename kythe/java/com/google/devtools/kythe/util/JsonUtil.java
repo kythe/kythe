@@ -42,6 +42,7 @@ import java.util.ArrayList;
 
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
+  private JsonUtil() {}
 
   /** Types that may be present in JSON pb files */
   public static final JsonFormat.TypeRegistry.Builder JSON_TYPE_REGISTRY =

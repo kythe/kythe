@@ -26,6 +26,7 @@ import java.util.Optional;
  * source nodes.
  */
 public class QualifiedNameExtractor {
+  private QualifiedNameExtractor() {}
   /**
    * Extracts a qualified name from the specified {@link MarkedSource} tree.
    *

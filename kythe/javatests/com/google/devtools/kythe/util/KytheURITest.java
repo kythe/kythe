@@ -134,7 +134,7 @@ public class KytheURITest extends TestCase {
         .isEqualTo("kythe://kythe?path=/rooted/path");
   }
 
-  private void checkToString(String expected, String... cases) throws URISyntaxException {
+  private void checkToString(String expected, String... cases) {
     for (String str : cases) {
       assertWithMessage("KytheURI.parse(\"" + str + "\").toString()")
           .that(parse(str).toString())
@@ -193,7 +193,7 @@ public class KytheURITest extends TestCase {
     return KytheURI.newBuilder();
   }
 
-  private static KytheURI parse(String str) throws URISyntaxException {
+  private static KytheURI parse(String str) {
     return KytheURI.parse(str);
   }
 

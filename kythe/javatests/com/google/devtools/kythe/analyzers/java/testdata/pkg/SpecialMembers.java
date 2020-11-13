@@ -2,6 +2,8 @@ package pkg;
 
 @SuppressWarnings("unused")
 public final class SpecialMembers {
+  private SpecialMembers() {}
+
   public static void main(String[] args) {
     //- @length ref Length
     //- Length.node/kind variable
@@ -21,10 +23,20 @@ public final class SpecialMembers {
     //- GetClass.node/kind function
     Class<?> arrayClass = args.getClass();
 
-    // TODO(schroederc): @class ref Class
+    //- @class ref CRef
+    //- CRef.subkind field
+    //- !{ @class ref IntRef }
     System.err.println(SpecialMembers.class);
 
-    // TODO(schroederc): @class ref Class
+    //- @class ref IntRef
+    //- IntRef.subkind field
+    //- !{ @class ref CRef
+    //-    @class ref LongRef }
     System.err.println(int.class);
+
+    //- @class ref LongRef
+    //- LongRef.subkind field
+    //- !{ @class ref IntRef }
+    System.err.println(long.class);
   }
 }

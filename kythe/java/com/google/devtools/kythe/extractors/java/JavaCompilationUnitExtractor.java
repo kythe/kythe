@@ -134,7 +134,7 @@ public class JavaCompilationUnitExtractor {
    * required inputs.
    */
   public static class ExtractionTask implements AutoCloseable {
-    private final TemporaryDirectory tempDir = new TemporaryDirectory();
+    private final TemporaryDirectory tempDir;
 
     // Can only be intiailized once the task is created.
     private Symtab symbolTable;
@@ -146,7 +146,9 @@ public class JavaCompilationUnitExtractor {
     private final UsageAsInputReportingFileManager fileManager =
         JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
 
-    ExtractionTask() throws ExtractionException {}
+    ExtractionTask() throws ExtractionException {
+      this.tempDir = new TemporaryDirectory();
+    }
 
     public UsageAsInputReportingFileManager getFileManager() {
       return fileManager;
@@ -1012,8 +1014,7 @@ public class JavaCompilationUnitExtractor {
    * {@link List}.
    */
   private static ImmutableList<String> completeCompilerOptions(
-      Iterable<String> rawOptions, Path tempDestinationDir) throws ExtractionException {
-
+      Iterable<String> rawOptions, Path tempDestinationDir) {
     return ModifiableOptions.of(rawOptions)
         .removeUnsupportedOptions()
         .ensureEncodingSet(StandardCharsets.UTF_8)

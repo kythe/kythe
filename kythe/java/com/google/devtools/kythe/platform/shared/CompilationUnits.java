@@ -33,6 +33,8 @@ import java.util.List;
 
 /** Utilities for working with CompilationUnit protos. */
 public class CompilationUnits {
+  private CompilationUnits() {}
+
   private static final HashFunction DIGEST = Hashing.sha256();
   private static final Charset CHARSET = StandardCharsets.UTF_8;
   private static final byte[] TAG_CU = "CU".getBytes(CHARSET);

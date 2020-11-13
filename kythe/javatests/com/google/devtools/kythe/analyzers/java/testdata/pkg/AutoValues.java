@@ -12,6 +12,8 @@ import com.google.auto.value.AutoValue;
 @SuppressWarnings("unused")
 //- @AutoValues=vname(_, Corpus, Root, Path, _).node/kind anchor
 public final class AutoValues {
+  private AutoValues() {}
+
   @AutoValue
   //- @StringPair defines/binding StringPair
   public abstract static class StringPair {

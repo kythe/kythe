@@ -32,6 +32,8 @@ import java.io.IOException;
  * <p>Usage: jar_extractor <.jar file | .class file>*
  */
 public class JarExtractor {
+  private JarExtractor() {}
+
   public static void main(String[] args) throws IOException, ExtractionException {
     JsonUtil.usingTypeRegistry(JvmExtractor.JSON_TYPE_REGISTRY);
     JvmExtractor.Options options = new JvmExtractor.Options();

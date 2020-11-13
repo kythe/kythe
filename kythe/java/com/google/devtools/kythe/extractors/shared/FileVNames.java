@@ -37,9 +37,10 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 /**
@@ -221,15 +222,15 @@ public class FileVNames {
 
     private static String fillIn(String tmpl, Matcher m) {
       Matcher replacers = replacerMatcher.matcher(tmpl);
-      Stack<ReplacementMarker> matches = new Stack<>();
+      Deque<ReplacementMarker> matches = new ArrayDeque<>();
       while (replacers.find()) {
-        matches.push(
+        matches.addFirst(
             new ReplacementMarker(
                 replacers.start(), replacers.end(), Integer.parseInt(replacers.group(1))));
       }
       StringBuilder builder = new StringBuilder(tmpl);
       while (!matches.isEmpty()) {
-        ReplacementMarker res = matches.pop();
+        ReplacementMarker res = matches.removeFirst();
         builder.replace(res.start, res.end, m.group(res.grp));
       }
       return builder.toString();

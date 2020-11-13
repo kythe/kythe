@@ -165,7 +165,7 @@ final class CompilationUnitPath implements Path {
   }
 
   @Override
-  public Path toRealPath(LinkOption... options) throws IOException {
+  public Path toRealPath(LinkOption... options) {
     return toAbsolutePath().normalize();
   }
 
@@ -176,13 +176,12 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public WatchKey register(
-      WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers)
-      throws IOException {
+      WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
+  public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) {
     throw new UnsupportedOperationException();
   }
 
@@ -257,7 +256,7 @@ final class CompilationUnitPath implements Path {
       }
 
       @Override
-      public void close() throws IOException {}
+      public void close() {}
     };
   }
 

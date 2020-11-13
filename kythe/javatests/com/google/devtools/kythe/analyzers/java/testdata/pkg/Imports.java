@@ -26,7 +26,7 @@ import static pkg.StaticMethods.staticMember;
 //- @List ref/imports ListI
 import java.util.List;
 //- @"java.util" ref UtilPackage
-import java.util.LinkedList;
+import java.util.ArrayList;
 //- @Entry ref/imports MapEntryClass
 //- @Map ref MapClass
 //- @"java.util" ref UtilPackage
@@ -48,7 +48,7 @@ public class Imports {
 
     //- @isNull ref IsNullMethod
     isNull(CASE_INSENSITIVE_ORDER);
-    isNull(new LinkedList<>());
+    isNull(new ArrayList<>());
 
     //- @staticMethod ref StaticBool
     staticMethod(member() == staticMember());

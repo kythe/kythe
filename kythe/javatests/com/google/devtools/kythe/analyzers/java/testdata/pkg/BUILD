@@ -21,6 +21,7 @@ java_library(
     ),
     javacopts = [
         "-Xep:MultipleTopLevelClasses:OFF",
+        "-Xep:PrivateConstructorForUtilityClass:OFF",
         "-Xep:WildcardImport:OFF",
     ],
     deps = [
@@ -460,6 +461,7 @@ java_library(
     name = "cross_file",
     srcs = ["CrossFile.java"],
     javacopts = [
+        "-Xep:PrivateConstructorForUtilityClass:OFF",
         "-Xep:WildcardImport:OFF",
     ],
     deps = [":files"],
