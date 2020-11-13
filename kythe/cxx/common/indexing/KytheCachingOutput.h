@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
@@ -219,7 +220,6 @@ class FileOutputStream : public KytheCachingOutput {
   explicit FileOutputStream(google::protobuf::io::FileOutputStream* stream)
       : stream_(stream) {
     edge_entry_.set_fact_name("/");
-    UseHashCache(&default_cache_);
   }
 
   /// \brief Dump stats to standard out on destruction?
@@ -240,7 +240,7 @@ class FileOutputStream : public KytheCachingOutput {
     EnqueueEntry(edge_entry_);
   }
   void UseHashCache(HashCache* cache) override {
-    cache_ = cache;
+    cache_ = CHECK_NOTNULL(cache);
     min_size_ = cache_->min_size();
     max_size_ = cache_->max_size();
   }
@@ -265,6 +265,11 @@ class FileOutputStream : public KytheCachingOutput {
   } stats_;
 
  private:
+  /// Emits all data from the top buffer (if the hash cache says it's relevant).
+  void EmitAndReleaseTopBuffer();
+  /// Emits an entry or adds it to a buffer (if the stack is nonempty).
+  void EnqueueEntry(const proto::Entry& entry);
+
   /// The output stream to write on.
   google::protobuf::io::FileOutputStream* stream_;
   /// A prototypical Kythe fact, used only to build other Kythe facts.
@@ -274,23 +279,20 @@ class FileOutputStream : public KytheCachingOutput {
   /// Buffers we're holding back for deduplication.
   BufferStack buffers_;
 
-  /// Emits all data from the top buffer (if the hash cache says it's relevant).
-  void EmitAndReleaseTopBuffer();
-  /// Emits an entry or adds it to a buffer (if the stack is nonempty).
-  void EnqueueEntry(const proto::Entry& entry);
-  /// The minimum size a buffer must be to get emitted.
-  size_t min_size_ = 0;
-  /// The maximum size a buffer can reach before it's split.
-  size_t max_size_ = 32 * 1024;
-  /// Whether we should flush the output stream after each entry
-  /// (when the buffer stack is empty).
-  bool flush_after_each_entry_;
-  /// The active hash cache;
-  HashCache* cache_;
   /// The default hash cache.
   HashCache default_cache_;
+  /// The active hash cache; must not be null.
+  HashCache* cache_ = &default_cache_;
+  /// The minimum size a buffer must be to get emitted.
+  size_t min_size_ = cache_->min_size();
+  /// The maximum size a buffer can reach before it's split.
+  size_t max_size_ = cache_->max_size();
+
   /// Whether we should dump stats to standard out on destruction.
   bool show_stats_ = false;
+  /// Whether we should flush the output stream after each entry
+  /// (when the buffer stack is empty).
+  bool flush_after_each_entry_ = false;
 };
 
 }  // namespace kythe

@@ -23,6 +23,7 @@
 #include "absl/strings/str_format.h"
 
 namespace kythe {
+
 std::string FileOutputStream::Stats::ToString() const {
   return absl::StrCat(
       buffers_merged_, " merged ", buffers_split_, " split ", buffers_retired_,
