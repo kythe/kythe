@@ -27,13 +27,6 @@ genlex(
 )
 
 cc_library(
-    name = "internal_headers",
-    hdrs = glob(["src/**/*.h"]),
-    include_prefix = "souffle",
-    strip_include_prefix = "src",
-)
-
-cc_library(
     name = "souffle",
     srcs = glob(
         ["src/**/*.cpp"],
@@ -51,15 +44,11 @@ cc_library(
         ":parser",
     ],
     hdrs = glob(["src/**/*.h"]) + [":parser"],
-    copts = [
-        "-Iexternal/souffle/src",
-        "-I$(GENDIR)/external/souffle/src",
-    ],
     includes = [
+        "src",
         "src/include",
     ],
     deps = [
-        ":internal_headers",
         "@org_sourceware_libffi//:libffi",
     ],
 )
