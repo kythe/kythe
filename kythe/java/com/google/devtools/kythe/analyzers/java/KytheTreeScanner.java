@@ -447,8 +447,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     node.setClassConstructors(constructors);
 
-    // TODO(schroeder): flesh out cinit w/ MarkedSource
-    VName classInit = entrySets.newClassInitAndEmit(classNode).getVName();
+    VName classInit = entrySets.newClassInitAndEmit(signature.get(), classNode).getVName();
     node.setClassInit(classInit);
     entrySets.emitEdge(classInit, EdgeKind.CHILDOF, classNode);
     if (classIdent != null) {

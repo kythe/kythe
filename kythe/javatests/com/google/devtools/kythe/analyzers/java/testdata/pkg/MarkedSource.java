@@ -18,6 +18,18 @@ import java.util.List;
 //- ClassTok.pre_text "MarkedSource"
 public class MarkedSource {
 
+  // Implicit static class initializer
+  //- ClassInit.node/kind function
+  //- ClassInit childof Class
+  //- ClassInit code InitCode
+  //- InitCode child.0 InitContext
+  //- InitCode.post_child_text "."
+  //- InitContext.kind "CONTEXT"
+  //- InitContext.pre_text "pkg.MarkedSource"
+  //- InitCode child.1 InitIdent
+  //- InitIdent.kind "IDENTIFIER"
+  //- InitIdent.pre_text "<clinit>"
+
   //- @CONSTANT defines/binding Constant
   //- Constant code CMS
   //- CMS child.0 ConstantType
