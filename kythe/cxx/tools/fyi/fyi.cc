@@ -599,7 +599,6 @@ bool ActionFactory::runInvocation(
           /*CaptureDiagnostics*/ clang::CaptureDiagsKind::All,
           /*PrecompilePreamble*/ true,
           /*CacheCodeCompletionResults*/ false,
-          /*IncludeBriefCommentsInCodeCompletion*/ false,
           /*UserFilesAreVolatile*/ true,
           /*ErrAST*/ nullptr);
       // The preprocessor hooks must have configured the FileTracker.
