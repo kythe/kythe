@@ -1642,9 +1642,10 @@ Brief description::
 Attached to::
   semantic nodes
 
+
 [[tagstatic]]
 tag/static
-~~~~~~~~~~~~~~
+~~~~~~~~~~
 
 Brief description::
   In languages which make a distinction between class-bound and instance-bound
@@ -1667,7 +1668,7 @@ class Wrapper {
 
 [[tagabstract]]
 tag/abstract
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 Brief description::
   In languages which have the concept of a non-instantiable class or method
@@ -1675,6 +1676,7 @@ Brief description::
   with `tag/abstract`.
 Attached to::
   semantic nodes
+
 
 Node kinds
 ----------
