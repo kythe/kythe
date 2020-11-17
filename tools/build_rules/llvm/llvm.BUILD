@@ -199,13 +199,10 @@ cc_library(
     deps = [":LLVM%sCodeGen" % t for t in LLVM_TARGETS],
 )
 
-load("@io_kythe_llvmbzlgen//rules:llvmbuild.bzl", _llvmbuild_context = "make_context")
-load("@io_kythe//tools/build_rules/llvm:generated_llvm_build_targets.bzl", "generated_llvm_build_targets")
 load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
 load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
 
 generated_cmake_targets(make_context(
     cmake_defines = cmake_defines(),
-    llvmbuildctx = generated_llvm_build_targets(_llvmbuild_context()),
     target_defaults = TARGET_DEFAULTS,
 ))
