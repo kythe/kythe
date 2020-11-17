@@ -68,8 +68,8 @@ absl::optional<BazelArtifact> AspectArtifactSelector::Select(
 absl::optional<google::protobuf::Any> AspectArtifactSelector::Serialize()
     const {
   kythe::proto::BazelAspectArtifactSelectorState state;
-  *state.mutable_seen() = FromRange{state_.seen};
-  *state.mutable_fileset() = FromRange{state_.filesets};
+  *state.mutable_disposed() = FromRange{state_.disposed};
+  *state.mutable_filesets() = FromRange{state_.filesets};
   *state.mutable_pending() = FromRange{state_.pending};
 
   google::protobuf::Any result;
@@ -83,8 +83,8 @@ absl::Status AspectArtifactSelector::Deserialize(
     kythe::proto::BazelAspectArtifactSelectorState proto_state;
     if (any.UnpackTo(&proto_state)) {
       state_ = {
-          .seen = FromRange{proto_state.seen()},
-          .filesets = FromRange{proto_state.fileset()},
+          .disposed = FromRange{proto_state.disposed()},
+          .filesets = FromRange{proto_state.filesets()},
           .pending = FromRange{proto_state.pending()},
       };
 
@@ -96,16 +96,16 @@ absl::Status AspectArtifactSelector::Deserialize(
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
-    absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
+    absl::string_view id, const build_event_stream::NamedSetOfFiles& filesets) {
   bool kept = false;
-  for (const auto& file : fileset.files()) {
+  for (const auto& file : filesets.files()) {
     if (options_->file_name_allowlist.Match(file.name(), nullptr)) {
       kept = true;
       *state_.filesets[id].add_files() = file;
     }
   }
-  for (const auto& child : fileset.file_sets()) {
-    if (!state_.seen.contains(child.id())) {
+  for (const auto& child : filesets.file_sets()) {
+    if (!state_.disposed.contains(child.id())) {
       kept = true;
       *state_.filesets[id].add_file_sets() = child;
     }
@@ -122,7 +122,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
   }
   if (!kept) {
     // There were no files, no children and no previous references, skip it.
-    state_.seen.insert(std::string(id));
+    state_.disposed.insert(std::string(id));
   }
   return absl::nullopt;
 }
@@ -136,9 +136,10 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
         .label = id.label(),
     };
     for (const auto& output_group : payload.output_group()) {
-      if (options_->output_group_allowlist.Match(output_group.name(), nullptr)) {
-        for (const auto& fileset : output_group.file_sets()) {
-          ReadFilesInto(fileset.id(), id.label(), result.files);
+      if (options_->output_group_allowlist.Match(output_group.name(),
+                                                 nullptr)) {
+        for (const auto& filesets : output_group.file_sets()) {
+          ReadFilesInto(filesets.id(), id.label(), result.files);
         }
       }
     }
@@ -152,32 +153,32 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
 void AspectArtifactSelector::ReadFilesInto(
     absl::string_view id, absl::string_view target,
     std::vector<BazelArtifactFile>& files) {
-  if (state_.seen.contains(id)) {
+  if (state_.disposed.contains(id)) {
     return;
   }
 
   if (auto iter = state_.filesets.find(id); iter != state_.filesets.end()) {
-    state_.seen.insert(std::string(id));
+    state_.disposed.insert(std::string(id));
     auto node = state_.filesets.extract(iter);
-    const build_event_stream::NamedSetOfFiles& fileset = node.mapped();
+    const build_event_stream::NamedSetOfFiles& filesets = node.mapped();
 
-    for (const auto& file : fileset.files()) {
+    for (const auto& file : filesets.files()) {
       files.push_back({
           .local_path = AsLocalPath(file),
           .uri = AsUri(file),
       });
     }
-    for (const auto& child : fileset.file_sets()) {
+    for (const auto& child : filesets.file_sets()) {
       ReadFilesInto(child.id(), target, files);
     }
 
     return;
   }
 
-  // Files where requested, but we haven't seen that fileset id yet.  Record
+  // Files where requested, but we haven't disposed that filesets id yet. Record
   // this for future processing.
   LOG(INFO) << "NamedSetOfFiles " << id << " requested by " << target
-            << " but not yet seen.";
+            << " but not yet disposed.";
   state_.pending.emplace(id, target);
 }
 

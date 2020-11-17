@@ -139,9 +139,8 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
  private:
   struct State {
-    // A record of all of the NamedSetOfFiles events which have been seen so
-    // far.
-    absl::flat_hash_set<std::string> seen;
+    // A record of all of the NamedSetOfFiles events which have been processed.
+    absl::flat_hash_set<std::string> disposed;
     // Mapping from fileset id to NamedSetOfFiles whose file names matched the
     // allowlist, but have not yet been consumed by an event.
     absl::flat_hash_map<std::string, build_event_stream::NamedSetOfFiles>

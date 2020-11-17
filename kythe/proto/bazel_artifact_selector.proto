@@ -22,10 +22,10 @@ import "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build
 
 message BazelAspectArtifactSelectorState {
   // A list of fileset ids which have already been processed or skipped.
-  repeated string seen = 1;
+  repeated string disposed = 1;
   // Filesets with potentially interesting contents which haven't matched an
   // output group.
-  map<string, build_event_stream.NamedSetOfFiles> fileset = 2;
+  map<string, build_event_stream.NamedSetOfFiles> filesets = 2;
   // Fileset ids which have been requested, but not yet seen the stream.
   // Mapped to a target label whose filters otherwise matched.
   map<string, string> pending = 3;
