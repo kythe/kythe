@@ -77,14 +77,12 @@ TEST(AspectArtifactSelectorTest, SelectsOutOfOrderFileSets) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
-    })pb")),
-              Eq(BazelArtifact{
+    })pb")), Eq(BazelArtifact{
                   .label = "//path/to/target:name",
                   .files = {{
                       .local_path = "path/to/file.kzip",
@@ -100,8 +98,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -115,8 +112,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(BazelArtifact{
+    })pb")), Eq(BazelArtifact{
                   .label = "//path/to/target:name",
                   .files = {{
                       .local_path = "path/to/file.kzip",
@@ -138,8 +134,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
 }
 
 TEST(AspectArtifactSelectorTest, CompatibleWithAny) {
