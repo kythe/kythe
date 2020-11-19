@@ -66,9 +66,10 @@ class AnyArtifactSelector {
   template <
       typename S,
       typename = absl::enable_if_t<!std::is_same_v<S, AnyArtifactSelector>>,
-      typename = absl::enable_if_t<std::is_base_of_v<BazelArtifactSelector, S>>>
+      typename =
+          absl::enable_if_t<std::is_convertible_v<S&, BazelArtifactSelector&>>>
   AnyArtifactSelector(S s)
-      : get_([s = std::move(s)]() mutable -> S& { return s; }) {}
+      : AnyArtifactSelector([s = std::move(s)]() mutable -> S& { return s; }) {}
 
   // Copyable.
   AnyArtifactSelector(const AnyArtifactSelector&) = default;
@@ -97,6 +98,9 @@ class AnyArtifactSelector {
   }
 
  private:
+  explicit AnyArtifactSelector(std::function<BazelArtifactSelector&()> get)
+      : get_(std::move(get)) {}
+
   std::function<BazelArtifactSelector&()> get_;
 };
 

@@ -324,6 +324,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "bazel_artifact_selector_test",
+    srcs = ["bazel_artifact_selector_test.cc"],
+    deps = [
+        ":bazel_artifact",
+        ":bazel_artifact_selector",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
 cc_library(
     name = "bazel_artifact_reader",
     srcs = ["bazel_artifact_reader.cc"],
