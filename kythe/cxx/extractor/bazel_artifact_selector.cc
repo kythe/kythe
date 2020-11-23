@@ -34,7 +34,7 @@ std::string AsUri(const build_event_stream::File& file) {
       // We expect inline data to be rare and small, so always base64 encode it.
       return absl::StrCat(
           "data:base64,",
-          // data URIs use regualr base64, not "web safe" base64.
+          // data URIs use regular base64, not "web safe" base64.
           absl::Base64Escape(file.contents()));
     case build_event_stream::File::FILE_NOT_SET:
       break;
