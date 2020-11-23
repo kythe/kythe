@@ -684,3 +684,18 @@ bzl_library(
     name = "go_bzl",
     srcs = ["go.bzl"],
 )
+
+proto_library(
+    name = "bazel_artifact_selector_proto",
+    srcs = ["bazel_artifact_selector.proto"],
+    deps = [
+        "@build_event_stream_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "bazel_artifact_selector_cc_proto",
+    deps = [
+        ":bazel_artifact_selector_proto",
+    ],
+)
