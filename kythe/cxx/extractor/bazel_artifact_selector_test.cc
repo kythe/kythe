@@ -32,7 +32,6 @@
 namespace kythe {
 namespace {
 using ::testing::Eq;
-using ::testing::Optional;
 
 RE2::Set MustCompile(absl::Span<const absl::string_view> patterns) {
   RE2::Set result(RE2::DefaultOptions, RE2::UNANCHORED);

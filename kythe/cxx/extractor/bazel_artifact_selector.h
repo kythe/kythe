@@ -33,7 +33,7 @@
 
 namespace kythe {
 
-/// \brief BazelArtifactSelector is an interace which can be used for finding
+/// \brief BazelArtifactSelector is an interface which can be used for finding
 /// extractor artifacts in a Bazel sequence of build_event_stream.BuildEvent
 /// messages.
 class BazelArtifactSelector {
