@@ -48,6 +48,13 @@ cc_library(
         "src",
         "src/include",
     ],
+    linkopts = select({
+        "@bazel_tools//src/conditions:linux_x86_64": [
+            "-ldl",
+        ],
+        "//conditions:default": [
+        ],
+    }),
     deps = [
         "@org_sourceware_libffi//:libffi",
     ],
