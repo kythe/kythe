@@ -57,7 +57,6 @@
 #include "ast/transform/SimplifyAggregateTargetExpression.h"
 #include "ast/transform/UniqueAggregationVariables.h"
 #include "ast2ram/AstToRamTranslator.h"
-#include "config.h"
 #include "interpreter/Engine.h"
 #include "interpreter/ProgInterface.h"
 #include "parser/ParserDriver.h"
