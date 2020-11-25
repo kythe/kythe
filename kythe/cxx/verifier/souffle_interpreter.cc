@@ -30,7 +30,8 @@
 namespace kythe::verifier {
 namespace {
 constexpr std::array<int, 4> kInputData = {1, 2, 2, 3};
-};
+}  // anonymous namespace
+
 class KytheReadStream : public souffle::ReadStream {
  public:
   KytheReadStream(const std::map<std::string, std::string>& rw_operation,
@@ -52,6 +53,7 @@ class KytheReadStream : public souffle::ReadStream {
  private:
   int pos_ = 0;
 };
+
 class KytheReadStreamFactory : public souffle::ReadStreamFactory {
  public:
   souffle::Own<souffle::ReadStream> getReader(
@@ -61,11 +63,13 @@ class KytheReadStreamFactory : public souffle::ReadStreamFactory {
     return souffle::mk<KytheReadStream>(rw_operation, symbol_table,
                                         record_table);
   }
+
   const std::string& getName() const override {
     static const std::string name = "kythe";
     return name;
   }
 };
+
 class KytheWriteStream : public souffle::WriteStream {
  public:
   KytheWriteStream(const std::map<std::string, std::string>& rw_operation,
@@ -77,6 +81,7 @@ class KytheWriteStream : public souffle::WriteStream {
 
  protected:
   void writeNullary() override {}
+
   void writeNextTuple(const souffle::RamDomain* tuple) override {
     output_->push_back({tuple[0], tuple[1]});
   }
@@ -84,6 +89,7 @@ class KytheWriteStream : public souffle::WriteStream {
  private:
   std::vector<std::pair<int, int>>* output_;
 };
+
 class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
  public:
   souffle::Own<souffle::WriteStream> getWriter(
@@ -98,15 +104,19 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
     return souffle::mk<KytheWriteStream>(rw_operation, symbol_table,
                                          record_table, &outputs_[output_id]);
   }
+
   const std::string& getName() const override {
     static const std::string name = "kythe";
     return name;
   }
+
   ~KytheWriteStreamFactory() override = default;
+
   size_t NewOutput() {
     outputs_.push_back({});
     return outputs_.size() - 1;
   }
+
   const std::vector<std::pair<int, int>>& GetOutput(size_t id) {
     return outputs_[id];
   }

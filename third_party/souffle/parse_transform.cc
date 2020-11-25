@@ -208,35 +208,6 @@ std::unique_ptr<ram::TranslationUnit> ParseTransform(const std::string& code) {
               std::set<std::string>(givenTransformers.begin(), givenTransformers.end()));
   }
 
-#if 0
-  // Set up the debug report if necessary
-  if (Global::config().has("debug-report")) {
-      auto parser_end = std::chrono::high_resolution_clock::now();
-      std::stringstream ss;
-
-      // Add current time
-      std::time_t time = std::time(nullptr);
-      ss << "Executed at ";
-      ss << std::put_time(std::localtime(&time), "%F %T") << "\n";
-
-      // Add config
-      ss << "(\n";
-      ss << join(Global::config().data(), ",\n", [](std::ostream& out, const auto& arg) {
-          out << "  \"" << arg.first << "\" -> \"" << arg.second << '"';
-      });
-      ss << "\n)";
-
-      debugReport.addSection("Configuration", "Configuration", ss.str());
-
-      // Add parsing runtime
-      std::string runtimeStr =
-              "(" + std::to_string(std::chrono::duration<double>(parser_end - parser_start).count()) + "s)";
-      debugReport.addSection("Parsing", "Parsing " + runtimeStr, "");
-
-      pipeline->setDebugReport();
-  }
-#endif
-
   // Toggle pipeline verbosity
   pipeline->setVerbosity(Global::config().has("verbose"));
 
