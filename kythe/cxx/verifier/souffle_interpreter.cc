@@ -76,8 +76,8 @@ class KytheWriteStream : public souffle::WriteStream {
         output_(output) {}
 
  protected:
-  virtual void writeNullary() {}
-  virtual void writeNextTuple(const souffle::RamDomain* tuple) {
+  void writeNullary() override {}
+  void writeNextTuple(const souffle::RamDomain* tuple) override {
     output_->push_back({tuple[0], tuple[1]});
   }
 
