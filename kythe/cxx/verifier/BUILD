@@ -51,6 +51,34 @@ cc_library(
 )
 
 cc_library(
+    name = "souffle_interpreter",
+    srcs = [
+        "souffle_interpreter.cc",
+    ],
+    hdrs = [
+        "souffle_interpreter.h",
+    ],
+    deps = [
+        "//third_party/souffle:parse_transform",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@souffle",
+    ],
+)
+
+cc_test(
+    name = "souffle_interpreter_test",
+    srcs = [
+        "souffle_interpreter_test.cc",
+    ],
+    deps = [
+        ":souffle_interpreter",
+        "//third_party:gtest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "assertions.cc",
