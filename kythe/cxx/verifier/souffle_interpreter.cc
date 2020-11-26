@@ -30,13 +30,12 @@
 namespace kythe::verifier {
 namespace {
 constexpr std::array<int, 4> kInputData = {1, 2, 2, 3};
-}  // anonymous namespace
 
 class KytheReadStream : public souffle::ReadStream {
  public:
-  KytheReadStream(const std::map<std::string, std::string>& rw_operation,
-                  souffle::SymbolTable& symbol_table,
-                  souffle::RecordTable& record_table)
+  explicit KytheReadStream(
+      const std::map<std::string, std::string>& rw_operation,
+      souffle::SymbolTable& symbol_table, souffle::RecordTable& record_table)
       : souffle::ReadStream(rw_operation, symbol_table, record_table) {}
 
  protected:
@@ -72,10 +71,11 @@ class KytheReadStreamFactory : public souffle::ReadStreamFactory {
 
 class KytheWriteStream : public souffle::WriteStream {
  public:
-  KytheWriteStream(const std::map<std::string, std::string>& rw_operation,
-                   const souffle::SymbolTable& symbol_table,
-                   const souffle::RecordTable& record_table,
-                   std::vector<std::pair<int, int>>* output)
+  explicit KytheWriteStream(
+      const std::map<std::string, std::string>& rw_operation,
+      const souffle::SymbolTable& symbol_table,
+      const souffle::RecordTable& record_table,
+      std::vector<std::pair<int, int>>* output)
       : souffle::WriteStream(rw_operation, symbol_table, record_table),
         output_(output) {}
 
@@ -110,20 +110,20 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
     return name;
   }
 
-  ~KytheWriteStreamFactory() override = default;
-
   size_t NewOutput() {
     outputs_.push_back({});
     return outputs_.size() - 1;
   }
 
-  const std::vector<std::pair<int, int>>& GetOutput(size_t id) {
+  const std::vector<std::pair<int, int>>& GetOutput(size_t id) const {
     return outputs_[id];
   }
 
  private:
   std::vector<std::vector<std::pair<int, int>>> outputs_;
 };
+}  // anonymous namespace
+
 // TODO(zarko): This is a temporary hack that only demonstrates that the
 // Souffle library is working. It bakes in the inputs and outputs for a
 // simple example program and checks that the interpreter calculates the
@@ -137,14 +137,13 @@ bool RunSouffle() {
       write_stream_factory);
   souffle::IOSystem::getInstance().registerReadStreamFactory(
       std::make_shared<KytheReadStreamFactory>());
-  auto ram_tu =
-      souffle::ParseTransform(absl::StrCat(R"(
+  auto ram_tu = souffle::ParseTransform(absl::StrCat(R"(
         .decl edge(x:number, y:number)
         .input edge(IO=kythe)
 
         .decl path(x:number, y:number)
         .output path(IO=kythe, id=)",
-                                           std::to_string(output_id), R"()
+                                                     output_id, R"()
 
         path(x, y) :- edge(x, y).
         path(x, y) :- path(x, z), edge(z, y).

@@ -74,6 +74,7 @@ cc_test(
     deps = [
         ":souffle_interpreter",
         "//third_party:gtest",
+        "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
     ],
 )
