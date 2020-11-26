@@ -59,3 +59,9 @@ cc_library(
         "@org_sourceware_libffi//:libffi",
     ],
 )
+
+cc_library(
+    name = "main",
+    srcs = ["src/main.cpp"],
+    deps = [":souffle"],
+)
