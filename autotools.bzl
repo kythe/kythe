@@ -14,11 +14,14 @@
 
 # Originally from google/sandboxed-api; added 'bootstrap'.
 
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
+
 """Repository rule that runs autotools' configure after extraction."""
 
 def _configure(ctx):
     bash_exe = ctx.os.environ["BAZEL_SH"] if "BAZEL_SH" in ctx.os.environ else "bash"
     ctx.report_progress("Running configure script...")
+
     # Run bootstrap script if it exists.
     ctx.execute(
         [bash_exe, "-c", "./bootstrap"],
@@ -42,6 +45,7 @@ def _buildfile(ctx):
     elif ctx.attr.build_file_content:
         ctx.execute([bash_exe, "-c", "rm -f BUILD.bazel"])
         ctx.file("BUILD.bazel", ctx.attr.build_file_content)
+    patch(ctx)
 
 def _autotools_repository_impl(ctx):
     if ctx.attr.build_file and ctx.attr.build_file_content:
@@ -74,6 +78,12 @@ autotools_repository = repository_rule(
         ),
         "quiet": attr.bool(
             default = True,
+        ),
+        "patches": attr.label_list(
+            default = [],
+        ),
+        "patch_args": attr.string_list(
+            default = ["-p0"],
         ),
     },
     implementation = _autotools_repository_impl,

@@ -72,6 +72,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:souffle.BUILD",
         sha256 = "654c1b33b2b3f20fdc1f0983dfed562c24a0baa230fd431401cc0004464c6b4d",
         strip_prefix = "souffle-fbb4c4b967bf58cccb7aca58e3d200a799218d98",
+        patch_args = ["-p0"],
+        patches = [
+            "@io_kythe//third_party:souffle_remove_config.patch",
+        ],
     )
 
     maybe(
