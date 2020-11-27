@@ -38,15 +38,23 @@ import (
 )
 
 var (
-	languages       languageFlag = languageFlag{localrun.AllLanguages()}
-	hostname                     = flag.String("hostname", "localhost", "The host to start the http server on once everything is finished")
-	port                         = flag.Int("port", 8080, "The port to start the http server on once everything is finished")
-	workingDir                   = flag.String("working_dir", "", "The directory for all bazel oprations to begin relative to")
-	kytheRelease                 = flag.String("kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
-	publicResources              = flag.String("public_resources", "", "Path to the public resources to serve in the webserver (default: $kythe_release/resources/public)")
-	outputDir                    = flag.String("output_dir", "", "The directory to create intermediate artifacts in")
-	indexingTimeout              = flag.Duration("indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
-	cacheSize                    = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
+	languages      languageFlag = languageFlag{localrun.AllLanguages()}
+	workerPoolSize              = flag.Int("worker_pool_size", 1, "Number of workers to use")
+)
+
+func init() {
+	flag.Var(&languages, "language", "Case insensitive list of languages that should be extracted and indexed")
+}
+
+var (
+	hostname        = flag.String("hostname", "localhost", "The host to start the http server on once everything is finished")
+	port            = flag.Int("port", 8080, "The port to start the http server on once everything is finished")
+	workingDir      = flag.String("working_dir", "", "The directory for all bazel oprations to begin relative to")
+	kytheRelease    = flag.String("kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
+	publicResources = flag.String("public_resources", "", "Path to the public resources to serve in the webserver (default: $kythe_release/resources/public)")
+	outputDir       = flag.String("output_dir", "", "The directory to create intermediate artifacts in")
+	indexingTimeout = flag.Duration("indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
+	cacheSize       = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
 )
 
 var errNotEnoughArgs = errors.New("not enough arguments")
@@ -55,7 +63,7 @@ func getTargets(args []string) ([]string, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("You provided %d arguments but expected 2: %w", len(args), errNotEnoughArgs)
 	}
-	return args[:], nil
+	return args, nil
 }
 
 // usage prints out usage information for the program to stderr.
@@ -109,12 +117,11 @@ bazel query 'kind(java_library, //...)' | xargs localrun
 
 // main entrypoint for the program.
 func main() {
+	flag.Parse()
+
 	*workingDir, _ = os.Getwd()
 	cacheDir, _ := os.UserCacheDir()
 	*outputDir = filepath.Join(cacheDir, "output")
-
-	flag.Var(&languages, "language", "Case insensitive list of languages that should be extracted and indexed")
-	flag.Parse()
 
 	if *publicResources == "" {
 		*publicResources = *kytheRelease + "/resources/public"
@@ -123,11 +130,15 @@ func main() {
 	targets, err := getTargets(flag.Args())
 	if err != nil {
 		usage()
-		log.Fatalf("Error invoking localrun: %v\n", err)
+		log.Fatalf("Error invoking localrun: %v", err)
 	}
 
 	log.Printf("Building %v for targets: %s\n",
 		languages.LanguageSet.String(), strings.Join(targets, " "))
+
+	if *workerPoolSize == 0 {
+		*workerPoolSize = runtime.GOMAXPROCS(0)
+	}
 
 	r := &localrun.Runner{
 		KytheRelease: *kytheRelease,
@@ -135,8 +146,7 @@ func main() {
 		OutputDir:    *outputDir,
 		CacheSize:    cacheSize,
 
-		//WorkerPoolSize: runtime.GOMAXPROCS(0) * 2,
-		WorkerPoolSize: runtime.GOMAXPROCS(0)*0 + 1,
+		WorkerPoolSize: *workerPoolSize,
 
 		Languages: languages.LanguageSet,
 		Targets:   targets,
@@ -190,7 +200,6 @@ func (lf *languageFlag) Set(value string) error {
 		}
 
 		lf.LanguageSet.Set(l)
-		continue
 	}
 	return nil
 }
