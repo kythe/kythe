@@ -90,6 +90,7 @@ cc_library(
         "@com_google_protobuf//:protobuf",
         "@souffle",
     ],
+    alwayslink = True,
 )
 
 cc_binary(

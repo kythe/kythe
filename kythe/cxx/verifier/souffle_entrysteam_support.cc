@@ -100,18 +100,19 @@ Note that this is an experimental feature and this declaration may change.
       return nullptr;
     }
     coded_input.PushLimit(byte_size);
-    if (!entry_.ParseFromCodedStream(&coded_input)) {
+    kythe::proto::Entry entry;
+    if (!entry.ParseFromCodedStream(&coded_input)) {
       fprintf(stderr, "error reading input stream\n");
       return nullptr;
     }
     auto tuple = std::make_unique<souffle::RamDomain[]>(kEntryElements);
     souffle::RamDomain vname[kVNameElements];
-    CopyVName(entry_.source(), vname);
+    CopyVName(entry.source(), vname);
     tuple[kSourceEntry] = recordTable.pack(vname, kVNameElements);
-    tuple[kKindEntry] = symbolTable.unsafeLookup(entry_.fact_name());
-    CopyVName(entry_.target(), vname);
+    tuple[kKindEntry] = symbolTable.unsafeLookup(entry.fact_name());
+    CopyVName(entry.target(), vname);
     tuple[kTargetEntry] = recordTable.pack(vname, kVNameElements);
-    tuple[kValueEntry] = symbolTable.unsafeLookup(entry_.fact_value());
+    tuple[kValueEntry] = symbolTable.unsafeLookup(entry.fact_value());
     return tuple;
   }
 
@@ -124,8 +125,6 @@ Note that this is an experimental feature and this declaration may change.
     target[kRootEntry] = symbolTable.unsafeLookup(vname.root());
     target[kLanguageEntry] = symbolTable.unsafeLookup(vname.language());
   }
-  /// This entry is reused for each tuple.
-  kythe::proto::Entry entry_;
   /// This `FileInputStream` reads from stdin.
   google::protobuf::io::FileInputStream raw_input_;
   /// True when the relation we're reading has the expected type.
