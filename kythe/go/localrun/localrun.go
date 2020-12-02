@@ -49,16 +49,16 @@ var _ = dedup.Reader{}
 
 // This list must be kept in sync with Language.String.
 const (
-	lowLanguageMarker Language = iota // Note that lowLanguageMarker must be first
+	lowLanguageMarker Language = iota // Note that lowLanguageMarker must be first.
 	Cxx
 	Go
 	Java
 	Jvm
 	Protobuf
-	Python    // TODO: Python isn't shipping in Kythe right now by default
+	Python    // TODO: Python isn't shipping in Kythe right now by default.
 	Textproto // TODO: Textproto isn't shipping in Kythe right now by default.
 	TypeScript
-	highLanguageMarker // Note that typescript must be last
+	highLanguageMarker // Note that highLanguageMarker must be last.
 )
 
 type metadata struct {
