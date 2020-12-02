@@ -129,14 +129,16 @@ type Language int
 // String provides the string representation of this enum value.
 func (l Language) String() string {
 	return [...]string{
-		"Cxx", // To insert above this line, modify Language.Validate
+		"lowLanguageMarker",
+		"Cxx",
 		"Go",
 		"Java",
 		"Jvm",
 		"Protobuf",
 		"Python",
 		"Textproto",
-		"TypeScript", // To insert below this line, modify Language.Validate
+		"TypeScript",
+		"highLanguageMarker",
 	}[l]
 }
 
@@ -160,7 +162,7 @@ func (l Language) metadata() metadata {
 // AllLanguages returns a language set that contains all available languages.
 func AllLanguages() LanguageSet {
 	languages := LanguageSet{}
-	for c := Language(0); c.Valid(); c++ {
+	for c := Language(lowLanguageMarker + 1); c.Valid(); c++ {
 		languages.Set(c)
 	}
 	return languages
