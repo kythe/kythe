@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Package localrun provides helper methods for locall building a kythe indexed
-// repo
+// Package localrun provides helper methods for locally building a Kythe indexed
+// repo.
 package localrun //import "kythe.io/kythe/go/localrun"
 
 import (
@@ -49,14 +49,16 @@ var _ = dedup.Reader{}
 
 // This list must be kept in sync with Language.String.
 const (
-	Cxx Language = iota // Note that Cxx must be first, or you must update Language.Valid to refer to the first element.
+	lowLanguageMarker Language = iota // Note that lowLanguageMarker must be first
+	Cxx
 	Go
 	Java
 	Jvm
 	Protobuf
-	Python     // TODO: Python isn't shipping in Kythe right now by default
-	Textproto  // TODO: Textproto isn't shipping in Kythe right now by default.
-	TypeScript // Note that typescript must be last, or you must update Language.Valid to refer to the last element.
+	Python    // TODO: Python isn't shipping in Kythe right now by default
+	Textproto // TODO: Textproto isn't shipping in Kythe right now by default.
+	TypeScript
+	highLanguageMarker // Note that typescript must be last
 )
 
 type metadata struct {
@@ -140,7 +142,7 @@ func (l Language) String() string {
 
 // Valid determines of the provided language is a valid enum value.
 func (l Language) Valid() bool {
-	return l >= Cxx && l <= TypeScript
+	return l > lowLanguageMarker && l < highLanguageMarker
 }
 
 func (l Language) kZipExtractorName() string {
@@ -317,7 +319,7 @@ func (r *Runner) Index(ctx context.Context) error {
 
 	file, err := os.Open(r.besFile) // For read access.
 	if err != nil {
-		return fmt.Errorf("Unable to open build event stream file: %v", err)
+		return fmt.Errorf("unable to open build event stream file: %v", err)
 	}
 
 	rd := delimited.NewReader(file)
@@ -470,6 +472,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 
 	log.Printf("Beginning serial indexing")
 
+	// TODO: Dedup the kzips instead of keeping them all around.
 	for i, k := range kzips {
 		log := func(i int, m string, v ...interface{}) {
 			den := len(kzips)
@@ -499,9 +502,8 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 		// Perform the work prescribed
 		cmd := exec.CommandContext(cmdCtx,
 			fmt.Sprintf("%s/indexers/%s", si.KytheRelease, l.indexerPath()),
-			//"-continue",
-			//"-json",
-			k)
+			k,
+		)
 
 		cmd.Stdout = indexedOut
 		cmd.Stderr = os.Stderr

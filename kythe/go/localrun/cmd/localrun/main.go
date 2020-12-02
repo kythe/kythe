@@ -49,10 +49,10 @@ func init() {
 var (
 	hostname        = flag.String("hostname", "localhost", "The host to start the http server on once everything is finished")
 	port            = flag.Int("port", 8080, "The port to start the http server on once everything is finished")
-	workingDir      = flag.String("working_dir", "", "The directory for all bazel oprations to begin relative to")
+	workingDir      = flag.String("working_dir", mustString(os.Getwd), "The directory for all bazel oprations to begin relative to")
 	kytheRelease    = flag.String("kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
 	publicResources = flag.String("public_resources", "", "Path to the public resources to serve in the webserver (default: $kythe_release/resources/public)")
-	outputDir       = flag.String("output_dir", "", "The directory to create intermediate artifacts in")
+	outputDir       = flag.String("output_dir", filepath.Join(mustString(os.UserCacheDir), "kythe", "output"), "The directory to create intermediate artifacts in")
 	indexingTimeout = flag.Duration("indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
 	cacheSize       = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
 )
@@ -119,10 +119,6 @@ bazel query 'kind(java_library, //...)' | xargs localrun
 func main() {
 	flag.Parse()
 
-	*workingDir, _ = os.Getwd()
-	cacheDir, _ := os.UserCacheDir()
-	*outputDir = filepath.Join(cacheDir, "output")
-
 	if *publicResources == "" {
 		*publicResources = *kytheRelease + "/resources/public"
 	}
@@ -136,7 +132,7 @@ func main() {
 	log.Printf("Building %v for targets: %s\n",
 		languages.LanguageSet.String(), strings.Join(targets, " "))
 
-	if *workerPoolSize == 0 {
+	if *workerPoolSize <= 0 {
 		*workerPoolSize = runtime.GOMAXPROCS(0)
 	}
 
@@ -158,6 +154,7 @@ func main() {
 		PublicResources: *publicResources,
 	}
 
+	// WithCancel used to prevent run-away goroutines from never exiting.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -202,4 +199,13 @@ func (lf *languageFlag) Set(value string) error {
 		lf.LanguageSet.Set(l)
 	}
 	return nil
+}
+
+func mustString(f func() (string, error)) string {
+	s, err := f()
+	if err != nil {
+		fmt.Printf("Error getting string: %v", err)
+		os.Exit(1)
+	}
+	return s
 }
