@@ -34,6 +34,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -67,6 +68,7 @@ llvm::StringRef ToStringRef(absl::string_view sv) {
 }
 
 using cxx_extractor::LookupFileForIncludePragma;
+using ::google::protobuf::RepeatedPtrField;
 
 // We need "the lowercase ascii hex SHA-256 digest of the file contents."
 constexpr char kHexDigits[] = "0123456789abcdef";
@@ -86,13 +88,78 @@ constexpr absl::string_view kStableRootDirectories[] = {
     "/kythe_cxx_extractor_root",
 };
 
+absl::string_view GetPathForProto(
+    const proto::CxxCompilationUnitDetails::SystemHeaderPrefix& prefix) {
+  return prefix.prefix();
+}
+
+absl::string_view GetPathForProto(
+    const proto::CxxCompilationUnitDetails::StatPath& path) {
+  return path.path();
+}
+
+absl::string_view GetPathForProto(
+    const proto::CompilationUnit::FileInput& input) {
+  return input.info().path();
+}
+
+absl::string_view GetPathForProto(
+    const proto::CxxCompilationUnitDetails::HeaderSearchDir& dir) {
+  return dir.path();
+}
+
+class RequiredRoots {
+ public:
+  explicit RequiredRoots(absl::string_view working_directory)
+      : working_directory_(absl::StripSuffix(working_directory, "/")) {}
+
+  template <typename T>
+  bool Update(absl::string_view name, const T& container) {
+    for (const auto& item : container) {
+      absl::string_view path = GetPathForProto(item);
+      // Check if the working directory is a path prefix.
+      if (absl::ConsumePrefix(&path, working_directory_) &&
+          (path.empty() || absl::ConsumePrefix(&path, "/"))) {
+        LOG(WARNING) << "Using real working directory (" << working_directory_
+                     << ") due to its inclusion in " << name;
+        return (success_ = false);
+      }
+      if (IsAbsolutePath(path)) {
+        roots_.insert(path.substr(0, path.find('/', 1)));
+      }
+    }
+    return success_;
+  }
+
+  std::string GetStableRoot() const {
+    if (!success_) {
+      return working_directory_;
+    }
+
+    for (absl::string_view root : kStableRootDirectories) {
+      if (!roots_.contains(root)) {
+        return std::string(root);
+      }
+    }
+    LOG(WARNING) << "Using real working directory (" << working_directory_
+                 << ") as we were unable to find a stable unique root.";
+    return working_directory_;
+  }
+
+ private:
+  absl::flat_hash_set<absl::string_view> roots_;
+  std::string working_directory_;
+  bool success_ = true;
+};
+
 /// \brief Finds a suitable stable root directory, if possible.
 /// Otherwise falls back to using the provided root.
 std::string FindStableRoot(
     absl::string_view working_directory,
-    const google::protobuf::RepeatedPtrField<std::string>& arguments,
-    const google::protobuf::RepeatedPtrField<proto::CompilationUnit::FileInput>&
-        required_input) {
+    const RepeatedPtrField<std::string>& arguments,
+    const RepeatedPtrField<proto::CompilationUnit::FileInput>& required_input,
+    const proto::CxxCompilationUnitDetails& details) {
+  absl::ConsumeSuffix(&working_directory, "/");
   for (absl::string_view arg : arguments) {
     if (arg.find(working_directory) != arg.npos) {
       LOG(WARNING) << "Using real working directory (" << working_directory
@@ -100,21 +167,13 @@ std::string FindStableRoot(
       return std::string(working_directory);
     }
   }
-  absl::flat_hash_set<std::string> required_roots;
-  for (const auto& input : required_input) {
-    const auto& path = input.info().path();
-    if (IsAbsolutePath(path)) {
-      required_roots.insert(path.substr(0, path.find('/', 1)));
-    }
-  }
-  for (absl::string_view root : kStableRootDirectories) {
-    if (!required_roots.contains(root)) {
-      return std::string(root);
-    }
-  }
-  LOG(WARNING) << "Using real working directory (" << working_directory
-               << ") as we were unable to find a stable unique root.";
-  return std::string(working_directory);
+
+  RequiredRoots roots(working_directory);
+  roots.Update("required_input", required_input) &&
+      roots.Update("header_search_info", details.header_search_info().dir()) &&
+      roots.Update("system_header_prefix", details.system_header_prefix()) &&
+      roots.Update("stat_path", details.stat_path());
+  return roots.GetStableRoot();
 }
 
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
@@ -1232,7 +1291,7 @@ void CompilationWriter::WriteIndex(
   } else {
     unit.set_working_directory(
         FindStableRoot(absolute_working_directory.c_str(), unit.argument(),
-                       unit.required_input()));
+                       unit.required_input(), cxx_details));
   }
   sink->OpenIndex(identifying_blob_digest);
   sink->WriteHeader(unit);
