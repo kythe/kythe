@@ -62,7 +62,7 @@ argument: "--driver-mode=g++"
 argument: "file.cc"
 argument: "-fsyntax-only"
 source_file: "file.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0")";
 
 // Verifies that the extractor properly handles KYTHE_ROOT_DIRECTORY
@@ -89,7 +89,6 @@ TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
   // TODO(shahms): use gMock protobuf matchers when available.
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));

@@ -27,6 +27,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -76,6 +77,45 @@ constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
 /// When a -resource-dir is not specified, map builtin versions of compiler
 /// headers to this directory.
 constexpr char kBuiltinResourceDirectory[] = "/kythe_builtins";
+
+/// A list of directory names to try when finding a suitable stable working
+/// directory.
+constexpr absl::string_view kStableRootDirectories[] = {
+    "/root",
+    "/build",
+    "/kythe_cxx_extractor_root",
+};
+
+/// \brief Finds a suitable stable root directory, if possible.
+/// Otherwise falls back to using the provided root.
+std::string FindStableRoot(
+    absl::string_view working_directory,
+    const google::protobuf::RepeatedPtrField<std::string>& arguments,
+    const google::protobuf::RepeatedPtrField<proto::CompilationUnit::FileInput>&
+        required_input) {
+  for (absl::string_view arg : arguments) {
+    if (arg.find(working_directory) != arg.npos) {
+      LOG(WARNING) << "Using real working directory (" << working_directory
+                   << ") due to its inclusion in compiler argument: " << arg;
+      return std::string(working_directory);
+    }
+  }
+  absl::flat_hash_set<std::string> required_roots;
+  for (const auto& input : required_input) {
+    const auto& path = input.info().path();
+    if (IsAbsolutePath(path)) {
+      required_roots.insert(path.substr(0, path.find('/', 1)));
+    }
+  }
+  for (absl::string_view root : kStableRootDirectories) {
+    if (!required_roots.contains(root)) {
+      return std::string(root);
+    }
+  }
+  LOG(WARNING) << "Using real working directory (" << working_directory
+               << ") as we were unable to find a stable unique root.";
+  return std::string(working_directory);
+}
 
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
 /// \param sha_buf The bytes of the hash.
@@ -1190,7 +1230,9 @@ void CompilationWriter::WriteIndex(
   if (err) {
     LOG(WARNING) << "Can't get working directory: " << err.message();
   } else {
-    unit.set_working_directory(absolute_working_directory.c_str());
+    unit.set_working_directory(
+        FindStableRoot(absolute_working_directory.c_str(), unit.argument(),
+                       unit.required_input()));
   }
   sink->OpenIndex(identifying_blob_digest);
   sink->WriteHeader(unit);
