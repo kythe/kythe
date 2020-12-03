@@ -86,6 +86,11 @@ class KytheEntryStreamReadStream : public souffle::ReadStream {
 Note that this is an experimental feature and this declaration may change.
 )");
     }
+    empty_symbol_ = symbolTable.unsafeLookup("");
+    std::array<souffle::RamDomain, 5> fields = {empty_symbol_, empty_symbol_,
+                                                empty_symbol_, empty_symbol_,
+                                                empty_symbol_};
+    empty_vname_ = record_table.pack(fields.data(), fields.size());
   }
 
  protected:
@@ -109,10 +114,17 @@ Note that this is an experimental feature and this declaration may change.
     souffle::RamDomain vname[kVNameElements];
     CopyVName(entry.source(), vname);
     tuple[kSourceEntry] = recordTable.pack(vname, kVNameElements);
-    tuple[kKindEntry] = symbolTable.unsafeLookup(entry.fact_name());
-    CopyVName(entry.target(), vname);
-    tuple[kTargetEntry] = recordTable.pack(vname, kVNameElements);
-    tuple[kValueEntry] = symbolTable.unsafeLookup(entry.fact_value());
+    if (entry.has_target()) {
+      tuple[kKindEntry] = symbolTable.unsafeLookup(entry.edge_kind());
+      CopyVName(entry.target(), vname);
+      tuple[kTargetEntry] = recordTable.pack(vname, kVNameElements);
+      tuple[kValueEntry] = empty_symbol_;
+    } else {
+      tuple[kKindEntry] = symbolTable.unsafeLookup(entry.fact_name());
+      tuple[kTargetEntry] = empty_vname_;
+      tuple[kValueEntry] = symbolTable.unsafeLookup(entry.fact_value());
+    }
+
     return tuple;
   }
 
@@ -129,6 +141,10 @@ Note that this is an experimental feature and this declaration may change.
   google::protobuf::io::FileInputStream raw_input_;
   /// True when the relation we're reading has the expected type.
   bool relation_ok_ = false;
+  /// The empty symbol.
+  souffle::RamDomain empty_symbol_;
+  /// An empty VName.
+  souffle::RamDomain empty_vname_;
 };
 
 class KytheEntryStreamReadFactory : public souffle::ReadStreamFactory {
