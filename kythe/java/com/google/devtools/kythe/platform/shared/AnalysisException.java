@@ -25,7 +25,7 @@ public class AnalysisException extends Exception {
   }
 
   public AnalysisException(String message, Throwable innerException) {
-    super(message, innerException);
+    super(message + ": " + innerException.getLocalizedMessage(), innerException);
   }
 
   public AnalysisException(Throwable innerException) {
