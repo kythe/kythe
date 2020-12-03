@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -838,7 +839,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                     const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder) {
-  if (unit.source_file().size() > 1) {
+  if (unit.source_file().empty()) {
     return absl::FailedPreconditionError(
         "Expected Unit to contain 1+ source files");
   }
@@ -847,7 +848,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
         "Must provide at least 2 files: a textproto and 1+ .proto files");
   }
 
-  std::set<std::string> textproto_filenames;
+  absl::flat_hash_set<std::string> textproto_filenames;
   for (const std::string& filename : unit.source_file()) {
     textproto_filenames.insert(filename);
   }
@@ -871,7 +872,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   }
   LOG(INFO) << "Proto message name: " << message_name;
 
-  std::map<std::string, const proto::FileData*> file_data_by_path;
+  absl::flat_hash_map<std::string, const proto::FileData*> file_data_by_path;
 
   // Load all proto files into in-memory SourceTree.
   PreloadedProtoFileTree file_reader(&path_substitutions,
