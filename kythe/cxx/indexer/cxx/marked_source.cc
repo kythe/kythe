@@ -100,7 +100,7 @@ std::string Reformat(const clang::LangOptions& lang_options,
       new clang::DiagnosticOptions);
   clang::SourceManager Sources(Diagnostics, Files);
   auto Source = llvm::MemoryBuffer::getMemBuffer(source_text);
-  InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, Source.get());
+  InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, *Source);
   clang::FileID ID =
       Sources.createFileID(*Files.getFile(kReplacementFile),
                            clang::SourceLocation(), clang::SrcMgr::C_User);
