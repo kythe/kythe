@@ -57,7 +57,7 @@ argument: "-DMACRO"
 argument: "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 )";
 
@@ -71,7 +71,6 @@ TEST(CxxExtractorTest, TestSourceFileEnvDepWithoutMacro) {
   // TODO(shahms): use gMock protobuf matchers when available.
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
 
   CompilationUnit expected =
@@ -93,7 +92,6 @@ TEST(CxxExtractorTest, TestSourceFileEnvDepWithMacro) {
   // TODO(shahms): use gMock protobuf matchers when available.
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));

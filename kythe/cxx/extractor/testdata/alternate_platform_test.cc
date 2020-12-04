@@ -56,7 +56,7 @@ argument: "-Ikythe/cxx/extractor"
 argument: "./kythe/cxx/extractor/testdata/arm.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/arm.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0")";
 
 TEST(CxxExtractorTest, TestAlternatePlatformExtraction) {
@@ -67,7 +67,6 @@ TEST(CxxExtractorTest, TestAlternatePlatformExtraction) {
   // Fix up things which may legitmately vary between runs.
   // TODO(shahms): use gMock protobuf matchers when available.
   CanonicalizeHashes(&unit);
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));

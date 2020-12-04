@@ -74,7 +74,7 @@ argument: "-v"
 argument: "./kythe/cxx/extractor/testdata/installed_dir.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/installed_dir.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 )";
 
@@ -87,7 +87,6 @@ TEST(CxxExtractorTest, TestInstalledClangExtraction) {
   }});
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));

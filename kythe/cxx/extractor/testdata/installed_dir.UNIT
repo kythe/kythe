@@ -46,7 +46,7 @@ argument: "-v"
 argument: "./kythe/cxx/extractor/testdata/installed_dir.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/installed_dir.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 details {
   [kythe.io/proto/kythe.proto.BuildDetails] {
