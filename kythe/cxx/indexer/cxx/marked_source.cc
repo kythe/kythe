@@ -596,9 +596,10 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
   // diagnostics from the typechecker.
   clang::IgnoringDiagConsumer consumer;
   auto* diags = &cache_->source_manager().getDiagnostics();
-  auto guard = MakeScopeGuard(
-      [diags = diags, client = diags->getClient(),
-       owned = diags->ownsClient()] { diags->setClient(client, owned); });
+
+  auto OwningPreviousClient = diags->takeClient();
+  auto PreviousClient = diags->getClient();
+
   diags->setClient(&consumer, false);
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
@@ -697,6 +698,8 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     }
     *next_arg->mutable_pre_text() = pre_text;
   }
+
+  diags->setClient(PreviousClient, !!OwningPreviousClient.release());
 }
 
 bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
