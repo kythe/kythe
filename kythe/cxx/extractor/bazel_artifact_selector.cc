@@ -61,7 +61,7 @@ struct FromRange {
 };
 
 template <typename T>
-FromRange(const T&)->FromRange<T>;
+FromRange(const T&) -> FromRange<T>;
 
 }  // namespace
 
@@ -211,7 +211,11 @@ ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
           return false;
         }
         return RE2::FullMatch(action_type, *action_pattern);
-      }) {}
+      }) {
+  CHECK(action_pattern == nullptr || action_pattern->ok())
+      << "ExtraActionSelector requires a valid pattern: "
+      << action_pattern->error();
+}
 
 absl::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
