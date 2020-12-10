@@ -9,7 +9,6 @@ rust_binary(
     edition = "2018",
     deps = [
         "//third_party/bazel:extra_actions_base_rust_proto",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:anyhow",
     ] + PROTO_COMPILE_DEPS,

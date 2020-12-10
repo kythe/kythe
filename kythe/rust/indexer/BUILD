@@ -14,7 +14,6 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_analysis",
@@ -30,11 +29,11 @@ rust_binary(
     crate_root = ":src/bin/main.rs",
     edition = "2018",
     deps = [
+        "@io_bazel_rules_rust//proto/raze:protobuf",
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:tempdir",
     ],
 )
