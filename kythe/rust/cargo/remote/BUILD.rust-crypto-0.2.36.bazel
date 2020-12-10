@@ -1,0 +1,69 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load(
+    "@io_bazel_rules_rust//rust:rust.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_test",
+)
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//kythe/rust/cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
+])
+
+# Generated Targets
+
+# Unsupported target "build-script-build" with type "custom-build" omitted
+
+# Unsupported target "symmetriccipher" with type "example" omitted
+
+alias(
+    name = "rust_crypto",
+    actual = ":crypto",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+rust_library(
+    name = "crypto",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "src/lib.rs",
+    crate_type = "lib",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "0.2.36",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__libc__0_2_74//:libc",
+        "@raze__rand__0_3_23//:rand",
+        "@raze__rustc_serialize__0_3_24//:rustc_serialize",
+        "@raze__time__0_1_43//:time",
+    ],
+)
