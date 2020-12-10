@@ -22,6 +22,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/proto/bazel_artifact_selector.pb.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace {
@@ -197,11 +198,29 @@ void AspectArtifactSelector::ReadFilesInto(
   state_.pending.emplace(id, target);
 }
 
+ExtraActionSelector::ExtraActionSelector(
+    absl::flat_hash_set<std::string> action_types)
+    : action_matches_([action_types = std::move(action_types)](
+                          absl::string_view action_type) {
+        return action_types.empty() || action_types.contains(action_type);
+      }) {}
+
+ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
+    : action_matches_([action_pattern](absl::string_view action_type) {
+        if (action_pattern == nullptr || action_pattern->pattern().empty()) {
+          return false;
+        }
+        return RE2::FullMatch(action_type, *action_pattern);
+      }) {
+  CHECK(action_pattern == nullptr || action_pattern->ok())
+      << "ExtraActionSelector requires a valid pattern: "
+      << action_pattern->error();
+}
+
 absl::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
   if (event.id().has_action_completed() && event.action().success() &&
-      (action_types_.empty() ||
-       action_types_.contains(event.action().type()))) {
+      action_matches_(event.action().type())) {
     return BazelArtifact{
         .label = event.id().action_completed().label(),
         .files = {{

@@ -28,6 +28,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
+#include "re2/re2.h"
 #include "re2/set.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
@@ -194,15 +195,18 @@ class ExtraActionSelector final : public BazelArtifactSelector {
   /// to match ActionCompleted events. An empty set will select any successful
   /// action.
   explicit ExtraActionSelector(
-      absl::flat_hash_set<std::string> action_types = {})
-      : action_types_(std::move(action_types)) {}
+      absl::flat_hash_set<std::string> action_types = {});
+
+  /// \brief Constructs an ExtraActionSelector from an allowlist pattern.
+  /// Both a null and an empty pattern will match nothing.
+  explicit ExtraActionSelector(const RE2* action_pattern);
 
   /// \brief Selects artifacts from ExtraAction-based extractors.
   absl::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) final;
 
  private:
-  absl::flat_hash_set<std::string> action_types_;
+  std::function<bool(absl::string_view)> action_matches_;
 };
 
 }  // namespace kythe

@@ -26,6 +26,7 @@
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
+#include "re2/re2.h"
 #include "re2/set.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
@@ -167,6 +168,158 @@ TEST(AnyArtifactSelectorTest, ForwardsFunctions) {
               Eq(absl::nullopt));
   EXPECT_THAT(selector.Serialize(), Eq(absl::nullopt));
   EXPECT_THAT(selector.Deserialize({}), absl::OkStatus());
+}
+
+TEST(ExtraActionSelector, SelectsAllByDefault) {
+  ExtraActionSelector selector;
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "extract_kzip_cxx_extra_action"
+    }
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
+}
+
+TEST(ExtraActionSelector, SelectsFromList) {
+  ExtraActionSelector selector({"matching_action_type"});
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "matching_action_type"
+    }
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "another_action_type"
+    }
+  )pb")), Eq(absl::nullopt));
+}
+
+TEST(ExtraActionSelector, SelectsFromPattern) {
+  const RE2 pattern("matching_action_type");
+  ExtraActionSelector selector(&pattern);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "matching_action_type"
+    }
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "another_action_type"
+    }
+  )pb")), Eq(absl::nullopt));
+}
+
+TEST(ExtraActionSelector, SelectsNoneWithEmptyPattern) {
+  const RE2 pattern("");
+  ExtraActionSelector selector(&pattern);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "another_action_type"
+    }
+  )pb")), Eq(absl::nullopt));
+}
+
+TEST(ExtraActionSelector, SelectsNoneWithNullPattern) {
+  ExtraActionSelector selector(nullptr);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      action_completed {
+        primary_output: "path/to/file/dummy.kzip"
+        label: "//kythe/cxx/extractor:bazel_artifact_selector"
+        configuration { id: "hash0" }
+      }
+    }
+    action {
+      success: true
+      label: "//kythe/cxx/extractor:bazel_artifact_selector"
+      primary_output { uri: "file:///home/path/to/file/dummy.kzip" }
+      configuration { id: "hash0" }
+      type: "another_action_type"
+    }
+  )pb")), Eq(absl::nullopt));
 }
 
 }  // namespace
