@@ -14,13 +14,15 @@
 
 FROM debian:buster
 
+ADD buster-backports.list /etc/apt/sources.list.d/
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install -t buster-backports -y \
+      ca-certificates gnupg \
       # Buildbot dependencies
       python3 python3-dev python3-pip wget git \
       # Linter dependencies
-      arcanist clang-format shellcheck \
+      arcanist shellcheck \
       # Required by go tool build of Kythe
       golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
@@ -28,10 +30,19 @@ RUN apt-get update && \
       # Bazel dependencies
       pkg-config zip g++ zlib1g-dev unzip \
       # Kythe C++ dependencies
-      gcc uuid-dev flex clang bison \
+      gcc uuid-dev flex bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel jq && \
     apt-get clean
+
+# Install recent clang tools.
+ADD llvm-toolchain.list /etc/apt/sources.list.d/
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key| apt-key add - && \
+    apt-get update && apt-get install -y clang-11 clang-format-11 && apt-get clean && \
+    update-alternatives \
+      --install /usr/bin/clang        clang        /usr/bin/clang-11    100 \
+      --slave   /usr/bin/clang++      clang++      /usr/bin/clang++-11      \
+      --slave   /usr/bin/clang-format clang-format /usr/bin/clang-format-11
 
 # Install Buildbot
 RUN pip3 install --upgrade pip
@@ -39,6 +50,8 @@ RUN pip3 install buildbot
 RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-waterfall-view psycopg2-binary txrequests
 RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
 RUN pip3 install buildbot-worker
+
+#RUN apt-get update && apt-get upgrade -t buster-backports -y golang-go && apt-get clean
 
 # Install extra linters
 RUN go get github.com/bazelbuild/buildtools/buildifier
