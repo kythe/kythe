@@ -537,3 +537,29 @@ cc_library(
         "@com_google_absl//absl/debugging:symbolize",
     ],
 )
+
+cc_library(
+    name = "regex",
+    srcs = ["regex.cc"],
+    hdrs = ["regex.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_test(
+    name = "regex_test",
+    srcs = ["regex_test.cc"],
+    deps = [
+        ":regex",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
