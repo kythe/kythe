@@ -67,14 +67,12 @@ TEST(AspectArtifactSelectorTest, SelectsOutOfOrderFileSets) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
-    })pb")),
-              Eq(BazelArtifact{
+    })pb")), Eq(BazelArtifact{
                   .label = "//path/to/target:name",
                   .files = {{
                       .local_path = "path/to/file.kzip",
@@ -90,8 +88,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -105,8 +102,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(BazelArtifact{
+    })pb")), Eq(BazelArtifact{
                   .label = "//path/to/target:name",
                   .files = {{
                       .local_path = "path/to/file.kzip",
@@ -128,8 +124,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
         name: "kythe_compilation_unit"
         file_sets { id: "1" }
       }
-    })pb")),
-              Eq(absl::nullopt));
+    })pb")), Eq(absl::nullopt));
 }
 
 TEST(AspectArtifactSelectorTest, CompatibleWithAny) {
@@ -182,14 +177,13 @@ TEST(ExtraActionSelector, SelectsAllByDefault) {
       configuration { id: "hash0" }
       type: "extract_kzip_cxx_extra_action"
     }
-  )pb")),
-              Eq(BazelArtifact{
-                  .label = "//kythe/cxx/extractor:bazel_artifact_selector",
-                  .files = {{
-                      .local_path = "path/to/file/dummy.kzip",
-                      .uri = "file:///home/path/to/file/dummy.kzip",
-                  }},
-              }));
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
 }
 
 TEST(ExtraActionSelector, SelectsFromList) {
@@ -209,14 +203,13 @@ TEST(ExtraActionSelector, SelectsFromList) {
       configuration { id: "hash0" }
       type: "matching_action_type"
     }
-  )pb")),
-              Eq(BazelArtifact{
-                  .label = "//kythe/cxx/extractor:bazel_artifact_selector",
-                  .files = {{
-                      .local_path = "path/to/file/dummy.kzip",
-                      .uri = "file:///home/path/to/file/dummy.kzip",
-                  }},
-              }));
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       action_completed {
@@ -232,8 +225,7 @@ TEST(ExtraActionSelector, SelectsFromList) {
       configuration { id: "hash0" }
       type: "another_action_type"
     }
-  )pb")),
-              Eq(absl::nullopt));
+  )pb")), Eq(absl::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsFromPattern) {
@@ -254,14 +246,13 @@ TEST(ExtraActionSelector, SelectsFromPattern) {
       configuration { id: "hash0" }
       type: "matching_action_type"
     }
-  )pb")),
-              Eq(BazelArtifact{
-                  .label = "//kythe/cxx/extractor:bazel_artifact_selector",
-                  .files = {{
-                      .local_path = "path/to/file/dummy.kzip",
-                      .uri = "file:///home/path/to/file/dummy.kzip",
-                  }},
-              }));
+  )pb")), Eq(BazelArtifact{
+               .label = "//kythe/cxx/extractor:bazel_artifact_selector",
+               .files = {{
+                   .local_path = "path/to/file/dummy.kzip",
+                   .uri = "file:///home/path/to/file/dummy.kzip",
+               }},
+           }));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       action_completed {
@@ -277,8 +268,7 @@ TEST(ExtraActionSelector, SelectsFromPattern) {
       configuration { id: "hash0" }
       type: "another_action_type"
     }
-  )pb")),
-              Eq(absl::nullopt));
+  )pb")), Eq(absl::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsNoneWithEmptyPattern) {
@@ -299,8 +289,7 @@ TEST(ExtraActionSelector, SelectsNoneWithEmptyPattern) {
       configuration { id: "hash0" }
       type: "another_action_type"
     }
-  )pb")),
-              Eq(absl::nullopt));
+  )pb")), Eq(absl::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsNoneWithNullPattern) {
@@ -320,8 +309,7 @@ TEST(ExtraActionSelector, SelectsNoneWithNullPattern) {
       configuration { id: "hash0" }
       type: "another_action_type"
     }
-  )pb")),
-              Eq(absl::nullopt));
+  )pb")), Eq(absl::nullopt));
 }
 
 }  // namespace

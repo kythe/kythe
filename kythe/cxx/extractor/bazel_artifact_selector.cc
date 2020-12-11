@@ -61,7 +61,7 @@ struct FromRange {
 };
 
 template <typename T>
-FromRange(const T&) -> FromRange<T>;
+FromRange(const T&)->FromRange<T>;
 
 }  // namespace
 
