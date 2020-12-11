@@ -818,7 +818,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
   template <typename NodeT>
   const IndexedParent* getIndexedParent(const NodeT& Node) {
-    return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
+    return getIndexedParent(clang::DynTypedNode::create(Node));
   }
 
   /// \return true if `Decl` and all of the nodes underneath it are prunable.
@@ -827,8 +827,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// This excludes, for example, certain template instantiations.
   bool declDominatesPrunableSubtree(const clang::Decl* Decl);
 
-  const IndexedParent* getIndexedParent(
-      const clang::ast_type_traits::DynTypedNode& Node);
+  const IndexedParent* getIndexedParent(const clang::DynTypedNode& Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
   const IndexedParentMap* getAllParents();

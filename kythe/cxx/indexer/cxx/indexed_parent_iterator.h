@@ -32,7 +32,7 @@ class RootTraversal {
   // Type containing the values used during root traversal iterator.
   struct value_type {
     // The current node in the traversal.
-    clang::ast_type_traits::DynTypedNode node;
+    clang::DynTypedNode node;
     // A pointer to the `clang::Decl` of the node, if any.
     const clang::Decl* decl;
     // A pointer to the IndexedParent of the current node, if any.
@@ -60,8 +60,8 @@ class RootTraversal {
     friend class RootTraversal;
 
     explicit iterator(const IndexedParentMap* parent_map,
-                      clang::ast_type_traits::DynTypedNode node,
-                      const clang::Decl* decl, const IndexedParent* parent)
+                      clang::DynTypedNode node, const clang::Decl* decl,
+                      const IndexedParent* parent)
         : parent_map_(parent_map), current_(value_type{node, decl, parent}) {
       // If we would be constructed from a TranslationUnitDecl, stop.
       if (decl && clang::isa<clang::TranslationUnitDecl>(decl)) {
@@ -71,19 +71,17 @@ class RootTraversal {
     }
 
     explicit iterator(const IndexedParentMap* parent_map,
-                      clang::ast_type_traits::DynTypedNode node,
-                      const clang::Decl* decl)
+                      clang::DynTypedNode node, const clang::Decl* decl)
         : iterator(parent_map, node, decl, parent_map->GetIndexedParent(node)) {
     }
 
     explicit iterator(const IndexedParentMap* parent_map,
-                      clang::ast_type_traits::DynTypedNode node)
+                      clang::DynTypedNode node)
         : iterator(parent_map, node, node.get<clang::Decl>()) {}
 
     explicit iterator(const IndexedParentMap* parent_map,
                       const clang::Decl* decl)
-        : iterator(parent_map,
-                   clang::ast_type_traits::DynTypedNode::create(*decl), decl) {}
+        : iterator(parent_map, clang::DynTypedNode::create(*decl), decl) {}
 
     iterator next() const;
     void advance();
@@ -114,8 +112,7 @@ class RootTraversal {
   }
   static iterator Start(const IndexedParentMap* parent_map,
                         const clang::Stmt* stmt) {
-    return stmt ? iterator(parent_map,
-                           clang::ast_type_traits::DynTypedNode::create(*stmt))
+    return stmt ? iterator(parent_map, clang::DynTypedNode::create(*stmt))
                 : iterator();
   }
   iterator start_;

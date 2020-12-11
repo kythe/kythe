@@ -477,7 +477,7 @@ const IndexedParentMap* IndexerASTVisitor::getAllParents() {
 }
 
 const IndexedParent* IndexerASTVisitor::getIndexedParent(
-    const ast_type_traits::DynTypedNode& Node) {
+    const DynTypedNode& Node) {
   return getAllParents()->GetIndexedParent(Node);
 }
 
