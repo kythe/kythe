@@ -81,7 +81,7 @@ class RegexSet {
   RegexSet& operator=(const RegexSet& other) = default;
 
   /// \brief Regex set is movable.
-  /// Moves leave the moved-from object in a default ocnstructed state.
+  /// Moves leave the moved-from object in a default constructed state.
   RegexSet(RegexSet&& other) noexcept;
   RegexSet& operator=(RegexSet&& other) noexcept;
 
