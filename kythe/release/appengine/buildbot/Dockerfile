@@ -51,8 +51,6 @@ RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-
 RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
 RUN pip3 install buildbot-worker
 
-#RUN apt-get update && apt-get upgrade -t buster-backports -y golang-go && apt-get clean
-
 # Install extra linters
 RUN go get github.com/bazelbuild/buildtools/buildifier
 RUN go get golang.org/x/lint/golint
