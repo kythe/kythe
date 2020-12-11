@@ -115,7 +115,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& filesets) {
   bool kept = false;
   for (const auto& file : filesets.files()) {
-    if (options_->file_name_allowlist.Match(file.name(), nullptr)) {
+    if (options_.file_name_allowlist.Match(file.name())) {
       kept = true;
       *state_.filesets[id].add_files() = file;
     }
@@ -147,13 +147,12 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
   if (payload.success() &&
-      options_->target_aspect_allowlist.Match(id.aspect(), nullptr)) {
+      options_.target_aspect_allowlist.Match(id.aspect())) {
     BazelArtifact result = {
         .label = id.label(),
     };
     for (const auto& output_group : payload.output_group()) {
-      if (options_->output_group_allowlist.Match(output_group.name(),
-                                                 nullptr)) {
+      if (options_.output_group_allowlist.Match(output_group.name())) {
         for (const auto& filesets : output_group.file_sets()) {
           ReadFilesInto(filesets.id(), id.label(), result.files);
         }

@@ -34,21 +34,11 @@ namespace kythe {
 namespace {
 using ::testing::Eq;
 
-RE2::Set MustCompile(absl::Span<const absl::string_view> patterns) {
-  RE2::Set result(RE2::DefaultOptions, RE2::UNANCHORED);
-  for (const auto pattern : patterns) {
-    std::string error;
-    CHECK_NE(result.Add(pattern, &error), -1) << error;
-  }
-  CHECK(result.Compile());
-  return result;
-}
-
 AspectArtifactSelector::Options DefaultOptions() {
   return {
-      .file_name_allowlist = MustCompile({R"(\.kzip$)"}),
-      .output_group_allowlist = MustCompile({".*"}),
-      .target_aspect_allowlist = MustCompile({".*"}),
+      .file_name_allowlist = RegexSet::Build({R"(\.kzip$)"}).value(),
+      .output_group_allowlist = RegexSet::Build({".*"}).value(),
+      .target_aspect_allowlist = RegexSet::Build({".*"}).value(),
   };
 }
 

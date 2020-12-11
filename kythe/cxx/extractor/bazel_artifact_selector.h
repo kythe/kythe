@@ -27,9 +27,9 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
+#include "kythe/cxx/common/regex.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "re2/re2.h"
-#include "re2/set.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
@@ -123,12 +123,13 @@ class AnyArtifactSelector {
 /// \brief Options class used for constructing an AspectArtifactSelector.
 struct AspectArtifactSelectorOptions {
   // A set of patterns used to filter file names from NamedSetOfFiles events.
-  RE2::Set file_name_allowlist;
+  // Matches nothing by default.
+  RegexSet file_name_allowlist;
   // A set of patterns used to filter output_group names from TargetComplete
-  // events.
-  RE2::Set output_group_allowlist;
+  // events. Matches nothing by default.
+  RegexSet output_group_allowlist;
   // A set of patterns used to filter aspect names from TargetComplete events.
-  RE2::Set target_aspect_allowlist;
+  RegexSet target_aspect_allowlist = RegexSet::Build({".*"}).value();
 };
 
 /// \brief A BazelArtifactSelector implementation which tracks state from
@@ -141,7 +142,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   /// \brief Constructs an instance of AspectArtifactSelector from the provided
   /// options.
   explicit AspectArtifactSelector(Options options)
-      : options_(std::make_shared<Options>(std::move(options))) {}
+      : options_(std::move(options)) {}
 
   /// \brief Selects an artifact if the event matches an expected
   /// aspect-produced compilation unit.
@@ -179,8 +180,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   void ReadFilesInto(absl::string_view id, absl::string_view target,
                      std::vector<BazelArtifactFile>& files);
 
-  // We must be copyable.
-  std::shared_ptr<const Options> options_;
+  Options options_;
   State state_;
 };
 

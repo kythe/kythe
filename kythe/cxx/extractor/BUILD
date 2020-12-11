@@ -312,6 +312,7 @@ cc_library(
     hdrs = ["bazel_artifact_selector.h"],
     deps = [
         ":bazel_artifact",
+        "//kythe/cxx/common:regex",
         "//kythe/proto:bazel_artifact_selector_cc_proto",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",
@@ -331,6 +332,7 @@ cc_test(
     deps = [
         ":bazel_artifact",
         ":bazel_artifact_selector",
+        "//kythe/cxx/common:regex",
         "//third_party:gtest",
         "//third_party:gtest_main",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
