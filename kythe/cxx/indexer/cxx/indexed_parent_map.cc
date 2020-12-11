@@ -83,7 +83,7 @@ class IndexedParentASTVisitor
   // on values of type `T*` and returns a boolean traversal result.
   template <typename T, typename BaseTraverseFn>
   bool TraverseNode(T* node, BaseTraverseFn traverse) {
-    using ::clang::ast_type_traits::DynTypedNode;
+    using ::clang::DynTypedNode;
     if (node == nullptr) return true;
     if (!parent_stack_.empty()) {
       auto& parent = parents_[node];
@@ -137,7 +137,7 @@ IndexedParentMap IndexedParentMap::Build(clang::TranslationUnitDecl* unit) {
 }
 
 const IndexedParent* IndexedParentMap::GetIndexedParent(
-    const clang::ast_type_traits::DynTypedNode& node) const {
+    const clang::DynTypedNode& node) const {
   CHECK(node.getMemoizationData() != nullptr)
       << "Invariant broken: only nodes that support memoization may be "
          "used in the parent map.";
@@ -150,7 +150,7 @@ const IndexedParent* IndexedParentMap::GetIndexedParent(
 
 bool IndexedParentMap::DeclDominatesPrunableSubtree(
     const clang::Decl* decl) const {
-  const auto node = clang::ast_type_traits::DynTypedNode::create(*decl);
+  const auto node = clang::DynTypedNode::create(*decl);
   const auto iter = parents_.find(node.getMemoizationData());
   if (iter == parents_.end()) {
     return false;  // Safe default.
