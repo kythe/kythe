@@ -64,7 +64,7 @@ case $file in
       gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
     fi ;;
   *.h|*.cc|*.c|*.proto|*.js)
-    cf="$(command -v clang-format-7 clang-format 2>/dev/null | head -n1)"
+    cf="$(command -v clang-format-11 clang-format 2>/dev/null | head -n1)"
     if [[ -n "$cf" ]]; then
       diff \
         --unchanged-line-format='' \
