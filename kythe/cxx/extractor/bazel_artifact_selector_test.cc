@@ -27,7 +27,6 @@
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "re2/re2.h"
-#include "re2/set.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
