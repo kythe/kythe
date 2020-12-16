@@ -63,13 +63,22 @@ struct FromRange {
 template <typename T>
 FromRange(const T&) -> FromRange<T>;
 
-}  // namespace
+template <typename T>
+const T& AsConstRef(const T& value) {
+  return value;
+}
 
-absl::Status BazelArtifactSelector::Deserialize(
-    absl::Span<const google::protobuf::Any> state) {
+template <typename T>
+const T& AsConstRef(const T* value) {
+  return *value;
+}
+
+template <typename T, typename U>
+absl::Status DeserializeInternal(T& selector, const U& container) {
   absl::Status error;
-  for (const auto& any : state) {
-    switch (auto status = DeserializeFrom(any); status.code()) {
+  for (const auto& any : container) {
+    switch (auto status = selector.DeserializeFrom(AsConstRef(any));
+            status.code()) {
       case absl::StatusCode::kOk:
       case absl::StatusCode::kUnimplemented:
         return absl::OkStatus();
@@ -87,28 +96,16 @@ absl::Status BazelArtifactSelector::Deserialize(
                     : absl::NotFoundError(
                           absl::StrCat("No state found: ", error.ToString()));
 }
+}  // namespace
+
+absl::Status BazelArtifactSelector::Deserialize(
+    absl::Span<const google::protobuf::Any> state) {
+  return DeserializeInternal(*this, state);
+}
 
 absl::Status BazelArtifactSelector::Deserialize(
     absl::Span<const google::protobuf::Any* const> state) {
-  absl::Status error;
-  for (const auto* any : state) {
-    switch (auto status = DeserializeFrom(*any); status.code()) {
-      case absl::StatusCode::kOk:
-      case absl::StatusCode::kUnimplemented:
-        return absl::OkStatus();
-      case absl::StatusCode::kInvalidArgument:
-        return status;
-      case absl::StatusCode::kFailedPrecondition:
-        error = status;
-        continue;
-      default:
-        error = status;
-        LOG(WARNING) << "Unrecognized status code: " << status;
-    }
-  }
-  return error.ok() ? absl::NotFoundError("No state found")
-                    : absl::NotFoundError(
-                          absl::StrCat("No state found: ", error.ToString()));
+  return DeserializeInternal(*this, state);
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::Select(
