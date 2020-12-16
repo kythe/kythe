@@ -47,24 +47,33 @@ class BazelArtifactSelector {
   virtual absl::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) = 0;
 
-  /// \brief Returns an Any-encoded protobuf with per-stream selector state.
+  /// \brief Encodes per-stream selector state into the Any protobuf.
   /// Stateful selectors should serialize any per-stream state into a
   /// suitable protocol buffer, encoded as an Any. If no state has been
   /// accumulated, they should return an empty protocol buffer of the
-  /// appropriate type.
-  /// Stateless selectors should return nullopt.
-  virtual absl::optional<google::protobuf::Any> Serialize() const {
-    return absl::nullopt;
+  /// appropriate type and return true.
+  /// Stateless selectors should return false.
+  virtual bool SerializeInto(google::protobuf::Any& state) const {
+    return false;
+  }
+
+  /// \brief Updates any per-stream state from the provided proto.
+  /// Stateless selectors should unconditionally return a kUnimplemented status.
+  /// Stateful selectors should return OK if the provided state contains a
+  /// suitable proto, InvalidArgument is the proto is of the right type, but
+  /// cannot be decoded or FailedPrecondition if the proto is of the wrong type.
+  virtual absl::Status DeserializeFrom(const google::protobuf::Any& state) {
+    return absl::UnimplementedError("stateless selector");
   }
 
   /// \brief Finds and updates any per-stream state from the provided list.
-  /// Stateless selectors should unconditionally return OK.
-  /// Stateful selectors should return NotFound if the custom protobuf is not
-  /// found in the provided list.
-  virtual absl::Status Deserialize(
-      absl::Span<const google::protobuf::Any> state) {
-    return absl::OkStatus();
-  }
+  /// Returns OK if the selector is stateless or if the requisite state was
+  /// found in the list.
+  /// Returns NotFound for a stateful selector whose state was not present
+  /// or InvalidArgument if the state was present but couldn't be decoded.
+  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state);
+  absl::Status Deserialize(
+      absl::Span<const google::protobuf::Any* const> state);
 
  protected:
   // Not publicly copyable or movable to avoid slicing, but subclasses may be.
@@ -74,8 +83,8 @@ class BazelArtifactSelector {
 };
 
 /// \brief A type-erased value-type implementation of the BazelArtifactSelector
-/// interface. Does not derive from BazelArtifactSelector.
-class AnyArtifactSelector {
+/// interface.
+class AnyArtifactSelector final : public BazelArtifactSelector {
  public:
   /// \brief Constructs an AnyArtifactSelector which delegates to the provided
   /// argument, which must derive from BazelArtifactSelector.
@@ -104,13 +113,13 @@ class AnyArtifactSelector {
   }
 
   /// \brief Forwards serialization to the contained BazelArtifactSelector.
-  absl::optional<google::protobuf::Any> Serialize() const {
-    return get_().Serialize();
+  bool SerializeInto(google::protobuf::Any& state) const final {
+    return get_().SerializeInto(state);
   }
 
   /// \brief Forwards deserialization to the contained BazelArtifactSelector.
-  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state) {
-    return get_().Deserialize(state);
+  absl::Status DeserializeFrom(const google::protobuf::Any& state) final {
+    return get_().DeserializeFrom(state);
   }
 
  private:
@@ -152,11 +161,11 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   /// \brief Serializes the accumulated state into the return value, which will
   /// always be non-empty and of type
   /// `kythe.proto.BazelAspectArtifactSelectorState`.
-  absl::optional<google::protobuf::Any> Serialize() const final;
+  bool SerializeInto(google::protobuf::Any& state) const final;
 
   /// \brief Deserializes accumulated stream state from an Any of type
-  /// `kythe.proto.BazelAspectArtifactSelectorState` or returns NotFound.
-  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state) final;
+  /// `kythe.proto.BazelAspectArtifactSelectorState`.
+  absl::Status DeserializeFrom(const google::protobuf::Any& state) final;
 
  private:
   struct State {

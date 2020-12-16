@@ -61,9 +61,55 @@ struct FromRange {
 };
 
 template <typename T>
-FromRange(const T&)->FromRange<T>;
+FromRange(const T&) -> FromRange<T>;
 
 }  // namespace
+
+absl::Status BazelArtifactSelector::Deserialize(
+    absl::Span<const google::protobuf::Any> state) {
+  absl::Status error;
+  for (const auto& any : state) {
+    switch (auto status = DeserializeFrom(any); status.code()) {
+      case absl::StatusCode::kOk:
+      case absl::StatusCode::kUnimplemented:
+        return absl::OkStatus();
+      case absl::StatusCode::kInvalidArgument:
+        return status;
+      case absl::StatusCode::kFailedPrecondition:
+        error = status;
+        continue;
+      default:
+        error = status;
+        LOG(WARNING) << "Unrecognized status code: " << status;
+    }
+  }
+  return error.ok() ? absl::NotFoundError("No state found")
+                    : absl::NotFoundError(
+                          absl::StrCat("No state found: ", error.ToString()));
+}
+
+absl::Status BazelArtifactSelector::Deserialize(
+    absl::Span<const google::protobuf::Any* const> state) {
+  absl::Status error;
+  for (const auto* any : state) {
+    switch (auto status = DeserializeFrom(*any); status.code()) {
+      case absl::StatusCode::kOk:
+      case absl::StatusCode::kUnimplemented:
+        return absl::OkStatus();
+      case absl::StatusCode::kInvalidArgument:
+        return status;
+      case absl::StatusCode::kFailedPrecondition:
+        error = status;
+        continue;
+      default:
+        error = status;
+        LOG(WARNING) << "Unrecognized status code: " << status;
+    }
+  }
+  return error.ok() ? absl::NotFoundError("No state found")
+                    : absl::NotFoundError(
+                          absl::StrCat("No state found: ", error.ToString()));
+}
 
 absl::optional<BazelArtifact> AspectArtifactSelector::Select(
     const build_event_stream::BuildEvent& event) {
@@ -81,34 +127,33 @@ absl::optional<BazelArtifact> AspectArtifactSelector::Select(
   return result;
 }
 
-absl::optional<google::protobuf::Any> AspectArtifactSelector::Serialize()
-    const {
-  kythe::proto::BazelAspectArtifactSelectorState state;
-  *state.mutable_disposed() = FromRange{state_.disposed};
-  *state.mutable_filesets() = FromRange{state_.filesets};
-  *state.mutable_pending() = FromRange{state_.pending};
+bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
+  kythe::proto::BazelAspectArtifactSelectorState raw;
+  *raw.mutable_disposed() = FromRange{state_.disposed};
+  *raw.mutable_filesets() = FromRange{state_.filesets};
+  *raw.mutable_pending() = FromRange{state_.pending};
 
-  google::protobuf::Any result;
-  result.PackFrom(state);
-  return result;
+  state.PackFrom(raw);
+  return true;
 }
 
-absl::Status AspectArtifactSelector::Deserialize(
-    absl::Span<const google::protobuf::Any> state) {
-  for (const auto& any : state) {
-    kythe::proto::BazelAspectArtifactSelectorState proto_state;
-    if (any.UnpackTo(&proto_state)) {
-      state_ = {
-          .disposed = FromRange{proto_state.disposed()},
-          .filesets = FromRange{proto_state.filesets()},
-          .pending = FromRange{proto_state.pending()},
-      };
-
-      return absl::OkStatus();
-    }
+absl::Status AspectArtifactSelector::DeserializeFrom(
+    const google::protobuf::Any& state) {
+  kythe::proto::BazelAspectArtifactSelectorState raw;
+  if (state.UnpackTo(&raw)) {
+    state_ = {
+        .disposed = FromRange{raw.disposed()},
+        .filesets = FromRange{raw.filesets()},
+        .pending = FromRange{raw.pending()},
+    };
+    return absl::OkStatus();
   }
-  return absl::NotFoundError(
-      "No entry found for kythe.proto.BazelAspectArtifactSelectorState");
+  if (state.Is<kythe::proto::BazelAspectArtifactSelectorState>()) {
+    return absl::InvalidArgumentError(
+        "Malformed kythe.proto.BazelAspectArtifactSelectorState");
+  }
+  return absl::FailedPreconditionError(
+      "State not of type kythe.proto.BazelAspectArtifactSelectorState");
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
