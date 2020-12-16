@@ -60,7 +60,7 @@ class BazelArtifactSelector {
   /// \brief Updates any per-stream state from the provided proto.
   /// Stateless selectors should unconditionally return a kUnimplemented status.
   /// Stateful selectors should return OK if the provided state contains a
-  /// suitable proto, InvalidArgument is the proto is of the right type, but
+  /// suitable proto, InvalidArgument if the proto is of the right type but
   /// cannot be decoded or FailedPrecondition if the proto is of the wrong type.
   virtual absl::Status DeserializeFrom(const google::protobuf::Any& state) {
     return absl::UnimplementedError("stateless selector");
