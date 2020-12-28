@@ -87,23 +87,6 @@ Regex& Regex::operator=(Regex&& other) noexcept {
   return *this;
 }
 
-absl::StatusOr<RegexSet> RegexSet::Build(absl::Span<const std::string> patterns,
-                                         const RE2::Options& options,
-                                         RE2::Anchor anchor) {
-  RE2::Set set(options, anchor);
-  for (const auto& value : patterns) {
-    std::string error;
-    if (set.Add(value, &error) == -1) {
-      return absl::InvalidArgumentError(error);
-    }
-  }
-  if (!set.Compile()) {
-    return absl::ResourceExhaustedError(
-        "Out of memory attempting to compile RegexSet");
-  }
-  return RegexSet(std::move(set));
-}
-
 RegexSet::RegexSet() : set_(DefaultSet()) {}
 RegexSet::RegexSet(RE2::Set set)
     : set_(std::make_shared<RE2::Set>(CheckCompiled(std::move(set)))) {}
