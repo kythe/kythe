@@ -65,9 +65,10 @@ class Regex {
 class RegexSet {
  public:
   /// \brief Builds a RegexSet from the list of patterns and options.
+  template <typename Range = absl::Span<const absl::string_view>>
   static absl::StatusOr<RegexSet> Build(
-      absl::Span<const std::string> patterns,
-      const RE2::Options& = RE2::DefaultOptions, RE2::Anchor = RE2::UNANCHORED);
+      Range&& patterns, const RE2::Options& = RE2::DefaultOptions,
+      RE2::Anchor = RE2::UNANCHORED);
 
   /// \brief Constructs a RegexSet from the extant RE2::Set.
   /// Requires: set has been compiled
@@ -99,6 +100,24 @@ class RegexSet {
  private:
   std::shared_ptr<const RE2::Set> set_;  // non-null.
 };
+
+template <typename Range>
+absl::StatusOr<RegexSet> RegexSet::Build(Range&& patterns,
+                                         const RE2::Options& options,
+                                         RE2::Anchor anchor) {
+  RE2::Set set(options, anchor);
+  for (const auto& value : std::forward<Range>(patterns)) {
+    std::string error;
+    if (set.Add(value, &error) == -1) {
+      return absl::InvalidArgumentError(error);
+    }
+  }
+  if (!set.Compile()) {
+    return absl::ResourceExhaustedError(
+        "Out of memory attempting to compile RegexSet");
+  }
+  return RegexSet(std::move(set));
+}
 
 }  // namespace kythe
 
