@@ -67,7 +67,7 @@ class RegexSet {
   /// \brief Builds a RegexSet from the list of patterns and options.
   template <typename Range = absl::Span<const absl::string_view>>
   static absl::StatusOr<RegexSet> Build(
-      Range&& patterns, const RE2::Options& = RE2::DefaultOptions,
+      const Range& patterns, const RE2::Options& = RE2::DefaultOptions,
       RE2::Anchor = RE2::UNANCHORED);
 
   /// \brief Constructs a RegexSet from the extant RE2::Set.
@@ -102,11 +102,11 @@ class RegexSet {
 };
 
 template <typename Range>
-absl::StatusOr<RegexSet> RegexSet::Build(Range&& patterns,
+absl::StatusOr<RegexSet> RegexSet::Build(const Range& patterns,
                                          const RE2::Options& options,
                                          RE2::Anchor anchor) {
   RE2::Set set(options, anchor);
-  for (const auto& value : std::forward<Range>(patterns)) {
+  for (const auto& value : patterns) {
     std::string error;
     if (set.Add(value, &error) == -1) {
       return absl::InvalidArgumentError(error);
