@@ -25,7 +25,7 @@ build --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
 
 # Import default javacopts
-import tools/javacopts.bazelrc
+import %workspace%/tools/javacopts.bazelrc
 
 # For release, stamp binaries, use optimized mode w/ minimum line table debugging.
 build:release --stamp -c opt --copt=-gmlt
@@ -68,4 +68,4 @@ build:remote --action_env=LEIN_JAVA_CMD=
 test:prepush --verbose_failures --noshow_loading_progress --noshow_progress
 
 # Support user-provided user.bazelrc
-try-import user.bazelrc
+try-import %workspace%/user.bazelrc
