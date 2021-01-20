@@ -632,6 +632,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
         case clang::TemplateArgument::TemplateExpansion:
         case clang::TemplateArgument::Expression:
         case clang::TemplateArgument::Pack:
+        case clang::TemplateArgument::UncommonValue:
           // TODO(zarko): Remaining cases.
           return false;
       }
