@@ -80,6 +80,57 @@ cc_test(
 )
 
 cc_library(
+    name = "ast",
+    srcs = [
+        "pretty_printer.cc",
+    ],
+    hdrs = [
+        "assertion_ast.h",
+        "pretty_printer.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "assertions_to_souffle",
+    srcs = [
+        "assertions_to_souffle.cc",
+    ],
+    deps = [
+        ":ast",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "assertions_to_souffle_test",
+    srcs = [
+        "assertions_to_souffle_test.cc",
+    ],
+    deps = [
+        ":assertions_to_souffle",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "souffle_solver",
+    srcs = [
+        "souffle_solver.cc",
+    ],
+    hdrs = [
+        "souffle_solver.h",
+    ],
+    deps = [
+        ":lib",
+    ],
+)
+
+cc_library(
     name = "souffle_entrystream_support",
     srcs = [
         "souffle_entrysteam_support.cc",
@@ -110,7 +161,6 @@ cc_library(
         "verifier.cc",
     ],
     hdrs = [
-        "assertion_ast.h",
         "assertions.h",
         "pretty_printer.h",
         "verifier.h",
@@ -121,6 +171,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":ast",
         ":lexparse",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",

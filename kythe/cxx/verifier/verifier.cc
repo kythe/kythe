@@ -519,8 +519,7 @@ class Solver {
     }
   }
 
-  ThunkRet SolveGoalArray(AssertionParser::GoalGroup* group, size_t cur,
-                          ThunkRet cut, Thunk f) {
+  ThunkRet SolveGoalArray(GoalGroup* group, size_t cur, ThunkRet cut, Thunk f) {
     if (cur > highest_goal_reached_) {
       highest_goal_reached_ = cur;
     }
@@ -553,12 +552,12 @@ class Solver {
       // Lots of unwinding later...
       if (result == cut) {
         // That last goal group succeeded.
-        if (group->accept_if != AssertionParser::GoalGroup::kNoneMayFail) {
+        if (group->accept_if != GoalGroup::kNoneMayFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
         }
       } else if (result == kNoException || result == kImpossible) {
         // That last goal group failed.
-        if (group->accept_if != AssertionParser::GoalGroup::kSomeMustFail) {
+        if (group->accept_if != GoalGroup::kSomeMustFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
         }
       } else {
@@ -761,7 +760,7 @@ void Verifier::SaveEVarAssignments() {
 void Verifier::ShowGoals() {
   FileHandlePrettyPrinter printer(stdout);
   for (auto& group : parser_.groups()) {
-    if (group.accept_if == AssertionParser::GoalGroup::kNoneMayFail) {
+    if (group.accept_if == GoalGroup::kNoneMayFail) {
       printer.Print("group:\n");
     } else {
       printer.Print("negated group:\n");
@@ -863,8 +862,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
       return;
     }
     printer.Print("(past the end of a ");
-    if (parser_.groups()[group].accept_if ==
-        AssertionParser::GoalGroup::kSomeMustFail) {
+    if (parser_.groups()[group].accept_if == GoalGroup::kSomeMustFail) {
       printer.Print("negated ");
     }
     printer.Print("group, whose last goal was)\n  ");
