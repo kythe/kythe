@@ -1800,7 +1800,7 @@ class Visitor {
         this.emitImplicitProperty(decl, declAnchor, vname);
       }
 
-      this.visitJSDoc(decl, vname);
+      this.visitJSDoc(decl, vname, false);
     }
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
 
@@ -2088,8 +2088,10 @@ class Visitor {
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
    */
-  visitJSDoc(node: ts.Node, target: VName) {
-    this.maybeTagDeprecated(node, target);
+  visitJSDoc(node: ts.Node, target: VName, emitDeprecation: boolean = true) {
+    if (emitDeprecation) {
+      this.maybeTagDeprecated(node, target);
+    }
 
     const text = node.getFullText();
     const comments = ts.getLeadingCommentRanges(text, 0);
