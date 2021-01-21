@@ -4219,16 +4219,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       }
       return Observer.recordTsigmaNode(Nodes);
     }
-    case TemplateArgument::UncommonValue: {
-      SmallString<32> Str;
-      llvm::raw_svector_ostream OS(Str);
-      LangOptions LangOpts;
-      LangOpts.CPlusPlus = true;
-      PrintingPolicy Policy(LangOpts);
-      Arg.getAsUncommonValue().printPretty(OS, Policy,
-                                           Arg.getUncommonValueType());
-      return BuildNodeIdForSpecialTemplateArgument(OS.str());
-    }
   }
   return absl::nullopt;
 }
