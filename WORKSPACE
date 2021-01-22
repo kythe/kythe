@@ -64,6 +64,7 @@ rbe_autoconfig(
     name = "rbe_default",
     env = clang_env(),
     export_configs = True,
+    toolchain_config_spec_name = "rbe_default_config_spec",
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
@@ -73,6 +74,7 @@ rbe_autoconfig(
     bazel_version = MIN_VERSION,
     env = clang_env(),
     export_configs = True,
+    toolchain_config_spec_name = "rbe_bazel_minversion_config_spec",
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
@@ -82,6 +84,7 @@ rbe_autoconfig(
     bazel_version = MAX_VERSION,
     env = clang_env(),
     export_configs = True,
+    toolchain_config_spec_name = "rbe_bazel_maxversion_config_spec",
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
