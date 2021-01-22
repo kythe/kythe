@@ -1047,24 +1047,25 @@ void KytheGraphObserver::recordExtendsEdge(const NodeId& from, const NodeId& to,
                          is_virtual ? EdgeKindID::kExtendsPublicVirtual
                                     : EdgeKindID::kExtendsPublic,
                          VNameRefFromNodeId(to));
-      break;
+      return;
     case clang::AccessSpecifier::AS_protected:
       recorder_->AddEdge(VNameRefFromNodeId(from),
                          is_virtual ? EdgeKindID::kExtendsProtectedVirtual
                                     : EdgeKindID::kExtendsProtected,
                          VNameRefFromNodeId(to));
-      break;
+      return;
     case clang::AccessSpecifier::AS_private:
       recorder_->AddEdge(VNameRefFromNodeId(from),
                          is_virtual ? EdgeKindID::kExtendsPrivateVirtual
                                     : EdgeKindID::kExtendsPrivate,
                          VNameRefFromNodeId(to));
-      break;
-    default:
+      return;
+    case clang::AccessSpecifier::AS_none:
       recorder_->AddEdge(
           VNameRefFromNodeId(from),
           is_virtual ? EdgeKindID::kExtendsVirtual : EdgeKindID::kExtends,
           VNameRefFromNodeId(to));
+      return;
   }
 }
 

@@ -3937,22 +3937,25 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
     }
     case TemplateName::OverloadedTemplate:
       CHECK(IgnoreUnimplemented) << "TN.OverloadedTemplate";
-      break;
+      return absl::nullopt;
+    case TemplateName::AssumedTemplate:
+      CHECK(IgnoreUnimplemented) << "TN.AssumedTemplate";
+      return absl::nullopt;
     case TemplateName::QualifiedTemplate:
       CHECK(IgnoreUnimplemented) << "TN.QualifiedTemplate";
-      break;
+      return absl::nullopt;
     case TemplateName::DependentTemplate:
       CHECK(IgnoreUnimplemented) << "TN.DependentTemplate";
-      break;
+      return absl::nullopt;
     case TemplateName::SubstTemplateTemplateParm:
       CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmParm";
-      break;
+      return absl::nullopt;
     case TemplateName::SubstTemplateTemplateParmPack:
       CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmPack";
-      break;
-    default:
-      LOG(FATAL) << "Unexpected TemplateName kind!";
+      return absl::nullopt;
   }
+  CHECK(IgnoreUnimplemented)
+      << "Unexpected TemplateName kind: " << Name.getKind();
   return absl::nullopt;
 }
 
