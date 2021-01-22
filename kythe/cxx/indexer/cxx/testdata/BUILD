@@ -3317,3 +3317,18 @@ test_suite(
     name = "indexer_df",
     tags = ["df"],
 )
+
+cc_indexer_test(
+    name = "toolchain_verify_no_diagnostics_test",
+    srcs = ["toolchain/verify_no_diagnostics.cc"],
+    copts = [
+        "-Xclang",
+        "-verify",
+    ],
+    tags = ["toolchain"],
+)
+
+test_suite(
+    name = "indexer_toolchain",
+    tags = ["toolchain"],
+)
