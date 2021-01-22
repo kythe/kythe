@@ -57,6 +57,7 @@ proto_library(
     name = "common_proto",
     srcs = ["common.proto"],
     visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = ["@com_google_protobuf//:timestamp_proto"],
 )
 
 cc_proto_library(
@@ -218,6 +219,7 @@ java_proto_library(
 proto_library(
     name = "status_service_proto",
     srcs = ["status_service.proto"],
+    deps = [":common_proto"],
 )
 
 cc_proto_library(
@@ -225,7 +227,10 @@ cc_proto_library(
     deps = [":status_service_proto"],
 )
 
-go_kythe_proto(proto = ":status_service_proto")
+go_kythe_proto(
+    proto = ":status_service_proto",
+    deps = [":common_go_proto"],
+)
 
 java_proto_library(
     name = "status_service_java_proto",
