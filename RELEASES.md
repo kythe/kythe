@@ -1,5 +1,61 @@
 # Release Notes
 
+## [v0.0.49] - 2021-01-22
+
+#### Bug Fixes
+
+*   disable TS function deprecation tagging (#4793) ([2c0bafa8](https://github.com/kythe/kythe/commit/2c0bafa81eaa104c79c07fcadad93b52121c58bc))
+*   avoid non-inclusive language (#4683) ([18401be2](https://github.com/kythe/kythe/commit/18401be27d56d8d98a9e4dd61bb012944fa280b3))
+* **build:**  use @io_kythe// instead of @// in bazel build file template (#4711) ([ca9e8881](https://github.com/kythe/kythe/commit/ca9e888151f0066c2aa49b0ddfd2d5600452fefa))
+* **cxx_common:**
+  *  change selector serialization to work better with protos (#4785) ([55231f7e](https://github.com/kythe/kythe/commit/55231f7e76f202827e4fe3fcf36270d36543414f))
+  *  always initialize fields in FileOutputStream (#4757) ([22f821c5](https://github.com/kythe/kythe/commit/22f821c540d30d2bcc4cb7d25ba62d64f3394e3b))
+* **cxx_indexer:**
+  *  add missing cases and remove default from clang enum switches (#4799) ([a6804702](https://github.com/kythe/kythe/commit/a680470234442453571f33bf2140a7a361719edd))
+* **java_common:**  keep rooted URI paths rooted (#4691) ([4f96ed5d](https://github.com/kythe/kythe/commit/4f96ed5deb79aeff912115dd5e943a1250a42afd))
+* **java_indexer:**
+  *  add MarkedSource for class initializer (#4758) ([58bf4fad](https://github.com/kythe/kythe/commit/58bf4fad805dca19ff94b9d4b25c8da4bc550203))
+  *  emit references to .class literals (#4756) ([a54f6970](https://github.com/kythe/kythe/commit/a54f6970c0c1f3fd5e7d5d89b370c06dbb5e8394))
+  *  handle doc refs to primitives (#4741) ([76939133](https://github.com/kythe/kythe/commit/769391337c1ea53d747b505123b82e89b60d3064))
+  *  blame callsites under static fields on the clinit (#4740) ([625299dc](https://github.com/kythe/kythe/commit/625299dcfb62b32fc96e8850fa6d25a990e075dc))
+  *  add zero-length definition for cinit (#4739) ([f43841b6](https://github.com/kythe/kythe/commit/f43841b64c685249c560d2567834fbb00f8ead61))
+  *  special-case builtin Array class lookup (#4738) ([a4441336](https://github.com/kythe/kythe/commit/a44413369537121a9119ed3dbd101e9e2e1fb172))
+  *  blame instance/static callsites on ctor/cinit methods (#4734) ([34ee6628](https://github.com/kythe/kythe/commit/34ee6628d28da2389731765a644829f74df4149d))
+* **verifier:**  correctly pull out edge kinds and cache empty vnames/symbols (#4769) ([5d627e80](https://github.com/kythe/kythe/commit/5d627e80bb71c63ed460ae7b21795620e15a1aa4))
+
+#### Features
+
+*   create a localrun script (#4235) ([dd6d7c96](https://github.com/kythe/kythe/commit/dd6d7c96cee338315896fccb96814755a4eed98d))
+* **api:**
+  *  add revision to non-anchor locations that may ref a file (#4699) ([51c92b9b](https://github.com/kythe/kythe/commit/51c92b9b98eb486f457611169c2c056da5562c06))
+  *  add revision fields for file/anchor locations (#4698) ([2918c49b](https://github.com/kythe/kythe/commit/2918c49bd417b344255cff4241ea45b628715e01))
+* **common:**  add kytheuri CorpusPath helpers (#4707) ([371a5d65](https://github.com/kythe/kythe/commit/371a5d65c3563caf7803a2730feb53de9836a0c6))
+* **cxx_common:**
+  *  allow any range-of-string-like-types for RegexSet::Build (#4787) ([9e57829d](https://github.com/kythe/kythe/commit/9e57829d0d70226dd89401158ce7a06c4bbef684))
+  *  allow matching with RE2 pattern in addtion to flat_hash_set (#4779) ([761465a6](https://github.com/kythe/kythe/commit/761465a6f9f040bcb0a9b73a77255c3b3af3b937))
+  *  extend bazel artifact selection to allow stateful selectors (#4764) ([228c3070](https://github.com/kythe/kythe/commit/228c3070500969485d5f63c085a03477d7970633))
+* **cxx_extractor:**
+  *  use a stable working_directory if possible (#4771) ([410f69c5](https://github.com/kythe/kythe/commit/410f69c5bcb69fabcb78a5200b7631a1bffabd31))
+  *  allow specifiying build target name in environment (#4686) ([a95f69ab](https://github.com/kythe/kythe/commit/a95f69ab37b9a9b261639fa7f1608fd9cc6238bd))
+* **cxx_indexer:**
+  *  add user-provided template instantiation excludelist (#4701) ([43f7d4de](https://github.com/kythe/kythe/commit/43f7d4de4a78ebb8538b05eef8ce4c4f7d49306d))
+  *  opt-in to emitting influence edges (#4700) ([d62cf15c](https://github.com/kythe/kythe/commit/d62cf15c7e640aa9c3a6741a5e014f22e35e4a4a))
+  *  trace influence through function calls (#4696) ([16c6730f](https://github.com/kythe/kythe/commit/16c6730fd5e86806961b6cd2ee6bf14473ce60b1))
+  *  distinguish field writes from reads (#4687) ([582c4430](https://github.com/kythe/kythe/commit/582c4430bee03c7adfbece86cf32ecc8e5336a11))
+  *  add blame scopes for field references (#4682) ([61a22a16](https://github.com/kythe/kythe/commit/61a22a16fee8c6652f4f0bbcd13246c23fab2100))
+* **java_indexer:**  tag abstract methods/classes as such (#4746) ([0d455662](https://github.com/kythe/kythe/commit/0d455662e33ef14e3f63b6bfd286ae1ef0bef84d))
+* **serving:**
+  *  plumb revision data for XRefService responses (#4710) ([22f144ad](https://github.com/kythe/kythe/commit/22f144ade35e00e0a0b19305479cdd19e78b5d15))
+  *  add revision serving fields for #4699/#4698 (#4708) ([d38aa957](https://github.com/kythe/kythe/commit/d38aa957b2ec96b2ca14f77d19b0c5fc220339c2))
+* **textproto:**
+  *  allow compilation units to contain multiple sources (#4772) ([37d71252](https://github.com/kythe/kythe/commit/37d7125261c6f57c9f6d24adc49e503d473c5074))
+  *  expose DescriptorPool in plugin api (#4721) ([c9b8c15c](https://github.com/kythe/kythe/commit/c9b8c15c1b9e2087faa4e6eb4a2dd79658490d9d))
+  *  put example plugin behind a flag (#4695) ([16a2eb53](https://github.com/kythe/kythe/commit/16a2eb53a49d459ff99b730dbafc8f3b3a71b614))
+  *  accept proto_library targets instead of .proto files (#4689) ([659de4d2](https://github.com/kythe/kythe/commit/659de4d29670922574ff9a4371d118d5b565cdf4))
+* **tooling:**  add optional analysis timeout to driver (#4714) ([14d4fa59](https://github.com/kythe/kythe/commit/14d4fa594301e53159cb99e6f048d90a65d2e434))
+* **verifier:**
+  *  build a souffle frontend that can read an entrystream (#4768) ([0e9dc6a9](https://github.com/kythe/kythe/commit/0e9dc6a9e37c907959736dbc2fb436feaf684b8c))
+
 ## [v0.0.48] - 2020-09-01
 * **runextractor:**
   * Pass flags to the compdb extractor (#4663) ([38fd346](https://github.com/kythe/kythe/commit/38fd346e0bbbf101334d7101a4031c320ac5c269))
@@ -982,7 +1038,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.48...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.49...HEAD
+[v0.0.49] https://github.com/kythe/kythe/compare/v0.0.48...v0.0.49
 [v0.0.48] https://github.com/kythe/kythe/compare/v0.0.47...v0.0.48
 [v0.0.47] https://github.com/kythe/kythe/compare/v0.0.46...v0.0.47
 [v0.0.46] https://github.com/kythe/kythe/compare/v0.0.45...v0.0.46
