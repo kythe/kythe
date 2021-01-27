@@ -25,7 +25,7 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/schema/edges"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -135,8 +135,8 @@ func TestGeneratedCodeInfo(t *testing.T) {
 		Annotation: []*protopb.GeneratedCodeInfo_Annotation{{
 			Path:       []int32{1, 2, 3, 4, 5},
 			SourceFile: proto.String("a"),
-			Begin:      proto.Int(1),
-			End:        proto.Int(100),
+			Begin:      proto.Int32(1),
+			End:        proto.Int32(100),
 		}},
 	}
 	want := Rules{{

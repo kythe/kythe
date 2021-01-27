@@ -20,6 +20,6 @@ go_test(
     library = ":metadata",
     deps = [
         "//kythe/go/util/compare",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
