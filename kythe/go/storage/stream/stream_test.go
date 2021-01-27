@@ -157,11 +157,12 @@ func testBuffer(entries []*spb.Entry) *bytes.Buffer {
 
 func testJSONBuffer(entries []*spb.Entry) *bytes.Buffer {
 	buf := bytes.NewBuffer(nil)
-	wr := json.NewEncoder(buf)
 	for _, e := range entries {
-		if err := wr.Encode(e); err != nil {
+		rec, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(e)
+		if err != nil {
 			panic(err)
 		}
+		buf.Write(rec)
 	}
 	return buf
 }
