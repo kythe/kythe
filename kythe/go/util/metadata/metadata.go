@@ -29,6 +29,8 @@ import (
 
 	"kythe.io/kythe/go/util/schema/edges"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -53,11 +55,19 @@ func (rs Rules) MarshalJSON() ([]byte, error) {
 		if r.EdgeIn == edges.DefinesBinding {
 			rtype = "anchor_defines"
 		}
+		var v json.RawMessage
+		if r.VName != nil {
+			var err error
+			v, err = protojson.Marshal(r.VName)
+			if err != nil {
+				return nil, err
+			}
+		}
 		f.Meta[i] = rule{
 			Type:  rtype,
 			Begin: r.Begin,
 			End:   r.End,
-			VName: r.VName,
+			VName: v,
 			Edge:  kind,
 		}
 	}
@@ -89,11 +99,11 @@ type file struct {
 
 // A rule is the encoded format of a single rule.
 type rule struct {
-	Type  string     `json:"type"`
-	Begin int        `json:"begin"`
-	End   int        `json:"end"`
-	Edge  string     `json:"edge,omitempty"`
-	VName *spb.VName `json:"vname,omitempty"`
+	Type  string          `json:"type"`
+	Begin int             `json:"begin"`
+	End   int             `json:"end"`
+	Edge  string          `json:"edge,omitempty"`
+	VName json.RawMessage `json:"vname,omitempty"`
 }
 
 // Parse parses a single JSON metadata object from r and returns the
@@ -113,12 +123,20 @@ func Parse(r io.Reader) (Rules, error) {
 
 	rs := make(Rules, len(f.Meta))
 	for i, meta := range f.Meta {
+		var v *spb.VName
+		if len(meta.VName) != 0 {
+			var msg spb.VName
+			if err := protojson.Unmarshal(meta.VName, &msg); err != nil {
+				return nil, err
+			}
+			v = &msg
+		}
 		rs[i] = Rule{
 			Begin:   meta.Begin,
 			End:     meta.End,
 			EdgeOut: edges.Canonical(meta.Edge),
 			Reverse: edges.IsReverse(meta.Edge),
-			VName:   meta.VName,
+			VName:   v,
 		}
 		switch t := meta.Type; t {
 		case "nop":
