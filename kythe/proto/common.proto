@@ -22,6 +22,8 @@ option go_package = "common_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 
+import "google/protobuf/timestamp.proto";
+
 // Fact represents a single key/value fact from the graph.
 message Fact {
   string name = 1;
@@ -182,4 +184,28 @@ message SymbolInfo {
   string base_name = 1;
   // The fully qualified name for a node ("printf", "java.lang.String")
   string qualified_name = 2;
+}
+
+// Origin of a Kythe index.
+message Origin {
+  string corpus = 1;
+  string revision = 2;
+  // commit_timestamp records the time at which this version of the corpus was
+  // created. It is typically a git commit timestamp.
+  google.protobuf.Timestamp commit_timestamp = 3;
+}
+
+// Metadata of a Kythe supported language.
+message Language {
+  string name = 1;  // the language name (see kythe.io/docs/schema)
+  Support support = 2;
+
+  enum Support {
+    UNKNOWN = 0;
+    EXPERIMENTAL = 1;  // support for this language is experimental
+    SUPPORTED = 2;     // the language is fully supported
+  }
+
+  // Set of analyzer versions used for this language's analysis.
+  repeated string analyzer_version = 3;
 }
