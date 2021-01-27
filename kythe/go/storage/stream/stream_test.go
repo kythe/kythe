@@ -107,7 +107,7 @@ func TestStructuredEntry(t *testing.T) {
 	}
 
 	if diff := compare.ProtoDiff(entry, (*spb.Entry)(&entryOut)); diff != "" {
-		t.Errorf("Roundtrip Marshal/Unmarshal failed: \n%v\n%v\n", entry, &entryOut, diff)
+		t.Errorf("Roundtrip Marshal/Unmarshal failed: \n%v\n%v\n%s", entry, &entryOut, diff)
 	}
 }
 
