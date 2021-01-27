@@ -22,7 +22,6 @@ go_test(
     library = "stream",
     visibility = ["//visibility:private"],
     deps = [
-        "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
     ],
 )

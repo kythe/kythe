@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/compare"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -38,8 +37,8 @@ func TestReader(t *testing.T) {
 
 	var i int
 	if err := NewReader(r)(func(e *spb.Entry) error {
-		if err := testutil.DeepEqual(testEntries[i], e); err != nil {
-			t.Errorf("testEntries[%d]: %v", i, err)
+		if diff := compare.ProtoDiff(testEntries[i], e); diff != "" {
+			t.Errorf("testEntries[%d]: %s", i, diff)
 		}
 		i++
 		return nil
@@ -57,8 +56,8 @@ func TestJSONReader(t *testing.T) {
 
 	var i int
 	if err := NewJSONReader(r)(func(e *spb.Entry) error {
-		if err := testutil.DeepEqual(testEntries[i], e); err != nil {
-			t.Errorf("testEntries[%d]: %v", i, err)
+		if diff := compare.ProtoDiff(testEntries[i], e); diff != "" {
+			t.Errorf("testEntries[%d]: %s", i, diff)
 		}
 		i++
 		return nil
