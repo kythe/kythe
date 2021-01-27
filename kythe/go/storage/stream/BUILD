@@ -21,5 +21,8 @@ go_test(
     srcs = ["stream_test.go"],
     library = "stream",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/go/test/testutil"],
+    deps = [
+        "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
+    ],
 )
