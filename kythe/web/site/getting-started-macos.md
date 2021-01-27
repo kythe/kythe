@@ -32,8 +32,8 @@ $ xcodebuild -version
 You should get something like this (though the numbers will vary):
 
 {% highlight bash %}
-Xcode 10.1
-Build version 10B61
+Xcode 12.3
+Build version 12C33
 {% endhighlight %}
 
 If you get an error like this:
@@ -63,14 +63,18 @@ for pkg in asciidoc bison brotli flex go graphviz leveldb node openjdk parallel 
    brew install $pkg
 done
 
-# Bazel.
-# See also:  https://docs.bazel.build/versions/master/install-os-x.html
+# For Bazel, we recommend using Bazelisk, a wrapper tool that uses
+# version settings in the repository to install and locate Bazel.
 #
-# DO NOT run "brew install bazel"; the version from core does not work.
-# If you did so by mistake, run "brew uninstall bazel" first.
-brew tap bazelbuild/tap
-brew tap-pin bazelbuild/tap
-brew install bazelbuild/tap/bazel
+# To install it, you need to have Go already installed.
+# Run:
+go get github.com/bazelbuild/bazelisk
+
+# Now you may either replace "bazel" with "bazelisk" on the command line,
+# e.g., "bazelisk build kythe/go/..."
+# or you may symlink bazel to bazelisk in your PATH.
+#
+# Bazelisk will download and install based on the .bazelversion file.
 
 # Bison and Flex. The stock versions are too old, but these tools are keg-only
 # and Bazel uses a restricted PATH, so we need to tell Bazel where to find

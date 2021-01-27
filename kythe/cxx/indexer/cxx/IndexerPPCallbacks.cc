@@ -92,19 +92,18 @@ void IndexerPPCallbacks::FileChanged(clang::SourceLocation Loc,
   switch (Reason) {
     case clang::PPCallbacks::EnterFile:
       Observer.pushFile(LastInclusionHash, Loc);
-      break;
+      return;
     case clang::PPCallbacks::ExitFile:
       Observer.popFile();
-      break;
+      return;
     case clang::PPCallbacks::SystemHeaderPragma:
-      break;
+      return;
     // RenameFile occurs when a #line directive is encountered, for example:
     // #line 10 "foo.cc"
     case clang::PPCallbacks::RenameFile:
-      break;
-    default:
-      llvm::dbgs() << "Unknown FileChangeReason " << Reason << "\n";
+      return;
   }
+  llvm::dbgs() << "Unknown FileChangeReason " << Reason << "\n";
 }
 
 void IndexerPPCallbacks::FilterAndEmitDeferredRecords() {

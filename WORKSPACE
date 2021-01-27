@@ -12,11 +12,11 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "1caf8584434d3e31be674067996be787cfa511fda2a0f05811131b588886477f",
-    strip_prefix = "bazel-toolchains-3.7.2",
+    sha256 = "1adf5db506a7e3c465a26988514cfc3971af6d5b3c2218925cd6e71ee443fc3f",
+    strip_prefix = "bazel-toolchains-4.0.0",
     urls = [
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.7.2/bazel-toolchains-3.7.2.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.7.2/bazel-toolchains-3.7.2.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.0.0/bazel-toolchains-4.0.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.0.0/bazel-toolchains-4.0.0.tar.gz",
     ],
 )
 
@@ -62,24 +62,6 @@ load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CON
 
 rbe_autoconfig(
     name = "rbe_default",
-    env = clang_env(),
-    export_configs = True,
-    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
-    use_legacy_platform_definition = False,
-)
-
-rbe_autoconfig(
-    name = "rbe_bazel_minversion",
-    bazel_version = MIN_VERSION,
-    env = clang_env(),
-    export_configs = True,
-    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
-    use_legacy_platform_definition = False,
-)
-
-rbe_autoconfig(
-    name = "rbe_bazel_maxversion",
-    bazel_version = MAX_VERSION,
     env = clang_env(),
     export_configs = True,
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
