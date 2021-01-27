@@ -27,12 +27,10 @@ import "kythe/proto/common.proto";
 // provided by another Kythe service such as XRefService. Clients can use this
 // to inform decisions about what requests to make to the primary service.
 service StatusService {
-  rpc Status(StatusRequest) returns (StatusReply) {
-  }
+  rpc Status(StatusRequest) returns (StatusReply) {}
 }
 
-message StatusRequest {
-}
+message StatusRequest {}
 
 message StatusReply {
   // The origins of the data served by this endpoint.
