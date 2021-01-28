@@ -147,8 +147,11 @@ var marshaler = protojson.MarshalOptions{UseProtoNames: true}
 
 // richJSONEntry delays the unmarshaling of the fact_value field
 type richJSONEntry struct {
-	*spb.Entry
-	FactValue json.RawMessage `json:"fact_value"`
+	Source    json.RawMessage `json:"source,omitempty"`
+	Target    json.RawMessage `json:"target,omitempty"`
+	EdgeKind  string          `json:"edge_kind,omitempty"`
+	FactName  string          `json:"fact_name,omitempty"`
+	FactValue json.RawMessage `json:"fact_value,omitempty"`
 }
 
 // StructuredFactValueJSON creates a json object from e.FactValue
@@ -174,7 +177,7 @@ func Structured(e *spb.Entry) *StructuredEntry {
 
 // UnmarshalJSON unmarshals r including an object representation of FactValue when appropriate
 func (r *StructuredEntry) UnmarshalJSON(data []byte) error {
-	var jsonEntry = richJSONEntry{(*spb.Entry)(r), nil}
+	var jsonEntry richJSONEntry
 	if err := json.Unmarshal(data, &jsonEntry); err != nil {
 		return err
 	}
@@ -187,19 +190,51 @@ func (r *StructuredEntry) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		jsonEntry.Entry.FactValue = pb
-	} else if err := json.Unmarshal(jsonEntry.FactValue, &jsonEntry.Entry.FactValue); err != nil {
+		r.FactValue = pb
+	} else if err := json.Unmarshal(jsonEntry.FactValue, &r.FactValue); err != nil {
+		return err
+	}
+
+	r.EdgeKind = jsonEntry.EdgeKind
+	r.FactName = jsonEntry.FactName
+
+	var err error
+	if r.Source, err = unmarshalVName(jsonEntry.Source); err != nil {
+		return err
+	} else if r.Target, err = unmarshalVName(jsonEntry.Target); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func marshalVName(v *spb.VName) (json.RawMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	return protojson.Marshal(v)
+}
+
+func unmarshalVName(msg json.RawMessage) (*spb.VName, error) {
+	if len(msg) == 0 {
+		return nil, nil
+	}
+	var v spb.VName
+	return &v, protojson.Unmarshal(msg, &v)
+}
+
 // MarshalJSON marshals r including an object representation of FactValue when appropriate
 func (r *StructuredEntry) MarshalJSON() ([]byte, error) {
+	jsonEntry := richJSONEntry{
+		EdgeKind: r.EdgeKind,
+		FactName: r.FactName,
+	}
 	var err error
-	var jsonEntry = richJSONEntry{(*spb.Entry)(r), nil}
-	if jsonEntry.FactValue, err = StructuredFactValueJSON((*spb.Entry)(r)); err != nil {
+	if jsonEntry.Source, err = marshalVName(r.Source); err != nil {
+		return nil, err
+	} else if jsonEntry.Target, err = marshalVName(r.Target); err != nil {
+		return nil, err
+	} else if jsonEntry.FactValue, err = StructuredFactValueJSON((*spb.Entry)(r)); err != nil {
 		return nil, err
 	}
 
