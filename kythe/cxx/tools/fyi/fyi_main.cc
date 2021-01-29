@@ -38,7 +38,8 @@ int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage("fyi: repair a C++ file with missing includes");
-  auto options = clang::tooling::CommonOptionsParser::create(argc, argv, fyi_options);
+  auto options =
+      clang::tooling::CommonOptionsParser::create(argc, argv, fyi_options);
   if (!options) {
     llvm::errs() << options.takeError();
     return 1;
