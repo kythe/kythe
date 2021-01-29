@@ -209,3 +209,9 @@ message Language {
   // Set of analyzer versions used for this language's analysis.
   repeated string analyzer_version = 3;
 }
+
+// A Manifest is a set of languages and corpora.
+message Manifest {
+  repeated Origin origin = 1;
+  repeated Language language = 2;
+}
