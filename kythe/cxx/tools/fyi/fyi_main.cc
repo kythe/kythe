@@ -38,12 +38,17 @@ int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage("fyi: repair a C++ file with missing includes");
-  clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
+  auto options =
+      clang::tooling::CommonOptionsParser::create(argc, argv, fyi_options);
+  if (!options) {
+    llvm::errs() << options.takeError();
+    return 1;
+  }
   kythe::JsonClient::InitNetwork();
   auto xrefs_db = absl::make_unique<kythe::XrefsJsonClient>(
       absl::make_unique<kythe::JsonClient>(), xrefs);
-  clang::tooling::ClangTool tool(options.getCompilations(),
-                                 options.getSourcePathList());
+  clang::tooling::ClangTool tool(options->getCompilations(),
+                                 options->getSourcePathList());
   kythe::fyi::ActionFactory factory(std::move(xrefs_db), 5);
   return tool.run(&factory);
 }
