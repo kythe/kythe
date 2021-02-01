@@ -64,6 +64,12 @@ Here, the call to `g` would be assigned to blame context `f`.
 
 == Variables
 
+=== Simple reference
+
+  v
+
+* Insert `v`.
+
 === Simple assignment
 
   v := e
@@ -72,11 +78,17 @@ Here, the call to `g` would be assigned to blame context `f`.
 * Traverse `e`.
 * Pop onto `v`.
 
-=== Simple reference
-
-  v
-
-* Insert `v`.
+[kythe,C++,"A simple expression.",0]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  int x = 0;
+  //- @y defines/binding VarY
+  int y = 1;
+  //- // VarX influences VarY
+  y = x;
+}
+--------------------------------------------------------------------------------
 
 == Functions
 
@@ -99,6 +111,26 @@ Here, the call to `g` would be assigned to blame context `f`.
 * Traverse `e`.
 * Pop onto the blame context.
 
+[kythe,C++,"A function call.",0]
+--------------------------------------------------------------------------------
+//- @x defines/binding ParamX
+//- @g defines/binding FnG
+int g(int x) {
+  //- ParamX influences FnG
+  return x + 1;
+}
+
+void f() {
+  //- @y defines/binding VarY
+  int y = 0;
+  //- @z defines/binding VarZ
+  int z;
+  //- VarY influences ParamX
+  //- FnG influences VarZ
+  z = y + g(y);
+}
+--------------------------------------------------------------------------------
+
 === Forward declarations
 
   f'(p'1 ... p'N);
@@ -106,3 +138,22 @@ Here, the call to `g` would be assigned to blame context `f`.
 
 * `p'I` influences `pI`.
 * `f` influences `f'`.
+
+[kythe,C++,"Forward declarations.",0]
+--------------------------------------------------------------------------------
+//- @f defines/binding FwdFnF
+//- @x defines/binding FwdParamX
+//- @y defines/binding FwdParamY
+int f(int x, int y);
+
+//- @f defines/binding DefnFnF
+//- @x defines/binding DefnParamX
+//- @y defines/binding DefnParamY
+int f(int x, int y) {
+  return x + y;
+}
+
+//- FwdParamX influences DefnParamX
+//- FwdParamY influences DefnParamY
+//- // DefnFnF influences FwdFnF TODO(#4812)
+--------------------------------------------------------------------------------

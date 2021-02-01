@@ -4,11 +4,6 @@ load(":asciidoc.bzl", "asciidoc")
 package(default_visibility = ["//kythe:default_visibility"])
 
 asciidoc(
-    name = "influences-relation",
-    src = "influences-relation.txt",
-)
-
-asciidoc(
     name = "kythe-compatible-compilers",
     src = "kythe-compatible-compilers.txt",
 )

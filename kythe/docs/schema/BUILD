@@ -12,6 +12,11 @@ asciidoc_with_verifier(
 )
 
 asciidoc_with_verifier(
+    name = "influences-relation",
+    src = "influences-relation.txt",
+)
+
+asciidoc_with_verifier(
     name = "callgraph",
     src = "callgraph.txt",
 )
