@@ -3289,13 +3289,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 : GraphObserver::Specificity::Completes,
             OuterNode);
 
-        if (Decl->param_size() == NextDecl->param_size()) {
-          for (size_t param = 0; param < Decl->param_size(); ++param) {
-            auto lhs = NextDecl->getParamDecl(param);
-            auto rhs = Decl->getParamDecl(param);
-            if (DataflowEdges && lhs != nullptr && rhs != nullptr) {
-              Observer.recordInfluences(BuildNodeIdForDecl(lhs),
-                                        BuildNodeIdForDecl(rhs));
+        if (DataflowEdges) {
+          Observer.recordInfluences(OuterNode, TargetDecl);
+
+          if (Decl->param_size() == NextDecl->param_size()) {
+            for (size_t param = 0; param < Decl->param_size(); ++param) {
+              auto lhs = NextDecl->getParamDecl(param);
+              auto rhs = Decl->getParamDecl(param);
+              if (lhs != nullptr && rhs != nullptr) {
+                Observer.recordInfluences(BuildNodeIdForDecl(lhs),
+                                          BuildNodeIdForDecl(rhs));
+              }
             }
           }
         }
