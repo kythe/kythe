@@ -155,5 +155,5 @@ int f(int x, int y) {
 
 //- FwdParamX influences DefnParamX
 //- FwdParamY influences DefnParamY
-//- // DefnFnF influences FwdFnF TODO(#4812)
+//- DefnFnF influences FwdFnF
 --------------------------------------------------------------------------------
