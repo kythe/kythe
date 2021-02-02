@@ -164,6 +164,7 @@ cc_binary(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":ast",
         ":lib",
         "//kythe/cxx/common:init",
         "//kythe/proto:storage_cc_proto",
