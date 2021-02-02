@@ -1,0 +1,159 @@
+// Copyright 2021 The Kythe Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+The `influences` relation
+=========================
+
+Kythe stores information about dataflow in the graph using
+https://kythe.io/docs/schema/#influences[`influences`] edges. A node *A*
+influences a node *B* if *A* directly affects *B* during the evaluation
+of a program. This relationship is not intended to model all dataflow
+interactions. In particular, it excludes nontrivial aliasing (that can't
+be decided within the scope of a single compilation unit). Despite this,
+the influence relation can be used to trace simple paths through a program
+by exploring the subgraph iteratively, allowing for non-universal queries
+that fit the following examples:
+
+* find places where a flag passed to a program directly affects a different
+  program value
+* find places where the return value from a sensitive function is passed to an 
+  insensitive sink, like leaking a key to a logging function
+* identify the places that affect a program value that was assigned something
+  unexpected at runtime
+
+This document is intended to describe how to add the `influences` relationship
+to a Kythe indexer based on common language features. Note that this document
+is still under active development.
+
+== General framework
+
+We assume that the indexer being amended performs an AST walk over a tree
+with resolved references (so it's possible to construct VNames for, e.g.,
+a variable that is referenced). The indexer should maintain a stack of
+sets of influencers (using whichever type is appopriate; for C++, we use
+pointers to declarations). As the indexer enters and leaves various kinds of
+AST node and encounters others, it will manipulate this stack.
+
+Names follow this convention:
+
+* `v` is a simple program variable.
+* `p` is a parameter.
+* `e` is an expression.
+
+Popping the set "onto" an object `o` with node `n` means removing the top
+set from the influencers stack and recording `i influences n` edges for all
+nodes `i` for the objects in that top set.
+
+The *blame context* is the node or nodes that would be assigned responsibility
+for making a function call at the current point in the AST. For example:
+
+  int f() { g(); }
+
+Here, the call to `g` would be assigned to blame context `f`.
+
+== Variables
+
+=== Simple reference
+
+  v
+
+* Insert `v`.
+
+=== Simple assignment
+
+  v := e
+
+* Push `{}`.
+* Traverse `e`.
+* Pop onto `v`.
+
+[kythe,C++,"A simple expression.",0]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  int x = 0;
+  //- @y defines/binding VarY
+  int y = 1;
+  //- // VarX influences VarY
+  y = x;
+}
+--------------------------------------------------------------------------------
+
+== Functions
+
+=== Simple calls
+
+  e(e1 ... eN)
+
+* Traverse `e`.
+* For each of `e1 ... eN` with corresponding parameters `p1 ... pN`:
+  * Push `{}`.
+  * Traverse `eI`.
+  * Pop onto `pI`.
+* Insert `e`.
+
+=== Returns
+
+  return e;
+
+* Push `{}`.
+* Traverse `e`.
+* Pop onto the blame context.
+
+[kythe,C++,"A function call.",0]
+--------------------------------------------------------------------------------
+//- @x defines/binding ParamX
+//- @g defines/binding FnG
+int g(int x) {
+  //- ParamX influences FnG
+  return x + 1;
+}
+
+void f() {
+  //- @y defines/binding VarY
+  int y = 0;
+  //- @z defines/binding VarZ
+  int z;
+  //- VarY influences ParamX
+  //- FnG influences VarZ
+  z = y + g(y);
+}
+--------------------------------------------------------------------------------
+
+=== Forward declarations
+
+  f'(p'1 ... p'N);
+  f(p1 ... pN) { ... }
+
+* `p'I` influences `pI`.
+* `f` influences `f'`.
+
+[kythe,C++,"Forward declarations.",0]
+--------------------------------------------------------------------------------
+//- @f defines/binding FwdFnF
+//- @x defines/binding FwdParamX
+//- @y defines/binding FwdParamY
+int f(int x, int y);
+
+//- @f defines/binding DefnFnF
+//- @x defines/binding DefnParamX
+//- @y defines/binding DefnParamY
+int f(int x, int y) {
+  return x + y;
+}
+
+//- FwdParamX influences DefnParamX
+//- FwdParamY influences DefnParamY
+//- // DefnFnF influences FwdFnF TODO(#4812)
+--------------------------------------------------------------------------------
