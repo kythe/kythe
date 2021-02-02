@@ -95,42 +95,6 @@ cc_library(
 )
 
 cc_library(
-    name = "assertions_to_souffle",
-    srcs = [
-        "assertions_to_souffle.cc",
-    ],
-    deps = [
-        ":ast",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "assertions_to_souffle_test",
-    srcs = [
-        "assertions_to_souffle_test.cc",
-    ],
-    deps = [
-        ":assertions_to_souffle",
-        "//third_party:gtest",
-        "//third_party:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "souffle_solver",
-    srcs = [
-        "souffle_solver.cc",
-    ],
-    hdrs = [
-        "souffle_solver.h",
-    ],
-    deps = [
-        ":lib",
-    ],
-)
-
-cc_library(
     name = "souffle_entrystream_support",
     srcs = [
         "souffle_entrysteam_support.cc",
