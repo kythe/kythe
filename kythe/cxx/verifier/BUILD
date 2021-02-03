@@ -80,6 +80,21 @@ cc_test(
 )
 
 cc_library(
+    name = "ast",
+    srcs = [
+        "pretty_printer.cc",
+    ],
+    hdrs = [
+        "assertion_ast.h",
+        "pretty_printer.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "souffle_entrystream_support",
     srcs = [
         "souffle_entrysteam_support.cc",
@@ -110,7 +125,6 @@ cc_library(
         "verifier.cc",
     ],
     hdrs = [
-        "assertion_ast.h",
         "assertions.h",
         "pretty_printer.h",
         "verifier.h",
@@ -121,6 +135,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":ast",
         ":lexparse",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
@@ -149,6 +164,7 @@ cc_binary(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":ast",
         ":lib",
         "//kythe/cxx/common:init",
         "//kythe/proto:storage_cc_proto",

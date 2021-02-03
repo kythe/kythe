@@ -42,16 +42,6 @@ class Verifier;
 /// format) by the `Verifier`.
 class AssertionParser {
  public:
-  /// \brief A set of goals to be handled atomically.
-  struct GoalGroup {
-    enum AcceptanceCriterion {
-      kNoneMayFail,  ///< For this group to pass, no goals may fail.
-      kSomeMustFail  ///< For this group to pass, some goals must fail.
-    };
-    AcceptanceCriterion accept_if;  ///< How this group is handled.
-    std::vector<AstNode*> goals;    ///< Grouped goals, implicitly conjoined.
-  };
-
   /// \param trace_lex Dump lexing debug information
   /// \param trace_parse Dump parsing debug information
   explicit AssertionParser(Verifier* verifier, bool trace_lex = false,
