@@ -59,7 +59,7 @@ absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
       single_line ? absl::string_view::npos : buf_string.find("*/", pos);
   for (; pos < buf_string.size();) {
     while (pos < buf_string.size() && isspace(buf_string[pos])) ++pos;
-    auto next_newline = buf_string.find("\n", pos);
+    auto next_newline = buf_string.find('\n', pos);
     if (next_term != absl::string_view::npos &&
         (next_newline == absl::string_view::npos || next_term < next_newline)) {
       raw_data.append(buf_string.data() + pos, next_term - pos);
