@@ -2110,6 +2110,21 @@ bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
   return Base::TraverseReturnStmt(RS);
 }
 
+bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
+  if (!DataflowEdges) {
+    return Base::TraverseVarDecl(Decl);
+  }
+  auto scope_guard = PushScope(Job->InfluenceSets, {});
+  if (!Base::TraverseVarDecl(Decl)) {
+    return false;
+  }
+  auto node = BuildNodeIdForDecl(Decl);
+  for (const auto* decl : Job->InfluenceSets.back()) {
+    Observer.recordInfluences(BuildNodeIdForDecl(decl), node);
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (!DataflowEdges) {
     return Base::TraverseBinaryOperator(BO);
