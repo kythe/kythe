@@ -123,6 +123,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
+  bool TraverseVarDecl(clang::VarDecl* Decl);
   bool VisitVarDecl(const clang::VarDecl* Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl* Decl);
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
