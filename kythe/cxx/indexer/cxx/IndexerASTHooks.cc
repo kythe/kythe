@@ -1341,6 +1341,9 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
       }
+      if (DataflowEdges && !Job->InfluenceSets.empty()) {
+        Job->InfluenceSets.back().insert(FieldDecl);
+      }
     }
   }
   return true;
@@ -2125,6 +2128,41 @@ bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
   return true;
 }
 
+bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
+  if (!DataflowEdges) {
+    return Base::TraverseFieldDecl(Decl);
+  }
+  auto scope_guard = PushScope(Job->InfluenceSets, {});
+  // Note that this will report a field's bitfield width as influencing that
+  // field.
+  if (!Base::TraverseFieldDecl(Decl)) {
+    return false;
+  }
+  auto node = BuildNodeIdForDecl(Decl);
+  for (const auto* decl : Job->InfluenceSets.back()) {
+    Observer.recordInfluences(BuildNodeIdForDecl(decl), node);
+  }
+  return true;
+}
+
+namespace {
+clang::Decl* GetInfluencedDeclFromLExpression(clang::Expr* lhs) {
+  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
+      expr != nullptr && expr->getFoundDecl() != nullptr &&
+      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    return expr->getFoundDecl();
+  }
+  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(lhs);
+      expr != nullptr) {
+    if (auto* member = expr->getMemberDecl(); member != nullptr) {
+      return member;
+    }
+  }
+  return nullptr;
+}
+}  // anonymous namespace
+
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (!DataflowEdges) {
     return Base::TraverseBinaryOperator(BO);
@@ -2140,13 +2178,10 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
-        expr != nullptr && expr->getFoundDecl() != nullptr &&
-        (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-         expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    if (auto* influenced = GetInfluencedDeclFromLExpression(lhs)) {
       for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
-                                  BuildNodeIdForDecl(expr->getFoundDecl()));
+                                  BuildNodeIdForDecl(influenced));
       }
     }
     return true;
