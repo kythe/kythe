@@ -34,7 +34,6 @@ cc_library(
     hdrs = [
         "assertion_ast.h",
         "assertions.h",
-        "pretty_printer.h",
         ":parser",
     ],
     copts = [
@@ -43,6 +42,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":pretty_printer",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -81,14 +81,11 @@ cc_test(
 
 cc_library(
     name = "ast",
-    srcs = [
-        "pretty_printer.cc",
-    ],
     hdrs = [
         "assertion_ast.h",
-        "pretty_printer.h",
     ],
     deps = [
+        ":pretty_printer",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
@@ -121,12 +118,10 @@ cc_library(
     srcs = [
         "assertions.cc",
         "parser.yy.hh",
-        "pretty_printer.cc",
         "verifier.cc",
     ],
     hdrs = [
         "assertions.h",
-        "pretty_printer.h",
         "verifier.h",
     ],
     copts = [
@@ -137,6 +132,7 @@ cc_library(
     deps = [
         ":ast",
         ":lexparse",
+        ":pretty_printer",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:scope_guard",
@@ -195,5 +191,14 @@ cc_test(
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "pretty_printer",
+    srcs = ["pretty_printer.cc"],
+    hdrs = ["pretty_printer.h"],
+    deps = [
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
