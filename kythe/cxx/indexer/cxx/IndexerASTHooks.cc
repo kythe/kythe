@@ -329,6 +329,22 @@ const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
   return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
 
+clang::Decl* GetInfluencedDeclFromLExpression(clang::Expr* lhs) {
+  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
+      expr != nullptr && expr->getFoundDecl() != nullptr &&
+      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    return expr->getFoundDecl();
+  }
+  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(lhs);
+      expr != nullptr) {
+    if (auto* member = expr->getMemberDecl(); member != nullptr) {
+      return member;
+    }
+  }
+  return nullptr;
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -2144,24 +2160,6 @@ bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
   }
   return true;
 }
-
-namespace {
-clang::Decl* GetInfluencedDeclFromLExpression(clang::Expr* lhs) {
-  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
-      expr != nullptr && expr->getFoundDecl() != nullptr &&
-      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
-    return expr->getFoundDecl();
-  }
-  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(lhs);
-      expr != nullptr) {
-    if (auto* member = expr->getMemberDecl(); member != nullptr) {
-      return member;
-    }
-  }
-  return nullptr;
-}
-}  // anonymous namespace
 
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (!DataflowEdges) {
