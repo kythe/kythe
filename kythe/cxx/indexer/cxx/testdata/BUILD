@@ -3255,6 +3255,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_field_influence",
+    srcs = ["df/df_field_influence.cc"],
+    experimental_record_dataflow_edges = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_fncall_influence",
     srcs = ["df/df_fncall_influence.cc"],
     experimental_record_dataflow_edges = True,
