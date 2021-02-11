@@ -25,6 +25,8 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -957,4 +959,70 @@ func TestDocuments_registrations(t *testing.T) {
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Documents()
 	beamtest.CheckRegistrations(t, p)
+}
+
+func TestCombineDecorPieces_mergeAccumulators(t *testing.T) {
+	accum := &srvpb.FileDecorations{
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Target: "target1",
+		}},
+		Target: []*srvpb.Node{{
+			Ticket: "ticket1",
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{{
+			Ticket: "ticket1",
+		}},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message: "msg1",
+		}},
+	}
+
+	other := &srvpb.FileDecorations{
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Target: "target2",
+		}},
+		Target: []*srvpb.Node{{
+			Ticket: "ticket2",
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{{
+			Ticket: "ticket2",
+		}},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message: "msg2",
+		}},
+		File: &srvpb.File{
+			Text: []byte("some text\n"),
+		},
+	}
+
+	expected := &srvpb.FileDecorations{
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Target: "target1",
+		}, {
+			Target: "target2",
+		}},
+		Target: []*srvpb.Node{{
+			Ticket: "ticket1",
+		}, {
+			Ticket: "ticket2",
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{{
+			Ticket: "ticket1",
+		}, {
+			Ticket: "ticket2",
+		}},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message: "msg1",
+		}, {
+			Message: "msg2",
+		}},
+		File: &srvpb.File{
+			Text: []byte("some text\n"),
+		},
+	}
+
+	actual := (&combineDecorPieces{}).MergeAccumulators(accum, other)
+	if d := cmp.Diff(actual, expected, cmpopts.IgnoreUnexported(cpb.Diagnostic{}, srvpb.ExpandedAnchor{}, srvpb.Node{}, srvpb.FileDecorations_Decoration{}, srvpb.File{}, srvpb.FileDecorations{})); d != "" {
+		t.Errorf("Expected %v but was %v. Diff: %v", expected, actual, d)
+	}
 }
