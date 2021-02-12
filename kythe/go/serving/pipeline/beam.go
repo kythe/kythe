@@ -539,6 +539,13 @@ func (c *combineDecorPieces) CreateAccumulator() *srvpb.FileDecorations {
 }
 
 func (c *combineDecorPieces) MergeAccumulators(accum, n *srvpb.FileDecorations) *srvpb.FileDecorations {
+	accum.Decoration = append(accum.Decoration, n.Decoration...)
+	if accum.File == nil {
+		accum.File = n.File
+	}
+	accum.Target = append(accum.Target, n.Target...)
+	accum.TargetDefinitions = append(accum.TargetDefinitions, n.TargetDefinitions...)
+	accum.Diagnostic = append(accum.Diagnostic, n.Diagnostic...)
 	return accum
 }
 
