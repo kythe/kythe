@@ -18,6 +18,8 @@ RUN apt-get update && \
     apt-get install -y parallel && \
     apt-get clean
 
+RUN curl -LO https://golang.org/dl/go1.15.8.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.15.8.linux-amd64.tar.gz
+
 ADD kythe/go/extractors/cmd/gotool/analyze_packages.sh /usr/local/bin/analyze_packages.sh
 ADD kythe/go/extractors/cmd/gotool/gotool /usr/local/bin/extract_go
 ADD kythe/go/platform/tools/kzip/kzip /usr/local/bin/
