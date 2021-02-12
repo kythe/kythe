@@ -244,7 +244,7 @@ public abstract class AbstractJavacWrapper {
               try {
                 return Integer.parseInt(s);
               } catch (NumberFormatException err) {
-                logger.atWarning().log("Invalid KYTHE_JAVA_SOURCE_BATCH_SIZE:", err);
+                logger.atWarning().log("Invalid KYTHE_JAVA_SOURCE_BATCH_SIZE: %s", err);
                 return null;
               }
             });
