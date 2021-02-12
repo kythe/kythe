@@ -174,7 +174,7 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
     } catch (UnsupportedOperationException err) {
       try {
         return Paths.get(fo.toUri());
-      } catch (Throwable unused) {
+      } catch (@SuppressWarnings("UnusedException") Throwable unused) {
         throw err; // Re-throw the original error.
       }
     }
