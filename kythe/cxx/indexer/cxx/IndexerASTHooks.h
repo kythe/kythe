@@ -122,6 +122,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         TemplateInstanceExcludePathPattern(TIEPP) {}
 
   bool VisitDecl(const clang::Decl* Decl);
+  bool TraverseFieldDecl(clang::FieldDecl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
   bool TraverseVarDecl(clang::VarDecl* Decl);
   bool VisitVarDecl(const clang::VarDecl* Decl);
