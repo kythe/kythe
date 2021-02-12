@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java.standalone;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.sun.tools.javac.file.JavacFileManager;
@@ -27,6 +28,7 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import javax.tools.JavaFileObject;
@@ -35,7 +37,7 @@ import javax.tools.StandardLocation;
 /** A class that wraps javac to extract compilation information and write it to an index file. */
 public class Javac9Wrapper extends AbstractJavacWrapper {
   @Override
-  protected CompilationDescription processCompilation(
+  protected Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
       throws Exception {
 
@@ -112,19 +114,26 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
       outputDirectory = ".";
     }
 
-    String analysisTarget =
-        readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
+    int batchSize = readSourcesBatchSize().orElse(sources.size());
+    List<CompilationDescription> results = new ArrayList<>();
+    for (List<String> sourceBatch : Lists.partition(sources, batchSize)) {
+      String analysisTarget =
+          readEnvironmentVariable(
+              "KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sourceBatch));
 
-    return javaCompilationUnitExtractor.extract(
-        analysisTarget,
-        sources,
-        classPaths,
-        bootclasspath,
-        sourcePaths,
-        processorPaths,
-        processors,
-        completeOptions,
-        outputDirectory);
+      results.add(
+          javaCompilationUnitExtractor.extract(
+              analysisTarget,
+              sourceBatch,
+              classPaths,
+              bootclasspath,
+              sourcePaths,
+              processorPaths,
+              processors,
+              completeOptions,
+              outputDirectory));
+    }
+    return results;
   }
 
   @Override
