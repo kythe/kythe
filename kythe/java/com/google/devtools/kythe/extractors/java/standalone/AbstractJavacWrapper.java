@@ -213,6 +213,18 @@ public abstract class AbstractJavacWrapper {
   }
 
   static String readEnvironmentVariable(String variableName, String defaultValue) {
+    return tryReadEnvironmentVariable(variableName)
+        .orElseGet(
+            () -> {
+              if (Strings.isNullOrEmpty(defaultValue)) {
+                System.err.printf("Missing environment variable: %s%n", variableName);
+                System.exit(1);
+              }
+              return defaultValue;
+            });
+  }
+
+  static Optional<String> tryReadEnvironmentVariable(String variableName) {
     // First see if we have a system property.
     String result = System.getProperty(variableName);
     if (Strings.isNullOrEmpty(result)) {
@@ -220,17 +232,13 @@ public abstract class AbstractJavacWrapper {
       result = System.getenv(variableName);
     }
     if (Strings.isNullOrEmpty(result)) {
-      if (Strings.isNullOrEmpty(defaultValue)) {
-        System.err.printf("Missing environment variable: %s%n", variableName);
-        System.exit(1);
-      }
-      result = defaultValue;
+      return Optional.empty();
     }
-    return result;
+    return Optional.of(result);
   }
 
   static Optional<Integer> readSourcesBatchSize() {
-    return Optional.ofNullable(readEnvironmentVariable("KYTHE_JAVA_SOURCE_BATCH_SIZE"))
+    return tryReadEnvironmentVariable("KYTHE_JAVA_SOURCE_BATCH_SIZE")
         .map(
             s -> {
               try {
