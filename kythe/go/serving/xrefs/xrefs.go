@@ -916,6 +916,10 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 	if err != nil {
 		log.Printf("Error parsing anchor ticket: %v", err)
 	}
+	revision := a.GetFileInfo().GetRevision()
+	if revision == "" {
+		revision = fileInfos[parent].GetRevision()
+	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:      a.Ticket,
 		Kind:        edges.Canonical(a.Kind),
@@ -925,7 +929,7 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
 		BuildConfig: a.BuildConfiguration,
-		Revision:    fileInfos[parent].GetRevision(),
+		Revision:    revision,
 	}}
 }
 
