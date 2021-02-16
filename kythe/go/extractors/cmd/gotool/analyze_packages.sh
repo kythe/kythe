@@ -61,7 +61,7 @@ fi
 
 # cd into the top-level git directory of our package and query git for the
 # commit timestamp.
-pushd "/workspace/gopath/src/$(dirname ${PACKAGES[1]})"
+pushd "$(go env GOPATH)/src/$(dirname ${PACKAGES[0]})"
 TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
 popd
 
