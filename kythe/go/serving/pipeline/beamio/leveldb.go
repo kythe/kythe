@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"hash/crc32"
 	"io"
 	"log"
 	"path/filepath"
@@ -32,6 +31,7 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/io/filesystem"
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/journal"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -39,9 +39,10 @@ import (
 )
 
 func init() {
-	beam.RegisterType(reflect.TypeOf((*shardKeyValue)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*writeManifest)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*writeTable)(nil)).Elem())
+	beam.RegisterFunction(keyByKey)
+	beam.RegisterFunction(distinctCombine)
 }
 
 // WriteLevelDB writes a set of PCollections containing KVs to a new LevelDB at
@@ -49,28 +50,48 @@ func init() {
 // key-value entry according to their enclosing PCollection's beam.Coder.  Each
 // table may have different KV types.  Keys must be unique across all
 // PCollections.
-func WriteLevelDB(s beam.Scope, path string, numShards int, tables ...beam.PCollection) {
+func WriteLevelDB(s beam.Scope, path string, opts stats.Opts, tables ...beam.PCollection) {
 	filesystem.ValidateScheme(path)
 	s = s.Scope("WriteLevelDB")
 
-	tableMetadata := writeShards(s, path, numShards, tables...)
+	tableMetadata := writeShards(s, path, opts, tables...)
 
 	// Write all SSTable metadata to the LevelDB's MANIFEST journal.
 	s = s.Scope("Manifest")
 	beam.ParDo(s, &writeManifest{Path: path}, beam.GroupByKey(s, beam.AddFixedKey(s, tableMetadata)))
 }
 
-func writeShards(s beam.Scope, path string, numShards int, tables ...beam.PCollection) beam.PCollection {
+func writeShards(s beam.Scope, path string, opts stats.Opts, tables ...beam.PCollection) beam.PCollection {
 	s = s.Scope("Shards")
 
 	encoded := EncodeKeyValues(s, tables...)
 
 	// Group each key-value by a shard number based on its key's byte encoding.
-	shards := beam.GroupByKey(s, beam.ParDo(s, &shardKeyValue{Shards: numShards}, encoded))
+	shards := beam.GroupByKey(s, ComputeShards(s, makeDistinct(s, encoded), opts))
 
 	// Write each shard to a separate SSTable.  The resulting PCollection contains
 	// each SSTable's metadata (*tableMetadata).
 	return beam.ParDo(s, &writeTable{path}, shards)
+}
+
+func keyByKey(kv KeyValue) ([]byte, KeyValue) {
+	return kv.Key, kv
+}
+
+func makeDistinct(s beam.Scope, kvs beam.PCollection) beam.PCollection {
+	return beam.DropKey(s, beam.CombinePerKey(s, distinctCombine, beam.ParDo(s, keyByKey, kvs)))
+}
+
+func distinctCombine(ctx context.Context, accum, other KeyValue) KeyValue {
+	if accum.Key == nil {
+		return other
+	} else {
+		duplicateLevelDBKeysCounter.Inc(ctx, 1)
+		if !bytes.Equal(accum.Value, other.Value) {
+			conflictingLevelDBValuesCounter.Inc(ctx, 1)
+		}
+		return accum
+	}
 }
 
 type writeManifest struct{ Path string }
@@ -308,14 +329,6 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 
 	emit(md)
 	return nil
-}
-
-type shardKeyValue struct{ Shards int }
-
-func (s *shardKeyValue) ProcessElement(kv KeyValue) (int, KeyValue) {
-	h := crc32.NewIEEE()
-	h.Write(kv.Key)
-	return int(h.Sum32()) % s.Shards, kv
 }
 
 const keySuffixSize = 8

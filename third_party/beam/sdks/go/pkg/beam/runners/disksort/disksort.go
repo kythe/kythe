@@ -40,7 +40,7 @@ func init() {
 }
 
 // Execute runs the pipeline in-process.
-func Execute(ctx context.Context, p *beam.Pipeline) error {
+func Execute(ctx context.Context, p *beam.Pipeline) (beam.PipelineResult, error) {
 	if *verbose {
 		log.Info(ctx, "Pipeline:")
 		log.Info(ctx, p)
@@ -48,11 +48,11 @@ func Execute(ctx context.Context, p *beam.Pipeline) error {
 
 	edges, _, err := p.Build()
 	if err != nil {
-		return fmt.Errorf("invalid pipeline: %v", err)
+		return nil, fmt.Errorf("invalid pipeline: %v", err)
 	}
 	plan, err := Compile(edges)
 	if err != nil {
-		return fmt.Errorf("translation failed: %v", err)
+		return nil, fmt.Errorf("translation failed: %v", err)
 	}
 
 	if *verbose {
@@ -62,13 +62,13 @@ func Execute(ctx context.Context, p *beam.Pipeline) error {
 
 	if err = plan.Execute(ctx, "", exec.DataContext{}); err != nil {
 		plan.Down(ctx) // ignore any teardown errors
-		return err
+		return nil, err
 	}
 	if err = plan.Down(ctx); err != nil {
-		return err
+		return nil, err
 	}
 	metrics.DumpToLog(ctx)
-	return nil
+	return nil, nil
 }
 
 // Compile translates a pipeline to a multi-bundle execution plan.

@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/delimited/dedup"
 	"kythe.io/kythe/go/services/graphstore"
@@ -400,7 +401,11 @@ func (r *Runner) PostProcess(ctx context.Context) error {
 	}
 	k := pipeline.FromEntries(s, entries)
 
-	beamio.WriteLevelDB(s, r.OutputDir, r.WorkerPoolSize,
+	opts := stats.Opts{
+		NumQuantiles: r.WorkerPoolSize,
+		K:            r.WorkerPoolSize,
+	}
+	beamio.WriteLevelDB(s, r.OutputDir, opts,
 		createColumnarMetadata(s),
 		k.SplitCrossReferences(),
 		k.SplitDecorations(),

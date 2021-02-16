@@ -22,9 +22,12 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
@@ -64,15 +67,30 @@ var (
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
 	beamShards               = flag.Int("beam_shards", 0, "Number of shards for beam processing. If non-positive, a reasonable default will be chosen.")
+	beamK                    = flag.Int("beam_k", 0, "Amount of memory to use when creating level DB shards.")
+	beamInternalSharding     intListFlag
 	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
 	compactTable             = flag.Bool("compact_table", false, "Whether to compact the output LevelDB after its creation")
 )
 
 func init() {
+	flag.Var(&beamInternalSharding, "beam_internal_sharding", "Internal sharding for tuning performance")
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read (mutually exclusive with --entries)")
 	flag.Usage = flagutil.SimpleUsage(
 		"Creates a combined xrefs/filetree/search serving table based on a given GraphStore or stream of GraphStore-ordered entries",
 		"(--graphstore spec | --entries path) --out path")
+}
+
+type intListFlag []int
+
+func (i *intListFlag) String() string { return fmt.Sprintf("%v", *i) }
+func (i *intListFlag) Set(value string) error {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return err
+	}
+	*i = append(*i, v)
+	return nil
 }
 
 func main() {
@@ -170,8 +188,17 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 		// TODO(schroederc): better determine number of shards
 		shards = 128
 	}
+	statsK := *beamK
+	if statsK == 0 {
+		statsK = shards
+	}
+	opts := stats.Opts{
+		K:                statsK,
+		InternalSharding: beamInternalSharding,
+		NumQuantiles:     shards,
+	}
 	if *experimentalColumnarData {
-		beamio.WriteLevelDB(s, *tablePath, shards,
+		beamio.WriteLevelDB(s, *tablePath, opts,
 			createColumnarMetadata(s),
 			k.SplitCrossReferences(),
 			k.SplitDecorations(),
@@ -183,7 +210,7 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	} else {
 		edgeSets, edgePages := k.Edges()
 		xrefSets, xrefPages := k.CrossReferences()
-		beamio.WriteLevelDB(s, *tablePath, shards,
+		beamio.WriteLevelDB(s, *tablePath, opts,
 			k.CorpusRoots(),
 			k.Decorations(),
 			k.Directories(),

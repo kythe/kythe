@@ -318,8 +318,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:Y8Q9pZ9V8IKM8EDNOE314D6cJE0neJooK+MxBvCcs1M=",
-        version = "v2.25.0+incompatible",
+        commit = "8f219a2e16c040fe112981dffa7c993ce76e8470",
+        build_extra_args = ["-known_import=beam.apache.org"],
     )
 
     _gazelle_ignore(

@@ -20,6 +20,7 @@ go_library(
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:build_event_stream_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/transforms/stats:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/x/beamx:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
