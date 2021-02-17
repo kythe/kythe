@@ -18,7 +18,8 @@ RUN apt-get update && \
     apt-get install -y parallel && \
     apt-get clean
 
-RUN curl -LO https://golang.org/dl/go1.15.8.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.15.8.linux-amd64.tar.gz
+# Get a recent go release, remove the current system one so we don't have multiple version problems, and install the new release.
+RUN curl -LO https://golang.org/dl/go1.15.8.linux-amd64.tar.gz && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.15.8.linux-amd64.tar.gz
 
 ADD kythe/go/extractors/cmd/gotool/analyze_packages.sh /usr/local/bin/analyze_packages.sh
 ADD kythe/go/extractors/cmd/gotool/gotool /usr/local/bin/extract_go
