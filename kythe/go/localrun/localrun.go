@@ -33,7 +33,6 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/delimited/dedup"
-	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/serving/xrefs"
@@ -241,7 +240,6 @@ type Runner struct {
 	OutputDir      string
 	WorkerPoolSize int
 	CacheSize      *datasize.Size
-	graphStore     graphstore.Service
 
 	// Building/extracting options.
 	Languages LanguageSet
