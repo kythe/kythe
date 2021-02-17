@@ -32,6 +32,27 @@ class AstTest : public ::testing::Test {
     return new (&arena_) Identifier(yy::location{}, symbol);
   }
 
+  /// \return an `AstNode` of the form App(`head`, Tuple(`values`))
+  AstNode* Pred(AstNode* head, std::initializer_list<AstNode*> values) {
+    size_t values_count = values.size();
+    AstNode** body = (AstNode**)arena_.New(values_count * sizeof(AstNode*));
+    size_t vn = 0;
+    for (AstNode* v : values) {
+      body[vn] = v;
+      ++vn;
+    }
+    AstNode* tuple = new (&arena_) Tuple(yy::location{}, values_count, body);
+    return new (&arena_) App(yy::location{}, head, tuple);
+  }
+
+  /// \return a `Range` at the given location.
+  Range* Range(size_t begin, size_t end, const std::string& path,
+               const std::string& root, const std::string& corpus) {
+    return new (&arena_) kythe::verifier::Range(
+        yy::location{}, begin, end, symbol_table_.intern(path),
+        symbol_table_.intern(root), symbol_table_.intern(corpus));
+  }
+
   /// \return a string representation of `node`
   std::string Dump(AstNode* node) {
     StringPrettyPrinter printer;
@@ -44,7 +65,12 @@ class AstTest : public ::testing::Test {
   SymbolTable symbol_table_;
 };
 
-TEST_F(AstTest, SelfTest) { EXPECT_EQ("test", Dump(Id("test"))); }
+TEST_F(AstTest, SelfTest) {
+  EXPECT_EQ("test", Dump(Id("test")));
+  EXPECT_EQ("a()", Dump(Pred(Id("a"), {})));
+  EXPECT_EQ("a(b, c)", Dump(Pred(Id("a"), {Id("b"), Id("c")})));
+  EXPECT_EQ("Range(c,r,p,0,1)", Dump(Range(0, 1, "p", "r", "c")));
+}
 
 }  // anonymous namespace
 }  // namespace kythe::verifier
