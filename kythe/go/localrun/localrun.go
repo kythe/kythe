@@ -462,10 +462,6 @@ func (r *Runner) Serve(ctx context.Context) error {
 	return nil
 }
 
-type indexer interface {
-	run(ctx context.Context, kzips []string) error
-}
-
 type serialIndexer struct {
 	besFile      string
 	Languages    LanguageSet

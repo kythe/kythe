@@ -85,13 +85,12 @@ func makeDistinct(s beam.Scope, kvs beam.PCollection) beam.PCollection {
 func distinctCombine(ctx context.Context, accum, other KeyValue) KeyValue {
 	if accum.Key == nil {
 		return other
-	} else {
-		duplicateLevelDBKeysCounter.Inc(ctx, 1)
-		if !bytes.Equal(accum.Value, other.Value) {
-			conflictingLevelDBValuesCounter.Inc(ctx, 1)
-		}
-		return accum
 	}
+	duplicateLevelDBKeysCounter.Inc(ctx, 1)
+	if !bytes.Equal(accum.Value, other.Value) {
+		conflictingLevelDBValuesCounter.Inc(ctx, 1)
+	}
+	return accum
 }
 
 type writeManifest struct{ Path string }
