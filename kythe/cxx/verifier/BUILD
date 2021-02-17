@@ -116,6 +116,7 @@ cc_test(
     ],
     deps = [
         ":assertions_to_souffle",
+        ":ast",
         ":pretty_printer",
         "//third_party:gtest",
         "//third_party:gtest_main",
