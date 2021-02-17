@@ -35,7 +35,7 @@ func TestGBK(t *testing.T) {
 	expected := []int{1, 4, 9, 4}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
 
-	if err := Execute(context.Background(), p); err != nil {
+	if _, err := Execute(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -62,7 +62,7 @@ func TestCoGBK(t *testing.T) {
 	expected := []int{5, 10, 15, 20}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
 
-	if err := Execute(context.Background(), p); err != nil {
+	if _, err := Execute(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -92,7 +92,7 @@ func TestCombinePerKey(t *testing.T) {
 	expected := []int{1, 4, 9, 4}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
 
-	if err := Execute(context.Background(), p); err != nil {
+	if _, err := Execute(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -110,7 +110,7 @@ func TestCombine(t *testing.T) {
 	expected := []int{10}
 	passert.Equals(s, sum, beam.CreateList(s, expected))
 
-	if err := Execute(context.Background(), p); err != nil {
+	if _, err := Execute(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
 }
