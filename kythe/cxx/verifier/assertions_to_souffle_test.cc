@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 #include "kythe/cxx/verifier/pretty_printer.h"
@@ -33,7 +34,7 @@ class AstTest : public ::testing::Test {
   }
 
   /// \return an `AstNode` of the form App(`head`, Tuple(`values`))
-  AstNode* Pred(AstNode* head, std::initializer_list<AstNode*> values) {
+  AstNode* Pred(AstNode* head, absl::Span<AstNode* const> values) {
     size_t values_count = values.size();
     AstNode** body = (AstNode**)arena_.New(values_count * sizeof(AstNode*));
     size_t vn = 0;
