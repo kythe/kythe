@@ -120,6 +120,7 @@ cc_test(
         ":pretty_printer",
         "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
