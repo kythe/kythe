@@ -65,14 +65,14 @@ var (
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
 	beamShards               = flag.Int("beam_shards", 0, "Number of shards for beam processing. If non-positive, a reasonable default will be chosen.")
-	beamK                    = flag.Int("beam_k", 0, "Amount of memory to use when creating level DB shards.")
+	beamK                    = flag.Int("beam_k", 0, "Amount of memory to use when determining level DB shards. This will keep approximately O(k*log(n/k)) database keys in memory at once on a single machine. n represents the total number of keys written to the database.")
 	beamInternalSharding     flagutil.IntList
 	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
 	compactTable             = flag.Bool("compact_table", false, "Whether to compact the output LevelDB after its creation")
 )
 
 func init() {
-	flag.Var(&beamInternalSharding, "beam_internal_sharding", "Internal sharding for tuning performance")
+	flag.Var(&beamInternalSharding, "beam_internal_sharding", "Controls how database keys are sharded in memory during processing. If the beam pipeline is running out of memory, use this to increase parallelism. Can be specified repeatedly for more control over shard computation. For example, if specified with -beam_internal_sharding 16 -beam_internal_sharding 4, the beam pipeline can use up to 16 machines to compute intermediate sharding information, then up to 4, then 1 to produce the final output.")
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read (mutually exclusive with --entries)")
 	flag.Usage = flagutil.SimpleUsage(
 		"Creates a combined xrefs/filetree/search serving table based on a given GraphStore or stream of GraphStore-ordered entries",
