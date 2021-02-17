@@ -953,7 +953,7 @@ Identifier* Verifier::IdentifierFor(const yy::location& location, int integer) {
 }
 
 AstNode* Verifier::MakePredicate(const yy::location& location, AstNode* head,
-                                 std::initializer_list<AstNode*> values) {
+                                 absl::Span<AstNode* const> values) {
   size_t values_count = values.size();
   AstNode** body = (AstNode**)arena_.New(values_count * sizeof(AstNode*));
   size_t vn = 0;

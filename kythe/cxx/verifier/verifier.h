@@ -21,6 +21,7 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "assertions.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
@@ -132,7 +133,7 @@ class Verifier {
   /// \param head The lhs of the `App` to allocate.
   /// \param values The body of the `Tuple` to allocate.
   AstNode* MakePredicate(const yy::location& location, AstNode* head,
-                         std::initializer_list<AstNode*> values);
+                         absl::Span<AstNode* const> values);
 
   /// \brief The head used for equality predicates.
   Identifier* eq_id() { return eq_id_; }
