@@ -30,9 +30,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/delimited/dedup"
-	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/serving/xrefs"
@@ -240,7 +240,6 @@ type Runner struct {
 	OutputDir      string
 	WorkerPoolSize int
 	CacheSize      *datasize.Size
-	graphStore     graphstore.Service
 
 	// Building/extracting options.
 	Languages LanguageSet
@@ -400,7 +399,11 @@ func (r *Runner) PostProcess(ctx context.Context) error {
 	}
 	k := pipeline.FromEntries(s, entries)
 
-	beamio.WriteLevelDB(s, r.OutputDir, r.WorkerPoolSize,
+	opts := stats.Opts{
+		NumQuantiles: r.WorkerPoolSize,
+		K:            r.WorkerPoolSize,
+	}
+	beamio.WriteLevelDB(s, r.OutputDir, opts,
 		createColumnarMetadata(s),
 		k.SplitCrossReferences(),
 		k.SplitDecorations(),
@@ -455,10 +458,6 @@ func (r *Runner) Serve(ctx context.Context) error {
 		return fmt.Errorf("error starting serve: %w", err)
 	}
 	return nil
-}
-
-type indexer interface {
-	run(ctx context.Context, kzips []string) error
 }
 
 type serialIndexer struct {

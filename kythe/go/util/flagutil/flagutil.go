@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/util/build"
@@ -188,4 +189,20 @@ func (f *StringMultimap) Get() interface{} {
 		return map[string]stringset.Set(nil)
 	}
 	return *f
+}
+
+// IntList implements a flag.Value that accepts multiple values by repeatedly specifying the flag.
+type IntList []int
+
+// String returns a string representation of the flag's value.
+func (i *IntList) String() string { return fmt.Sprintf("%v", *i) }
+
+// Set adds a value to the flag's list of integers.
+func (i *IntList) Set(value string) error {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return err
+	}
+	*i = append(*i, v)
+	return nil
 }
