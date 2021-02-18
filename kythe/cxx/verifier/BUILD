@@ -83,11 +83,44 @@ cc_library(
     name = "ast",
     hdrs = [
         "assertion_ast.h",
+        ":parser",  # for location.hh
     ],
     deps = [
         ":pretty_printer",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_library(
+    name = "assertions_to_souffle",
+    srcs = [
+        "assertions_to_souffle.cc",
+    ],
+    hdrs = [
+        "assertions_to_souffle.h",
+    ],
+    deps = [
+        ":ast",
+        ":lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "assertions_to_souffle_test",
+    srcs = [
+        "assertions_to_souffle_test.cc",
+    ],
+    deps = [
+        ":assertions_to_souffle",
+        ":ast",
+        ":pretty_printer",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -143,6 +176,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
