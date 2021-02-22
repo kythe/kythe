@@ -1761,7 +1761,7 @@ Naming convention::
   Corpus:::
     The *Corpus* of the <<file>> containing this anchor.
   Language::
-    The *Language* of the indexer emitting this anchor.
+    The *Language* of the compilation producing this anchor.
 Expected out-edges::
   <<defines>>, <<definesbinding,[defines/binding]>>, <<ref>>,
   <<refcall,[ref/call]>>
