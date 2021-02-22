@@ -63,9 +63,11 @@ import (
 	"io"
 	"sort"
 
-	"github.com/golang/protobuf/proto"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
+
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	espb "kythe.io/kythe/proto/entryset_go_proto"
 	intpb "kythe.io/kythe/proto/internal_go_proto"
@@ -150,7 +152,10 @@ func (s *Set) Stats() *Stats {
 // set, such entries are simply discarded. It is therefore safe to ignore an
 // error from this method if you want to drop invalid data.
 func (s *Set) Add(e *spb.Entry) error {
-	if (e.Target == nil) != (e.EdgeKind == "") {
+	if e == nil {
+		s.addErrors++
+		return errors.New("entryset: nil entry")
+	} else if (e.Target == nil) != (e.EdgeKind == "") {
 		s.addErrors++
 		return fmt.Errorf("entryset: invalid entry: target=%v/kind=%v", e.Target == nil, e.EdgeKind == "")
 	}
