@@ -22,10 +22,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
+
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
 	espb "kythe.io/kythe/proto/entryset_go_proto"
 	intpb "kythe.io/kythe/proto/internal_go_proto"
@@ -178,7 +179,7 @@ func TestSplit(t *testing.T) {
 		t.Errorf("Add(%+v) failed: %v", big, err)
 	}
 	enc := s.Encode()
-	t.Logf("After encoding:\n%s", proto.MarshalTextString(enc))
+	t.Logf("After encoding:\n%s", prototext.Format(enc))
 
 	dec, err := Decode(s.Encode())
 	if err != nil {
@@ -189,7 +190,7 @@ func TestSplit(t *testing.T) {
 		numEntries++
 		if !proto.Equal(ent, big) {
 			t.Errorf("Visited entry:\ngot  %s\nwant %s",
-				proto.MarshalTextString(ent), proto.MarshalTextString(big))
+				prototext.Format(ent), prototext.Format(big))
 		}
 		return true
 	})

@@ -11,7 +11,8 @@ go_library(
         "//kythe/proto:entryset_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 
@@ -24,5 +25,6 @@ go_test(
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
         "//kythe/go/util/kytheuri",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
     ],
 )
