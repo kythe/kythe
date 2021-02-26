@@ -37,6 +37,7 @@ public enum EdgeKind {
   REF_EXPANDS(true, "ref/expands"),
   REF_EXPANDS_TRANSITIVE(true, "ref/expands/transitive"),
   REF_FILE(true, "ref/file"),
+  REF_ID(true, "ref/id"),
   REF_IMPLICIT(true, "ref/implicit"),
   REF_IMPORTS(true, "ref/imports"),
   REF_INCLUDES(true, "ref/includes"),
