@@ -15,7 +15,4 @@
 # limitations under the License.
 
 cd "$(dirname "$0")"
-
-bundle install --path _vendor/bundle
-./sync_docs.sh
-bundle exec jekyll build "$@"
+bazel build :site

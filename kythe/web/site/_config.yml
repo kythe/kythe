@@ -5,7 +5,7 @@ description: >
   with code.
 permalink: pretty
 future: false
-exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'sync_docs.sh', 'check_links.sh']
+exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'check_links.sh', 'site_docs.bzl', 'BUILD', 'doc_header.rb']
 collections:
   docs:
     output: true
@@ -17,3 +17,7 @@ asciidoctor:
   attributes:
     - hardbreaks!
     - source-highlighter=pygments
+sass:
+  # Paths are CWD relative, not --source relative.
+  # https://github.com/jekyll/jekyll-sass-converter/issues/115
+  sourcemap: never

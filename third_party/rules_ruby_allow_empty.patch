@@ -1,0 +1,21 @@
+diff --git a/ruby/private/bundle/create_bundle_build_file.rb b/ruby/private/bundle/create_bundle_build_file.rb
+index b283b40..10dce4e 100755
+--- a/ruby/private/bundle/create_bundle_build_file.rb
++++ b/ruby/private/bundle/create_bundle_build_file.rb
+@@ -38,6 +38,7 @@ GEM_TEMPLATE = <<~GEM_TEMPLATE
+         {gem_binaries}
+       ],
+       exclude = {exclude},
++      allow_empty = True,
+     ),
+     deps = {deps},
+     includes = ["lib/ruby/{ruby_version}/gems/{name}-{version}/lib"],
+@@ -47,7 +48,7 @@ GEM_TEMPLATE
+ ALL_GEMS = <<~ALL_GEMS
+   ruby_library(
+     name = "gems",
+-    srcs = glob([{bundle_lib_files}]) + glob(["bin/*"]),
++    srcs = glob([{bundle_lib_files}], allow_empty = True) + glob(["bin/*"]),
+     includes = {bundle_lib_paths},
+   )
+ 

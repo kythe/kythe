@@ -1,12 +1,28 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+
+AsciidocInfo = provider(
+    doc = "Information about the asciidoc-generated files.",
+    fields = {
+        "primary_output": "File indicating the primary output from the asciidoc command.",
+        "resource_dir": "File for the directory containing all of the generated resources.",
+    },
+)
 
 _toolchain_type = "//tools/build_rules/external_tools:external_tools_toolchain_type"
 
 def _asciidoc_impl(ctx):
+    resource_dir = ctx.actions.declare_directory(ctx.label.name + ".d")
+    primary_output = ctx.actions.declare_file("{dir}/{name}.html".format(
+        dir = resource_dir.basename,
+        name = ctx.label.name,
+    ))
+
+    # Declared as an output, but not saved as part of the default output group.
+    # Build with --output_groups=+asciidoc_logfile to retain.
+    logfile = ctx.actions.declare_file(ctx.label.name + ".logfile")
+
     # Locate the asciidoc binary from the toolchain and construct its args.
-    # Because an asciidoc run produces an unknown number of files from the
-    # execution of filters, the output is staged to a temporary directory
-    # and packaged into a .zip file.
     asciidoc = ctx.toolchains[_toolchain_type].asciidoc
     args = ["--backend", "html", "--no-header-footer"]
     for key, value in ctx.attr.attrs.items():
@@ -17,16 +33,12 @@ def _asciidoc_impl(ctx):
     if ctx.attr.example_script:
         args.append("--attribute=example_script=" + ctx.file.example_script.path)
     args += ["--conf-file=%s" % c.path for c in ctx.files.confs]
-    args += ["-o", "out/" + ctx.attr.name + ".html"]
+    args += ["-o", primary_output.path]
     args.append(ctx.file.src.path)
 
     # Get the path where all our necessary tools are located so it can be set
     # to PATH in our run_shell command.
     tool_path = ctx.toolchains[_toolchain_type].path
-
-    # Declare the logfile as an output so that it can be read if something goes
-    # awry (otherwise Bazel will clean it up).
-    logfile = ctx.actions.declare_file(ctx.attr.name + ".logfile")
 
     # Resolve data targets to get input files and runfiles manifests.
     data, _, manifests = ctx.resolve_command(tools = ctx.attr.data)
@@ -39,41 +51,33 @@ def _asciidoc_impl(ctx):
                   ([ctx.file.example_script] if ctx.file.example_script else []) +
                   data),
         input_manifests = manifests,
-        outputs = [ctx.outputs.out, logfile],
+        outputs = [primary_output, resource_dir, logfile],
+        arguments = args,
         command = "\n".join([
+            "set -e",
             # so we can locate the binaries asciidoc needs
-            'export PATH="$PATH:' + tool_path + '"',
-
-            # Create the temporary staging directory.
-            "mkdir out",
-
+            'export PATH="$PATH:{tool_path}"'.format(tool_path = tool_path),
             # Run asciidoc itself, and fail if it returns nonzero.
-            "%s %s 2> %s" % (
-                shell.quote(asciidoc),
-                " ".join([shell.quote(arg) for arg in args]),
-                shell.quote(logfile.path),
+            "{asciidoc} \"$@\" 2> >(tee -a {logfile} >&2)".format(
+                logfile = shell.quote(logfile.path),
+                asciidoc = shell.quote(asciidoc),
             ),
-            "if [[ $? -ne 0 ]]; then",
-            "exit 1",
-            "fi",
-
             # The tool succeeded, but now check for error diagnostics.
-            "cat %s" % (shell.quote(logfile.path)),
-            'grep -q -e "filter non-zero exit code" -e "no output from filter" %s' % (
-                shell.quote(logfile.path)
+            'if grep -q -e "filter non-zero exit code" -e "no output from filter" {logfile}; then'.format(
+                logfile = shell.quote(logfile.path),
             ),
-            "if [[ $? -ne 1 ]]; then",
             "exit 1",
             "fi",
-
-            # Move any generated images to the out directory.
-            "find . -name '*.svg' -maxdepth 1 -exec mv '{}' out/ \\;",
-
-            # Package up the outputs into the zip file.
-            "(cd out; zip -9qr ../%s *)" % ctx.outputs.out.path,
+            # Move SVGs to the appropriate directory.
+            "find . -name '*.svg' -maxdepth 1 -exec mv '{{}}' {out}/ \\;".format(out = shell.quote(resource_dir.path)),
         ]),
         mnemonic = "RunAsciidoc",
     )
+    return [
+        DefaultInfo(files = depset([primary_output, resource_dir])),
+        OutputGroupInfo(asciidoc_logfile = depset([logfile])),
+        AsciidocInfo(primary_output = primary_output, resource_dir = resource_dir),
+    ]
 
 asciidoc = rule(
     implementation = _asciidoc_impl,
@@ -100,7 +104,4 @@ asciidoc = rule(
         ),
     },
     doc = "Generate asciidoc",
-    outputs = {
-        "out": "%{name}.zip",
-    },
 )
