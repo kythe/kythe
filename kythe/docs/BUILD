@@ -66,4 +66,8 @@ asciidoc(
 bzl_library(
     name = "asciidoc_bzl",
     srcs = ["asciidoc.bzl"],
+    deps = [
+        "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:shell",
+    ],
 )
