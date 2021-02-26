@@ -127,6 +127,7 @@ var (
 		"/kythe/edge/ref/expands":              29,
 		"/kythe/edge/ref/expands/transitive":   30,
 		"/kythe/edge/ref/file":                 31,
+		"/kythe/edge/ref/id":                   46,
 		"/kythe/edge/ref/implicit":             32,
 		"/kythe/edge/ref/imports":              33,
 		"/kythe/edge/ref/includes":             34,
@@ -258,6 +259,7 @@ var (
 		43: "/kythe/edge/undefines",
 		44: "/kythe/edge/property/reads",
 		45: "/kythe/edge/property/writes",
+		46: "/kythe/edge/ref/id",
 	}
 )
 
