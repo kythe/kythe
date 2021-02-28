@@ -1598,8 +1598,9 @@ class Visitor {
     let declKw;
     if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-          '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+                                                       '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' :
+                                                       'let';
     } else {
       declKw = '(property)';
     }
@@ -1775,11 +1776,10 @@ class Visitor {
       this.visit((decl.name as ts.ComputedPropertyName).expression);
     }
 
-    // Treat functions with computed names as anonymous. From developer point of view in the
-    // following expression:
-    // `const k = {[foo]() {}};`
-    // the part `[foo]` isn't a separate symbol that you can click. Only `foo` should be xref'ed
-    // and lead to the `foo` definition.
+    // Treat functions with computed names as anonymous. From developer point of
+    // view in the following expression: `const k = {[foo]() {}};` the part
+    // `[foo]` isn't a separate symbol that you can click. Only `foo` should be
+    // xref'ed and lead to the `foo` definition.
     if (decl.name && !isNameComputedProperty) {
       if (!sym) {
         todo(
