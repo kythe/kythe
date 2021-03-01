@@ -26,6 +26,7 @@ site_docs(
         "//kythe/docs:modeling-libraries",
         "//kythe/docs:schema-overview",
     ],
+    tags = ["manual"],
     deps = [":schema"],
 )
 
@@ -44,11 +45,13 @@ site_docs(
     rename_files = {
         "schema.html": "index.html",
     },
+    tags = ["manual"],
 )
 
 jekyll_build(
     name = "site",
     srcs = [":site_sources"],
+    tags = ["manual"],
 )
 
 filegroup(
@@ -101,6 +104,7 @@ sh_test(
         "JEKYLL_BIN": "$(location @website_bundle//:bin/jekyll)",
     },
     tags = [
+        "arc-ignore",
         "local",
         "manual",
     ],

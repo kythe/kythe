@@ -4,7 +4,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 AsciidocInfo = provider(
     doc = "Information about the asciidoc-generated files.",
     fields = {
-        "primary_output": "File indicating the primary output from the asciidoc command.",
+        "primary_output_path": "Path of the primary output file beneath {resource_dir}.}",
         "resource_dir": "File for the directory containing all of the generated resources.",
     },
 )
@@ -13,10 +13,7 @@ _toolchain_type = "//tools/build_rules/external_tools:external_tools_toolchain_t
 
 def _asciidoc_impl(ctx):
     resource_dir = ctx.actions.declare_directory(ctx.label.name + ".d")
-    primary_output = ctx.actions.declare_file("{dir}/{name}.html".format(
-        dir = resource_dir.basename,
-        name = ctx.label.name,
-    ))
+    primary_output = "{name}.html".format(name = ctx.label.name)
 
     # Declared as an output, but not saved as part of the default output group.
     # Build with --output_groups=+asciidoc_logfile to retain.
@@ -33,7 +30,7 @@ def _asciidoc_impl(ctx):
     if ctx.attr.example_script:
         args.append("--attribute=example_script=" + ctx.file.example_script.path)
     args += ["--conf-file=%s" % c.path for c in ctx.files.confs]
-    args += ["-o", primary_output.path]
+    args += ["-o", paths.join(resource_dir.path, primary_output)]
     args.append(ctx.file.src.path)
 
     # Get the path where all our necessary tools are located so it can be set
@@ -51,10 +48,11 @@ def _asciidoc_impl(ctx):
                   ([ctx.file.example_script] if ctx.file.example_script else []) +
                   data),
         input_manifests = manifests,
-        outputs = [primary_output, resource_dir, logfile],
+        outputs = [resource_dir, logfile],
         arguments = args,
         command = "\n".join([
             "set -e",
+            "mkdir -p {resource_dir}".format(resource_dir = shell.quote(resource_dir.path)),
             # so we can locate the binaries asciidoc needs
             'export PATH="$PATH:{tool_path}"'.format(tool_path = tool_path),
             # Run asciidoc itself, and fail if it returns nonzero.
@@ -74,9 +72,9 @@ def _asciidoc_impl(ctx):
         mnemonic = "RunAsciidoc",
     )
     return [
-        DefaultInfo(files = depset([primary_output, resource_dir])),
+        DefaultInfo(files = depset([resource_dir])),
         OutputGroupInfo(asciidoc_logfile = depset([logfile])),
-        AsciidocInfo(primary_output = primary_output, resource_dir = resource_dir),
+        AsciidocInfo(primary_output_path = primary_output, resource_dir = resource_dir),
     ]
 
 asciidoc = rule(

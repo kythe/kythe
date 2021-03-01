@@ -6,6 +6,8 @@ _AsciidocHeaderInfo = provider(
     fields = {"header": "File with the asciidoc header."},
 )
 
+_SiteDocsInfo = provider()
+
 def _header_impl(target, ctx):
     src = ctx.rule.file.src
     header = ctx.actions.declare_file(paths.replace_extension(src.path, "head." + src.extension))
@@ -15,6 +17,7 @@ def _header_impl(target, ctx):
         tools = [ctx.executable._docheader],
         executable = ctx.executable._docheader,
         arguments = [src.path, header.path],
+        mnemonic = "JekyllHeader",
     )
 
     return [
@@ -33,84 +36,62 @@ _header_aspect = aspect(
 )
 
 def _impl(ctx):
-    intermediates = []
+    outdir = ctx.actions.declare_directory(ctx.label.name)
+    commands = []
+    inputs = []
     for src in ctx.attr.srcs:
         header = src[_AsciidocHeaderInfo].header
-        html = src[AsciidocInfo].primary_output
+        html = src[AsciidocInfo].primary_output_path
         resources = src[AsciidocInfo].resource_dir
-        tmpdir = ctx.actions.declare_directory(src.label.name + ".tmp.d")
-        ctx.actions.run_shell(
-            inputs = [resources, html, header],
-            outputs = [tmpdir],
-            command = "\n".join([
-                "set -e",
-                # Copy only the files from the resource dir, omitting the html file itself
-                # or we will get subsequent permissions problems.
-                "find {resource_dir} -mindepth 1 -not -name {html} -exec cp {{}} {outdir} \\;".format(
-                    resource_dir = shell.quote(resources.path),
-                    outdir = shell.quote(tmpdir.path),
-                    html = shell.quote(html.basename),
-                ),
-                "cat {header} {html} > {output}".format(
-                    header = shell.quote(header.path),
-                    html = shell.quote(html.path),
-                    output = shell.quote(paths.join(tmpdir.path, html.basename)),
-                ),
-            ]),
-        )
-        intermediates.append(tmpdir)
-    for dep in ctx.attr.deps:
-        staging = ctx.actions.declare_directory("{root}.staging.d/{name}".format(root = ctx.label.name, name = dep.label.name))
-        args = ctx.actions.args()
-        args.add_all(dep.files)
-
-        ctx.actions.run_shell(
-            # We use an additional directory so it is retained when we copy the staging
-            # directory below.
-            command = "mkdir -p {destdir} && cp \"$@\" {destdir}".format(
-                destdir = shell.quote("{root}/{name}".format(
-                    root = staging.path,
-                    name = dep.label.name,
-                )),
+        inputs += [resources, header]
+        commands += [
+            # Copy only the files from the resource dir, omitting the html file itself
+            # or we will get subsequent permissions problems.
+            "find {resource_dir} -mindepth 1 -maxdepth 1 -depth -not -path {html} -exec cp -L -r {{}} {outdir} \\;".format(
+                resource_dir = shell.quote(resources.path),
+                outdir = shell.quote(outdir.path),
+                html = shell.quote(paths.join(resources.path, html)),
             ),
-            arguments = [args],
-            inputs = dep.files,
-            outputs = [staging],
-        )
-        intermediates.append(staging)
+            "cat {header} {html} > {output}".format(
+                header = shell.quote(header.path),
+                html = shell.quote(paths.join(resources.path, html)),
+                output = shell.quote(paths.join(outdir.path, html)),
+            ),
+        ]
+    for dep in ctx.attr.deps:
+        files = dep.files.to_list()
+        inputs += files
+        commands += [
+            "cp -L -r {file} {outdir}".format(
+                file = shell.quote(file.path),
+                outdir = shell.quote(outdir.path),
+            )
+            for file in files
+        ]
 
-    outdir = None
-    if intermediates:
-        outdir = ctx.actions.declare_directory(ctx.label.name)
-        outputs = [outdir]
-        renames = []
-        for src, dest in ctx.attr.rename_files.items():
-            # Declaring this file ensures that intermediate directories are created, if necessary.
-            # It also means Bazel will issue a warning if we fail to create it.
-            outputs.append(ctx.actions.declare_file(paths.join(ctx.label.name, dest)))
-            renames.append("mv {src} {dest}".format(
-                src = shell.quote(src),
-                dest = shell.quote(dest),
-            ))
+    commands.append("pushd {outdir}".format(outdir = shell.quote(outdir.path)))
+    for src, dest in ctx.attr.rename_files.items():
+        commands.append("mv {src} {dest}".format(
+            src = shell.quote(src),
+            dest = shell.quote(dest),
+        ))
+    commands.append("popd")
 
-        # Outputs which are a prefix of another output can only be output by a single action,
-        # so bundle all of the results into intermediate directories above and copy them into place here.
-        ctx.actions.run_shell(
-            inputs = intermediates,
-            outputs = outputs,
-            command = "\n".join([
-                "set -e",
-                "find \"$@\" -mindepth 1 -maxdepth 1 -depth -exec cp -L -r {{}} {outdir} \\;".format(outdir = shell.quote(outdir.path)),
-                # Change to the output directory so the subsequent renames remain local.
-                "cd {outdir}".format(outdir = shell.quote(outdir.path)),
-            ] + renames),
-            arguments = [d.path for d in intermediates],
-        )
+    ctx.actions.run_shell(
+        mnemonic = "BuildDocs",
+        inputs = inputs,
+        outputs = [outdir],
+        command = "\n".join([
+            "set -e",
+            "mkdir -p {outdir}".format(outdir = shell.quote(outdir.path)),
+        ] + commands),
+    )
 
     return [
         # Only include the root directory in our declared outputs.
         # This ensure that downstream rules don't see files listed twice if the expand tree artifacts.
-        DefaultInfo(files = depset([outdir] if outdir else [])),
+        DefaultInfo(files = depset([outdir])),
+        _SiteDocsInfo(),
     ]
 
 site_docs = rule(
@@ -120,7 +101,9 @@ site_docs = rule(
             aspects = [_header_aspect],
             providers = [AsciidocInfo],
         ),
-        "deps": attr.label_list(),
+        "deps": attr.label_list(
+            providers = [_SiteDocsInfo],
+        ),
         "rename_files": attr.string_dict(),
     },
 )
@@ -152,6 +135,9 @@ def _jekyll_impl(ctx):
         inputs = symlinks,
         arguments = [args],
         executable = ctx.executable._jekyll,
+        # TODO(shahms): We don't currently have a Ruby toolchain in the RBE environment.
+        execution_requirements = {"local": ""},
+        mnemonic = "JekyllBuild",
     )
 
     return [
