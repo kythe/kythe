@@ -56,6 +56,7 @@ export enum EdgeKind {
   EXPORTS = '/kythe/edge/exports',
   EXTENDS = '/kythe/edge/extends',
   GENERATES = '/kythe/edge/generates',
+  INFLUENCES = '/kythe/edge/influences',
   INSTANTIATES = '/kythe/edge/instantiates',
   INSTANTIATES_SPECULATIVE = '/kythe/edge/instantiates/speculative',
   IMPUTES = '/kythe/edge/imputes',

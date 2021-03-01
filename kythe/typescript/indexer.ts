@@ -740,6 +740,9 @@ class Visitor {
 
   typeChecker: ts.TypeChecker;
 
+  /** influencers is a stack of influencer VNames. */
+  private influencers: Set<VName>[] = [];
+
   constructor(
       private readonly host: IndexerHost,
       private file: ts.SourceFile,
@@ -809,6 +812,32 @@ class Visitor {
     });
   }
 
+  /** forAllInfluencers executes fn for each influencer in the active set. */
+  forAllInfluencers(fn: (influencer: VName) => void) {
+    if (this.influencers.length != 0) {
+      this.influencers[this.influencers.length - 1].forEach(fn);
+    }
+  }
+
+  /** addInfluencer adds influencer to the active set. */
+  addInfluencer(influencer: VName) {
+    if (this.influencers.length != 0) {
+      this.influencers[this.influencers.length - 1].add(influencer);
+    }
+  }
+
+  /** popInfluencers pops the active influencer set. */
+  popInfluencers() {
+    if (this.influencers.length != 0) {
+      this.influencers.pop();
+    }
+  }
+
+  /** pushInfluencers pushes a new active influencer set. */
+  pushInfluencers() {
+    this.influencers.push(new Set<VName>());
+  }
+
   visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
       const sym = this.host.getSymbolAtLocation(param.name);
@@ -831,6 +860,28 @@ class Visitor {
       // ...<T = A>
       if (param.default) this.visitType(param.default);
     }
+  }
+
+  /**
+   * Adds influence edges for return statements.
+   */
+  visitReturnStatement(node: ts.ReturnStatement) {
+    this.pushInfluencers();
+    ts.forEachChild(node, n => {
+      this.visit(n);
+    });
+    const containingFunction = this.getContainingFunctionNode(node);
+    if (!ts.isSourceFile(containingFunction)) {
+      const containingVName =
+          this.getSymbolAndVNameForFunctionDeclaration(containingFunction)
+              .vname;
+      if (containingVName) {
+        this.forAllInfluencers(
+            influencer => this.emitEdge(
+                influencer, EdgeKind.INFLUENCES, containingVName));
+      }
+    }
+    this.popInfluencers();
   }
 
   /**
@@ -1598,8 +1649,9 @@ class Visitor {
     let declKw;
     if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-          '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+                                                       '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' :
+                                                       'let';
     } else {
       declKw = '(property)';
     }
@@ -1775,11 +1827,10 @@ class Visitor {
       this.visit((decl.name as ts.ComputedPropertyName).expression);
     }
 
-    // Treat functions with computed names as anonymous. From developer point of view in the
-    // following expression:
-    // `const k = {[foo]() {}};`
-    // the part `[foo]` isn't a separate symbol that you can click. Only `foo` should be xref'ed
-    // and lead to the `foo` definition.
+    // Treat functions with computed names as anonymous. From developer point of
+    // view in the following expression: `const k = {[foo]() {}};` the part
+    // `[foo]` isn't a separate symbol that you can click. Only `foo` should be
+    // xref'ed and lead to the `foo` definition.
     if (decl.name && !isNameComputedProperty) {
       if (!sym) {
         todo(
@@ -2059,6 +2110,7 @@ class Visitor {
     if (!name) return;
     const anchor = this.newAnchor(node);
     this.emitEdge(anchor, EdgeKind.REF, name);
+    this.addInfluencer(name);
   }
 
   /**
@@ -2201,6 +2253,9 @@ class Visitor {
       case ts.SyntaxKind.NewExpression:
         this.visitCallOrNewExpression(
             node as ts.CallExpression | ts.NewExpression);
+        return;
+      case ts.SyntaxKind.ReturnStatement:
+        this.visitReturnStatement(node as ts.ReturnStatement)
         return;
       default:
         // Use default recursive processing.
