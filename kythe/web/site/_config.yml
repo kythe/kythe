@@ -5,7 +5,7 @@ description: >
   with code.
 permalink: pretty
 future: false
-exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'check_links.sh', 'site_docs.bzl', 'BUILD', 'doc_header.rb']
+exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'check_links_test.sh', 'site_docs.bzl', 'BUILD', 'doc_header.rb']
 collections:
   docs:
     output: true
