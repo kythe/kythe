@@ -1,11 +1,11 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazelruby_rules_ruby//ruby:defs.bzl", "ruby_binary")
 load(":site_docs.bzl", "jekyll_build", "site_docs")
-load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 ruby_binary(
     name = "doc_header",
     srcs = ["doc_header.rb"],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["@website_bundle//:asciidoctor"],
 )
@@ -75,6 +75,7 @@ filegroup(
             "asciidoc-pygments.css",
         ],
     ) + [":_docs"],
+    tags = ["manual"],
 )
 
 filegroup(
@@ -83,6 +84,7 @@ filegroup(
         ":site",
         ":site_sources",
     ],
+    tags = ["manual"],
 )
 
 sh_test(
