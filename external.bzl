@@ -148,10 +148,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_github_google_glog",
         repo_name = "google/glog",
-        # Updates newer than this break due to our use of layering_check.
-        # See https://github.com/google/glog/issues/596
-        commit = "ba8a9f6952d04d1403b97df24e6836227751454e",
-        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        commit = "d4e8ebab7e295f20f86cae9557da0d5087a02f73",
+        sha256 = "b38713b8189bc621185c1d558f0dbeef6ce821688e0990b8c6d72c703769779c",
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
