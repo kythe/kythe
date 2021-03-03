@@ -36,13 +36,13 @@ import stat
 import sys
 
 # Find the locations of the workspace root and the generated files directory.
-workspace = check_output(['bazelisk', 'info', 'workspace']).strip()
-bazel_bin = check_output(['bazelisk', 'info', 'bazel-bin']).strip()
+workspace = check_output(['bazel', 'info', 'workspace']).strip()
+bazel_bin = check_output(['bazel', 'info', 'bazel-bin']).strip()
 targets = '//kythe/...'
 import_base = 'kythe.io'
 
 go_protos = check_output([
-    'bazelisk',
+    'bazel',
     'query',
     'kind("go_proto_library", %s)' % targets,
 ]).split()
@@ -51,7 +51,7 @@ go_protos = check_output([
 # First build all the rules to ensure we have the output files.
 # Then strip off each :baz_proto, convert it to a filename "baz.proto",
 # and copy the generated output "baz.pb.go" into the source tree.
-if call(['bazelisk', 'build'] + go_protos) != 0:
+if call(['bazel', 'build'] + go_protos) != 0:
     print('Build failed')
     sys.exit(1)
 
