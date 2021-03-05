@@ -39,13 +39,15 @@ public class EnvironmentUtils {
    * also empty.
    */
   public static String readEnvironmentVariable(String variableName, String defaultValue) {
-    return tryReadEnvironmentVariable(variableName).orElseGet(() -> {
-      if (Strings.isNullOrEmpty(defaultValue)) {
-        System.err.printf("Missing environment variable: %s%n", variableName);
-        System.exit(1);
-      }
-      return defaultValue;
-    });
+    return tryReadEnvironmentVariable(variableName)
+        .orElseGet(
+            () -> {
+              if (Strings.isNullOrEmpty(defaultValue)) {
+                System.err.printf("Missing environment variable: %s%n", variableName);
+                System.exit(1);
+              }
+              return defaultValue;
+            });
   }
 
   /** Returns the value of the specified variable, if set, otherwise <code>empty()</code>. */
@@ -64,10 +66,12 @@ public class EnvironmentUtils {
 
   /** Returns the value of the default corpus. */
   public static String defaultCorpus() {
-    return tryReadEnvironmentVariable("KYTHE_CORPUS").orElseGet(() -> {
-      logger.atWarning().log("KYTHE_CORPUS not set, using suboptimal default of 'kythe'");
-      return DEFAULT_CORPUS;
-    });
+    return tryReadEnvironmentVariable("KYTHE_CORPUS")
+        .orElseGet(
+            () -> {
+              logger.atWarning().log("KYTHE_CORPUS not set, using suboptimal default of 'kythe'");
+              return DEFAULT_CORPUS;
+            });
   }
 
   public static final String DEFAULT_CORPUS = "kythe";

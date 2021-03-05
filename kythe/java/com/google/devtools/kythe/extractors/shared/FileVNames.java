@@ -87,8 +87,9 @@ public class FileVNames {
    * {@link #lookupBaseVName(String)}.
    */
   public static FileVNames staticCorpus(String corpus) {
-    return new FileVNames(Arrays.asList(
-        new BaseFileVName(Pattern.compile(".*"), new VNameTemplate(corpus, null, null))));
+    return new FileVNames(
+        Arrays.asList(
+            new BaseFileVName(Pattern.compile(".*"), new VNameTemplate(corpus, null, null))));
   }
 
   /** Returns a {@link FileVNames} parsed from the given JSON-encoded file. */
@@ -98,8 +99,9 @@ public class FileVNames {
 
   /** Returns a {@link FileVNames} parsed from the given JSON-encoded file. */
   public static FileVNames fromFile(Path configFile) throws IOException {
-    return new FileVNames(GSON.<List<BaseFileVName>>fromJson(
-        Files.newBufferedReader(configFile, UTF_8), CONFIG_TYPE));
+    return new FileVNames(
+        GSON.<List<BaseFileVName>>fromJson(
+            Files.newBufferedReader(configFile, UTF_8), CONFIG_TYPE));
   }
 
   /** Returns a {@link FileVNames} parsed from the given JSON-encoded {@link String}. */
@@ -120,11 +122,14 @@ public class FileVNames {
   public static FileVNames fromProto(Iterable<VNameRewriteRule> rules) {
     return new FileVNames(
         Streams.stream(rules)
-            .map(r
-                -> new BaseFileVName(Pattern.compile(r.getPattern()),
-                    new VNameTemplate(Strings.emptyToNull(r.getVName().getCorpus()),
-                        Strings.emptyToNull(r.getVName().getRoot()),
-                        Strings.emptyToNull(r.getVName().getPath()))))
+            .map(
+                r ->
+                    new BaseFileVName(
+                        Pattern.compile(r.getPattern()),
+                        new VNameTemplate(
+                            Strings.emptyToNull(r.getVName().getCorpus()),
+                            Strings.emptyToNull(r.getVName().getRoot()),
+                            Strings.emptyToNull(r.getVName().getPath()))))
             .collect(Collectors.toList()));
   }
 
@@ -147,17 +152,20 @@ public class FileVNames {
   /** Returns an equivalent {@link VNameRewriteRules}. */
   public VNameRewriteRules toProto() {
     return VNameRewriteRules.newBuilder()
-        .addAllRule(baseVNames.stream()
-                        .map(b
-                            -> VNameRewriteRule.newBuilder()
-                                   .setPattern(b.pattern.toString())
-                                   .setVName(VName.newBuilder()
-                                                 .setCorpus(Strings.nullToEmpty(b.vname.corpus))
-                                                 .setRoot(Strings.nullToEmpty(b.vname.root))
-                                                 .setPath(Strings.nullToEmpty(b.vname.path))
-                                                 .build())
-                                   .build())
-                        .collect(Collectors.toList()))
+        .addAllRule(
+            baseVNames.stream()
+                .map(
+                    b ->
+                        VNameRewriteRule.newBuilder()
+                            .setPattern(b.pattern.toString())
+                            .setVName(
+                                VName.newBuilder()
+                                    .setCorpus(Strings.nullToEmpty(b.vname.corpus))
+                                    .setRoot(Strings.nullToEmpty(b.vname.root))
+                                    .setPath(Strings.nullToEmpty(b.vname.path))
+                                    .build())
+                            .build())
+                .collect(Collectors.toList()))
         .build();
   }
 
@@ -220,8 +228,9 @@ public class FileVNames {
       Matcher replacers = replacerMatcher.matcher(tmpl);
       Deque<ReplacementMarker> matches = new ArrayDeque<>();
       while (replacers.find()) {
-        matches.addFirst(new ReplacementMarker(
-            replacers.start(), replacers.end(), Integer.parseInt(replacers.group(1))));
+        matches.addFirst(
+            new ReplacementMarker(
+                replacers.start(), replacers.end(), Integer.parseInt(replacers.group(1))));
       }
       StringBuilder builder = new StringBuilder(tmpl);
       while (!matches.isEmpty()) {
