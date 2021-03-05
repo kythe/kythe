@@ -49,8 +49,9 @@ import java.util.Optional;
  * <p>KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate
  * the {@link CompilationUnit}'s required input {@link VName}s
  *
- * <p>KYTHE_CORPUS: if a vname generated via KYTHE_VNAMES does not provide a corpus, the {@link VName} will be populated with this
- * corpus (default {@link EnvironmentUtils.DEFAULT_CORPUS})
+ * <p>KYTHE_CORPUS: if a vname generated via KYTHE_VNAMES does not provide a corpus, the
+ * {@link VName} will be populated with this corpus (default
+ * {@link EnvironmentUtils.DEFAULT_CORPUS})
  *
  * <p>KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
  * the {@link CompilationUnit} will be made to be relative to this directory

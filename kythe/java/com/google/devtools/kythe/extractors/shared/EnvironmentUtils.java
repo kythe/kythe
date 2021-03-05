@@ -30,7 +30,8 @@ public class EnvironmentUtils {
     return readEnvironmentVariable(variableName, null);
   }
 
-  /** Returns the value of the specified variable; uses default if not set, exits if default also empty. */
+  /** Returns the value of the specified variable; uses default if not set, exits if default also
+   * empty. */
   public static String readEnvironmentVariable(String variableName, String defaultValue) {
     return tryReadEnvironmentVariable(variableName)
         .orElseGet(
