@@ -103,7 +103,7 @@ def _cc_dependencies():
     maybe(
         git_repository,
         name = "boringssl",
-        # Use the github mirror because the official source at
+        # Use the GitHub mirror because the official source at
         # https://boringssl.googlesource.com/boringssl does not allow
         # unauthenticated git clone and the archives suffer from
         # https://github.com/google/gitiles/issues/84 preventing the use of
