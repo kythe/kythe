@@ -934,7 +934,7 @@ fact_value: ""
 }
 #- @texx defines SomeNode
 ##texx (line 22 column 2 offset 384-388))
-  	 
+
 #-  SomeAnchor defines SomeNode)"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
@@ -1424,7 +1424,7 @@ TEST(VerifierUnitTest, CompoundGroups) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42
-#- !{ OtherNode.content 43 
+#- !{ OtherNode.content 43
 #-    AnotherNode.content 44 }
 #- !{ LastNode.content 45 }
 source { root:"1" }
@@ -1444,7 +1444,7 @@ fact_value: "43"
 TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassFail) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
-#- !{ SomeNode.content 42 
+#- !{ SomeNode.content 42
 #-    OtherNode.content 44 }
 source { root:"1" }
 fact_name: "/kythe/content"
@@ -1463,7 +1463,7 @@ fact_value: "43"
 TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassPass) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
-#- !{ SomeNode.content 42 
+#- !{ SomeNode.content 42
 #-    OtherNode.content 43 }
 source { root:"1" }
 fact_name: "/kythe/content"

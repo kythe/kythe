@@ -27,7 +27,7 @@ that fit the following examples:
 
 * find places where a flag passed to a program directly affects a different
   program value
-* find places where the return value from a sensitive function is passed to an 
+* find places where the return value from a sensitive function is passed to an
   insensitive sink, like leaking a key to a logging function
 * identify the places that affect a program value that was assigned something
   unexpected at runtime

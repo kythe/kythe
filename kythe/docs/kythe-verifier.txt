@@ -146,7 +146,7 @@ as is the case when the next line begins with a magic comment as previously
 described. It is an error if matching `tok` is ambiguous. Substring matching is
 used. `tok` may be a literal string; `@text` and `@"text"` are equivalent.
 
-For example, the following two rules both match tokens from the same line. 
+For example, the following two rules both match tokens from the same line.
 If `@text` and `@more` were swapped in this example, the rules would remain
 valid.
 
