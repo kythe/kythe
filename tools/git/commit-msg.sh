@@ -15,4 +15,8 @@
 # limitations under the License.
 
 # Check commit message: https://www.conventionalcommits.org/en/v1.0.0-beta.2/
-bazel run --run_under "cd '$PWD' && " @io_kythe//tools/git:commitlint -- --edit "$1"
+bazel run \
+  --show_result=0 \
+  --noshow_progress \
+  --noshow_loading_progress \
+  --run_under "cd '$PWD' && " @io_kythe//tools/git:commitlint -- --edit "$1"
