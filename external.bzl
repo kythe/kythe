@@ -103,7 +103,7 @@ def _cc_dependencies():
     maybe(
         git_repository,
         name = "boringssl",
-        # Use the github mirror because the official source at
+        # Use the GitHub mirror because the official source at
         # https://boringssl.googlesource.com/boringssl does not allow
         # unauthenticated git clone and the archives suffer from
         # https://github.com/google/gitiles/issues/84 preventing the use of
@@ -1204,11 +1204,11 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
-        strip_prefix = "protobuf-3.13.0",
+        sha256 = "1c11b325e9fbb655895e8fe9843479337d50dd0be56a41737cbb9aede5e9ffa0",
+        strip_prefix = "protobuf-3.15.3",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
