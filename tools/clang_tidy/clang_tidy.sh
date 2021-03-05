@@ -6,6 +6,6 @@ if [ -z "${CLANG_TIDY:=$(which clang-tidy)}" ]; then
   exit 1
 fi
 
-$(dirname "${BASH_SOURCE[0]}")/../cpp/generate_compilation_database.sh
+"$(dirname "${BASH_SOURCE[0]}")/../cpp/generate_compilation_database.sh"
 
 "$CLANG_TIDY" -p "$(bazel info execution_root)" "$@"

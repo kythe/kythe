@@ -55,7 +55,9 @@ fix_permissions() {
   local dir="${1:?missing path}"
   # We cannot use stat -c to get user and group because it varies too much from
   # system to system.
-  local ug=$(ls -ld "$dir" | awk '{print $3":"$4}')
+  local ug
+  # shellcheck disable=SC2012
+  ug="$(ls -ld "$dir" | awk '{print $3":"$4}')"
   chown -R "$ug" "$dir"
 }
 cleanup() {

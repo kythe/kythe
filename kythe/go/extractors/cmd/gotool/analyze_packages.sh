@@ -34,7 +34,7 @@ done
 
 # golang build tags can optionally be specified with the `KYTHE_GO_BUILD_TAGS`
 # env variable.
-if [ ! -z "$KYTHE_GO_BUILD_TAGS" ]; then
+if [ -n "$KYTHE_GO_BUILD_TAGS" ]; then
   FLAGS+=( "--buildtags=$KYTHE_GO_BUILD_TAGS" )
 fi
 
@@ -61,7 +61,7 @@ fi
 
 # cd into the top-level git directory of our package and query git for the
 # commit timestamp.
-pushd "$(go env GOPATH)/src/$(dirname ${PACKAGES[0]})"
+pushd "$(go env GOPATH)/src/$(dirname "${PACKAGES[0]}")"
 TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
 popd
 

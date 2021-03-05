@@ -75,7 +75,7 @@ case $file in
 esac
 
 # Ensure filenames/paths do not clash on case-insensitive file systems.
-if grep -q [A-Z] <<<"$dir"; then
+if grep -q "[A-Z]" <<<"$dir"; then
   echo "case-insensitivity::error:1 $dir directory contains an uppercase letter"
 fi
 if [[ $(find "$dir" -maxdepth 0 -iname "$name" | wc -l) -gt 1 ]]; then
