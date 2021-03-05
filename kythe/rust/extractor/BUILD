@@ -64,7 +64,6 @@ rust_binary(
     srcs = glob(["tests/integration_test.rs"]),
     edition = "2018",
     deps = [
-        "@io_bazel_rules_rust//proto/raze:protobuf",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:assert_cmd",
@@ -72,6 +71,7 @@ rust_binary(
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
+        "@io_bazel_rules_rust//proto/raze:protobuf",
     ],
 )
 

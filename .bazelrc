@@ -66,6 +66,8 @@ build:remote --extra_toolchains=@io_kythe//tools/build_rules/lexyacc:lexyacc_rem
 build:remote --action_env=LEIN_JAVA_CMD=
 
 test:prepush --verbose_failures --noshow_loading_progress --noshow_progress
+test:prepush --test_summary=terse --test_output=errors
+test:prepush --test_tag_filters=-manual,-broken,-arc-ignore,-docker
 
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc
