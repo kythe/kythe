@@ -17,12 +17,16 @@
 package com.google.devtools.kythe.extractors.shared;
 
 import com.google.common.base.Strings;
+import com.google.common.flogger.FluentLogger;
 import java.util.Optional;
 
 /**
  * A class containing common utilities for uniform access to system properties and environment variables.
  */
 public class EnvironmentUtils {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private EnvironmentUtils() {}
 
   /** Returns the value of the specified variable; exits if not set. */
@@ -60,7 +64,12 @@ public class EnvironmentUtils {
 
   /** Returns the value of the default corpus. */
   public static String defaultCorpus() {
-    return readEnvironmentVariable("KYTHE_CORPUS", DEFAULT_CORPUS);
+    return tryReadEnvironmentVariable("KYTHE_CORPUS")
+        .orElseGet(
+            () -> {
+              logger.atWarning().log("KYTHE_CORPUS not set, using suboptimal default of 'kythe'");
+              return DEFAULT_CORPUS;
+            });
   }
 
   public static final String DEFAULT_CORPUS = "kythe";
