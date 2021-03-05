@@ -29,14 +29,14 @@ public class EnvironmentUtils {
 
   private EnvironmentUtils() {}
 
-  /** Returns the value of the specified variable; exits if not set. */
+  /** Returns the value of the specified variable; System.exits if not set. */
   public static String readEnvironmentVariable(String variableName) {
     return readEnvironmentVariable(variableName, null);
   }
 
   /**
-   * Returns the value of the specified variable; uses default if not set, exits if default also
-   * empty.
+   * Returns the value of the specified variable; uses default if not set, System.exits if default
+   * also empty.
    */
   public static String readEnvironmentVariable(String variableName, String defaultValue) {
     return tryReadEnvironmentVariable(variableName).orElseGet(() -> {
