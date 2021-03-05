@@ -53,7 +53,7 @@ go_test(
     srcs = ["shards_test.go"],
     library = "beamio",
     deps = [
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
     ],
 )
