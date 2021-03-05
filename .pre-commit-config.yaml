@@ -22,6 +22,21 @@ repos:
         entry: buildifier
         language: system
         files: '^(.*/)?(BUILD\.bazel|BUILD)$|\.bzl$|^WORKSPACE$'
+    -   id: copyright
+        name: Kythe Copyright Header
+        language: pygrep
+        entry: 'Copyright 20[12][0-9] The Kythe Authors. All rights reserved.'
+        args: [--negate]
+        files: '^.*$'
+        # Use a verbose Python regex and YAML single-quoted string to make this more legible.
+        exclude: '(?x)
+            ^(AUTHORS|CONTRIBUTORS|WORKSPACE|LICENSE)$
+            |(^|/)BUILD([^/*]*\.bazel)?$
+            |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|kzip|tex|tac|bazelproject)$
+            |(^|/)(\.[^/]*|go\.mod|go\.sum)$
+            |^tools/|^third_party/|^kythe/web/site/
+            |worker/info/(admin|host)$
+            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$'
         #    -   id: shellcheck
         #        name: shellcheck
         #        description: Runs `shellcheck` on shell files
@@ -32,7 +47,7 @@ repos:
         name: google-java-format
         description: Runs `google-java-format` on Java files
         language: system
-        entry: google-java-format
+        entry: google-java-format -i
         types: [java]
         #    -   id: staticcheck
         #        name: staticcheck
@@ -44,6 +59,6 @@ repos:
         name: gofmt
         description: Runs `gofmt` on Go files
         language: system
-        entry: gofmt
+        entry: gofmt -w
         types: [go]
-exclude: '.*/testdata/.*|third_party/.*|tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$'
+exclude: '(.*/testdata/.*)|(third_party/.*)|(tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$)'
