@@ -78,4 +78,10 @@ repos:
         #        language: system
         #        entry: staticcheck
         #        types: [go]
+    -   id: bazel-test
+        name: Bazel Tests
+        description: Runs affected Bazel tests
+        language: script
+        entry: tools/git/test-affected-targets.sh
+        stages: [push]
 exclude: '(.*/testdata/.*)|(third_party/.*)|(tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$)'

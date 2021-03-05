@@ -1,7 +1,0 @@
-{
-  "phabricator.uri" : "https://phabricator-dot-kythe-repo.appspot.com/",
-  "load": [
-    "tools/arc"
-  ],
-  "unit.engine": "BazelTestEngine"
-}
