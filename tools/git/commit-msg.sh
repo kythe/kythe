@@ -16,6 +16,7 @@
 
 # Check commit message: https://www.conventionalcommits.org/en/v1.0.0-beta.2/
 bazel run \
+  --ui_event_filters=-info \
   --show_result=0 \
   --noshow_progress \
   --noshow_loading_progress \
