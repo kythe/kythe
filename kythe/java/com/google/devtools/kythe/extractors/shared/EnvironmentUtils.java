@@ -25,10 +25,12 @@ import java.util.Optional;
 public class EnvironmentUtils {
   private EnvironmentUtils() {}
 
+  /** Returns the value of the specified variable; exits if not set. */
   public static String readEnvironmentVariable(String variableName) {
     return readEnvironmentVariable(variableName, null);
   }
 
+  /** Returns the value of the specified variable; uses default if not set, exits if default also empty. */
   public static String readEnvironmentVariable(String variableName, String defaultValue) {
     return tryReadEnvironmentVariable(variableName)
         .orElseGet(
@@ -41,6 +43,7 @@ public class EnvironmentUtils {
             });
   }
 
+  /** Returns the value of the specified variable, if set, otherwise <code>empty()</code>. */
   public static Optional<String> tryReadEnvironmentVariable(String variableName) {
     // First see if we have a system property.
     String result = System.getProperty(variableName);
@@ -54,6 +57,7 @@ public class EnvironmentUtils {
     return Optional.of(result);
   }
 
+  /** Returns the value of the default corpus. */
   public static String defaultCorpus() {
     return readEnvironmentVariable("KYTHE_CORPUS", DEFAULT_CORPUS);
   }
