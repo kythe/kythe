@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v3.4.0
     hooks:
     -   id: trailing-whitespace
         args: ['--markdown-linebreak-ext=md,txt']
@@ -10,6 +10,8 @@ repos:
     -   id: check-yaml
     -   id: check-added-large-files
     -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: check-executables-have-shebangs
 -   repo: meta
     hooks:
     -   id: check-hooks-apply
@@ -63,6 +65,13 @@ repos:
         language: system
         entry: gofmt -w
         types: [go]
+    -   id: golint
+        name: golint
+        description: Runs `golint` on Go files
+        language: system
+        entry: golint
+        types: [go]
+        exclude: '^kythe/proto/.*'
         #    -   id: staticcheck
         #        name: staticcheck
         #        description: Runs `staticcheck` on Go files
