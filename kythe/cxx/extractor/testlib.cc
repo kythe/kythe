@@ -86,8 +86,9 @@ class EquivToCompilationImpl
 /// \brief Range wrapper around ContextDependentVersion, if any.
 class MutableContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kpb::ContextDependentVersion>().mutable_row()->begin());
+  using iterator = decltype(std::declval<kpb::ContextDependentVersion>()
+                                .mutable_row()
+                                ->begin());
   explicit MutableContextRows(kpb::CompilationUnit::FileInput* file_input) {
     for (gpb::Any& detail : *file_input->mutable_details()) {
       if (detail.UnpackTo(&context_)) {

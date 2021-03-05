@@ -51,16 +51,22 @@ repos:
         language: system
         entry: google-java-format -i
         types: [java]
-        #    -   id: staticcheck
-        #        name: staticcheck
-        #        description: Runs `staticcheck` on Go files
-        #        language: system
-        #        entry: staticcheck
-        #        types: [go]
+    -   id: clang-format
+        name: clang-format
+        description: Formats files using clang-format
+        language: system
+        entry: clang-format -i
+        files: '\.(c|cc|h|i|m|js|proto)$'
     -   id: gofmt
         name: gofmt
         description: Runs `gofmt` on Go files
         language: system
         entry: gofmt -w
         types: [go]
+        #    -   id: staticcheck
+        #        name: staticcheck
+        #        description: Runs `staticcheck` on Go files
+        #        language: system
+        #        entry: staticcheck
+        #        types: [go]
 exclude: '(.*/testdata/.*)|(third_party/.*)|(tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$)'
