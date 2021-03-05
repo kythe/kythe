@@ -1,0 +1,48 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      #    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+-   repo: meta
+    hooks:
+    -   id: check-hooks-apply
+    -   id: check-useless-excludes
+-   repo: local
+    hooks:
+    -   id: buildifier
+        name: bazel buildifier
+        description: Runs `buildifier` on Bazel files
+        entry: buildifier
+        language: system
+        files: '^(.*/)?(BUILD\.bazel|BUILD)$|\.bzl$|^WORKSPACE$'
+        #    -   id: shellcheck
+        #        name: shellcheck
+        #        description: Runs `shellcheck` on shell files
+        #        language: system
+        #        entry: shellcheck
+        #        types: [shell]
+    -   id: google-java-format
+        name: google-java-format
+        description: Runs `google-java-format` on Java files
+        language: system
+        entry: google-java-format
+        types: [java]
+        #    -   id: staticcheck
+        #        name: staticcheck
+        #        description: Runs `staticcheck` on Go files
+        #        language: system
+        #        entry: staticcheck
+        #        types: [go]
+    -   id: gofmt
+        name: gofmt
+        description: Runs `gofmt` on Go files
+        language: system
+        entry: gofmt
+        types: [go]
+exclude: '.*/testdata/.*|third_party/.*|tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$'
