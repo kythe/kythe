@@ -23,6 +23,7 @@ import static com.google.common.hash.Hashing.sha256;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -197,4 +199,40 @@ public class ExtractorUtils {
     existingCompilationUnit = builder.build();
     return existingCompilationUnit;
   }
+
+
+  public static String readEnvironmentVariable(String variableName) {
+    return readEnvironmentVariable(variableName, null);
+  }
+
+  public static String readEnvironmentVariable(String variableName, String defaultValue) {
+    return tryReadEnvironmentVariable(variableName)
+        .orElseGet(
+            () -> {
+              if (Strings.isNullOrEmpty(defaultValue)) {
+                System.err.printf("Missing environment variable: %s%n", variableName);
+                System.exit(1);
+              }
+              return defaultValue;
+            });
+  }
+
+  public static Optional<String> tryReadEnvironmentVariable(String variableName) {
+    // First see if we have a system property.
+    String result = System.getProperty(variableName);
+    if (Strings.isNullOrEmpty(result)) {
+      // Fall back to the environment variable.
+      result = System.getenv(variableName);
+    }
+    if (Strings.isNullOrEmpty(result)) {
+      return Optional.empty();
+    }
+    return Optional.of(result);
+  }
+
+  public static String defaultCorpus() {
+    return readEnvironmentVariable("KYTHE_CORPUS", DEFAULT_CORPUS);
+  }
+
+  public static final String DEFAULT_CORPUS = "kythe";
 }
