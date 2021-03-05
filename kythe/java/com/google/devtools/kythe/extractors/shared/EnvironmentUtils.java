@@ -21,10 +21,10 @@ import com.google.common.flogger.FluentLogger;
 import java.util.Optional;
 
 /**
- * A class containing common utilities for uniform access to system properties and environment variables.
+ * A class containing common utilities for uniform access to system properties and environment
+ * variables.
  */
 public class EnvironmentUtils {
-
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private EnvironmentUtils() {}
@@ -34,18 +34,18 @@ public class EnvironmentUtils {
     return readEnvironmentVariable(variableName, null);
   }
 
-  /** Returns the value of the specified variable; uses default if not set, exits if default also
-   * empty. */
+  /**
+   * Returns the value of the specified variable; uses default if not set, exits if default also
+   * empty.
+   */
   public static String readEnvironmentVariable(String variableName, String defaultValue) {
-    return tryReadEnvironmentVariable(variableName)
-        .orElseGet(
-            () -> {
-              if (Strings.isNullOrEmpty(defaultValue)) {
-                System.err.printf("Missing environment variable: %s%n", variableName);
-                System.exit(1);
-              }
-              return defaultValue;
-            });
+    return tryReadEnvironmentVariable(variableName).orElseGet(() -> {
+      if (Strings.isNullOrEmpty(defaultValue)) {
+        System.err.printf("Missing environment variable: %s%n", variableName);
+        System.exit(1);
+      }
+      return defaultValue;
+    });
   }
 
   /** Returns the value of the specified variable, if set, otherwise <code>empty()</code>. */
@@ -64,12 +64,10 @@ public class EnvironmentUtils {
 
   /** Returns the value of the default corpus. */
   public static String defaultCorpus() {
-    return tryReadEnvironmentVariable("KYTHE_CORPUS")
-        .orElseGet(
-            () -> {
-              logger.atWarning().log("KYTHE_CORPUS not set, using suboptimal default of 'kythe'");
-              return DEFAULT_CORPUS;
-            });
+    return tryReadEnvironmentVariable("KYTHE_CORPUS").orElseGet(() -> {
+      logger.atWarning().log("KYTHE_CORPUS not set, using suboptimal default of 'kythe'");
+      return DEFAULT_CORPUS;
+    });
   }
 
   public static final String DEFAULT_CORPUS = "kythe";

@@ -38,10 +38,8 @@ import javax.tools.StandardLocation;
 /** A class that wraps javac to extract compilation information and write it to an index file. */
 public class Javac9Wrapper extends AbstractJavacWrapper {
   @Override
-  protected Collection<CompilationDescription> processCompilation(
-      String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
-      throws Exception {
-
+  protected Collection<CompilationDescription> processCompilation(String[] arguments,
+      JavaCompilationUnitExtractor javaCompilationUnitExtractor) throws Exception {
     // Use javac's argument parser to get the list of source files
     Context context = new Context();
 
@@ -73,9 +71,7 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     }
 
     EnumSet<Option> claimed =
-        EnumSet.of(
-            Option.CLASS_PATH, Option.SOURCE_PATH,
-            Option.PROCESSOR_PATH, Option.PROCESSOR);
+        EnumSet.of(Option.CLASS_PATH, Option.SOURCE_PATH, Option.PROCESSOR_PATH, Option.PROCESSOR);
 
     List<String> completeOptions = new ArrayList<>();
     if (options.isSet(Option.RELEASE)) {
@@ -118,21 +114,12 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     int batchSize = readSourcesBatchSize().orElse(sources.size());
     List<CompilationDescription> results = new ArrayList<>();
     for (List<String> sourceBatch : Lists.partition(sources, batchSize)) {
-      String analysisTarget =
-          EnvironmentUtils.readEnvironmentVariable(
-              "KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sourceBatch));
+      String analysisTarget = EnvironmentUtils.readEnvironmentVariable(
+          "KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sourceBatch));
 
-      results.add(
-          javaCompilationUnitExtractor.extract(
-              analysisTarget,
-              sourceBatch,
-              classPaths,
-              bootclasspath,
-              sourcePaths,
-              processorPaths,
-              processors,
-              completeOptions,
-              outputDirectory));
+      results.add(javaCompilationUnitExtractor.extract(analysisTarget, sourceBatch, classPaths,
+          bootclasspath, sourcePaths, processorPaths, processors, completeOptions,
+          outputDirectory));
     }
     return results;
   }

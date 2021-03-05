@@ -65,9 +65,8 @@ import java.util.Optional;
 public abstract class AbstractJavacWrapper {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  protected abstract Collection<CompilationDescription> processCompilation(
-      String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
-      throws Exception;
+  protected abstract Collection<CompilationDescription> processCompilation(String[] arguments,
+      JavaCompilationUnitExtractor javaCompilationUnitExtractor) throws Exception;
 
   protected abstract void passThrough(String[] args) throws Exception;
 
@@ -84,14 +83,11 @@ public abstract class AbstractJavacWrapper {
         JavaCompilationUnitExtractor extractor;
         if (!vnamesConfig.isPresent()) {
           String corpus = EnvironmentUtils.defaultCorpus();
-          extractor =
-              new JavaCompilationUnitExtractor(
-                  corpus, EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
+          extractor = new JavaCompilationUnitExtractor(
+              corpus, EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
         } else {
-          extractor =
-              new JavaCompilationUnitExtractor(
-                  FileVNames.fromFile(vnamesConfig.get()),
-                  EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
+          extractor = new JavaCompilationUnitExtractor(FileVNames.fromFile(vnamesConfig.get()),
+              EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
         }
 
         Collection<CompilationDescription> indexInfos =
@@ -133,14 +129,12 @@ public abstract class AbstractJavacWrapper {
     // Just rely on the underlying compilation unit's signature to get the filename, if we're not
     // writing to a single kzip file.
     for (CompilationDescription indexInfo : indexInfos) {
-      String name =
-          indexInfo
-              .getCompilationUnit()
-              .getVName()
-              .getSignature()
-              .trim()
-              .replaceAll("^/+|/+$", "")
-              .replace('/', '_');
+      String name = indexInfo.getCompilationUnit()
+                        .getVName()
+                        .getSignature()
+                        .trim()
+                        .replaceAll("^/+|/+$", "")
+                        .replace('/', '_');
       String path = IndexInfoUtils.getKzipPath(outputDir, name).toString();
       IndexInfoUtils.writeKzipToFile(indexInfo, path);
     }
@@ -162,14 +156,12 @@ public abstract class AbstractJavacWrapper {
       if (arg.equals("-target")) {
         skipArg = true;
         continue;
-      } else if (!(skipArg
-          || arg.startsWith("-J")
-          || arg.startsWith("-XD")
-          || arg.startsWith("-Werror")
-          // The errorprone plugin complicates the build due to certain other
-          // flags it requires (such as -XDcompilePolicy=byfile) and is not
-          // necessary for extraction.
-          || arg.startsWith("-Xplugin:ErrorProne"))) {
+      } else if (!(skipArg || arg.startsWith("-J") || arg.startsWith("-XD")
+                     || arg.startsWith("-Werror")
+                     // The errorprone plugin complicates the build due to certain other
+                     // flags it requires (such as -XDcompilePolicy=byfile) and is not
+                     // necessary for extraction.
+                     || arg.startsWith("-Xplugin:ErrorProne"))) {
         cleanedUpArgs.add(arg);
       }
       skipArg = false;
@@ -210,16 +202,14 @@ public abstract class AbstractJavacWrapper {
   }
 
   static Optional<Integer> readSourcesBatchSize() {
-    return EnvironmentUtils.tryReadEnvironmentVariable("KYTHE_JAVA_SOURCE_BATCH_SIZE")
-        .map(
-            s -> {
-              try {
-                return Integer.parseInt(s);
-              } catch (NumberFormatException err) {
-                logger.atWarning().withCause(err).log("Invalid KYTHE_JAVA_SOURCE_BATCH_SIZE");
-                return null;
-              }
-            });
+    return EnvironmentUtils.tryReadEnvironmentVariable("KYTHE_JAVA_SOURCE_BATCH_SIZE").map(s -> {
+      try {
+        return Integer.parseInt(s);
+      } catch (NumberFormatException err) {
+        logger.atWarning().withCause(err).log("Invalid KYTHE_JAVA_SOURCE_BATCH_SIZE");
+        return null;
+      }
+    });
   }
 
   protected static List<String> getSourceList(Collection<File> files) {
