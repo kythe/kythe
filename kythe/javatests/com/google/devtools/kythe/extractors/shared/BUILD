@@ -8,6 +8,7 @@ java_test(
     srcs = ["FileVNamesTest.java"],
     test_class = "com.google.devtools.kythe.extractors.shared.FileVNamesTest",
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",

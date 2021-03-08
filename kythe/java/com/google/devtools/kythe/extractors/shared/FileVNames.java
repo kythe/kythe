@@ -70,6 +70,7 @@ public class FileVNames {
   private static final Type CONFIG_TYPE = new TypeToken<List<BaseFileVName>>() {}.getType();
 
   private final List<BaseFileVName> baseVNames;
+  private final String defaultCorpus;
 
   private FileVNames(List<BaseFileVName> baseVNames) {
     Preconditions.checkNotNull(baseVNames);
@@ -78,6 +79,7 @@ public class FileVNames {
       Preconditions.checkNotNull(b.vname, "vname template == null for pattern: %s", b.pattern);
     }
     this.baseVNames = baseVNames;
+    this.defaultCorpus = EnvironmentUtils.defaultCorpus();
   }
 
   /**
@@ -140,7 +142,7 @@ public class FileVNames {
       for (BaseFileVName b : baseVNames) {
         Matcher matcher = b.pattern.matcher(path);
         if (matcher.matches()) {
-          return b.vname.fillInWith(matcher);
+          return b.vname.fillInWith(matcher, defaultCorpus);
         }
       }
     }
@@ -204,10 +206,12 @@ public class FileVNames {
      * Returns a {@link VName} by filling in its corpus/root/path with regex groups in the given
      * {@link Matcher}.
      */
-    public VName fillInWith(Matcher m) {
+    public VName fillInWith(Matcher m, String defaultCorpus) {
       VName.Builder b = VName.newBuilder();
       if (corpus != null) {
         b.setCorpus(fillIn(corpus, m));
+      } else {
+        b.setCorpus(defaultCorpus);
       }
       if (root != null) {
         b.setRoot(fillIn(root, m));
