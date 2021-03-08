@@ -36,5 +36,5 @@ setup_hook() {
 }
 
 setup_hook commit-msg
-pre-commit install -t pre-commit
-pre-commit install -t pre-push
+pre-commit install "$@" -t pre-commit
+pre-commit install "$@" -t pre-push
