@@ -51,10 +51,11 @@ set -ex
 
 if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
+  # shellcheck disable=SC2086
   # TODO(jaysachs): unclear if we should bail if any packages fail to install
   apt-get update && \
   apt-get upgrade -y && \
-  apt-get install -y "$KYTHE_SYSTEM_DEPS" && \
+  apt-get install -y $KYTHE_SYSTEM_DEPS && \
   apt-get clean
 fi
 

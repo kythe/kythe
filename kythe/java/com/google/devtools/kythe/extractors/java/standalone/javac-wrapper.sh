@@ -40,7 +40,7 @@
 #   KYTHE_EXTRACT_ONLY: if set, suppress the call to javac after extraction
 
 if [[ -z "$JAVA_HOME" ]]; then
-  readonly JAVABIN="$(which java)"
+  readonly JAVABIN="$(command -v java)"
 else
   readonly JAVABIN="$JAVA_HOME/bin/java"
 fi

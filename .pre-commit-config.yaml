@@ -74,14 +74,14 @@ repos:
         name: Check clang-format
         description: Checks that files are clang-format compatible
         language: system
-        entry: clang-format --dry-run -Werror
+        entry: clang-format-11 --style=file --dry-run -Werror
         files: '\.(c|cc|h|i|m|js|proto)$'
         stages: [push, commit]
     -   id: clang-format
         name: Format w/ clang-format
         description: Formats files using clang-format
         language: system
-        entry: clang-format -i
+        entry: clang-format-11 --style=file -i
         files: '\.(c|cc|h|i|m|js|proto)$'
         stages: [manual]
     -   id: check-gofmt

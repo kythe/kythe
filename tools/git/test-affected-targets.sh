@@ -16,6 +16,7 @@
 # A pre-commit hook which will determine and run affected test targets using the
 # files passed on the command line.
 # Usage: test-affected-targets.sh file...
+set -e
 OMIT_TAGS=(manual broken arc-ignore docker)
 
 function join_by {
@@ -27,10 +28,21 @@ function join_by {
 }
 
 TAG_RE="\\b($(join_by '|' "${OMIT_TAGS[@]}"))\\b"
+
+readarray -t TARGETS < <(bazel query \
+  --keep_going \
+  --noshow_progress \
+  "rdeps(//..., set($*)) except attr('tags', '$TAG_RE', //...)")
+
+if [[ "${#TARGETS[@]}" -gt 0 ]]; then
+  echo "Building targets"
+  bazel build --config=prepush "${TARGETS[@]}"
+fi
+
 readarray -t TESTS < <(bazel query \
   --keep_going \
   --noshow_progress \
-  "kind(test, rdeps(//..., set($*))) except attr('tags', '$TAG_RE', //...)")
+  "tests(rdeps(//..., set($*}))) except attr('tags', '$TAG_RE', //...)")
 
 if [[ "${#TESTS[@]}" -gt 0 ]]; then
   echo "Running tests"

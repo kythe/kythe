@@ -12,40 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:buster
+FROM ubuntu:focal
 
-ADD buster-backports.list /etc/apt/sources.list.d/
 RUN apt-get update && \
     apt-get upgrade -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -t buster-backports -y \
-      ca-certificates gnupg \
-      # Buildbot dependencies
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      # Buildbot and pre-commit dependencies
       python3 python3-dev python3-pip wget git \
-      # Linter dependencies
-      pre-commit shellcheck \
       # Required by go tool build of Kythe
       golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
       openjdk-11-jdk \
       # Bazel dependencies
-      pkg-config zip g++ zlib1g-dev unzip \
+      zip zlib1g-dev unzip \
       # Kythe C++ dependencies
-      gcc uuid-dev flex bison \
+      clang-11 uuid-dev flex bison \
+      # Linter dependencies
+      shellcheck clang-format-11 \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel jq && \
     apt-get clean
 
-# Install recent clang tools.
-ADD llvm-toolchain.list /etc/apt/sources.list.d/
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key| apt-key add - && \
-    apt-get update && apt-get install -y clang-11 clang-format-11 && apt-get clean && \
-    update-alternatives \
+# Make clang-11 the default
+RUN update-alternatives \
       --install /usr/bin/clang        clang        /usr/bin/clang-11    100 \
       --slave   /usr/bin/clang++      clang++      /usr/bin/clang++-11      \
       --slave   /usr/bin/clang-format clang-format /usr/bin/clang-format-11
 
-# Install Buildbot
+# Install pip-packages
 RUN pip3 install --upgrade pip
+RUN pip3 install pre-commit
 RUN pip3 install buildbot
 RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-waterfall-view psycopg2-binary txrequests
 RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
@@ -58,7 +54,7 @@ RUN go get honnef.co/go/tools/cmd/staticcheck
 ENV PATH=$PATH:/root/go/bin
 RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar && \
    mv google-java-format-1.7-all-deps.jar /usr/bin/google-java-format.jar && \
-   echo 'exec java -jar /usr/bin/google-java-format.jar "$@"' >/usr/bin/google-java-format && \
+   /bin/echo -e '#!/bin/sh\nexec java -jar /usr/bin/google-java-format.jar "$@"' >/usr/bin/google-java-format && \
    chmod +x /usr/bin/google-java-format
 
 # Install Bazelisk and wrapper script
@@ -73,6 +69,7 @@ ADD bazelrc /root/.bazelrc
 ADD start.sh /buildbot/
 ADD worker /buildbot/worker
 ADD master /buildbot/master
+
 ADD secrets.tar /buildbot
 RUN buildbot checkconfig /buildbot/master/master.cfg
 
