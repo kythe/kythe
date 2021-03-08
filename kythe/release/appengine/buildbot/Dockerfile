@@ -22,7 +22,7 @@ RUN apt-get update && \
       # Buildbot dependencies
       python3 python3-dev python3-pip wget git \
       # Linter dependencies
-      arcanist shellcheck \
+      pre-commit shellcheck \
       # Required by go tool build of Kythe
       golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
