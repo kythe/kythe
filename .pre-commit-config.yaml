@@ -18,12 +18,20 @@ repos:
     -   id: check-useless-excludes
 -   repo: local
     hooks:
-    -   id: buildifier
-        name: bazel buildifier
-        description: Runs `buildifier` on Bazel files
-        entry: buildifier
+    -   id: check-buildifier
+        name: Check bazel buildifier
+        description: Runs `buildifier` checks on Bazel files
+        entry: buildifier --mode=check
         language: system
         files: '^(.*/)?(BUILD\.bazel|BUILD)$|\.bzl$|^WORKSPACE$'
+        stages: [push, commit]
+    -   id: buildifier
+        name: Format w/ buildifier
+        description: Runs `buildifier` on Bazel files
+        entry: buildifier --mode=fix
+        language: system
+        files: '^(.*/)?(BUILD\.bazel|BUILD)$|\.bzl$|^WORKSPACE$'
+        stages: [manual]
     -   id: copyright
         name: Check for Kythe Copyright Header
         language: pygrep
@@ -47,24 +55,49 @@ repos:
         args: [-e, SC2064] # Silence the trap argument quotation warnings
         types: [shell]
         exclude: 'kythe/extractors/openjdk8/extract\.sh'
+        stages: [push, commit]
+    -   id: check-google-java-format
+        name: Check google-java-format
+        description: Checks `google-java-format` on Java files
+        language: system
+        entry: google-java-format -n --set-exit-if-changed
+        types: [java]
+        stages: [push, commit]
     -   id: google-java-format
-        name: google-java-format
+        name: Format w/ google-java-format
         description: Runs `google-java-format` on Java files
         language: system
         entry: google-java-format -i
         types: [java]
+        stages: [manual]
+    -   id: check-clang-format
+        name: Check clang-format
+        description: Checks that files are clang-format compatible
+        language: system
+        entry: clang-format --dry-run -Werror
+        files: '\.(c|cc|h|i|m|js|proto)$'
+        stages: [push, commit]
     -   id: clang-format
-        name: clang-format
+        name: Format w/ clang-format
         description: Formats files using clang-format
         language: system
         entry: clang-format -i
         files: '\.(c|cc|h|i|m|js|proto)$'
+        stages: [manual]
+    -   id: check-gofmt
+        name: Check gofmt
+        description: Checks `gofmt` on Go files
+        language: script
+        entry: tools/git/check-gofmt.sh
+        types: [go]
+        stages: [push, commit]
     -   id: gofmt
-        name: gofmt
+        name: Format w/ gofmt
         description: Runs `gofmt` on Go files
         language: system
         entry: gofmt -w
         types: [go]
+        stages: [manual]
     -   id: golint
         name: golint
         description: Runs `golint` on Go files
@@ -72,12 +105,14 @@ repos:
         entry: golint
         types: [go]
         exclude: '^kythe/proto/.*'
-        #    -   id: staticcheck
-        #        name: staticcheck
-        #        description: Runs `staticcheck` on Go files
-        #        language: system
-        #        entry: staticcheck
-        #        types: [go]
+        stages: [push, commit]
+    -   id: staticcheck
+        name: staticcheck
+        description: Runs `staticcheck` on Go files
+        language: script
+        entry: tools/git/run-staticcheck.sh
+        types: [go]
+        stages: [manual]
     -   id: bazel-test
         name: Bazel Tests
         description: Runs affected Bazel tests
