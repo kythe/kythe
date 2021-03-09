@@ -10,7 +10,7 @@ def docker_build(
 
     data_locs = []
     for d in data:
-        data_locs += ["$(locations " + d + ")"]
+        data_locs.append("$(locations " + d + ")")
 
     args = []
     if not use_cache:

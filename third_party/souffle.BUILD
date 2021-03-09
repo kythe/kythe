@@ -1,8 +1,8 @@
+load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # The Universal Permissive License (UPL), Version 1.0
-
-load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 filegroup(
     name = "license",

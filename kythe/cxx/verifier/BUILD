@@ -1,10 +1,10 @@
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     features = ["layering_check"],
 )
-
-load("//:visibility.bzl", "PUBLIC_VISIBILITY")
-load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 genyacc(
     name = "parser",

@@ -1,5 +1,3 @@
-load("//kythe/cxx/indexer/textproto/testdata:textproto_verifier_test.bzl", "textproto_verifier_test")
-
 package(
     default_visibility = ["//kythe/cxx/indexer/textproto:__subpackages__"],
     features = ["layering_check"],
