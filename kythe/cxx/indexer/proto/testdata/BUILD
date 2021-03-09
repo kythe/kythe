@@ -1,10 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load(":proto_verifier_test.bzl", "proto_verifier_test")
 
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
-
-load(":proto_verifier_test.bzl", "proto_verifier_test")
 
 proto_verifier_test(
     name = "file_node_existence",

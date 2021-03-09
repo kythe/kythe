@@ -598,7 +598,7 @@ def _cc_index_impl(ctx):
     sources = [depset([src for src in ctx.files.srcs if src.extension != "kzip"])]
     for dep in ctx.attr.srcs:
         if KytheVerifierSources in dep:
-            sources += [dep[KytheVerifierSources].files]
+            sources.append(dep[KytheVerifierSources].files)
     return [
         KytheVerifierSources(files = depset(transitive = sources)),
         KytheEntries(compressed = depset([ctx.outputs.entries]), files = entries),

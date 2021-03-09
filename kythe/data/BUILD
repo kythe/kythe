@@ -1,9 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 load(":vnames.bzl", "construct_vnames_config")
+load("//kythe/go/util/vnameutil:test/macros.bzl", "test_vname_rules")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 exports_files([
     "schema_index.textproto",
@@ -48,8 +48,6 @@ shell_tool_test(
         "DIR_INDEXER": "//kythe/go/storage/tools:directory_indexer",
     },
 )
-
-load("//kythe/go/util/vnameutil:test/macros.bzl", "test_vname_rules")
 
 test_vname_rules(
     name = "go_vnames_test",

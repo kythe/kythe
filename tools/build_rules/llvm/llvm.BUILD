@@ -1,3 +1,8 @@
+load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
+load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "LLVM_TARGETS", "cmake_defines")
+load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
+load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -166,8 +171,6 @@ genrule(
     cmd = "echo \"#define CLANG_REVISION \\\"$$(cat $<)\\\"\" > $@",
 )
 
-load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
-
 builtin_headers = glob(
     ["tools/clang/lib/Headers/**"],
     exclude = ["tools/clang/lib/Headers/**/CMakeLists.txt"],
@@ -192,15 +195,10 @@ cc_resources(
     strip = "staging/include/",
 )
 
-load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "LLVM_TARGETS", "cmake_defines")
-
 cc_library(
     name = "all_targets",
     deps = [":LLVM%sCodeGen" % t for t in LLVM_TARGETS],
 )
-
-load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
-load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
 
 generated_cmake_targets(make_context(
     cmake_defines = cmake_defines(),
