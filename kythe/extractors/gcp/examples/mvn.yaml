@@ -57,4 +57,3 @@ artifacts:
 tags:
   - '${_CORPUS}'
   - 'kythe_extract_maven'
-

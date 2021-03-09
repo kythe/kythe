@@ -701,4 +701,3 @@ leveldb::
   An implementation of a graph store using link:http://leveldb.org[LevelDB]
   (via link:http://github.com/jmhodges/levigo[levigo]).
   [link:/repo/kythe/go/storage/leveldb/leveldb.go[source]]
-

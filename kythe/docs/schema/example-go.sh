@@ -60,4 +60,3 @@ fi
 
 source-highlight --failsafe --output=STDOUT --src-lang go -i "$SRCFILE"
 echo "</div>"
-

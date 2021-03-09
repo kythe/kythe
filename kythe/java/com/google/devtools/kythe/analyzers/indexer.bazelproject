@@ -32,4 +32,3 @@ targets:
   //kythe/javatests/com/google/devtools/kythe/analyzers/java:all
   //kythe/javatests/com/google/devtools/kythe/analyzers/jvm/...:all
   //kythe/java/com/google/devtools/kythe/extractors/shared
-

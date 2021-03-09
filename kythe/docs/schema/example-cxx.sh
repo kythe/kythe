@@ -39,7 +39,7 @@ touch "$ARGS_FILE"
 # main source text, more files can be specified with header lines formatted like
 # "#example filename".  The lines proceeding these header lines will be placed
 # next to test.cc in "$SRCS/filename".
-TEST_MAIN="$SRCS/test.cc"
+export TEST_MAIN="$SRCS/test.cc"
 
 # The raw filter input will be placed into this file for later syntax highlighting
 RAW_EXAMPLE="$TMP/raw.hcc"
@@ -83,6 +83,7 @@ CXX_ARGS="-std=c++1y $(cat "$ARGS_FILE")"
 
 for TEST_CC in "${SRCS}"/*.cc
 do
+  # shellcheck disable=SC2086
   "$CXX_INDEXER_BIN" --ignore_unimplemented=false \
       --experimental_record_dataflow_edges -i "${TEST_CC}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
