@@ -35,10 +35,11 @@ Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification
 to bypass these checks.  In addition to the tools necessary to build Kythe, the
 following are necessary to run the installed hooks:
 
-- arcanist
+- pre-commit
 - buildifier
-- clang-format
+- clang-format (>= 11)
 - gofmt
+- golint
 - google-java-format
 - jq
 - shellcheck

@@ -49,6 +49,6 @@ if [[ ! -s "$CP" ]]; then
   echo > "$CP"
 fi
 
-SRCS="$(find -name '*.java')"
+readarray -t SRCS < <(find . -name '*.java')
 
-java -jar /kythe/bin/javac_extractor_deploy.jar -cp "@$CP" $SRCS
+java -jar /kythe/bin/javac_extractor_deploy.jar -cp "@$CP" "${SRCS[@]}"

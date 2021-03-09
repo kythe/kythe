@@ -11,6 +11,7 @@ java_library(
         "IndexInfoUtils.java",
     ],
     deps = [
+        ":environment",
         ":file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/proto:analysis_java_proto",
@@ -21,9 +22,21 @@ java_library(
 )
 
 java_library(
+    name = "environment",
+    srcs = [
+        "EnvironmentUtils.java",
+    ],
+    deps = [
+        "//third_party/guava",
+        "@com_google_common_flogger//api",
+    ],
+)
+
+java_library(
     name = "file_vnames",
     srcs = ["FileVNames.java"],
     deps = [
+        ":environment",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",

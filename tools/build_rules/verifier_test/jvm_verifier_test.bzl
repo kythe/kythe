@@ -28,7 +28,7 @@ def _invoke(rulefn, name, **kwargs):
 def _jvm_extract_kzip_impl(ctx):
     jars = []
     for dep in ctx.attr.deps:
-        jars += [dep[JavaInfo].full_compile_jars]
+        jars.append(dep[JavaInfo].full_compile_jars)
     jars = depset(transitive = jars)
 
     extract(

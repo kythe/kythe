@@ -20,5 +20,4 @@ package kythe.examples.proto.example;
 
 // A single proto message.
 //- @Foo defines/binding MessageFoo?
-message Foo {
-}
+message Foo {}

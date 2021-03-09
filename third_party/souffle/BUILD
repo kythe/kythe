@@ -5,8 +5,6 @@ package(
 
 licenses(["notice"])  # The Universal Permissive License (UPL), Version 1.0
 
-load("//:visibility.bzl", "PUBLIC_VISIBILITY")
-
 filegroup(
     name = "license",
     srcs = ["LICENSE"],

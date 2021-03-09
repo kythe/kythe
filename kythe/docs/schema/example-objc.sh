@@ -39,7 +39,7 @@ touch "$ARGS_FILE"
 # main source text, more files can be specified with header lines formatted like
 # "#example filename".  The lines proceeding these header lines will be placed
 # next to test.m in "$SRCS/filename".
-TEST_MAIN="$SRCS/test.m"
+export TEST_MAIN="$SRCS/test.m"
 
 # The raw filter input will be placed into this file for later syntax highlighting
 RAW_EXAMPLE="$TMP/raw.hcc"
@@ -83,6 +83,8 @@ CXX_ARGS="-fblocks $(cat "$ARGS_FILE")"
 
 for TEST_M in "${SRCS}"/*.m
 do
+  # CXX_ARGS is intentionally unquoted
+  # shellcheck disable=SC2086
   "$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "${TEST_M}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
 done

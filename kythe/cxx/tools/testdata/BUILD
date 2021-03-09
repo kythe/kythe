@@ -1,6 +1,6 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 shell_tool_test(
     name = "test_claim_tool_kzip",

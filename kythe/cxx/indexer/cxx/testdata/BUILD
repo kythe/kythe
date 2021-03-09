@@ -1,16 +1,16 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
-exports_files(
-    ["test_vnames.json"],
-    visibility = ["//kythe:default_visibility"],
-)
-
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_extract_kzip",
     "cc_extractor_test",
     "cc_indexer_test",
     "objc_indexer_test",
+)
+
+package(default_visibility = ["//kythe:default_visibility"])
+
+exports_files(
+    ["test_vnames.json"],
+    visibility = ["//kythe:default_visibility"],
 )
 
 cc_indexer_test(

@@ -103,7 +103,7 @@ def _cc_dependencies():
     maybe(
         git_repository,
         name = "boringssl",
-        # Use the github mirror because the official source at
+        # Use the GitHub mirror because the official source at
         # https://boringssl.googlesource.com/boringssl does not allow
         # unauthenticated git clone and the archives suffer from
         # https://github.com/google/gitiles/issues/84 preventing the use of
@@ -148,10 +148,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_github_google_glog",
         repo_name = "google/glog",
-        # Updates newer than this break due to our use of layering_check.
-        # See https://github.com/google/glog/issues/596
-        commit = "ba8a9f6952d04d1403b97df24e6836227751454e",
-        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        commit = "d4e8ebab7e295f20f86cae9557da0d5087a02f73",
+        sha256 = "b38713b8189bc621185c1d558f0dbeef6ce821688e0990b8c6d72c703769779c",
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
@@ -1206,11 +1204,11 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
-        strip_prefix = "protobuf-3.13.0",
+        sha256 = "1c11b325e9fbb655895e8fe9843479337d50dd0be56a41737cbb9aede5e9ffa0",
+        strip_prefix = "protobuf-3.15.3",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )

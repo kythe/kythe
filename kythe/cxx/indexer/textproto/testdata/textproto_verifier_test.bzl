@@ -133,7 +133,7 @@ def textproto_verifier_test(
             deps = [textproto_kzip],
         )
 
-        textproto_entries += [entries]
+        textproto_entries.append(entries)
 
     # extract proto(s)
     proto_kzip = _invoke(
@@ -160,7 +160,7 @@ def textproto_verifier_test(
 
     vopts = verifier_opts + ["--ignore_dups", "--show_goals", "--goal_regex=\"\\s*(?:#|//)-(.*)\""]
     if convert_marked_source:
-        vopts += ["--convert_marked_source"]
+        vopts.append("--convert_marked_source")
     return _invoke(
         verifier_test,
         name = name,

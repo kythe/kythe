@@ -16,9 +16,9 @@ set -eo pipefail
 #
 # This script tests the java indexer's CLI.
 
-: ${indexer?:missing indexer}
-: ${entrystream?:missing entrystream}
+: "${indexer?:missing indexer}"
+: "${entrystream?:missing entrystream}"
 test_kzip="$PWD/kythe/testdata/test.kzip"
 
 # Test indexing a .kzip file
-$indexer $test_kzip | $entrystream >/dev/null
+"$indexer" "$test_kzip" | "$entrystream" >/dev/null

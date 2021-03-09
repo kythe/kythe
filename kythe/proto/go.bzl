@@ -75,7 +75,7 @@ def go_kythe_proto(proto = None, deps = [], importpath = None, visibility = None
     )
 
     # Copy the generated source from the proto library so we can compare it to
-    # what we checked in. Nothing useful is ever easy in Skylark.
+    # what we checked in. Nothing useful is ever easy in Starlark.
     _go_proto_src(
         name = name + "_src",
         library = ":" + name,

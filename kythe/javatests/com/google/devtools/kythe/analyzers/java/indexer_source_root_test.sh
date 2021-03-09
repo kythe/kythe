@@ -16,8 +16,8 @@ set -eo pipefail
 #
 # This script checks for the existance of #818
 
-: ${indexer?:missing indexer}
-: ${entrystream?:missing entrystream}
+: "${indexer?:missing indexer}"
+: "${entrystream?:missing entrystream}"
 test_kindex="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/corner_case.kindex"
 
 # This line removes the precondition for #818 (allowing the test to pass).

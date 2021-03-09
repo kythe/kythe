@@ -21,7 +21,7 @@
 
 usage() {
   echo "usage: $(basename "$0") output-path" >&2
-  exit $1
+  exit "$1"
 }
 
 OUTPUT="$1"
@@ -35,4 +35,4 @@ OUTPUT="$(readlink -e "$OUTPUT")"
 cd "$(dirname "$0")"/../../..
 bazel build //kythe/extractors/openjdk
 
-docker run -ti --rm -v $OUTPUT:/idx openjdk-extractor
+docker run -ti --rm -v "$OUTPUT:/idx openjdk-extractor"

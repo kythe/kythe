@@ -353,10 +353,10 @@ fn corpus_root_for(relative_path: &PathBuf) -> &'static CorpusRoot {
 /// `src_path` is the absolute, but not necessarily canonicalized path to the
 /// file to add.
 fn add_source_input(
-    mut archive: &mut kzip::Writer, 
-    src_path: &PathBuf, 
-    options: &Options, 
-    mut required_inputs: &mut Vec<String>, 
+    mut archive: &mut kzip::Writer,
+    src_path: &PathBuf,
+    options: &Options,
+    mut required_inputs: &mut Vec<String>,
     mut file_inputs: &mut Vec<CompilationUnit_FileInput>,
     ) -> Result<()> {
         // "../../file.txt"

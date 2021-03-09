@@ -46,20 +46,17 @@ import "kythe/proto/common.proto";
 service XRefService {
   // Decorations returns an index of the nodes and edges associated with a
   // particular file node.
-  rpc Decorations(DecorationsRequest) returns (DecorationsReply) {
-  }
+  rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
 
   // CrossReferences returns the global references, definitions, declarations,
   // callers, and related nodes of a set of requested nodes.
-  rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {
-  }
+  rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
 
   // Documentation takes a set of tickets for semantic objects and returns
   // documentation about them, including generated signatures and
   // user-provided text. The documentation may refer to tickets for other
   // nodes in the graph.
-  rpc Documentation(DocumentationRequest) returns (DocumentationReply) {
-  }
+  rpc Documentation(DocumentationRequest) returns (DocumentationReply) {}
 }
 
 // A Location represents a single span of zero or more contiguous bytes of a
