@@ -18,7 +18,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
       # Buildbot and pre-commit dependencies
-      python3 python3-dev python3-pip wget git \
+      python python3 python3-dev python3-pip wget git \
       # Required by go tool build of Kythe
       golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
@@ -52,8 +52,8 @@ RUN go get github.com/bazelbuild/buildtools/buildifier
 RUN go get golang.org/x/lint/golint
 RUN go get honnef.co/go/tools/cmd/staticcheck
 ENV PATH=$PATH:/root/go/bin
-RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar && \
-   mv google-java-format-1.7-all-deps.jar /usr/bin/google-java-format.jar && \
+RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.9/google-java-format-1.9-all-deps.jar && \
+   mv google-java-format-1.9-all-deps.jar /usr/bin/google-java-format.jar && \
    /bin/echo -e '#!/bin/sh\nexec java -jar /usr/bin/google-java-format.jar "$@"' >/usr/bin/google-java-format && \
    chmod +x /usr/bin/google-java-format
 
