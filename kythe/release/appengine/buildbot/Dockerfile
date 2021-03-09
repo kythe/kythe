@@ -30,7 +30,7 @@ RUN apt-get update && \
       # Linter dependencies
       shellcheck clang-format-11 \
       # Kythe misc dependencies
-      asciidoc source-highlight graphviz curl parallel jq && \
+      asciidoc ruby-dev source-highlight graphviz curl parallel jq && \
     apt-get clean
 
 # Make clang-11 the default
