@@ -741,7 +741,7 @@ class Visitor {
   typeChecker: ts.TypeChecker;
 
   /** influencers is a stack of influencer VNames. */
-  private influencers: Set<VName>[] = [];
+  private readonly influencers: Set<VName>[] = [];
 
   constructor(
       private readonly host: IndexerHost,
@@ -876,9 +876,9 @@ class Visitor {
           this.getSymbolAndVNameForFunctionDeclaration(containingFunction)
               .vname;
       if (containingVName) {
-        this.forAllInfluencers(
-            influencer => this.emitEdge(
-                influencer, EdgeKind.INFLUENCES, containingVName));
+        this.forAllInfluencers(influencer => {
+          this.emitEdge(influencer, EdgeKind.INFLUENCES, containingVName);
+        });
       }
     }
     this.popInfluencers();
