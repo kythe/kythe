@@ -19,3 +19,30 @@ index b283b40..10dce4e 100755
      includes = {bundle_lib_paths},
    )
  
+diff --git a/ruby/private/toolchains/BUILD.runtime.tpl b/ruby/private/toolchains/BUILD.runtime.tpl
+index fbb3e64..18fb412 100644
+--- a/ruby/private/toolchains/BUILD.runtime.tpl
++++ b/ruby/private/toolchains/BUILD.runtime.tpl
+@@ -24,14 +24,20 @@ sh_binary(
+ 
+ cc_import(
+     name = "libruby",
+-    hdrs = glob({hdrs}),
++    hdrs = glob(
++        include = {hdrs},
++        allow_empty = True,
++    ),
+     shared_library = {shared_library},
+     static_library = {static_library},
+ )
+ 
+ cc_library(
+     name = "headers",
+-    hdrs = glob({hdrs}),
++    hdrs = glob(
++        include = {hdrs},
++        allow_empty = True,
++    ),
+     includes = {includes},
+ )
+ 
