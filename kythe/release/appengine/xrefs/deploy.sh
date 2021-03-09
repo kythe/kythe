@@ -42,4 +42,3 @@ if [[ -n "$DEV" ]]; then
 else
   gcloud app deploy --promote --server gcr.appengine.google.com app.yaml
 fi
-

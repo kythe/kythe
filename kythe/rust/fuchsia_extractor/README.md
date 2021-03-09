@@ -172,4 +172,3 @@ Other than that, the packaged files are:
   subdirectories.
 - `*.rlib` files which are the required part of the compilation, even though
   the current indexer does not use them.
-

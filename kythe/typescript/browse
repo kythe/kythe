@@ -21,11 +21,11 @@ KYTHE="${KYTHE:-/opt/kythe}"
 rm -f -- graphstore/* tables/*
 mkdir -p graphstore tables
 # Read JSON entries from standard in to a graphstore.
-$KYTHE/tools/entrystream --read_format=json \
-  | $KYTHE/tools/write_entries -graphstore graphstore
+"$KYTHE/tools/entrystream" --read_format=json \
+  | "$KYTHE/tools/write_entries" -graphstore graphstore
 # Convert the graphstore to serving tables.
-$KYTHE/tools/write_tables -graphstore graphstore -out=tables
+"$KYTHE/tools/write_tables" -graphstore graphstore -out=tables
 # Host the browser UI.
-$KYTHE/tools/http_server -serving_table tables \
+"$KYTHE/tools/http_server" -serving_table tables \
   -public_resources="$KYTHE/web/ui" \
   -listen=":${BROWSE_PORT}"

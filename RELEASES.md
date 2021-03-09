@@ -562,7 +562,7 @@
   *  split semantic callers within xrefs group (#3776) ([87e1e2ed](https://github.com/kythe/kythe/commit/87e1e2ed393dad8abb0865ff7fdc36eab81e6f60), closes [#3768](https://github.com/kythe/kythe/issues/3768))
   *  convert DirectoryReply to FileDirectory for serving data (#3604) ([0ef9b748](https://github.com/kythe/kythe/commit/0ef9b7487088173ba66916eb84f199642eab5949))
   *  make pipeline more tolerant to some errors (#3490) ([dc33424b](https://github.com/kythe/kythe/commit/dc33424b08fda5c6dbdfbc4598851e32cf95833e))
-* **proto:** 
+* **proto:**
   *  include deprecation tags for messages, enums and enum values. (#3822) ([c602555d](https://github.com/kythe/kythe/commit/c602555d75c8cff60722027eb99062b5b07c6153))
   *  link BuildDetails proto (#49) ([e9b68f17](https://github.com/kythe/kythe/commit/e9b68f1708ebeb4c11e0a7ff155ab0a5480d3a35))
   *  proto fields have subkind "field" (#4098) ([ac6cb14b](https://github.com/kythe/kythe/commit/ac6cb14b3a1d7d91abbfcc94a879b8b3ca961f4e))

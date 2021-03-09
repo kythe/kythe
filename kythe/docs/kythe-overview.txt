@@ -81,7 +81,7 @@ protocols and data formats* for representing, accessing and querying
 source code information as data, Kythe allows *language analysis and
 indexing to be run as services*.  This, in turn, enables lightweight
 (``thin'') composition of analysis tools with client tools such as
-editors, IDEs, and code browsers. 
+editors, IDEs, and code browsers.
 
 A hub-and-spoke model reduces the overall work to integrate _L_ languages, _C_
 clients, and _B_ build systems from a worst-case of O(L×C×B) -- combinatorial
