@@ -11,14 +11,14 @@ def _asciidoc_impl(ctx):
     args = ["--backend", "html", "--no-header-footer"]
     for key, value in ctx.attr.attrs.items():
         if value:
-            args += ["--attribute=%s=%s" % (key, value)]
+            args.append("--attribute=%s=%s" % (key, value))
         else:
-            args += ["--attribute=%s!" % (key,)]
+            args.append("--attribute=%s!" % (key,))
     if ctx.attr.example_script:
-        args += ["--attribute=example_script=" + ctx.file.example_script.path]
+        args.append("--attribute=example_script=" + ctx.file.example_script.path)
     args += ["--conf-file=%s" % c.path for c in ctx.files.confs]
     args += ["-o", "out/" + ctx.attr.name + ".html"]
-    args += [ctx.file.src.path]
+    args.append(ctx.file.src.path)
 
     # Get the path where all our necessary tools are located so it can be set
     # to PATH in our run_shell command.

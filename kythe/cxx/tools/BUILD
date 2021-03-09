@@ -1,7 +1,5 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("//:visibility.bzl", "PUBLIC_VISIBILITY")
-
 cc_binary(
     name = "static_claim",
     srcs = [

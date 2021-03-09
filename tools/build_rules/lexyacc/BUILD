@@ -1,8 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_toolchain", "lexyacc_variables")
 
 package(default_visibility = ["//visibility:public"])
-
-load("//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_toolchain", "lexyacc_variables")
 
 exports_files(["lexyacc.bzl"])
 

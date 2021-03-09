@@ -1,8 +1,8 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
 load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
+
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "kythe_rust_indexer",

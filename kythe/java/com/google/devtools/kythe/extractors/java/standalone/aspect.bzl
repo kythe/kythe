@@ -46,7 +46,7 @@ def _extract_java_aspect(target, ctx):
     if processors:
         args += ["-processor", ",".join(processors)]
     else:
-        args += ["-proc:none"]
+        args.append("-proc:none")
 
     deps = depset(
         transitive = annotations.processor_classpath + [
@@ -78,7 +78,7 @@ def _remove_flags(lst, to_remove):
         elif flag in to_remove:
             skip += to_remove[flag]
         else:
-            res += [flag]
+            res.append(flag)
     return res
 
 # Aspect to run the javac_extractor on all specified Java targets.
