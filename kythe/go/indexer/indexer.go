@@ -62,6 +62,9 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
+// ErrNoSourceFiles is returned from Resolve if it is given a package without any sources files.
+var ErrNoSourceFiles = errors.New("no source files in package")
+
 // A Fetcher retrieves the contents of a file given its path and/or hex-encoded
 // SHA256 digest, at least one of which must be set.
 type Fetcher interface {
@@ -328,7 +331,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		fmap[ipath] = ri.Info
 	}
 	if len(files) == 0 {
-		return nil, errors.New("no source files in package")
+		return nil, ErrNoSourceFiles
 	}
 
 	// Populate the location mapping. This relies on the fact that Iterate
