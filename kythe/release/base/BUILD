@@ -1,9 +1,9 @@
+load("//tools:build_rules/docker.bzl", "docker_build")
+
 package(default_visibility = [
     "//kythe/extractors:__subpackages__",
     "//kythe/release:__subpackages__",
 ])
-
-load("//tools:build_rules/docker.bzl", "docker_build")
 
 exports_files(
     ["fix_permissions.sh"],

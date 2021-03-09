@@ -1,10 +1,10 @@
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 exports_files(["LICENSE"])
-
-load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 go_library(
     name = "runner_disksort",

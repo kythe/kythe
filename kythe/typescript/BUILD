@@ -1,8 +1,8 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_library")
 load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 ts_config(
     name = "tsconfig",

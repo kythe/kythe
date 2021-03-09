@@ -1,9 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 load(":compile_commands.bzl", "compile_commands")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 compile_commands(
     name = "compile_commands",

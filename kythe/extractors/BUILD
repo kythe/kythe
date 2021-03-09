@@ -1,10 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain")
 load("@rules_java//java:defs.bzl", "java_library")
+load(":extractors.bzl", "extractor_action")
 
 package(default_visibility = ["//visibility:public"])
-
-load(":extractors.bzl", "extractor_action")
 
 exports_files(["extractors.bzl"])
 

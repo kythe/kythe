@@ -1,9 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
-package(default_visibility = ["//visibility:private"])
-
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
+
+package(default_visibility = ["//visibility:private"])
 
 exports_files(glob(["*"]))
 

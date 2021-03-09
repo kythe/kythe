@@ -1,6 +1,6 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("//tools:build_rules/docker.bzl", "docker_build")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 # This target builds a docker image which contains the kzip tool binary.
 docker_build(

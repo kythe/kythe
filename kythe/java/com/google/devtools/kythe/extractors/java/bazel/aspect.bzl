@@ -36,7 +36,7 @@ def _extract_java(target, ctx):
 
     source_files = []
     for src in ctx.rule.files.srcs:
-        source_files += [src.path]
+        source_files.append(src.path)
 
     classpath = [j.path for j in compilation.compilation_classpath.to_list()]
     bootclasspath = [j.path for j in compilation.boot_classpath]

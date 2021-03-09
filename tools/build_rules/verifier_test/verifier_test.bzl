@@ -167,7 +167,7 @@ def extract(
     direct_inputs = []
     if vnames_config:
         final_env["KYTHE_VNAMES"] = vnames_config.path
-        direct_inputs += [vnames_config]
+        direct_inputs.append(vnames_config)
     inputs = depset(direct = direct_inputs, transitive = [srcs, deps])
 
     args = opts
@@ -192,13 +192,13 @@ def _index_compilation_impl(ctx):
     intermediates = []
     for dep in ctx.attr.deps:
         if KytheVerifierSources in dep:
-            sources += [dep[KytheVerifierSources].files]
+            sources.append(dep[KytheVerifierSources].files)
         for input in dep.files.to_list():
             entries = ctx.actions.declare_file(
                 ctx.label.name + input.basename + ".entries",
                 sibling = ctx.outputs.entries,
             )
-            intermediates += [entries]
+            intermediates.append(entries)
 
             args = ctx.actions.args()
             args.add(ctx.executable.indexer)
@@ -259,21 +259,21 @@ def _verifier_test_impl(ctx):
     sources = []
     for src in ctx.attr.srcs:
         if KytheVerifierSources in src:
-            sources += [src[KytheVerifierSources].files]
+            sources.append(src[KytheVerifierSources].files)
             if KytheEntries in src:
                 if src[KytheEntries].files:
-                    entries += [src[KytheEntries].files]
+                    entries.append(src[KytheEntries].files)
                 else:
-                    entries_gz += [src[KytheEntries].compressed]
+                    entries_gz.append(src[KytheEntries].compressed)
         else:
-            sources += [src.files]
+            sources.append(src.files)
 
     for dep in ctx.attr.deps:
         # TODO(shahms): Allow specifying .entries files directly.
         if dep[KytheEntries].files:
-            entries += [dep[KytheEntries].files]
+            entries.append(dep[KytheEntries].files)
         else:
-            entries_gz += [dep[KytheEntries].compressed]
+            entries_gz.append(dep[KytheEntries].compressed)
 
     # Flatten input lists
     entries = depset(transitive = entries).to_list()
@@ -287,7 +287,7 @@ def _verifier_test_impl(ctx):
     # If no dependency specifies KytheVerifierSources and
     # we aren't provided explicit sources, assume `--use_file_nodes`.
     if not sources and "--use_file_nodes" not in args:
-        args += ["--use_file_nodes"]
+        args.append("--use_file_nodes")
     ctx.actions.expand_template(
         template = ctx.file._template,
         output = ctx.outputs.executable,
