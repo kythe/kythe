@@ -24,7 +24,6 @@ load(
     "rules_ruby_dependencies",
     "rules_ruby_select_sdk",
 )
-load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -42,7 +41,6 @@ def _rule_dependencies():
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
-    rules_pkg_dependencies()
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""

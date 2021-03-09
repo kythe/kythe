@@ -1,5 +1,4 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load(":asciidoc_with_verifier.bzl", "asciidoc_with_verifier", "build_example_sh")
 
 package(default_visibility = ["//kythe:default_visibility"])

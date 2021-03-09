@@ -4,7 +4,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 AsciidocInfo = provider(
     doc = "Information about the asciidoc-generated files.",
     fields = {
-        "primary_output_path": "Path of the primary output file beneath {resource_dir}.}",
+        "primary_output_path": "Path of the primary output file beneath {resource_dir}.",
         "resource_dir": "File for the directory containing all of the generated resources.",
     },
 )
