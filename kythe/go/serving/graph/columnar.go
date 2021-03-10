@@ -123,107 +123,117 @@ func (c *ColumnarTable) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.
 	allowedKinds := stringset.New(req.Kind...)
 
 	for _, ticket := range req.Ticket {
-		srcURI, err := kytheuri.Parse(ticket)
-		if err != nil {
-			return nil, err
-		}
-
-		src := srcURI.VName()
-		prefix, err := keys.Append(columnar.EdgesKeyPrefix, src)
-		if err != nil {
-			return nil, err
-		}
-
-		it, err := c.DB.ScanPrefix(ctx, prefix, &keyvalue.Options{LargeRead: true})
-		if err != nil {
-			return nil, err
-		}
-
-		k, val, err := it.Next()
-		if err == io.EOF || !bytes.Equal(k, prefix) {
-			continue
-		} else if err != nil {
-			return nil, err
-		}
-
-		// Decode Edges Index
-		var idx gspb.Edges_Index
-		if err := proto.Unmarshal(val, &idx); err != nil {
-			return nil, fmt.Errorf("error decoding index: %v", err)
-		}
-		if len(patterns) > 0 {
-			if info := filterNode(patterns, idx.Node); len(info.Facts) > 0 {
-				reply.Nodes[ticket] = info
-			}
-		}
-
-		edges := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-		reply.EdgeSets[ticket] = edges
-		targets := stringset.New()
-
-		// Main loop to scan over each columnar kv entry.
-		for {
-			k, val, err := it.Next()
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return nil, err
-			}
-			key := string(k[len(prefix):])
-
-			// TODO(schroederc): only parse needed entries
-			e, err := columnar.DecodeEdgesEntry(src, key, val)
+		loopBody := func() (bool, error) {
+			srcURI, err := kytheuri.Parse(ticket)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 
-			switch e := e.Entry.(type) {
-			case *gspb.Edges_Edge_:
-				edge := e.Edge
+			src := srcURI.VName()
+			prefix, err := keys.Append(columnar.EdgesKeyPrefix, src)
+			if err != nil {
+				return false, err
+			}
 
-				kind := edge.GetGenericKind()
-				if kind == "" {
-					kind = schema.EdgeKindString(edge.GetKytheKind())
-				}
-				if edge.Reverse {
-					kind = "%" + kind
-				}
+			it, err := c.DB.ScanPrefix(ctx, prefix, &keyvalue.Options{LargeRead: true})
+			defer it.Close()
+			if err != nil {
+				return false, err
+			}
 
-				if len(allowedKinds) != 0 && !allowedKinds.Contains(kind) {
-					continue
-				}
+			k, val, err := it.Next()
+			if err == io.EOF || !bytes.Equal(k, prefix) {
+				return true, nil
+			} else if err != nil {
+				return false, err
+			}
 
-				target := kytheuri.ToString(edge.Target)
-				targets.Add(target)
-
-				g := edges.Groups[kind]
-				if g == nil {
-					g = &gpb.EdgeSet_Group{}
-					edges.Groups[kind] = g
+			// Decode Edges Index
+			var idx gspb.Edges_Index
+			if err := proto.Unmarshal(val, &idx); err != nil {
+				return false, fmt.Errorf("error decoding index: %v", err)
+			}
+			if len(patterns) > 0 {
+				if info := filterNode(patterns, idx.Node); len(info.Facts) > 0 {
+					reply.Nodes[ticket] = info
 				}
-				g.Edge = append(g.Edge, &gpb.EdgeSet_Group_Edge{
-					TargetTicket: target,
-					Ordinal:      edge.Ordinal,
-				})
-			case *gspb.Edges_Target_:
-				if len(patterns) == 0 || len(targets) == 0 {
+			}
+
+			edges := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
+			reply.EdgeSets[ticket] = edges
+			targets := stringset.New()
+
+			// Main loop to scan over each columnar kv entry.
+			for {
+				k, val, err := it.Next()
+				if err == io.EOF {
 					break
+				} else if err != nil {
+					return false, err
+				}
+				key := string(k[len(prefix):])
+
+				// TODO(schroederc): only parse needed entries
+				e, err := columnar.DecodeEdgesEntry(src, key, val)
+				if err != nil {
+					return false, err
 				}
 
-				target := e.Target
-				ticket := kytheuri.ToString(target.Node.Source)
-				if targets.Contains(ticket) {
-					if info := filterNode(patterns, target.Node); len(info.Facts) > 0 {
-						reply.Nodes[ticket] = info
+				switch e := e.Entry.(type) {
+				case *gspb.Edges_Edge_:
+					edge := e.Edge
+
+					kind := edge.GetGenericKind()
+					if kind == "" {
+						kind = schema.EdgeKindString(edge.GetKytheKind())
 					}
-				}
-			default:
-				return nil, fmt.Errorf("unknown Edges entry: %T", e)
-			}
-		}
+					if edge.Reverse {
+						kind = "%" + kind
+					}
 
-		if len(edges.Groups) == 0 {
-			delete(reply.EdgeSets, ticket)
+					if len(allowedKinds) != 0 && !allowedKinds.Contains(kind) {
+						continue
+					}
+
+					target := kytheuri.ToString(edge.Target)
+					targets.Add(target)
+
+					g := edges.Groups[kind]
+					if g == nil {
+						g = &gpb.EdgeSet_Group{}
+						edges.Groups[kind] = g
+					}
+					g.Edge = append(g.Edge, &gpb.EdgeSet_Group_Edge{
+						TargetTicket: target,
+						Ordinal:      edge.Ordinal,
+					})
+				case *gspb.Edges_Target_:
+					if len(patterns) == 0 || len(targets) == 0 {
+						break
+					}
+
+					target := e.Target
+					ticket := kytheuri.ToString(target.Node.Source)
+					if targets.Contains(ticket) {
+						if info := filterNode(patterns, target.Node); len(info.Facts) > 0 {
+							reply.Nodes[ticket] = info
+						}
+					}
+				default:
+					return false, fmt.Errorf("unknown Edges entry: %T", e)
+				}
+			}
+
+			if len(edges.Groups) == 0 {
+				delete(reply.EdgeSets, ticket)
+			}
+			return true, nil
+		}
+		cont, err := loopBody()
+		if err != nil {
+			return nil, err
+		} else if !cont {
+			break
 		}
 	}
 
