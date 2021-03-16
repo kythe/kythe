@@ -27,3 +27,10 @@ public class StaticMethods {
   //- @staticMethod defines/binding StaticInt
   public static void staticMethod(int b) {}
 }
+
+//- MemberFunc.tag/static _
+//- ProtectedStaticMemberFunc.tag/static _
+//- PackageStaticMemberFunc.tag/static _
+//- StaticMemberFunc.tag/static _
+//- StaticBool.tag/static _
+//- StaticInt.tag/static _

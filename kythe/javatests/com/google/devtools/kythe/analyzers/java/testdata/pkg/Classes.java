@@ -17,7 +17,8 @@ public class Classes {
   //- DefaultCtorType param.1 N
   //- DefaultCtrAnchor defines DefaultCtor
   //- !{ _DefaultCtorBindingAnchor defines/binding DefaultCtor }
-  
+
+  //- @Subclass defines/binding SubclassOne
   private static class Subclass extends Classes {
     //- ImplicitSuperCall ref/call DefaultCtor
     //- ImplicitSuperCall.loc/start @^"{}"
@@ -81,10 +82,16 @@ public class Classes {
   //- ClassInit.node/kind function
   //- ClassInit childof N
   // !{ ClassInit.subkind "constructor" }
-  
+
   static {
     //- @LocalClassInStaticInitializer defines/binding LCISI
     //- LCISI childof ClassInit
     class LocalClassInStaticInitializer {};
   }
 }
+
+//- SubclassOne.tag/static _
+//- SubclassTwo.tag/static _
+//- SI.tag/static _
+//- E.tag/static _
+//- !{I.tag/static _}
