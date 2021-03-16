@@ -49,4 +49,5 @@ asciidoc_with_verifier(
 bzl_library(
     name = "asciidoc_with_verifier_bzl",
     srcs = ["asciidoc_with_verifier.bzl"],
+    deps = ["//kythe/docs:asciidoc_bzl"],
 )

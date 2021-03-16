@@ -116,3 +116,17 @@ def kythe_rule_repositories():
             "https://github.com/bazelbuild/rules_rust/archive/997a8a19a6893026a94bee5d1a775c2ba3d75a42.tar.gz",
         ],
     )
+
+    maybe(
+        http_archive,
+        name = "bazelruby_rules_ruby",
+        strip_prefix = "rules_ruby-0.4.1",
+        sha256 = "abfc2758cc379e0ff0eb9824e3b507c1633d4c8f99f24735aef63c7180be50f0",
+        urls = [
+            "https://github.com/bazelruby/rules_ruby/archive/v0.4.1.zip",
+        ],
+        patches = [
+            "//third_party:rules_ruby_allow_empty.patch",
+        ],
+        patch_args = ["-p1"],
+    )

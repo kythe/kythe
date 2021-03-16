@@ -19,6 +19,11 @@ load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_reposi
 load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
 load("@io_bazel_rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
+load(
+    "@bazelruby_rules_ruby//ruby:deps.bzl",
+    "rules_ruby_dependencies",
+    "rules_ruby_select_sdk",
+)
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -34,6 +39,8 @@ def _rule_dependencies():
     bazel_toolchains_repositories()
     rust_repositories(version = "nightly", iso_date = "2020-06-23", dev_components = True)
     rust_proto_repositories()
+    rules_ruby_dependencies()
+    rules_ruby_select_sdk(version = "host")
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""

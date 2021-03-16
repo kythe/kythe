@@ -67,3 +67,15 @@ rbe_autoconfig(
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
+
+load(
+    "@bazelruby_rules_ruby//ruby:defs.bzl",
+    "ruby_bundle",
+)
+
+ruby_bundle(
+    name = "website_bundle",
+    bundler_version = "2.1.4",
+    gemfile = "//kythe/web/site:Gemfile",
+    gemfile_lock = "//kythe/web/site:Gemfile.lock",
+)

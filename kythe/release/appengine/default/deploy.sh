@@ -21,7 +21,8 @@ cd "$(dirname "$0")"
 COMMIT="$(git rev-parse HEAD)"
 echo "Deploying Kythe website version $COMMIT" >&2
 
-../../../web/site/build.sh -d "$PWD/site"
+bazel build //kythe/web/site
+rsync -Lr --delete "$(bazel info workspace)/bazel-bin/kythe/web/site/_site/" "$PWD/site/"
 gcloud app deploy --no-promote --version "$COMMIT" app.yaml
 
 echo >&2
