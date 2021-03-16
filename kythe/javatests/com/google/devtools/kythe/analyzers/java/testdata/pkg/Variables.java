@@ -70,3 +70,6 @@ public class Variables {
     int localInStaticInitializer = 0;
   }
 }
+
+//- !{V.tag/static _}
+//- SF.tag/static _

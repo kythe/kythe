@@ -337,6 +337,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // initializers. But there's no harm in emitting the same fact twice!
     getScope(ctx).forEach(scope -> entrySets.emitEdge(classNode, EdgeKind.CHILDOF, scope));
 
+    if (classDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
+      emitStatic(classNode);
+    }
+
     NestingKind nestingKind = classDef.sym.getNestingKind();
     if (nestingKind != NestingKind.LOCAL
         && nestingKind != NestingKind.ANONYMOUS
@@ -534,6 +538,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName methodNode =
         entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource, null);
     visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
+    if (methodDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
+      emitStatic(methodNode);
+    }
 
     EntrySet absNode =
         defineTypeParameters(
@@ -730,7 +737,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
     if (varDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
-      entrySets.getEmitter().emitFact(varNode, "/kythe/tag/static", "");
+      emitStatic(varNode);
 
       if (varDef.sym.getKind().isField() && owner.getNode().getClassInit().isPresent()) {
         ctx.setNode(new JavaNode(owner.getNode().getClassInit().get()));
@@ -1430,6 +1437,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private void emitDeprecated(Optional<String> deprecation, VName node) {
     deprecation.ifPresent(d -> entrySets.getEmitter().emitFact(node, "/kythe/tag/deprecated", d));
+  }
+
+  private void emitStatic(VName node) {
+    entrySets.getEmitter().emitFact(node, "/kythe/tag/static", "");
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode
