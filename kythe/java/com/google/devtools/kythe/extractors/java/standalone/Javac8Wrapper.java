@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
+import com.google.devtools.kythe.extractors.shared.EnvironmentUtils;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.Option;
@@ -40,7 +41,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
   protected Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
       throws Exception {
-
     // Use javac's argument parser to get the list of source files
     Context context = new Context();
 
@@ -66,9 +66,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     List<String> processors = splitCSV(options.get(Option.PROCESSOR));
 
     EnumSet<Option> claimed =
-        EnumSet.of(
-            Option.CLASS_PATH, Option.SOURCE_PATH,
-            Option.PROCESSOR_PATH, Option.PROCESSOR);
+        EnumSet.of(Option.CLASS_PATH, Option.SOURCE_PATH, Option.PROCESSOR_PATH, Option.PROCESSOR);
 
     // Retrieve all other javac options.
     List<String> completeOptions = new ArrayList<>();
@@ -103,7 +101,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     List<CompilationDescription> results = new ArrayList<>();
     for (List<String> sourceBatch : Lists.partition(sources, batchSize)) {
       String analysisTarget =
-          readEnvironmentVariable(
+          EnvironmentUtils.readEnvironmentVariable(
               "KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sourceBatch));
       results.add(
           javaCompilationUnitExtractor.extract(

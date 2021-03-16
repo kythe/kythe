@@ -1,9 +1,9 @@
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     features = ["layering_check"],
 )
-
-load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 
 cc_library(
     name = "output",

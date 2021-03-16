@@ -197,6 +197,48 @@ func TestServingDecorations(t *testing.T) {
 		// DefinitionLocations: not requested
 	}))
 
+	t.Run("references_dirty", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: fileTicket},
+		References:  true,
+		DirtyBuffer: []byte("\n " + expectedText),
+	}, &xpb.DecorationsReply{
+		Location: &xpb.Location{Ticket: fileTicket},
+		Reference: []*xpb.DecorationsReply_Reference{{
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   0 + 2,
+					ColumnOffset: 0 + 1,
+					LineNumber:   1 + 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   4 + 2,
+					ColumnOffset: 4 + 1,
+					LineNumber:   1 + 1,
+				},
+			},
+			Kind:         "/kythe/edge/ref",
+			TargetTicket: "kythe:#simpleDecor",
+		}, {
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5 + 2,
+					ColumnOffset: 5 + 1,
+					LineNumber:   1 + 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9 + 2,
+					ColumnOffset: 9 + 1,
+					LineNumber:   1 + 1,
+				},
+			},
+			Kind:         "/kythe/edge/ref",
+			TargetTicket: "kythe:#decorWithDef",
+			// TargetDefinition: explicitly not requested
+		}},
+		// Nodes: not requested
+		// DefinitionLocations: not requested
+	}))
+
 	t.Run("referenced_nodes", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		References: true,

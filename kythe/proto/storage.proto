@@ -149,8 +149,7 @@ message WriteRequest {
 }
 
 // Response to a WriteRequest
-message WriteReply {
-}
+message WriteReply {}
 
 // Request for a stream of Entry objects resulting from a full scan of a
 // GraphStore.

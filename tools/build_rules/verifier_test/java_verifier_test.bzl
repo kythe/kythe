@@ -49,17 +49,17 @@ def _filter_java_sources(src):
 def _java_extract_kzip_impl(ctx):
     deps = []
     for dep in ctx.attr.deps:
-        deps += [dep[JavaInfo]]
+        deps.append(dep[JavaInfo])
 
     srcs = []
     srcjars = []
     dirs = []
     for src in ctx.attr.srcs:
         if KytheGeneratedSourcesInfo in src:
-            srcjars += [src[KytheGeneratedSourcesInfo].srcjar]
-            dirs += [src[KytheGeneratedSourcesInfo].dir]
+            srcjars.append(src[KytheGeneratedSourcesInfo].srcjar)
+            dirs.append(src[KytheGeneratedSourcesInfo].dir)
         else:
-            srcs += [src.files]
+            srcs.append(src.files)
     srcs = depset(transitive = srcs).to_list()
 
     # Actually compile the sources to be used as a dependency for other tests
@@ -210,7 +210,7 @@ def java_verifier_test(
             "--load_plugin",
             "$(location {})".format(load_plugin_deploy_jar),
         ]
-        tools += [load_plugin_deploy_jar]
+        tools.append(load_plugin_deploy_jar)
 
     entries = _invoke(
         index_compilation,

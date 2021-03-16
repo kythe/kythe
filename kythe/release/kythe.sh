@@ -124,7 +124,8 @@ if [[ -z "$INDEXING" ]]; then
 fi
 
 drive_indexer_kzip() {
-  local lang="$(basename "$(dirname "$1")")"
+  local lang
+  lang="$(basename "$(dirname "$1")")"
   local analyzer="/kythe/bin/${lang}_indexer"
   if [[ ! -x "$analyzer" ]]; then
     if [[ -n "$IGNORE_UNHANDLED" ]]; then

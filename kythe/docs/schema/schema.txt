@@ -68,8 +68,8 @@ Edge kinds
 ----------
 .Reverse Edges
 TIP: The Kythe API uses `%` to denote a reverse edge.
-For example, if NodeA `defines/binding` NodeB, then NodeB 
-`%/kythe/edge/defines/binding` NodeA. Reverse edges are constructed 
+For example, if NodeA `defines/binding` NodeB, then NodeB
+`%/kythe/edge/defines/binding` NodeA. Reverse edges are constructed
 during post-processing, and should not be emitted by indexers.
 
 [[aliases]]

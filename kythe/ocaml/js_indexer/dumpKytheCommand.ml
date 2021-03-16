@@ -93,7 +93,7 @@ let main option_values path filename () =
 
   match (Marshal.from_channel ic : DKS.resp_t) with
   | (Some err, None) -> handle_error err
-  | (None, Some jsons) -> List.iter 
+  | (None, Some jsons) -> List.iter
                             (fun j -> print_endline (json_to_string j)) jsons
   | (_, _) -> assert false
 

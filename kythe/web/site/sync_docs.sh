@@ -36,25 +36,26 @@ cd "$DIR/../../.."
 # Use the project's bazelrc so we pick up the default options that Kythe needs
 # to build correctly.
 bazel --bazelrc=.bazelrc build //kythe/docs/... \
-    //kythe/docs:schema-overview \
-    //kythe/docs/schema \
-    //kythe/docs/schema:callgraph \
-    //kythe/docs/schema:verifierstyle \
-    //kythe/docs/schema:writing-an-indexer \
-    //kythe/docs/schema:indexing-generated-code \
-    //kythe/docs/schema:marked-source
+  //kythe/docs:schema-overview \
+  //kythe/docs/schema \
+  //kythe/docs/schema:callgraph \
+  //kythe/docs/schema:verifierstyle \
+  //kythe/docs/schema:writing-an-indexer \
+  //kythe/docs/schema:indexing-generated-code \
+  //kythe/docs/schema:marked-source
 # Copy the zipped asciidoc outputs into the staging directory, unpack the
 # archives, then remove them. We do this to ensure the output retains the
 # directory structure of the source tree.
 rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
 find "$DIR"/_docs -type f -name '*.zip' -execdir unzip -q {} ';' -delete
 
-DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
-  grep -E '\.(txt|adoc|ad)$' | \
-  parallel --gnu -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))
+# shellcheck disable=SC2016
+readarray -t DOCS < <(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' |
+  grep -E '\.(txt|adoc|ad)$' |
+  parallel --gnu -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x')
 
 asciidoc_query() {
-  bundle exec ruby -r asciidoctor -e 'puts Asciidoctor.load_file(ARGV[0]).'"$2" "$1" 2>/dev/null
+  bundle exec ruby -r asciidoctor -e 'puts Asciidoctor.load_file(ARGV[0]).'"$2" "$1" 2> /dev/null
 }
 
 asciidoc_attribute_presence() {
@@ -70,20 +71,22 @@ toclevels: $(asciidoc_query "$1" 'attributes["toclevels"]')"
   if asciidoc_attribute_presence "$1" toc || asciidoc_attribute_presence "$1" toc2; then
     echo "toc: true"
   fi
-echo "---"
+  echo "---"
 }
 
 TMP="$(mktemp)"
 trap 'rm -rf "$TMP"' EXIT ERR INT
 
 cd "$DIR"
-for doc in ${DOCS[@]}; do
+for doc in "${DOCS[@]}"; do
   html=${doc%%.*}.html
   echo "Processing $html"
   abs_path="../../../kythe/docs/$doc"
   cp "_docs/$html" "$TMP"
-  { doc_header "$abs_path";
-    cat "$TMP"; } >"_docs/$html"
+  {
+    doc_header "$abs_path"
+    cat "$TMP"
+  } > "_docs/$html"
 done
 
 mv _docs/schema/{schema,index}.html
