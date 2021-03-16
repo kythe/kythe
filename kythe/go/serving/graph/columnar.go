@@ -124,10 +124,10 @@ func (c *ColumnarTable) processTicket(ctx context.Context, ticket string, patter
 	}
 
 	it, err := c.DB.ScanPrefix(ctx, prefix, &keyvalue.Options{LargeRead: true})
-	defer it.Close()
 	if err != nil {
 		return err
 	}
+	defer it.Close()
 
 	k, val, err := it.Next()
 	if err == io.EOF || !bytes.Equal(k, prefix) {
