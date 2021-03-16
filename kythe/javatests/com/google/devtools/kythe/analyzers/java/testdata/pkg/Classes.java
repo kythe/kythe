@@ -76,7 +76,8 @@ public class Classes {
   private void localFunc() {
     //- @LocalClass defines/binding LC
     //- LC childof LF
-    class LocalClass {};
+    class LocalClass {}
+    ;
   }
 
   //- ClassInit.node/kind function
@@ -86,7 +87,8 @@ public class Classes {
   static {
     //- @LocalClassInStaticInitializer defines/binding LCISI
     //- LCISI childof ClassInit
-    class LocalClassInStaticInitializer {};
+    class LocalClassInStaticInitializer {}
+    ;
   }
 }
 

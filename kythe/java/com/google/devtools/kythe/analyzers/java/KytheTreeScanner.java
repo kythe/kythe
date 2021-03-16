@@ -542,7 +542,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitStatic(methodNode);
     }
 
-
     EntrySet absNode =
         defineTypeParameters(
             ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
