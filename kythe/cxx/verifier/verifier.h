@@ -190,7 +190,16 @@ class Verifier {
   /// \brief Don't search for file vnames.
   void IgnoreFileVnames() { file_vnames_ = false; }
 
+  /// \brief Use the fast solver.
+  void UseFastSolver(bool value) { use_fast_solver_ = value; }
+
  private:
+  using InternedVName = std::tuple<Symbol, Symbol, Symbol, Symbol, Symbol>;
+
+  /// \brief Interns an AST node known to be a VName.
+  /// \param node the node to intern.
+  InternedVName InternVName(AstNode* node);
+
   /// \brief Generate a VName that will not conflict with any other VName.
   AstNode* NewUniqueVName(const yy::location& loc);
 
@@ -219,6 +228,11 @@ class Verifier {
   void AddAnchor(AstNode* vname, size_t begin, size_t end) {
     anchors_.emplace(std::make_pair(begin, end), vname);
   }
+
+  /// \brief Processes a fact tuple for the fast solver.
+  /// \param tuple the five-tuple representation of a fact
+  /// \return true if successful.
+  bool ProcessFactTupleForFastSolver(Tuple* tuple);
 
   /// \sa parser()
   AssertionParser parser_;
@@ -394,6 +408,18 @@ class Verifier {
 
   /// Find file vnames by examining file content.
   bool file_vnames_ = true;
+
+  /// Use the fast solver.
+  bool use_fast_solver_ = false;
+
+  /// Sentinel value for a known file.
+  Symbol known_file_sym_;
+
+  /// Sentinel value for a known nonfile.
+  Symbol known_not_file_sym_;
+
+  /// Maps VNames to known_file_sym_, known_not_file_sym_, or file text.
+  absl::flat_hash_map<InternedVName, Symbol> fast_solver_files_;
 };
 
 }  // namespace verifier
