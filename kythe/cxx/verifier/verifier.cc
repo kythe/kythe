@@ -1060,11 +1060,11 @@ static bool EncodedFactHasValidForm(Verifier* cxt, AstNode* a) {
 
 Verifier::InternedVName Verifier::InternVName(AstNode* node) {
   auto* tuple = node->AsTuple();
-  return std::make_tuple(tuple->element(0)->AsIdentifier()->symbol(),
-                         tuple->element(1)->AsIdentifier()->symbol(),
-                         tuple->element(2)->AsIdentifier()->symbol(),
-                         tuple->element(3)->AsIdentifier()->symbol(),
-                         tuple->element(4)->AsIdentifier()->symbol());
+  return {tuple->element(0)->AsIdentifier()->symbol(),
+          tuple->element(1)->AsIdentifier()->symbol(),
+          tuple->element(2)->AsIdentifier()->symbol(),
+          tuple->element(3)->AsIdentifier()->symbol(),
+          tuple->element(4)->AsIdentifier()->symbol()};
 }
 
 bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
