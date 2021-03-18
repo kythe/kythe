@@ -1800,8 +1800,10 @@ class Visitor {
         const overriddenCondition = (sym: ts.Symbol) =>
             Boolean(sym.flags & funcFlags) && sym.name === funcName;
 
-        const overridden =
-            toArray(type.symbol.members.values()).find(overriddenCondition);
+        // TODO(b/181591179): Remove this alias and casts
+        type AnyDuringTs42Migration = any;
+        const overridden: AnyDuringTs42Migration =
+            toArray(type.symbol.members.values() as AnyDuringTs42Migration).find(overriddenCondition as AnyDuringTs42Migration);
         if (overridden) {
           const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
           if (base) {
