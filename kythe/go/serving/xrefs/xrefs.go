@@ -541,7 +541,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
 		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
-			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets (TotalsQuality: %s)", i, len(tickets), totalsQuality)
 			break
 		}
 
@@ -753,10 +752,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 }
 
 func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mergeNode string) []string {
-	if prevMerge, ok := mergeMap[mergeNode]; ok {
-		if prevMerge != rootNode {
-			log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
-		}
+	if _, ok := mergeMap[mergeNode]; ok {
 		return allTickets
 	}
 	allTickets = append(allTickets, mergeNode)
