@@ -117,6 +117,19 @@ def kythe_rule_repositories():
         ],
     )
 
+    rules_scala_version = "5df8033f752be64fbe2cedfd1bdbad56e2033b15"
+
+    maybe(
+        http_archive,
+        name = "io_bazel_rules_scala",
+        sha256 = "b7fa29db72408a972e6b6685d1bc17465b3108b620cb56d9b1700cf6f70f624a",
+        strip_prefix = "rules_scala-%s" % rules_scala_version,
+        type = "zip",
+        urls = [
+            "https://github.com/bazelbuild/rules_scala/archive/%s.zip" % rules_scala_version,
+        ],
+    )
+
     maybe(
         http_archive,
         name = "bazelruby_rules_ruby",
