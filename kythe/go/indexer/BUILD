@@ -213,6 +213,13 @@ go_indexer_test(
     has_marked_source = True,
 )
 
+go_indexer_test(
+    name = "dependent_test",
+    srcs = ["testdata/dependent.go"],
+    has_marked_source = True,
+    deps = [":types_test"],
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(

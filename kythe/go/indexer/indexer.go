@@ -435,9 +435,11 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 		return ""
 	} else if pi.owner == nil {
 		pi.owner = make(map[types.Object]types.Object)
-		pi.addOwners(pi.Package)
+		ownerByPos := make(map[token.Position]types.Object)
+		unownedByPos := make(map[token.Position][]types.Object)
+		pi.addOwners(pi.Package, ownerByPos, unownedByPos)
 		for _, pkg := range pi.Dependencies {
-			pi.addOwners(pkg)
+			pi.addOwners(pkg, ownerByPos, unownedByPos)
 		}
 	}
 	if sig, ok := pi.sigs[obj]; ok {
@@ -669,7 +671,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 // slice type constructors between the type of the exported package member (V2,
 // F or T) and the type of its X subelement.  For now, we simply ignore such
 // names.  They should be rare in readable code.
-func (pi *PackageInfo) addOwners(pkg *types.Package) {
+func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Position]types.Object, unownedByPos map[token.Position][]types.Object) {
 	scope := pkg.Scope()
 	addFunc := func(obj *types.Func) {
 		// Inspect the receiver, parameters, and result values.
@@ -690,10 +692,41 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	}
 	addMethods := func(obj types.Object, n int, method func(i int) *types.Func) {
 		for i := 0; i < n; i++ {
-			if m := method(i); m.Pkg() == pkg {
-				if _, ok := pi.owner[m]; !ok {
+			m := method(i)
+			if _, ok := pi.owner[m]; !ok {
+				pos := pi.FileSet.Position(m.Pos())
+				if m.Pkg() == pkg {
 					pi.owner[m] = obj
 					addFunc(m)
+
+					// Keep track of owners by position to facilitate ownership across
+					// package boundaries for new type names of existing interfaces:
+					//
+					//    package pkg
+					//    type A fmt.Stringer
+					//
+					//    -----
+					//
+					//    package other
+					//    import "pkg"
+					//                         \/
+					//    func f(a pkg.A) { a.String() }
+					//
+					// Understanding that the above reference is to
+					// (fmt.Stringer).String() is lost due to compiler unwrapping the
+					// `type A fmt.Stringer` definition for downtream compilations.
+					// However, position info remains behind for stack traces so we can
+					// use it as fallback heuristic to determine "sameness" of methods.
+					ownerByPos[pos] = obj
+					for _, m := range unownedByPos[pos] {
+						pi.owner[m] = obj
+					}
+					delete(unownedByPos, pos)
+				} else if owner, ok := ownerByPos[pos]; ok {
+					pi.owner[m] = owner
+					addFunc(m)
+				} else {
+					unownedByPos[pos] = append(unownedByPos[pos], m)
 				}
 			}
 		}
