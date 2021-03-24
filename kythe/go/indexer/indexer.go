@@ -714,7 +714,7 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 					//
 					// Understanding that the above reference is to
 					// (fmt.Stringer).String() is lost due to compiler unwrapping the
-					// `type A fmt.Stringer` definition for downtream compilations.
+					// `type A fmt.Stringer` definition for downstream compilations.
 					// However, position info remains behind for stack traces so we can
 					// use it as fallback heuristic to determine "sameness" of methods.
 					ownerByPos[pos] = obj
