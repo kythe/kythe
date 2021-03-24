@@ -20,6 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.Streams;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.proto.Storage.VNameRewriteRule;
@@ -41,6 +42,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -70,7 +72,7 @@ public class FileVNames {
   private static final Type CONFIG_TYPE = new TypeToken<List<BaseFileVName>>() {}.getType();
 
   private final List<BaseFileVName> baseVNames;
-  private final String defaultCorpus;
+  private final Supplier<String> defaultCorpus;
 
   private FileVNames(List<BaseFileVName> baseVNames) {
     Preconditions.checkNotNull(baseVNames);
@@ -79,7 +81,7 @@ public class FileVNames {
       Preconditions.checkNotNull(b.vname, "vname template == null for pattern: %s", b.pattern);
     }
     this.baseVNames = baseVNames;
-    this.defaultCorpus = EnvironmentUtils.defaultCorpus();
+    this.defaultCorpus = Suppliers.memoize(EnvironmentUtils::defaultCorpus);
   }
 
   /**
@@ -206,12 +208,12 @@ public class FileVNames {
      * Returns a {@link VName} by filling in its corpus/root/path with regex groups in the given
      * {@link Matcher}.
      */
-    public VName fillInWith(Matcher m, String defaultCorpus) {
+    public VName fillInWith(Matcher m, Supplier<String> defaultCorpus) {
       VName.Builder b = VName.newBuilder();
       if (corpus != null) {
         b.setCorpus(fillIn(corpus, m));
       } else {
-        b.setCorpus(defaultCorpus);
+        b.setCorpus(defaultCorpus.get());
       }
       if (root != null) {
         b.setRoot(fillIn(root, m));
@@ -220,6 +222,14 @@ public class FileVNames {
         b.setPath(fillIn(path, m));
       }
       return b.build();
+    }
+
+    /**
+     * Returns a {@link VName} by filling in its corpus/root/path with regex groups in the given
+     * {@link Matcher}.
+     */
+    public VName fillInWith(Matcher m, String defaultCorpus) {
+      return fillInWith(m, () -> defaultCorpus);
     }
 
     private static final Pattern replacerMatcher = Pattern.compile("@(\\d+)@");
