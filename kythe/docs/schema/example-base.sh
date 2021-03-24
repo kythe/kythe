@@ -41,6 +41,8 @@ export LABEL="$4"
 export SHOWGRAPH="$5"
 export DIV_STYLE="$6"
 export VERIFIER_ARGS="$7"
+export KYTHE_CORPUS="kythe"
+
 
 error() {
   echo "[ FAILED $1: $LABEL ]" >&2
