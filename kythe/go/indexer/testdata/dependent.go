@@ -7,7 +7,13 @@ import (
 )
 
 // Repeat the test from types.go to ensure the references work across packages.
-func f(i types.StringerI, s fmt.Stringer, e types.StringerE, e2 types.StringerE2) {
+func f(
+	i types.StringerI,
+	s fmt.Stringer,
+	e types.StringerE,
+	e2 types.StringerE2,
+	a types.StringerA,
+) {
 	//- @String ref String
 	i.String()
 	//- @String ref String
@@ -16,4 +22,6 @@ func f(i types.StringerI, s fmt.Stringer, e types.StringerE, e2 types.StringerE2
 	e.String()
 	//- @String ref String
 	e2.String()
+	//- @String ref String
+	a.String()
 }

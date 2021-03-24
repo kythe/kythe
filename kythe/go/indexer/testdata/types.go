@@ -375,8 +375,15 @@ func main() {
 type StringerI fmt.Stringer
 type StringerE interface{ fmt.Stringer }
 type StringerE2 interface{ StringerI }
+type StringerA = fmt.Stringer
 
-func f(i StringerI, s fmt.Stringer, e StringerE, e2 StringerE2) {
+func f(
+	i StringerI,
+	s fmt.Stringer,
+	e StringerE,
+	e2 StringerE2,
+	a StringerA,
+) {
 	//- @String ref String
 	i.String()
 	//- @String ref String
@@ -385,6 +392,8 @@ func f(i StringerI, s fmt.Stringer, e StringerE, e2 StringerE2) {
 	e.String()
 	//- @String ref String
 	e2.String()
+	//- @String ref String
+	a.String()
 }
 
 // TODO(schroederc): taliases
