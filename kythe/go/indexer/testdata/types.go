@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 //- Array4Builtin=vname("array4#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 //- BoolBuiltin=vname("bool#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 //- ByteBuiltin=vname("byte#builtin", "golang.org", "", "", "go").node/kind tbuiltin
@@ -367,6 +369,31 @@ func main() {
 	localF := func(a int) { print(a) }
 
 	localF(i)
+}
+
+// Test the that the String method remains identical across these different embeddings.
+type StringerI fmt.Stringer
+type StringerE interface{ fmt.Stringer }
+type StringerE2 interface{ StringerI }
+type StringerA = fmt.Stringer
+
+func f(
+	i StringerI,
+	s fmt.Stringer,
+	e StringerE,
+	e2 StringerE2,
+	a StringerA,
+) {
+	//- @String ref String
+	i.String()
+	//- @String ref String
+	s.String()
+	//- @String ref String
+	e.String()
+	//- @String ref String
+	e2.String()
+	//- @String ref String
+	a.String()
 }
 
 // TODO(schroederc): taliases
