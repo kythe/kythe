@@ -76,6 +76,14 @@ func TestFromEntries(t *testing.T) {
 		EdgeKind: "/unknown/edge/kind",
 		Target:   &spb.VName{Signature: "node2"},
 	}, {
+		Source:   &spb.VName{Signature: "node2"},
+		EdgeKind: "/unknown/edge/kind2",
+		Target:   &spb.VName{Signature: "node2"},
+	}, {
+		Source:   &spb.VName{Signature: "node2"},
+		EdgeKind: "/unknown/edge/kind3",
+		Target:   &spb.VName{Signature: "node2"},
+	}, {
 		Source:    &spb.VName{Signature: "anchor"},
 		FactName:  facts.NodeKind,
 		FactValue: []byte(nodes.Anchor),
@@ -113,6 +121,12 @@ func TestFromEntries(t *testing.T) {
 		}},
 		Edge: []*scpb.Edge{{
 			Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind"},
+			Target: &spb.VName{Signature: "node2"},
+		}, {
+			Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind2"},
+			Target: &spb.VName{Signature: "node2"},
+		}, {
+			Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind3"},
 			Target: &spb.VName{Signature: "node2"},
 		}, {
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TYPED},
