@@ -22,12 +22,12 @@ message MessageWithTabsInside {
 	//- BarField childof MessageNode
 	optional MessageWithTabsInside bar = 2;
 
-	//- @"itsapackage.Foo" ref FooMessage
+	//- @Foo ref FooMessage
 	//- @foo_data defines/binding AnotherFooField
 	//- AnotherFooField childof MessageNode
 	optional itsapackage.Foo foo_data = 3;
 
-	//- @"itsapackage.Bar" ref BarMessage
+	//- @Bar ref BarMessage
 	//- @bar_data defines/binding AnotherBarField
 	//- AnotherBarField childof MessageNode
 	optional itsapackage.Bar bar_data = 4;

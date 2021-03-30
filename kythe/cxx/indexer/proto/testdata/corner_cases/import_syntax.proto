@@ -16,34 +16,22 @@ import public "kythe/cxx/indexer/proto/testdata/basic/oneof.proto";
 // Message to test for various syntax expressions of referring to a message
 // defined in a namespace.
 message TestMessage {
-  //- @"itsapackage.Foo" ref FooMessage
+  //- @Foo ref FooMessage
   optional itsapackage.Foo test_foo = 1;
-  //- DotLineOne.node/kind anchor
-  //- DotLineOne.loc/start @^"itsapackage."
-  //- DotLineOne.loc/end @$+3"Bar"
-  //- DotLineOne ref BarMessage
+  //- @+2"Bar" ref BarMessage
   optional itsapackage.
   Bar test_bar = 2;
 
-  //- DotLineTwo.node/kind anchor
-  //- DotLineTwo.loc/start @^"itsapackage"
-  //- DotLineTwo.loc/end @$+3".Baz"
-  //- DotLineTwo ref BazMessage
+  //- @+2"Baz" ref BazMessage
   optional itsapackage
   .Baz test_baz = 3;
 
   // Here the base case is already covered in nested-message-field.proto
-  //- NestedDotLineOne.node/kind anchor
-  //- NestedDotLineOne.loc/start @^"ParentMessage."
-  //- NestedDotLineOne.loc/end @$+3"NestedMessage"
-  //- NestedDotLineOne ref NestedMessage
+  //- @+2"NestedMessage" ref NestedMessage
   optional ParentMessage.
   NestedMessage test_nested_import = 4;
 
-  //- NestedDotLineTwo.node/kind anchor
-  //- NestedDotLineTwo.loc/start @^"ParentMessage"
-  //- NestedDotLineTwo.loc/end @$+3".NestedMessage"
-  //- NestedDotLineTwo ref NestedMessage
+  //- @+2"NestedMessage" ref NestedMessage
   optional ParentMessage
   .NestedMessage test_nested_import_again = 5;
 }
