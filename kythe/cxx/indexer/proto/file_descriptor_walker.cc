@@ -374,6 +374,8 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
 
     // If we're in a message or enum type, decorate only the span
     // covering the type name itself, not the full package name.
+    // This is consistent with other languages and avoids the possibility
+    // of a multi-line span, which some UIs have problems with.
     if (absl::optional<absl::string_view> type_name = TypeName(*field)) {
       absl::string_view full_type = absl::string_view(content_).substr(
           type_location.begin, type_location.end - type_location.begin);
