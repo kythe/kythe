@@ -144,8 +144,8 @@ func (e *extractor) checkAction(_ context.Context, info *bazel.ActionInfo) error
 
 func (e *extractor) checkInput(path string) (string, bool) {
 	switch filepath.Ext(path) {
-	case ".go", ".a":
-		return path, true // keep source files, archives
+	case ".go", ".a", ".x":
+		return path, true // keep source files, archives, and export info
 	}
 	return path, false
 }
