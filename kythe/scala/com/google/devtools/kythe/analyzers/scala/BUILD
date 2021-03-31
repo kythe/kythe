@@ -29,9 +29,9 @@ scala_library(
 
 scala_binary(
     name = "runplugin",
-    runtime_deps = [":analyzer"],
-    main_class="com.google.devtools.kythe.analyzers.scala.ScalacWrapper",
     data = [":plugin"],
+    main_class = "com.google.devtools.kythe.analyzers.scala.ScalacWrapper",
+    runtime_deps = [":analyzer"],
 )
 
 gen_verifier_tests()
