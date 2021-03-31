@@ -23,7 +23,7 @@ extend Extendee {
 
 //- @"itsapackage.Foo" ref FooMessage
 extend itsapackage.Foo {
-  //- @"itsapackage.Bar" ref BarMessage
+  //- @Bar ref BarMessage
   //- @other_package_ext defines/binding OtherExtField
   //- OtherExtField childof MainPackage
   //- OtherExtField completes FooMessage
@@ -43,7 +43,7 @@ message Nested {
 
   //- @"itsapackage.Foo" ref FooMessage
   extend itsapackage.Foo {
-    //- @"itsapackage.Bar" ref BarMessage
+    //- @Bar ref BarMessage
     //- @nested_other_package_ext defines/binding NestedOtherField
     //- NestedOtherField childof NestedMessage
     //- NestedOtherField completes FooMessage

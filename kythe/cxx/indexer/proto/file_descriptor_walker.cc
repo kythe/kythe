@@ -82,6 +82,19 @@ class ScopedLookup {
   const int component_;
 };
 
+absl::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
+  if (field.is_map()) {
+    return absl::nullopt;
+  }
+  if (const EnumDescriptor* desc = field.enum_type()) {
+    return desc->name();
+  }
+  if (const Descriptor* desc = field.message_type()) {
+    return desc->name();
+  }
+  return absl::nullopt;
+}
+
 }  // namespace
 
 int FileDescriptorWalker::ComputeByteOffset(int line_number,
@@ -358,6 +371,19 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
     }
     const std::vector<int>& type_span = location_map_[lookup_path];
     InitializeLocation(type_span, &type_location);
+
+    // If we're in a message or enum type, decorate only the span
+    // covering the type name itself, not the full package name.
+    // This is consistent with other languages and avoids the possibility
+    // of a multi-line span, which some UIs have problems with.
+    if (absl::optional<absl::string_view> type_name = TypeName(*field)) {
+      absl::string_view full_type = absl::string_view(content_).substr(
+          type_location.begin, type_location.end - type_location.begin);
+      if (auto pos = full_type.rfind(*type_name); pos != full_type.npos) {
+        type_location.begin += pos;
+        type_location.end = type_location.begin + type_name->size();
+      }
+    }
   }
   VName type = VNameForFieldType(field);
 
