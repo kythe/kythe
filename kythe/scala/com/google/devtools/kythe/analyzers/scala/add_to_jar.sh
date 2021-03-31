@@ -18,7 +18,7 @@
 set -e
 finalJar=${1}
 shift
-JAR_CMD="$(pwd)/external/local_jdk/bin/jar"
+JAR_CMD="jar"
 
 tmpDir="${finalJar}.tmp"
 rm -rf "${tmpDir}"
