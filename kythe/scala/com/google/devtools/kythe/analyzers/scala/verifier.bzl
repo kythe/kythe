@@ -1,4 +1,5 @@
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_test")
+
 TEST_SRCS = ["VerifierTest.scala"]
 
 def gen_verifier_tests():
@@ -19,9 +20,9 @@ def gen_verifier_tests():
                 "@io_bazel_rules_scala_scala_library",
             ] + ["//kythe/scala/com/google/devtools/kythe/analyzers/scala:" + path],
             deps = [
-                    "@io_bazel_rules_scala//testing/toolchain:scalatest_classpath",
-                    "@io_bazel_rules_scala//third_party/utils/src/test:test_util",
-                    "@io_bazel_rules_scala_scala_compiler",
-                    "@io_bazel_rules_scala_scala_library",
-                ],
+                "@io_bazel_rules_scala//testing/toolchain:scalatest_classpath",
+                "@io_bazel_rules_scala//third_party/utils/src/test:test_util",
+                "@io_bazel_rules_scala_scala_compiler",
+                "@io_bazel_rules_scala_scala_library",
+            ],
         )
