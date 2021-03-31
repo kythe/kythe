@@ -580,7 +580,7 @@ object ScalacWrapper extends scala.tools.nsc.Driver {
     var s = settings.copy()
     // You have to create a .jar file with scalac-plugin.xml in it.
     // But it doesn't need any .class files.
-    val myArgs = List("-Xplugin:kythe-plugin.jar", "-Yrangepos")
+    val myArgs = List("-Xplugin:kythe/scala/com/google/devtools/kythe/analyzers/scala/kythe-plugin.jar", "-Yrangepos")
     s.processArguments(myArgs, true) match {
       case (false, rest) => {
         println("error processing arguments (unprocessed: %s)".format(rest))

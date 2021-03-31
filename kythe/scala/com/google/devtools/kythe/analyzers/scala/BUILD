@@ -7,9 +7,7 @@ load(
     "scala_macro_library",
     "scala_test",
 )
-load(":verifier.bzl", "gen_verifier_tests")
-
-TEST_SRCS = ["VerifierTest.scala"]
+load(":verifier.bzl", "TEST_SRCS", "gen_verifier_tests")
 
 scala_library(
     name = "analyzer",
@@ -29,15 +27,11 @@ scala_library(
     ],
 )
 
-scala_library(
-    name = "verifier_test_base",
-    srcs = TEST_SRCS,
-    deps = [
-        "@io_bazel_rules_scala//testing/toolchain:scalatest_classpath",
-        "@io_bazel_rules_scala//third_party/utils/src/test:test_util",
-        "@io_bazel_rules_scala_scala_compiler",
-        "@io_bazel_rules_scala_scala_library",
-    ],
+scala_binary(
+    name = "runplugin",
+    runtime_deps = [":analyzer"],
+    main_class="com.google.devtools.kythe.analyzers.scala.ScalacWrapper",
+    data = [":plugin"],
 )
 
 gen_verifier_tests()

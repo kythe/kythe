@@ -62,7 +62,6 @@ class VerifierTest extends FlatSpec with Matchers {
           Seq(
             verifierBinaryLocation,
             "--show_protos",
-            "--ignore_dups",
             "--show_goals",
             fileToTest.toString
           )
