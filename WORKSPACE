@@ -40,20 +40,26 @@ maybe(
 
 # optional: setup ScalaTest toolchain and dependencies
 load("@io_bazel_rules_scala//testing:scalatest.bzl", "scalatest_repositories", "scalatest_toolchain")
+
 scalatest_repositories()
+
 scalatest_toolchain()
+
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
 
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
-scala_config(scala_version="2.12.12")
+
+scala_config(scala_version = "2.12.12")
 
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_repositories")
+
 scala_repositories()
 
 load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
+
 scala_register_toolchains()
 
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
