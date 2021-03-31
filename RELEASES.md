@@ -1,5 +1,53 @@
 # Release Notes
 
+## [v0.0.50] - 2021-03-31
+
+#### Bug Fixes
+
+*   allow print_extra_actions to print ObjcCompile (#4838) ([2d995633](https://github.com/kythe/kythe/commit/2d995633c7f8424177c49aded94d9e2f904301f6))
+*   revert #4813 (breaks darwin) (#4815) ([50286c1c](https://github.com/kythe/kythe/commit/50286c1cb8a3d0041ae50bfbe8e0e92d50fb83af))
+* **bazel_go_extractor:**  include .x files in required input (#4874) ([a0a72617](https://github.com/kythe/kythe/commit/a0a72617af23375114546d4d75d3d74cf887a13b))
+* **cxx_indexer:**  function definitions should influence declarations (#4812) ([c741a386](https://github.com/kythe/kythe/commit/c741a3865d01e43c684d5d177566d7b6140d74d2))
+* **cxx_verifier:**  properly attribute srcs/hdrs to avoid ODR (#4821) ([b802f32b](https://github.com/kythe/kythe/commit/b802f32b25231dc28e37ed060c0a601486e827a6))
+* **docs:**  Use rules_ruby to hermetically generated the web site  (#4857) ([f975ce26](https://github.com/kythe/kythe/commit/f975ce2607972c8a20e761f227d4f88a85ebbe65))
+* **go_indexer:**  fallback to method ownership by pos (#4867) ([4097379d](https://github.com/kythe/kythe/commit/4097379d37e325220d0192df054c7869e8d8c2c9))
+* **java:**
+  *  emit "static" facts for classes and methods (#4861) ([9c061944](https://github.com/kythe/kythe/commit/9c06194450c2c78e5163545b5eee9d4f09dbf3fa))
+  *  ensure a corpus is always set in extracted compilation units (#4849) ([e7326868](https://github.com/kythe/kythe/commit/e7326868072e30aa8af05943c6c0bb31949695d2))
+* **platform:**  use proper JSON marshalling in proxy (#4804) ([d5a03e10](https://github.com/kythe/kythe/commit/d5a03e103f021645dc07ce716dbb3284f410f369))
+* **proto:**  only decorate the relative type name in fields (#4872) ([d24403f2](https://github.com/kythe/kythe/commit/d24403f2ddfe68e1d1da19b23ce8b000c512352e))
+* **serving:**
+  *  move defer to after error check (#4862) ([6e4b9aea](https://github.com/kythe/kythe/commit/6e4b9aea748bccf28100f9b56b18f7835f2f0b63))
+  *  use nearest FileInfo for revision data (#4827) ([f734fb09](https://github.com/kythe/kythe/commit/f734fb098b5cdb9db5b8a2406318b3bb2cfc8dc7))
+* **tooling:**
+  *  guard adding nil Entry to EntrySet (#4835) ([24735fa1](https://github.com/kythe/kythe/commit/24735fa1051a782ce870500a53549b73d8501ed2))
+  *  use protojson for metadata marshalling (#4806) ([2d265641](https://github.com/kythe/kythe/commit/2d265641400536fd0f9fd2dbf8acc20046b2ed38))
+  *  use protojson for Entry stream encoding (#4805) ([6eaf95d2](https://github.com/kythe/kythe/commit/6eaf95d278be9f8649c63e98e48822a71aab28b9))
+* **typescript:**
+  *  prepare for breakage for upcoming 4.2 migration (#4864) ([9abccb21](https://github.com/kythe/kythe/commit/9abccb214ce52f14dbc7571cfa96cc20399a10aa))
+  *  tslints (#4843) ([891120a3](https://github.com/kythe/kythe/commit/891120a32edf1264224c767179e5051e55ce7249))
+* **verifier:**
+  *  use absl::Span instead of std::initializer_list elsewhere (#4834) ([875a36f6](https://github.com/kythe/kythe/commit/875a36f66bf8b83db20eb297dbcaabd9519d59f7))
+  *  refactor the assertion AST into a library (#4814) ([de6b0c42](https://github.com/kythe/kythe/commit/de6b0c420020bbdbff32d743f73377d84a78f1c2))
+
+#### Features
+
+* **cxx_indexer:**
+  *  add fields to the influence graph (#4820) ([77f6424a](https://github.com/kythe/kythe/commit/77f6424ac3d1e81dd677967014e679d49d3bbaf6))
+  *  track influence through vardecls (#4818) ([b7025ca0](https://github.com/kythe/kythe/commit/b7025ca057559790ca8a77e84d547dbf31f32fe9))
+* **docs:**  begin to document the influence relation (#4791) ([ce3200a2](https://github.com/kythe/kythe/commit/ce3200a25098e1f2667949fca563d8bd85b4acd3))
+* **indexing:**  add synchronous FDS method (#4817) ([eaea3792](https://github.com/kythe/kythe/commit/eaea379277db915d6bc89502a081ce5250504ae2))
+* **java_extractor:**  allow specifying java sources batch size for extractor (#4823) ([3bb67881](https://github.com/kythe/kythe/commit/3bb67881e2f29eae848822da7a64d77feaa47514))
+* **schema:**  add ref/id to edge kinds (#4840) ([fbad5f9a](https://github.com/kythe/kythe/commit/fbad5f9aa330e54bdd4505b9871096a26c9517b7))
+* **serving:**
+  *  handle dirty_buffer in columnar decorations (#4858) ([adb5eb51](https://github.com/kythe/kythe/commit/adb5eb51b218b2531d4708f3e0ba58de5bbd49eb))
+  *  handle dirty_buffer in columnar decorations (#4858) ([cbf4a453](https://github.com/kythe/kythe/commit/cbf4a45375c2830de6dc91fb57cc1df3d3d3de30))
+* **typescript:**  returns influence functions (#4841) ([577446b7](https://github.com/kythe/kythe/commit/577446b7a0f35b86e4ab1782224eca2be8d204c6))
+* **verifier:**
+  *  don't spend time sorting input for the fast solver (#4863) ([7f4c3f03](https://github.com/kythe/kythe/commit/7f4c3f03dbd26427ba11db9fb5e96c9f1f60f035))
+  *  convenience functions for building predicates and ranges (#4833) ([1b160dab](https://github.com/kythe/kythe/commit/1b160dab4c150489dcaae07990429296800cd614))
+  *  set up a library/tests for lowering assertions to souffle (#4832) ([c8df46d2](https://github.com/kythe/kythe/commit/c8df46d2262b24e5afba54d27e758cd15ea22d7d))
+
 ## [v0.0.49] - 2021-01-22
 
 #### Bug Fixes
@@ -1038,7 +1086,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.49...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.50...HEAD
+[v0.0.50] https://github.com/kythe/kythe/compare/v0.0.49...v0.0.50
 [v0.0.49] https://github.com/kythe/kythe/compare/v0.0.48...v0.0.49
 [v0.0.48] https://github.com/kythe/kythe/compare/v0.0.47...v0.0.48
 [v0.0.47] https://github.com/kythe/kythe/compare/v0.0.46...v0.0.47
