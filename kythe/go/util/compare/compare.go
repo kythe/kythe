@@ -61,7 +61,8 @@ func (By) isOption() {}
 
 // Compare returns the Order between two arbitrary values of the same type.
 //
-// Only the following types are currently supported: {string, int, int32, []byte}.
+// Only the following types are currently supported:
+//     {string, int, int32, []byte, bool}.
 //
 // Options may be provided to change the semantics of the comparison.  Other
 // types may be compared if an appropriate By Option transforms the values into
@@ -101,6 +102,8 @@ func Compare(a, b interface{}, opts ...Option) (o Order) {
 		return with(a, b)
 	}
 	switch a := a.(type) {
+	case bool:
+		return Bools(a, b.(bool))
 	case int:
 		return Ints(a, b.(int))
 	case int32:
@@ -191,6 +194,16 @@ func Bytes(s, t []byte) Order { return Order(bytes.Compare(s, t)) }
 
 // Ints returns LT if a < b, EQ if a == b, or GT if a > b.
 func Ints(a, b int) Order { return ToOrder(a - b) }
+
+// Bools returns LT if !a && b, EQ if a == b, or GT if a && !b.
+func Bools(a, b bool) Order {
+	if a == b {
+		return EQ
+	} else if !a {
+		return LT
+	}
+	return GT
+}
 
 // Options for comparing components of *spb.VName protobuf messages.
 var (
