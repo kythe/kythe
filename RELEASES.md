@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.51] - 2021-04-05
+
+#### Bug Fixes
+
+* **go_vnames:**  properly map .x file vnames (#4878) ([00d8e038](https://github.com/kythe/kythe/commit/00d8e0387ad3e15a4295e8af72e8070a45c90fc8))
+
 ## [v0.0.50] - 2021-03-31
 
 #### Bug Fixes
@@ -1086,7 +1092,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.50...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.51...HEAD
+[v0.0.51] https://github.com/kythe/kythe/compare/v0.0.50...v0.0.51
 [v0.0.50] https://github.com/kythe/kythe/compare/v0.0.49...v0.0.50
 [v0.0.49] https://github.com/kythe/kythe/compare/v0.0.48...v0.0.49
 [v0.0.48] https://github.com/kythe/kythe/compare/v0.0.47...v0.0.48
