@@ -13,7 +13,20 @@
     }
   },
   {
+    "input": "bazel-out/foo/bin/nonce%/github.com/kythe/kythe/blah.x",
+    "match": true,
+    "want": {
+      "corpus": "github.com/kythe/kythe",
+      "path": "blah"
+    }
+  },
+  {
     "input": "bazel-out/foo/bin/nonce%/bitbucket.org/creachadair/stringset.a",
+    "match": true,
+    "want": {"corpus": "bitbucket.org/creachadair/stringset"}
+  },
+  {
+    "input": "bazel-out/foo/bin/nonce%/bitbucket.org/creachadair/stringset.x",
     "match": true,
     "want": {"corpus": "bitbucket.org/creachadair/stringset"}
   },
@@ -38,6 +51,11 @@
     "want": {"corpus": "bitbucket.org/nobble/fleem", "path": "wharrgarbl"}
   },
   {
+    "input": "bazel-out/itty/bin/nonce%/bitbucket.org/nobble/fleem/wharrgarbl.x",
+    "match": true,
+    "want": {"corpus": "bitbucket.org/nobble/fleem", "path": "wharrgarbl"}
+  },
+  {
     "input": "bazel-out/foo/genfiles/kythe/proto/analysis.pb.go",
     "match": true,
     "want": {
@@ -47,6 +65,14 @@
   },
   {
     "input": "external/go_sdk/pkg/linux_amd64/io/ioutil.a",
+    "match": true,
+    "want": {
+      "corpus": "golang.org",
+      "path": "io/ioutil"
+    }
+  },
+  {
+    "input": "external/go_sdk/pkg/linux_amd64/io/ioutil.x",
     "match": true,
     "want": {
       "corpus": "golang.org",
