@@ -1,20 +1,20 @@
 [
   {
-    "pattern": "bazel-out/[^%]*%/(github\\.com(?:/[-.\\w]+){2})(?:/([^~]+))?\\.a(?:~partial.a)?$",
+    "pattern": "bazel-out/[^%]*%/(github\\.com(?:/[-.\\w]+){2})(?:/([^~]+))?\\.[xa](?:~partial.[xa])?$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^%]*%/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?\\.a$",
+    "pattern": "bazel-out/[^%]*%/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?\\.[xa]$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^%]*%/(golang\\.org(?:/x/\\w+))/(.+)\\.a$",
+    "pattern": "bazel-out/[^%]*%/(golang\\.org(?:/x/\\w+))/(.+)\\.[xa]$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
@@ -36,21 +36,21 @@
     }
   },
   {
-    "pattern": ".*/go_sdk/pkg/\\w+/vendor/golang_org/x/(\\w+)/(.*)\\.a$",
+    "pattern": ".*/go_sdk/pkg/\\w+/vendor/golang_org/x/(\\w+)/(.*)\\.[xa]$",
     "vname": {
       "corpus": "golang.org/x/@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": ".*/go_sdk/pkg/\\w+/(.*)\\.a$",
+    "pattern": ".*/go_sdk/pkg/\\w+/(.*)\\.[xa]$",
     "vname": {
       "corpus": "golang.org",
       "path": "@1@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/(\\w+)/[^%]*%/([-.\\w]+)/(.+)\\.a(?:~partial.a)?$",
+    "pattern": "bazel-out/[^/]+/(\\w+)/[^%]*%/([-.\\w]+)/(.+)\\.[xa](?:~partial.[xa])?$",
     "vname": {
       "root" : "bazel-out/@1@",
       "corpus": "@2@",
