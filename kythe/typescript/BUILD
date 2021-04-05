@@ -58,11 +58,15 @@ ts_library(
 
 nodejs_test(
     name = "indexer_test",
-    data = [":test_ts"] + glob(["testdata/**/*"]) + [
+    data = [
+        ":test_ts",
+    ] + glob(["testdata/**/*"]) + [
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
     ],
     entry_point = ":test.ts",
+    # See https://github.com/bazelbuild/rules_nodejs/wiki#--bazel_patch_module_resolver-now-defaults-to-false-2324
+    templated_args = ["--bazel_patch_module_resolver"],
 )
 
 jasmine_node_test(
