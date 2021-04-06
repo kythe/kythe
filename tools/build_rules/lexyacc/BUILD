@@ -11,8 +11,8 @@ lexyacc_variables(name = "current_lexyacc_toolchain")
 
 lexyacc_toolchain(
     name = "lexyacc_remote",
-    lex = "/usr/bin/flex",
-    yacc = "/usr/bin/bison",
+    lex_path = "/usr/bin/flex",
+    yacc_path = "/usr/bin/bison",
 )
 
 bzl_library(
