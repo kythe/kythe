@@ -20,8 +20,6 @@
 #include "kythe/cxx/verifier/assertions.h"
 
 namespace kythe::verifier {
-class Verifier;
-
 struct SouffleResult {
   bool success;
   size_t highest_goal_reached;
