@@ -59,6 +59,7 @@ cc_library(
         "souffle_interpreter.h",
     ],
     deps = [
+        ":lexparse",
         "//third_party/souffle:parse_transform",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -72,25 +73,11 @@ cc_test(
         "souffle_interpreter_test.cc",
     ],
     deps = [
+        ":lib",
         ":souffle_interpreter",
         "//third_party:gtest",
         "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
-    ],
-)
-
-cc_library(
-    name = "ast",
-    hdrs = [
-        "assertion_ast.h",
-        ":parser",  # for location.hh
-    ],
-    deps = [
-        ":pretty_printer",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -103,7 +90,7 @@ cc_library(
         "assertions_to_souffle.h",
     ],
     deps = [
-        ":ast",
+        ":lexparse",
         ":lib",
         "@com_google_absl//absl/strings",
     ],
@@ -116,7 +103,7 @@ cc_test(
     ],
     deps = [
         ":assertions_to_souffle",
-        ":ast",
+        ":lexparse",
         ":pretty_printer",
         "//third_party:gtest",
         "//third_party:gtest_main",
@@ -163,9 +150,9 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":ast",
         ":lexparse",
         ":pretty_printer",
+        ":souffle_interpreter",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:scope_guard",
@@ -194,7 +181,7 @@ cc_binary(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":ast",
+        ":lexparse",
         ":lib",
         "//kythe/cxx/common:init",
         "//kythe/proto:storage_cc_proto",

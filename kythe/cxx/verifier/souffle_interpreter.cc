@@ -27,6 +27,15 @@
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
 
+#ifdef __APPLE__
+extern "C" {
+// TODO(zarko): fix these on darwin
+void ffi_call() { abort(); }
+void ffi_prep_cif_machdep() { abort(); }
+void ffi_prep_closure_loc() { abort(); }
+}
+#endif  // defined(__APPLE__)
+
 namespace kythe::verifier {
 namespace {
 constexpr std::array<int, 4> kInputData = {1, 2, 2, 3};
@@ -130,7 +139,11 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
 // correct result. `Kythe{Write,Read}StreamFactory` will need to be moved
 // to separate files and updated to accept the Datalog relations that the
 // verifier -> datalog compiler produces.
-bool RunSouffle() {
+bool RunSouffle(
+    const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
+    const Database& database,
+    std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect,
+    size_t& highest_goal_reached, size_t& highest_group_reached) {
   auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
   size_t output_id = write_stream_factory->NewOutput();
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
@@ -157,6 +170,8 @@ bool RunSouffle() {
   std::set<std::pair<int, int>> expected = {{1, 2}, {1, 3}, {2, 3}};
   const auto& actual = write_stream_factory->GetOutput(output_id);
   std::set<std::pair<int, int>> actual_set(actual.begin(), actual.end());
+  highest_goal_reached = 0;
+  highest_group_reached = 0;
   return (expected == actual_set);
 }
 }  // namespace kythe::verifier

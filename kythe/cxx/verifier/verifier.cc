@@ -27,14 +27,13 @@
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/verifier/souffle_interpreter.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace verifier {
 namespace {
-
-typedef std::vector<AstNode*> Database;
 
 /// \brief The return code from a verifier thunk.
 using ThunkRet = size_t;
@@ -917,9 +916,8 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 bool Verifier::VerifyAllGoals(
     std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
   if (use_fast_solver_) {
-    highest_goal_reached_ = 0;
-    highest_group_reached_ = 0;
-    return false;
+    return RunSouffle(symbol_table_, parser_.groups(), facts_, this, inspect,
+                      highest_goal_reached_, highest_group_reached_);
   }
   if (!PrepareDatabase()) {
     return false;

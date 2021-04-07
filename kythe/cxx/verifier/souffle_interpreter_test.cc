@@ -20,5 +20,14 @@
 #include "gtest/gtest.h"
 
 namespace kythe::verifier {
-TEST(SouffleInterpreterTest, SmokeTest) { ASSERT_TRUE(RunSouffle()); }
+TEST(SouffleInterpreterTest, SmokeTest) {
+  SymbolTable symbols;
+  Database db;
+  std::vector<GoalGroup> groups;
+  size_t goal, group;
+  ASSERT_TRUE(RunSouffle(
+      symbols, groups, db, nullptr,
+      [](Verifier*, const AssertionParser::Inspection&) { return true; }, goal,
+      group));
+}
 }  // namespace kythe::verifier
