@@ -916,8 +916,11 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 bool Verifier::VerifyAllGoals(
     std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
   if (use_fast_solver_) {
-    return RunSouffle(symbol_table_, parser_.groups(), facts_, this, inspect,
-                      highest_goal_reached_, highest_group_reached_);
+    auto result = RunSouffle(symbol_table_, parser_.groups(), facts_,
+                             parser_.inspections(), this, inspect);
+    highest_goal_reached_ = result.highest_goal_reached;
+    highest_group_reached_ = result.highest_group_reached;
+    return result.success;
   }
   if (!PrepareDatabase()) {
     return false;

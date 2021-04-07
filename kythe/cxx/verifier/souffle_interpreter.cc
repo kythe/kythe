@@ -139,13 +139,14 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
 // correct result. `Kythe{Write,Read}StreamFactory` will need to be moved
 // to separate files and updated to accept the Datalog relations that the
 // verifier -> datalog compiler produces.
-bool RunSouffle(
+SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database, Verifier* verifier,
-    std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect,
-    size_t& highest_goal_reached, size_t& highest_group_reached) {
-  highest_goal_reached = 0;
-  highest_group_reached = 0;
+    const Database& database,
+    const std::vector<AssertionParser::Inspection>& inspections,
+    Verifier* verifier,
+    std::function<bool(Verifier*, const AssertionParser::Inspection&)>
+        inspect) {
+  SouffleResult result{};
   auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
   size_t output_id = write_stream_factory->NewOutput();
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
@@ -164,7 +165,7 @@ bool RunSouffle(
         path(x, y) :- path(x, z), edge(z, y).
     )"));
   if (ram_tu == nullptr) {
-    return false;
+    return result;
   }
   souffle::Own<souffle::interpreter::Engine> interpreter(
       souffle::mk<souffle::interpreter::Engine>(*ram_tu));
@@ -172,6 +173,7 @@ bool RunSouffle(
   std::set<std::pair<int, int>> expected = {{1, 2}, {1, 3}, {2, 3}};
   const auto& actual = write_stream_factory->GetOutput(output_id);
   std::set<std::pair<int, int>> actual_set(actual.begin(), actual.end());
-  return (expected == actual_set);
+  result.success = (expected == actual_set);
+  return result;
 }
 }  // namespace kythe::verifier

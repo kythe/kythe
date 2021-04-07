@@ -21,20 +21,30 @@
 
 namespace kythe::verifier {
 class Verifier;
+
+struct SouffleResult {
+  bool success;
+  size_t highest_goal_reached;
+  size_t highest_group_reached;
+};
+
 /// \brief Runs the Souffle interpreter on parsed facts and goal groups.
 /// \param symbol_table the symbol table for expanding idents
 /// \param goal_groups the goal groups to solve
 /// \param database the facts to solve against
-/// \param verifier the verifier to pass to the inspection
-/// \param inspect the inspection to use
-/// \param highest_goal_reached will be set to the highest goal reached
-/// \param highest_group_reached will be set to the highest group reached
-/// \return true if all goals could be solved
-bool RunSouffle(
+/// \param inspections the list of EVars that have been marked explicitly
+/// (`@foo ref Foo?`) or implicitly for inspection.
+/// \param verifier the verifier to pass to the inspection callback
+/// \param inspect the inspection callback that will be used against the
+/// provided list of inspections; a false return value stops iterating through
+/// inspection results and fails the solution, while a true result continues.
+/// \return a `SouffleResult` describing how the run went.
+SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database, Verifier* verifier,
-    std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect,
-    size_t& highest_goal_reached, size_t& highest_group_reached);
+    const Database& database,
+    const std::vector<AssertionParser::Inspection>& inspections,
+    Verifier* verifier,
+    std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect);
 }  // namespace kythe::verifier
 
 #endif  // defined(KYTHE_CXX_VERIFIER_SOUFFLE_INTERPRETER_H_)

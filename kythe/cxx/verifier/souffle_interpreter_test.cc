@@ -24,10 +24,10 @@ TEST(SouffleInterpreterTest, SmokeTest) {
   SymbolTable symbols;
   Database db;
   std::vector<GoalGroup> groups;
-  size_t goal, group;
-  ASSERT_TRUE(RunSouffle(
-      symbols, groups, db, nullptr,
-      [](Verifier*, const AssertionParser::Inspection&) { return true; }, goal,
-      group));
+  std::vector<AssertionParser::Inspection> inspections;
+  auto result = RunSouffle(
+      symbols, groups, db, inspections, nullptr,
+      [](Verifier*, const AssertionParser::Inspection&) { return true; });
+  ASSERT_TRUE(result.success);
 }
 }  // namespace kythe::verifier
