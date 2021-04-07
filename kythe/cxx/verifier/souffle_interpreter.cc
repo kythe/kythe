@@ -144,6 +144,8 @@ bool RunSouffle(
     const Database& database,
     std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect,
     size_t& highest_goal_reached, size_t& highest_group_reached) {
+  highest_goal_reached = 0;
+  highest_group_reached = 0;
   auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
   size_t output_id = write_stream_factory->NewOutput();
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
@@ -170,8 +172,6 @@ bool RunSouffle(
   std::set<std::pair<int, int>> expected = {{1, 2}, {1, 3}, {2, 3}};
   const auto& actual = write_stream_factory->GetOutput(output_id);
   std::set<std::pair<int, int>> actual_set(actual.begin(), actual.end());
-  highest_goal_reached = 0;
-  highest_group_reached = 0;
   return (expected == actual_set);
 }
 }  // namespace kythe::verifier
