@@ -34,7 +34,6 @@ struct SouffleResult {
 /// \param database the facts to solve against
 /// \param inspections the list of EVars that have been marked explicitly
 /// (`@foo ref Foo?`) or implicitly for inspection.
-/// \param verifier the verifier to pass to the inspection callback
 /// \param inspect the inspection callback that will be used against the
 /// provided list of inspections; a false return value stops iterating through
 /// inspection results and fails the solution, while a true result continues.
@@ -43,8 +42,7 @@ SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
     const Database& database,
     const std::vector<AssertionParser::Inspection>& inspections,
-    Verifier* verifier,
-    std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect);
+    std::function<bool(const AssertionParser::Inspection&)> inspect);
 }  // namespace kythe::verifier
 
 #endif  // defined(KYTHE_CXX_VERIFIER_SOUFFLE_INTERPRETER_H_)

@@ -143,9 +143,7 @@ SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
     const Database& database,
     const std::vector<AssertionParser::Inspection>& inspections,
-    Verifier* verifier,
-    std::function<bool(Verifier*, const AssertionParser::Inspection&)>
-        inspect) {
+    std::function<bool(const AssertionParser::Inspection&)> inspect) {
   SouffleResult result{};
   auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
   size_t output_id = write_stream_factory->NewOutput();
