@@ -141,7 +141,7 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
 // verifier -> datalog compiler produces.
 bool RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database,
+    const Database& database, Verifier* verifier,
     std::function<bool(Verifier*, const AssertionParser::Inspection&)> inspect,
     size_t& highest_goal_reached, size_t& highest_group_reached) {
   highest_goal_reached = 0;
