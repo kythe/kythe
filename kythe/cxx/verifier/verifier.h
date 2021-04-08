@@ -28,7 +28,6 @@
 
 namespace kythe {
 namespace verifier {
-
 /// \brief Runs logic programs.
 ///
 /// The `Verifier` combines an `AssertionContext` with a database of Kythe
@@ -244,7 +243,7 @@ class Verifier {
   SymbolTable symbol_table_;
 
   /// All known facts.
-  std::vector<AstNode*> facts_;
+  Database facts_;
 
   /// Multimap from anchor offsets to anchor VName tuples.
   std::multimap<std::pair<size_t, size_t>, AstNode*> anchors_;

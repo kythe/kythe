@@ -32,6 +32,9 @@ class AssertionParserImpl;
 namespace kythe {
 namespace verifier {
 
+/// \brief A database of fact-shaped AstNodes.
+using Database = std::vector<AstNode*>;
+
 class Verifier;
 
 /// \brief Parses logic programs.
