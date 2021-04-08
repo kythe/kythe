@@ -187,7 +187,7 @@ public class FileVNames {
     }
   }
 
-  /** Subset of a {@link VName} with built-in templating '@<num>@' markers. */
+  /** Subset of a {@link VName} with built-in templating '@<group>@' markers. */
   private static class VNameTemplate {
     private final String corpus;
     private final String root;
@@ -232,20 +232,19 @@ public class FileVNames {
       return fillInWith(m, () -> defaultCorpus);
     }
 
-    private static final Pattern replacerMatcher = Pattern.compile("@(\\d+)@");
+    private static final Pattern replacerPattern = Pattern.compile("@(\\w+)@");
 
     private static String fillIn(String tmpl, Matcher m) {
-      Matcher replacers = replacerMatcher.matcher(tmpl);
+      Matcher replacers = replacerPattern.matcher(tmpl);
       Deque<ReplacementMarker> matches = new ArrayDeque<>();
       while (replacers.find()) {
         matches.addFirst(
-            new ReplacementMarker(
-                replacers.start(), replacers.end(), Integer.parseInt(replacers.group(1))));
+            new ReplacementMarker(replacers.start(), replacers.end(), replacers.group(1)));
       }
       StringBuilder builder = new StringBuilder(tmpl);
       while (!matches.isEmpty()) {
         ReplacementMarker res = matches.removeFirst();
-        builder.replace(res.start, res.end, m.group(res.grp));
+        builder.replace(res.start, res.end, res.groupText(m));
       }
       return builder.toString();
     }
@@ -260,12 +259,21 @@ public class FileVNames {
   private static class ReplacementMarker {
     final int start;
     final int end;
-    final int grp;
+    final String grp;
 
-    ReplacementMarker(int start, int end, int grp) {
+    ReplacementMarker(int start, int end, String grp) {
       this.start = start;
       this.end = end;
       this.grp = grp;
+    }
+
+    String groupText(Matcher m) {
+      try {
+        int idx = Integer.parseInt(grp);
+        return m.group(idx);
+      } catch (NumberFormatException unused) {
+        return m.group(grp);
+      }
     }
   }
 

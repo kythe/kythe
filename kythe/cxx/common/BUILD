@@ -124,12 +124,10 @@ cc_library(
 cc_library(
     name = "lib",
     srcs = [
-        "file_vname_generator.cc",
         "kythe_metadata_file.cc",
         "protobuf_metadata_file.cc",
     ],
     hdrs = [
-        "file_vname_generator.h",
         "kythe_metadata_file.h",
         "protobuf_metadata_file.h",
         "vname_ordering.h",
@@ -141,6 +139,7 @@ cc_library(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":file_vname_generator",
         ":json_proto",
         "//external:zlib",
         "//kythe/cxx/common/schema:edges",
@@ -187,20 +186,17 @@ cc_library(
 )
 
 cc_library(
-    name = "file_vname_generator_testlib",
-    testonly = 1,
-    srcs = [
-        "file_vname_generator_test.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
+    name = "file_vname_generator",
+    srcs = ["file_vname_generator.cc"],
+    hdrs = ["file_vname_generator.h"],
     deps = [
-        ":lib",
-        "//third_party:gtest",
-        "@com_google_protobuf//:protobuf",
+        "//kythe/proto:storage_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -208,8 +204,14 @@ cc_library(
 cc_test(
     name = "file_vname_generator_test",
     size = "small",
+    srcs = [
+        "file_vname_generator_test.cc",
+    ],
     deps = [
-        ":file_vname_generator_testlib",
+        ":file_vname_generator",
+        "//third_party:gtest",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

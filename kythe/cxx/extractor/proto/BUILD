@@ -28,6 +28,7 @@ cc_library(
     visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
         "//kythe/cxx/common:file_utils",
+        "//kythe/cxx/common:file_vname_generator",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",

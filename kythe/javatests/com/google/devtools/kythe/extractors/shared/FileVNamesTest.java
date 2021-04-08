@@ -53,10 +53,10 @@ public class FileVNamesTest extends TestCase {
                 "    }",
                 "  },",
                 "  {",
-                "    \"pattern\": \"(grp1)/(\\\\d+)/(.*)\",",
+                "    \"pattern\": \"(?P<corpus>grp1)/(\\\\d+)/(.*)\",",
                 "    \"vname\": {",
                 "      \"root\": \"@2@\",",
-                "      \"corpus\": \"@1@/@3@\"",
+                "      \"corpus\": \"@1@/@corpus@/@3@\"",
                 "    }",
                 "  },",
                 "  {",
@@ -95,7 +95,7 @@ public class FileVNamesTest extends TestCase {
           .addRule(rule("static/path", v("static", "root", "")))
           .addRule(rule("dup/path", v("first", "", "")))
           .addRule(rule("dup/path2", v("second", "", "")))
-          .addRule(rule("(grp1)/(\\d+)/(.*)", v("@1@/@3@", "@2@", "")))
+          .addRule(rule("(?P<corpus>grp1)/(\\d+)/(.*)", v("@1@/@corpus@/@3@", "@2@", "")))
           .addRule(rule("bazel-bin/([^/]+)/java/.*[.]jar!/.*", v("@1@", "java", "")))
           .addRule(rule("third_party/([^/]+)/.*[.]jar!/.*", v("third_party", "@1@", "")))
           .addRule(rule("([^/]+)/java/.*", v("@1@", "java", "")))
@@ -137,7 +137,7 @@ public class FileVNamesTest extends TestCase {
     assertThat(f.lookupBaseVName("corpus/some/path/here"))
         .isEqualTo(VName.newBuilder().setCorpus("corpus").build());
     assertThat(f.lookupBaseVName("grp1/12345/endingGroup"))
-        .isEqualTo(VName.newBuilder().setCorpus("grp1/endingGroup").setRoot("12345").build());
+        .isEqualTo(VName.newBuilder().setCorpus("grp1/grp1/endingGroup").setRoot("12345").build());
 
     assertThat(f.lookupBaseVName("bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class"))
         .isEqualTo(VName.newBuilder().setCorpus("kythe").setRoot("java").build());

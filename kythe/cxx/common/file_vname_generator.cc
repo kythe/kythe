@@ -16,97 +16,103 @@
 
 #include "file_vname_generator.h"
 
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_replace.h"
+#include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 
 namespace kythe {
+namespace {
 
 // FullMatchN supports "3..16 args"
-static constexpr int kMaxRegexArgs = 16;
+constexpr int kMaxRegexArgs = 16;
 
-FileVNameGenerator::FileVNameGenerator() {
-  CHECK_EQ(RE2::NoError, substitution_matcher_.error_code());
+const LazyRE2 kSubstitutionsPattern = {R"(@\w+@)"};
+
+std::string EscapeBackslashes(absl::string_view value) {
+  return absl::StrReplaceAll(value, {{R"(\)", R"(\\)"}});
 }
 
-std::string FileVNameGenerator::ApplyRule(const StringConsRule& rule,
-                                          const re2::StringPiece* argv,
-                                          int argc) const {
-  std::string ret;
-  for (const auto& node : rule) {
-    switch (node.kind) {
-      case StringConsNode::Kind::kEmitText:
-        ret.append(node.raw_text);
-        break;
-      case StringConsNode::Kind::kUseSubstitution:
-        // Invariant: 0 <= node.capture_index < argc
-        ret.append(std::string(argv[node.capture_index]));
-        break;
-    }
+absl::optional<absl::string_view> FindMatch(absl::string_view text,
+                                            const RE2& pattern) {
+  re2::StringPiece match;
+  if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
+    return absl::string_view(match.data(), match.size());
   }
-  return ret;
+  return absl::nullopt;
 }
 
-bool FileVNameGenerator::ParseRule(const std::string& rule, int max_capture,
-                                   StringConsRule* result,
-                                   std::string* error_text) {
-  CHECK(result != nullptr);
-  CHECK(error_text != nullptr);
-  re2::StringPiece rule_left(rule);
-  while (!rule_left.empty()) {
-    re2::StringPiece prefix, substitution;
-    if (!RE2::Consume(&rule_left, substitution_matcher_, &prefix,
-                      &substitution)) {
-      prefix = rule_left;
-      rule_left = re2::StringPiece();
-    }
-    if (!prefix.empty()) {
-      StringConsNode node;
-      node.kind = StringConsNode::Kind::kEmitText;
-      node.raw_text = std::string(prefix);
-      result->push_back(node);
-    }
-    if (!substitution.empty()) {
-      StringConsNode node;
-      node.kind = StringConsNode::Kind::kUseSubstitution;
-      node.capture_index = std::stoi(std::string(substitution));
-      if (node.capture_index == 0 || node.capture_index > max_capture) {
-        *error_text =
-            "Capture index out of range: " + std::to_string(node.capture_index);
-        return false;
+absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
+                                          absl::string_view input) {
+  std::string result;
+  while (absl::optional<absl::string_view> match =
+             FindMatch(input, *kSubstitutionsPattern)) {
+    absl::string_view group = match->substr(1, match->size() - 2);
+
+    int index = 0;
+    if (!absl::SimpleAtoi(group, &index)) {
+      auto iter = kSubstitutionsPattern->NamedCapturingGroups().find(
+          std::string(group));
+      if (iter == kSubstitutionsPattern->NamedCapturingGroups().end()) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Unknown named capture: ", group));
       }
-      // Make these zero-based.
-      --node.capture_index;
-      result->push_back(node);
+      index = iter->second;
     }
+    if (index == 0 || index > pattern.NumberOfCapturingGroups()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Capture index out of range: ", index));
+    }
+    absl::string_view prefix = input.substr(0, match->begin() - input.begin());
+    absl::StrAppend(&result, EscapeBackslashes(prefix), "\\", index);
+    input.remove_prefix(prefix.size() + match->size());
   }
-  return true;
+  // Include the unmatched tail.
+  absl::StrAppend(&result, EscapeBackslashes(input));
+  return result;
 }
+
+absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
+                                                const rapidjson::Value& parent,
+                                                absl::string_view name) {
+  const auto member =
+      parent.FindMember(rapidjson::Value(name.data(), name.size()));
+  if (member == parent.MemberEnd()) {
+    return "";
+  }
+  if (!member->value.IsString()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("VName template ", name, " is not a string."));
+  }
+  return ParseTemplate(pattern, member->value.GetString());
+}
+
+}  // namespace
 
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
-    const std::string& path) const {
-  re2::StringPiece argv[kMaxRegexArgs];
-  RE2::Arg args[kMaxRegexArgs];
-  RE2::Arg* arg_pointers[kMaxRegexArgs];
-  for (size_t n = 0; n < kMaxRegexArgs; ++n) {
-    args[n] = &argv[n];
-    arg_pointers[n] = &args[n];
-  }
+    absl::string_view path) const {
   for (const auto& rule : rules_) {
-    // Invariant: capture_groups <= kMaxRegexArgs
-    // RE2 will fail to match if we provide more args than there are captures
-    // for a given regex.
-    int capture_groups = rule.pattern->NumberOfCapturingGroups();
-    if (RE2::FullMatchN(path, *rule.pattern, arg_pointers, capture_groups)) {
+    std::vector<re2::StringPiece> captures(
+        1 +
+        std::max({RE2::MaxSubmatch(rule.corpus), RE2::MaxSubmatch(rule.root),
+                  RE2::MaxSubmatch(rule.path)}));
+    if (rule.pattern->Match(path, 0, path.size(), RE2::ANCHOR_BOTH,
+                            captures.data(), captures.size())) {
       kythe::proto::VName result;
       if (!rule.corpus.empty()) {
-        result.set_corpus(ApplyRule(rule.corpus, argv, capture_groups));
+        rule.pattern->Rewrite(result.mutable_corpus(), rule.corpus,
+                              captures.data(), captures.size());
       }
       if (!rule.root.empty()) {
-        result.set_root(ApplyRule(rule.root, argv, capture_groups));
+        rule.pattern->Rewrite(result.mutable_root(), rule.root, captures.data(),
+                              captures.size());
       }
       if (!rule.path.empty()) {
-        result.set_path(ApplyRule(rule.path, argv, capture_groups));
+        rule.pattern->Rewrite(result.mutable_path(), rule.path, captures.data(),
+                              captures.size());
       }
       return result;
     }
@@ -115,92 +121,78 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
 }
 
 kythe::proto::VName FileVNameGenerator::LookupVName(
-    const std::string& path) const {
+    absl::string_view path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
-    vname.set_path(path);
+    vname.set_path(path.data(), path.size());
   }
   return vname;
 }
 
-bool FileVNameGenerator::LoadJsonString(const std::string& data,
+bool FileVNameGenerator::LoadJsonString(absl::string_view data,
                                         std::string* error_text) {
-  CHECK(error_text != nullptr);
+  absl::Status status = LoadJsonString(data);
+  if (!status.ok() && error_text != nullptr) {
+    *error_text = status.ToString();
+  }
+  return status.ok();
+}
+
+absl::Status FileVNameGenerator::LoadJsonString(absl::string_view data) {
   using Value = rapidjson::Value;
   rapidjson::Document document;
-  document.Parse(data.c_str());
+  document.Parse(data.data(), data.size());
   if (document.HasParseError()) {
-    if (error_text) {
-      *error_text = rapidjson::GetParseError_En(document.GetParseError());
-      error_text->append(" near offset ");
-      error_text->append(std::to_string(document.GetErrorOffset()));
-    }
-    return false;
+    return absl::InvalidArgumentError(
+        absl::StrCat(rapidjson::GetParseError_En(document.GetParseError()),
+                     " near offset ", document.GetErrorOffset()));
   }
   if (!document.IsArray()) {
-    *error_text = "Root element in JSON was not an array.";
-    return false;
+    return absl::InvalidArgumentError("Root element in JSON was not an array.");
   }
   for (Value::ConstValueIterator rule = document.Begin();
        rule != document.End(); ++rule) {
     if (!rule->IsObject()) {
-      *error_text = "Expected an array of objects.";
-      return false;
+      return absl::InvalidArgumentError("Expected an array of objects.");
     }
     const auto regex = rule->FindMember("pattern");
     if (regex == rule->MemberEnd() || !regex->value.IsString()) {
-      *error_text = "VName rule is missing its pattern.";
-      return false;
+      return absl::InvalidArgumentError("VName rule is missing its pattern.");
     }
     VNameRule next_rule;
     // RE2s don't act like values. Just box them.
     next_rule.pattern = std::make_shared<RE2>(regex->value.GetString());
     if (next_rule.pattern->error_code() != RE2::NoError) {
-      *error_text = next_rule.pattern->error();
-      return false;
+      return absl::InvalidArgumentError(next_rule.pattern->error());
     }
-    int num_captures = next_rule.pattern->NumberOfCapturingGroups();
-    CHECK(num_captures <= kMaxRegexArgs);
     const auto vname = rule->FindMember("vname");
     if (vname == rule->MemberEnd() || !vname->value.IsObject()) {
-      *error_text = "VName rule is missing its template.";
-      return false;
+      return absl::InvalidArgumentError("VName rule is missing its template.");
     }
-    const auto root = vname->value.FindMember("root");
-    if (root != vname->value.MemberEnd()) {
-      if (!root->value.IsString()) {
-        *error_text = "VName template root is not a string.";
-        return false;
-      }
-      if (!ParseRule(root->value.GetString(), num_captures, &next_rule.root,
-                     error_text)) {
-        return false;
-      }
+
+    absl::StatusOr<std::string> root =
+        ParseTemplateMember(*next_rule.pattern, vname->value, "root");
+    if (!root.ok()) {
+      return root.status();
     }
-    const auto corpus = vname->value.FindMember("corpus");
-    if (corpus != vname->value.MemberEnd()) {
-      if (!corpus->value.IsString()) {
-        *error_text = "VName template corpus is not a string.";
-        return false;
-      }
-      if (!ParseRule(corpus->value.GetString(), num_captures, &next_rule.corpus,
-                     error_text)) {
-        return false;
-      }
+    next_rule.root = *std::move(root);
+
+    absl::StatusOr<std::string> corpus =
+        ParseTemplateMember(*next_rule.pattern, vname->value, "corpus");
+    if (!corpus.ok()) {
+      return corpus.status();
     }
-    const auto path = vname->value.FindMember("path");
-    if (path != vname->value.MemberEnd()) {
-      if (!path->value.IsString()) {
-        *error_text = "VName template path is not a string.";
-        return false;
-      }
-      if (!ParseRule(path->value.GetString(), num_captures, &next_rule.path,
-                     error_text)) {
-        return false;
-      }
+    next_rule.corpus = *std::move(corpus);
+
+    absl::StatusOr<std::string> path =
+        ParseTemplateMember(*next_rule.pattern, vname->value, "path");
+    if (!path.ok()) {
+      return path.status();
     }
+    next_rule.path = *std::move(path);
+
     rules_.push_back(next_rule);
   }
-  return true;
+  return absl::OkStatus();
 }
 }  // namespace kythe
