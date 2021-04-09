@@ -1,5 +1,17 @@
 # Release Notes
 
+## [v0.0.52] - 2021-04-09
+
+#### Features
+
+* **build:**  allow in-tree lex/yacc toolchains (#4880) ([ad8f0987](https://github.com/kythe/kythe/commit/ad8f0987e33d4d78c3ba3c8fc33ced9c8213cb07))
+* **common:**  allow named captures in vnames.json rules (#4883) ([4398f3f5](https://github.com/kythe/kythe/commit/4398f3f57060d7bfeb320d0c885df7905592d756))
+* **verifier:**  add stub for souffle support (#4881) ([fe68af99](https://github.com/kythe/kythe/commit/fe68af990c367228aeb4ad0f9a5403e3fa7defd3))
+
+#### Bug Fixes
+
+* **go_vnames:**  add go vname archives to simple_vnames.json (#4882) ([44e45a63](https://github.com/kythe/kythe/commit/44e45a6388e7780b11574906e80a18cc323d6f02))
+
 ## [v0.0.51] - 2021-04-05
 
 #### Bug Fixes
@@ -1092,7 +1104,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.51...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.52...HEAD
+[v0.0.52] https://github.com/kythe/kythe/compare/v0.0.51...v0.0.52
 [v0.0.51] https://github.com/kythe/kythe/compare/v0.0.50...v0.0.51
 [v0.0.50] https://github.com/kythe/kythe/compare/v0.0.49...v0.0.50
 [v0.0.49] https://github.com/kythe/kythe/compare/v0.0.48...v0.0.49
