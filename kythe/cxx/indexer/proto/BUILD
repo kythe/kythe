@@ -42,6 +42,7 @@ cc_library(
         ":proto_graph_builder",
         ":search_path",
         ":source_tree",
+        "//kythe/cxx/common:file_vname_generator",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
@@ -115,6 +116,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":proto_analyzer",
+        "//kythe/cxx/common:file_vname_generator",
         "//kythe/cxx/common:init",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_reader",

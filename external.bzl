@@ -290,7 +290,7 @@ def _java_dependencies():
             "com.google.errorprone:error_prone_annotations:2.3.1",
             "com.google.guava:guava:26.0-jre",
             "com.google.jimfs:jimfs:1.1",
-            "com.google.re2j:re2j:1.2",
+            "com.google.re2j:re2j:1.6",
             "com.google.truth:truth:1.0",
             "com.googlecode.java-diff-utils:diffutils:1.3.0",
             "org.apache.tomcat:tomcat-annotations-api:9.0.34",
