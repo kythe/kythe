@@ -86,7 +86,7 @@ TEST(FileVNameGenerator, LookupGroups) {
   EXPECT_EQ(corpus_vname.DebugString(),
             generator.LookupBaseVName("corpus/some/path/here").DebugString());
   kythe::proto::VName grp1_vname;
-  grp1_vname.set_corpus("grp1/endingGroup");
+  grp1_vname.set_corpus("grp1/grp1/endingGroup");
   grp1_vname.set_root("12345");
   EXPECT_EQ(grp1_vname.DebugString(),
             generator.LookupBaseVName("grp1/12345/endingGroup").DebugString());
@@ -249,10 +249,10 @@ const char kSharedTestFile[] = R"d([
     }
   },
   {
-    "pattern": "(grp1)/(\\d+)/(.*)",
+    "pattern": "(?P<CORPUS>grp1)/(\\d+)/(.*)",
     "vname": {
       "root": "@2@",
-      "corpus": "@1@/@3@"
+      "corpus": "@1@/@CORPUS@/@3@"
     }
   },
   {

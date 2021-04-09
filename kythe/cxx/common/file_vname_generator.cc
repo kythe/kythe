@@ -27,9 +27,6 @@
 namespace kythe {
 namespace {
 
-// FullMatchN supports "3..16 args"
-constexpr int kMaxRegexArgs = 16;
-
 const LazyRE2 kSubstitutionsPattern = {R"(@\w+@)"};
 
 std::string EscapeBackslashes(absl::string_view value) {
@@ -54,9 +51,8 @@ absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
 
     int index = 0;
     if (!absl::SimpleAtoi(group, &index)) {
-      auto iter = kSubstitutionsPattern->NamedCapturingGroups().find(
-          std::string(group));
-      if (iter == kSubstitutionsPattern->NamedCapturingGroups().end()) {
+      auto iter = pattern.NamedCapturingGroups().find(std::string(group));
+      if (iter == pattern.NamedCapturingGroups().end()) {
         return absl::InvalidArgumentError(
             absl::StrCat("Unknown named capture: ", group));
       }
