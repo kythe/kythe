@@ -91,9 +91,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_jvm_external",
-        sha256 = "e5b97a31a3e8feed91636f42e19b11c49487b85e5de2f387c999ea14d77c7f45",
-        strip_prefix = "rules_jvm_external-2.9",
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/2.9.zip"],
+        sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
+        strip_prefix = "rules_jvm_external-4.0",
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.0.zip"],
     )
 
     maybe(
