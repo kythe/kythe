@@ -21,7 +21,7 @@ java_library(
     name = "autovalue",
     exported_plugins = [":auto_plugin"],
     exports = [
-        "@maven//:com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value_annotations",
         "@maven//:org_apache_tomcat_tomcat_annotations_api",
     ],
 )
@@ -40,7 +40,7 @@ java_library(
     name = "autoservice",
     exported_plugins = [":auto_service_plugin"],
     exports = [
-        "@maven//:com_google_auto_service_auto_service",
+        "@maven//:com_google_auto_service_auto_service_annotations",
         "@maven//:org_apache_tomcat_tomcat_annotations_api",
     ],
 )
