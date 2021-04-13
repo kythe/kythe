@@ -386,20 +386,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitComment(classDef, classNode);
     }
 
-    if (classDef.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
-      entrySets.getEmitter().emitFact(classNode, "/kythe/tag/abstract", "");
-    }
-
-    if (classDef.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
-      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/public", "");
-    }
-    if (classDef.getModifiers().getFlags().contains(Modifier.PRIVATE)) {
-      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/private", "");
-    }
-    if (classDef.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
-      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/protected", "");
-    }
-
     visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
     JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
@@ -1445,6 +1431,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private void emitModifiers(VName node, JCModifiers modifiers) {
+    if (modifiers.getFlags().contains(Modifier.ABSTRACT)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/tag/abstract", "");
+    }
+
     if (modifiers.getFlags().contains(Modifier.STATIC)) {
       entrySets.getEmitter().emitFact(node, "/kythe/tag/static", "");
     }

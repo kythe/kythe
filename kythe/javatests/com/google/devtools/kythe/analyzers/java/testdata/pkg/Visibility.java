@@ -36,13 +36,13 @@ public class Visibility {
   }
 
   //- @PrivClass defines/binding PrivateClass
-  private class PrivClass { }
+  private class PrivClass {}
 
   //- @DefClass defines/binding DefaultClass
-  class DefClass { }
+  class DefClass {}
 
   //- @ProtClass defines/binding ProtectedClass
-  protected class ProtClass { }
+  protected class ProtClass {}
 
   //- @PubClass defines/binding PublicClass
   public class PubClass {}
