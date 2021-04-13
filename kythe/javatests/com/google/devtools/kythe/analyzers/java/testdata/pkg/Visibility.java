@@ -32,7 +32,10 @@ public class Visibility {
 
   //- @pubMethod defines/binding PublicMethod
   public int pubMethod() {
-    return 0;
+
+    //- @local defines/binding LocalVar
+    int local = 0;
+    return local;
   }
 
   //- @PrivClass defines/binding PrivateClass
@@ -49,16 +52,18 @@ public class Visibility {
 }
 
 //- PrivateMember.visibility private
-//- !{ DefaultMember.visibility _ }
+//- DefaultMember.visibility package
 //- ProtectedMember.visibility protected
 //- PublicMember.visibility public
 
 //- PrivateMethod.visibility private
-//- !{ DefaultMethod.visibility _}
+//- DefaultMethod.visibility package
 //- ProtectedMethod.visibility protected
 //- PublicMethod.visibility public
 
 //- PrivateClass.visibility private
-//- !{ DefaultClass.visibility _ }
+//- DefaultClass.visibility package
 //- ProtectedClass.visibility protected
 //- PublicClass.visibility public
+
+//- !{ LocalVar.visibility _ }
