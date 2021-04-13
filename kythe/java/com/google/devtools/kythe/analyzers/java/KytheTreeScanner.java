@@ -337,9 +337,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // initializers. But there's no harm in emitting the same fact twice!
     getScope(ctx).forEach(scope -> entrySets.emitEdge(classNode, EdgeKind.CHILDOF, scope));
 
-    if (classDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
-      emitStatic(classNode);
-    }
+    emitModifiers(classNode, classDef.getModifiers());
 
     NestingKind nestingKind = classDef.sym.getNestingKind();
     if (nestingKind != NestingKind.LOCAL
@@ -390,6 +388,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (classDef.getModifiers().getFlags().contains(Modifier.ABSTRACT)) {
       entrySets.getEmitter().emitFact(classNode, "/kythe/tag/abstract", "");
+    }
+
+    if (classDef.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
+      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/public", "");
+    }
+    if (classDef.getModifiers().getFlags().contains(Modifier.PRIVATE)) {
+      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/private", "");
+    }
+    if (classDef.getModifiers().getFlags().contains(Modifier.PUBLIC)) {
+      entrySets.getEmitter().emitFact(classNode, "/kythe/visibility/protected", "");
     }
 
     visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
@@ -538,9 +546,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName methodNode =
         entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource, null);
     visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
-    if (methodDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
-      emitStatic(methodNode);
-    }
+    emitModifiers(methodNode, methodDef.getModifiers());
 
     EntrySet absNode =
         defineTypeParameters(
@@ -736,9 +742,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     getScope(ctx).forEach(scope -> entrySets.emitEdge(varNode, EdgeKind.CHILDOF, scope));
     visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
+    emitModifiers(varNode, varDef.getModifiers());
     if (varDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
-      emitStatic(varNode);
-
       if (varDef.sym.getKind().isField() && owner.getNode().getClassInit().isPresent()) {
         ctx.setNode(new JavaNode(owner.getNode().getClassInit().get()));
       }
@@ -1439,8 +1444,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     deprecation.ifPresent(d -> entrySets.getEmitter().emitFact(node, "/kythe/tag/deprecated", d));
   }
 
-  private void emitStatic(VName node) {
-    entrySets.getEmitter().emitFact(node, "/kythe/tag/static", "");
+  private void emitModifiers(VName node, JCModifiers modifiers) {
+    if (modifiers.getFlags().contains(Modifier.STATIC)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/tag/static", "");
+    }
+
+    if (modifiers.getFlags().contains(Modifier.VOLATILE)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/tag/volatile", "");
+    }
+
+    if (modifiers.getFlags().contains(Modifier.DEFAULT)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/tag/default", "");
+    }
+
+    if (modifiers.getFlags().contains(Modifier.PUBLIC)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/visibility", "public");
+    }
+    if (modifiers.getFlags().contains(Modifier.PRIVATE)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/visibility", "private");
+    }
+    if (modifiers.getFlags().contains(Modifier.PROTECTED)) {
+      entrySets.getEmitter().emitFact(node, "/kythe/visibility", "protected");
+    }
+    // TODO: default? what about "implied" visibility (e.g. interface methods are public)?
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode

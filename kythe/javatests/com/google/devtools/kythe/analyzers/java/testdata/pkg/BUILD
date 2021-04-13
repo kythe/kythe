@@ -356,6 +356,18 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "visibility_tests",
+    size = "small",
+    srcs = ["Visibility.java"],
+)
+
+java_verifier_test(
+    name = "modifier_tests",
+    size = "small",
+    srcs = ["Modifiers.java"],
+)
+
+java_verifier_test(
     name = "package_tests",
     size = "small",
     srcs = [
