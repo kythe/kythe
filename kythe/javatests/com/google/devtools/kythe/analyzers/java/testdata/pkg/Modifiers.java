@@ -1,6 +1,7 @@
 package pkg;
 
 @SuppressWarnings("unused")
+//- @Modifiers defines/binding AbstractClass
 public abstract class Modifiers {
 
   //- @privMember defines/binding PrivateMember
@@ -16,6 +17,10 @@ public abstract class Modifiers {
   //- @absmethod defines/binding AbstractMethod
   abstract int absmethod();
 
+  //- @Clazz defines/binding Class
+  class Clazz { }
+
+  //- @Intf defines/binding Interface
   interface Intf {
     //- @func defines/binding IMethod
     int func();
@@ -35,3 +40,7 @@ public abstract class Modifiers {
 
 //- !{ Method.tag/abstract _ }
 //- AbstractMethod.tag/abstract _
+
+//- !{ Class.tag/abstract _ }
+//- AbstractClass.tag/abstract _
+//- !{ Interface.tag/abstract _ }
