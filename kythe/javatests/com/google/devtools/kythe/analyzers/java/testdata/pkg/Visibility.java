@@ -49,6 +49,19 @@ public class Visibility {
 
   //- @PubClass defines/binding PublicClass
   public class PubClass {}
+
+  //- @DefIntf defines/binding DefaultInterface
+  interface DefIntf {
+    //- @f defines/binding DefaultInterfaceMethod
+    int f();
+  }
+
+  //- @DefEnum defines/binding DefaultEnum
+  enum DefEnum {
+    //- @X defines/binding EnumValueX
+    X,
+    Y;
+  }
 }
 
 //- PrivateMember.visibility private
@@ -67,3 +80,10 @@ public class Visibility {
 //- PublicClass.visibility public
 
 //- !{ LocalVar.visibility _ }
+
+//- DefaultInterface.visibility package
+//- DefaultInterfaceMethod.visibility public
+
+//- DefaultEnum.visibility package
+// N.B. enum values are tagged as public, final and static by the Java compiler.
+//- EnumValueX.visibility public
