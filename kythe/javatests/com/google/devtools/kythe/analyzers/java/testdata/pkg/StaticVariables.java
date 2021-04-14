@@ -11,7 +11,8 @@ public class StaticVariables {
   //- @E defines/binding Enum
   enum E {
     //- @X defines/binding EnumValue
-    X;
+    X,
+    Y;
   }
 }
 
