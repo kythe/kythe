@@ -8,6 +8,8 @@ public abstract class Modifiers {
   private int privMember;
   //- @volMember defines/binding VolatileMember
   private volatile int volMember;
+  //- @volStatic defines/binding VolatileStatic
+  private static volatile int volStatic;
 
   //- @method defines/binding Method
   int method() {
@@ -34,6 +36,7 @@ public abstract class Modifiers {
 
 //- !{ PrivateMember.tag/volatile _ }
 //- VolatileMember.tag/volatile _
+//- VolatileStatic.tag/volatile _
 
 //- !{ IMethod.tag/default _ }
 //- DefaultMethod.tag/default _
