@@ -1279,17 +1279,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     final String factValue;
-  }
 
-  private static Visibility getDefaultVisibility(TreeContext ctx) {
-    JCClassDecl parent = ctx.getClassParentDecl();
-    if (parent == null) {
-      return Visibility.PACKAGE;
+    static Visibility getDefault(TreeContext ctx) {
+      JCClassDecl parent = ctx.getClassParentDecl();
+      if (parent == null) {
+        return PACKAGE;
+      }
+      if (parent.getKind().equals(Kind.INTERFACE)) {
+        return PUBLIC;
+      }
+      return PACKAGE;
     }
-    if (parent.getKind().equals(Kind.INTERFACE)) {
-      return Visibility.PUBLIC;
-    }
-    return Visibility.PACKAGE;
   }
 
   private static ImmutableList<VName> getScope(TreeContext ctx) {
@@ -1490,7 +1490,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else {
       entrySets
           .getEmitter()
-          .emitFact(node, "/kythe/visibility", getDefaultVisibility(ctx).factValue);
+          .emitFact(node, VISIBILITY_FACT_NAME, Visibility.getDefault(ctx).factValue);
     }
   }
 
