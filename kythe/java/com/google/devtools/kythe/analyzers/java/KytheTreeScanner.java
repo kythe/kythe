@@ -126,6 +126,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Name for special source file containing package annotations and documentation. */
   private static final String PACKAGE_INFO_NAME = "package-info";
 
+  /** Fact name for visibility. */
+  private static final String VISIBILITY_FACT_NAME = "/kythe/visibility";
+
   private final JavaIndexerConfig config;
 
   private final JavaEntrySets entrySets;
@@ -1479,11 +1482,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private void emitVisibility(VName node, JCModifiers modifiers, TreeContext ctx) {
     if (modifiers.getFlags().contains(Modifier.PUBLIC)) {
-      entrySets.getEmitter().emitFact(node, "/kythe/visibility", Visibility.PUBLIC.factValue);
+      entrySets.getEmitter().emitFact(node, VISIBILITY_FACT_NAME, Visibility.PUBLIC.factValue);
     } else if (modifiers.getFlags().contains(Modifier.PRIVATE)) {
-      entrySets.getEmitter().emitFact(node, "/kythe/visibility", Visibility.PRIVATE.factValue);
+      entrySets.getEmitter().emitFact(node, VISIBILITY_FACT_NAME, Visibility.PRIVATE.factValue);
     } else if (modifiers.getFlags().contains(Modifier.PROTECTED)) {
-      entrySets.getEmitter().emitFact(node, "/kythe/visibility", Visibility.PROTECTED.factValue);
+      entrySets.getEmitter().emitFact(node, VISIBILITY_FACT_NAME, Visibility.PROTECTED.factValue);
     } else {
       entrySets
           .getEmitter()
