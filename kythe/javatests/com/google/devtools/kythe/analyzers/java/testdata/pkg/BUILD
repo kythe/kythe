@@ -188,7 +188,6 @@ java_verifier_test(
     verifier_deps = [":jvm_files_tests"],
 )
 
-# TODO(#1501): This test currently fails
 java_verifier_test(
     name = "generic_class_tests",
     size = "small",

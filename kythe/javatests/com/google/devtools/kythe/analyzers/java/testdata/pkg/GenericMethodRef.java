@@ -9,6 +9,7 @@ public final class GenericMethodRef {
     Optional() {}
   }
 
+  // TODO(#1501): wildcard tests currently fail
   //- @Optional ref OClass
   //- @wildcard defines/binding WildcardFnAbs
   //- @ovar defines/binding WildcardParam1
