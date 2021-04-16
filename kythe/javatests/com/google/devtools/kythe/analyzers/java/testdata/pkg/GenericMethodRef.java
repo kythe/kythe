@@ -1,8 +1,13 @@
 package pkg;
 
 @SuppressWarnings("unused")
+//- @GenericMethodRef defines/binding GClass
 public final class GenericMethodRef {
-  public static final class Optional<T> {}
+  //- @Optional defines/binding OClass
+  public static final class Optional<T> {
+    //- @Optional defines/binding OptionalConstructor
+    Optional() {}
+  }
 
   //- @Optional ref OptionalClass
   //- @wildcard defines/binding WildcardFnAbs
@@ -28,5 +33,13 @@ public final class GenericMethodRef {
     //- @verboseWildcard ref VerboseWildcardFnAbs
     //- @"verboseWildcard(null)" ref/call VerboseWildcardFnAbs
     verboseWildcard(null);
+  }
+
+  private static void constructor() {
+    //- @Optional ref/call OptionalConstructor
+    //- @Optional ref OptionalConstructor
+    //- @Optional ref OClass
+    //- @GenericMethodRef ref GClass
+    Object o = new Optional<GenericMethodRef>();
   }
 }

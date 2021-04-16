@@ -60,9 +60,12 @@ public class Callgraph {
   //- CtorCall.loc/start @^"new Callgraph()"
   //- CtorCall.loc/end @$"new Callgraph()"
   //- CtorCall ref/call ECtor
+  //- CtorRef.loc/start @^"Callgraph"
+  //- CtorRef.loc/end @$"Callgraph"
+  //- CtorRef ref ECtor
   //- CtorCall childof ECtor
   //- CtorCall childof SCtor
-  final Callgraph instance = new Callgraph();
+  final Object instance = new Callgraph();
 
   //- @Callgraph defines/binding ECtor
   //- ECtor.node/kind function
@@ -78,12 +81,12 @@ public class Callgraph {
   //- F.node/kind function
   //- F typed _FType
   static void f(int n) {
-    //- @"new Callgraph" ref ECtor
+    //- @"Callgraph" ref ECtor
     //- ECtorCall.loc/start @^"new Callgraph()"
     //- ECtorCall.loc/end @$"new Callgraph()"
-    Callgraph cg = new Callgraph();
+    Object cg = new Callgraph();
     //
-    //- @"new Callgraph" ref SCtor
+    //- @"Callgraph" ref SCtor
     //- SCtorCall.loc/start @^"new Callgraph(null)"
     //- SCtorCall.loc/end @$"new Callgraph(null)"
     cg = new Callgraph(null);
