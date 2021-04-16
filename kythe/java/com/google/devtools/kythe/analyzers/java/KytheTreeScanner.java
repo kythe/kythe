@@ -901,7 +901,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         new Span(
             filePositions.getStart(newClass.getIdentifier()),
             filePositions.getEnd(newClass.getIdentifier()));
-    // Span over "new Class"
+    // Span over "new Class(...)"
     Span callSpan = new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
 
     if (owner.getTree().getTag() == JCTree.Tag.VARDEF) {
