@@ -9,7 +9,7 @@ public final class GenericMethodRef {
     Optional() {}
   }
 
-  //- @Optional ref OptionalClass
+  //- @Optional ref OClass
   //- @wildcard defines/binding WildcardFnAbs
   //- @ovar defines/binding WildcardParam1
   //- WildcardFnAbs.node/kind abs
@@ -26,20 +26,36 @@ public final class GenericMethodRef {
   private static <T> void verboseWildcard(Optional<T> ovar) {}
 
   private static void caller() {
-    //- @wildcard ref WildcardFnAbs
-    //- @"wildcard(null)" ref/call WildcardFnAbs
+    // - @wildcard ref WildcardFnAbs
+    // - @"wildcard(null)" ref/call WildcardFnAbs
     wildcard(null);
 
-    //- @verboseWildcard ref VerboseWildcardFnAbs
-    //- @"verboseWildcard(null)" ref/call VerboseWildcardFnAbs
+    // - @verboseWildcard ref VerboseWildcardFnAbs
+    // - @"verboseWildcard(null)" ref/call VerboseWildcardFnAbs
     verboseWildcard(null);
   }
 
-  private static void constructor() {
-    //- @Optional ref/call OptionalConstructor
-    //- @Optional ref OptionalConstructor
-    //- @Optional ref OClass
+  //- @T defines/binding AbsT
+  private static <T> void constructor() {
+    //- OptC.loc/start @^"Optional"
+    //- OptC.loc/end @$"Optional"
+    //- OptC ref OptionalConstructor
+    //- OptC ref OClass
     //- @GenericMethodRef ref GClass
+    //- OptCCall.loc/start @^"new Optional<GenericMethodRef>()"
+    //- OptCCall.loc/end @$"new Optional<GenericMethodRef>()"
+    //- OptCCall ref/call OptionalConstructor
     Object o = new Optional<GenericMethodRef>();
+
+    //- OptC2.loc/start @^"Optional"
+    //- OptC2.loc/end @$"Optional"
+    //- OptC2 ref OptionalConstructor
+    //- OptC2 ref OClass
+    //- OptCCall2.loc/start @^"new Optional<T>()"
+    //- OptCCall2.loc/end @$"new Optional<T>()"
+    //- OptCCall2 ref/call OptionalConstructor
+    //- @T ref AbsT
+    Object o2 = new Optional<T>();
   }
+
 }

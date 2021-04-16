@@ -216,10 +216,6 @@ java_verifier_test(
     name = "generic_method_ref_tests",
     size = "small",
     srcs = ["GenericMethodRef.java"],
-    tags = [
-        "arc-ignore",
-        "manual",
-    ],
 )
 
 java_verifier_test(
