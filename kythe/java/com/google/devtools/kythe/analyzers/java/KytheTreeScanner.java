@@ -898,10 +898,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     Span refSpan =
-        new Span(filePositions.getStart(newClass.getIdentifier()), filePositions.getEnd(newClass.getIdentifier()));
+        new Span(
+            filePositions.getStart(newClass.getIdentifier()),
+            filePositions.getEnd(newClass.getIdentifier()));
     // Span over "new Class"
-    Span callSpan =
-        new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
+    Span callSpan = new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
 
     if (owner.getTree().getTag() == JCTree.Tag.VARDEF) {
       JCVariableDecl varDef = (JCVariableDecl) owner.getTree();
