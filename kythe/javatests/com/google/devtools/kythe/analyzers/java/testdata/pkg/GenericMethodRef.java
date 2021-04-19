@@ -38,23 +38,15 @@ public final class GenericMethodRef {
 
   //- @T defines/binding AbsT
   private static <T> void constructor() {
-    //- OptC.loc/start @^"Optional"
-    //- OptC.loc/end @$"Optional"
-    //- OptC ref OptionalConstructor
-    //- OptC ref OClass
+    //- @Optional ref OptionalConstructor
+    //- @Optional ref OClass
     //- @GenericMethodRef ref GClass
-    //- OptCCall.loc/start @^"new Optional<GenericMethodRef>()"
-    //- OptCCall.loc/end @$"new Optional<GenericMethodRef>()"
-    //- OptCCall ref/call OptionalConstructor
+    //- @"new Optional<GenericMethodRef>()" ref/call OptionalConstructor
     Object o = new Optional<GenericMethodRef>();
 
-    //- OptC2.loc/start @^"Optional"
-    //- OptC2.loc/end @$"Optional"
-    //- OptC2 ref OptionalConstructor
-    //- OptC2 ref OClass
-    //- OptCCall2.loc/start @^"new Optional<T>()"
-    //- OptCCall2.loc/end @$"new Optional<T>()"
-    //- OptCCall2 ref/call OptionalConstructor
+    //- @Optional ref OptionalConstructor
+    //- @Optional ref OClass
+    //- @"new Optional<T>()" ref/call OptionalConstructor
     //- @T ref AbsT
     Object o2 = new Optional<T>();
   }
