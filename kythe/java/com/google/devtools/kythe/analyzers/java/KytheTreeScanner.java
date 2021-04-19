@@ -897,10 +897,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "error analyzing class", null, null);
     }
 
-    Span refSpan =
-        new Span(
-            filePositions.getStart(newClass.getIdentifier()),
-            filePositions.getEnd(newClass.getIdentifier()));
+    Span refSpan;
+    if (newClass.getIdentifier() instanceof JCTypeApply) {
+      JCTree type = ((JCTypeApply) newClass.getIdentifier()).getType();
+      refSpan = new Span(filePositions.getStart(type), filePositions.getEnd(type));
+    } else {
+      refSpan =
+          new Span(
+              filePositions.getStart(newClass.getIdentifier()),
+              filePositions.getEnd(newClass.getIdentifier()));
+    }
+
     // Span over "new Class(...)"
     Span callSpan = new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
 
