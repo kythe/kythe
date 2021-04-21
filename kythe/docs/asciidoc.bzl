@@ -53,8 +53,6 @@ def _asciidoc_impl(ctx):
         command = "\n".join([
             "set -e",
             "mkdir -p {resource_dir}".format(resource_dir = shell.quote(resource_dir.path)),
-            # so we can locate the binaries asciidoc needs
-            'export PATH="$PATH:{tool_path}"'.format(tool_path = tool_path),
             # Run asciidoc itself, and fail if it returns nonzero.
             "{asciidoc} \"$@\" 2> >(tee -a {logfile} >&2)".format(
                 logfile = shell.quote(logfile.path),
@@ -69,6 +67,7 @@ def _asciidoc_impl(ctx):
             # Move SVGs to the appropriate directory.
             "find . -name '*.svg' -maxdepth 1 -exec mv '{{}}' {out}/ \\;".format(out = shell.quote(resource_dir.path)),
         ]),
+        env = {"PATH": tool_path},
         mnemonic = "RunAsciidoc",
     )
     return [

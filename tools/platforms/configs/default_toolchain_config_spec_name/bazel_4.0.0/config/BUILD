@@ -40,5 +40,5 @@ platform(
         "@bazel_tools//platforms:x86_64",
         "@bazel_tools//tools/cpp:clang",
     ],
-    exec_properties = {"container-image": "docker://gcr.io/kythe-repo/kythe-builder@sha256:affd4b4d05144cb524db0d4f4639db74942b53ff499a1dfce23ce0592654e259", "OSFamily": "Linux"},
+    exec_properties = {"container-image": "docker://gcr.io/kythe-repo/kythe-builder@sha256:49a7a2a52ac943571dbf7c49e888c74eebe1e56ac28badab746e49841fadd3a3", "OSFamily": "Linux"},
 )
