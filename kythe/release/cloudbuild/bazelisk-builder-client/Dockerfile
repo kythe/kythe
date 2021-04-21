@@ -29,8 +29,6 @@ RUN apt-get update \
                 git \
                 # Needed to apply local patches to Bazel reposiories.
                 patch \
-                # Needed by rules_foreign_cc for libffi and Souffle.
-                # Make needs to be in the RBE environment. make \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
