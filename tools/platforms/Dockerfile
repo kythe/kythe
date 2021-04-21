@@ -18,7 +18,7 @@ FROM gcr.io/cloud-marketplace/google/rbe-ubuntu18-04@sha256:48b67b41118dbcdfc265
 RUN apt-get update && \
     apt-get install -y \
       # Kythe C++ dependencies
-      uuid-dev flex bison g++ \
+      uuid-dev flex bison make \
       # Kythe misc dependencies
       asciidoc ruby-dev source-highlight graphviz && \
     apt-get clean

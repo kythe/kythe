@@ -130,3 +130,11 @@ def kythe_rule_repositories():
         ],
         patch_args = ["-p1"],
     )
+
+    maybe(
+        http_archive,
+        name = "rules_foreign_cc",
+        sha256 = "e60cfd0a8426fa4f5fd2156e768493ca62b87d125cb35e94c44e79a3f0d8635f",
+        strip_prefix = "rules_foreign_cc-0.2.0",
+        url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
+    )
