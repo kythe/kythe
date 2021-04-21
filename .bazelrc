@@ -14,6 +14,10 @@ build --auto_cpu_environment_group=//buildenv:cpu
 build --client_env=CC=clang
 # We require C++17, but bazel defaults to C++0x (pre-C++11).
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
+# Don't warn on deprecations when compiling protobufs.
+# This generates a lot of spurious warnings when compiling the definitions of proto fields
+# which are marked deprecated.
+build --per_file_copt=.*\.pb\.cc@-Wno-deprecated-declarations
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
@@ -53,7 +57,7 @@ build:remote --javabase=@rbe_default//java:jdk
 build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 
-build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+build:remote --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 build:remote --crosstool_top=@rbe_default//cc:toolchain
 build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
 
@@ -61,7 +65,9 @@ build:remote --extra_execution_platforms=@rbe_default//config:platform
 build:remote --host_platform=@rbe_default//config:platform
 build:remote --platforms=@rbe_default//config:platform
 
-build:remote --extra_toolchains=@io_kythe//tools/build_rules/lexyacc:lexyacc_remote_toolchain
+build:remote --repo_env=KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS=1
+build:remote --extra_toolchains=//tools/build_rules/lexyacc:lexyacc_remote_toolchain
+build:remote --extra_toolchains=//tools/build_rules/external_tools:external_tools_remote_toolchain
 
 build:remote --action_env=LEIN_JAVA_CMD=
 

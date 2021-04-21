@@ -1,4 +1,4 @@
-# Copyright 2018 The Kythe Authors. All rights reserved.
+# Copyright 2021 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# A minimal image for building Kythe using go.
 
-# docker build -t gcr.io/kythe-repo/kythe-builder .
-FROM gcr.io/cloud-marketplace/google/rbe-ubuntu18-04@sha256:48b67b41118dbcdfc265e7335f454fbefa62681ab8d47200971fc7a52fb32054
+# docker build -t gcr.io/kythe-repo/go-builder
+FROM golang
 
-RUN apt-get update && \
-    apt-get install -y \
-      # Kythe C++ dependencies
-      uuid-dev flex bison make \
-      # Kythe misc dependencies
-      asciidoc ruby-dev source-highlight graphviz && \
-    apt-get clean
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libleveldb-dev libbrotli-dev && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*

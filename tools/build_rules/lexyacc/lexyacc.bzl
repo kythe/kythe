@@ -125,6 +125,9 @@ def _check_flex_version(repository_ctx, min_version):
     return flex
 
 def _local_lexyacc(repository_ctx):
+    if repository_ctx.os.environ.get("KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS", "0") == "1":
+        repository_ctx.file("BUILD.bazel", "# Toolchain detection disabled by KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS")
+        return
     flex = _check_flex_version(repository_ctx, "2.6")
     bison = repository_ctx.os.environ.get("BISON", repository_ctx.which("bison"))
     if not bison:
@@ -150,11 +153,14 @@ def _local_lexyacc(repository_ctx):
 local_lexyacc_repository = repository_rule(
     implementation = _local_lexyacc,
     local = True,
-    environ = ["PATH", "BISON", "FLEX"],
+    environ = [
+        "KYTHE_DO_NOT_DETECT_BAZEL_TOOCHAINS",
+        "PATH",
+        "BISON",
+        "FLEX",
+    ],
 )
 
 def lexyacc_configure():
     local_lexyacc_repository(name = "local_config_lexyacc")
-    native.register_toolchains(
-        "@local_config_lexyacc//:lexyacc_local_toolchain",
-    )
+    native.register_toolchains("@local_config_lexyacc//:all")

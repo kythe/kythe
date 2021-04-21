@@ -12,92 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_library(
-    name = "libffi_common_headers",
-    hdrs = [
-        "configure-bazel-gen/fficonfig.h",
-        "configure-bazel-gen/include/ffi.h",
-        "configure-bazel-gen/include/ffitarget.h",
-        "include/ffi_common.h",
-    ],
-    includes = [
-        "configure-bazel-gen",
-        "configure-bazel-gen/include",
-        "include",
-    ],
-    visibility = ["//visibility:public"],
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "configure_make")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
 )
 
-cc_library(
-    name = "libffi_closures",
-    srcs = [
-        "src/closures.c",
-    ],
-    copts = [
-        # libffi-3.3-rc0 uses variable length arrays for closures on all
-        # platforms.
-        "-Wno-vla",
-        # libffi does not check the result of ftruncate.
-        "-Wno-unused-result",
-    ],
-    textual_hdrs = ["src/dlmalloc.c"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":libffi_common_headers",
-    ],
-)
-
-cc_library(
+configure_make(
     name = "libffi",
-    srcs = [
-        "src/debug.c",
-        "src/java_raw_api.c",
-        "src/prep_cif.c",
-        "src/raw_api.c",
-        "src/types.c",
-    ] + select({
-        "@bazel_tools//src/conditions:linux_x86_64": [
-            "src/x86/asmnames.h",
-            "src/x86/ffi.c",
-            "src/x86/ffi64.c",
-            "src/x86/ffiw64.c",
-            "src/x86/internal.h",
-            "src/x86/internal64.h",
-            "src/x86/sysv.S",
-            "src/x86/unix64.S",
-            "src/x86/win64.S",
-        ],
-        "@bazel_tools//src/conditions:linux_ppc": [
-            "src/powerpc/ffi.c",
-            "src/powerpc/ffi_linux64.c",
-            "src/powerpc/ffi_sysv.c",
-            "src/powerpc/linux64.S",
-            "src/powerpc/linux64_closure.S",
-            "src/powerpc/ppc_closure.S",
-            "src/powerpc/sysv.S",
-        ],
-        "@bazel_tools//src/conditions:linux_aarch64": [
-            "src/aarch64/ffi.c",
-            "src/aarch64/internal.h",
-            "src/aarch64/sysv.S",
-        ],
-        "//conditions:default": [
-            # TODO(zarko): add Darwin configuration here if necessary
-        ],
-    }),
-    hdrs = [
-        "include/ffi_cfi.h",
+    configure_options = [
+        "--disable-multi-os-directory",
+        "--disable-dependency-tracking",
+        "--disable-docs",
     ],
-    copts = [
-        # libffi-3.3-rc0 uses variable length arrays for closures on all
-        # platforms.
-        "-Wno-vla",
-        # libffi does not check the result of ftruncate.
-        "-Wno-unused-result",
-    ],
+    lib_source = ":all_srcs",
     visibility = ["//visibility:public"],
-    deps = [
-        ":libffi_closures",
-        ":libffi_common_headers",
-    ],
 )

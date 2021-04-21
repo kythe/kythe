@@ -6,7 +6,6 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
-load("@io_kythe//:autotools.bzl", "autotools_repository")
 load("@io_kythe//:setup.bzl", "github_archive", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
@@ -24,6 +23,7 @@ load(
     "rules_ruby_dependencies",
     "rules_ruby_select_sdk",
 )
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -41,6 +41,7 @@ def _rule_dependencies():
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
+    rules_foreign_cc_dependencies(register_built_tools = False)
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
@@ -62,7 +63,8 @@ def _proto_dependencies():
     )
 
 def _cc_dependencies():
-    autotools_repository(
+    maybe(
+        http_archive,
         name = "org_sourceware_libffi",
         build_file = "@io_kythe//third_party:libffi.BUILD",
         sha256 = "653ffdfc67fbb865f39c7e5df2a071c0beb17206ebfb0a9ecb18a18f63f6b263",  # 2019-11-02
@@ -71,7 +73,7 @@ def _cc_dependencies():
     )
 
     maybe(
-        autotools_repository,
+        http_archive,
         name = "souffle",
         urls = ["https://github.com/souffle-lang/souffle/archive/fbb4c4b967bf58cccb7aca58e3d200a799218d98.zip"],
         build_file = "@io_kythe//third_party:souffle.BUILD",

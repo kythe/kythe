@@ -1,0 +1,36 @@
+#!/bin/bash -e
+#
+# Copyright 2018 The Kythe Authors. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Wrapper script to run Bazel via Bazelisk.
+#
+# Transforms USE_BAZEL_VERSION=min to USE_BAZEL_VERSION=$(<.bazelminversion).
+# The .bazelminversion file may be in the current working directory or any
+# parent directory.  The first readable file found will be used; if none are
+# found, the script will exit unsuccessfully.
+
+if [[ "$USE_BAZEL_VERSION" == "min" ]]; then
+  dir="$PWD"
+  while [[ ! -r "$dir/.bazelminversion" ]]; do
+    if [[ "$dir" == "/" ]]; then
+      echo "ERROR: unable to find .bazelminversion file in cwd or above" >&2
+      exit 1
+    fi
+    dir="$(dirname "$dir")"
+  done
+  USE_BAZEL_VERSION="$(<"$dir/.bazelminversion")"
+fi
+
+exec bazelisk "$@"
