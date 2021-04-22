@@ -42,3 +42,5 @@ RUN curl -s https://api.github.com/repos/bazelbuild/bazelisk/releases/latest \
 
 # Add the wrapper script for USE_BAZEL_VERSION=min support.
 ADD bazel /usr/bin/bazel
+# Use a custom system bazelrc file as well.
+ADD bazelrc /etc/bazel.bazelrc
