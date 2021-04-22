@@ -61,7 +61,7 @@ var (
 	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
 
 	// TODO(schroederc): remove once relevant clients specify their required quality
-	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "PRECISE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
+	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "APPROXIMATE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
 )
 
 func init() {
