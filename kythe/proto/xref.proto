@@ -265,6 +265,9 @@ message DecorationsReply {
   // references to the list of their overrides.
   map<string, Overrides> extends_overrides = 17;
 
+  // A unique build_id for the underlying dataset serving this reply.
+  string build_id = 20;
+
   reserved 6;
 }
 
@@ -536,6 +539,9 @@ message CrossReferencesReply {
   // fetch the next page in sequence after this one.  If there are no further
   // cross-references, this field will be empty.
   string next_page_token = 10;
+
+  // A unique build_id for the underlying dataset serving this reply.
+  string build_id = 11;
 }
 
 message DocumentationRequest {
@@ -574,4 +580,7 @@ message DocumentationReply {
   // Map from the definition anchor tickets referred to in each NodeInfo to
   // their corresponding Anchor data.
   map<string, Anchor> definition_locations = 3;
+
+  // A unique build_id for the underlying dataset serving this reply.
+  string build_id = 4;
 }
