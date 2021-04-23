@@ -4,6 +4,8 @@ steps:
       - fetch
       - '--unshallow'
       - '--no-tags'
+      - origin
+      - master
   - name: gcr.io/kythe-repo/pre-commit
     args:
       - run
