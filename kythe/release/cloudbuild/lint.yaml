@@ -9,6 +9,7 @@ steps:
       - run
       - '--hook-stage'
       - commit
+      - '--show-diff-on-failure'
       - '--from-ref'
       - origin/master
       - '--to-ref'

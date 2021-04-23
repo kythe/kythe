@@ -18,7 +18,7 @@
 
 CACHE="$HOME/.cache/goversions"
 
-GO="$(which -a go | xargs -L1 realpath | grep -v "$(realpath "$0")" | head -n1)"
+GO="$(command -v go | xargs -L1 realpath | grep -v "$(realpath "$0")" | head -n1)"
 if ! [[ -x "$GO" ]]; then
   echo "ERROR: failed to find ambient go tool" >&2
   exit 1
