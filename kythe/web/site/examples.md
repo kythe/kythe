@@ -258,7 +258,7 @@ bin: main.cc
 
 ```
 
-Extraction is done by setting the `CXX` environment variable as well as some environment variables that configure `cxx_extractor`.
+Extraction is done by setting the `CXX` make variable as well as some environment variables that configure `cxx_extractor`.
 
 ```shell
 # directory where kythe release has been installed
