@@ -1828,6 +1828,7 @@ cc_indexer_test(
     name = "rec_class_member_ptr",
     srcs = ["rec/rec_class_member_ptr.cc"],
     check_for_singletons = True,
+    experimental_record_dataflow_edges = True,
     tags = ["rec"],
 )
 
@@ -2844,6 +2845,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "extension_property",
     srcs = ["objc/categories/extension_property.m"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
     deps = ["objc/categories/extension_property.h"],
@@ -3051,6 +3053,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
+    experimental_record_dataflow_edges = True,
     tags = ["objc"],
 )
 
@@ -3144,6 +3147,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_decl_defn_synth",
     srcs = ["objc/property_decl_defn_synth.m"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -3244,6 +3248,7 @@ test_suite(
 cc_indexer_test(
     name = "df_field_ref_blame",
     srcs = ["df/df_field_ref_blame.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3251,6 +3256,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_field_rw",
     srcs = ["df/df_field_rw.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3297,6 +3303,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3309,6 +3316,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_rw",
     srcs = ["df/df_var_rw.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
