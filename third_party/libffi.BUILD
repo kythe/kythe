@@ -25,6 +25,7 @@ configure_make(
         "--disable-multi-os-directory",
         "--disable-dependency-tracking",
         "--disable-docs",
+        "AR=ar",
     ],
     lib_source = ":all_srcs",
     visibility = ["//visibility:public"],
