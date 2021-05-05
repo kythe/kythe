@@ -1,6 +1,6 @@
 // Unary {post,pre}{inc,dec}rements are included in the influence graph.
 void f() {
-    int x;
+    int x, y, z;
     //- @x ref VarX
     //- @x ref/writes VarX
     x++;
@@ -14,4 +14,11 @@ void f() {
     //- @x ref/writes VarX
     --x;
     //- VarX influences VarX
+    //- !{ @x ref/writes VarX }
+    //- !{ @z ref/writes VarZ }
+    //- !{ @y ref VarY }
+    //- @z ref VarZ
+    //- @x ref VarX
+    //- @y ref/writes VarY
+    y = x + z;
 }
