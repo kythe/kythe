@@ -328,23 +328,6 @@ clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
 const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
   return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
-
-clang::Decl* GetInfluencedDeclFromLExpression(clang::Expr* lhs) {
-  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
-      expr != nullptr && expr->getFoundDecl() != nullptr &&
-      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
-    return expr->getFoundDecl();
-  }
-  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(lhs);
-      expr != nullptr) {
-    if (auto* member = expr->getMemberDecl(); member != nullptr) {
-      return member;
-    }
-  }
-  return nullptr;
-}
-
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1347,9 +1330,8 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
-      auto semantic = IsUsedAsWrite(*getAllParents(), E)
-                          ? GraphObserver::UseKind::kWrite
-                          : GraphObserver::UseKind::kUnknown;
+      auto semantic = IsUsedAsWrite(E) ? GraphObserver::UseKind::kWrite
+                                       : GraphObserver::UseKind::kUnknown;
       Observer.recordSemanticDeclUseLocation(
           *RCC, BuildNodeIdForRefToDecl(FieldDecl), semantic,
           GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
@@ -2167,16 +2149,16 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   }
   if (BO->getOpcode() != clang::BO_Assign)
     return Base::TraverseBinaryOperator(BO);
-
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinaryOperator(BO)) return false;
+    auto* lvhead = UsedAsWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto* influenced = GetInfluencedDeclFromLExpression(lhs)) {
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
       for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
                                   BuildNodeIdForDecl(influenced));
@@ -2285,9 +2267,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
       RecordBlame(FoundDecl, *RCC);
-      auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
-                          ? GraphObserver::UseKind::kWrite
-                          : GraphObserver::UseKind::kUnknown;
+      auto semantic = IsUsedAsWrite(Expr) ? GraphObserver::UseKind::kWrite
+                                          : GraphObserver::UseKind::kUnknown;
       if (DataflowEdges) {
         if (!Job->InfluenceSets.empty() &&
             (FoundDecl->getKind() == clang::Decl::Kind::Var ||

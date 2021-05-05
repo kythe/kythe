@@ -969,6 +969,18 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns whether `Decl` should be indexed.
   bool ShouldIndex(const clang::Decl* Decl);
 
+  /// \brief Returns whether `stmt` is used as a write target.
+  bool IsUsedAsWrite(const clang::Stmt* stmt) {
+    return is_used_as_write_.find(stmt) != is_used_as_write_.end();
+  }
+
+  /// \brief Marks that `stmt` was used as a write target.
+  /// \return `stmt` as passed.
+  const clang::Stmt* UsedAsWrite(const clang::Stmt* stmt) {
+    if (stmt != nullptr) is_used_as_write_.insert(stmt);
+    return stmt;
+  }
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 
@@ -1011,6 +1023,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
+
+  /// \brief AST nodes we know are used in a write context.
+  absl::flat_hash_set<const clang::Stmt*> is_used_as_write_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
