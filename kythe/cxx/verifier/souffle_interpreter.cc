@@ -27,15 +27,6 @@
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
 
-#ifdef __APPLE__
-extern "C" {
-// TODO(zarko): fix these on darwin
-void ffi_call() { abort(); }
-void ffi_prep_cif_machdep() { abort(); }
-void ffi_prep_closure_loc() { abort(); }
-}
-#endif  // defined(__APPLE__)
-
 namespace kythe::verifier {
 namespace {
 constexpr std::array<int, 4> kInputData = {1, 2, 2, 3};

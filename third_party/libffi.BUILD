@@ -29,4 +29,5 @@ configure_make(
     ],
     lib_source = ":all_srcs",
     visibility = ["//visibility:public"],
+    alwayslink = True,
 )
