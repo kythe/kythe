@@ -26,6 +26,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -134,6 +135,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool TraverseCallExpr(clang::CallExpr* CE);
   bool TraverseReturnStmt(clang::ReturnStmt* RS);
   bool TraverseBinaryOperator(clang::BinaryOperator* BO);
+  bool TraverseUnaryOperator(clang::UnaryOperator* BO);
 
   bool TraverseInitListExpr(clang::InitListExpr* ILE);
   bool VisitInitListExpr(const clang::InitListExpr* ILE);
@@ -969,15 +971,22 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns whether `Decl` should be indexed.
   bool ShouldIndex(const clang::Decl* Decl);
 
-  /// \brief Returns whether `stmt` is used as a write target.
-  bool IsUsedAsWrite(const clang::Stmt* stmt) {
-    return is_used_as_write_.find(stmt) != is_used_as_write_.end();
+  GraphObserver::UseKind UseKindFor(const clang::Stmt* stmt) {
+    auto i = use_kinds_.find(stmt);
+    return i == use_kinds_.end() ? GraphObserver::UseKind::kUnknown : i->second;
   }
 
   /// \brief Marks that `stmt` was used as a write target.
   /// \return `stmt` as passed.
   const clang::Stmt* UsedAsWrite(const clang::Stmt* stmt) {
-    if (stmt != nullptr) is_used_as_write_.insert(stmt);
+    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kWrite;
+    return stmt;
+  }
+
+  /// \brief Marks that `stmt` was used as a read+write target.
+  /// \return `stmt` as passed.
+  const clang::Stmt* UsedAsReadWrite(const clang::Stmt* stmt) {
+    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kReadWrite;
     return stmt;
   }
 
@@ -1024,8 +1033,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
 
-  /// \brief AST nodes we know are used in a write context.
-  absl::flat_hash_set<const clang::Stmt*> is_used_as_write_;
+  /// \brief AST nodes we know are used in specific ways.
+  absl::flat_hash_map<const clang::Stmt*, GraphObserver::UseKind> use_kinds_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

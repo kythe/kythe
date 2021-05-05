@@ -3301,6 +3301,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_unary",
+    srcs = ["df/df_unary.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
     experimental_record_dataflow_edges = True,

@@ -834,7 +834,9 @@ class GraphObserver {
     /// No specific determination. Similar to a read.
     kUnknown,
     /// This use site is a write.
-    kWrite
+    kWrite,
+    /// This use site is both a read and a write.
+    kReadWrite,
   };
 
   /// \brief Records a use site for some decl with additional semantic
