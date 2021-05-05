@@ -2167,6 +2167,33 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   return Base::TraverseBinaryOperator(BO);
 }
 
+bool IndexerASTVisitor::TraverseCompoundAssignOperator(
+    clang::CompoundAssignOperator* CAO) {
+  if (!DataflowEdges) {
+    return Base::TraverseCompoundAssignOperator(CAO);
+  }
+  if (auto rhs = CAO->getRHS(), lhs = CAO->getLHS();
+      lhs != nullptr && rhs != nullptr) {
+    if (!WalkUpFromCompoundAssignOperator(CAO)) return false;
+    auto* lvhead = UsedAsReadWrite(FindLValueHead(lhs));
+    if (!TraverseStmt(lhs)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    if (!TraverseStmt(rhs)) {
+      return false;
+    }
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl),
+                                  BuildNodeIdForDecl(influenced));
+      }
+      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
+                                BuildNodeIdForDecl(influenced));
+    }
+    return true;
+  }
+  return Base::TraverseCompoundAssignOperator(CAO);
+}
+
 bool IndexerASTVisitor::TraverseUnaryOperator(clang::UnaryOperator* UO) {
   if (!DataflowEdges) {
     return Base::TraverseUnaryOperator(UO);
