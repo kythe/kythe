@@ -1330,10 +1330,8 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
-      auto semantic = IsUsedAsWrite(E) ? GraphObserver::UseKind::kWrite
-                                       : GraphObserver::UseKind::kUnknown;
       Observer.recordSemanticDeclUseLocation(
-          *RCC, BuildNodeIdForRefToDecl(FieldDecl), semantic,
+          *RCC, BuildNodeIdForRefToDecl(FieldDecl), UseKindFor(E),
           GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
@@ -2169,6 +2167,29 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   return Base::TraverseBinaryOperator(BO);
 }
 
+bool IndexerASTVisitor::TraverseUnaryOperator(clang::UnaryOperator* UO) {
+  if (!DataflowEdges) {
+    return Base::TraverseUnaryOperator(UO);
+  }
+  if (UO->getOpcode() != clang::UO_PostDec &&
+      UO->getOpcode() != clang::UO_PreDec &&
+      UO->getOpcode() != clang::UO_PostInc &&
+      UO->getOpcode() != clang::UO_PreInc) {
+    return Base::TraverseUnaryOperator(UO);
+  }
+  if (auto* lval = UO->getSubExpr(); lval != nullptr) {
+    if (!WalkUpFromUnaryOperator(UO)) return false;
+    auto* lvhead = UsedAsReadWrite(FindLValueHead(lval));
+    if (!TraverseStmt(lval)) return false;
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
+                                BuildNodeIdForDecl(influenced));
+    }
+    return true;
+  }
+  return Base::TraverseUnaryOperator(UO);
+}
+
 bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
   if (ILE == nullptr) return true;
   // Because we visit implicit code, the default traversal will visit both
@@ -2267,8 +2288,6 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
       RecordBlame(FoundDecl, *RCC);
-      auto semantic = IsUsedAsWrite(Expr) ? GraphObserver::UseKind::kWrite
-                                          : GraphObserver::UseKind::kUnknown;
       if (DataflowEdges) {
         if (!Job->InfluenceSets.empty() &&
             (FoundDecl->getKind() == clang::Decl::Kind::Var ||
@@ -2277,8 +2296,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
         }
       }
       Observer.recordSemanticDeclUseLocation(
-          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
-          this->IsImplicit(*RCC));
+          *RCC, DeclId, UseKindFor(Expr),
+          GraphObserver::Claimability::Unclaimable, this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
         S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
