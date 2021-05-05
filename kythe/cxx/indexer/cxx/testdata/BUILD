@@ -3246,6 +3246,14 @@ test_suite(
 )
 
 cc_indexer_test(
+    name = "df_binary",
+    srcs = ["df/df_binary.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_field_ref_blame",
     srcs = ["df/df_field_ref_blame.cc"],
     experimental_record_dataflow_edges = True,
