@@ -2174,7 +2174,7 @@ bool IndexerASTVisitor::TraverseCompoundAssignOperator(
   }
   if (auto rhs = CAO->getRHS(), lhs = CAO->getLHS();
       lhs != nullptr && rhs != nullptr) {
-    if (!WalkUpFromBinaryOperator(CAO)) return false;
+    if (!WalkUpFromCompoundAssignOperator(CAO)) return false;
     auto* lvhead = UsedAsReadWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
