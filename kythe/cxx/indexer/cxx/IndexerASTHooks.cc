@@ -2152,13 +2152,13 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinaryOperator(BO)) return false;
-    auto* lvroot = UsedAsWrite(FindLValueRoot(lhs));
+    auto* lvhead = UsedAsWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto* influenced = GetInfluencedDeclFromLValueRoot(lvroot)) {
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
       for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
                                   BuildNodeIdForDecl(influenced));

@@ -35,15 +35,15 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
 /// \return true if a reference to `decl` should be given blame context.
 bool ShouldHaveBlameContext(const clang::Decl* decl);
 
-/// \return the `Stmt` that is at the lvalue root position of `stmt`, or
+/// \return the `Stmt` that is at the lvalue head position of `stmt`, or
 /// null otherwise. For example, in `foo[x].bar(y).z`, the member expression
 /// for `z` is in the root position.
-const clang::Stmt* FindLValueRoot(const clang::Stmt* stmt);
+const clang::Stmt* FindLValueHead(const clang::Stmt* stmt);
 
 /// \return the `Decl` that is the target of influence by an lexpression with
-/// root `root`, or null. For example, in `foo[x].bar(y).z`, the target of
+/// head `head`, or null. For example, in `foo[x].bar(y).z`, the target of
 /// influence is the member decl for `z`.
-const clang::Decl* GetInfluencedDeclFromLValueRoot(const clang::Stmt* root);
+const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head);
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_

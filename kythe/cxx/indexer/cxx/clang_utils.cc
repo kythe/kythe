@@ -96,7 +96,7 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
   }
 }
 
-const clang::Stmt* FindLValueRoot(const clang::Stmt* stmt) {
+const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
   if (stmt == nullptr) return nullptr;
   switch (stmt->getStmtClass()) {
     case clang::Stmt::StmtClass::DeclRefExprClass:
@@ -108,15 +108,15 @@ const clang::Stmt* FindLValueRoot(const clang::Stmt* stmt) {
   }
 }
 
-const clang::Decl* GetInfluencedDeclFromLValueRoot(const clang::Stmt* root) {
-  if (root == nullptr) return nullptr;
-  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(root);
+const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head) {
+  if (head == nullptr) return nullptr;
+  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
       expr != nullptr && expr->getFoundDecl() != nullptr &&
       (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
        expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
     return expr->getFoundDecl();
   }
-  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(root);
+  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(head);
       expr != nullptr) {
     if (auto* member = expr->getMemberDecl(); member != nullptr) {
       return member;
