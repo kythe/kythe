@@ -121,7 +121,7 @@ def kythe_rule_repositories():
             "https://github.com/bazelruby/rules_ruby/archive/v0.4.1.zip",
         ],
         patches = [
-            "//third_party:rules_ruby_allow_empty.patch",
+            "@io_kythe//third_party:rules_ruby_allow_empty.patch",
         ],
         patch_args = ["-p1"],
     )
