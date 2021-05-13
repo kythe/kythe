@@ -4,6 +4,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
@@ -20,7 +21,7 @@ http_archive(
     ],
 )
 
-load("//:setup.bzl", "kythe_rule_repositories", "maybe")
+load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
 
