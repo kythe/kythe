@@ -695,7 +695,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     std::string pre_text;
     {
       llvm::raw_string_ostream stream(pre_text);
-      print_arg.print(policy, stream);
+      print_arg.print(policy, stream, true);
     }
     *next_arg->mutable_pre_text() = pre_text;
   }
