@@ -96,7 +96,7 @@ public class JsonUtil {
     @Override
     public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
       try {
-        return new JsonParser().parse(PRINTER.print(msg));
+        return JsonParser.parseString(PRINTER.print(msg));
       } catch (InvalidProtocolBufferException e) {
         throw new RuntimeException(e);
       }
