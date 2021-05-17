@@ -44,6 +44,7 @@ public enum EdgeKind {
   REF_INIT(true, "ref/init"),
   REF_INIT_IMPLICIT(true, "ref/init/implicit"),
   REF_QUERIES(true, "ref/queries"),
+  REF_WRITES(true, "ref/writes"),
 
   ALIASES("aliases"),
   ALIASES_ROOT("aliases/root"),

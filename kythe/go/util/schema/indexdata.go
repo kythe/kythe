@@ -134,6 +134,7 @@ var (
 		"/kythe/edge/ref/init":                 35,
 		"/kythe/edge/ref/init/implicit":        36,
 		"/kythe/edge/ref/queries":              37,
+		"/kythe/edge/ref/writes":               47,
 		"/kythe/edge/satisfies":                38,
 		"/kythe/edge/specializes":              39,
 		"/kythe/edge/specializes/speculative":  40,
@@ -260,6 +261,7 @@ var (
 		44: "/kythe/edge/property/reads",
 		45: "/kythe/edge/property/writes",
 		46: "/kythe/edge/ref/id",
+		47: "/kythe/edge/ref/writes",
 	}
 )
 
