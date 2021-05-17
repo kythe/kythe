@@ -31,6 +31,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
@@ -1070,6 +1071,10 @@ class GraphObserver {
   /// Note that the `VNameRef` should not outlive `id`.
   VNameRef DecodeMintedVName(const NodeId& id) const;
 
+  /// \brief Return a map of file IDs to metadata.
+  virtual const std::multimap<clang::FileID, std::shared_ptr<MetadataFile>>&
+  meta() = 0;
+
   virtual ~GraphObserver() = 0;
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
@@ -1174,12 +1179,19 @@ class NullGraphObserver : public GraphObserver {
 
   const ClaimToken* getVNameClaimToken() const override { return &VnameToken; }
 
+  const std::multimap<clang::FileID, std::shared_ptr<MetadataFile>>& meta()
+      override {
+    return meta_;
+  }
+
   ~NullGraphObserver() {}
 
  private:
   NullClaimToken DefaultToken;
 
   NullClaimToken VnameToken;
+
+  std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
 };
 
 /// \brief Emits a stringified representation of the given `NameId`,

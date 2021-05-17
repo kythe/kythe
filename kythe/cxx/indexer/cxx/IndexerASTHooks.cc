@@ -1592,6 +1592,13 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       for (const auto& S : Supports) {
         S->InspectCallExpr(*this, E, RCC.value(), CalleeId);
       }
+      if (const auto* semantic = AlternateSemanticForDecl(Callee);
+          semantic != nullptr && semantic->node) {
+        Observer.recordSemanticDeclUseLocation(
+            RCC.value(), *(semantic->node), semantic->use_kind,
+            GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
+      }
+
     } else if (const auto* CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
         RecordCallEdges(RCC.value(), CalleeId.value());
@@ -3065,6 +3072,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   if (SkipAliasedDecl(Decl)) {
     return true;
   }
+  (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
   GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
@@ -5695,6 +5703,57 @@ void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
   llvm::raw_string_ostream ss(s);
   Expr->dump(ss, Context);
   LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::PrepareAlternateSemanticCache() {
+  if (!DataflowEdges) return;
+  for (const auto& meta : Observer.meta()) {
+    for (const auto& rule : meta.second->rules()) {
+      GraphObserver::UseKind kind = GraphObserver::UseKind::kUnknown;
+      if (rule.second.semantic == MetadataFile::Semantic::kNone) continue;
+      switch (rule.second.semantic) {
+        case MetadataFile::Semantic::kWrite:
+          kind = GraphObserver::UseKind::kWrite;
+          break;
+        case MetadataFile::Semantic::kReadWrite:
+          kind = GraphObserver::UseKind::kReadWrite;
+          break;
+        default:
+          break;
+      }
+      auto end = Observer.getSourceManager()->getComposedLoc(meta.first,
+                                                             rule.second.end);
+      AlternateSemantic semantic{
+          end, kind, Observer.MintNodeIdForVName(rule.second.vname)};
+      auto loc = Observer.getSourceManager()->getComposedLoc(meta.first,
+                                                             rule.second.begin);
+      alternate_semantic_cache_[loc.getRawEncoding()] = semantic;
+    }
+  }
+}
+
+kythe::IndexerASTVisitor::AlternateSemantic*
+IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
+  if (!DataflowEdges) return nullptr;
+  const auto* canonical = decl->getCanonicalDecl();
+  if (auto found = alternate_semantics_.find(canonical);
+      found != alternate_semantics_.end()) {
+    return found->second;
+  }
+  const auto* named = llvm::dyn_cast<clang::NamedDecl>(decl);
+  // No sense in annotating an unnamed declaration. We still deal in `Decl`s
+  // in this function, though, because bare `Decl`s appear in many contexts
+  // (like the callee of a call expression).
+  if (named == nullptr) return nullptr;
+  auto range = RangeForNameOfDeclaration(named);
+  if (auto cached =
+          alternate_semantic_cache_.find(range.getBegin().getRawEncoding());
+      cached != alternate_semantic_cache_.end() &&
+      cached->second.end == range.getEnd()) {
+    alternate_semantics_[canonical] = &cached->second;
+    return &cached->second;
+  }
+  return nullptr;
 }
 
 }  // namespace kythe

@@ -1275,6 +1275,14 @@ cc_indexer_test(
     deps = ["metadata/metadata_self.h"],
 )
 
+cc_indexer_test(
+    name = "metadata_semantic",
+    srcs = ["metadata/metadata_semantic.cc"],
+    experimental_record_dataflow_edges = True,
+    tags = ["metadata"],
+    deps = ["metadata/semantic.meta"],
+)
+
 test_suite(
     name = "indexer_metadata",
     tags = ["metadata"],

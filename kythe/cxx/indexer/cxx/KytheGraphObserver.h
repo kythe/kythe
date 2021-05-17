@@ -445,6 +445,11 @@ class KytheGraphObserver : public GraphObserver {
 
   absl::string_view getBuildConfig() const override { return build_config_; }
 
+  const std::multimap<clang::FileID, std::shared_ptr<MetadataFile>>& meta()
+      override {
+    return meta_;
+  }
+
  private:
   /// A pair of tokens to use for namespaces.
   struct NamespaceTokens {
