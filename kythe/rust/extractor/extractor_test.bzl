@@ -19,7 +19,7 @@ def _rust_extractor_test_impl(ctx):
     extractor = ctx.executable._extractor
 
     # Rust toolchain
-    rust_toolchain = ctx.toolchains["@io_bazel_rules_rust//rust:toolchain"]
+    rust_toolchain = ctx.toolchains["@rules_rust//rust:toolchain"]
     rustc_lib = rust_toolchain.rustc_lib.files.to_list()
     rust_lib = rust_toolchain.rust_lib.files.to_list()
 
@@ -71,5 +71,5 @@ rust_extractor_test = rule(
         ),
     },
     test = True,
-    toolchains = ["@io_bazel_rules_rust//rust:toolchain"],
+    toolchains = ["@rules_rust//rust:toolchain"],
 )

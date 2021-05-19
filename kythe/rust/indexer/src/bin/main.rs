@@ -72,7 +72,7 @@ fn main() -> Result<()> {
 /// `temp_path` using the file names and digests in the CompilationUnit
 pub fn extract_from_kzip(
     c_unit: &CompilationUnit,
-    temp_path: &PathBuf,
+    temp_path: &Path,
     provider: &mut dyn FileProvider,
 ) -> Result<()> {
     for required_input in c_unit.get_required_input() {

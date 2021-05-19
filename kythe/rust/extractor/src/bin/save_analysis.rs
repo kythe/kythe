@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Generates a save analysis in `output_dir`
 ///
@@ -32,7 +32,7 @@ pub fn generate_save_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Re
 /// * `arguments` - The Bazel arguments extracted from the extra action protobuf
 /// * `output_dir` - The directory to output the binary produced by the Rust
 ///   compiler
-fn generate_arguments(arguments: Vec<String>, output_dir: &PathBuf) -> Result<Vec<String>> {
+fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<String>> {
     let argument_position = arguments
         .iter()
         .position(|arg| arg == "--")

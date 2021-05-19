@@ -24,7 +24,7 @@ use rls_data::{Def, DefKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use storage_rust_proto::*;
 
 /// A data structure to analyze and index CompilationUnit protobufs
@@ -36,7 +36,7 @@ pub struct UnitAnalyzer<'a> {
     // The emitter used to  write generated nodes and edges
     emitter: EntryEmitter<'a>,
     // The root directory for the source files
-    root_dir: &'a PathBuf,
+    root_dir: &'a Path,
     // A map between a file name and it's Kythe VName
     file_vnames: HashMap<String, VName>,
     // An index for computing byte offsets in files based on line and column number
@@ -87,7 +87,7 @@ impl<'a> UnitAnalyzer<'a> {
     pub fn new(
         unit: &'a CompilationUnit,
         writer: &'a mut dyn KytheWriter,
-        root_dir: &'a PathBuf,
+        root_dir: &'a Path,
     ) -> Self {
         // Create a HashMap between the file path and the VName which we can retrieve
         // later to emit nodes
@@ -663,7 +663,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // If documentation isn't "" also generate a documents node
         // - Emit documentation type node
         // - Emit documents edge from node to def
-        if def.docs != "" {
+        if !def.docs.is_empty() {
             let mut doc_vname = def_vname.clone();
             let doc_signature = format!("{}_doc", def_vname.get_signature());
             doc_vname.set_signature(doc_signature);
