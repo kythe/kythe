@@ -34,6 +34,7 @@ import (
 )
 
 type xrefsCommand struct {
+	baseKytheCommand
 	nodeFilters  flagutil.StringList
 	buildConfigs flagutil.StringSet
 

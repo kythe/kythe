@@ -52,6 +52,7 @@ var (
 
 // baseDecorCommand is a shared base for the source/decor/diagnostics commands
 type baseDecorCommand struct {
+	baseKytheCommand
 	decorSpan                string
 	corpus, root, pathPrefix string
 	buildConfigs             flagutil.StringSet
@@ -124,9 +125,9 @@ type decorCommand struct {
 	semanticScopes   bool
 }
 
-func (decorCommand) Name() string     { return "decor" }
-func (decorCommand) Synopsis() string { return "list a file's decorations" }
-func (decorCommand) Usage() string    { return "" }
+func (decorCommand) Name() string      { return "decor" }
+func (decorCommand) Synopsis() string  { return "list a file's decorations" }
+func (decorCommand) Aliases() []string { return []string{"decors"} }
 func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
 	c.baseDecorCommand.SetFlags(flag)
 	// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
