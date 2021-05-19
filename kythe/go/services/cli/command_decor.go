@@ -117,6 +117,7 @@ func (c baseDecorCommand) spanArg() (*cpb.Span, error) {
 
 type decorCommand struct {
 	baseDecorCommand
+	name             string
 	targetDefs       bool
 	dirtyFile        string
 	refFormat        string
@@ -124,7 +125,7 @@ type decorCommand struct {
 	semanticScopes   bool
 }
 
-func (decorCommand) Name() string     { return "decor" }
+func (c *decorCommand) Name() string  { return c.name }
 func (decorCommand) Synopsis() string { return "list a file's decorations" }
 func (decorCommand) Usage() string    { return "" }
 func (c *decorCommand) SetFlags(flag *flag.FlagSet) {

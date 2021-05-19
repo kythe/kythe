@@ -75,7 +75,8 @@ func Execute(ctx context.Context, api API) subcommands.ExitStatus {
 	RegisterCommand(&identCommand{}, "")
 	RegisterCommand(&lsCommand{}, "")
 
-	RegisterCommand(&decorCommand{}, "xrefs")
+	RegisterCommand(&decorCommand{name: "decor"}, "xrefs")
+	RegisterCommand(&decorCommand{name: "decors"}, "xrefs")
 	RegisterCommand(&diagnosticsCommand{}, "xrefs")
 	RegisterCommand(&docsCommand{}, "xrefs")
 	RegisterCommand(&sourceCommand{}, "xrefs")
