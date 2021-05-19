@@ -27,13 +27,13 @@ import (
 )
 
 type docsCommand struct {
+	baseKytheCommand
 	nodeFilters     string
 	includeChildren bool
 }
 
 func (docsCommand) Name() string     { return "docs" }
 func (docsCommand) Synopsis() string { return "display documentation for a node" }
-func (docsCommand) Usage() string    { return "" }
 func (c *docsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of node fact filters (default returns all)")
 	flag.BoolVar(&c.includeChildren, "include_children", false, "Include documentation for children of the given node")

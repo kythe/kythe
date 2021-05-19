@@ -27,6 +27,7 @@ import (
 )
 
 type identCommand struct {
+	baseKytheCommand
 	corpora, languages string
 }
 
