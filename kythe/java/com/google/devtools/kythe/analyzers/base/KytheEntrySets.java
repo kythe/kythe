@@ -53,6 +53,7 @@ public class KytheEntrySets {
 
   private final VName compilationVName;
   private final Map<String, VName> inputVNames;
+  protected boolean useCompilationCorpusAsDefault;
 
   public KytheEntrySets(
       StatisticsCollector statistics,
@@ -76,6 +77,10 @@ public class KytheEntrySets {
       }
       inputVNames.put(digest, name.build());
     }
+  }
+
+  public final void setUseCompilationCorpusAsDefault(boolean d) {
+    this.useCompilationCorpusAsDefault = d;
   }
 
   /** Returns the {@link FactEmitter} used to emit generated {@link EntrySet}s. */
@@ -338,6 +343,7 @@ public class KytheEntrySets {
     if (ms != null) {
       builder.setProperty("code", ms);
     }
+    builder.setCorpusPath(defaultCorpusPath());
     EntrySet node = emitAndReturn(builder);
     emitEdge(node.getVName(), EdgeKind.PARAM, head, 0);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, arguments, 1);
@@ -359,6 +365,16 @@ public class KytheEntrySets {
   protected VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);
     return inputVName == null ? null : EntrySet.extendVName(compilationVName, inputVName);
+  }
+
+  /**
+   * Returns a CorpusPath containing the default corpus. This will either be
+   * empty string or the compilation unit's corpus depending on the
+   * --use_compilation_corpus_as_default option.
+   */
+  public CorpusPath defaultCorpusPath() {
+    return new CorpusPath(
+        useCompilationCorpusAsDefault ? compilationVName.getCorpus() : "", "", "");
   }
 
   protected EntrySet emitAndReturn(EntrySet.Builder b) {
