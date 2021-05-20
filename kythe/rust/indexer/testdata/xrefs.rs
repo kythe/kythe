@@ -21,7 +21,7 @@ fn add(arg1: u32, arg2: u32) -> u32 {
 //- @TestTrait defines/binding Trait
 trait TestTrait {
     //- @hello defines/binding TraitHelloFn
-    fn hello(){}
+    fn hello() {}
 }
 
 //- @TestStruct defines/binding Struct

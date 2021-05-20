@@ -46,7 +46,10 @@ impl AnalysisLoader for Loader {
         None
     }
     fn search_directories(&self) -> Vec<SearchDirectory> {
-        vec![SearchDirectory { path: self.deps_dir.clone(), prefix_rewrite: None }]
+        vec![SearchDirectory {
+            path: self.deps_dir.clone(),
+            prefix_rewrite: None,
+        }]
     }
 }
 

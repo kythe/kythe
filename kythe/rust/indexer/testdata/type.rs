@@ -6,4 +6,4 @@
 //- TestType aliases U32Type
 type _TestType = u32;
 
-fn main(){}
+fn main() {}

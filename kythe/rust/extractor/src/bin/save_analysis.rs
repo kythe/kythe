@@ -48,9 +48,15 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
     let outdir_position = rustc_arguments
         .iter()
         .position(|arg| arg.contains("--out-dir"))
-        .ok_or_else(|| anyhow!("Could not find the output directory argument: {:?}", arguments))?;
-    let outdir_str =
-        output_dir.to_str().ok_or_else(|| anyhow!("Couldn't convert temporary path to string"))?;
+        .ok_or_else(|| {
+            anyhow!(
+                "Could not find the output directory argument: {:?}",
+                arguments
+            )
+        })?;
+    let outdir_str = output_dir
+        .to_str()
+        .ok_or_else(|| anyhow!("Couldn't convert temporary path to string"))?;
     rustc_arguments[outdir_position] = format!("--out-dir={}", outdir_str);
 
     Ok(rustc_arguments)

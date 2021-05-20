@@ -83,7 +83,11 @@ impl<'a> EntryEmitter<'a> {
             "/kythe/loc/start",
             byte_start.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_node(
+            anchor_vname,
+            "/kythe/loc/end",
+            byte_end.to_string().into_bytes().to_vec(),
+        )?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/defines/binding")
     }
 
@@ -105,7 +109,11 @@ impl<'a> EntryEmitter<'a> {
             "/kythe/loc/start",
             byte_start.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_node(
+            anchor_vname,
+            "/kythe/loc/end",
+            byte_end.to_string().into_bytes().to_vec(),
+        )?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/ref")
     }
 }
