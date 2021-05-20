@@ -21,4 +21,4 @@ impl _TestStruct {
     fn _test() {}
 }
 
-fn main(){}
+fn main() {}

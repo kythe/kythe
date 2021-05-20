@@ -65,9 +65,15 @@ impl Writer {
             )
         };
         if status != 0 {
-            return Err(anyhow::anyhow!("could not create KzipWriter: code: {}", status));
+            return Err(anyhow::anyhow!(
+                "could not create KzipWriter: code: {}",
+                status
+            ));
         }
-        Ok(Writer { rep: std::ptr::NonNull::new(raw).expect("non-null in try_new"), closed: false })
+        Ok(Writer {
+            rep: std::ptr::NonNull::new(raw).expect("non-null in try_new"),
+            closed: false,
+        })
     }
 
     /// Closes the writer and flushes its buffers.i
@@ -120,8 +126,9 @@ impl Writer {
         const CAPACITY: usize = 200;
         let mut buf: Vec<u8> = vec![0; CAPACITY];
         let mut resulting_buffer_size: sys::size_t = 0;
-        let content =
-            unit.write_to_bytes().with_context(|| "kzip::write_unit: while writing protobuf")?;
+        let content = unit
+            .write_to_bytes()
+            .with_context(|| "kzip::write_unit: while writing protobuf")?;
         let status = unsafe {
             sys::KzipWriter_WriteUnit(
                 self.rep.as_ptr(),
@@ -155,13 +162,25 @@ mod tests {
         let output_file = temp_dir.path().join("out.kzip");
         let content = "content";
         let unit = analysis::IndexedCompilation::new();
-        assert!(!Path::exists(&output_file), "file exists but should not: {:?}", &output_file);
+        assert!(
+            !Path::exists(&output_file),
+            "file exists but should not: {:?}",
+            &output_file
+        );
         {
             let mut writer =
                 Writer::try_new(&output_file, Encoding::Proto).expect("created writer");
-            writer.write_file(content.as_bytes()).expect("wrote file with success");
-            writer.write_unit(&unit).expect("wrote compilation unit with success");
+            writer
+                .write_file(content.as_bytes())
+                .expect("wrote file with success");
+            writer
+                .write_unit(&unit)
+                .expect("wrote compilation unit with success");
         }
-        assert!(Path::exists(&output_file), "file does not exist but should: {:?}", &output_file);
+        assert!(
+            Path::exists(&output_file),
+            "file does not exist but should: {:?}",
+            &output_file
+        );
     }
 }
