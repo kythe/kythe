@@ -63,19 +63,6 @@ for pkg in asciidoc bison brotli flex go graphviz leveldb node openjdk parallel 
    brew install $pkg
 done
 
-# For Bazel, we recommend using Bazelisk, a wrapper tool that uses
-# version settings in the repository to install and locate Bazel.
-#
-# To install it, you need to have Go already installed.
-# Run:
-go get github.com/bazelbuild/bazelisk
-
-# Now you may either replace "bazel" with "bazelisk" on the command line,
-# e.g., "bazelisk build kythe/go/..."
-# or you may symlink bazel to bazelisk in your PATH.
-#
-# Bazelisk will download and install based on the .bazelversion file.
-
 # Bison and Flex. The stock versions are too old, but these tools are keg-only
 # and Bazel uses a restricted PATH, so we need to tell Bazel where to find
 # them (see #3514, #4455).
