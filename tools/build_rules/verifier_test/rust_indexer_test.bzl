@@ -33,7 +33,7 @@ def _rust_extract_impl(ctx):
     )
 
     # Rust toolchain
-    rust_toolchain = ctx.toolchains["@io_bazel_rules_rust//rust:toolchain"]
+    rust_toolchain = ctx.toolchains["@rules_rust//rust:toolchain"]
     rustc_lib = rust_toolchain.rustc_lib.files.to_list()
     rust_lib = rust_toolchain.rust_lib.files.to_list()
 
@@ -107,7 +107,7 @@ rust_extract = rule(
     outputs = {"kzip": "%{name}.kzip"},
     fragments = ["cpp"],
     toolchains = [
-        "@io_bazel_rules_rust//rust:toolchain",
+        "@rules_rust//rust:toolchain",
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     incompatible_use_toolchain_transition = True,

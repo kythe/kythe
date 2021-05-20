@@ -16,8 +16,8 @@ load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_st
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
-load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
-load("@io_bazel_rules_rust//proto:repositories.bzl", "rust_proto_repositories")
+load("@rules_rust//rust:repositories.bzl", "rust_repositories")
+load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 load(
     "@bazelruby_rules_ruby//ruby:deps.bzl",
@@ -38,7 +38,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
-    rust_repositories(version = "nightly", iso_date = "2020-06-23", dev_components = True)
+    rust_repositories(version = "nightly", iso_date = "2021-05-18", dev_components = True)
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
