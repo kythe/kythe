@@ -133,3 +133,15 @@ def kythe_rule_repositories():
         strip_prefix = "rules_foreign_cc-0.2.0",
         url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
     )
+
+    maybe(
+        http_archive,
+        name = "llvm-bazel",
+        patch_args = ["-p2"],
+        patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
+        sha256 = "7f28107253563839a00705d328cd8a0c2ba94f3fbc3630148c770dc8a242ad1b",
+        strip_prefix = "llvm-bazel-7e975edbdfda63cdac85d64d63ff3b81982952b5/llvm-bazel",
+        urls = [
+            "https://github.com/google/llvm-bazel/archive/7e975edbdfda63cdac85d64d63ff3b81982952b5.zip",
+        ],
+    )

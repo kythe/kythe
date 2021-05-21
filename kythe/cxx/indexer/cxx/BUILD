@@ -61,7 +61,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -72,8 +72,8 @@ cc_library(
     deps = [
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -95,10 +95,10 @@ cc_library(
         ":indexed_parent_map",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangLex",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:lex",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -120,8 +120,8 @@ cc_library(
         ":indexer_library_support",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
     ],
 )
 
@@ -141,7 +141,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
     ],
 )
 
@@ -166,9 +166,9 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/types:span",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangLex",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:lex",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -211,12 +211,12 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangIndex",
-        "@org_llvm//:clangLex",
-        "@org_llvm//:clangSema",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:index",
+        "@llvm-project//clang:lex",
+        "@llvm-project//clang:sema",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -227,8 +227,8 @@ cc_library(
     deps = [
         "//kythe/cxx/common:scope_guard",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -239,7 +239,7 @@ cc_library(
     deps = [
         ":indexed_parent_map",
         "@com_google_absl//absl/types:optional",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
     ],
 )
 
@@ -247,7 +247,7 @@ cc_library(
     name = "type_map",
     srcs = ["type_map.cc"],
     hdrs = ["type_map.h"],
-    deps = ["@org_llvm//:clangAST"],
+    deps = ["@llvm-project//clang:ast"],
 )
 
 cc_library(
@@ -267,7 +267,7 @@ cc_library(
         "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
     ],
 )
 
@@ -292,10 +292,10 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings:str_format",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangIndex",
-        "@org_llvm//:clangLex",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:index",
+        "@llvm-project//clang:lex",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -329,9 +329,9 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -358,12 +358,12 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangFormat",
-        "@org_llvm//:clangRewrite",
-        "@org_llvm//:clangSema",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:format",
+        "@llvm-project//clang:rewrite",
+        "@llvm-project//clang:sema",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -388,7 +388,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
     ],
 )
 
@@ -417,8 +417,8 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangBasic",
+        "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -464,11 +464,11 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangLex",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:lex",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -535,10 +535,10 @@ cc_test(
         "//third_party:gtest",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -546,7 +546,7 @@ cc_library(
     name = "recursive_type_visitor",
     hdrs = ["recursive_type_visitor.h"],
     deps = [
-        "@org_llvm//:clangAST",
+        "@llvm-project//clang:ast",
     ],
 )
 
@@ -566,10 +566,10 @@ cc_library(
     hdrs = ["clang_range_finder.h"],
     deps = [
         "@com_github_google_glog//:glog",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangLex",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:lex",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -585,11 +585,11 @@ cc_test(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangLex",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:lex",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 

@@ -9,7 +9,6 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
-load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
@@ -25,6 +24,9 @@ load(
     "rules_ruby_select_sdk",
 )
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+load("@llvm-bazel//:configure.bzl", "llvm_configure")
+load("@llvm-bazel//:terminfo.bzl", "llvm_terminfo_disable")
+load("@llvm-bazel//:zlib.bzl", "llvm_zlib_external")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -64,6 +66,36 @@ def _proto_dependencies():
     )
 
 def _cc_dependencies():
+    maybe(
+        http_archive,
+        name = "llvm-project-raw",
+        build_file_content = "#empty",
+        sha256 = "512cc1b9e19981a1214a95b7f711ec2c12b78541866f1aaf00ea825bd3c2c70f",
+        strip_prefix = "llvm-project-0316f3e64972c919d8bfa2d15b9a4be858530f85",
+        urls = [
+            "https://github.com/llvm/llvm-project/archive/0316f3e64972c919d8bfa2d15b9a4be858530f85.zip",
+        ],
+    )
+
+    maybe(
+        llvm_terminfo_disable,
+        name = "llvm_terminfo",
+    )
+
+    maybe(
+        llvm_zlib_external,
+        name = "llvm_zlib",
+        external_zlib = "@net_zlib//:zlib",
+    )
+
+    maybe(
+        llvm_configure,
+        name = "llvm-project",
+        overlay_workspace = "@llvm-bazel//:WORKSPACE",
+        src_path = ".",
+        src_workspace = "@llvm-project-raw//:WORKSPACE",
+    )
+
     maybe(
         http_archive,
         name = "org_sourceware_libffi",
@@ -252,11 +284,6 @@ def _cc_dependencies():
             "https://mirror.bazel.build/github.com/google/leveldb/archive/v1.20.zip",
             "https://github.com/google/leveldb/archive/v1.20.zip",
         ],
-    )
-
-    maybe(
-        git_llvm_repository,
-        name = "org_llvm",
     )
 
     lexyacc_configure()
@@ -1223,14 +1250,6 @@ def kythe_dependencies(sample_ui = True):
             "https://github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe(
-        github_archive,
-        name = "io_kythe_llvmbzlgen",
-        repo_name = "kythe/llvmbzlgen",
-        commit = "7ca9c6146d7d2363a36da6a5eb76f8e139c8d3fe",
-        sha256 = "809da3c5b5c918d9321cfec01b38c46f0c99cf562d9ad3d79ec45e4b8e2d9b3c",
     )
 
     _bindings()

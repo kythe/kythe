@@ -23,8 +23,8 @@ cc_library(
     deps = [
         "//kythe/proto:cxx_cc_proto",
         "@com_github_google_glog//:glog",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangLex",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:lex",
     ],
 )
 
@@ -35,10 +35,10 @@ cc_library(
     deps = [
         "//kythe/cxx/common:lib",
         "@com_google_absl//absl/strings:str_format",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangBasic",
-        "@org_llvm//:clangLex",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:lex",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -46,7 +46,7 @@ cc_library(
     name = "supported_language",
     srcs = ["language.cc"],
     hdrs = ["language.h"],
-    deps = ["@org_llvm//:LLVMSupport"],
+    deps = ["@llvm-project//llvm:Support"],
 )
 
 cc_library(
@@ -65,7 +65,7 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings:str_format",
-        "@org_llvm//:LLVMSupport",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -129,10 +129,10 @@ cc_library(
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangLex",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:lex",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -154,7 +154,7 @@ cc_library(
     deps = [
         "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:LLVMSupport",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -247,9 +247,9 @@ cc_test(
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangTooling",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
     ],
 )
 
@@ -271,7 +271,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
+        "@llvm-project//llvm:Support",
     ],
 )
 
