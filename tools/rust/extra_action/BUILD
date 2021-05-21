@@ -1,5 +1,5 @@
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy")
-load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy")
+load("@rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 
 package(default_visibility = ["//visibility:public"])
 

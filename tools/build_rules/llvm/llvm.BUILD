@@ -200,6 +200,13 @@ cc_library(
     deps = [":LLVM%sCodeGen" % t for t in LLVM_TARGETS],
 )
 
+genrule(
+    name = "nodegen",
+    srcs = ["tools/clang/lib/Tooling/EmptyNodeIntrospection.inc.in"],
+    outs = ["tools/clang/include/clang/Tooling/NodeIntrospection.inc"],
+    cmd = "cp $< $@",
+)
+
 generated_cmake_targets(make_context(
     cmake_defines = cmake_defines(),
     target_defaults = TARGET_DEFAULTS,

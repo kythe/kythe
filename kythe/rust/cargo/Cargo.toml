@@ -47,7 +47,8 @@ serial_test = "0.4.0"
 [package.metadata.raze]
 workspace_path = "//kythe/rust/cargo"
 genmode = "Remote"
-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu"]
+package_aliases_dir = "."
 
 #
 # cargo-raze crate configuration
@@ -64,3 +65,6 @@ gen_buildrs = true
 
 [package.metadata.raze.crates.proc-macro2.'1.0.19']
 gen_buildrs = true
+
+[package.metadata.raze.crates.bstr.'0.2.16']
+data_attr = 'glob(["src/unicode/fsm/*.dfa"])'

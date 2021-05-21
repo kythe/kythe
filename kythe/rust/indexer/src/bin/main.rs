@@ -72,7 +72,7 @@ fn main() -> Result<()> {
 /// `temp_path` using the file names and digests in the CompilationUnit
 pub fn extract_from_kzip(
     c_unit: &CompilationUnit,
-    temp_path: &PathBuf,
+    temp_path: &Path,
     provider: &mut dyn FileProvider,
 ) -> Result<()> {
     for required_input in c_unit.get_required_input() {
@@ -84,9 +84,9 @@ pub fn extract_from_kzip(
         let input_path_buf = PathBuf::new().join(input_path);
         let output_path = match input_path_buf.extension() {
             Some(os_str) => match os_str.to_str() {
-                Some("json") => {
-                    temp_path.join("analysis").join(input_path_buf.file_name().unwrap())
-                }
+                Some("json") => temp_path
+                    .join("analysis")
+                    .join(input_path_buf.file_name().unwrap()),
                 _ => temp_path.join(input_path),
             },
             _ => temp_path.join(input_path),
@@ -97,13 +97,19 @@ pub fn extract_from_kzip(
             .parent()
             .ok_or_else(|| anyhow!("Failed to get parent for path: {:?}", output_path))?;
         std::fs::create_dir_all(parent).with_context(|| {
-            format!("Failed to create temporary directories for path: {}", parent.display())
+            format!(
+                "Failed to create temporary directories for path: {}",
+                parent.display()
+            )
         })?;
 
         // Copy the file contents to the output path in the temporary directory
         let digest = required_input.get_info().get_digest();
         let file_contents = provider.contents(digest).with_context(|| {
-            format!("Failed to get contents of file \"{}\" with digest \"{}\"", input_path, digest)
+            format!(
+                "Failed to get contents of file \"{}\" with digest \"{}\"",
+                input_path, digest
+            )
         })?;
         let mut output_file = File::create(&output_path).context("Failed to create file")?;
         output_file.write_all(&file_contents).with_context(|| {
