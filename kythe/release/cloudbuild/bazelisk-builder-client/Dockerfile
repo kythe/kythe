@@ -29,6 +29,8 @@ RUN apt-get update \
                 git \
                 # Needed to apply local patches to Bazel reposiories.
                 patch \
+                # Needed to configure the LLVM repository.
+                python3 \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
