@@ -28,6 +28,7 @@ import (
 	"sort"
 	"time"
 
+	"kythe.io/kythe/go/extractors/bazel/treeset"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -213,8 +214,8 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 		Argument: info.Arguments,
 	}
 
-	// Capture the primary output path.  Although the action has room for
-	// multiple outputs, we expect only one to be set in practice.  It's
+	// Capture the primary output path. Although the action has room for
+	// multiple outputs, we expect only one to be set in practice. It's
 	// harmless if there are more, though, so don't fail for that.
 	if len(info.Outputs) > 0 {
 		cu.OutputKey = info.Outputs[0]
@@ -235,11 +236,11 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 		log.Printf("ERROR: Adding build details: %v", err)
 	}
 
-	// Load and populate file contents and required inputs.  First scan the
+	// Load and populate file contents and required inputs. First scan the
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
 	sort.Strings(info.Inputs) // ensure a consistent order
-	inputs := c.classifyInputs(info, cu)
+	inputs := c.classifyInputs(ctx, info, cu)
 
 	start := time.Now()
 	if err := c.fetchInputs(ctx, inputs, func(i int, r io.Reader) error {
@@ -337,9 +338,11 @@ func (c *Config) inferCorpus(info *ActionInfo) string {
 // classifyInputs updates unit to add required inputs for each matching path
 // and to identify source inputs according to the rules of c. The filtered
 // complete list of inputs paths is returned.
-func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []string {
+func (c *Config) classifyInputs(ctx context.Context, info *ActionInfo, unit *apb.CompilationUnit) []string {
 	var inputs, sourceFiles stringset.Set
-	for _, in := range info.Inputs {
+	// Inputs might be file or directories https://docs.bazel.build/versions/master/glossary.html#artifact
+	// So we need to expand directories and process only files.
+	for _, in := range treeset.ExpandDirectories(ctx, info.Inputs) {
 		path, ok := c.checkInput(in)
 		if ok {
 			if !inputs.Add(path) {
@@ -366,7 +369,7 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 			c.logPrintf("Excluding input file: %q", in)
 		}
 	}
-	for _, src := range info.Sources {
+	for _, src := range treeset.ExpandDirectories(ctx, info.Sources) {
 		if inputs.Contains(src) {
 			c.logPrintf("Matched source file from action: %q", src)
 			sourceFiles.Add(src)
