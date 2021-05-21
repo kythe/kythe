@@ -66,7 +66,6 @@ func FindMissingTreeInputs(inputs []string, requiredFiles stringset.Set) []strin
 	missingInputs := stringset.New()
 	inputsSet := stringset.New(inputs...)
 	for file := range requiredFiles {
-
 		if inputsSet.Contains(file) {
 			continue
 		}
