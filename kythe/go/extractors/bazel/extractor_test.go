@@ -53,16 +53,32 @@ const (
 	wantDigest = emptyDigest
 )
 
-var (
+func prependFolder(folder string, paths ...string) []string {
+	var result []string
+	for _, path := range paths {
+		result = append(result, folder+"/"+path)
+	}
+	return result
+}
+
+func createEmptyFiles(t *testing.T, paths []string) {
+	for _, path := range paths {
+		if err := ioutil.WriteFile(path, nil, 0755); err != nil {
+			t.Fatalf("Creating test file: %v", err)
+		}
+	}
+}
+
+func createActionInfo(folder string) (*ActionInfo, *xapb.SpawnInfo) {
 	// Gin up an exra action record with some known fields, and make sure the
 	// extractor handles them correctly.
-	xa = &xapb.ExtraActionInfo{
+	xa := &xapb.ExtraActionInfo{
 		Owner:    proto.String(testTarget),
 		Mnemonic: proto.String("SomeAction"),
 	}
-	si = &xapb.SpawnInfo{
+	si := &xapb.SpawnInfo{
 		Argument:   []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		InputFile:  []string{"1.dep", "2.src", "3.dep", "1.dep", "4.src"},
+		InputFile:  prependFolder(folder, "1.dep", "2.src", "3.dep", "1.dep", "4.src", "treeArtifact"),
 		OutputFile: []string{testOutput, "garbage"},
 		Variable: []*xapb.EnvironmentVariable{{
 			Name:  proto.String("PATH"),
@@ -72,19 +88,15 @@ var (
 			Value: proto.String("should not be seen"),
 		}},
 	}
-
-	ai *ActionInfo
-)
-
-func init() {
 	if err := proto.SetExtension(xa, xapb.E_SpawnInfo_SpawnInfo, si); err != nil {
 		log.Fatalf("Error setting extension on XA: %v", err)
 	}
-	if act, err := SpawnAction(xa); err != nil {
+	act, err := SpawnAction(xa)
+	if err != nil {
 		log.Fatalf("Error generating Spawn action: %v", err)
-	} else {
-		ai = act
+		return nil, si
 	}
+	return act, si
 }
 
 type results struct {
@@ -134,13 +146,13 @@ func (r *results) newConfig() *Config {
 	}
 }
 
-func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
+func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit, si *xapb.SpawnInfo, folder string) {
 	t.Helper()
 	// Verify that the info check callback was invoked.
 	wantInfo := &ActionInfo{ // N.B.: Values prior to filtering!
 		Target:    testTarget,
 		Arguments: []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		Inputs:    []string{"1.dep", "1.dep", "2.src", "3.dep", "4.src"},
+		Inputs:    prependFolder(folder, "1.dep", "1.dep", "2.src", "3.dep", "4.src", "treeArtifact"),
 		Outputs:   []string{testOutput, "garbage"},
 		Environment: map[string]string{
 			"PATH":  "p1:p2",
@@ -154,8 +166,8 @@ func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
 	}
 
 	// Verify that the inputs were all passed to the callback.
-	if !reflect.DeepEqual(r.checkedInputs, si.InputFile) {
-		t.Errorf("Wrong input files checked:\n got %+q\nwant %+q", r.checkedInputs, si.InputFile)
+	if want := prependFolder(folder, "1.dep", "1.dep", "2.src", "3.dep", "4.src", "treeArtifact/5.src", "treeArtifact/6.dep"); !reflect.DeepEqual(r.checkedInputs, want) {
+		t.Errorf("Wrong input files checked:\n got %+q\nwant %+q", r.checkedInputs, want)
 	}
 
 	// Verify that the environment got filtered correctly.
@@ -174,7 +186,7 @@ func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
 	}
 
 	// Verify that the identified sources were correctly propagated.
-	if want := []string{"2.src", "4.src"}; !reflect.DeepEqual(cu.SourceFile, want) {
+	if want := prependFolder(folder, "2.src", "4.src", "treeArtifact/5.src"); !reflect.DeepEqual(cu.SourceFile, want) {
 		t.Errorf("Wrong source files:\n got %+q\nwant %+q", cu.SourceFile, want)
 	}
 
@@ -208,8 +220,23 @@ func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
 }
 
 func TestExtractToFile(t *testing.T) {
+	// Prepare test directory and create src/dep files there.
+	// We want to test subdirectories as well so creating treeArtifact subdir.
+	tmp, err := ioutil.TempDir("", "TestExtractToFile")
+	if err != nil {
+		t.Fatalf("Error creating temp directory: %v", err)
+	}
+	err = os.Mkdir(tmp+"/treeArtifact", 0755)
+	if err != nil {
+		t.Fatalf("Error creating treeArfifact directory: %v", err)
+	}
+	createEmptyFiles(t,
+		prependFolder(tmp, "1.dep", "2.src", "3.dep", "4.src", "treeArtifact/5.src", "treeArtifact/6.dep"))
+	defer os.RemoveAll(tmp) // best effort
+
 	res := new(results)
 	config := res.newConfig()
+	ai, si := createActionInfo(tmp)
 
 	buf := bytes.NewBuffer(nil)
 	w, err := kzip.NewWriter(buf)
@@ -227,7 +254,7 @@ func TestExtractToFile(t *testing.T) {
 
 	var numUnits int
 	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(_ *kzip.Reader, unit *kzip.Unit) error {
-		res.checkValues(t, unit.Proto)
+		res.checkValues(t, unit.Proto, si, tmp)
 		numUnits++
 		return nil
 	}); err != nil {
