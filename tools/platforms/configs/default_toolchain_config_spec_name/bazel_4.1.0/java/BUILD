@@ -1,4 +1,4 @@
-# Copyright 2020 The Bazel Authors. All rights reserved.
+# Copyright 2016 The Bazel Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,17 +16,10 @@
 # and should not be modified directly.
 # See @bazel_toolchains//rules:rbe_repo.bzl
 
-load("@bazel_tools//tools/jdk:local_java_repository.bzl", "local_java_runtime")
-
 package(default_visibility = ["//visibility:public"])
 
-alias(
+java_runtime(
     name = "jdk",
-    actual = "rbe_jdk",
-)
-
-local_java_runtime(
-    name = "rbe_jdk",
+    srcs = [],
     java_home = "/usr/lib/jvm/11.29.3-ca-jdk11.0.2/reduced",
-    version = "11",
 )
