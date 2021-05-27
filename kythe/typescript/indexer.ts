@@ -638,15 +638,15 @@ class StandardIndexerContext implements IndexerHost {
   /**
    * pathToVName returns the VName for a given file path.
    *
-   * This function is used for 2 distinct cases that should be separated ideally
-   * in 2 different functions but it. `path` can be one of two:
+   * This function is used for 2 distinct cases that should be ideally separated
+   * in 2 different functions. `path` can be one of two:
    * 1. Full path like 'bazel-out/genfiles/path/to/file.ts'.
-   *    This path is used to build VNames for files and anchors. The
+   *    This path is used to build VNames for files and anchors.
    * 2. Module name like 'path/to/file'.
    *    This path is used to build VNames for semantic nodes.
    *
-   * Only for full paths `pathVnames` contains an entry. For short, module
-   * names, this function will always default to calculating vname based on path
+   * Only for full paths `pathVnames` contains an entry. For short paths (module
+   * names) this function will defaults to calculating vname based on path
    * and compilation unit.
    */
   pathToVName(path: string): VName {
