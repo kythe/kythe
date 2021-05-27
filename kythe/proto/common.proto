@@ -193,6 +193,8 @@ message Origin {
   // commit_timestamp records the time at which this version of the corpus was
   // created. It is typically a git commit timestamp.
   google.protobuf.Timestamp commit_timestamp = 3;
+  // Set of languages appearing in this origin.
+  repeated string language = 4;
 }
 
 // Metadata of a Kythe supported language.
