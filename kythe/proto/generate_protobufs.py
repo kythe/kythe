@@ -102,3 +102,5 @@ for rule in protos:
         lib_rs = os.path.join(bazel_bin, rule_dir, proto + '.proto.rust', 'lib.rs')
         shutil.copy(lib_rs, output_dir)
         os.chmod(os.path.join(output_dir, 'lib.rs'), 0o644)
+        with open(os.path.join(output_dir, 'lib.rs'), 'a') as f:
+            f.write('\n')
