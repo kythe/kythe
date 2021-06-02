@@ -14,11 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# By default, this script (re)generates the source for Go protobuf packages
-# so that Go packages can be fetched and installed with the "go get" command.
-#
-# If the --rust flag is passed, it will generate source for the Rust
-# protobuf packages.
+# This script (re)generates the source for Go protobuf packages so that Go
+# packages can be fetched and installed with the "go get" command. It also
+# generates the Rust protobuf code.
 #
 # This script must be run with its current working directory inside a Bazel
 # workspace root.
@@ -30,7 +28,6 @@
 from subprocess import check_output
 from subprocess import call
 
-import argparse
 import glob
 import os
 import re
@@ -39,64 +36,63 @@ import shutil
 import stat
 import sys
 
-parser = argparse.ArgumentParser(description='Generate Go or Rust protobufs')
-parser.add_argument('--rust', dest='lang', action='store_const', const='rust',
-                    default='go', help='generate Rust instead of Go')
-args = parser.parse_args()
-lang = args.lang
-ext = 'pb.go'
-if lang == 'rust':
-    ext = 'rs'
-
 # Find the locations of the workspace root and the generated files directory.
 workspace = check_output(['bazel', 'info', 'workspace']).strip()
 bazel_bin = check_output(['bazel', 'info', 'bazel-bin']).strip()
 targets = '//kythe/...'
 import_base = 'kythe.io'
 
-protos = check_output([
-    'bazel',
-    'query',
-    'kind("%s_proto_library", %s)' % (lang, targets),
-]).split()
+def do_lang(lang, ext):
+    protos = check_output([
+        'bazel',
+        'query',
+        'kind("%s_proto_library", %s)' % (lang, targets),
+    ]).split()
 
-# Each rule has the form //foo/bar:baz_proto.
-# First build all the rules to ensure we have the output files.
-# Then strip off each :baz_proto, convert it to a filename "baz.proto",
-# and copy the generated output "baz.pb.go" into the source tree.
-if call(['bazel', 'build'] + protos) != 0:
-    print('Build failed')
-    sys.exit(1)
+    # Each rule has the form //foo/bar:baz_proto.
+    # First build all the rules to ensure we have the output files.
+    # Then strip off each :baz_proto, convert it to a filename "baz.proto",
+    # and copy the generated output "baz.pb.go" into the source tree.
+    if call(['bazel', 'build'] + protos) != 0:
+        print('Build failed')
+        sys.exit(1)
 
-for rule in protos:
-    # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
-    rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
-    # Example: $ROOT/kythe/proto/blah_go_proto
-    output_dir = os.path.join(workspace, rule_dir, proto)
-    # Example: blah_go_proto -> blah.proto
-    proto_file = re.sub('_%s_proto$' % lang, '.proto', proto)
+    for rule in protos:
+        # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
+        rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
+        # Example: $ROOT/kythe/proto/blah_go_proto
+        output_dir = os.path.join(workspace, rule_dir, proto)
+        # Example: blah_go_proto -> blah.proto
+        proto_file = re.sub('_%s_proto$' % lang, '.proto', proto)
 
-    print('Copying generated protobuf source for %s' % rule)
-    generated_file = re.sub('.proto$', '.%s' % ext, proto_file)
-    check_path = os.path.join(bazel_bin, rule_dir, proto + '_', import_base, rule_dir, proto,
-                              generated_file)
-    if lang == 'rust':
-        check_path = os.path.join(bazel_bin, rule_dir, proto + '.proto.rust', generated_file)
-    generated_path = glob.glob(check_path).pop()
+        print('Copying generated protobuf source for %s' % rule)
+        generated_file = re.sub('.proto$', '.%s' % ext, proto_file)
+        check_path = os.path.join(bazel_bin, rule_dir, proto + '_', import_base,
+                                  rule_dir, proto, generated_file)
+        if lang == 'rust':
+            check_path = os.path.join(bazel_bin, rule_dir,
+                                      proto + '.proto.rust', generated_file)
+        generated_path = glob.glob(check_path).pop()
 
-    if os.path.isdir(output_dir):
-        print('Deleting and recreating old protobuf directory: %s' % output_dir)
-        shutil.rmtree(output_dir)
-    else:
-        print('Creating new generated protobuf: %s' % generated_file)
+        if os.path.isdir(output_dir):
+            print('Deleting and recreating old protobuf directory: %s'
+                  % output_dir)
+            shutil.rmtree(output_dir)
+        else:
+            print('Creating new generated protobuf: %s' % generated_file)
 
-    # Ensure the output directory exists, and update permissions after copying.
-    os.makedirs(output_dir, 0o755)
-    shutil.copy(generated_path, output_dir)
-    os.chmod(os.path.join(output_dir, generated_file), 0o644)
-    if lang == 'rust':
-        lib_rs = os.path.join(bazel_bin, rule_dir, proto + '.proto.rust', 'lib.rs')
-        shutil.copy(lib_rs, output_dir)
-        os.chmod(os.path.join(output_dir, 'lib.rs'), 0o644)
-        with open(os.path.join(output_dir, 'lib.rs'), 'a') as f:
-            f.write('\n')
+        # Ensure the output directory exists, and update permissions after copying.
+        os.makedirs(output_dir, 0o755)
+        shutil.copy(generated_path, output_dir)
+        os.chmod(os.path.join(output_dir, generated_file), 0o644)
+        if lang == 'rust':
+            lib_rs = os.path.join(bazel_bin, rule_dir, proto + '.proto.rust',
+                                  'lib.rs')
+            shutil.copy(lib_rs, output_dir)
+            os.chmod(os.path.join(output_dir, 'lib.rs'), 0o644)
+            with open(os.path.join(output_dir, 'lib.rs'), 'a') as f:
+                f.write('\n')
+
+do_lang(lang='go', ext='pb.go')
+do_lang(lang='rust', ext='rs')
+
