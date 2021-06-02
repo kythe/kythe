@@ -95,4 +95,3 @@ def do_lang(lang, ext):
 
 do_lang(lang='go', ext='pb.go')
 do_lang(lang='rust', ext='rs')
-
