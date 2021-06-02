@@ -30,6 +30,7 @@
 from subprocess import check_output
 from subprocess import call
 
+import argparse
 import glob
 import os
 import re
@@ -38,19 +39,14 @@ import shutil
 import stat
 import sys
 
-if len(sys.argv) > 2:
-    print('Too many arguments.')
-    sys.exit(1)
-
-lang = 'go'
+parser = argparse.ArgumentParser(description='Generate Go or Rust protobufs')
+parser.add_argument('--rust', dest='lang', action='store_const', const='rust',
+                    default='go', help='generate Rust instead of Go')
+args = parser.parse_args()
+lang = args.lang
 ext = 'pb.go'
-
-if len(sys.argv) > 1:
-    lang = 'rust'
+if lang == 'rust':
     ext = 'rs'
-    if sys.argv[1] != '--rust':
-        print('Unknown argument %s' % sys.argv[1])
-        sys.exit(1)
 
 # Find the locations of the workspace root and the generated files directory.
 workspace = check_output(['bazel', 'info', 'workspace']).strip()
