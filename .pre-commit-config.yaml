@@ -38,7 +38,8 @@ repos:
             |(^|/)(\.[^/]*|go\.mod|go\.sum)$
             |^tools/|^third_party/|^kythe/web/site/
             |worker/info/(admin|host)$
-            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$'
+            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$
+            |^/kythe/proto/.*_rust_proto/'
     -   id: shellcheck
         name: shellcheck
         description: Runs `shellcheck` on shell files
