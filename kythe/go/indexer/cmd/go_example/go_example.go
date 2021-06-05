@@ -64,8 +64,6 @@ Options:
 }
 
 func main() {
-	panic("testing that go_example is getting rebuilt")
-	log.Fatal("testing that go_example is getting rebuilt")
 	flag.Parse()
 
 	if flag.NArg() == 0 {
