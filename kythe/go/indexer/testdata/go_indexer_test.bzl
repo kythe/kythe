@@ -166,6 +166,9 @@ def _go_entries(ctx):
     if ctx.attr.emit_anchor_scopes:
         iargs.append("-anchor_scopes")
 
+    if ctx.attr.use_compilation_corpus_as_default:
+        iargs.append("-use_compilation_corpus_as_default")
+
     # If the test wants linkage metadata, enable support for it in the indexer.
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
@@ -200,6 +203,8 @@ go_entries = rule(
 
         # The suffix used to recognize linkage metadata files, if non-empty.
         "metadata_suffix": attr.string(default = ""),
+
+        "use_compilation_corpus_as_default": attr.bool(default=False),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -247,6 +252,7 @@ def _go_indexer(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
+        use_compilation_corpus_as_default = False,
         metadata_suffix = ""):
     if importpath == None:
         importpath = native.package_name() + "/" + name
@@ -268,6 +274,7 @@ def _go_indexer(
         name = entries,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
+        use_compilation_corpus_as_default = use_compilation_corpus_as_default,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -287,6 +294,7 @@ def go_indexer_test(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
+        use_compilation_corpus_as_default=False,
         metadata_suffix = ""):
     entries = _go_indexer(
         name = name,
@@ -294,6 +302,7 @@ def go_indexer_test(
         data = data,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
+        use_compilation_corpus_as_default=use_compilation_corpus_as_default,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,

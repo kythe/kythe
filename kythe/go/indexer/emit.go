@@ -64,6 +64,10 @@ type EmitOptions struct {
 
 	// If true, the doc/uri fact is only emitted for go std library packages.
 	OnlyEmitDocURIsForStandardLibs bool
+
+	// Nodes that otherwise wouldn't have a corpus (such as tapps) are given the
+	// corpus of the compilation unit being indexed.
+	UseCompilationCorpusAsDefault bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -280,6 +284,9 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 		components = append(components, p)
 	}
 	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
+	if e.opts.UseCompilationCorpusAsDefault {
+		v.Corpus = e.pi.VName.GetCorpus()
+	}
 	if e.pi.typeEmitted.Add(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
 		e.writeEdge(v, ctor, edges.ParamIndex(0))
