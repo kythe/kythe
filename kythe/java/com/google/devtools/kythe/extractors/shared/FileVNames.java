@@ -64,7 +64,7 @@ import java.util.stream.Collectors;
  * The {@link VName} template values can contain markers such as @1@ or @2@ that will be replaced by
  * the first or second regex groups in the pathRegex.
  *
- * <p>NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
+ * <p>NOTE: regex syntax is RE2: https://github.com/google/re2/wiki/Syntax
  */
 public class FileVNames {
   private static final Gson GSON =
