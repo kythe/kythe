@@ -684,6 +684,11 @@ cc_proto_library(
     deps = [":metadata_proto"],
 )
 
+java_proto_library(
+    name = "metadata_java_proto",
+    deps = [":metadata_proto"],
+)
+
 bzl_library(
     name = "go_bzl",
     srcs = ["go.bzl"],
