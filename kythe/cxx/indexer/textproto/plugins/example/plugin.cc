@@ -24,7 +24,7 @@ namespace lang_textproto {
 absl::Status ExamplePlugin::AnalyzeStringField(
     PluginApi* api, const proto::VName& file_vname,
     const google::protobuf::FieldDescriptor& field,
-    std::vector<StringToken> tokens) {
+    const std::vector<StringToken>& tokens) {
   // Create an anchor spanning the full range of the string value.
   const char* begin = tokens.front().source_text.data();
   const char* end = tokens.back().source_text.end();
