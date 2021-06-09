@@ -959,10 +959,10 @@ mod testing {
             let result: analysis::IndexedCompilation = protobuf::parse_from_bytes(&buf).unwrap();
             return result;
         }
-        panic!(format!(
+        panic!(
             "pbunits file not found in existing zip file: zip_path: {:?}",
             &zip_path.as_ref(),
-        ));
+        );
     }
 
     #[test]
