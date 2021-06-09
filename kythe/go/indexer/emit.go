@@ -113,6 +113,9 @@ type impl struct{ A, B types.Object }
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
 func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) error {
+	if opts == nil {
+		opts = &EmitOptions{}
+	}
 	e := &emitter{
 		ctx:      ctx,
 		pi:       pi,
