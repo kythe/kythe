@@ -901,7 +901,8 @@ void KytheGraphObserver::recordIntegerConstantNode(const NodeId& node_id,
                                                    const llvm::APSInt& Value) {
   VNameRef node_vname(VNameRefFromNodeId(node_id));
   recorder_->AddProperty(node_vname, NodeKindID::kConstant);
-  recorder_->AddProperty(node_vname, PropertyID::kText, Value.toString(10));
+  recorder_->AddProperty(node_vname, PropertyID::kText,
+                         llvm::toString(Value, 10));
 }
 
 void KytheGraphObserver::recordFunctionNode(
