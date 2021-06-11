@@ -368,9 +368,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns a CorpusPath containing the default corpus. This will either be
-   * empty string or the compilation unit's corpus depending on the
-   * --use_compilation_corpus_as_default option.
+   * Returns a CorpusPath containing the default corpus. This will either be empty string or the
+   * compilation unit's corpus depending on the --use_compilation_corpus_as_default option.
    */
   public CorpusPath defaultCorpusPath() {
     return new CorpusPath(
