@@ -139,9 +139,9 @@ def kythe_rule_repositories():
         name = "llvm-bazel",
         patch_args = ["-p2"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
-        sha256 = "7f28107253563839a00705d328cd8a0c2ba94f3fbc3630148c770dc8a242ad1b",
-        strip_prefix = "llvm-bazel-7e975edbdfda63cdac85d64d63ff3b81982952b5/llvm-bazel",
+        sha256 = "1c54ed1c322cb96a64daab8d2d99e0178de17812e2992bf07f53756b13805822",
+        strip_prefix = "llvm-bazel-e3593b2e6eeb96e3972278073bc35ac8f4ea8f4b/llvm-bazel",
         urls = [
-            "https://github.com/google/llvm-bazel/archive/7e975edbdfda63cdac85d64d63ff3b81982952b5.zip",
+            "https://github.com/google/llvm-bazel/archive/e3593b2e6eeb96e3972278073bc35ac8f4ea8f4b.zip",
         ],
     )

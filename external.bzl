@@ -70,10 +70,10 @@ def _cc_dependencies():
         http_archive,
         name = "llvm-project-raw",
         build_file_content = "#empty",
-        sha256 = "512cc1b9e19981a1214a95b7f711ec2c12b78541866f1aaf00ea825bd3c2c70f",
-        strip_prefix = "llvm-project-0316f3e64972c919d8bfa2d15b9a4be858530f85",
+        sha256 = "e20dcfb060f7078124bf29d9c8dee8c5c56b4bebee33ab3b6fef2898262651f2",
+        strip_prefix = "llvm-project-82a3b606b01d2da23a40785222f3f7d15401dda0",
         urls = [
-            "https://github.com/llvm/llvm-project/archive/0316f3e64972c919d8bfa2d15b9a4be858530f85.zip",
+            "https://github.com/llvm/llvm-project/archive/82a3b606b01d2da23a40785222f3f7d15401dda0.zip",
         ],
     )
 

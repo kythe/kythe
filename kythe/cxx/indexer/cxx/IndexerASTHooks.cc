@@ -4280,7 +4280,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument("nullptr");
     case TemplateArgument::Integral:
       return BuildNodeIdForSpecialTemplateArgument(
-          Arg.getAsIntegral().toString(10) + "i");
+          llvm::toString(Arg.getAsIntegral(), 10) + "i");
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:
