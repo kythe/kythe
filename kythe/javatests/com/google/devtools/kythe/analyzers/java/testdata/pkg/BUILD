@@ -511,3 +511,17 @@ java_verifier_test(
     name = "abstract_class_test",
     compilation = ":abstract_class",
 )
+
+java_library(
+    name = "default_corpus",
+    srcs = ["DefaultCorpus.java"],
+)
+
+java_verifier_test(
+    name = "default_corpus_test",
+    compilation = ":default_corpus",
+    indexer_opts = [
+        "--verbose",
+        "--use_compilation_corpus_as_default",
+    ],
+)
