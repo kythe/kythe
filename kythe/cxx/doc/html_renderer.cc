@@ -62,9 +62,8 @@ class CssTag {
 
 std::string RenderPrintable(const HtmlRendererOptions& options,
                             const std::vector<MarkupHandler>& handlers,
-                            const proto::Printable& printable_proto,
-                            Printable::RejectPolicy filter) {
-  Printable printable(printable_proto, filter);
+                            const proto::Printable& printable_proto) {
+  Printable printable(printable_proto);
   auto markdoc = HandleMarkup(handlers, printable);
   return RenderHtml(options, markdoc);
 }
@@ -688,8 +687,7 @@ std::string RenderDocument(
     }
     {
       CssTag content_div(CssTag::Kind::Div, options.content_div, &text_out);
-      text_out.append(RenderPrintable(options, handlers, document.text(),
-                                      Printable::IncludeAll));
+      text_out.append(RenderPrintable(options, handlers, document.text()));
     }
     for (const auto& child : document.children()) {
       text_out.append(RenderDocument(options, handlers, child));
