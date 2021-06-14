@@ -48,17 +48,13 @@ Printable::Printable(const proto::Printable& from,
   text_.reserve(from.raw_text().size() - from.link_size() * 2);
   size_t current_link = 0;
   std::stack<size_t> unclosed_links;
-  // Number of important blocks we're inside.
-  size_t important_count = 0;
-  // Number of list blocks we're inside.
-  size_t list_count = 0;
   for (size_t i = 0; i < from.raw_text().size(); ++i) {
     char c = from.raw_text()[i], next = (i + 1 == from.raw_text().size())
                                             ? '\0'
                                             : from.raw_text()[i + 1];
     switch (c) {
       case '\\':
-        if (!ShouldReject(filter, important_count, list_count)) {
+        if (!ShouldReject(filter, 0, 0)) {
           text_.push_back(next);
         }
         ++i;
@@ -66,17 +62,7 @@ Printable::Printable(const proto::Printable& from,
       case '[':
         if (current_link < from.link_size()) {
           unclosed_links.push(spans_.size());
-          switch (from.link(current_link).kind()) {
-            case proto::common::Link::LIST:
-              ++list_count;
-              break;
-            case proto::common::Link::IMPORTANT:
-              ++important_count;
-              break;
-            default:
-              break;
-          }
-          if (!ShouldReject(filter, important_count, list_count)) {
+          if (!ShouldReject(filter, 0, 0)) {
             spans_.Emplace(text_.size(), text_.size(),
                            from.link(current_link++));
           }
@@ -84,24 +70,14 @@ Printable::Printable(const proto::Printable& from,
         break;
       case ']':
         if (!unclosed_links.empty()) {
-          if (!ShouldReject(filter, important_count, list_count)) {
+          if (!ShouldReject(filter, 0, 0)) {
             spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
-          }
-          switch (spans_.span(unclosed_links.top()).link().kind()) {
-            case proto::common::Link::LIST:
-              --list_count;
-              break;
-            case proto::common::Link::IMPORTANT:
-              --important_count;
-              break;
-            default:
-              break;
           }
           unclosed_links.pop();
         }
         break;
       default:
-        if (!ShouldReject(filter, important_count, list_count)) {
+        if (!ShouldReject(filter, 0, 0)) {
           text_.push_back(c);
         }
         break;
@@ -202,25 +178,9 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
               break;
           }
         } break;
-        case PrintableSpan::Semantic::Link: {
+        case PrintableSpan::Semantic::Link:
           text_out.append("[link");
-          switch (open_spans.top()->link().kind()) {
-            case proto::common::Link::DEFINITION:
-              text_out.append("D ");
-              break;
-            case proto::common::Link::LIST:
-              text_out.append("L ");
-              break;
-            case proto::common::Link::LIST_ITEM:
-              text_out.append("E ");
-              break;
-            case proto::common::Link::IMPORTANT:
-              text_out.append("I ");
-              break;
-            default:
-              text_out.append("? ");
-          }
-        } break;
+          break;
         case PrintableSpan::Semantic::CodeRef:
           text_out.append("[coderef ");
           break;

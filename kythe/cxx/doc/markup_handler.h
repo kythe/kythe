@@ -81,10 +81,8 @@ class PrintableSpan {
   PrintableSpan(size_t begin, size_t end, Style style)
       : begin_(begin), end_(end), semantic_(Semantic::Styled), style_(style) {}
   const bool operator<(const PrintableSpan& o) const {
-    int priority = link_priority();
-    int opriority = o.link_priority();
-    return std::tie(begin_, o.end_, semantic_, priority, tag_block_, style_) <
-           std::tie(o.begin_, end_, o.semantic_, opriority, tag_block_, style_);
+    return std::tie(begin_, o.end_, semantic_, tag_block_, style_) <
+           std::tie(o.begin_, end_, o.semantic_, tag_block_, style_);
   }
   bool is_valid() const { return begin_ < end_; }
   const size_t begin() const { return begin_; }
@@ -96,7 +94,6 @@ class PrintableSpan {
   std::pair<TagBlockId, size_t> tag_block() const { return tag_block_; }
 
  private:
-  int link_priority() const { return -link_.kind(); }
   /// The beginning offset, in bytes, of the span.
   size_t begin_;
   /// The ending offset, in bytes, of the span.

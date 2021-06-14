@@ -110,20 +110,7 @@ message Link {
   // Semantic tickets for DEFINITION links.
   repeated string definition = 3;
 
-  enum Kind {  // Will be deprecated.
-    // This annotates a link to a ticket.
-    DEFINITION = 0;
-    // This span of text contains a list of items.
-    LIST = 1;
-    // This span of text is an item in a list.
-    LIST_ITEM = 2;
-    // This span of text is important.
-    IMPORTANT = 999;
-  }
-  // The kind of this span.
-  Kind kind = 2 [deprecated = true];
-
-  reserved 1;
+  reserved 1, 2;
 }
 
 // Marked up, source code-like text.
