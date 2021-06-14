@@ -1,16 +1,16 @@
 # Cloud Build configuration for mandatory presubmit tests.
 steps:
   - name: gcr.io/kythe-repo/bazelisk-builder-client
-    id: bazel
+    id: bazel-minversion
+    env:
+      - USE_BAZEL_VERSION=min
     args:
       - bazel
       - test
       - '--config=remote'
       - //...
   - name: gcr.io/kythe-repo/bazelisk-builder-client
-    id: bazel-minversion
-    env:
-      - USE_BAZEL_VERSION=min
+    id: bazel
     args:
       - bazel
       - test
