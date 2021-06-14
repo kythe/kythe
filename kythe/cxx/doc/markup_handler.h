@@ -158,14 +158,6 @@ class Printable {
   PrintableSpans spans_;
 };
 
-/// \brief Combines `Printable::RejectPolicy` enumerators.
-inline Printable::RejectPolicy operator|(Printable::RejectPolicy lhs,
-                                         Printable::RejectPolicy rhs) {
-  using impl = std::underlying_type<Printable::RejectPolicy>::type;
-  return static_cast<Printable::RejectPolicy>(static_cast<impl>(lhs) |
-                                              static_cast<impl>(rhs));
-}
-
 /// \brief Appends markup-specific spans to `spans` from `printable`.
 /// \param previous_spans Previously-emitted spans. After the MarkupHandler
 /// runs, these will be merged with `spans`.
