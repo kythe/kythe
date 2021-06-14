@@ -30,21 +30,7 @@ void PrintableSpans::Merge(const PrintableSpans& o) {
   std::sort(spans_.begin(), spans_.end());
 }
 
-namespace {
-bool ShouldReject(Printable::RejectPolicy filter, size_t important_count,
-                  size_t list_count) {
-  return !((filter & Printable::IncludeLists) == Printable::IncludeLists &&
-           list_count != 0) &&
-         ((((filter & Printable::RejectUnimportant) ==
-            Printable::RejectUnimportant) &&
-           important_count == 0) ||
-          (((filter & Printable::RejectLists) == Printable::RejectLists) &&
-           list_count != 0));
-}
-}  // anonymous namespace
-
-Printable::Printable(const proto::Printable& from,
-                     Printable::RejectPolicy filter) {
+Printable::Printable(const proto::Printable& from) {
   text_.reserve(from.raw_text().size() - from.link_size() * 2);
   size_t current_link = 0;
   std::stack<size_t> unclosed_links;
@@ -54,32 +40,23 @@ Printable::Printable(const proto::Printable& from,
                                             : from.raw_text()[i + 1];
     switch (c) {
       case '\\':
-        if (!ShouldReject(filter, 0, 0)) {
-          text_.push_back(next);
-        }
+        text_.push_back(next);
         ++i;
         break;
       case '[':
         if (current_link < from.link_size()) {
           unclosed_links.push(spans_.size());
-          if (!ShouldReject(filter, 0, 0)) {
-            spans_.Emplace(text_.size(), text_.size(),
-                           from.link(current_link++));
-          }
+          spans_.Emplace(text_.size(), text_.size(), from.link(current_link++));
         }
         break;
       case ']':
         if (!unclosed_links.empty()) {
-          if (!ShouldReject(filter, 0, 0)) {
-            spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
-          }
+          spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
           unclosed_links.pop();
         }
         break;
       default:
-        if (!ShouldReject(filter, 0, 0)) {
-          text_.push_back(c);
-        }
+        text_.push_back(c);
         break;
     }
   }

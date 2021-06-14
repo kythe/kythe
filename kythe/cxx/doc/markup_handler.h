@@ -138,23 +138,9 @@ class PrintableSpans {
 
 class Printable {
  public:
-  /// A policy bitmask for filtering spans.
-  enum RejectPolicy : unsigned {
-    IncludeAll = 0,         ///< Reject no spans.
-    RejectLists = 1,        ///< Reject LIST spans.
-    RejectUnimportant = 2,  ///< Reject spans not dominated by IMPORTANT spans.
-    IncludeLists = 4        ///< Always include LIST spans. Has precedence over
-                            ///< `kRejectLists`.
-  };
-
   /// \brief Build a Printable from a protobuf.
   /// \post The internal list of spans is sorted.
-  /// \param filter A bitmask of Link spans to reject.
-  Printable(const proto::Printable& from, RejectPolicy filter);
-  /// \brief Build a Printable from a protobuf.
-  /// \post The internal list of spans is sorted.
-  explicit Printable(const proto::Printable& from)
-      : Printable(from, IncludeAll) {}
+  explicit Printable(const proto::Printable& from);
   /// \pre The list of spans is sorted.
   Printable(const std::string& text, PrintableSpans&& spans)
       : text_(text), spans_(std::move(spans)) {}
