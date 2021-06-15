@@ -1,0 +1,97 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:rust.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//kythe/rust/cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
+])
+
+# Generated Targets
+
+rust_binary(
+    # Prefix bin name to disambiguate from (probable) collision with lib name
+    # N.B.: The exact form of this is subject to change.
+    name = "cargo_bin_bin_fixture",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "src/bin/bin_fixture.rs",
+    data = [] + ["README.md"],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "1.0.5",
+    # buildifier: leave-alone
+    deps = [
+        ":assert_cmd",
+        "@raze__bstr__0_2_16//:bstr",
+        "@raze__doc_comment__0_3_3//:doc_comment",
+        "@raze__predicates__1_0_8//:predicates",
+        "@raze__predicates_core__1_0_2//:predicates_core",
+        "@raze__predicates_tree__1_0_2//:predicates_tree",
+        "@raze__wait_timeout__0_2_0//:wait_timeout",
+    ],
+)
+
+# Unsupported target "example_fixture" with type "example" omitted
+
+rust_library(
+    name = "assert_cmd",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "src/lib.rs",
+    crate_type = "lib",
+    data = [] + ["README.md"],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "1.0.5",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__bstr__0_2_16//:bstr",
+        "@raze__doc_comment__0_3_3//:doc_comment",
+        "@raze__predicates__1_0_8//:predicates",
+        "@raze__predicates_core__1_0_2//:predicates_core",
+        "@raze__predicates_tree__1_0_2//:predicates_tree",
+        "@raze__wait_timeout__0_2_0//:wait_timeout",
+    ],
+)
+
+# Unsupported target "assert" with type "test" omitted
+
+# Unsupported target "cargo" with type "test" omitted
+
+# Unsupported target "examples" with type "test" omitted

@@ -72,6 +72,6 @@ rust_library(
     deps = [
         "@raze__lazy_static__1_4_0//:lazy_static",
         "@raze__memchr__2_4_0//:memchr",
-        "@raze__regex_automata__0_1_9//:regex_automata",
+        "@raze__regex_automata__0_1_10//:regex_automata",
     ],
 )

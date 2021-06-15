@@ -30,13 +30,25 @@ licenses([
 
 # Generated Targets
 
+# Unsupported target "sha256" with type "bench" omitted
+
+# Unsupported target "sha512" with type "bench" omitted
+
+# Unsupported target "sha256sum" with type "example" omitted
+
+# Unsupported target "sha512sum" with type "example" omitted
+
 rust_library(
-    name = "thiserror_impl",
+    name = "sha2",
     srcs = glob(["**/*.rs"]),
+    aliases = {
+    },
     crate_features = [
+        "default",
+        "std",
     ],
     crate_root = "src/lib.rs",
-    crate_type = "proc-macro",
+    crate_type = "lib",
     data = [],
     edition = "2018",
     rustc_flags = [
@@ -46,11 +58,22 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.24",
+    version = "0.9.5",
     # buildifier: leave-alone
     deps = [
-        "@raze__proc_macro2__1_0_26//:proc_macro2",
-        "@raze__quote__1_0_9//:quote",
-        "@raze__syn__1_0_72//:syn",
-    ],
+        "@raze__block_buffer__0_9_0//:block_buffer",
+        "@raze__cfg_if__1_0_0//:cfg_if",
+        "@raze__digest__0_9_0//:digest",
+        "@raze__opaque_debug__0_3_0//:opaque_debug",
+    ] + selects.with_or({
+        # cfg(any(target_arch = "x86", target_arch = "x86_64"))
+        (
+            "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+        ): [
+            "@raze__cpufeatures__0_1_4//:cpufeatures",
+        ],
+        "//conditions:default": [],
+    }),
 )
+
+# Unsupported target "lib" with type "test" omitted

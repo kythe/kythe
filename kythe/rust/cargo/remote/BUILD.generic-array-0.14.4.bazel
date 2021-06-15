@@ -25,7 +25,7 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT OR Apache-2.0"
+    "notice",  # MIT from expression "MIT"
 ])
 
 # Generated Targets
@@ -37,12 +37,11 @@ load(
 )
 
 cargo_build_script(
-    name = "serde_derive_build_script",
+    name = "generic_array_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
-        "default",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
@@ -54,20 +53,20 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.126",
+    version = "0.14.4",
     visibility = ["//visibility:private"],
     deps = [
+        "@raze__version_check__0_9_3//:version_check",
     ],
 )
 
 rust_library(
-    name = "serde_derive",
+    name = "generic_array",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "default",
     ],
     crate_root = "src/lib.rs",
-    crate_type = "proc-macro",
+    crate_type = "lib",
     data = [],
     edition = "2015",
     rustc_flags = [
@@ -77,12 +76,22 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.126",
+    version = "0.14.4",
     # buildifier: leave-alone
     deps = [
-        ":serde_derive_build_script",
-        "@raze__proc_macro2__1_0_27//:proc_macro2",
-        "@raze__quote__1_0_9//:quote",
-        "@raze__syn__1_0_73//:syn",
+        ":generic_array_build_script",
+        "@raze__typenum__1_13_0//:typenum",
     ],
 )
+
+# Unsupported target "arr" with type "test" omitted
+
+# Unsupported target "generics" with type "test" omitted
+
+# Unsupported target "hex" with type "test" omitted
+
+# Unsupported target "import_name" with type "test" omitted
+
+# Unsupported target "iter" with type "test" omitted
+
+# Unsupported target "mod" with type "test" omitted
