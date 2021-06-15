@@ -342,6 +342,16 @@ class EVar : public AstNode {
   AstNode* current_;
 };
 
+/// \brief A set of goals to be handled atomically.
+struct GoalGroup {
+  enum AcceptanceCriterion {
+    kNoneMayFail,  ///< For this group to pass, no goals may fail.
+    kSomeMustFail  ///< For this group to pass, some goals must fail.
+  };
+  AcceptanceCriterion accept_if;  ///< How this group is handled.
+  std::vector<AstNode*> goals;    ///< Grouped goals, implicitly conjoined.
+};
+
 }  // namespace verifier
 }  // namespace kythe
 

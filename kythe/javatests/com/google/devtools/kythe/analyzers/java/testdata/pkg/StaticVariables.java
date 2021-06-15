@@ -7,7 +7,16 @@ public class StaticVariables {
 
   //- @bar defines/binding StaticBar
   public static int bar;
+
+  //- @E defines/binding Enum
+  enum E {
+    //- @X defines/binding EnumValue
+    X,
+    Y;
+  }
 }
 
 //- StaticFoo.tag/static _
 //- StaticBar.tag/static _
+//- !{ Enum.tag/static _ }
+//- EnumValue.tag/static _

@@ -4,6 +4,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
@@ -12,15 +13,15 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "8e0633dfb59f704594f19ae996a35650747adc621ada5e8b9fb588f808c89cb0",
-    strip_prefix = "bazel-toolchains-3.7.0",
+    sha256 = "179ec02f809e86abf56356d8898c8bd74069f1bd7c56044050c2cd3d79d0e024",
+    strip_prefix = "bazel-toolchains-4.1.0",
     urls = [
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.7.0/bazel-toolchains-3.7.0.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.7.0/bazel-toolchains-3.7.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
     ],
 )
 
-load("//:setup.bzl", "kythe_rule_repositories", "maybe")
+load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
 
@@ -68,20 +69,14 @@ rbe_autoconfig(
     use_legacy_platform_definition = False,
 )
 
-rbe_autoconfig(
-    name = "rbe_bazel_minversion",
-    bazel_version = MIN_VERSION,
-    env = clang_env(),
-    export_configs = True,
-    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
-    use_legacy_platform_definition = False,
+load(
+    "@bazelruby_rules_ruby//ruby:defs.bzl",
+    "ruby_bundle",
 )
 
-rbe_autoconfig(
-    name = "rbe_bazel_maxversion",
-    bazel_version = MAX_VERSION,
-    env = clang_env(),
-    export_configs = True,
-    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
-    use_legacy_platform_definition = False,
+ruby_bundle(
+    name = "website_bundle",
+    bundler_version = "2.1.4",
+    gemfile = "//kythe/web/site:Gemfile",
+    gemfile_lock = "//kythe/web/site:Gemfile.lock",
 )

@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.70.0 // indirect
 	cloud.google.com/go/storage v1.12.0 // indirect
 	github.com/DataDog/zstd v1.4.5
-	github.com/apache/beam v2.25.0+incompatible
+	github.com/apache/beam v2.2.1-0.20210211185206-8f219a2e16c0+incompatible
 	github.com/bazelbuild/rules_go v0.24.5
 	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.1 // indirect

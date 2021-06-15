@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import javax.tools.StandardJavaFileManager;
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();
 
@@ -174,7 +176,8 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
     } catch (UnsupportedOperationException err) {
       try {
         return Paths.get(fo.toUri());
-      } catch (Throwable unused) {
+      } catch (Throwable suppressed) {
+        logger.atWarning().withCause(suppressed).log("asPath unsupported due underlying error");
         throw err; // Re-throw the original error.
       }
     }

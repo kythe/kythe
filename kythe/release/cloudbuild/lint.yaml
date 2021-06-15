@@ -1,0 +1,18 @@
+steps:
+  - name: gcr.io/cloud-builders/git
+    args:
+      - fetch
+      - '--unshallow'
+      - '--no-tags'
+      - origin
+      - master
+  - name: gcr.io/kythe-repo/pre-commit
+    args:
+      - run
+      - '--hook-stage'
+      - commit
+      - '--show-diff-on-failure'
+      - '--from-ref'
+      - origin/master
+      - '--to-ref'
+      - HEAD

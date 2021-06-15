@@ -63,7 +63,7 @@ argument: "-I./kythe/cxx/extractor"
 argument: "./kythe/cxx/extractor/testdata/metadata.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/metadata.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 )";
 
@@ -77,7 +77,6 @@ TEST(CxxExtractorTest, TextMetadataExtraction) {
   CanonicalizeHashes(&unit);
   unit.clear_details();
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }

@@ -1,8 +1,8 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_library")
 load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 ts_config(
     name = "tsconfig",
@@ -58,11 +58,15 @@ ts_library(
 
 nodejs_test(
     name = "indexer_test",
-    data = [":test_ts"] + glob(["testdata/**/*"]) + [
+    data = [
+        ":test_ts",
+    ] + glob(["testdata/**/*"]) + [
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
     ],
     entry_point = ":test.ts",
+    # See https://github.com/bazelbuild/rules_nodejs/wiki#--bazel_patch_module_resolver-now-defaults-to-false-2324
+    templated_args = ["--bazel_patch_module_resolver"],
 )
 
 jasmine_node_test(

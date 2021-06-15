@@ -28,7 +28,7 @@ namespace kythe {
 /// node in some arbitrary but consistent order defined by the parent.
 struct IndexedParent {
   /// \brief The parent DynTypedNode associated with some key.
-  clang::ast_type_traits::DynTypedNode parent;
+  clang::DynTypedNode parent;
   /// \brief The index at which some associated key appears in `Parent`.
   size_t index;
 
@@ -59,8 +59,7 @@ class IndexedParentMap {
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
-  const IndexedParent* GetIndexedParent(
-      const clang::ast_type_traits::DynTypedNode& node) const;
+  const IndexedParent* GetIndexedParent(const clang::DynTypedNode& node) const;
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
@@ -69,7 +68,7 @@ class IndexedParentMap {
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
   template <typename T>
   const IndexedParent* GetIndexedParent(const T& node) const {
-    return GetIndexedParent(clang::ast_type_traits::DynTypedNode::create(node));
+    return GetIndexedParent(clang::DynTypedNode::create(node));
   }
 
   /// \return true if `Decl` and all of the nodes underneath it are prunable.

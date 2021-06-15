@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
 import com.google.devtools.kythe.platform.kzip.KZipReader;
@@ -130,15 +131,22 @@ public class IndexInfoUtils {
 
   public static void writeKzipToFile(CompilationDescription description, String path)
       throws IOException {
+    writeKzipToFile(ImmutableList.of(description), path);
+  }
+
+  public static void writeKzipToFile(Collection<CompilationDescription> descriptions, String path)
+      throws IOException {
     Paths.get(path).getParent().toFile().mkdirs();
     try (KZip.Writer writer = new KZipWriter(new File(path))) {
-      Analysis.IndexedCompilation indexedCompilation =
-          Analysis.IndexedCompilation.newBuilder()
-              .setUnit(description.getCompilationUnit())
-              .build();
-      writer.writeUnit(indexedCompilation);
-      for (FileData fileData : description.getFileContents()) {
-        writer.writeFile(fileData.getContent().toByteArray());
+      for (CompilationDescription description : descriptions) {
+        Analysis.IndexedCompilation indexedCompilation =
+            Analysis.IndexedCompilation.newBuilder()
+                .setUnit(description.getCompilationUnit())
+                .build();
+        writer.writeUnit(indexedCompilation);
+        for (FileData fileData : description.getFileContents()) {
+          writer.writeFile(fileData.getContent().toByteArray());
+        }
       }
     }
   }

@@ -94,6 +94,17 @@ class TreeContext {
     return parent;
   }
 
+  public JCClassDecl getClassParentDecl() {
+    TreeContext parent = up();
+    while (parent != null && !(parent.getTree() instanceof JCClassDecl)) {
+      parent = parent.up();
+    }
+    if (parent == null) {
+      return null;
+    }
+    return (JCClassDecl) parent.getTree();
+  }
+
   public TreeContext getScope() {
     TreeContext parent = up();
     while (parent != null

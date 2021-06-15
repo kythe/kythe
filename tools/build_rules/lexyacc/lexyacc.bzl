@@ -16,6 +16,7 @@ def genlex(name, src, out, includes = []):
         srcs = [src] + includes,
         cmd = cmd,
         toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        exec_tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 def genyacc(name, src, header_out, source_out, extra_outs = []):
@@ -35,16 +36,18 @@ def genyacc(name, src, header_out, source_out, extra_outs = []):
         srcs = [src],
         cmd = cmd,
         toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        exec_tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 LexYaccInfo = provider(
     doc = "Paths to lex and yacc binaries.",
-    fields = ["lex", "yacc"],
+    fields = ["lex", "yacc", "runfiles"],
 )
 
 def _lexyacc_variables(ctx):
     lyinfo = ctx.toolchains["@io_kythe//tools/build_rules/lexyacc:toolchain_type"].lexyaccinfo
     return [
+        DefaultInfo(runfiles = lyinfo.runfiles, files = lyinfo.runfiles.files),
         platform_common.TemplateVariableInfo({
             "LEX": lyinfo.lex,
             "YACC": lyinfo.yacc,
@@ -57,11 +60,25 @@ lexyacc_variables = rule(
 )
 
 def _lexyacc_toolchain_impl(ctx):
+    runfiles = ctx.runfiles()
+    if bool(ctx.attr.lex) == bool(ctx.attr.lex_path):
+        fail("Exactly one of lex and lex_path is required")
+
+    if ctx.attr.lex:
+        runfiles = runfiles.merge(ctx.attr.lex[DefaultInfo].default_runfiles)
+
+    if bool(ctx.attr.yacc) == bool(ctx.attr.yacc_path):
+        fail("Exactly one of yacc and yacc_path is required")
+
+    if ctx.attr.yacc:
+        runfiles = runfiles.merge(ctx.attr.yacc[DefaultInfo].default_runfiles)
+
     return [
         platform_common.ToolchainInfo(
             lexyaccinfo = LexYaccInfo(
-                lex = ctx.attr.lex,
-                yacc = ctx.attr.yacc,
+                lex = ctx.attr.lex_path or ctx.executable.lex.path,
+                yacc = ctx.attr.yacc_path or ctx.executable.yacc.path,
+                runfiles = runfiles,
             ),
         ),
     ]
@@ -69,16 +86,24 @@ def _lexyacc_toolchain_impl(ctx):
 _lexyacc_toolchain = rule(
     implementation = _lexyacc_toolchain_impl,
     attrs = {
-        "lex": attr.string(),
-        "yacc": attr.string(),
+        "lex_path": attr.string(),
+        "yacc_path": attr.string(),
+        "lex": attr.label(
+            executable = True,
+            cfg = "exec",
+        ),
+        "yacc": attr.label(
+            executable = True,
+            cfg = "exec",
+        ),
     },
     provides = [
         platform_common.ToolchainInfo,
     ],
 )
 
-def lexyacc_toolchain(name, lex, yacc):
-    _lexyacc_toolchain(name = name, lex = lex, yacc = yacc)
+def lexyacc_toolchain(name, **kwargs):
+    _lexyacc_toolchain(name = name, **kwargs)
     native.toolchain(
         name = name + "_toolchain",
         toolchain = ":" + name,
@@ -100,6 +125,9 @@ def _check_flex_version(repository_ctx, min_version):
     return flex
 
 def _local_lexyacc(repository_ctx):
+    if repository_ctx.os.environ.get("KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS", "0") == "1":
+        repository_ctx.file("BUILD.bazel", "# Toolchain detection disabled by KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS")
+        return
     flex = _check_flex_version(repository_ctx, "2.6")
     bison = repository_ctx.os.environ.get("BISON", repository_ctx.which("bison"))
     if not bison:
@@ -116,8 +144,8 @@ def _local_lexyacc(repository_ctx):
             "package(default_visibility=[\"//visibility:public\"])",
             "lexyacc_toolchain(",
             "  name = \"lexyacc_local\",",
-            "  lex = \"%s\"," % flex,
-            "  yacc = \"%s\"," % bison,
+            "  lex_path = \"%s\"," % flex,
+            "  yacc_path = \"%s\"," % bison,
             ")",
         ]),
     )
@@ -125,11 +153,14 @@ def _local_lexyacc(repository_ctx):
 local_lexyacc_repository = repository_rule(
     implementation = _local_lexyacc,
     local = True,
-    environ = ["PATH", "BISON", "FLEX"],
+    environ = [
+        "KYTHE_DO_NOT_DETECT_BAZEL_TOOCHAINS",
+        "PATH",
+        "BISON",
+        "FLEX",
+    ],
 )
 
 def lexyacc_configure():
     local_lexyacc_repository(name = "local_config_lexyacc")
-    native.register_toolchains(
-        "@local_config_lexyacc//:lexyacc_local_toolchain",
-    )
+    native.register_toolchains("@local_config_lexyacc//:all")

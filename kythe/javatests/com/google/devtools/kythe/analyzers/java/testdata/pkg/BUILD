@@ -188,7 +188,6 @@ java_verifier_test(
     verifier_deps = [":jvm_files_tests"],
 )
 
-# TODO(#1501): This test currently fails
 java_verifier_test(
     name = "generic_class_tests",
     size = "small",
@@ -216,10 +215,6 @@ java_verifier_test(
     name = "generic_method_ref_tests",
     size = "small",
     srcs = ["GenericMethodRef.java"],
-    tags = [
-        "arc-ignore",
-        "manual",
-    ],
 )
 
 java_verifier_test(
@@ -353,6 +348,18 @@ java_verifier_test(
     name = "static_variable_tests",
     size = "small",
     srcs = ["StaticVariables.java"],
+)
+
+java_verifier_test(
+    name = "visibility_tests",
+    size = "small",
+    srcs = ["Visibility.java"],
+)
+
+java_verifier_test(
+    name = "modifier_tests",
+    size = "small",
+    srcs = ["Modifiers.java"],
 )
 
 java_verifier_test(
@@ -503,4 +510,18 @@ java_library(
 java_verifier_test(
     name = "abstract_class_test",
     compilation = ":abstract_class",
+)
+
+java_library(
+    name = "default_corpus",
+    srcs = ["DefaultCorpus.java"],
+)
+
+java_verifier_test(
+    name = "default_corpus_test",
+    compilation = ":default_corpus",
+    indexer_opts = [
+        "--verbose",
+        "--use_compilation_corpus_as_default",
+    ],
 )

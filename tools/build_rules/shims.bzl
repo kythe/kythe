@@ -1,5 +1,4 @@
 load("@bazel_gazelle//:deps.bzl", _go_repository = "go_repository")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 def go_repository(name, **kwargs):

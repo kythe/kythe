@@ -22,7 +22,7 @@ use crate::writer::KytheWriter;
 
 use analysis_rust_proto::*;
 use analyzers::UnitAnalyzer;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// A data structure for indexing CompilationUnits
 pub struct KytheIndexer<'a> {
@@ -37,11 +37,7 @@ impl<'a> KytheIndexer<'a> {
 
     /// Accepts a CompilationUnit and the root directory of source files and
     /// indexes the CompilationUnit
-    pub fn index_cu(
-        &mut self,
-        unit: &CompilationUnit,
-        root_dir: &PathBuf,
-    ) -> Result<(), KytheError> {
+    pub fn index_cu(&mut self, unit: &CompilationUnit, root_dir: &Path) -> Result<(), KytheError> {
         let mut generator = UnitAnalyzer::new(unit, self.writer, root_dir);
 
         // First, create file nodes for all of the source files in the CompilationUnit

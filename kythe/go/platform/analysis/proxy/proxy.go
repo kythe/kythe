@@ -80,7 +80,10 @@ package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -109,9 +112,9 @@ type response struct {
 
 // A unit represents a compilation unit to be analyzed.
 type unit struct {
-	Unit            *apb.CompilationUnit `json:"unit"`
-	Revision        string               `json:"rev,omitempty"`
-	FileDataService string               `json:"fds,omitempty"`
+	Unit            json.RawMessage `json:"unit"`
+	Revision        string          `json:"rev,omitempty"`
+	FileDataService string          `json:"fds,omitempty"`
 }
 
 // A file represents a file request or content reply.
@@ -158,8 +161,12 @@ func (p *Proxy) Run(h Handler) error {
 				p.reply("error", err.Error())
 			} else {
 				hasReq = true
+				u, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(req.Compilation)
+				if err != nil {
+					return fmt.Errorf("error marshalling compilation unit: %w", err)
+				}
 				p.reply("ok", &unit{
-					Unit:            req.Compilation,
+					Unit:            json.RawMessage(u),
 					Revision:        req.Revision,
 					FileDataService: req.FileDataService,
 				})
@@ -171,8 +178,7 @@ func (p *Proxy) Run(h Handler) error {
 				p.reply("error", "no analysis is in progress")
 				break
 			}
-			var entries []*spb.Entry
-			err := json.Unmarshal(req.Args, &entries)
+			entries, err := decodeEntries(req.Args)
 			if err != nil {
 				p.reply("error", "invalid entries: "+err.Error())
 			} else if err := h.Output(entries...); err != nil {
@@ -241,6 +247,22 @@ func (p *Proxy) Run(h Handler) error {
 			return p.err // deferred from above
 		}
 	}
+}
+
+func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
+	var messages []json.RawMessage
+	if err := json.Unmarshal(jsonArray, &messages); err != nil {
+		return nil, err
+	}
+	entries := make([]*spb.Entry, len(messages))
+	for i, msg := range messages {
+		var e spb.Entry
+		if err := protojson.Unmarshal(msg, &e); err != nil {
+			return nil, err
+		}
+		entries[i] = &e
+	}
+	return entries, nil
 }
 
 func (p *Proxy) reply(status string, args interface{}) {

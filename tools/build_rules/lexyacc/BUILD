@@ -1,8 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_toolchain", "lexyacc_variables")
 
 package(default_visibility = ["//visibility:public"])
-
-load("//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_toolchain", "lexyacc_variables")
 
 exports_files(["lexyacc.bzl"])
 
@@ -12,8 +11,8 @@ lexyacc_variables(name = "current_lexyacc_toolchain")
 
 lexyacc_toolchain(
     name = "lexyacc_remote",
-    lex = "/usr/bin/flex",
-    yacc = "/usr/bin/bison",
+    lex_path = "/usr/bin/flex",
+    yacc_path = "/usr/bin/bison",
 )
 
 bzl_library(

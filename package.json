@@ -1,19 +1,19 @@
 {
   "devDependencies": {
-    "@bazel/bazelisk": "^1.6.1",
+    "@bazel/bazelisk": "^1.7.5",
     "@bazel/ibazel": "^0.13.2",
-    "@bazel/jasmine": "^2.2.0",
-    "@bazel/labs": "^2.2.0",
-    "@bazel/typescript": "^2.2.0",
+    "@bazel/jasmine": "^3.2.3",
+    "@bazel/labs": "^3.2.3",
+    "@bazel/typescript": "^3.2.3",
     "@commitlint/cli": "^9.1.2",
     "@commitlint/config-conventional": "^11.0.0",
-    "@types/jasmine": "^3.5.14",
-    "@types/node": "^12.12.50",
-    "jasmine": "^3.6.1",
-    "jasmine-core": "^3.6.0"
+    "@types/jasmine": "^3.6.9",
+    "@types/node": "^12.20.7",
+    "jasmine": "^3.7.0",
+    "jasmine-core": "^3.7.1"
   },
   "dependencies": {
-    "google-protobuf": "^3.12.2",
+    "google-protobuf": "^3.15.6",
     "source-map-support": "^0.5.19",
     "typescript": "~3.8"
   },

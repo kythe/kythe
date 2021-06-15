@@ -6,6 +6,7 @@ action_listener(
     name = "print_extra_actions",
     extra_actions = [":printer"],
     mnemonics = [
+        "ObjcCompile",
         "CppCompile",
         "GoCompilePkg",
         "JavaIjar",

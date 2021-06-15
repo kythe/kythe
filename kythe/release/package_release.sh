@@ -58,6 +58,7 @@ PBASE="$OUT.dir/$(basename "$OUT" .tar.gz)"
 P=$PBASE
 
 mkdir -p "$PBASE"
+# shellcheck disable=SC2064
 trap "rm -rf '$PWD/$OUT.dir'" EXIT ERR INT
 
 VERBOSE=
@@ -101,7 +102,7 @@ while [[ $# -gt 0 ]]; do
           break
         fi
       done
-      if [[ ! -z "$skip" ]]; then
+      if [[ -n "$skip" ]]; then
         log "Excluding $1"
       elif [[ -z "$RELPATHS" ]]; then
         log "Copying $1 to $P"

@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -838,16 +839,19 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                     const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder) {
-  if (unit.source_file().size() != 1) {
+  if (unit.source_file().empty()) {
     return absl::FailedPreconditionError(
-        "Expected Unit to contain 1 source file");
+        "Expected Unit to contain 1+ source files");
   }
   if (files.size() < 2) {
     return absl::FailedPreconditionError(
         "Must provide at least 2 files: a textproto and 1+ .proto files");
   }
 
-  const std::string textproto_name = unit.source_file(0);
+  absl::flat_hash_set<std::string> textproto_filenames;
+  for (const std::string& filename : unit.source_file()) {
+    textproto_filenames.insert(filename);
+  }
 
   // Parse path substitutions from arguments.
   absl::flat_hash_map<std::string, std::string> file_substitution_cache;
@@ -868,15 +872,17 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   }
   LOG(INFO) << "Proto message name: " << message_name;
 
+  absl::flat_hash_map<std::string, const proto::FileData*> file_data_by_path;
+
   // Load all proto files into in-memory SourceTree.
   PreloadedProtoFileTree file_reader(&path_substitutions,
                                      &file_substitution_cache);
   std::vector<std::string> proto_filenames;
-  const proto::FileData* textproto_file_data = nullptr;
   for (const auto& file : files) {
     // Skip textproto - only proto files go in the descriptor db.
-    if (file.info().path() == textproto_name) {
-      textproto_file_data = &file;
+    if (textproto_filenames.find(file.info().path()) !=
+        textproto_filenames.end()) {
+      file_data_by_path[file.info().path()] = &file;
       continue;
     }
 
@@ -886,8 +892,9 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     }
     proto_filenames.push_back(file.info().path());
   }
-  if (textproto_file_data == nullptr) {
-    return absl::NotFoundError("Couldn't find textproto source in file data.");
+  if (textproto_filenames.size() != file_data_by_path.size()) {
+    return absl::NotFoundError(
+        "Couldn't find all textproto sources in file data.");
   }
 
   // Build proto descriptor pool with top-level protos.
@@ -920,48 +927,57 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
         "Unable to find proto message in descriptor pool: ", message_name));
   }
 
-  // Use reflection to create an instance of the top-level proto message.
-  // note: msg_factory must outlive any protos created from it.
-  google::protobuf::DynamicMessageFactory msg_factory;
-  std::unique_ptr<Message> proto(msg_factory.GetPrototype(descriptor)->New());
+  for (auto& source : file_data_by_path) {
+    // Use reflection to create an instance of the top-level proto message.
+    // note: msg_factory must outlive any protos created from it.
+    google::protobuf::DynamicMessageFactory msg_factory;
+    std::unique_ptr<Message> proto(msg_factory.GetPrototype(descriptor)->New());
 
-  // Parse textproto into @proto, recording input locations to @parse_tree.
-  TextFormat::ParseInfoTree parse_tree;
-  {
-    TextFormat::Parser parser;
-    parser.WriteLocationsTo(&parse_tree);
-    // Relax parser restrictions - even if the proto is partially ill-defined,
-    // we'd like to analyze the parts that are good.
-    parser.AllowPartialMessage(true);
-    parser.AllowUnknownExtension(true);
-    if (!parser.ParseFromString(textproto_file_data->content(), proto.get())) {
-      return absl::UnknownError("Failed to parse text proto");
+    // Parse textproto into @proto, recording input locations to @parse_tree.
+    TextFormat::ParseInfoTree parse_tree;
+    {
+      TextFormat::Parser parser;
+      parser.WriteLocationsTo(&parse_tree);
+      // Relax parser restrictions - even if the proto is partially ill-defined,
+      // we'd like to analyze the parts that are good.
+      parser.AllowPartialMessage(true);
+      parser.AllowUnknownExtension(true);
+      if (!parser.ParseFromString(source.second->content(), proto.get())) {
+        return absl::UnknownError("Failed to parse text proto");
+      }
+    }
+
+    // Emit file node.
+    proto::VName file_vname = LookupVNameForFullPath(source.first, unit);
+    recorder->AddProperty(VNameRef(file_vname), NodeKindID::kFile);
+    // Record source text as a fact.
+    recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
+                          source.second->content());
+
+    TextprotoAnalyzer analyzer(&unit, source.second->content(),
+                               &file_substitution_cache, recorder,
+                               descriptor_pool);
+
+    // Load plugins
+    analyzer.SetPlugins(plugin_loader(*proto));
+
+    absl::Status status =
+        analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
+    if (!status.ok()) {
+      std::string msg =
+          absl::StrCat("Error analyzing schema comments: ", status.ToString());
+      LOG(ERROR) << msg << status;
+      analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
+    }
+
+    auto s =
+        analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, parse_tree);
+    if (!s.ok()) {
+      return s;
     }
   }
 
-  // Emit file node.
-  proto::VName file_vname = LookupVNameForFullPath(textproto_name, unit);
-  recorder->AddProperty(VNameRef(file_vname), NodeKindID::kFile);
-  // Record source text as a fact.
-  recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
-                        textproto_file_data->content());
-
-  TextprotoAnalyzer analyzer(&unit, textproto_file_data->content(),
-                             &file_substitution_cache, recorder,
-                             descriptor_pool);
-
-  // Load plugins
-  analyzer.SetPlugins(plugin_loader(*proto));
-
-  absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
-  if (!status.ok()) {
-    std::string msg =
-        absl::StrCat("Error analyzing schema comments: ", status.ToString());
-    LOG(ERROR) << msg << status;
-    analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
-  }
-
-  return analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, parse_tree);
+  return absl::OkStatus();
 }
 
 }  // namespace lang_textproto

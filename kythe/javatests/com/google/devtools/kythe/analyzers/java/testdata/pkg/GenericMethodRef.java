@@ -1,10 +1,16 @@
 package pkg;
 
 @SuppressWarnings("unused")
+//- @GenericMethodRef defines/binding GClass
 public final class GenericMethodRef {
-  public static final class Optional<T> {}
+  //- @Optional defines/binding OClass
+  public static final class Optional<T> {
+    //- @Optional defines/binding OptionalConstructor
+    Optional() {}
+  }
 
-  //- @Optional ref OptionalClass
+  // TODO(#1501): wildcard tests currently fail
+  //- @Optional ref OClass
   //- @wildcard defines/binding WildcardFnAbs
   //- @ovar defines/binding WildcardParam1
   //- WildcardFnAbs.node/kind abs
@@ -21,12 +27,28 @@ public final class GenericMethodRef {
   private static <T> void verboseWildcard(Optional<T> ovar) {}
 
   private static void caller() {
-    //- @wildcard ref WildcardFnAbs
-    //- @"wildcard(null)" ref/call WildcardFnAbs
+    // - @wildcard ref WildcardFnAbs
+    // - @"wildcard(null)" ref/call WildcardFnAbs
     wildcard(null);
 
-    //- @verboseWildcard ref VerboseWildcardFnAbs
-    //- @"verboseWildcard(null)" ref/call VerboseWildcardFnAbs
+    // - @verboseWildcard ref VerboseWildcardFnAbs
+    // - @"verboseWildcard(null)" ref/call VerboseWildcardFnAbs
     verboseWildcard(null);
   }
+
+  //- @T defines/binding AbsT
+  private static <T> void constructor() {
+    //- @Optional ref OptionalConstructor
+    //- @Optional ref OClass
+    //- @GenericMethodRef ref GClass
+    //- @"new Optional<GenericMethodRef>()" ref/call OptionalConstructor
+    Object o = new Optional<GenericMethodRef>();
+
+    //- @Optional ref OptionalConstructor
+    //- @Optional ref OClass
+    //- @"new Optional<T>()" ref/call OptionalConstructor
+    //- @T ref AbsT
+    Object o2 = new Optional<T>();
+  }
+
 }

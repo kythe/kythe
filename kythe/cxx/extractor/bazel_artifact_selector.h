@@ -27,8 +27,9 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
+#include "kythe/cxx/common/regex.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
-#include "re2/set.h"
+#include "re2/re2.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
@@ -46,24 +47,33 @@ class BazelArtifactSelector {
   virtual absl::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) = 0;
 
-  /// \brief Returns an Any-encoded protobuf with per-stream selector state.
+  /// \brief Encodes per-stream selector state into the Any protobuf.
   /// Stateful selectors should serialize any per-stream state into a
   /// suitable protocol buffer, encoded as an Any. If no state has been
   /// accumulated, they should return an empty protocol buffer of the
-  /// appropriate type.
-  /// Stateless selectors should return nullopt.
-  virtual absl::optional<google::protobuf::Any> Serialize() const {
-    return absl::nullopt;
+  /// appropriate type and return true.
+  /// Stateless selectors should return false.
+  virtual bool SerializeInto(google::protobuf::Any& state) const {
+    return false;
+  }
+
+  /// \brief Updates any per-stream state from the provided proto.
+  /// Stateless selectors should unconditionally return a kUnimplemented status.
+  /// Stateful selectors should return OK if the provided state contains a
+  /// suitable proto, InvalidArgument if the proto is of the right type but
+  /// cannot be decoded or FailedPrecondition if the proto is of the wrong type.
+  virtual absl::Status DeserializeFrom(const google::protobuf::Any& state) {
+    return absl::UnimplementedError("stateless selector");
   }
 
   /// \brief Finds and updates any per-stream state from the provided list.
-  /// Stateless selectors should unconditionally return OK.
-  /// Stateful selectors should return NotFound if the custom protobuf is not
-  /// found in the provided list.
-  virtual absl::Status Deserialize(
-      absl::Span<const google::protobuf::Any> state) {
-    return absl::OkStatus();
-  }
+  /// Returns OK if the selector is stateless or if the requisite state was
+  /// found in the list.
+  /// Returns NotFound for a stateful selector whose state was not present
+  /// or InvalidArgument if the state was present but couldn't be decoded.
+  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state);
+  absl::Status Deserialize(
+      absl::Span<const google::protobuf::Any* const> state);
 
  protected:
   // Not publicly copyable or movable to avoid slicing, but subclasses may be.
@@ -73,8 +83,8 @@ class BazelArtifactSelector {
 };
 
 /// \brief A type-erased value-type implementation of the BazelArtifactSelector
-/// interface. Does not derive from BazelArtifactSelector.
-class AnyArtifactSelector {
+/// interface.
+class AnyArtifactSelector final : public BazelArtifactSelector {
  public:
   /// \brief Constructs an AnyArtifactSelector which delegates to the provided
   /// argument, which must derive from BazelArtifactSelector.
@@ -103,13 +113,13 @@ class AnyArtifactSelector {
   }
 
   /// \brief Forwards serialization to the contained BazelArtifactSelector.
-  absl::optional<google::protobuf::Any> Serialize() const {
-    return get_().Serialize();
+  bool SerializeInto(google::protobuf::Any& state) const final {
+    return get_().SerializeInto(state);
   }
 
   /// \brief Forwards deserialization to the contained BazelArtifactSelector.
-  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state) {
-    return get_().Deserialize(state);
+  absl::Status DeserializeFrom(const google::protobuf::Any& state) final {
+    return get_().DeserializeFrom(state);
   }
 
  private:
@@ -122,12 +132,13 @@ class AnyArtifactSelector {
 /// \brief Options class used for constructing an AspectArtifactSelector.
 struct AspectArtifactSelectorOptions {
   // A set of patterns used to filter file names from NamedSetOfFiles events.
-  RE2::Set file_name_allowlist;
+  // Matches nothing by default.
+  RegexSet file_name_allowlist;
   // A set of patterns used to filter output_group names from TargetComplete
-  // events.
-  RE2::Set output_group_allowlist;
+  // events. Matches nothing by default.
+  RegexSet output_group_allowlist;
   // A set of patterns used to filter aspect names from TargetComplete events.
-  RE2::Set target_aspect_allowlist;
+  RegexSet target_aspect_allowlist = RegexSet::Build({".*"}).value();
 };
 
 /// \brief A BazelArtifactSelector implementation which tracks state from
@@ -140,7 +151,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   /// \brief Constructs an instance of AspectArtifactSelector from the provided
   /// options.
   explicit AspectArtifactSelector(Options options)
-      : options_(std::make_shared<Options>(std::move(options))) {}
+      : options_(std::move(options)) {}
 
   /// \brief Selects an artifact if the event matches an expected
   /// aspect-produced compilation unit.
@@ -150,11 +161,11 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   /// \brief Serializes the accumulated state into the return value, which will
   /// always be non-empty and of type
   /// `kythe.proto.BazelAspectArtifactSelectorState`.
-  absl::optional<google::protobuf::Any> Serialize() const final;
+  bool SerializeInto(google::protobuf::Any& state) const final;
 
   /// \brief Deserializes accumulated stream state from an Any of type
-  /// `kythe.proto.BazelAspectArtifactSelectorState` or returns NotFound.
-  absl::Status Deserialize(absl::Span<const google::protobuf::Any> state) final;
+  /// `kythe.proto.BazelAspectArtifactSelectorState`.
+  absl::Status DeserializeFrom(const google::protobuf::Any& state) final;
 
  private:
   struct State {
@@ -178,8 +189,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   void ReadFilesInto(absl::string_view id, absl::string_view target,
                      std::vector<BazelArtifactFile>& files);
 
-  // We must be copyable.
-  std::shared_ptr<const Options> options_;
+  Options options_;
   State state_;
 };
 
@@ -194,15 +204,18 @@ class ExtraActionSelector final : public BazelArtifactSelector {
   /// to match ActionCompleted events. An empty set will select any successful
   /// action.
   explicit ExtraActionSelector(
-      absl::flat_hash_set<std::string> action_types = {})
-      : action_types_(std::move(action_types)) {}
+      absl::flat_hash_set<std::string> action_types = {});
+
+  /// \brief Constructs an ExtraActionSelector from an allowlist pattern.
+  /// Both a null and an empty pattern will match nothing.
+  explicit ExtraActionSelector(const RE2* action_pattern);
 
   /// \brief Selects artifacts from ExtraAction-based extractors.
   absl::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) final;
 
  private:
-  absl::flat_hash_set<std::string> action_types_;
+  std::function<bool(absl::string_view)> action_matches_;
 };
 
 }  // namespace kythe

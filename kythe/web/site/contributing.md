@@ -35,18 +35,18 @@ Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification
 to bypass these checks.  In addition to the tools necessary to build Kythe, the
 following are necessary to run the installed hooks:
 
-- arcanist
+- pre-commit
 - buildifier
-- clang-format
+- clang-format (>= 11)
 - gofmt
+- golint
 - google-java-format
 - jq
 - shellcheck
 
-Each Pull Request will also require a gambit of tests run by Kythe's instance of
-[Buildbot](https://buildbot-dot-kythe-repo.appspot.com).  All non-maintainers
-will require a Kythe team member to add the `buildbot` label to each Pull
-Request to verify the PR should be checked by Buildbot.
+Each Pull Request will also require a gambit of tests run Google Cloud Build.
+All non-maintainers will require a Kythe team member to add a `/gcbrun` comment
+in each Pull Request to verify the PR should be checked by presubmits.
 
 ### Style formatting
 

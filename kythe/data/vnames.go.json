@@ -1,64 +1,50 @@
 [
   {
-    "pattern": "bazel-out/[^%]*%/(github\\.com(?:/[-.\\w]+){2})(?:/([^~]+))?\\.a(?:~partial.a)?$",
+    "pattern": "external/go_sdk/pkg/[^/]+/vendor/golang.org/x/(\\w+)/(.*)\\.[xa]$",
     "vname": {
-      "corpus": "@1@",
+      "corpus": "org_golang_x_@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^%]*%/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?\\.a$",
-    "vname": {
-      "corpus": "@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^%]*%/(golang\\.org(?:/x/\\w+))/(.+)\\.a$",
-    "vname": {
-      "corpus": "@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^/]+/(\\w+)/[^%]*%/([-.\\w]+)/(.+\\.go)$",
-    "vname": {
-      "corpus": "@2@",
-      "root": "bazel-out/@1@",
-      "path": "@3@"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^/]+/(\\w+)/([^%]+)/\\w+/(\\w+)+%/testmain.go$",
-    "vname": {
-      "root": "bazel-out/@1@",
-      "path": "@2@/@3@/testmain.go"
-    }
-  },
-  {
-    "pattern": ".*/go_sdk/pkg/\\w+/vendor/golang_org/x/(\\w+)/(.*)\\.a$",
-    "vname": {
-      "corpus": "golang.org/x/@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": ".*/go_sdk/pkg/\\w+/(.*)\\.a$",
+    "pattern": "external/go_sdk/pkg/[^/]+/(.*)\\.[xa]$",
     "vname": {
       "corpus": "golang.org",
       "path": "@1@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/(\\w+)/[^%]*%/([-.\\w]+)/(.+)\\.a(?:~partial.a)?$",
+    "pattern": "external/([^/]+)/(.*\\.go)$",
     "vname": {
-      "root" : "bazel-out/@1@",
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/([^/]+)/external/([^/]+)/(.*\\.go)$",
+    "vname": {
       "corpus": "@2@",
+      "root": "bazel-out/@1@",
       "path": "@3@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/(\\w+)/(kythe/.+\\.go)$",
+    "pattern": "bazel-out/[^/]+/([^/]+)/external/([^/]+)/(.*)\\.[xa]$",
+    "vname": {
+      "corpus": "@2@",
+      "root": "bazel-out/@1@",
+      "path": "@3@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/([^/]+)/(.*\\.go)$",
+    "vname": {
+      "root": "bazel-out/@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/([^/]+)/(.*)\\.[xa]$",
     "vname": {
       "root": "bazel-out/@1@",
       "path": "@2@"

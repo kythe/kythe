@@ -33,6 +33,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateName& name) const {
     case TemplateName::OverloadedTemplate:
       CHECK(ignore_unimplemented_) << "SemanticHash(OverloadedTemplate)";
       return 0;
+    case TemplateName::AssumedTemplate:
+      CHECK(ignore_unimplemented_) << "SemanticHash(AssumedTemplate)";
+      return 0;
     case TemplateName::QualifiedTemplate:
       CHECK(ignore_unimplemented_) << "SemanticHash(QualifiedTemplate)";
       return 0;
@@ -46,9 +49,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateName& name) const {
       CHECK(ignore_unimplemented_)
           << "SemanticHash(SubstTemplateTemplateParmPack)";
       return 0;
-    default:
-      LOG(FATAL) << "Unexpected TemplateName Kind";
   }
+  CHECK(ignore_unimplemented_)
+      << "Unexpected TemplateName Kind: " << name.getKind();
   return 0;
 }
 
@@ -70,7 +73,7 @@ uint64_t SemanticHash::Hash(const clang::TemplateArgument& arg) const {
       if (value.getMinSignedBits() <= sizeof(uint64_t) * CHAR_BIT) {
         return static_cast<uint64_t>(value.getExtValue());
       } else {
-        return std::hash<std::string>()(value.toString(10));
+        return std::hash<std::string>()(llvm::toString(value, 10));
       }
     }
     case TemplateArgument::Template:
@@ -88,9 +91,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateArgument& arg) const {
       }
       return out;
     }
-    default:
-      LOG(FATAL) << "Unexpected TemplateArgument Kind";
   }
+  CHECK(ignore_unimplemented_)
+      << "Unexpected TemplateArgument Kind: " << arg.getKind();
   return 0;
 }
 

@@ -328,7 +328,6 @@ clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
 const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
   return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
-
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -477,7 +476,7 @@ const IndexedParentMap* IndexerASTVisitor::getAllParents() {
 }
 
 const IndexedParent* IndexerASTVisitor::getIndexedParent(
-    const ast_type_traits::DynTypedNode& Node) {
+    const DynTypedNode& Node) {
   return getAllParents()->GetIndexedParent(Node);
 }
 
@@ -1331,15 +1330,15 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
-      auto semantic = IsUsedAsWrite(*getAllParents(), E)
-                          ? GraphObserver::UseKind::kWrite
-                          : GraphObserver::UseKind::kUnknown;
       Observer.recordSemanticDeclUseLocation(
-          *RCC, BuildNodeIdForRefToDecl(FieldDecl), semantic,
+          *RCC, BuildNodeIdForRefToDecl(FieldDecl), UseKindFor(E),
           GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
+      }
+      if (DataflowEdges && !Job->InfluenceSets.empty()) {
+        Job->InfluenceSets.back().insert(FieldDecl);
       }
     }
   }
@@ -2110,33 +2109,112 @@ bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
   return Base::TraverseReturnStmt(RS);
 }
 
+bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
+  if (!DataflowEdges) {
+    return Base::TraverseVarDecl(Decl);
+  }
+  auto scope_guard = PushScope(Job->InfluenceSets, {});
+  if (!Base::TraverseVarDecl(Decl)) {
+    return false;
+  }
+  auto node = BuildNodeIdForDecl(Decl);
+  for (const auto* decl : Job->InfluenceSets.back()) {
+    Observer.recordInfluences(BuildNodeIdForDecl(decl), node);
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
+  if (!DataflowEdges) {
+    return Base::TraverseFieldDecl(Decl);
+  }
+  auto scope_guard = PushScope(Job->InfluenceSets, {});
+  // Note that this will report a field's bitfield width as influencing that
+  // field.
+  if (!Base::TraverseFieldDecl(Decl)) {
+    return false;
+  }
+  auto node = BuildNodeIdForDecl(Decl);
+  for (const auto* decl : Job->InfluenceSets.back()) {
+    Observer.recordInfluences(BuildNodeIdForDecl(decl), node);
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (!DataflowEdges) {
     return Base::TraverseBinaryOperator(BO);
   }
   if (BO->getOpcode() != clang::BO_Assign)
     return Base::TraverseBinaryOperator(BO);
-
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinaryOperator(BO)) return false;
+    auto* lvhead = UsedAsWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
-        expr != nullptr && expr->getFoundDecl() != nullptr &&
-        (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-         expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
       for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
-                                  BuildNodeIdForDecl(expr->getFoundDecl()));
+                                  BuildNodeIdForDecl(influenced));
       }
     }
     return true;
   }
   return Base::TraverseBinaryOperator(BO);
+}
+
+bool IndexerASTVisitor::TraverseCompoundAssignOperator(
+    clang::CompoundAssignOperator* CAO) {
+  if (!DataflowEdges) {
+    return Base::TraverseCompoundAssignOperator(CAO);
+  }
+  if (auto rhs = CAO->getRHS(), lhs = CAO->getLHS();
+      lhs != nullptr && rhs != nullptr) {
+    if (!WalkUpFromCompoundAssignOperator(CAO)) return false;
+    auto* lvhead = UsedAsReadWrite(FindLValueHead(lhs));
+    if (!TraverseStmt(lhs)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    if (!TraverseStmt(rhs)) {
+      return false;
+    }
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl),
+                                  BuildNodeIdForDecl(influenced));
+      }
+      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
+                                BuildNodeIdForDecl(influenced));
+    }
+    return true;
+  }
+  return Base::TraverseCompoundAssignOperator(CAO);
+}
+
+bool IndexerASTVisitor::TraverseUnaryOperator(clang::UnaryOperator* UO) {
+  if (!DataflowEdges) {
+    return Base::TraverseUnaryOperator(UO);
+  }
+  if (UO->getOpcode() != clang::UO_PostDec &&
+      UO->getOpcode() != clang::UO_PreDec &&
+      UO->getOpcode() != clang::UO_PostInc &&
+      UO->getOpcode() != clang::UO_PreInc) {
+    return Base::TraverseUnaryOperator(UO);
+  }
+  if (auto* lval = UO->getSubExpr(); lval != nullptr) {
+    if (!WalkUpFromUnaryOperator(UO)) return false;
+    auto* lvhead = UsedAsReadWrite(FindLValueHead(lval));
+    if (!TraverseStmt(lval)) return false;
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
+                                BuildNodeIdForDecl(influenced));
+    }
+    return true;
+  }
+  return Base::TraverseUnaryOperator(UO);
 }
 
 bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
@@ -2237,9 +2315,6 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
       RecordBlame(FoundDecl, *RCC);
-      auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
-                          ? GraphObserver::UseKind::kWrite
-                          : GraphObserver::UseKind::kUnknown;
       if (DataflowEdges) {
         if (!Job->InfluenceSets.empty() &&
             (FoundDecl->getKind() == clang::Decl::Kind::Var ||
@@ -2248,8 +2323,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
         }
       }
       Observer.recordSemanticDeclUseLocation(
-          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
-          this->IsImplicit(*RCC));
+          *RCC, DeclId, UseKindFor(Expr),
+          GraphObserver::Claimability::Unclaimable, this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
         S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
@@ -3289,13 +3364,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 : GraphObserver::Specificity::Completes,
             OuterNode);
 
-        if (Decl->param_size() == NextDecl->param_size()) {
-          for (size_t param = 0; param < Decl->param_size(); ++param) {
-            auto lhs = NextDecl->getParamDecl(param);
-            auto rhs = Decl->getParamDecl(param);
-            if (DataflowEdges && lhs != nullptr && rhs != nullptr) {
-              Observer.recordInfluences(BuildNodeIdForDecl(lhs),
-                                        BuildNodeIdForDecl(rhs));
+        if (DataflowEdges) {
+          Observer.recordInfluences(OuterNode, TargetDecl);
+
+          if (Decl->param_size() == NextDecl->param_size()) {
+            for (size_t param = 0; param < Decl->param_size(); ++param) {
+              auto lhs = NextDecl->getParamDecl(param);
+              auto rhs = Decl->getParamDecl(param);
+              if (lhs != nullptr && rhs != nullptr) {
+                Observer.recordInfluences(BuildNodeIdForDecl(lhs),
+                                          BuildNodeIdForDecl(rhs));
+              }
             }
           }
         }
@@ -3937,22 +4016,25 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
     }
     case TemplateName::OverloadedTemplate:
       CHECK(IgnoreUnimplemented) << "TN.OverloadedTemplate";
-      break;
+      return absl::nullopt;
+    case TemplateName::AssumedTemplate:
+      CHECK(IgnoreUnimplemented) << "TN.AssumedTemplate";
+      return absl::nullopt;
     case TemplateName::QualifiedTemplate:
       CHECK(IgnoreUnimplemented) << "TN.QualifiedTemplate";
-      break;
+      return absl::nullopt;
     case TemplateName::DependentTemplate:
       CHECK(IgnoreUnimplemented) << "TN.DependentTemplate";
-      break;
+      return absl::nullopt;
     case TemplateName::SubstTemplateTemplateParm:
       CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmParm";
-      break;
+      return absl::nullopt;
     case TemplateName::SubstTemplateTemplateParmPack:
       CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmPack";
-      break;
-    default:
-      LOG(FATAL) << "Unexpected TemplateName kind!";
+      return absl::nullopt;
   }
+  CHECK(IgnoreUnimplemented)
+      << "Unexpected TemplateName kind: " << Name.getKind();
   return absl::nullopt;
 }
 
@@ -4198,7 +4280,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument("nullptr");
     case TemplateArgument::Integral:
       return BuildNodeIdForSpecialTemplateArgument(
-          Arg.getAsIntegral().toString(10) + "i");
+          llvm::toString(Arg.getAsIntegral(), 10) + "i");
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:

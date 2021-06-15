@@ -22,10 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
-	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/schema/edges"
+
+	"google.golang.org/protobuf/proto"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -37,7 +37,7 @@ func TestParse(t *testing.T) {
 		want  Rules
 	}{
 		// Minimal value: Just a plain type tag.
-		{`{"type":"kythe0"}`, nil},
+		{`{"type":"kythe0"}`, Rules{}},
 
 		// NOP values, multiple rules.
 		{`{"type":"kythe0","meta":[
@@ -82,15 +82,14 @@ func TestParse(t *testing.T) {
 			continue
 		}
 
-		if err := testutil.DeepEqual(test.want, got); err != nil {
-			t.Errorf("Parse %q: %v", test.input, err)
+		if diff := compare.ProtoDiff(test.want, got); diff != "" {
+			t.Errorf("Parse %q: %s", test.input, diff)
 		}
 	}
 }
 
 func TestRoundTrip(t *testing.T) {
 	tests := []Rules{
-		nil,
 		Rules{},
 		Rules{{}},
 		Rules{
@@ -125,8 +124,8 @@ func TestRoundTrip(t *testing.T) {
 			continue
 		}
 
-		if err := testutil.DeepEqual(test, dec); err != nil {
-			t.Errorf("Round-trip of %+v failed: %v", test, err)
+		if diff := compare.ProtoDiff(test, dec); diff != "" {
+			t.Errorf("Round-trip of %+v failed: %s", test, diff)
 		}
 	}
 }
@@ -136,8 +135,8 @@ func TestGeneratedCodeInfo(t *testing.T) {
 		Annotation: []*protopb.GeneratedCodeInfo_Annotation{{
 			Path:       []int32{1, 2, 3, 4, 5},
 			SourceFile: proto.String("a"),
-			Begin:      proto.Int(1),
-			End:        proto.Int(100),
+			Begin:      proto.Int32(1),
+			End:        proto.Int32(100),
 		}},
 	}
 	want := Rules{{
@@ -154,8 +153,8 @@ func TestGeneratedCodeInfo(t *testing.T) {
 	}}
 	{
 		got := FromGeneratedCodeInfo(in, nil)
-		if err := testutil.DeepEqual(got, want); err != nil {
-			t.Errorf("FromGeneratedCodeInfo failed: %v", err)
+		if diff := compare.ProtoDiff(got, want); diff != "" {
+			t.Errorf("FromGeneratedCodeInfo failed: %s", diff)
 		}
 	}
 	{
@@ -163,8 +162,8 @@ func TestGeneratedCodeInfo(t *testing.T) {
 			Corpus: "blargh",
 		})
 		want[0].VName.Corpus = "blargh"
-		if err := testutil.DeepEqual(got, want); err != nil {
-			t.Errorf("FromGeneratedCodeInfo failed: %v", err)
+		if diff := compare.ProtoDiff(got, want); diff != "" {
+			t.Errorf("FromGeneratedCodeInfo failed: %s", diff)
 		}
 	}
 }

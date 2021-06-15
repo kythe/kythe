@@ -1,0 +1,12 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/$PROJECT_ID/go-builder:latest || exit 0']
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+            'build',
+            '-t', 'gcr.io/$PROJECT_ID/go-builder:latest',
+            '--cache-from', 'gcr.io/$PROJECT_ID/go-builder:latest',
+            '.'
+        ]
+images: ['gcr.io/$PROJECT_ID/go-builder:latest']

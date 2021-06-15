@@ -76,7 +76,7 @@ argument: "-I./kythe/cxx/extractor"
 argument: "./kythe/cxx/extractor/testdata/modules.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/modules.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 )";
 
@@ -93,7 +93,6 @@ TEST(CxxExtractorTest, TestModulesExtraction) {
   }});
   CanonicalizeHashes(&unit);
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
   unit.clear_details();
   unit.mutable_argument()->erase(
       absl::c_find_if(unit.argument(), [](absl::string_view arg) {

@@ -41,8 +41,8 @@ import (
 func main() {
 	flag.Parse()
 
-	if flag.NArg() != 2 {
-		fmt.Printf("usage: %s <text_proto_file> <output_path>\n", filepath.Base(os.Args[0]))
+	if flag.NArg() < 2 || (flag.NArg() > 2 && flag.Arg(2) != "--") {
+		fmt.Printf("usage: %s <text_proto_file> <output_path> [-- <arg>...]\n", filepath.Base(os.Args[0]))
 		os.Exit(2)
 	}
 
@@ -66,6 +66,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// C++ command line arguments are not available in Starlark, so the extension cannot
+	// be completed populated there and must delegate to an external binary.
+	if cc := proto.GetExtension(&xa, xapb.E_CppCompileInfo_CppCompileInfo).(*xapb.CppCompileInfo); cc != nil {
+		populateCppCompileInfo(cc)
+	}
+
 	rec, err := proto.Marshal(&xa)
 	if err != nil {
 		log.Fatal(err)
@@ -78,5 +84,19 @@ func main() {
 		log.Fatal(err)
 	} else if err := f.Close(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func populateCppCompileInfo(cc *xapb.CppCompileInfo) {
+	if flag.NArg() <= 3 || flag.Arg(2) != "--" {
+		return // No additional flags, end early.
+	}
+	cc.Tool = proto.String(flag.Arg(3))
+	cc.CompilerOption = flag.Args()[4:flag.NArg()]
+	for i, arg := range cc.CompilerOption {
+		if arg == "-c" && i+1 < len(cc.CompilerOption) {
+			cc.SourceFile = proto.String(cc.CompilerOption[i+1])
+			break
+		}
 	}
 }

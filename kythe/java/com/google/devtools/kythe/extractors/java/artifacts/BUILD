@@ -1,6 +1,6 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
 load("//tools:build_rules/docker.bzl", "docker_build")
+
+package(default_visibility = ["//kythe:default_visibility"])
 
 # This target builds a docker image which contains java extraction artifacts
 # that can be drawn upon in an a la carte fashion for composing customized

@@ -23,6 +23,7 @@ import (
 	"log"
 	"testing"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"kythe.io/kythe/go/util/compare"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -164,6 +165,23 @@ func mustMarshal(v interface{}) string {
 	return string(bits)
 }
 
+func encodeEntries(es []*spb.Entry) json.RawMessage {
+	var messages []json.RawMessage
+	for _, e := range es {
+		rec, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(e)
+		if err != nil {
+			panic(err)
+		}
+		messages = append(messages, rec)
+	}
+
+	msg, err := json.Marshal(messages)
+	if err != nil {
+		panic(err)
+	}
+	return msg
+}
+
 func TestNOOP(t *testing.T) {
 	// Verify that startup and shutdown are clean.
 	if rsps, err := runProxy(handler{}); err != nil {
@@ -187,7 +205,7 @@ func TestErrors(t *testing.T) {
 	}, {
 		desc: "Error sending outputs",
 		h:    handler{output: func(...*spb.Entry) error { return errors.New("bad") }},
-		reqs: []testreq{{Type: "analysis"}, {Type: "output", Args: testEntries}},
+		reqs: []testreq{{Type: "analysis"}, {Type: "output", Args: encodeEntries(testEntries)}},
 		want: []string{
 			analysisReply,
 			`{"rsp":"error","args":"bad"}`,
@@ -197,7 +215,7 @@ func TestErrors(t *testing.T) {
 		h:    handler{},
 		reqs: []testreq{
 			{Type: "done", Args: status{OK: true}},
-			{Type: "output", Args: testEntries},
+			{Type: "output", Args: encodeEntries(testEntries)},
 		},
 		want: []string{
 			`{"rsp":"error","args":"no analysis is in progress"}`,
@@ -220,10 +238,10 @@ func TestErrors(t *testing.T) {
 		},
 		reqs: []testreq{
 			{Type: "analysis"}, // succeeds
-			{Type: "output", Args: []*spb.Entry{{EdgeKind: "ok"}}},        // succeeds
-			{Type: "output", Args: []*spb.Entry{{EdgeKind: "fail"}}},      // fails
-			{Type: "output", Args: []*spb.Entry{{EdgeKind: "wah"}}},       // fails
-			{Type: "done", Args: status{OK: false, Message: "cat abuse"}}, // fails
+			{Type: "output", Args: encodeEntries([]*spb.Entry{{EdgeKind: "ok"}})},   // succeeds
+			{Type: "output", Args: encodeEntries([]*spb.Entry{{EdgeKind: "fail"}})}, // fails
+			{Type: "output", Args: encodeEntries([]*spb.Entry{{EdgeKind: "wah"}})},  // fails
+			{Type: "done", Args: status{OK: false, Message: "cat abuse"}},           // fails
 			{Type: "analysis"}, // succeeds
 		},
 		want: []string{
@@ -275,7 +293,7 @@ func TestAnalysisWorks(t *testing.T) {
 	},
 		testreq{Type: "analysis"},
 		testreq{Type: "file", Args: file{Path: "exists"}},
-		testreq{Type: "output", Args: testEntries},
+		testreq{Type: "output", Args: encodeEntries(testEntries)},
 		testreq{Type: "file", Args: file{Path: "does not exist"}},
 		testreq{Type: "done"},
 	)

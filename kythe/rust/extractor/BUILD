@@ -1,10 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library")
+load("@rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load(":extractor_test.bzl", "rust_extractor_test")
 
 package(default_visibility = ["//visibility:public"])
-
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
-load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
-load(":extractor_test.bzl", "rust_extractor_test")
 
 rust_library(
     name = "kythe_rust_extractor",
@@ -23,7 +22,6 @@ rust_binary(
         ":kythe_rust_extractor",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_data",
         "//kythe/rust/cargo:clap",
@@ -69,10 +67,10 @@ rust_binary(
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:assert_cmd",
         "//kythe/rust/cargo:predicates",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
+        "@rules_rust//proto/raze:protobuf",
     ],
 )
 

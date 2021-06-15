@@ -2,6 +2,8 @@ licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])
 
+load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
+
 cc_library(
     name = "preprocessor_util_lib",
     srcs = ["cxx_extractor_preprocessor_utils.cc"],
@@ -11,7 +13,13 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    deps = ["@org_llvm//:clangLex"],
+    deps = ["@llvm-project//clang:lex"],
+)
+
+cc_resources(
+    name = "clang_builtin_headers_resources",
+    data = ["@llvm-project//clang:builtin_headers_gen"],
+    strip = "staging/include/",
 )
 
 cc_library(
@@ -23,5 +31,5 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    deps = ["@org_llvm//:clang_builtin_headers_resources"],
+    deps = [":clang_builtin_headers_resources"],
 )

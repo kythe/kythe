@@ -13,20 +13,15 @@ external_tools_toolchain(
 
 toolchain(
     name = "host_toolchain",
-    exec_compatible_with = [
-      # These expect constraint_setting targets, not platforms.
-      # But the desired constraints are visibility restricted.
-      #"@bazel_tools//platforms:host_platform",
-    ],
-    target_compatible_with = [
-      #"@bazel_tools//platforms:host_platform",
-    ],
     toolchain = ":host_toolchain_impl",
     toolchain_type = "@io_kythe//tools/build_rules/external_tools:external_tools_toolchain_type",
 )
 """
 
 def _external_toolchain_autoconf_impl(repository_ctx):
+    if repository_ctx.os.environ.get("KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS", "0") == "1":
+        repository_ctx.file("BUILD", "# Toolchain detection disabled by KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS")
+        return
     asciidoc = repository_ctx.which("asciidoc")
     if asciidoc == None:
         fail("Unable to find 'asciidoc' executable on path.")
@@ -35,13 +30,16 @@ def _external_toolchain_autoconf_impl(repository_ctx):
     # explicit call to asciidoc.
     tools = [
         "awk",
+        "bash",
         "cat",
         "cut",
         "dot",
+        "env",
+        "find",
         "grep",
         "mkdir",
         "mktemp",
-        "python",
+        "mv",
         "readlink",
         "rm",
         "sed",
@@ -67,9 +65,12 @@ def symlink_command(repository_ctx, command):
 external_toolchain_autoconf = repository_rule(
     implementation = _external_toolchain_autoconf_impl,
     local = True,
-    environ = ["PATH"],
+    environ = [
+        "KYTHE_DO_NOT_DETECT_BAZEL_TOOCHAINS",
+        "PATH",
+    ],
 )
 
 def external_tools_configure():
     external_toolchain_autoconf(name = "local_config_tools")
-    native.register_toolchains("@local_config_tools//:host_toolchain")
+    native.register_toolchains("@local_config_tools//:all")

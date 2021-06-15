@@ -41,6 +41,8 @@ export LABEL="$4"
 export SHOWGRAPH="$5"
 export DIV_STYLE="$6"
 export VERIFIER_ARGS="$7"
+export KYTHE_CORPUS="kythe"
+
 
 error() {
   echo "[ FAILED $1: $LABEL ]" >&2
@@ -48,7 +50,8 @@ error() {
 }
 export -f error
 
-export TMP="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
+export TMP
+TMP="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$TMP"' EXIT ERR INT
 
 case "$LANGUAGE" in

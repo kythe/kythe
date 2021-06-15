@@ -22,6 +22,8 @@ option go_package = "common_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 
+import "google/protobuf/timestamp.proto";
+
 // Fact represents a single key/value fact from the graph.
 message Fact {
   string name = 1;
@@ -108,20 +110,7 @@ message Link {
   // Semantic tickets for DEFINITION links.
   repeated string definition = 3;
 
-  enum Kind {  // Will be deprecated.
-    // This annotates a link to a ticket.
-    DEFINITION = 0;
-    // This span of text contains a list of items.
-    LIST = 1;
-    // This span of text is an item in a list.
-    LIST_ITEM = 2;
-    // This span of text is important.
-    IMPORTANT = 999;
-  }
-  // The kind of this span.
-  Kind kind = 2 [deprecated = true];
-
-  reserved 1;
+  reserved 1, 2;
 }
 
 // Marked up, source code-like text.
@@ -182,4 +171,30 @@ message SymbolInfo {
   string base_name = 1;
   // The fully qualified name for a node ("printf", "java.lang.String")
   string qualified_name = 2;
+}
+
+// Origin of a Kythe index.
+message Origin {
+  string corpus = 1;
+  string revision = 2;
+  // commit_timestamp records the time at which this version of the corpus was
+  // created. It is typically a git commit timestamp.
+  google.protobuf.Timestamp commit_timestamp = 3;
+  // Set of languages appearing in this origin.
+  repeated string language = 4;
+}
+
+// Metadata of a Kythe supported language.
+message Language {
+  string name = 1;  // the language name (see kythe.io/docs/schema)
+  Support support = 2;
+
+  enum Support {
+    UNKNOWN = 0;
+    EXPERIMENTAL = 1;  // support for this language is experimental
+    SUPPORTED = 2;     // the language is fully supported
+  }
+
+  // Set of analyzer versions used for this language's analysis.
+  repeated string analyzer_version = 3;
 }

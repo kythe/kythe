@@ -22,6 +22,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/proto/bazel_artifact_selector.pb.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace {
@@ -60,9 +61,52 @@ struct FromRange {
 };
 
 template <typename T>
-FromRange(const T&)->FromRange<T>;
+FromRange(const T&) -> FromRange<T>;
 
+template <typename T>
+const T& AsConstRef(const T& value) {
+  return value;
+}
+
+template <typename T>
+const T& AsConstRef(const T* value) {
+  return *value;
+}
+
+template <typename T, typename U>
+absl::Status DeserializeInternal(T& selector, const U& container) {
+  absl::Status error;
+  for (const auto& any : container) {
+    switch (auto status = selector.DeserializeFrom(AsConstRef(any));
+            status.code()) {
+      case absl::StatusCode::kOk:
+      case absl::StatusCode::kUnimplemented:
+        return absl::OkStatus();
+      case absl::StatusCode::kInvalidArgument:
+        return status;
+      case absl::StatusCode::kFailedPrecondition:
+        error = status;
+        continue;
+      default:
+        error = status;
+        LOG(WARNING) << "Unrecognized status code: " << status;
+    }
+  }
+  return error.ok() ? absl::NotFoundError("No state found")
+                    : absl::NotFoundError(
+                          absl::StrCat("No state found: ", error.ToString()));
+}
 }  // namespace
+
+absl::Status BazelArtifactSelector::Deserialize(
+    absl::Span<const google::protobuf::Any> state) {
+  return DeserializeInternal(*this, state);
+}
+
+absl::Status BazelArtifactSelector::Deserialize(
+    absl::Span<const google::protobuf::Any* const> state) {
+  return DeserializeInternal(*this, state);
+}
 
 absl::optional<BazelArtifact> AspectArtifactSelector::Select(
     const build_event_stream::BuildEvent& event) {
@@ -80,41 +124,40 @@ absl::optional<BazelArtifact> AspectArtifactSelector::Select(
   return result;
 }
 
-absl::optional<google::protobuf::Any> AspectArtifactSelector::Serialize()
-    const {
-  kythe::proto::BazelAspectArtifactSelectorState state;
-  *state.mutable_disposed() = FromRange{state_.disposed};
-  *state.mutable_filesets() = FromRange{state_.filesets};
-  *state.mutable_pending() = FromRange{state_.pending};
+bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
+  kythe::proto::BazelAspectArtifactSelectorState raw;
+  *raw.mutable_disposed() = FromRange{state_.disposed};
+  *raw.mutable_filesets() = FromRange{state_.filesets};
+  *raw.mutable_pending() = FromRange{state_.pending};
 
-  google::protobuf::Any result;
-  result.PackFrom(state);
-  return result;
+  state.PackFrom(raw);
+  return true;
 }
 
-absl::Status AspectArtifactSelector::Deserialize(
-    absl::Span<const google::protobuf::Any> state) {
-  for (const auto& any : state) {
-    kythe::proto::BazelAspectArtifactSelectorState proto_state;
-    if (any.UnpackTo(&proto_state)) {
-      state_ = {
-          .disposed = FromRange{proto_state.disposed()},
-          .filesets = FromRange{proto_state.filesets()},
-          .pending = FromRange{proto_state.pending()},
-      };
-
-      return absl::OkStatus();
-    }
+absl::Status AspectArtifactSelector::DeserializeFrom(
+    const google::protobuf::Any& state) {
+  kythe::proto::BazelAspectArtifactSelectorState raw;
+  if (state.UnpackTo(&raw)) {
+    state_ = {
+        .disposed = FromRange{raw.disposed()},
+        .filesets = FromRange{raw.filesets()},
+        .pending = FromRange{raw.pending()},
+    };
+    return absl::OkStatus();
   }
-  return absl::NotFoundError(
-      "No entry found for kythe.proto.BazelAspectArtifactSelectorState");
+  if (state.Is<kythe::proto::BazelAspectArtifactSelectorState>()) {
+    return absl::InvalidArgumentError(
+        "Malformed kythe.proto.BazelAspectArtifactSelectorState");
+  }
+  return absl::FailedPreconditionError(
+      "State not of type kythe.proto.BazelAspectArtifactSelectorState");
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& filesets) {
   bool kept = false;
   for (const auto& file : filesets.files()) {
-    if (options_->file_name_allowlist.Match(file.name(), nullptr)) {
+    if (options_.file_name_allowlist.Match(file.name())) {
       kept = true;
       *state_.filesets[id].add_files() = file;
     }
@@ -146,13 +189,12 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
   if (payload.success() &&
-      options_->target_aspect_allowlist.Match(id.aspect(), nullptr)) {
+      options_.target_aspect_allowlist.Match(id.aspect())) {
     BazelArtifact result = {
         .label = id.label(),
     };
     for (const auto& output_group : payload.output_group()) {
-      if (options_->output_group_allowlist.Match(output_group.name(),
-                                                 nullptr)) {
+      if (options_.output_group_allowlist.Match(output_group.name())) {
         for (const auto& filesets : output_group.file_sets()) {
           ReadFilesInto(filesets.id(), id.label(), result.files);
         }
@@ -197,11 +239,29 @@ void AspectArtifactSelector::ReadFilesInto(
   state_.pending.emplace(id, target);
 }
 
+ExtraActionSelector::ExtraActionSelector(
+    absl::flat_hash_set<std::string> action_types)
+    : action_matches_([action_types = std::move(action_types)](
+                          absl::string_view action_type) {
+        return action_types.empty() || action_types.contains(action_type);
+      }) {}
+
+ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
+    : action_matches_([action_pattern](absl::string_view action_type) {
+        if (action_pattern == nullptr || action_pattern->pattern().empty()) {
+          return false;
+        }
+        return RE2::FullMatch(action_type, *action_pattern);
+      }) {
+  CHECK(action_pattern == nullptr || action_pattern->ok())
+      << "ExtraActionSelector requires a valid pattern: "
+      << action_pattern->error();
+}
+
 absl::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
   if (event.id().has_action_completed() && event.action().success() &&
-      (action_types_.empty() ||
-       action_types_.contains(event.action().type()))) {
+      action_matches_(event.action().type())) {
     return BazelArtifact{
         .label = event.id().action_completed().label(),
         .files = {{

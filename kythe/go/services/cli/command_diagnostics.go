@@ -30,9 +30,10 @@ type diagnosticsCommand struct {
 	baseDecorCommand
 }
 
-func (diagnosticsCommand) Name() string     { return "diagnostics" }
-func (diagnosticsCommand) Synopsis() string { return "list a file's diagnostics" }
-func (diagnosticsCommand) Usage() string    { return "" }
+func (diagnosticsCommand) Name() string      { return "diagnostics" }
+func (diagnosticsCommand) Aliases() []string { return []string{"diags"} }
+func (diagnosticsCommand) Synopsis() string  { return "list a file's diagnostics" }
+func (diagnosticsCommand) Usage() string     { return "" }
 func (c *diagnosticsCommand) SetFlags(flag *flag.FlagSet) {
 	c.baseDecorCommand.SetFlags(flag)
 }

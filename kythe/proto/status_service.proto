@@ -21,39 +21,23 @@ package kythe.proto;
 option go_package = "status_service_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
+import "kythe/proto/common.proto";
+
 // StatusService provides clients a way to request information about the data
 // provided by another Kythe service such as XRefService. Clients can use this
 // to inform decisions about what requests to make to the primary service.
 service StatusService {
-  rpc Status(StatusRequest) returns (StatusReply) {
-  }
+  rpc Status(StatusRequest) returns (StatusReply) {}
 }
 
-message StatusRequest {
-}
+message StatusRequest {}
 
 message StatusReply {
   // The origins of the data served by this endpoint.
-  repeated Origin origins = 1;
-
-  message Origin {
-    string corpus = 1;    // The corpus label
-    string revision = 2;  // The revision marker of the data
-  }
+  repeated kythe.proto.common.Origin origins = 1;
 
   // The languages supported by this endpoint.
-  repeated Language languages = 2;
-
-  message Language {
-    string name = 1;      // the language name (see kythe.io/docs/schema)
-    Support support = 2;  // the language support level
-
-    enum Support {
-      UNSUPPORTED = 0;   // the language is known but unsupported
-      EXPERIMENTAL = 1;  // support for this language is experimental
-      SUPPORTED = 2;     // the language is fully supported
-    }
-  }
+  repeated kythe.proto.common.Language languages = 2;
 
   // An index may comprise data from multiple build origins.  An index_version
   // is an opaque identifier for a complete index, encompassing all reported

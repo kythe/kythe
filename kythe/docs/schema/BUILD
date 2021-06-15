@@ -12,6 +12,11 @@ asciidoc_with_verifier(
 )
 
 asciidoc_with_verifier(
+    name = "influences-relation",
+    src = "influences-relation.txt",
+)
+
+asciidoc_with_verifier(
     name = "callgraph",
     src = "callgraph.txt",
 )
@@ -44,4 +49,5 @@ asciidoc_with_verifier(
 bzl_library(
     name = "asciidoc_with_verifier_bzl",
     srcs = ["asciidoc_with_verifier.bzl"],
+    deps = ["//kythe/docs:asciidoc_bzl"],
 )

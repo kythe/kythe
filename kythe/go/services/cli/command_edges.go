@@ -36,6 +36,7 @@ import (
 )
 
 type edgesCommand struct {
+	baseKytheCommand
 	dotGraph    bool
 	countOnly   bool
 	targetsOnly bool
@@ -46,7 +47,6 @@ type edgesCommand struct {
 
 func (edgesCommand) Name() string     { return "edges" }
 func (edgesCommand) Synopsis() string { return "retrieve outward edges from a node" }
-func (edgesCommand) Usage() string    { return "" }
 func (c *edgesCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.dotGraph, "graphviz", false, "Print resulting edges as a dot graph")
 	flag.BoolVar(&c.countOnly, "count_only", false, "Only print counts per edge kind")

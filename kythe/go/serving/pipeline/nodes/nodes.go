@@ -171,7 +171,6 @@ func (c *combineNodes) ExtractOutput(ctx context.Context, n *scpb.Node) *scpb.No
 			if compareEdges(n.Edge[j-1], n.Edge[i]) != compare.EQ {
 				n.Edge[j] = n.Edge[i]
 				j++
-				i++
 			}
 		}
 		n.Edge = n.Edge[:j]

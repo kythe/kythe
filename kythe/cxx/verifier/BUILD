@@ -1,10 +1,10 @@
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     features = ["layering_check"],
 )
-
-load("//:visibility.bzl", "PUBLIC_VISIBILITY")
-load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 genyacc(
     name = "parser",
@@ -34,7 +34,6 @@ cc_library(
     hdrs = [
         "assertion_ast.h",
         "assertions.h",
-        "pretty_printer.h",
         ":parser",
     ],
     copts = [
@@ -43,6 +42,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":pretty_printer",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -59,6 +59,7 @@ cc_library(
         "souffle_interpreter.h",
     ],
     deps = [
+        ":lexparse",
         "//third_party/souffle:parse_transform",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -72,10 +73,41 @@ cc_test(
         "souffle_interpreter_test.cc",
     ],
     deps = [
+        ":lib",
         ":souffle_interpreter",
         "//third_party:gtest",
         "//third_party:gtest_main",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "assertions_to_souffle",
+    srcs = [
+        "assertions_to_souffle.cc",
+    ],
+    hdrs = [
+        "assertions_to_souffle.h",
+    ],
+    deps = [
+        ":lexparse",
+        ":lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "assertions_to_souffle_test",
+    srcs = [
+        "assertions_to_souffle_test.cc",
+    ],
+    deps = [
+        ":assertions_to_souffle",
+        ":lexparse",
+        ":pretty_printer",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -106,13 +138,10 @@ cc_library(
     srcs = [
         "assertions.cc",
         "parser.yy.hh",
-        "pretty_printer.cc",
         "verifier.cc",
     ],
     hdrs = [
-        "assertion_ast.h",
         "assertions.h",
-        "pretty_printer.h",
         "verifier.h",
     ],
     copts = [
@@ -122,6 +151,8 @@ cc_library(
     ],
     deps = [
         ":lexparse",
+        ":pretty_printer",
+        ":souffle_interpreter",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:scope_guard",
@@ -132,6 +163,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
@@ -149,6 +181,7 @@ cc_binary(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":lexparse",
         ":lib",
         "//kythe/cxx/common:init",
         "//kythe/proto:storage_cc_proto",
@@ -179,5 +212,14 @@ cc_test(
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "pretty_printer",
+    srcs = ["pretty_printer.cc"],
+    hdrs = ["pretty_printer.h"],
+    deps = [
+        "@com_google_absl//absl/strings:str_format",
     ],
 )

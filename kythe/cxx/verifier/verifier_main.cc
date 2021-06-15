@@ -53,6 +53,9 @@ ABSL_FLAG(bool, convert_marked_source, false,
 ABSL_FLAG(bool, show_anchors, false, "Show anchor locations instead of @s");
 ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
+ABSL_FLAG(bool, use_fast_solver, false,
+          "Use the fast solver. EXPERIMENTAL; NOT ALL FEATURES ARE CURRENTLY "
+          "SUPPORTED.");
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -104,6 +107,8 @@ Example:
     v.IgnoreFileVnames();
   }
 
+  v.UseFastSolver(absl::GetFlag(FLAGS_use_fast_solver));
+
   std::string dbname = "database";
   size_t facts = 0;
   kythe::proto::Entry entry;
@@ -131,7 +136,7 @@ Example:
     ++facts;
   }
 
-  if (!v.PrepareDatabase()) {
+  if (!absl::GetFlag(FLAGS_use_fast_solver) && !v.PrepareDatabase()) {
     return 1;
   }
 

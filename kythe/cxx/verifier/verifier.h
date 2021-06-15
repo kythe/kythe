@@ -21,13 +21,13 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "assertions.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace verifier {
-
 /// \brief Runs logic programs.
 ///
 /// The `Verifier` combines an `AssertionContext` with a database of Kythe
@@ -132,7 +132,7 @@ class Verifier {
   /// \param head The lhs of the `App` to allocate.
   /// \param values The body of the `Tuple` to allocate.
   AstNode* MakePredicate(const yy::location& location, AstNode* head,
-                         std::initializer_list<AstNode*> values);
+                         absl::Span<AstNode* const> values);
 
   /// \brief The head used for equality predicates.
   Identifier* eq_id() { return eq_id_; }
@@ -189,7 +189,16 @@ class Verifier {
   /// \brief Don't search for file vnames.
   void IgnoreFileVnames() { file_vnames_ = false; }
 
+  /// \brief Use the fast solver.
+  void UseFastSolver(bool value) { use_fast_solver_ = value; }
+
  private:
+  using InternedVName = std::tuple<Symbol, Symbol, Symbol, Symbol, Symbol>;
+
+  /// \brief Interns an AST node known to be a VName.
+  /// \param node the node to intern.
+  InternedVName InternVName(AstNode* node);
+
   /// \brief Generate a VName that will not conflict with any other VName.
   AstNode* NewUniqueVName(const yy::location& loc);
 
@@ -219,6 +228,11 @@ class Verifier {
     anchors_.emplace(std::make_pair(begin, end), vname);
   }
 
+  /// \brief Processes a fact tuple for the fast solver.
+  /// \param tuple the five-tuple representation of a fact
+  /// \return true if successful.
+  bool ProcessFactTupleForFastSolver(Tuple* tuple);
+
   /// \sa parser()
   AssertionParser parser_;
 
@@ -229,7 +243,7 @@ class Verifier {
   SymbolTable symbol_table_;
 
   /// All known facts.
-  std::vector<AstNode*> facts_;
+  Database facts_;
 
   /// Multimap from anchor offsets to anchor VName tuples.
   std::multimap<std::pair<size_t, size_t>, AstNode*> anchors_;
@@ -393,6 +407,18 @@ class Verifier {
 
   /// Find file vnames by examining file content.
   bool file_vnames_ = true;
+
+  /// Use the fast solver.
+  bool use_fast_solver_ = false;
+
+  /// Sentinel value for a known file.
+  Symbol known_file_sym_;
+
+  /// Sentinel value for a known nonfile.
+  Symbol known_not_file_sym_;
+
+  /// Maps VNames to known_file_sym_, known_not_file_sym_, or file text.
+  absl::flat_hash_map<InternedVName, Symbol> fast_solver_files_;
 };
 
 }  // namespace verifier

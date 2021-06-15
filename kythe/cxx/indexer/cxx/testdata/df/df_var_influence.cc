@@ -14,4 +14,9 @@ void f() {
   //- VarX influences VarW
   //- VarY influences VarW
   w = x + y;
+  //- @v defines/binding VarV
+  //- @q defines/binding VarQ
+  //- VarW influences VarV
+  //- VarY influences VarQ
+  int v = w, q = y;
 }

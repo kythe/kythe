@@ -61,7 +61,7 @@ var (
 	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
 
 	// TODO(schroederc): remove once relevant clients specify their required quality
-	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "PRECISE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
+	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "APPROXIMATE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
 )
 
 func init() {
@@ -541,7 +541,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
 		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
-			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets (TotalsQuality: %s)", i, len(tickets), totalsQuality)
 			break
 		}
 
@@ -753,10 +752,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 }
 
 func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mergeNode string) []string {
-	if prevMerge, ok := mergeMap[mergeNode]; ok {
-		if prevMerge != rootNode {
-			log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
-		}
+	if _, ok := mergeMap[mergeNode]; ok {
 		return allTickets
 	}
 	allTickets = append(allTickets, mergeNode)
@@ -916,6 +912,10 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 	if err != nil {
 		log.Printf("Error parsing anchor ticket: %v", err)
 	}
+	revision := a.GetFileInfo().GetRevision()
+	if revision == "" {
+		revision = fileInfos[parent].GetRevision()
+	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:      a.Ticket,
 		Kind:        edges.Canonical(a.Kind),
@@ -925,7 +925,7 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
 		BuildConfig: a.BuildConfiguration,
-		Revision:    fileInfos[parent].GetRevision(),
+		Revision:    revision,
 	}}
 }
 

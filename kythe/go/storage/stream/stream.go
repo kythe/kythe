@@ -18,7 +18,6 @@
 package stream // import "kythe.io/kythe/go/storage/stream"
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,8 +26,8 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/schema/facts"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -127,11 +126,15 @@ func NewJSONReader(r io.Reader) EntryReader {
 	return func(f func(*spb.Entry) error) error {
 		de := json.NewDecoder(r)
 		for {
-			var entry spb.Entry
-			if err := de.Decode(&entry); err == io.EOF {
+			var raw json.RawMessage
+			if err := de.Decode(&raw); err == io.EOF {
 				return nil
 			} else if err != nil {
-				return fmt.Errorf("error decoding JSON Entry: %v", err)
+				return fmt.Errorf("error decoding JSON Entry: %w", err)
+			}
+			var entry spb.Entry
+			if err := protojson.Unmarshal(raw, &entry); err != nil {
+				return fmt.Errorf("error decoding JSON Entry: %w", err)
 			}
 			if err := f(&entry); err != nil {
 				return err
@@ -140,12 +143,15 @@ func NewJSONReader(r io.Reader) EntryReader {
 	}
 }
 
-var marshaler = &jsonpb.Marshaler{OrigName: true}
+var marshaler = protojson.MarshalOptions{UseProtoNames: true}
 
 // richJSONEntry delays the unmarshaling of the fact_value field
 type richJSONEntry struct {
-	*spb.Entry
-	FactValue json.RawMessage `json:"fact_value"`
+	Source    json.RawMessage `json:"source,omitempty"`
+	Target    json.RawMessage `json:"target,omitempty"`
+	EdgeKind  string          `json:"edge_kind,omitempty"`
+	FactName  string          `json:"fact_name,omitempty"`
+	FactValue json.RawMessage `json:"fact_value,omitempty"`
 }
 
 // StructuredFactValueJSON creates a json object from e.FactValue
@@ -155,11 +161,11 @@ func StructuredFactValueJSON(e *spb.Entry) (json.RawMessage, error) {
 		if err := proto.Unmarshal(e.FactValue, &ms); err != nil {
 			return nil, err
 		}
-		msg := new(bytes.Buffer)
-		if err := marshaler.Marshal(msg, &ms); err != nil {
+		rec, err := marshaler.Marshal(&ms)
+		if err != nil {
 			return nil, err
 		}
-		return msg.Bytes(), nil
+		return rec, nil
 	}
 	return json.Marshal(e.FactValue)
 }
@@ -171,33 +177,64 @@ func Structured(e *spb.Entry) *StructuredEntry {
 
 // UnmarshalJSON unmarshals r including an object representation of FactValue when appropriate
 func (r *StructuredEntry) UnmarshalJSON(data []byte) error {
-	var jsonEntry = richJSONEntry{(*spb.Entry)(r), nil}
+	var jsonEntry richJSONEntry
 	if err := json.Unmarshal(data, &jsonEntry); err != nil {
 		return err
 	}
 	if jsonEntry.FactName == facts.Code {
-		factReader := bytes.NewReader(jsonEntry.FactValue)
 		var ms cpb.MarkedSource
-		if err := jsonpb.Unmarshal(factReader, &ms); err != nil {
+		if err := protojson.Unmarshal(jsonEntry.FactValue, &ms); err != nil {
 			return err
 		}
 		pb, err := proto.Marshal(&ms)
 		if err != nil {
 			return err
 		}
-		jsonEntry.Entry.FactValue = pb
-	} else if err := json.Unmarshal(jsonEntry.FactValue, &jsonEntry.Entry.FactValue); err != nil {
+		r.FactValue = pb
+	} else if err := json.Unmarshal(jsonEntry.FactValue, &r.FactValue); err != nil {
+		return err
+	}
+
+	r.EdgeKind = jsonEntry.EdgeKind
+	r.FactName = jsonEntry.FactName
+
+	var err error
+	if r.Source, err = unmarshalVName(jsonEntry.Source); err != nil {
+		return err
+	} else if r.Target, err = unmarshalVName(jsonEntry.Target); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func marshalVName(v *spb.VName) (json.RawMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	return protojson.Marshal(v)
+}
+
+func unmarshalVName(msg json.RawMessage) (*spb.VName, error) {
+	if len(msg) == 0 {
+		return nil, nil
+	}
+	var v spb.VName
+	return &v, protojson.Unmarshal(msg, &v)
+}
+
 // MarshalJSON marshals r including an object representation of FactValue when appropriate
 func (r *StructuredEntry) MarshalJSON() ([]byte, error) {
+	jsonEntry := richJSONEntry{
+		EdgeKind: r.EdgeKind,
+		FactName: r.FactName,
+	}
 	var err error
-	var jsonEntry = richJSONEntry{(*spb.Entry)(r), nil}
-	if jsonEntry.FactValue, err = StructuredFactValueJSON((*spb.Entry)(r)); err != nil {
+	if jsonEntry.Source, err = marshalVName(r.Source); err != nil {
+		return nil, err
+	} else if jsonEntry.Target, err = marshalVName(r.Target); err != nil {
+		return nil, err
+	} else if jsonEntry.FactValue, err = StructuredFactValueJSON((*spb.Entry)(r)); err != nil {
 		return nil, err
 	}
 

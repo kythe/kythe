@@ -140,7 +140,7 @@ def proto_verifier_test(
     )
     vopts = ["--ignore_dups"] + verifier_opts
     if convert_marked_source:
-        vopts += ["--convert_marked_source"]
+        vopts.append("--convert_marked_source")
     return _invoke(
         verifier_test,
         name = name,

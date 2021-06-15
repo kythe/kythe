@@ -32,8 +32,8 @@ $ xcodebuild -version
 You should get something like this (though the numbers will vary):
 
 {% highlight bash %}
-Xcode 10.1
-Build version 10B61
+Xcode 12.3
+Build version 12C33
 {% endhighlight %}
 
 If you get an error like this:
@@ -62,15 +62,6 @@ To install most of the [external dependencies][ext], run
 for pkg in asciidoc bison brotli flex go graphviz leveldb node openjdk parallel source-highlight wget ; do
    brew install $pkg
 done
-
-# Bazel.
-# See also:  https://docs.bazel.build/versions/master/install-os-x.html
-#
-# DO NOT run "brew install bazel"; the version from core does not work.
-# If you did so by mistake, run "brew uninstall bazel" first.
-brew tap bazelbuild/tap
-brew tap-pin bazelbuild/tap
-brew install bazelbuild/tap/bazel
 
 # Bison and Flex. The stock versions are too old, but these tools are keg-only
 # and Bazel uses a restricted PATH, so we need to tell Bazel where to find

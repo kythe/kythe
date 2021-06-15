@@ -100,7 +100,7 @@ std::string Reformat(const clang::LangOptions& lang_options,
       new clang::DiagnosticOptions);
   clang::SourceManager Sources(Diagnostics, Files);
   auto Source = llvm::MemoryBuffer::getMemBuffer(source_text);
-  InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, Source.get());
+  InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, *Source);
   clang::FileID ID =
       Sources.createFileID(*Files.getFile(kReplacementFile),
                            clang::SourceLocation(), clang::SrcMgr::C_User);
@@ -596,9 +596,11 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
   // diagnostics from the typechecker.
   clang::IgnoringDiagConsumer consumer;
   auto* diags = &cache_->source_manager().getDiagnostics();
-  auto guard = MakeScopeGuard(
-      [diags = diags, client = diags->getClient(),
-       owned = diags->ownsClient()] { diags->setClient(client, owned); });
+  auto guard = MakeScopeGuard([diags = diags, client = diags->getClient(),
+                               owned = diags->takeClient()]() mutable {
+    diags->setClient(client, owned.release() != nullptr);
+  });
+
   diags->setClient(&consumer, false);
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
@@ -693,7 +695,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     std::string pre_text;
     {
       llvm::raw_string_ostream stream(pre_text);
-      print_arg.print(policy, stream);
+      print_arg.print(policy, stream, true);
     }
     *next_arg->mutable_pre_text() = pre_text;
   }

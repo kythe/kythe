@@ -1,3 +1,6 @@
+load(":extractors.bzl", "extractor_action")
+load(":vnames.bzl", "construct_vnames_config")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
@@ -7,9 +10,6 @@ exports_files([
     "proto/*",
     "tools/*",
 ])
-
-load(":extractors.bzl", "extractor_action")
-load(":vnames.bzl", "construct_vnames_config")
 
 config_setting(
     name = "assign_external_projects_to_separate_corpora",

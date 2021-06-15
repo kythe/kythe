@@ -5,39 +5,6 @@
     "want": null
   },
   {
-    "input": "bazel-out/foo/bin/nonce%/github.com/kythe/kythe/blah.a",
-    "match": true,
-    "want": {
-      "corpus": "github.com/kythe/kythe",
-      "path": "blah"
-    }
-  },
-  {
-    "input": "bazel-out/foo/bin/nonce%/bitbucket.org/creachadair/stringset.a",
-    "match": true,
-    "want": {"corpus": "bitbucket.org/creachadair/stringset"}
-  },
-  {
-    "_note": "cgo output has this pattern.",
-    "input": "bazel-out/foo/bin/nonce%/github.com/google/brotli/go/cbrotli.a~partial.a",
-    "match": true,
-    "want": {
-      "corpus": "github.com/google/brotli",
-      "path": "go/cbrotli"
-    }
-  },
-  {
-    "_note": "cgo output has this pattern as well.",
-    "input": "bazel-out/foo/bin/nonce%/github.com/bar/baz.a~partial.a",
-    "match": true,
-    "want": {"corpus": "github.com/bar/baz"}
-  },
-  {
-    "input": "bazel-out/itty/bin/nonce%/bitbucket.org/nobble/fleem/wharrgarbl.a",
-    "match": true,
-    "want": {"corpus": "bitbucket.org/nobble/fleem", "path": "wharrgarbl"}
-  },
-  {
     "input": "bazel-out/foo/genfiles/kythe/proto/analysis.pb.go",
     "match": true,
     "want": {
@@ -54,12 +21,11 @@
     }
   },
   {
-    "_note": "Go generated test binary wrappers have this pattern.",
-    "input": "bazel-out/foo/bin/bar/baz/nonce/quux%/testmain.go",
+    "input": "external/go_sdk/pkg/linux_amd64/io/ioutil.x",
     "match": true,
     "want": {
-      "root": "bazel-out/bin",
-      "path": "bar/baz/quux/testmain.go"
+      "corpus": "golang.org",
+      "path": "io/ioutil"
     }
   }
 ]

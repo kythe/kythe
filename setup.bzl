@@ -1,11 +1,5 @@
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-def maybe(repo_rule, name, **kwargs):
-    """Defines a repository if it does not already exist.
-    """
-    if name not in native.existing_rules():
-        repo_rule(name = name, **kwargs)
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
 def github_archive(name, repo_name, commit, kind = "zip", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -38,10 +32,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
+        sha256 = "6f111c57fd50baf5b8ee9d63024874dd2a014b069426156c55adbf6d3d22cb7b",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.0/rules_go-v0.25.0.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.25.0/rules_go-v0.25.0.tar.gz",
         ],
     )
 
@@ -85,16 +79,16 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "build_bazel_rules_nodejs",
-        sha256 = "4952ef879704ab4ad6729a29007e7094aef213ea79e9f2e94cbe1c9a753e63ef",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/2.2.0/rules_nodejs-2.2.0.tar.gz"],
+        sha256 = "dd7ea7efda7655c218ca707f55c3e1b9c68055a70c31a98f264b3445bc8f4cb1",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.2.3/rules_nodejs-3.2.3.tar.gz"],
     )
 
     maybe(
         http_archive,
         name = "rules_jvm_external",
-        sha256 = "e5b97a31a3e8feed91636f42e19b11c49487b85e5de2f387c999ea14d77c7f45",
-        strip_prefix = "rules_jvm_external-2.9",
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/2.9.zip"],
+        sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
+        strip_prefix = "rules_jvm_external-4.0",
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.0.zip"],
     )
 
     maybe(
@@ -110,10 +104,44 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
-        name = "io_bazel_rules_rust",
-        sha256 = "0a38be61514ed6364d60324486a2748653689c02dafff0cd8e3c9840b04008fe",
-        strip_prefix = "rules_rust-3dffbabb3ab65a41056228b5c387d4b78331eaec",
+        name = "rules_rust",
+        sha256 = "f8c0132ea3855781d41ac574df0ca44959f17694d368c03c7cbaa5f29ef42d8b",
+        strip_prefix = "rules_rust-5bb12cc451317581452b5441692d57eb4310b839",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/3dffbabb3ab65a41056228b5c387d4b78331eaec.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/archive/5bb12cc451317581452b5441692d57eb4310b839.tar.gz",
+        ],
+    )
+
+    maybe(
+        http_archive,
+        name = "bazelruby_rules_ruby",
+        strip_prefix = "rules_ruby-0.4.1",
+        sha256 = "abfc2758cc379e0ff0eb9824e3b507c1633d4c8f99f24735aef63c7180be50f0",
+        urls = [
+            "https://github.com/bazelruby/rules_ruby/archive/v0.4.1.zip",
+        ],
+        patches = [
+            "@io_kythe//third_party:rules_ruby_allow_empty.patch",
+        ],
+        patch_args = ["-p1"],
+    )
+
+    maybe(
+        http_archive,
+        name = "rules_foreign_cc",
+        sha256 = "e60cfd0a8426fa4f5fd2156e768493ca62b87d125cb35e94c44e79a3f0d8635f",
+        strip_prefix = "rules_foreign_cc-0.2.0",
+        url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "llvm-bazel",
+        patch_args = ["-p2"],
+        patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
+        sha256 = "1c54ed1c322cb96a64daab8d2d99e0178de17812e2992bf07f53756b13805822",
+        strip_prefix = "llvm-bazel-e3593b2e6eeb96e3972278073bc35ac8f4ea8f4b/llvm-bazel",
+        urls = [
+            "https://github.com/google/llvm-bazel/archive/e3593b2e6eeb96e3972278073bc35ac8f4ea8f4b.zip",
         ],
     )

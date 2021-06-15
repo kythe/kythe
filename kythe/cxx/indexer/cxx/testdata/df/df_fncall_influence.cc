@@ -11,6 +11,7 @@ int f(int a, int b);
 //- @f completes/uniquely FDecl
 //- VarA influences VarC
 //- VarB influences VarD
+//- FDefn influences FDecl
 int f(int c, int d) {
   //- VarC influences FDefn
   //- VarD influences FDefn

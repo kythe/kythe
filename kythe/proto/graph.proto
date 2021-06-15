@@ -35,13 +35,11 @@ option go_package = "graph_go_proto";
 // without any facts or edges is not considered to exist.
 service GraphService {
   // Nodes returns a subset of the facts for each of the requested nodes.
-  rpc Nodes(NodesRequest) returns (NodesReply) {
-  }
+  rpc Nodes(NodesRequest) returns (NodesReply) {}
 
   // Edges returns a subset of the outbound edges for each of a set of
   // requested nodes.
-  rpc Edges(EdgesRequest) returns (EdgesReply) {
-  }
+  rpc Edges(EdgesRequest) returns (EdgesReply) {}
 }
 
 message NodesRequest {

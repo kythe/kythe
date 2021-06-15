@@ -32,7 +32,7 @@ index 1645b4e..454f440 100644
      DumpTypesCommand.command;
 +    DumpKytheCommand.command;
    ]
- 
+
    (* status commands, which need a list of other commands *)
 diff --git a/third_party/flow/src/server/dumpKytheService_js.ml b/third_party/flow/src/server/dumpKytheService_js.ml
 new file mode 120000
@@ -49,7 +49,7 @@ index ccb2e08..a01582e 100644
 @@ -193,6 +193,11 @@ struct
      Marshal.to_channel oc (err, resp) [];
      flush oc
- 
+
 +  let dump_kythe file_input oc =
 +    let resp : DumpKytheService_js.resp_t = DumpKytheService_js.query file_input in
 +    Marshal.to_channel oc resp [];

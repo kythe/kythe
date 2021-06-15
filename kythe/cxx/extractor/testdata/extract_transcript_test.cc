@@ -105,7 +105,7 @@ argument: "-I./kythe/cxx/extractor/testdata"
 argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
-working_directory: "TEST_CWD"
+working_directory: "/root"
 entry_context: "hash0"
 )";
 
@@ -119,7 +119,6 @@ TEST(CxxExtractorTest, TextExtractedTranscript) {
   CanonicalizeHashes(&unit);
   unit.clear_details();
   unit.set_argument(2, "dummy-target");
-  unit.set_working_directory("TEST_CWD");
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }

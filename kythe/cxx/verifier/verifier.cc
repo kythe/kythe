@@ -27,14 +27,13 @@
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/verifier/souffle_interpreter.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace verifier {
 namespace {
-
-typedef std::vector<AstNode*> Database;
 
 /// \brief The return code from a verifier thunk.
 using ThunkRet = size_t;
@@ -519,8 +518,7 @@ class Solver {
     }
   }
 
-  ThunkRet SolveGoalArray(AssertionParser::GoalGroup* group, size_t cur,
-                          ThunkRet cut, Thunk f) {
+  ThunkRet SolveGoalArray(GoalGroup* group, size_t cur, ThunkRet cut, Thunk f) {
     if (cur > highest_goal_reached_) {
       highest_goal_reached_ = cur;
     }
@@ -553,12 +551,12 @@ class Solver {
       // Lots of unwinding later...
       if (result == cut) {
         // That last goal group succeeded.
-        if (group->accept_if != AssertionParser::GoalGroup::kNoneMayFail) {
+        if (group->accept_if != GoalGroup::kNoneMayFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
         }
       } else if (result == kNoException || result == kImpossible) {
         // That last goal group failed.
-        if (group->accept_if != AssertionParser::GoalGroup::kSomeMustFail) {
+        if (group->accept_if != GoalGroup::kSomeMustFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
         }
       } else {
@@ -641,6 +639,8 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   marked_source_code_edge_id_ =
       IdentifierFor(builtin_location_, "/kythe/edge/code");
   marked_source_false_id_ = IdentifierFor(builtin_location_, "false");
+  known_file_sym_ = symbol_table_.unique();
+  known_not_file_sym_ = symbol_table_.unique();
   SetGoalCommentPrefix("//-");
 }
 
@@ -761,7 +761,7 @@ void Verifier::SaveEVarAssignments() {
 void Verifier::ShowGoals() {
   FileHandlePrettyPrinter printer(stdout);
   for (auto& group : parser_.groups()) {
-    if (group.accept_if == AssertionParser::GoalGroup::kNoneMayFail) {
+    if (group.accept_if == GoalGroup::kNoneMayFail) {
       printer.Print("group:\n");
     } else {
       printer.Print("negated group:\n");
@@ -863,8 +863,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
       return;
     }
     printer.Print("(past the end of a ");
-    if (parser_.groups()[group].accept_if ==
-        AssertionParser::GoalGroup::kSomeMustFail) {
+    if (parser_.groups()[group].accept_if == GoalGroup::kSomeMustFail) {
       printer.Print("negated ");
     }
     printer.Print("group, whose last goal was)\n  ");
@@ -916,6 +915,14 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 
 bool Verifier::VerifyAllGoals(
     std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
+  if (use_fast_solver_) {
+    auto result = RunSouffle(
+        symbol_table_, parser_.groups(), facts_, parser_.inspections(),
+        [&](const Solver::Inspection& i) { return inspect(this, i); });
+    highest_goal_reached_ = result.highest_goal_reached;
+    highest_group_reached_ = result.highest_group_reached;
+    return result.success;
+  }
   if (!PrepareDatabase()) {
     return false;
   }
@@ -955,7 +962,7 @@ Identifier* Verifier::IdentifierFor(const yy::location& location, int integer) {
 }
 
 AstNode* Verifier::MakePredicate(const yy::location& location, AstNode* head,
-                                 std::initializer_list<AstNode*> values) {
+                                 absl::Span<AstNode* const> values) {
   size_t values_count = values.size();
   AstNode** body = (AstNode**)arena_.New(values_count * sizeof(AstNode*));
   size_t vn = 0;
@@ -1053,10 +1060,56 @@ static bool EncodedFactHasValidForm(Verifier* cxt, AstNode* a) {
   }
 }
 
+Verifier::InternedVName Verifier::InternVName(AstNode* node) {
+  auto* tuple = node->AsTuple();
+  return {tuple->element(0)->AsIdentifier()->symbol(),
+          tuple->element(1)->AsIdentifier()->symbol(),
+          tuple->element(2)->AsIdentifier()->symbol(),
+          tuple->element(3)->AsIdentifier()->symbol(),
+          tuple->element(4)->AsIdentifier()->symbol()};
+}
+
+bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
+  // TODO(zarko): None of the text processing supports non-UTF8 encoded files.
+  if (tuple->element(1) == empty_string_id_ &&
+      tuple->element(2) == empty_string_id_) {
+    if (EncodedIdentEqualTo(tuple->element(3), kind_id_)) {
+      auto vname = InternVName(tuple->element(0));
+      if (EncodedIdentEqualTo(tuple->element(4), file_id_)) {
+        auto sym = fast_solver_files_.insert({vname, known_file_sym_});
+        if (!sym.second && sym.first->second != known_not_file_sym_) {
+          if (assertions_from_file_nodes_) {
+            return LoadInMemoryRuleFile("", tuple->element(0),
+                                        sym.first->second);
+          } else {
+            content_to_vname_[sym.first->second] = tuple->element(0);
+          }
+        }
+      } else {
+        fast_solver_files_[vname] = known_not_file_sym_;
+      }
+    } else if (EncodedIdentEqualTo(tuple->element(3), text_id_)) {
+      auto vname = InternVName(tuple->element(0));
+      auto content = tuple->element(4)->AsIdentifier()->symbol();
+      auto file = fast_solver_files_.insert({vname, content});
+      if (!file.second && file.first->second == known_file_sym_) {
+        if (assertions_from_file_nodes_) {
+          return LoadInMemoryRuleFile("", tuple->element(0), content);
+        } else {
+          content_to_vname_[content] = tuple->element(0);
+        }
+      }
+    }
+  }
+  return true;
+}
+
 bool Verifier::PrepareDatabase() {
   if (database_prepared_) {
     return true;
   }
+  CHECK(!use_fast_solver_)
+      << "This configuration is not supported when --use_fast_solver is on.";
   // TODO(zarko): Make this configurable.
   FileHandlePrettyPrinter printer(stderr);
   // First, sort the tuples. As an invariant, we know they will be of the form
@@ -1382,11 +1435,14 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
                                    : empty_string_id_;
   }
 
-  AstNode* tuple = new (&arena_) Tuple(loc, 5, values);
+  Tuple* tuple = new (&arena_) Tuple(loc, 5, values);
   AstNode* fact = new (&arena_) App(fact_id_, tuple);
 
   database_prepared_ = false;
   facts_.push_back(fact);
+  if (use_fast_solver_) {
+    return ProcessFactTupleForFastSolver(tuple);
+  }
   return true;
 }
 

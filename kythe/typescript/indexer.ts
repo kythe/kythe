@@ -580,11 +580,11 @@ class StandardIndexerContext implements IndexerHost {
     const stored = this.symbolNames.get(sym, ns, context);
     if (stored) return stored;
 
-    let declarations = sym.declarations;
-    if (!declarations || declarations.length < 1) {
+    if (!sym.declarations || sym.declarations.length < 1) {
       return undefined;
     }
 
+    let declarations = sym.declarations;
     // Disambiguate symbols with multiple declarations using a context.
     if (sym.declarations.length > 1) {
       switch (context) {
@@ -637,6 +637,17 @@ class StandardIndexerContext implements IndexerHost {
 
   /**
    * pathToVName returns the VName for a given file path.
+   *
+   * This function is used for 2 distinct cases that should be ideally separated
+   * in 2 different functions. `path` can be one of two:
+   * 1. Full path like 'bazel-out/genfiles/path/to/file.ts'.
+   *    This path is used to build VNames for files and anchors.
+   * 2. Module name like 'path/to/file'.
+   *    This path is used to build VNames for semantic nodes.
+   *
+   * Only for full paths `pathVnames` contains an entry. For short paths (module
+   * names) this function will defaults to calculating vname based on path
+   * and compilation unit.
    */
   pathToVName(path: string): VName {
     const vname = this.pathVNames.get(path);
@@ -740,6 +751,9 @@ class Visitor {
 
   typeChecker: ts.TypeChecker;
 
+  /** influencers is a stack of influencer VNames. */
+  private readonly influencers: Set<VName>[] = [];
+
   constructor(
       private readonly host: IndexerHost,
       private file: ts.SourceFile,
@@ -809,6 +823,32 @@ class Visitor {
     });
   }
 
+  /** forAllInfluencers executes fn for each influencer in the active set. */
+  forAllInfluencers(fn: (influencer: VName) => void) {
+    if (this.influencers.length != 0) {
+      this.influencers[this.influencers.length - 1].forEach(fn);
+    }
+  }
+
+  /** addInfluencer adds influencer to the active set. */
+  addInfluencer(influencer: VName) {
+    if (this.influencers.length != 0) {
+      this.influencers[this.influencers.length - 1].add(influencer);
+    }
+  }
+
+  /** popInfluencers pops the active influencer set. */
+  popInfluencers() {
+    if (this.influencers.length != 0) {
+      this.influencers.pop();
+    }
+  }
+
+  /** pushInfluencers pushes a new active influencer set. */
+  pushInfluencers() {
+    this.influencers.push(new Set<VName>());
+  }
+
   visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
       const sym = this.host.getSymbolAtLocation(param.name);
@@ -831,6 +871,28 @@ class Visitor {
       // ...<T = A>
       if (param.default) this.visitType(param.default);
     }
+  }
+
+  /**
+   * Adds influence edges for return statements.
+   */
+  visitReturnStatement(node: ts.ReturnStatement) {
+    this.pushInfluencers();
+    ts.forEachChild(node, n => {
+      this.visit(n);
+    });
+    const containingFunction = this.getContainingFunctionNode(node);
+    if (!ts.isSourceFile(containingFunction)) {
+      const containingVName =
+          this.getSymbolAndVNameForFunctionDeclaration(containingFunction)
+              .vname;
+      if (containingVName) {
+        this.forAllInfluencers(influencer => {
+          this.emitEdge(influencer, EdgeKind.INFLUENCES, containingVName);
+        });
+      }
+    }
+    this.popInfluencers();
   }
 
   /**
@@ -1376,7 +1438,9 @@ class Visitor {
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
     const sym = this.host.getSymbolAtLocation(decl.name);
-    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+    if (!sym || !sym.declarations) {
+      throw new Error('Getter/setter declaration has no symbols.');
+    }
 
     if (sym.declarations.find(ts.isGetAccessor)) {
       // Emit a "property/reads" edge between the getter and the property
@@ -1598,8 +1662,9 @@ class Visitor {
     let declKw;
     if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-          '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+                                                       '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' :
+                                                       'let';
     } else {
       declKw = '(property)';
     }
@@ -1748,8 +1813,10 @@ class Visitor {
         const overriddenCondition = (sym: ts.Symbol) =>
             Boolean(sym.flags & funcFlags) && sym.name === funcName;
 
-        const overridden =
-            toArray(type.symbol.members.values()).find(overriddenCondition);
+        // TODO(b/181591179): Remove this alias and casts
+        type AnyDuringTs42Migration = any;
+        const overridden: AnyDuringTs42Migration =
+            toArray(type.symbol.members.values() as AnyDuringTs42Migration).find(overriddenCondition as AnyDuringTs42Migration);
         if (overridden) {
           const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
           if (base) {
@@ -1775,11 +1842,10 @@ class Visitor {
       this.visit((decl.name as ts.ComputedPropertyName).expression);
     }
 
-    // Treat functions with computed names as anonymous. From developer point of view in the
-    // following expression:
-    // `const k = {[foo]() {}};`
-    // the part `[foo]` isn't a separate symbol that you can click. Only `foo` should be xref'ed
-    // and lead to the `foo` definition.
+    // Treat functions with computed names as anonymous. From developer point of
+    // view in the following expression: `const k = {[foo]() {}};` the part
+    // `[foo]` isn't a separate symbol that you can click. Only `foo` should be
+    // xref'ed and lead to the `foo` definition.
     if (decl.name && !isNameComputedProperty) {
       if (!sym) {
         todo(
@@ -1796,11 +1862,11 @@ class Visitor {
       // getter is present, it will bind this entry; otherwise a setter will.
       if (ts.isGetAccessor(decl) ||
           (ts.isSetAccessor(decl) &&
-           !sym.declarations.find(ts.isGetAccessor))) {
+           (!sym.declarations || !sym.declarations.find(ts.isGetAccessor)))) {
         this.emitImplicitProperty(decl, declAnchor, vname);
       }
 
-      this.visitJSDoc(decl, vname);
+      this.visitJSDoc(decl, vname, false);
     }
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
 
@@ -1995,7 +2061,7 @@ class Visitor {
 
       // If the class has a constructor, emit an entry for it.
       const ctorSymbol = this.getCtorSymbol(decl);
-      if (ctorSymbol) {
+      if (ctorSymbol && ctorSymbol.declarations) {
         const ctorDecl = ctorSymbol.declarations[0];
         const span = this.getTextSpan(ctorDecl, 'constructor');
         const classCtorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
@@ -2059,6 +2125,7 @@ class Visitor {
     if (!name) return;
     const anchor = this.newAnchor(node);
     this.emitEdge(anchor, EdgeKind.REF, name);
+    this.addInfluencer(name);
   }
 
   /**
@@ -2088,8 +2155,10 @@ class Visitor {
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
    */
-  visitJSDoc(node: ts.Node, target: VName) {
-    this.maybeTagDeprecated(node, target);
+  visitJSDoc(node: ts.Node, target: VName, emitDeprecation: boolean = true) {
+    if (emitDeprecation) {
+      this.maybeTagDeprecated(node, target);
+    }
 
     const text = node.getFullText();
     const comments = ts.getLeadingCommentRanges(text, 0);
@@ -2127,7 +2196,8 @@ class Visitor {
         ts.getJSDocTags(node).find(tag => tag.tagName.text === 'deprecated');
     if (deprecatedTag) {
       this.emitFact(
-          nodeVName, FactName.TAG_DEPRECATED, deprecatedTag.comment || '');
+          nodeVName, FactName.TAG_DEPRECATED,
+          (deprecatedTag.comment || '') as any);
     }
   }
 
@@ -2199,6 +2269,9 @@ class Visitor {
       case ts.SyntaxKind.NewExpression:
         this.visitCallOrNewExpression(
             node as ts.CallExpression | ts.NewExpression);
+        return;
+      case ts.SyntaxKind.ReturnStatement:
+        this.visitReturnStatement(node as ts.ReturnStatement)
         return;
       default:
         // Use default recursive processing.

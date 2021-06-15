@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
     ],
 )
 

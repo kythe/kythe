@@ -1,8 +1,8 @@
+load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
+
 package(
     default_visibility = ["//visibility:public"],
 )
-
-load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
 
 PACKAGE_VERSION = "1.7.3"
 

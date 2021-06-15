@@ -46,13 +46,15 @@ impl AnalysisLoader for Loader {
         None
     }
     fn search_directories(&self) -> Vec<SearchDirectory> {
-        vec![SearchDirectory { path: self.deps_dir.clone(), prefix_rewrite: None }]
+        vec![SearchDirectory {
+            path: self.deps_dir.clone(),
+            prefix_rewrite: None,
+        }]
     }
 }
 
 /// Takes a PathBuf and loads the save_analysis files from the path
-pub fn load_analysis(root_dir: &PathBuf) -> Vec<Crate> {
-    let path = (*root_dir).clone();
-    let loader = Loader::new(path);
+pub fn load_analysis(root_dir: &Path) -> Vec<Crate> {
+    let loader = Loader::new(root_dir.to_path_buf());
     rls_analysis::read_analysis_from_files(&loader, Default::default(), &[] as &[&str])
 }

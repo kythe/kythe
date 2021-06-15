@@ -31,7 +31,7 @@ public class Methods {
   //- CreateType param.2 VoidBuiltin
   public static Methods create() {
     //- @Methods ref Class
-    //- @"new Methods" ref Ctor
+    //- @"Methods" ref Ctor
     return new Methods();
   }
 

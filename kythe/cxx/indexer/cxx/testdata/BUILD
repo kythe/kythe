@@ -1,16 +1,16 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
-exports_files(
-    ["test_vnames.json"],
-    visibility = ["//kythe:default_visibility"],
-)
-
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_extract_kzip",
     "cc_extractor_test",
     "cc_indexer_test",
     "objc_indexer_test",
+)
+
+package(default_visibility = ["//kythe:default_visibility"])
+
+exports_files(
+    ["test_vnames.json"],
+    visibility = ["//kythe:default_visibility"],
 )
 
 cc_indexer_test(
@@ -1828,6 +1828,7 @@ cc_indexer_test(
     name = "rec_class_member_ptr",
     srcs = ["rec/rec_class_member_ptr.cc"],
     check_for_singletons = True,
+    experimental_record_dataflow_edges = True,
     tags = ["rec"],
 )
 
@@ -2844,6 +2845,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "extension_property",
     srcs = ["objc/categories/extension_property.m"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
     deps = ["objc/categories/extension_property.h"],
@@ -3051,6 +3053,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
+    experimental_record_dataflow_edges = True,
     tags = ["objc"],
 )
 
@@ -3144,6 +3147,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_decl_defn_synth",
     srcs = ["objc/property_decl_defn_synth.m"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -3242,8 +3246,17 @@ test_suite(
 )
 
 cc_indexer_test(
+    name = "df_binary",
+    srcs = ["df/df_binary.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_field_ref_blame",
     srcs = ["df/df_field_ref_blame.cc"],
+    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3251,6 +3264,14 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_field_rw",
     srcs = ["df/df_field_rw.cc"],
+    experimental_record_dataflow_edges = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_field_influence",
+    srcs = ["df/df_field_influence.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3288,8 +3309,17 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_unary",
+    srcs = ["df/df_unary.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3302,6 +3332,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_rw",
     srcs = ["df/df_var_rw.cc"],
+    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3316,4 +3347,19 @@ cc_indexer_test(
 test_suite(
     name = "indexer_df",
     tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "toolchain_verify_no_diagnostics_test",
+    srcs = ["toolchain/verify_no_diagnostics.cc"],
+    copts = [
+        "-Xclang",
+        "-verify",
+    ],
+    tags = ["toolchain"],
+)
+
+test_suite(
+    name = "indexer_toolchain",
+    tags = ["toolchain"],
 )

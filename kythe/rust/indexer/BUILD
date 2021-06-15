@@ -1,8 +1,8 @@
-package(default_visibility = ["//visibility:public"])
-
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
-load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
+load("@rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
+
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "kythe_rust_indexer",
@@ -14,7 +14,6 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_analysis",
@@ -34,8 +33,8 @@ rust_binary(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:tempdir",
+        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -56,7 +55,7 @@ rust_test(
         ":inline_tests",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "@io_bazel_rules_rust//tools/runfiles",
+        "@rules_rust//tools/runfiles",
     ] + PROTO_COMPILE_DEPS,
 )
 

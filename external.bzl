@@ -2,24 +2,31 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
-load("@io_kythe//:autotools.bzl", "autotools_repository")
-load("@io_kythe//:setup.bzl", "github_archive", "maybe")
+load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
-load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
-load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
-load("@io_bazel_rules_rust//proto:repositories.bzl", "rust_proto_repositories")
-load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
+load("@rules_rust//rust:repositories.bzl", "rust_repositories")
+load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
+load(
+    "@bazelruby_rules_ruby//ruby:deps.bzl",
+    "rules_ruby_dependencies",
+    "rules_ruby_select_sdk",
+)
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+load("@llvm-bazel//:configure.bzl", "llvm_configure")
+load("@llvm-bazel//:terminfo.bzl", "llvm_terminfo_disable")
+load("@llvm-bazel//:zlib.bzl", "llvm_zlib_external")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -27,15 +34,17 @@ load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains()
+    go_register_toolchains(version = "1.15.5")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
-    rust_repositories(version = "nightly", iso_date = "2020-06-23", dev_components = True)
+    rust_repositories(version = "nightly", iso_date = "2021-05-18", dev_components = True)
     rust_proto_repositories()
-    bazel_version(name = "bazel_version")
+    rules_ruby_dependencies()
+    rules_ruby_select_sdk(version = "host")
+    rules_foreign_cc_dependencies(register_built_tools = False)
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
@@ -57,7 +66,38 @@ def _proto_dependencies():
     )
 
 def _cc_dependencies():
-    autotools_repository(
+    maybe(
+        http_archive,
+        name = "llvm-project-raw",
+        build_file_content = "#empty",
+        sha256 = "e20dcfb060f7078124bf29d9c8dee8c5c56b4bebee33ab3b6fef2898262651f2",
+        strip_prefix = "llvm-project-82a3b606b01d2da23a40785222f3f7d15401dda0",
+        urls = [
+            "https://github.com/llvm/llvm-project/archive/82a3b606b01d2da23a40785222f3f7d15401dda0.zip",
+        ],
+    )
+
+    maybe(
+        llvm_terminfo_disable,
+        name = "llvm_terminfo",
+    )
+
+    maybe(
+        llvm_zlib_external,
+        name = "llvm_zlib",
+        external_zlib = "@net_zlib//:zlib",
+    )
+
+    maybe(
+        llvm_configure,
+        name = "llvm-project",
+        overlay_workspace = "@llvm-bazel//:WORKSPACE",
+        src_path = ".",
+        src_workspace = "@llvm-project-raw//:WORKSPACE",
+    )
+
+    maybe(
+        http_archive,
         name = "org_sourceware_libffi",
         build_file = "@io_kythe//third_party:libffi.BUILD",
         sha256 = "653ffdfc67fbb865f39c7e5df2a071c0beb17206ebfb0a9ecb18a18f63f6b263",  # 2019-11-02
@@ -66,7 +106,7 @@ def _cc_dependencies():
     )
 
     maybe(
-        autotools_repository,
+        http_archive,
         name = "souffle",
         urls = ["https://github.com/souffle-lang/souffle/archive/fbb4c4b967bf58cccb7aca58e3d200a799218d98.zip"],
         build_file = "@io_kythe//third_party:souffle.BUILD",
@@ -105,7 +145,7 @@ def _cc_dependencies():
     maybe(
         git_repository,
         name = "boringssl",
-        # Use the github mirror because the official source at
+        # Use the GitHub mirror because the official source at
         # https://boringssl.googlesource.com/boringssl does not allow
         # unauthenticated git clone and the archives suffer from
         # https://github.com/google/gitiles/issues/84 preventing the use of
@@ -134,8 +174,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "5bf048b8425cc0a342e4647932de19e25ffd6ad7",
-        sha256 = "6bc23aa3b5adfc8ca8831d7fc95e4cedae4db2eadc93e396bc7e8a099158fffb",
+        commit = "e9b9e38f67a008d66133535a72ada843bd66013f",
+        sha256 = "49c93740b3b09f73cd2f10da778ea4129d59733085393f458a4acd17774503fb",
     )
 
     maybe(
@@ -150,10 +190,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_github_google_glog",
         repo_name = "google/glog",
-        # Updates newer than this break due to our use of layering_check.
-        # See https://github.com/google/glog/issues/596
-        commit = "ba8a9f6952d04d1403b97df24e6836227751454e",
-        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        commit = "d4e8ebab7e295f20f86cae9557da0d5087a02f73",
+        sha256 = "b38713b8189bc621185c1d558f0dbeef6ce821688e0990b8c6d72c703769779c",
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
@@ -248,11 +286,6 @@ def _cc_dependencies():
         ],
     )
 
-    maybe(
-        git_llvm_repository,
-        name = "org_llvm",
-    )
-
     lexyacc_configure()
     cxx_extractor_register_toolchains()
 
@@ -277,23 +310,25 @@ def _java_dependencies():
     maven_install(
         name = "maven",
         artifacts = [
-            "com.beust:jcommander:1.48",
-            "com.google.auto.service:auto-service:1.0-rc4",
-            "com.google.auto.value:auto-value:1.5.4",
-            "com.google.auto:auto-common:0.10",
-            "com.google.code.findbugs:jsr305:3.0.1",
-            "com.google.code.gson:gson:2.8.5",
+            "com.beust:jcommander:1.81",
+            "com.google.auto.service:auto-service:1.0",
+            "com.google.auto.service:auto-service-annotations:1.0",
+            "com.google.auto.value:auto-value:1.8",
+            "com.google.auto.value:auto-value-annotations:1.8",
+            "com.google.auto:auto-common:1.0",
+            "com.google.code.findbugs:jsr305:3.0.2",
+            "com.google.code.gson:gson:2.8.6",
             "com.google.common.html.types:types:1.0.8",
-            "com.google.errorprone:error_prone_annotations:2.3.1",
-            "com.google.guava:guava:26.0-jre",
-            "com.google.jimfs:jimfs:1.1",
-            "com.google.re2j:re2j:1.2",
-            "com.google.truth:truth:1.0",
+            "com.google.errorprone:error_prone_annotations:2.6.0",
+            "com.google.guava:guava:30.1.1-jre",
+            "com.google.jimfs:jimfs:1.2",
+            "com.google.re2j:re2j:1.6",
+            "com.google.truth:truth:1.1.2",
             "com.googlecode.java-diff-utils:diffutils:1.3.0",
-            "org.apache.tomcat:tomcat-annotations-api:9.0.34",
-            "junit:junit:4.12",
-            "org.checkerframework:checker-qual:2.9.0",
-            "org.ow2.asm:asm:7.0",
+            "org.apache.tomcat:tomcat-annotations-api:9.0.45",
+            "junit:junit:4.13.2",
+            "org.checkerframework:checker-qual:3.12.0",
+            "org.ow2.asm:asm:9.1",
         ],
         repositories = [
             "https://jcenter.bintray.com",
@@ -320,8 +355,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:Y8Q9pZ9V8IKM8EDNOE314D6cJE0neJooK+MxBvCcs1M=",
-        version = "v2.25.0+incompatible",
+        commit = "8f219a2e16c040fe112981dffa7c993ce76e8470",
+        build_extra_args = ["-known_import=beam.apache.org"],
     )
 
     _gazelle_ignore(
@@ -1087,11 +1122,11 @@ def _go_dependencies():
         name = "org_golang_x_tools",
         # master, as of 2020-08-24
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/c024452afbcdebb4a0fbe1bb0eaea0d2dbff835b.zip",
-            "https://github.com/golang/tools/archive/c024452afbcdebb4a0fbe1bb0eaea0d2dbff835b.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/a1b87a1c0de44760bd00894ef736a8c36548068f.zip",
+            "https://github.com/golang/tools/archive/a1b87a1c0de44760bd00894ef736a8c36548068f.zip",
         ],
-        sha256 = "5b330e3bd29a52c235648457e1aa899d948cb1eb90a8b5caa0ac882be75572db",
-        strip_prefix = "tools-c024452afbcdebb4a0fbe1bb0eaea0d2dbff835b",
+        sha256 = "fe3987ccdff6a0e7e5a8353d4d1d2ca3ada5a72ea69462ba7b9b7343b5a25e06",
+        strip_prefix = "tools-a1b87a1c0de44760bd00894ef736a8c36548068f",
         patches = [
             # deletegopls removes the gopls subdirectory. It contains a nested
             # module with additional dependencies. It's not needed by rules_go.
@@ -1208,21 +1243,13 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
-        strip_prefix = "protobuf-3.13.0",
+        sha256 = "1c11b325e9fbb655895e8fe9843479337d50dd0be56a41737cbb9aede5e9ffa0",
+        strip_prefix = "protobuf-3.15.3",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.15.3.zip",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe(
-        github_archive,
-        name = "io_kythe_llvmbzlgen",
-        repo_name = "kythe/llvmbzlgen",
-        commit = "7ca9c6146d7d2363a36da6a5eb76f8e139c8d3fe",
-        sha256 = "809da3c5b5c918d9321cfec01b38c46f0c99cf562d9ad3d79ec45e4b8e2d9b3c",
     )
 
     _bindings()

@@ -21,10 +21,13 @@ $(document).ready(function() {
       .addClass('panel panel-default')
       .removeClass('listingblock output')
       .each(function(_, el) {
-    var id = $(el).find('.content')
-        .addClass('collapse in panel-body')
-        .uniqueId().attr('id');
-    $(el).find('.title')
-        .replaceWith('<div class="panel-heading"><a class="title" data-toggle="collapse" href="#' + id + '">Output</a></div>');
-  });
+        var id = $(el)
+                     .find('.content')
+                     .addClass('collapse in panel-body')
+                     .uniqueId()
+                     .attr('id');
+        $(el).find('.title').replaceWith(
+            '<div class="panel-heading"><a class="title" data-toggle="collapse" href="#' +
+            id + '">Output</a></div>');
+      });
 });

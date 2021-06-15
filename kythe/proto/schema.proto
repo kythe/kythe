@@ -150,12 +150,14 @@ enum EdgeKind {
   REF_EXPANDS_TRANSITIVE = 30
       [(metadata).label = "/kythe/edge/ref/expands/transitive"];
   REF_FILE = 31 [(metadata).label = "/kythe/edge/ref/file"];
+  REF_ID = 46 [(metadata).label = "/kythe/edge/ref/id"];
   REF_IMPLICIT = 32 [(metadata).label = "/kythe/edge/ref/implicit"];
   REF_IMPORTS = 33 [(metadata).label = "/kythe/edge/ref/imports"];
   REF_INCLUDES = 34 [(metadata).label = "/kythe/edge/ref/includes"];
   REF_INIT = 35 [(metadata).label = "/kythe/edge/ref/init"];
   REF_INIT_IMPLICIT = 36 [(metadata).label = "/kythe/edge/ref/init/implicit"];
   REF_QUERIES = 37 [(metadata).label = "/kythe/edge/ref/queries"];
+  REF_WRITES = 47 [(metadata).label = "/kythe/edge/ref/writes"];
   SATISFIES = 38 [(metadata).label = "/kythe/edge/satisfies"];
   SPECIALIZES = 39 [(metadata).label = "/kythe/edge/specializes"];
   SPECIALIZES_SPECULATIVE = 40

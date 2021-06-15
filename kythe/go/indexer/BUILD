@@ -1,5 +1,6 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -47,8 +48,6 @@ bzl_library(
     srcs = ["testdata/go_indexer_test.bzl"],
     visibility = ["//visibility:private"],
 )
-
-load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 
 go_indexer_test(
     name = "syntax_test",
@@ -212,6 +211,19 @@ go_indexer_test(
     name = "types_test",
     srcs = ["testdata/types.go"],
     has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "dependent_test",
+    srcs = ["testdata/dependent.go"],
+    has_marked_source = True,
+    deps = [":types_test"],
+)
+
+go_indexer_test(
+    name = "tappcorpus_test",
+    srcs = ["testdata/basic/tappcorpus.go"],
+    use_compilation_corpus_as_default = True,
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")

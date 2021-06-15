@@ -1,0 +1,89 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+    -   id: trailing-whitespace
+        args: ['--markdown-linebreak-ext=md,txt']
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: check-executables-have-shebangs
+-   repo: meta
+    hooks:
+    -   id: check-hooks-apply
+    -   id: check-useless-excludes
+-   repo: local
+    hooks:
+    -   id: buildifier
+        name: Format w/ buildifier
+        description: Runs `buildifier` on Bazel files
+        entry: buildifier --mode=fix
+        language: system
+        files: '^(.*/)?(BUILD\.bazel|BUILD)$|\.bzl$|^WORKSPACE$'
+    -   id: copyright
+        name: Check for Kythe Copyright Header
+        language: pygrep
+        entry: 'Copyright 20[12][0-9] The Kythe Authors. All rights reserved.'
+        args: [--negate]
+        files: '^.*$'
+        # Use a verbose Python regex and YAML single-quoted string to make this more legible.
+        exclude: '(?x)
+            ^(AUTHORS|CONTRIBUTORS|WORKSPACE|LICENSE)$
+            |(^|/)BUILD([^/*]*\.bazel)?$
+            |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|kzip|tex|tac|bazelproject)$
+            |(^|/)(\.[^/]*|go\.mod|go\.sum)$
+            |^tools/|^third_party/|^kythe/web/site/
+            |worker/info/(admin|host)$
+            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$
+            |^kythe/proto/.*_rust_proto/'
+    -   id: shellcheck
+        name: shellcheck
+        description: Runs `shellcheck` on shell files
+        language: system
+        entry: shellcheck
+        args: [-e, SC2064] # Silence the trap argument quotation warnings
+        types: [shell]
+        exclude: 'kythe/extractors/openjdk8/extract\.sh'
+    -   id: google-java-format
+        name: Format w/ google-java-format
+        description: Runs `google-java-format` on Java files
+        language: system
+        entry: google-java-format -i
+        types: [java]
+    -   id: clang-format
+        name: Format w/ clang-format
+        description: Formats files using clang-format
+        language: system
+        entry: clang-format-11 --style=file -i
+        files: '\.(c|cc|h|i|m|js|proto)$'
+    -   id: gofmt
+        name: Format w/ gofmt
+        description: Runs `gofmt` on Go files
+        language: system
+        entry: gofmt -w
+        types: [go]
+    -   id: golint
+        name: golint
+        description: Runs `golint` on Go files
+        language: system
+        entry: golint
+        types: [go]
+        exclude: '^kythe/proto/.*'
+    -   id: staticcheck
+        name: staticcheck
+        description: Runs `staticcheck` on Go files
+        language: script
+        entry: tools/git/run-staticcheck.sh
+        types: [go]
+        stages: [manual]
+    -   id: bazel-test
+        name: Bazel Tests
+        description: Runs affected Bazel tests
+        language: script
+        entry: tools/git/test-affected-targets.sh
+        stages: [push]
+exclude: '(.*/testdata/.*)|(third_party/.*)|(tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$)'

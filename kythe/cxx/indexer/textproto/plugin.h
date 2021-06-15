@@ -92,7 +92,7 @@ class Plugin {
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      std::vector<StringToken> tokens) = 0;
+      const std::vector<StringToken>& tokens) = 0;
 
  protected:
   Plugin(const Plugin&) = delete;

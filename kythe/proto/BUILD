@@ -2,10 +2,9 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
 load("@npm//@bazel/labs:index.bzl", "ts_proto_library")
-load("@io_bazel_rules_rust//proto:proto.bzl", "rust_proto_library")
+load("@rules_rust//proto:proto.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -57,6 +56,7 @@ proto_library(
     name = "common_proto",
     srcs = ["common.proto"],
     visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = ["@com_google_protobuf//:timestamp_proto"],
 )
 
 cc_proto_library(
@@ -218,6 +218,7 @@ java_proto_library(
 proto_library(
     name = "status_service_proto",
     srcs = ["status_service.proto"],
+    deps = [":common_proto"],
 )
 
 cc_proto_library(
@@ -225,7 +226,10 @@ cc_proto_library(
     deps = [":status_service_proto"],
 )
 
-go_kythe_proto(proto = ":status_service_proto")
+go_kythe_proto(
+    proto = ":status_service_proto",
+    deps = [":common_go_proto"],
+)
 
 java_proto_library(
     name = "status_service_java_proto",
@@ -677,6 +681,11 @@ proto_library(
 
 cc_proto_library(
     name = "metadata_cc_proto",
+    deps = [":metadata_proto"],
+)
+
+java_proto_library(
+    name = "metadata_java_proto",
     deps = [":metadata_proto"],
 )
 

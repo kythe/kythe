@@ -26,6 +26,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -122,7 +123,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         TemplateInstanceExcludePathPattern(TIEPP) {}
 
   bool VisitDecl(const clang::Decl* Decl);
+  bool TraverseFieldDecl(clang::FieldDecl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
+  bool TraverseVarDecl(clang::VarDecl* Decl);
   bool VisitVarDecl(const clang::VarDecl* Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl* Decl);
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
@@ -132,6 +135,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool TraverseCallExpr(clang::CallExpr* CE);
   bool TraverseReturnStmt(clang::ReturnStmt* RS);
   bool TraverseBinaryOperator(clang::BinaryOperator* BO);
+  bool TraverseUnaryOperator(clang::UnaryOperator* BO);
+  bool TraverseCompoundAssignOperator(clang::CompoundAssignOperator* CAO);
 
   bool TraverseInitListExpr(clang::InitListExpr* ILE);
   bool VisitInitListExpr(const clang::InitListExpr* ILE);
@@ -818,7 +823,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
   template <typename NodeT>
   const IndexedParent* getIndexedParent(const NodeT& Node) {
-    return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
+    return getIndexedParent(clang::DynTypedNode::create(Node));
   }
 
   /// \return true if `Decl` and all of the nodes underneath it are prunable.
@@ -827,8 +832,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// This excludes, for example, certain template instantiations.
   bool declDominatesPrunableSubtree(const clang::Decl* Decl);
 
-  const IndexedParent* getIndexedParent(
-      const clang::ast_type_traits::DynTypedNode& Node);
+  const IndexedParent* getIndexedParent(const clang::DynTypedNode& Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
   const IndexedParentMap* getAllParents();
@@ -968,6 +972,25 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns whether `Decl` should be indexed.
   bool ShouldIndex(const clang::Decl* Decl);
 
+  GraphObserver::UseKind UseKindFor(const clang::Stmt* stmt) {
+    auto i = use_kinds_.find(stmt);
+    return i == use_kinds_.end() ? GraphObserver::UseKind::kUnknown : i->second;
+  }
+
+  /// \brief Marks that `stmt` was used as a write target.
+  /// \return `stmt` as passed.
+  const clang::Stmt* UsedAsWrite(const clang::Stmt* stmt) {
+    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kWrite;
+    return stmt;
+  }
+
+  /// \brief Marks that `stmt` was used as a read+write target.
+  /// \return `stmt` as passed.
+  const clang::Stmt* UsedAsReadWrite(const clang::Stmt* stmt) {
+    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kReadWrite;
+    return stmt;
+  }
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 
@@ -1010,6 +1033,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
+
+  /// \brief AST nodes we know are used in specific ways.
+  absl::flat_hash_map<const clang::Stmt*, GraphObserver::UseKind> use_kinds_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

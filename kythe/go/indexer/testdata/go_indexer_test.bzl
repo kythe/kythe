@@ -32,10 +32,10 @@ load(
 # capture dependencies and runs the extractor.
 def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
     tmpdir = output.dirname + "/tmp"
-    srcdir = tmpdir + "/src/" + ipath
-    pkgdir = tmpdir + "/pkg/%s_%s" % (mode.goos, mode.goarch)
+    srcroot = tmpdir + "/src"
+    srcdir = srcroot + "/" + ipath
     extras = []
-    cmds = ["#!/bin/sh -e", "mkdir -p " + pkgdir, "mkdir -p " + srcdir]
+    cmds = ["#!/bin/sh -e", "mkdir -p " + srcdir]
 
     # Link the source files and dependencies into a common temporary directory.
     # Source files need to be made relative to the temp directory.
@@ -44,13 +44,14 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
         'ln -s "%s%s" "%s"' % ("../" * ups, src.path, srcdir)
         for src in srcs
     ]
-    for path, dpath in deps.items():
-        fullpath = "/".join([pkgdir, dpath])
-        tups = fullpath.count("/")
-        cmds += [
-            "mkdir -p " + fullpath.rsplit("/", 1)[0],
-            "ln -s '%s%s' '%s.a'" % ("../" * tups, path, fullpath),
-        ]
+    for dep in deps:
+        gosrc = dep[GoSource]
+        path = gosrc.library.importpath
+        fullpath = "/".join([srcroot, path])
+        tups = fullpath.count("/") + 1
+        cmds += ["mkdir -p " + fullpath]
+        for src in gosrc.srcs:
+            cmds += ["ln -s '%s%s' '%s'" % ("../" * tups, src.path, fullpath + "/" + src.basename)]
 
     # Gather any extra data dependencies.
     for target in data:
@@ -66,8 +67,14 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
         ctx.files._extractor[-1].path,
         "-output",
         output.path,
+        "-goos",
+        mode.goos,
+        "-goarch",
+        mode.goarch,
         "-goroot",
         goroot,
+        "-gocompiler",
+        "gc",
         "-gopath",
         tmpdir,
         "-extra_files",
@@ -83,7 +90,13 @@ def _go_extract(ctx):
     gosrc = ctx.attr.library[GoSource]
     mode = gosrc.mode
     srcs = gosrc.srcs
-    deps = {}  # TODO(schroederc): support dependencies
+
+    # TODO: handle transitive dependencies
+    deps = gosrc.deps
+    depsrcs = []
+    for dep in deps:
+        depsrcs += dep[GoSource].srcs
+
     ipath = gosrc.library.importpath
     data = ctx.attr.data
     output = ctx.outputs.kzip
@@ -107,7 +120,7 @@ def _go_extract(ctx):
         mnemonic = "GoExtract",
         executable = script,
         outputs = [output],
-        inputs = srcs + extras,
+        inputs = srcs + extras + depsrcs,
         tools = tools,
     )
     return struct(kzip = output)
@@ -153,6 +166,9 @@ def _go_entries(ctx):
     if ctx.attr.emit_anchor_scopes:
         iargs.append("-anchor_scopes")
 
+    if ctx.attr.use_compilation_corpus_as_default:
+        iargs.append("-use_compilation_corpus_as_default")
+
     # If the test wants linkage metadata, enable support for it in the indexer.
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
@@ -187,6 +203,7 @@ go_entries = rule(
 
         # The suffix used to recognize linkage metadata files, if non-empty.
         "metadata_suffix": attr.string(default = ""),
+        "use_compilation_corpus_as_default": attr.bool(default = False),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -201,6 +218,7 @@ go_entries = rule(
 def go_verifier_test(
         name,
         entries,
+        deps = [],
         size = "small",
         tags = [],
         log_entries = False,
@@ -209,7 +227,7 @@ def go_verifier_test(
     opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons"]
     if log_entries:
         opts.append("--show_protos")
-    if allow_duplicates:
+    if allow_duplicates or len(deps) > 0:
         opts.append("--ignore_dups")
 
     # If the test wants marked source, enable support for it in the verifier.
@@ -220,7 +238,7 @@ def go_verifier_test(
         size = size,
         opts = opts,
         tags = tags,
-        deps = [entries],
+        deps = [entries] + deps,
     )
 
 # Shared extract/index logic for the go_indexer_test/go_integration_test rules.
@@ -233,10 +251,8 @@ def _go_indexer(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
+        use_compilation_corpus_as_default = False,
         metadata_suffix = ""):
-    if len(deps) > 0:
-        # TODO(schroederc): support dependencies
-        fail("ERROR: go_indexer_test.deps not supported")
     if importpath == None:
         importpath = native.package_name() + "/" + name
     lib = name + "_lib"
@@ -244,7 +260,7 @@ def _go_indexer(
         name = lib,
         srcs = srcs,
         importpath = importpath,
-        deps = deps,
+        deps = [dep + "_lib" for dep in deps],
     )
     kzip = name + "_units"
     go_extract(
@@ -257,6 +273,7 @@ def _go_indexer(
         name = entries,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
+        use_compilation_corpus_as_default = use_compilation_corpus_as_default,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -276,6 +293,7 @@ def go_indexer_test(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
+        use_compilation_corpus_as_default = False,
         metadata_suffix = ""):
     entries = _go_indexer(
         name = name,
@@ -283,6 +301,7 @@ def go_indexer_test(
         data = data,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
+        use_compilation_corpus_as_default = use_compilation_corpus_as_default,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,
@@ -292,6 +311,7 @@ def go_indexer_test(
         size = size,
         allow_duplicates = allow_duplicates,
         entries = ":" + entries,
+        deps = [dep + "_entries" for dep in deps],
         has_marked_source = has_marked_source,
         log_entries = log_entries,
         tags = tags,

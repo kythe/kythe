@@ -26,6 +26,7 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"github.com/jmhodges/levigo"
 
 	_ "github.com/apache/beam/sdks/go/pkg/beam/io/filesystem/local"
@@ -56,7 +57,7 @@ func TestLevelDBSink(t *testing.T) {
 		t.Fatalf("Error creating temporary directory: %v", err)
 	}
 	defer os.RemoveAll(path)
-	WriteLevelDB(s, path, 4, tbl)
+	WriteLevelDB(s, path, stats.Opts{NumQuantiles: 4, K: 100}, tbl)
 
 	if err := ptest.Run(p); err != nil {
 		t.Fatal(err)

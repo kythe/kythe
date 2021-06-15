@@ -16,9 +16,9 @@ set -eo pipefail
 #
 # This script tests that the java indexer doesn't fall over on empty CUs.
 
-: ${indexer?:missing indexer}
-: ${entrystream?:missing entrystream}
+: "${indexer?:missing indexer}"
+: "${entrystream?:missing entrystream}"
 test_kindex="$PWD/kythe/testdata/java_empty.kindex"
 
 # Test indexing a .kindex file
-$indexer "$test_kindex" | $entrystream >/dev/null
+"$indexer" "$test_kindex" | "$entrystream" >/dev/null

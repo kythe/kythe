@@ -23,10 +23,10 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -37,8 +37,8 @@ func TestReader(t *testing.T) {
 
 	var i int
 	if err := NewReader(r)(func(e *spb.Entry) error {
-		if err := testutil.DeepEqual(testEntries[i], e); err != nil {
-			t.Errorf("testEntries[%d]: %v", i, err)
+		if diff := compare.ProtoDiff(testEntries[i], e); diff != "" {
+			t.Errorf("testEntries[%d]: %s", i, diff)
 		}
 		i++
 		return nil
@@ -56,8 +56,8 @@ func TestJSONReader(t *testing.T) {
 
 	var i int
 	if err := NewJSONReader(r)(func(e *spb.Entry) error {
-		if err := testutil.DeepEqual(testEntries[i], e); err != nil {
-			t.Errorf("testEntries[%d]: %v", i, err)
+		if diff := compare.ProtoDiff(testEntries[i], e); diff != "" {
+			t.Errorf("testEntries[%d]: %s", i, diff)
 		}
 		i++
 		return nil
@@ -76,12 +76,12 @@ func TestStructuredEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error marshaling MarkedSource: %v", err)
 	}
-	entry := &StructuredEntry{
+	entry := &spb.Entry{
 		Source:    &spb.VName{Signature: "sig"},
 		FactName:  "/kythe/code",
 		FactValue: pbms,
 	}
-	entryJSON, err := json.Marshal(entry)
+	entryJSON, err := json.Marshal((*StructuredEntry)(entry))
 	if err != nil {
 		t.Fatalf("Error marshaling entry: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestStructuredEntry(t *testing.T) {
 	}
 
 	var msOut cpb.MarkedSource
-	if err := jsonpb.UnmarshalString(string(rawOut.FactValue), &msOut); err != nil {
+	if err := protojson.Unmarshal(rawOut.FactValue, &msOut); err != nil {
 		t.Fatalf("Error unmarshaling fact_value: %v", err)
 	}
 
@@ -105,8 +105,8 @@ func TestStructuredEntry(t *testing.T) {
 		t.Fatalf("Error unmarshaling StructuredEntry: %v", err)
 	}
 
-	if !proto.Equal(entry, &entryOut) {
-		t.Errorf("Roundtrip Marshal/Unmarshal failed: \n%v\n%v", entry, &entryOut)
+	if diff := compare.ProtoDiff(entry, (*spb.Entry)(&entryOut)); diff != "" {
+		t.Errorf("Roundtrip Marshal/Unmarshal failed: \n%v\n%v\n%s", entry, &entryOut, diff)
 	}
 }
 
@@ -157,11 +157,12 @@ func testBuffer(entries []*spb.Entry) *bytes.Buffer {
 
 func testJSONBuffer(entries []*spb.Entry) *bytes.Buffer {
 	buf := bytes.NewBuffer(nil)
-	wr := json.NewEncoder(buf)
 	for _, e := range entries {
-		if err := wr.Encode(e); err != nil {
+		rec, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(e)
+		if err != nil {
 			panic(err)
 		}
+		buf.Write(rec)
 	}
 	return buf
 }

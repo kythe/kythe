@@ -86,7 +86,7 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
     trap "rm -rf '$TMP_REPO'" EXIT ERR INT
     COMMIT=$(git rev-parse --abbrev-ref HEAD)
     echo "Checking out $COMMIT to $TMP_REPO for file indexing" >&2
-    git --work-tree="$TMP_REPO" checkout -f $COMMIT
+    git --work-tree="$TMP_REPO" checkout -f "$COMMIT"
 
     cd "$TMP_REPO"
     "$TOOLS/directory_indexer" --vnames kythe/data/vnames.json | \
