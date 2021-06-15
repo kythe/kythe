@@ -21,7 +21,7 @@ use analysis_rust_proto::*;
 use anyhow::{Context, Result};
 use extra_actions_base_rust_proto::*;
 use protobuf::Message;
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -166,9 +166,9 @@ fn create_indexed_compilation(
 /// Generate sha256 hex digest of a vector of bytes
 fn sha256digest(bytes: &[u8]) -> String {
     let mut sha256 = Sha256::new();
-    sha256.update(bytes)
-    let bytes = sha256.finalize()
-    hex::decode(bytes)
+    sha256.update(bytes);
+    let bytes = sha256.finalize();
+    hex::encode(bytes)
 }
 
 /// Add a file from a path to the kzip and the list of required inputs
