@@ -58,7 +58,7 @@ rust_binary(
         (
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
-            "@raze__libc__0_2_94//:libc",
+            "@raze__libc__0_2_97//:libc",
         ],
         "//conditions:default": [],
     }),
@@ -92,7 +92,7 @@ rust_binary(
         (
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
-            "@raze__libc__0_2_94//:libc",
+            "@raze__libc__0_2_97//:libc",
         ],
         "//conditions:default": [],
     }),
@@ -126,7 +126,7 @@ rust_binary(
         (
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
-            "@raze__libc__0_2_94//:libc",
+            "@raze__libc__0_2_97//:libc",
         ],
         "//conditions:default": [],
     }),
@@ -158,7 +158,7 @@ rust_library(
         (
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
-            "@raze__libc__0_2_94//:libc",
+            "@raze__libc__0_2_97//:libc",
         ],
         "//conditions:default": [],
     }),

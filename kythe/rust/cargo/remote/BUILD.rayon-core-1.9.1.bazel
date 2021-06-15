@@ -91,7 +91,7 @@ rust_library(
         ":rayon_core_build_script",
         "@raze__crossbeam_channel__0_5_1//:crossbeam_channel",
         "@raze__crossbeam_deque__0_8_0//:crossbeam_deque",
-        "@raze__crossbeam_utils__0_8_4//:crossbeam_utils",
+        "@raze__crossbeam_utils__0_8_5//:crossbeam_utils",
         "@raze__lazy_static__1_4_0//:lazy_static",
         "@raze__num_cpus__1_13_0//:num_cpus",
     ] + selects.with_or({

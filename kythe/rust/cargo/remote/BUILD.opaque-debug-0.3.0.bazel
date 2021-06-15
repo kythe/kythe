@@ -30,21 +30,10 @@ licenses([
 
 # Generated Targets
 
-# Unsupported target "defer" with type "bench" omitted
-
-# Unsupported target "flush" with type "bench" omitted
-
-# Unsupported target "pin" with type "bench" omitted
-
-# Unsupported target "sanitize" with type "example" omitted
-
 rust_library(
-    name = "crossbeam_epoch",
+    name = "opaque_debug",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "alloc",
-        "lazy_static",
-        "std",
     ],
     crate_root = "src/lib.rs",
     crate_type = "lib",
@@ -57,15 +46,10 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "0.9.4",
+    version = "0.3.0",
     # buildifier: leave-alone
     deps = [
-        "@raze__cfg_if__1_0_0//:cfg_if",
-        "@raze__crossbeam_utils__0_8_4//:crossbeam_utils",
-        "@raze__lazy_static__1_4_0//:lazy_static",
-        "@raze__memoffset__0_6_3//:memoffset",
-        "@raze__scopeguard__1_1_0//:scopeguard",
     ],
 )
 
-# Unsupported target "loom" with type "test" omitted
+# Unsupported target "mod" with type "test" omitted

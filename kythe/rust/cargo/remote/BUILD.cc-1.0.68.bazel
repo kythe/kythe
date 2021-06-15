@@ -33,12 +33,12 @@ licenses([
 rust_binary(
     # Prefix bin name to disambiguate from (probable) collision with lib name
     # N.B.: The exact form of this is subject to change.
-    name = "cargo_bin_bin_fixture",
+    name = "cargo_bin_gcc_shim",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
-    crate_root = "src/bin/bin_fixture.rs",
-    data = [] + ["README.md"],
+    crate_root = "src/bin/gcc-shim.rs",
+    data = [],
     edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
@@ -47,29 +47,21 @@ rust_binary(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.4",
+    version = "1.0.68",
     # buildifier: leave-alone
     deps = [
-        ":assert_cmd",
-        "@raze__bstr__0_2_16//:bstr",
-        "@raze__doc_comment__0_3_3//:doc_comment",
-        "@raze__predicates__1_0_8//:predicates",
-        "@raze__predicates_core__1_0_2//:predicates_core",
-        "@raze__predicates_tree__1_0_2//:predicates_tree",
-        "@raze__wait_timeout__0_2_0//:wait_timeout",
+        ":cc",
     ],
 )
 
-# Unsupported target "example_fixture" with type "example" omitted
-
 rust_library(
-    name = "assert_cmd",
+    name = "cc",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
     crate_root = "src/lib.rs",
     crate_type = "lib",
-    data = [] + ["README.md"],
+    data = [],
     edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
@@ -78,20 +70,16 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.4",
+    version = "1.0.68",
     # buildifier: leave-alone
     deps = [
-        "@raze__bstr__0_2_16//:bstr",
-        "@raze__doc_comment__0_3_3//:doc_comment",
-        "@raze__predicates__1_0_8//:predicates",
-        "@raze__predicates_core__1_0_2//:predicates_core",
-        "@raze__predicates_tree__1_0_2//:predicates_tree",
-        "@raze__wait_timeout__0_2_0//:wait_timeout",
     ],
 )
 
-# Unsupported target "assert" with type "test" omitted
+# Unsupported target "cc_env" with type "test" omitted
 
-# Unsupported target "cargo" with type "test" omitted
+# Unsupported target "cflags" with type "test" omitted
 
-# Unsupported target "examples" with type "test" omitted
+# Unsupported target "cxxflags" with type "test" omitted
+
+# Unsupported target "test" with type "test" omitted

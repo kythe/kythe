@@ -65,14 +65,14 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "0.5.12",
+    version = "0.5.13",
     # buildifier: leave-alone
     deps = [
         "@raze__byteorder__1_4_3//:byteorder",
-        "@raze__bzip2__0_3_3//:bzip2",
+        "@raze__bzip2__0_4_3//:bzip2",
         "@raze__crc32fast__1_2_1//:crc32fast",
         "@raze__flate2__1_0_20//:flate2",
-        "@raze__thiserror__1_0_24//:thiserror",
+        "@raze__thiserror__1_0_25//:thiserror",
         "@raze__time__0_1_44//:time",
     ],
 )

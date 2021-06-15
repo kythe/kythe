@@ -25,13 +25,13 @@ package(default_visibility = [
 ])
 
 licenses([
-    "unencumbered",  # Unlicense from expression "Unlicense OR MIT"
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
 ])
 
 # Generated Targets
 
 rust_library(
-    name = "regex_automata",
+    name = "version_check",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
@@ -46,11 +46,8 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "0.1.9",
+    version = "0.9.3",
     # buildifier: leave-alone
     deps = [
-        "@raze__byteorder__1_4_3//:byteorder",
     ],
 )
-
-# Unsupported target "default" with type "test" omitted
