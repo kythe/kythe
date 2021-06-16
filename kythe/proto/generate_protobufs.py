@@ -83,13 +83,18 @@ def do_lang(lang, ext):
 
         # Ensure the output directory exists, and update permissions after copying.
         os.makedirs(output_dir, 0o755)
-        shutil.copy(generated_path, output_dir)
-        os.chmod(os.path.join(output_dir, generated_file), 0o644)
-        if lang == 'rust':
-            lib_rs = os.path.join(bazel_bin, rule_dir, proto + '.proto.rust',
-                                  'lib.rs')
-            shutil.copy(lib_rs, output_dir)
-            os.chmod(os.path.join(output_dir, 'lib.rs'), 0o644)
+
+        if lang == 'go':
+            shutil.copy(generated_path, output_dir)
+            os.chmod(os.path.join(output_dir, generated_file), 0o644)
+        elif lang == 'rust':
+            source_path = os.path.join(bazel_bin, rule_dir,
+                                       proto + '.proto.rust')
+            sources = os.listdir(source_path)
+            for source in sources:
+                if source.endswith('.rs'):
+                    shutil.copy(os.path.join(source_path, source), output_dir)
+                    os.chmod(os.path.join(output_dir, source), 0o644)
             with open(os.path.join(output_dir, 'lib.rs'), 'a') as f:
                 f.write('\n')
 
