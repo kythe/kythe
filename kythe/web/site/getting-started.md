@@ -193,7 +193,6 @@ gem install bundler
 Build and serve:
 {% highlight bash %}
 cd ./kythe/web/site
-./build.sh
 # Serve website locally on port 4000
-bundle exec jekyll serve
+bazel run :serve
 {% endhighlight %}
