@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -35,19 +34,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class JavacAnalysisDriver {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
-  private final boolean useExperimentalPathFileManager;
   @Nullable private final Path temporaryDirectory;
 
-  public JavacAnalysisDriver() {
-    this(ImmutableList.of(), false, null);
-  }
-
-  public JavacAnalysisDriver(
-      List<Processor> processors,
-      boolean useExperimentalPathFileManager,
-      @Nullable Path temporaryDirectory) {
+  public JavacAnalysisDriver(List<Processor> processors, @Nullable Path temporaryDirectory) {
     this.processors = processors;
-    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
     this.temporaryDirectory = temporaryDirectory;
   }
 
@@ -72,11 +62,7 @@ public class JavacAnalysisDriver {
 
     try (JavaCompilationDetails details =
         JavaCompilationDetails.createDetails(
-            compilationUnit,
-            fileDataProvider,
-            processors,
-            useExperimentalPathFileManager,
-            temporaryDirectory)) {
+            compilationUnit, fileDataProvider, processors, temporaryDirectory)) {
       analyzer.analyzeCompilationUnit(details);
     }
   }
