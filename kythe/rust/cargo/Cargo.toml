@@ -41,8 +41,6 @@ lazy_static = "1.4.0"
 rayon = "1.5.0"
 
 [dev-dependencies]
-assert_cmd = "1.0.1"
-predicates = "1.0.5"
 serial_test = "0.4.0"
 
 [package.metadata.raze]
@@ -57,15 +55,8 @@ package_aliases_dir = "."
 # that the version numbers below match the updated dependencies.
 #
 
-# assert_cmd doctests its README.md at compile-time
-[package.metadata.raze.crates.assert_cmd.'1.0.1']
-data_attr = '["README.md"]'
-
 [package.metadata.raze.crates.bzip2-sys.'0.1.9+1.0.8']
 gen_buildrs = true
 
 [package.metadata.raze.crates.proc-macro2.'1.0.19']
 gen_buildrs = true
-
-[package.metadata.raze.crates.bstr.'0.2.16']
-data_attr = 'glob(["src/unicode/fsm/*.dfa"])'

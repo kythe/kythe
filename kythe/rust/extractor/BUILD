@@ -66,8 +66,6 @@ rust_binary(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:assert_cmd",
-        "//kythe/rust/cargo:predicates",
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
