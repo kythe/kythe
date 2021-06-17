@@ -40,12 +40,6 @@ For Java there are other required env vars:
   extractor.
 * **REAL_JAVAC**: A path to a "normal" javac binary (not a wrapped binary).
 
-And an optional env var:
-* **KYTHE_OUTPUT_FILE**: If you specify an output file ending in `.kzip`, any
-  compilation units will be output into that file.  Note that for now,
-  **KYTHE_OUTPUT_DIRECTORY** is still required for some incidental things in
-  the Java extractor, so that must still be specified.
-
 TODO(#156): If we can get rid of docker in docker, working dir relative paths
   might be easier to work with.
 
