@@ -26,10 +26,7 @@ pub struct ExtractorConfig {
 impl ExtractorConfig {
     /// Create a new ExtractorConfig using the supplied parameters
     pub fn new(extra_action_path: PathBuf, output_path: PathBuf) -> Self {
-        Self {
-            extra_action_path,
-            output_path,
-        }
+        Self { extra_action_path, output_path }
     }
 }
 

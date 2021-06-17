@@ -110,7 +110,7 @@ impl<'a> UnitAnalyzer<'a> {
             file_vnames,
             file_digests,
             offset_index: OffsetIndex::default(),
-            provider
+            provider,
         }
     }
 
@@ -122,22 +122,22 @@ impl<'a> UnitAnalyzer<'a> {
             let vname = self.get_file_vname(source_file)?;
 
             // Create the file node fact
-            self.emitter
-                .emit_node(&vname, "/kythe/node/kind", b"file".to_vec())?;
+            self.emitter.emit_node(&vname, "/kythe/node/kind", b"file".to_vec())?;
 
             // Create language fact
-            self.emitter
-                .emit_node(&vname, "/kythe/language", b"rust".to_vec())?;
+            self.emitter.emit_node(&vname, "/kythe/language", b"rust".to_vec())?;
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
             if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
                 let file_bytes = self.provider.contents(file_digest)?;
-                file_contents = String::from_utf8(file_bytes)
-                    .map_err(|_| KytheError::IndexerError(
-                        format!("Failed to read file {} as UTF8 string", source_file.to_string())
-                    ))?;
+                file_contents = String::from_utf8(file_bytes).map_err(|_| {
+                    KytheError::IndexerError(format!(
+                        "Failed to read file {} as UTF8 string",
+                        source_file.to_string()
+                    ))
+                })?;
             } else {
                 return Err(KytheError::FileNotFoundError(source_file.to_string()));
             }
@@ -146,8 +146,7 @@ impl<'a> UnitAnalyzer<'a> {
             self.offset_index.add_file(&source_file, &file_contents);
 
             // Create text fact
-            self.emitter
-                .emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
+            self.emitter.emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -179,10 +178,7 @@ impl<'a> UnitAnalyzer<'a> {
             "Failed to find VName for file \"{}\" located in the save analysis. Is it included in the required inputs of the Compilation Unit?",
             file_name
         );
-        let vname = self
-            .file_vnames
-            .get(file_name)
-            .ok_or(KytheError::IndexerError(err_msg))?;
+        let vname = self.file_vnames.get(file_name).ok_or(KytheError::IndexerError(err_msg))?;
         Ok(vname.clone())
     }
 }
@@ -275,14 +271,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // First emit the node for our own crate and add it to the hashmap
         let krate_id = &krate_prelude.crate_id;
-        let krate_signature = format!(
-            "{}_{}_{}",
-            krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-        );
+        let krate_signature =
+            format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
         let krate_vname = self.generate_crate_vname(&krate_signature);
         self.krate_vname = krate_vname.clone();
-        self.emitter
-            .emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
+        self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_id.clone());
 
         // Then, do the same for all of the external crates
@@ -293,10 +286,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
             );
             let krate_vname = self.generate_crate_vname(&krate_signature);
-            self.emitter
-                .emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
-            self.krate_ids
-                .insert((krate_num + 1) as u32, krate_id.clone());
+            self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
+            self.krate_ids.insert((krate_num + 1) as u32, krate_id.clone());
         }
 
         Ok(())
@@ -305,8 +296,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emits tbuiltin nodes for all of the Rust built-in types
     pub fn emit_tbuiltin_nodes(&mut self) -> Result<(), KytheError> {
         for vname in self.type_vnames.values() {
-            self.emitter
-                .emit_node(vname, "/kythe/node/kind", b"tbuiltin".to_vec())?;
+            self.emitter.emit_node(vname, "/kythe/node/kind", b"tbuiltin".to_vec())?;
         }
 
         Ok(())
@@ -349,18 +339,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     // The save_analysis file will have the krate and index be maxint if the
                     // implementation is not on a trait.
                     let max_int = 4294967295;
-                    let trait_target = if relation.to.krate != max_int {
-                        Some(relation.to)
-                    } else {
-                        None
-                    };
-                    method_index.insert(
-                        *child,
-                        MethodImpl {
-                            struct_target,
-                            trait_target,
-                        },
-                    );
+                    let trait_target =
+                        if relation.to.krate != max_int { Some(relation.to) } else { None };
+                    method_index.insert(*child, MethodImpl { struct_target, trait_target });
                 }
             }
         }
@@ -395,12 +376,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // If the file name is mod.rs, then the expected name is the directory name
         if Some(OsStr::new("mod.rs")) == file_path.file_name() {
             if let Some(parent_directory) = file_path.parent() {
-                expected_name = parent_directory
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+                expected_name = parent_directory.file_name().unwrap().to_str().unwrap().to_string();
             } else {
                 // This should only happen if there is something wrong with the file path we
                 // were provided in the CompilationUnit
@@ -464,8 +440,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     child_id
                 ))
             })?;
-            self.emitter
-                .emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
+            self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
         }
 
         Ok(())
@@ -489,8 +464,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 if let Some(child_vname) = self.definition_vnames.get(child) {
                     // The child definition has already been visited and we can emit the childof
                     // edge now
-                    self.emitter
-                        .emit_edge(child_vname, def_vname, "/kythe/edge/childof")?;
+                    self.emitter.emit_edge(child_vname, def_vname, "/kythe/edge/childof")?;
                 } else {
                     self.children_ids.insert(*child, def_vname.clone());
                 }
@@ -500,8 +474,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Check if the current definition is a child of another node and remove the
         // entry if it existed
         if let Some(parent_vname) = self.children_ids.remove(&def.id) {
-            self.emitter
-                .emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
+            self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
         }
 
         // Store the definition's VName so it can be referenced by its id later
@@ -537,8 +510,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         ))
                     })?;
                     // Emit the childof edge between this node and the parent
-                    self.emitter
-                        .emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
+                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
                 }
             }
             DefKind::Function => {
@@ -608,8 +580,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         vname
                     };
                     // Emit a childof edge to the parent struct
-                    self.emitter
-                        .emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
+                    self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
                 }
             }
             DefKind::Mod => {
@@ -618,8 +589,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 facts.push(("/kythe/complete", b"definition"));
                 // Emit the childof edge on the crate if this is the main module
                 if def.qualname == "::" {
-                    self.emitter
-                        .emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+                    self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
                 }
             }
             DefKind::Struct => {
@@ -656,8 +626,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // If it aliases a builtin type, emit an aliases edge
                 // TODO: Make this work with custom types
                 if let Some(type_vname) = self.type_vnames.get(&def.value) {
-                    self.emitter
-                        .emit_edge(def_vname, type_vname, "/kythe/edge/aliases")?;
+                    self.emitter.emit_edge(def_vname, type_vname, "/kythe/edge/aliases")?;
                 }
             }
             DefKind::Union => {
@@ -671,18 +640,13 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // Emit nodes for all fact/value pairs
         for (fact_name, fact_value) in facts.iter() {
-            self.emitter
-                .emit_node(def_vname, fact_name, fact_value.to_vec())?;
+            self.emitter.emit_node(def_vname, fact_name, fact_value.to_vec())?;
         }
 
         // Calculate the byte_start and byte_end using the OffsetIndex
         let byte_start = self
             .offset_index
-            .get_byte_offset(
-                file_vname.get_path(),
-                def.span.line_start.0,
-                def.span.column_start.0,
-            )
+            .get_byte_offset(file_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get starting offset for definition {:?}",
@@ -691,11 +655,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(
-                file_vname.get_path(),
-                def.span.line_end.0,
-                def.span.column_end.0,
-            )
+            .get_byte_offset(file_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for definition {:?}",
@@ -710,17 +670,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Module definitions need special logic if they are implicit
         if def.kind == DefKind::Mod && self.is_module_implicit(def) {
             // Emit a 0-length anchor and defines edge at the top of the file
-            self.emitter
-                .emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
-            self.emitter
-                .emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
-            self.emitter
-                .emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
-            self.emitter
-                .emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+            self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
         } else {
-            self.emitter
-                .emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
+            self.emitter.emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
         }
 
         // If documentation isn't "" also generate a documents node
@@ -730,15 +685,13 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let mut doc_vname = def_vname.clone();
             let doc_signature = format!("{}_doc", def_vname.get_signature());
             doc_vname.set_signature(doc_signature);
-            self.emitter
-                .emit_node(&doc_vname, "/kythe/node/kind", b"doc".to_vec())?;
+            self.emitter.emit_node(&doc_vname, "/kythe/node/kind", b"doc".to_vec())?;
             self.emitter.emit_node(
                 &doc_vname,
                 "/kythe/text",
                 def.docs.trim().as_bytes().to_vec(),
             )?;
-            self.emitter
-                .emit_edge(&doc_vname, def_vname, "/kythe/edge/documents")?;
+            self.emitter.emit_edge(&doc_vname, def_vname, "/kythe/edge/documents")?;
         }
 
         Ok(())
@@ -787,10 +740,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 })?;
 
             // Create signature based on span
-            reference_vname.set_signature(format!(
-                "{}_ref_{}_{}",
-                krate_signature, start_byte, end_byte
-            ));
+            reference_vname
+                .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
 
             // Create VName being referenced
             let krate_id = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
@@ -804,14 +755,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
             );
             let mut target_vname = template_vname.clone();
-            target_vname.set_signature(format!(
-                "{}_def_{}",
-                krate_signature, reference.ref_id.index
-            ));
+            target_vname
+                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
             target_vname.set_language("rust".to_string());
 
-            self.emitter
-                .emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
+            self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
         }
         Ok(())
     }

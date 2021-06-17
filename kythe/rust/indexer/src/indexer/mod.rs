@@ -38,7 +38,12 @@ impl<'a> KytheIndexer<'a> {
 
     /// Accepts a CompilationUnit and the directory for analysis files and
     /// indexes the CompilationUnit
-    pub fn index_cu(&mut self, unit: &CompilationUnit, analysis_dir: &Path, provider: &mut dyn FileProvider) -> Result<(), KytheError> {
+    pub fn index_cu(
+        &mut self,
+        unit: &CompilationUnit,
+        analysis_dir: &Path,
+        provider: &mut dyn FileProvider,
+    ) -> Result<(), KytheError> {
         let mut generator = UnitAnalyzer::new(unit, self.writer, provider);
 
         // First, create file nodes for all of the source files in the CompilationUnit
