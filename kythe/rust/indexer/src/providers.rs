@@ -132,10 +132,23 @@ impl FileProvider for KzipFileProvider {
         let file = self
             .zip_archive
             .by_name(&name)
-            .map_err(|_| KytheError::FileNotFoundError)?;
+            .map_err(|_| KytheError::FileNotFoundError(name))?;
         let mut reader = BufReader::new(file);
         let mut file_contents: Vec<u8> = Vec::new();
         reader.read_to_end(&mut file_contents)?;
         Ok(file_contents)
     }
 }
+
+// /// A [FileProvider] that reads directly from the file system
+// pub struct FileSystemProvider {}
+
+// impl FileSystemProvider {
+//     pub fn new() -> Self {
+//         return Self {}
+//     }
+// }
+
+// impl FileProvider for FileSystemProvider {
+//     fn exists(&mut self, file_hash: &str
+// }
