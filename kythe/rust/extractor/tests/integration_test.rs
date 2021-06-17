@@ -16,12 +16,11 @@ extern crate anyhow;
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
-use assert_cmd::Command;
 use extra_actions_base_rust_proto::*;
-use predicates::str::*;
 use protobuf::Message;
 use std::fs::File;
 use std::io::{BufReader, Write};
+use std::process::Command;
 use std::path::Path;
 use tempdir::TempDir;
 
@@ -98,40 +97,29 @@ fn main() -> Result<()> {
 
 fn missing_arguments_fail() {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
-    Command::new(&extractor_path)
-        .arg("--output=/tmp/wherever")
-        .assert()
-        .failure()
-        .code(1)
-        .stderr(starts_with(
-            "error: The following required arguments were not provided:",
-        ));
-    Command::new(&extractor_path)
-        .arg("--extra_action=/tmp/wherever")
-        .assert()
-        .failure()
-        .code(1)
-        .stderr(starts_with(
-            "error: The following required arguments were not provided:",
-        ));
-    Command::new(&extractor_path)
-        .assert()
-        .failure()
-        .code(1)
-        .stderr(starts_with(
-            "error: The following required arguments were not provided:",
-        ));
+    let mut output = Command::new(&extractor_path).arg("--output=/tmp/wherever").output().unwrap();
+    assert_eq!(output.status.code().unwrap(), 1);
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
+
+    output = Command::new(&extractor_path).arg("--extra_action=/tmp/wherever").output().unwrap();
+    assert_eq!(output.status.code().unwrap(), 1);
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
+
+    output = Command::new(&extractor_path).output().unwrap();
+    assert_eq!(output.status.code().unwrap(), 1);
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
 }
 
 fn bad_extra_action_path_fails() {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
-    Command::new(&extractor_path)
+
+    let output = Command::new(&extractor_path)
         .arg("--extra_action=badPath")
         .arg("--output=/tmp/wherever")
-        .assert()
-        .failure()
-        .code(1)
-        .stderr(contains("Failed to open extra action file"));
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code().unwrap(), 1);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Failed to open extra action file"));
 }
 
 fn correct_arguments_succeed(
@@ -142,11 +130,12 @@ fn correct_arguments_succeed(
 ) {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let kzip_path_str = format!("{}/output.kzip", temp_dir_str);
-    Command::new(&extractor_path)
+    let exit_status = Command::new(&extractor_path)
         .arg(format!("--extra_action={}", extra_action_path_str))
         .arg(format!("--output={}", kzip_path_str))
-        .assert()
-        .success();
+        .status()
+        .unwrap();
+    assert_eq!(exit_status.code().unwrap(), 0);
 
     // Open kzip
     let kzip_path = Path::new(&kzip_path_str);

@@ -22,15 +22,6 @@ alias(
 )
 
 alias(
-    name = "assert_cmd",
-    actual = "@raze__assert_cmd__1_0_5//:assert_cmd",
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-)
-
-alias(
     name = "clap",
     actual = "@raze__clap__2_33_3//:clap",
     tags = [
@@ -60,15 +51,6 @@ alias(
 alias(
     name = "lazy_static",
     actual = "@raze__lazy_static__1_4_0//:lazy_static",
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-)
-
-alias(
-    name = "predicates",
-    actual = "@raze__predicates__1_0_8//:predicates",
     tags = [
         "cargo-raze",
         "manual",
