@@ -20,8 +20,8 @@ use extra_actions_base_rust_proto::*;
 use protobuf::Message;
 use std::fs::File;
 use std::io::{BufReader, Write};
-use std::path::Path;
 use std::process::Command;
+use std::path::Path;
 use tempdir::TempDir;
 
 fn main() -> Result<()> {
@@ -85,7 +85,12 @@ fn main() -> Result<()> {
 
     missing_arguments_fail();
     bad_extra_action_path_fails();
-    correct_arguments_succeed(&extra_action_path_str, &temp_dir_str, &output_key, arguments);
+    correct_arguments_succeed(
+        &extra_action_path_str,
+        &temp_dir_str,
+        &output_key,
+        arguments,
+    );
 
     Ok(())
 }
@@ -94,18 +99,15 @@ fn missing_arguments_fail() {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let mut output = Command::new(&extractor_path).arg("--output=/tmp/wherever").output().unwrap();
     assert_eq!(output.status.code().unwrap(), 1);
-    assert!(String::from_utf8_lossy(&output.stderr)
-        .starts_with("error: The following required arguments were not provided:"));
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
 
     output = Command::new(&extractor_path).arg("--extra_action=/tmp/wherever").output().unwrap();
     assert_eq!(output.status.code().unwrap(), 1);
-    assert!(String::from_utf8_lossy(&output.stderr)
-        .starts_with("error: The following required arguments were not provided:"));
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
 
     output = Command::new(&extractor_path).output().unwrap();
     assert_eq!(output.status.code().unwrap(), 1);
-    assert!(String::from_utf8_lossy(&output.stderr)
-        .starts_with("error: The following required arguments were not provided:"));
+    assert!(String::from_utf8_lossy(&output.stderr).starts_with("error: The following required arguments were not provided:"));
 }
 
 fn bad_extra_action_path_fails() {
@@ -152,7 +154,10 @@ fn correct_arguments_succeed(
             cu_path_str = file.name().to_string();
         }
     }
-    assert_ne!(cu_path_str, "", "IndexedCompilation protobuf missing from kzip");
+    assert_ne!(
+        cu_path_str, "",
+        "IndexedCompilation protobuf missing from kzip"
+    );
 
     // Read it into an IndexedCompilation
     let cu_file = kzip.by_name(&cu_path_str).unwrap();
@@ -171,24 +176,41 @@ fn correct_arguments_succeed(
     );
 
     let output_key = compilation_unit.get_output_key();
-    assert_eq!(output_key, expected_output_key, "output_key field doesn't match");
+    assert_eq!(
+        output_key, expected_output_key,
+        "output_key field doesn't match"
+    );
 
     let unit_vname = compilation_unit.get_v_name();
-    assert_eq!(unit_vname.get_language(), "rust", "VName language field doesn't match");
+    assert_eq!(
+        unit_vname.get_language(),
+        "rust",
+        "VName language field doesn't match"
+    );
 
     let arguments = compilation_unit.get_argument();
-    assert_eq!(arguments, expected_arguments, "Argument field doesn't match");
+    assert_eq!(
+        arguments, expected_arguments,
+        "Argument field doesn't match"
+    );
 
     let required_inputs = compilation_unit.get_required_input().to_vec();
-    let source_input = required_inputs.get(0).expect("Failed to get first required input");
+    let source_input = required_inputs
+        .get(0)
+        .expect("Failed to get first required input");
     assert_eq!(source_input.get_v_name().get_corpus(), "test_corpus");
-    assert_eq!(source_input.get_info().get_path(), "kythe/rust/extractor/main.rs");
+    assert_eq!(
+        source_input.get_info().get_path(),
+        "kythe/rust/extractor/main.rs"
+    );
     assert_eq!(
         source_input.get_info().get_digest(),
         "7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03"
     );
 
-    let analysis_input = required_inputs.get(1).expect("Failed to get second required input");
+    let analysis_input = required_inputs
+        .get(1)
+        .expect("Failed to get second required input");
     assert_eq!(analysis_input.get_v_name().get_corpus(), "test_corpus");
     let analysis_path = analysis_input.get_info().get_path();
     assert!(

@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Takes analysis files from a kzip loaded into `provider` and extracts them
+/// Takes analysis files from a kzip loaded into `provider` and extracts them 
 /// to `temp_path` using the file names and digests in the CompilationUnit
 pub fn extract_analysis_from_kzip(
     c_unit: &CompilationUnit,
@@ -86,10 +86,9 @@ pub fn extract_analysis_from_kzip(
                         input_path, digest
                     )
                 })?;
-
+    
                 let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file =
-                    File::create(&output_path).context("Failed to create file")?;
+                let mut output_file = File::create(&output_path).context("Failed to create file")?;
                 output_file.write_all(&file_contents).with_context(|| {
                     format!(
                         "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",

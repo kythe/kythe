@@ -26,7 +26,9 @@ pub struct ArrayWriter {
 impl ArrayWriter {
     /// Returns a new ArrayWriter
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 }
 
