@@ -139,16 +139,3 @@ impl FileProvider for KzipFileProvider {
         Ok(file_contents)
     }
 }
-
-// /// A [FileProvider] that reads directly from the file system
-// pub struct FileSystemProvider {}
-
-// impl FileSystemProvider {
-//     pub fn new() -> Self {
-//         return Self {}
-//     }
-// }
-
-// impl FileProvider for FileSystemProvider {
-//     fn exists(&mut self, file_hash: &str
-// }
