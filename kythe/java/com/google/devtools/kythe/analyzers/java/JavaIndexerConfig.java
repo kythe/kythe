@@ -57,11 +57,6 @@ public class JavaIndexerConfig extends IndexerConfig {
   private boolean emitAnchorScopes;
 
   @Parameter(
-      names = "--experimental_use_path_file_manager",
-      description = "Use the experimental Path-based FileManager on JDK9+")
-  private boolean useExperimentalPathFileManager;
-
-  @Parameter(
       names = "--temp_directory",
       description =
           "Directory on the local file system that can be used to store files that the java"
@@ -97,10 +92,6 @@ public class JavaIndexerConfig extends IndexerConfig {
     return emitAnchorScopes;
   }
 
-  public boolean getUseExperimentalPathFileManager() {
-    return useExperimentalPathFileManager;
-  }
-
   public String getTemporaryDirectory() {
     return temporaryDirectory;
   }
@@ -131,12 +122,6 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setEmitJvmSignatures(boolean emitJvmSignatures) {
     this.emitJvmSignatures = emitJvmSignatures;
-    return this;
-  }
-
-  public JavaIndexerConfig setUseExperimentalPathFileManager(
-      boolean useExperimentalPathFileManager) {
-    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
     return this;
   }
 
