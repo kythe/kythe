@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::error::KytheError;
+use crate::providers::FileProvider;
 use crate::writer::KytheWriter;
 
 use super::entries::EntryEmitter;
@@ -23,8 +24,6 @@ use rls_analysis::Crate;
 use rls_data::{Def, DefKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::fs;
-use std::path::Path;
 use storage_rust_proto::*;
 
 /// A data structure to analyze and index CompilationUnit protobufs
@@ -35,19 +34,21 @@ pub struct UnitAnalyzer<'a> {
     unit_storage_vname: VName,
     // The emitter used to  write generated nodes and edges
     emitter: EntryEmitter<'a>,
-    // The root directory for the source files
-    root_dir: &'a Path,
-    // A map between a file name and it's Kythe VName
+    // A map between a file name and its Kythe VName
     file_vnames: HashMap<String, VName>,
+    // A map between a file name and its sha256 digest
+    file_digests: HashMap<String, String>,
     // An index for computing byte offsets in files based on line and column number
     offset_index: OffsetIndex,
+    // A file provider
+    provider: &'a mut dyn FileProvider,
 }
 
 /// A data structure to analyze and index individual crates
 pub struct CrateAnalyzer<'a, 'b> {
     // The emitter used to  write generated nodes and edges
     emitter: &'b mut EntryEmitter<'a>,
-    // A map between a file name and it's Kythe VName
+    // A map between a file name and its Kythe VName
     file_vnames: &'b HashMap<String, VName>,
     // The current CompilationUnit's VName
     unit_vname: &'b VName,
@@ -72,7 +73,7 @@ pub struct CrateAnalyzer<'a, 'b> {
 }
 
 /// A data struct to keep track of method implementations. Used in a HashMap to
-/// map a method definition Id to it's struct and corresponding trait.
+/// map a method definition Id to its struct and corresponding trait.
 pub struct MethodImpl {
     // The struct definition Id the method is being implemented on
     pub struct_target: rls_data::Id,
@@ -87,16 +88,18 @@ impl<'a> UnitAnalyzer<'a> {
     pub fn new(
         unit: &'a CompilationUnit,
         writer: &'a mut dyn KytheWriter,
-        root_dir: &'a Path,
+        provider: &'a mut dyn FileProvider,
     ) -> Self {
         // Create a HashMap between the file path and the VName which we can retrieve
-        // later to emit nodes
+        // later to emit nodes and create a HashMap between a file path and its digest
         let mut file_vnames = HashMap::new();
+        let mut file_digests = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
             let storage_vname: VName = analysis_to_storage_vname(&analysis_vname);
             let path = storage_vname.get_path().to_owned();
-            file_vnames.insert(path, storage_vname);
+            file_vnames.insert(path.clone(), storage_vname);
+            file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(&unit.get_v_name());
@@ -104,9 +107,10 @@ impl<'a> UnitAnalyzer<'a> {
             unit,
             unit_storage_vname,
             emitter: EntryEmitter::new(writer),
-            root_dir,
             file_vnames,
+            file_digests,
             offset_index: OffsetIndex::default(),
+            provider
         }
     }
 
@@ -127,7 +131,16 @@ impl<'a> UnitAnalyzer<'a> {
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
-            let file_contents = fs::read_to_string(self.root_dir.join(Path::new(&source_file)))?;
+            let file_contents: String;
+            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
+                let file_bytes = self.provider.contents(file_digest)?;
+                file_contents = String::from_utf8(file_bytes)
+                    .map_err(|_| KytheError::IndexerError(
+                        format!("Failed to read file {} as UTF8 string", source_file.to_string())
+                    ))?;
+            } else {
+                return Err(KytheError::FileNotFoundError(source_file.to_string()));
+            }
 
             // Add the file to the OffsetIndex
             self.offset_index.add_file(&source_file, &file_contents);

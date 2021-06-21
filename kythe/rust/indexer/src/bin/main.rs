@@ -11,9 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#[macro_use]
-extern crate anyhow;
-
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::CodedOutputStreamWriter};
 
@@ -60,66 +57,48 @@ fn main() -> Result<()> {
         let temp_path = PathBuf::new().join(temp_dir.path());
 
         // Extract all of the files from the kzip into the temporary directory
-        extract_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
+        extract_analysis_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
 
         // Index the CompilationUnit
-        indexer.index_cu(&unit, &temp_path)?;
+        indexer.index_cu(&unit, &temp_path, &mut kzip_provider)?;
     }
     Ok(())
 }
 
-/// Takes files from a kzip loaded into `provider` and extracts them to
-/// `temp_path` using the file names and digests in the CompilationUnit
-pub fn extract_from_kzip(
+/// Takes analysis files from a kzip loaded into `provider` and extracts them
+/// to `temp_path` using the file names and digests in the CompilationUnit
+pub fn extract_analysis_from_kzip(
     c_unit: &CompilationUnit,
     temp_path: &Path,
     provider: &mut dyn FileProvider,
 ) -> Result<()> {
     for required_input in c_unit.get_required_input() {
-        // Get path where we will copy the file to
         let input_path = required_input.get_info().get_path();
-
-        // The only JSON files in the kzip are the save_analyses, so we put them in the
-        // analysis folder.
         let input_path_buf = PathBuf::new().join(input_path);
-        let output_path = match input_path_buf.extension() {
-            Some(os_str) => match os_str.to_str() {
-                Some("json") => temp_path
-                    .join("analysis")
-                    .join(input_path_buf.file_name().unwrap()),
-                _ => temp_path.join(input_path),
-            },
-            _ => temp_path.join(input_path),
-        };
 
-        // Create directories for the output path
-        let parent = output_path
-            .parent()
-            .ok_or_else(|| anyhow!("Failed to get parent for path: {:?}", output_path))?;
-        std::fs::create_dir_all(parent).with_context(|| {
-            format!(
-                "Failed to create temporary directories for path: {}",
-                parent.display()
-            )
-        })?;
+        // save_analysis files are JSON files
+        if let Some(os_str) = input_path_buf.extension() {
+            if let Some("json") = os_str.to_str() {
+                let digest = required_input.get_info().get_digest();
+                let file_contents = provider.contents(digest).with_context(|| {
+                    format!(
+                        "Failed to get contents of file \"{}\" with digest \"{}\"",
+                        input_path, digest
+                    )
+                })?;
 
-        // Copy the file contents to the output path in the temporary directory
-        let digest = required_input.get_info().get_digest();
-        let file_contents = provider.contents(digest).with_context(|| {
-            format!(
-                "Failed to get contents of file \"{}\" with digest \"{}\"",
-                input_path, digest
-            )
-        })?;
-        let mut output_file = File::create(&output_path).context("Failed to create file")?;
-        output_file.write_all(&file_contents).with_context(|| {
-            format!(
-                "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",
-                input_path,
-                digest,
-                output_path.display()
-            )
-        })?;
+                let output_path = temp_path.join(input_path_buf.file_name().unwrap());
+                let mut output_file = File::create(&output_path).context("Failed to create file")?;
+                output_file.write_all(&file_contents).with_context(|| {
+                    format!(
+                        "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",
+                        input_path,
+                        digest,
+                        output_path.display()
+                    )
+                })?;
+            }
+        }
     }
     Ok(())
 }

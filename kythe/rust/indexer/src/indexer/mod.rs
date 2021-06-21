@@ -18,6 +18,7 @@ pub mod offset;
 pub mod save_analysis;
 
 use crate::error::KytheError;
+use crate::providers::FileProvider;
 use crate::writer::KytheWriter;
 
 use analysis_rust_proto::*;
@@ -35,16 +36,16 @@ impl<'a> KytheIndexer<'a> {
         Self { writer }
     }
 
-    /// Accepts a CompilationUnit and the root directory of source files and
+    /// Accepts a CompilationUnit and the directory for analysis files and
     /// indexes the CompilationUnit
-    pub fn index_cu(&mut self, unit: &CompilationUnit, root_dir: &Path) -> Result<(), KytheError> {
-        let mut generator = UnitAnalyzer::new(unit, self.writer, root_dir);
+    pub fn index_cu(&mut self, unit: &CompilationUnit, analysis_dir: &Path, provider: &mut dyn FileProvider) -> Result<(), KytheError> {
+        let mut generator = UnitAnalyzer::new(unit, self.writer, provider);
 
         // First, create file nodes for all of the source files in the CompilationUnit
         generator.handle_files()?;
 
         // Then, index all of the crates from the save_analysis
-        let analyzed_crates = save_analysis::load_analysis(&root_dir.join("analysis"));
+        let analyzed_crates = save_analysis::load_analysis(&analysis_dir);
         for krate in analyzed_crates {
             generator.index_crate(krate)?;
         }
