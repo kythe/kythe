@@ -34,9 +34,9 @@ pub struct UnitAnalyzer<'a> {
     unit_storage_vname: VName,
     // The emitter used to  write generated nodes and edges
     emitter: EntryEmitter<'a>,
-    // A map between a file name and it's Kythe VName
+    // A map between a file name and its Kythe VName
     file_vnames: HashMap<String, VName>,
-    // A map between a file name and it's sha256 digest
+    // A map between a file name and its sha256 digest
     file_digests: HashMap<String, String>,
     // An index for computing byte offsets in files based on line and column number
     offset_index: OffsetIndex,
@@ -48,7 +48,7 @@ pub struct UnitAnalyzer<'a> {
 pub struct CrateAnalyzer<'a, 'b> {
     // The emitter used to  write generated nodes and edges
     emitter: &'b mut EntryEmitter<'a>,
-    // A map between a file name and it's Kythe VName
+    // A map between a file name and its Kythe VName
     file_vnames: &'b HashMap<String, VName>,
     // The current CompilationUnit's VName
     unit_vname: &'b VName,
@@ -73,7 +73,7 @@ pub struct CrateAnalyzer<'a, 'b> {
 }
 
 /// A data struct to keep track of method implementations. Used in a HashMap to
-/// map a method definition Id to it's struct and corresponding trait.
+/// map a method definition Id to its struct and corresponding trait.
 pub struct MethodImpl {
     // The struct definition Id the method is being implemented on
     pub struct_target: rls_data::Id,
@@ -91,7 +91,7 @@ impl<'a> UnitAnalyzer<'a> {
         provider: &'a mut dyn FileProvider,
     ) -> Self {
         // Create a HashMap between the file path and the VName which we can retrieve
-        // later to emit nodes and create a HashMap between a file path and it's digest
+        // later to emit nodes and create a HashMap between a file path and its digest
         let mut file_vnames = HashMap::new();
         let mut file_digests = HashMap::new();
         for required_input in unit.get_required_input() {
