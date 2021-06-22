@@ -14,6 +14,7 @@ class DefaultCorpus {
 
   //- @myMethod defines/binding MyMethod
   //- MyMethod typed MyMethodType=vname(_,"kythe",_,_,"java")
+  //- MyMethodType.node/kind "tapp"
   //- MyMethodType param.0 FnBuiltin?=vname("fn#builtin","kythe",_,_,"java")
   String myMethod() {
     return "";
