@@ -307,6 +307,12 @@ def _java_dependencies():
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
+    maybe(
+        git_repository,
+        name = "io_bazel",
+        commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
+        remote = "https://github.com/bazelbuild/bazel",
+    )
     maven_install(
         name = "maven",
         artifacts = [
