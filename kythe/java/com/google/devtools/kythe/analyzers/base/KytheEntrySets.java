@@ -146,6 +146,7 @@ public class KytheEntrySets {
     EntrySet.Builder nodeBuilder =
         newNode(NodeKind.TBUILTIN)
             .setSignature(getBuiltinSignature(name))
+            .setCorpusPath(defaultCorpusPath())
             .setProperty(
                 "code",
                 MarkedSource.newBuilder().setPreText(name).setKind(Kind.IDENTIFIER).build());
