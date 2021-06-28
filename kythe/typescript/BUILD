@@ -47,6 +47,7 @@ ts_library(
 
 ts_library(
     name = "utf8_test_ts",
+    testonly = True,
     srcs = ["utf8_test.ts"],
     tsconfig = ":tsconfig",
     deps = [
