@@ -37,7 +37,9 @@ steps:
       - ./kythe/...
     waitFor:
       - '-'  # go test can run concurrently with the bazel tests.
-timeout: 1800s
+# Use a long timeout as some builds, particularly LLVM updates, can
+# exceed 30 minutes.
+timeout: 2700s
 options:
   # The increased scheduling time is more than offset by the substantially improved test runtime.
   machineType: E2_HIGHCPU_8
