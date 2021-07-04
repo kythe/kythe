@@ -210,10 +210,10 @@ cc_library(
         "lib/wildcard.h",
         "lib/x509asn1.h",
     ] + select({
-        ":darwin": [
+        "@bazel_tools//src/conditions:darwin": [
             "lib/vtls/darwinssl.c",
         ],
-        ":windows": [
+        "@bazel_tools//src/conditions:windows": [
             "lib/asyn-thread.c",
             "lib/inet_ntop.c",
             "lib/system_win32.c",
@@ -234,7 +234,7 @@ cc_library(
         "include/curl/typecheck-gcc.h",
     ],
     copts = select({
-        ":windows": [
+        "@bazel_tools//src/conditions:windows": [
             "/Iexternal/se_haxx_curl/lib",
             "/DHAVE_CONFIG_H",
             "/DCURL_DISABLE_FTP",
@@ -258,10 +258,10 @@ cc_library(
             "-Wno-string-plus-int",
         ],
     }) + select({
-        ":darwin": [
+        "@bazel_tools//src/conditions:darwin": [
             "-fno-constant-cfstrings",
         ],
-        ":windows": [
+        "@bazel_tools//src/conditions:windows": [
             # See curl.h for discussion of write size and Windows
             "/DCURL_MAX_WRITE_SIZE=16384",
         ],
@@ -271,13 +271,13 @@ cc_library(
     }) + CURL_COPTS,
     includes = ["include"],
     linkopts = select({
-        ":darwin": [
+        "@bazel_tools//src/conditions:darwin": [
             "-Wl,-framework",
             "-Wl,CoreFoundation",
             "-Wl,-framework",
             "-Wl,Security",
         ],
-        ":windows": [
+        "@bazel_tools//src/conditions:windows": [
             "ws2_32.lib",
         ],
         "//conditions:default": [
@@ -288,7 +288,7 @@ cc_library(
     deps = [
         "@net_zlib//:zlib",
     ] + select({
-        ":windows": [],
+        "@bazel_tools//src/conditions:windows": [],
         "//conditions:default": [
             "@boringssl//:ssl",
         ],
@@ -384,7 +384,7 @@ cc_binary(
         "src/tool_xattr.h",
     ],
     copts = select({
-        ":windows": [
+        "@bazel_tools//src/conditions:windows": [
             "/Iexternal/se_haxx_curl/lib",
             "/DHAVE_CONFIG_H",
             "/DCURL_DISABLE_LIBCURL_OPTION",
@@ -653,14 +653,4 @@ genrule(
         "#endif  // EXTERNAL_CURL_INCLUDE_CURL_CONFIG_H_",
         "EOF",
     ]),
-)
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-)
-
-config_setting(
-    name = "windows",
-    values = {"cpu": "x64_windows_msvc"},
 )
