@@ -34,12 +34,12 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/ulikunitz/xz v0.5.8 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/net v0.0.0-20201027133719-8eef5233e2a1
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/text v0.3.4
-	golang.org/x/tools v0.0.0-20201027213030-631220838841
+	golang.org/x/tools v0.1.4
 	google.golang.org/api v0.34.0
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20201026171402-d4b8fe4fd877 // indirect

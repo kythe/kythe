@@ -34,7 +34,7 @@ load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.15.5")
+    go_register_toolchains(version = "1.16.5")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
@@ -1115,13 +1115,13 @@ def _go_dependencies():
     )
     http_archive(
         name = "org_golang_x_tools",
-        # master, as of 2020-08-24
+        # v0.1.0, as of 2021-03-17
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/a1b87a1c0de44760bd00894ef736a8c36548068f.zip",
-            "https://github.com/golang/tools/archive/a1b87a1c0de44760bd00894ef736a8c36548068f.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.0.zip",
+            "https://github.com/golang/tools/archive/v0.1.0.zip",
         ],
-        sha256 = "fe3987ccdff6a0e7e5a8353d4d1d2ca3ada5a72ea69462ba7b9b7343b5a25e06",
-        strip_prefix = "tools-a1b87a1c0de44760bd00894ef736a8c36548068f",
+        sha256 = "60a5cee8304b4d9130344f156a10ba648e315b5fca4b84939b765b26ce217dee",
+        strip_prefix = "tools-0.1.0",
         patches = [
             # deletegopls removes the gopls subdirectory. It contains a nested
             # module with additional dependencies. It's not needed by rules_go.
