@@ -1093,8 +1093,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:2+jF2APAgFgXJnYOQGDGGiRvvEo6OhqZGQf46n9xgEw=",
-        version = "v0.0.0-20201027140754-0fcbb8f4928c",
+        sum = "h1:F1jZWGFhYfh0Ci55sIpILtKKK8p3i2/krTr0H1rg74I=",
+        version = "v0.0.0-20210630005230-0f9fa26af87c",
     )
     go_repository(
         name = "org_golang_x_text",
