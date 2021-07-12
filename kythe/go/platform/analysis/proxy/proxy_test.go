@@ -17,7 +17,6 @@
 package proxy
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -186,14 +185,13 @@ func encodeEntries(es []*spb.Entry) json.RawMessage {
 }
 
 func encodeWireEntries(es []*spb.Entry) json.RawMessage {
-	var messages []string
+	var messages [][]byte
 	for _, e := range es {
 		rec, err := proto.MarshalOptions{}.Marshal(e)
 		if err != nil {
 			panic(err)
 		}
-		b64 := base64.StdEncoding.EncodeToString(rec)
-		messages = append(messages, b64)
+		messages = append(messages, rec)
 	}
 
 	msg, err := json.Marshal(messages)

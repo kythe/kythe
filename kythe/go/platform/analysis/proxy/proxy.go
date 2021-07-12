@@ -88,7 +88,6 @@
 package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,7 +130,7 @@ type unit struct {
 
 // A unit represents a compilation unit (in base64-encoded wire format) to be analyzed.
 type unit_wire struct {
-	Unit            string `json:"unit"`
+	Unit            []byte `json:"unit"`
 	Revision        string `json:"rev,omitempty"`
 	FileDataService string `json:"fds,omitempty"`
 }
@@ -203,9 +202,8 @@ func (p *Proxy) Run(h Handler) error {
 				if err != nil {
 					return fmt.Errorf("error marshalling compilation unit as wire format: %w", err)
 				}
-				b64 := base64.StdEncoding.EncodeToString(u)
 				p.reply("ok", &unit_wire{
-					Unit:            b64,
+					Unit:            u,
 					Revision:        req.Revision,
 					FileDataService: req.FileDataService,
 				})
@@ -326,18 +324,14 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 }
 
 func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
-	var messages []string
+	var messages [][]byte
 	if err := json.Unmarshal(jsonArray, &messages); err != nil {
 		return nil, err
 	}
 	entries := make([]*spb.Entry, len(messages))
 	for i, msg := range messages {
 		var e spb.Entry
-		b, err := base64.StdEncoding.DecodeString(msg)
-		if err != nil {
-			return nil, err
-		}
-		if err := (proto.UnmarshalOptions{}.Unmarshal(b, &e)); err != nil {
+		if err := (proto.UnmarshalOptions{}.Unmarshal(msg, &e)); err != nil {
 			return nil, err
 		}
 		entries[i] = &e
