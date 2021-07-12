@@ -32,7 +32,15 @@
 //   P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
 //          {"rsp":"error","args":<error>}<LF>
 //
+//   X → P: {"req":"analysis_wire"}<LF>
+//   P → X: {"rsp":"ok","args":{"unit":<unit_wire>,"rev":<revision>,"fds":<addr>}}<LF>
+//          {"rsp":"error","args":<error>}<LF>
+//
 //   X → P: {"req":"output","args":[<entry>...]}<LF>
+//   P → X: {"rsp":"ok"}<LF>
+//          {"rsp":"error","args":<error>}<LF>
+//
+//   X → P: {"req":"output_wire","args":[<entry_wire>...]}<LF>
 //   P → X: {"rsp":"ok"}<LF>
 //          {"rsp":"error","args":<error>}<LF>
 //
@@ -46,15 +54,17 @@
 //
 // Where:
 //
-//    <addr>     -- service address
-//    <bytes>    -- BASE-64 encoded bytes (string)
-//    <digest>   -- file content digest (string)
-//    <entry>    -- JSON encoded kythe.proto.Entry message
-//    <error>    -- error diagnostic (string)
-//    <path>     -- file path (string)
-//    <revision> -- revision marker (string)
-//    <unit>     -- JSON encoded kythe.proto.CompilationUnit message
-//    <LF>       -- line feed character (decimal code 10)
+//    <addr>       -- service address
+//    <bytes>      -- BASE-64 encoded bytes (string)
+//    <digest>     -- file content digest (string)
+//    <entry>      -- JSON encoded kythe.proto.Entry message
+//    <entry_wire> -- BASE-64 encoded kythe.proto.Entry message in wire format (string)
+//    <error>      -- error diagnostic (string)
+//    <path>       -- file path (string)
+//    <revision>   -- revision marker (string)
+//    <unit>       -- JSON encoded kythe.proto.CompilationUnit message
+//    <unit_wire>  -- BASE-64 encoded kythe.proto.CompilationUnit message in wire format (string)
+//    <LF>         -- line feed character (decimal code 10)
 //
 // When rsp="error" in a reply, the args are an error string. The ordinary flow
 // for the indexer is:
@@ -78,12 +88,14 @@
 package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -110,11 +122,18 @@ type response struct {
 	Args   interface{} `json:"args,omitempty"`
 }
 
-// A unit represents a compilation unit to be analyzed.
+// A unit represents a compilation unit (in JSON form) to be analyzed.
 type unit struct {
 	Unit            json.RawMessage `json:"unit"`
 	Revision        string          `json:"rev,omitempty"`
 	FileDataService string          `json:"fds,omitempty"`
+}
+
+// A unit represents a compilation unit (in base64-encoded wire format) to be analyzed.
+type unit_wire struct {
+	Unit            string `json:"unit"`
+	Revision        string `json:"rev,omitempty"`
+	FileDataService string `json:"fds,omitempty"`
 }
 
 // A file represents a file request or content reply.
@@ -163,10 +182,30 @@ func (p *Proxy) Run(h Handler) error {
 				hasReq = true
 				u, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(req.Compilation)
 				if err != nil {
-					return fmt.Errorf("error marshalling compilation unit: %w", err)
+					return fmt.Errorf("error marshalling compilation unit as JSON: %w", err)
 				}
 				p.reply("ok", &unit{
 					Unit:            json.RawMessage(u),
+					Revision:        req.Revision,
+					FileDataService: req.FileDataService,
+				})
+			}
+
+		case "analysis_wire":
+			// Prerequisite: There is no analysis request already in progress.
+			if hasReq {
+				p.reply("error", "an analysis is already in progress")
+			} else if req, err := h.Analysis(); err != nil {
+				p.reply("error", err.Error())
+			} else {
+				hasReq = true
+				u, err := proto.MarshalOptions{}.Marshal(req.Compilation)
+				if err != nil {
+					return fmt.Errorf("error marshalling compilation unit as wire format: %w", err)
+				}
+				b64 := base64.StdEncoding.EncodeToString(u)
+				p.reply("ok", &unit_wire{
+					Unit:            b64,
 					Revision:        req.Revision,
 					FileDataService: req.FileDataService,
 				})
@@ -179,6 +218,27 @@ func (p *Proxy) Run(h Handler) error {
 				break
 			}
 			entries, err := decodeEntries(req.Args)
+			if err != nil {
+				p.reply("error", "invalid entries: "+err.Error())
+			} else if err := h.Output(entries...); err != nil {
+				p.reply("error", err.Error())
+			} else {
+				p.reply("ok", nil)
+				break
+			}
+
+			// Analysis is now abandoned; report the error back to the
+			// handler and give up.
+			h.Done(err)
+			hasReq = false
+
+		case "output_wire":
+			// Prerequisite: There is an analysis request in progress.
+			if !hasReq {
+				p.reply("error", "no analysis is in progress")
+				break
+			}
+			entries, err := decodeWireEntries(req.Args)
 			if err != nil {
 				p.reply("error", "invalid entries: "+err.Error())
 			} else if err := h.Output(entries...); err != nil {
@@ -258,6 +318,26 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	for i, msg := range messages {
 		var e spb.Entry
 		if err := protojson.Unmarshal(msg, &e); err != nil {
+			return nil, err
+		}
+		entries[i] = &e
+	}
+	return entries, nil
+}
+
+func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
+	var messages []string
+	if err := json.Unmarshal(jsonArray, &messages); err != nil {
+		return nil, err
+	}
+	entries := make([]*spb.Entry, len(messages))
+	for i, msg := range messages {
+		var e spb.Entry
+		b, err := base64.StdEncoding.DecodeString(msg)
+		if err != nil {
+			return nil, err
+		}
+		if err := (proto.UnmarshalOptions{}.Unmarshal(b, &e)); err != nil {
 			return nil, err
 		}
 		entries[i] = &e

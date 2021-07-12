@@ -17,6 +17,7 @@
 package proxy
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -24,6 +25,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"kythe.io/kythe/go/util/compare"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -156,6 +158,7 @@ var (
 )
 
 const analysisReply = `{"rsp":"ok","args":{"fds":"Q","rev":"1","unit":{"v_name":{"signature":"test"}}}}`
+const analysisWireReply = `{"rsp":"ok","args":{"fds":"Q","rev":"1","unit":"CgYKBHRlc3Q="}}`
 
 func mustMarshal(v interface{}) string {
 	bits, err := json.Marshal(v)
@@ -173,6 +176,24 @@ func encodeEntries(es []*spb.Entry) json.RawMessage {
 			panic(err)
 		}
 		messages = append(messages, rec)
+	}
+
+	msg, err := json.Marshal(messages)
+	if err != nil {
+		panic(err)
+	}
+	return msg
+}
+
+func encodeWireEntries(es []*spb.Entry) json.RawMessage {
+	var messages []string
+	for _, e := range es {
+		rec, err := proto.MarshalOptions{}.Marshal(e)
+		if err != nil {
+			panic(err)
+		}
+		b64 := base64.StdEncoding.EncodeToString(rec)
+		messages = append(messages, b64)
 	}
 
 	msg, err := json.Marshal(messages)
@@ -314,6 +335,60 @@ func TestAnalysisWorks(t *testing.T) {
 		analysisReply, // from Analyze
 		`{"rsp":"ok","args":{"content":"ZGF0YQ==","path":"exists"}}`, // from File (1)
 		`{"rsp":"ok"}`,                      // from Output
+		`{"rsp":"error","args":"notfound"}`, // from File (2)
+		`{"rsp":"ok"}`,                      // from Done
+	}
+	if diff := compare.ProtoDiff(rsps, want); diff != "" {
+		t.Errorf("Wrong incorrect responses:\n got: %+v\nwant: %+v: %s", rsps, want, diff)
+	}
+}
+
+func TestWireAnalysisWorks(t *testing.T) {
+	// Enact a standard analyzer transaction, and verify that the responses work.
+	var doneCalled bool
+	var gotEntries []*spb.Entry
+
+	rsps, err := runProxy(handler{
+		done: func(err error) {
+			if err != nil {
+				t.Errorf("Done was called with an error: %v", err)
+			}
+			doneCalled = true
+		},
+		output: func(es ...*spb.Entry) error {
+			gotEntries = append(gotEntries, es...)
+			return nil
+		},
+		file: func(path, digest string) ([]byte, error) {
+			if path == "exists" {
+				return []byte("data"), nil
+			}
+			return nil, errors.New("notfound")
+		},
+	},
+		testreq{Type: "analysis_wire"},
+		testreq{Type: "file", Args: file{Path: "exists"}},
+		testreq{Type: "output_wire", Args: encodeWireEntries(testEntries)},
+		testreq{Type: "file", Args: file{Path: "does not exist"}},
+		testreq{Type: "done"},
+	)
+	if err != nil {
+		t.Errorf("Unexpected error from proxy: %v", err)
+	}
+
+	// Verify that the proxy followed the protocol reasonably.
+	if !doneCalled {
+		t.Error("The handler's Done method was never called")
+	}
+	if diff := compare.ProtoDiff(gotEntries, testEntries); diff != "" {
+		t.Errorf("Incorrect entries:\n got: %+v\nwant: %+v: %s", gotEntries, testEntries, diff)
+	}
+
+	// Verify that we got the expected replies back from the proxy.
+	want := []string{
+		analysisWireReply, // from Analyze Wire
+		`{"rsp":"ok","args":{"content":"ZGF0YQ==","path":"exists"}}`, // from File (1)
+		`{"rsp":"ok"}`,                      // from Output Wire
 		`{"rsp":"error","args":"notfound"}`, // from File (2)
 		`{"rsp":"ok"}`,                      // from Done
 	}
