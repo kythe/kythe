@@ -175,8 +175,7 @@ public class JavaIndexer {
         Strings.isNullOrEmpty(config.getTemporaryDirectory())
             ? null
             : FileSystems.getDefault().getPath(config.getTemporaryDirectory());
-    new JavacAnalysisDriver(
-            ImmutableList.of(), config.getUseExperimentalPathFileManager(), tempPath)
+    new JavacAnalysisDriver(ImmutableList.of(), tempPath)
         .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
   }
 

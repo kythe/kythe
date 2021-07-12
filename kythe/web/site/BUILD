@@ -91,10 +91,6 @@ sh_test(
     name = "check_links_test",
     srcs = ["check_links_test.sh"],
     data = [
-        # runfiles, $(execpath) and directories interact poorly.
-        # so include both the :site itself and each of the files as
-        # discovered via :site_files.
-        ":site",
         ":site_files",
         # Similarly :bin/jekyll is a plain file, :jekyll is a ruby library
         # and we need the toolchain.
@@ -110,6 +106,25 @@ sh_test(
         "local",
         "manual",
     ],
+)
+
+# Can be run via `bazel run //kythe/website:serve`
+# to manually verify the website contents.
+sh_binary(
+    name = "serve",
+    srcs = ["serve.sh"],
+    data = [
+        ":site_files",
+        # Similarly :bin/jekyll is a plain file, :jekyll is a ruby library
+        # and we need the toolchain.
+        "@org_ruby_lang_ruby_toolchain//:ruby_bin",
+        "@website_bundle//:bin/jekyll",
+        "@website_bundle//:jekyll",
+    ],
+    env = {
+        "JEKYLL_BIN": "$(location @website_bundle//:bin/jekyll)",
+    },
+    tags = ["manual"],
 )
 
 bzl_library(

@@ -14,16 +14,7 @@ licenses([
 # Aliased targets
 alias(
     name = "anyhow",
-    actual = "@raze__anyhow__1_0_40//:anyhow",
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-)
-
-alias(
-    name = "assert_cmd",
-    actual = "@raze__assert_cmd__1_0_4//:assert_cmd",
+    actual = "@raze__anyhow__1_0_41//:anyhow",
     tags = [
         "cargo-raze",
         "manual",
@@ -49,8 +40,8 @@ alias(
 )
 
 alias(
-    name = "lazy_static",
-    actual = "@raze__lazy_static__1_4_0//:lazy_static",
+    name = "hex",
+    actual = "@raze__hex__0_4_3//:hex",
     tags = [
         "cargo-raze",
         "manual",
@@ -58,8 +49,8 @@ alias(
 )
 
 alias(
-    name = "predicates",
-    actual = "@raze__predicates__1_0_8//:predicates",
+    name = "lazy_static",
+    actual = "@raze__lazy_static__1_4_0//:lazy_static",
     tags = [
         "cargo-raze",
         "manual",
@@ -112,15 +103,6 @@ alias(
 )
 
 alias(
-    name = "rust_crypto",
-    actual = "@raze__rust_crypto__0_2_36//:rust_crypto",
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-)
-
-alias(
     name = "serde",
     actual = "@raze__serde__1_0_126//:serde",
     tags = [
@@ -148,6 +130,15 @@ alias(
 )
 
 alias(
+    name = "sha2",
+    actual = "@raze__sha2__0_9_5//:sha2",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
     name = "tempdir",
     actual = "@raze__tempdir__0_3_7//:tempdir",
     tags = [
@@ -158,7 +149,7 @@ alias(
 
 alias(
     name = "zip",
-    actual = "@raze__zip__0_5_12//:zip",
+    actual = "@raze__zip__0_5_13//:zip",
     tags = [
         "cargo-raze",
         "manual",

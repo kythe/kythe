@@ -132,7 +132,7 @@ impl FileProvider for KzipFileProvider {
         let file = self
             .zip_archive
             .by_name(&name)
-            .map_err(|_| KytheError::FileNotFoundError)?;
+            .map_err(|_| KytheError::FileNotFoundError(name))?;
         let mut reader = BufReader::new(file);
         let mut file_contents: Vec<u8> = Vec::new();
         reader.read_to_end(&mut file_contents)?;

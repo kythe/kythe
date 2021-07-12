@@ -81,10 +81,8 @@ class PrintableSpan {
   PrintableSpan(size_t begin, size_t end, Style style)
       : begin_(begin), end_(end), semantic_(Semantic::Styled), style_(style) {}
   const bool operator<(const PrintableSpan& o) const {
-    int priority = link_priority();
-    int opriority = o.link_priority();
-    return std::tie(begin_, o.end_, semantic_, priority, tag_block_, style_) <
-           std::tie(o.begin_, end_, o.semantic_, opriority, tag_block_, style_);
+    return std::tie(begin_, o.end_, semantic_, tag_block_, style_) <
+           std::tie(o.begin_, end_, o.semantic_, tag_block_, style_);
   }
   bool is_valid() const { return begin_ < end_; }
   const size_t begin() const { return begin_; }
@@ -96,7 +94,6 @@ class PrintableSpan {
   std::pair<TagBlockId, size_t> tag_block() const { return tag_block_; }
 
  private:
-  int link_priority() const { return -link_.kind(); }
   /// The beginning offset, in bytes, of the span.
   size_t begin_;
   /// The ending offset, in bytes, of the span.
@@ -141,23 +138,9 @@ class PrintableSpans {
 
 class Printable {
  public:
-  /// A policy bitmask for filtering spans.
-  enum RejectPolicy : unsigned {
-    IncludeAll = 0,         ///< Reject no spans.
-    RejectLists = 1,        ///< Reject LIST spans.
-    RejectUnimportant = 2,  ///< Reject spans not dominated by IMPORTANT spans.
-    IncludeLists = 4        ///< Always include LIST spans. Has precedence over
-                            ///< `kRejectLists`.
-  };
-
   /// \brief Build a Printable from a protobuf.
   /// \post The internal list of spans is sorted.
-  /// \param filter A bitmask of Link spans to reject.
-  Printable(const proto::Printable& from, RejectPolicy filter);
-  /// \brief Build a Printable from a protobuf.
-  /// \post The internal list of spans is sorted.
-  explicit Printable(const proto::Printable& from)
-      : Printable(from, IncludeAll) {}
+  explicit Printable(const proto::Printable& from);
   /// \pre The list of spans is sorted.
   Printable(const std::string& text, PrintableSpans&& spans)
       : text_(text), spans_(std::move(spans)) {}
@@ -174,14 +157,6 @@ class Printable {
   /// \brief Interesting spans in `text_`.
   PrintableSpans spans_;
 };
-
-/// \brief Combines `Printable::RejectPolicy` enumerators.
-inline Printable::RejectPolicy operator|(Printable::RejectPolicy lhs,
-                                         Printable::RejectPolicy rhs) {
-  using impl = std::underlying_type<Printable::RejectPolicy>::type;
-  return static_cast<Printable::RejectPolicy>(static_cast<impl>(lhs) |
-                                              static_cast<impl>(rhs));
-}
 
 /// \brief Appends markup-specific spans to `spans` from `printable`.
 /// \param previous_spans Previously-emitted spans. After the MarkupHandler

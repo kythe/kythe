@@ -73,6 +73,7 @@ public class JavaEntrySets extends KytheEntrySets {
       JavaIndexerConfig config) {
     super(statistics, emitter, compilationVName, requiredInputs);
     this.config = config;
+    setUseCompilationCorpusAsDefault(config.getUseCompilationCorpusAsDefault());
   }
 
   Map<Symbol, VName> getSymbolNodes() {

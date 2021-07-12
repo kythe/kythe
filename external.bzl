@@ -67,17 +67,6 @@ def _proto_dependencies():
 
 def _cc_dependencies():
     maybe(
-        http_archive,
-        name = "llvm-project-raw",
-        build_file_content = "#empty",
-        sha256 = "512cc1b9e19981a1214a95b7f711ec2c12b78541866f1aaf00ea825bd3c2c70f",
-        strip_prefix = "llvm-project-0316f3e64972c919d8bfa2d15b9a4be858530f85",
-        urls = [
-            "https://github.com/llvm/llvm-project/archive/0316f3e64972c919d8bfa2d15b9a4be858530f85.zip",
-        ],
-    )
-
-    maybe(
         llvm_terminfo_disable,
         name = "llvm_terminfo",
     )
@@ -306,6 +295,12 @@ def _java_dependencies():
         name = "com_google_common_flogger",
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
+    )
+    maybe(
+        git_repository,
+        name = "io_bazel",
+        commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
+        remote = "https://github.com/bazelbuild/bazel",
     )
     maven_install(
         name = "maven",

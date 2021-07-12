@@ -27,7 +27,6 @@ import (
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/analysis/driver"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 
@@ -48,11 +47,11 @@ func (o *Options) revision() string {
 }
 
 // A FileQueue is a driver.Queue reading each compilation from a sequence of
-// .kzip and .kindex files.  On each call to the driver.CompilationFunc, the
+// .kzip files.  On each call to the driver.CompilationFunc, the
 // FileQueue's analysis.Fetcher interface exposes the current file's contents.
 type FileQueue struct {
 	index    int                    // the next index to consume from paths
-	paths    []string               // the paths of kindex files to read
+	paths    []string               // the paths of kzip files to read
 	units    []*apb.CompilationUnit // units waiting to be delivered
 	revision string                 // revision marker for each compilation
 
@@ -60,8 +59,7 @@ type FileQueue struct {
 	closer  io.Closer
 }
 
-// NewFileQueue returns a new FileQueue over the given paths to .kzip or
-// .kindex files.
+// NewFileQueue returns a new FileQueue over the given paths to .kzip files.
 func NewFileQueue(paths []string, opts *Options) *FileQueue {
 	return &FileQueue{
 		paths:    paths,
@@ -83,14 +81,6 @@ func (q *FileQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
 		path := q.paths[q.index]
 		q.index++
 		switch filepath.Ext(path) {
-		case ".kindex":
-			cu, err := kindex.Open(ctx, path)
-			if err != nil {
-				return fmt.Errorf("opening kindex file %q: %v", path, err)
-			}
-			q.fetcher = cu
-			q.closer = nil // nothing to close in this case
-			q.units = append(q.units, cu.Proto)
 		case ".kzip":
 			f, err := vfs.Open(ctx, path)
 			if err != nil {

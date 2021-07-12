@@ -26,13 +26,12 @@ use {
     analysis_rust_proto::*, // CompilationUnit, IndexedCompilation
     anyhow::{Context, Result},
     clap::clap_app,
-    crypto::digest::Digest,
-    crypto::sha2,
     fuchsia_extractor_lib::kzip,
     lazy_static::lazy_static,
     regex::Regex,
     rls_data,
     serde_json,
+    sha2::{Digest, Sha256},
     std::fs,
     std::path::Path,
     std::path::PathBuf,
@@ -92,11 +91,12 @@ fn read_save_analysis_dir(dir: Option<&str>) -> Result<Vec<PathBuf>> {
 
 /// Generates a unique filename in `output_dir` for the kzip archive.
 fn get_unique_filename(file: &PathBuf, output_dir: &PathBuf) -> Result<PathBuf> {
-    let mut hasher = sha2::Sha256::new();
+    let mut hasher = Sha256::new();
     let file_str = file.to_str().expect("should be convertible to string");
 
-    hasher.input_str(file_str);
-    let filename = format!("{}.rs.kzip", hasher.result_str());
+    hasher.update(file_str);
+    let bytes = hasher.finalize();
+    let filename = format!("{}.rs.kzip", hex::encode(bytes));
 
     let mut output_filename = output_dir.clone();
     output_filename.push(filename);
@@ -959,10 +959,10 @@ mod testing {
             let result: analysis::IndexedCompilation = protobuf::parse_from_bytes(&buf).unwrap();
             return result;
         }
-        panic!(format!(
+        panic!(
             "pbunits file not found in existing zip file: zip_path: {:?}",
             &zip_path.as_ref(),
-        ));
+        );
     }
 
     #[test]

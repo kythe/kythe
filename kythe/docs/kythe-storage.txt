@@ -423,14 +423,14 @@ be ordered after the previous row.
 
 [width="40%",cols="10%,10%,10%,60%,10%"]
 |=====================================================================================
-|A               |ø              |ø              | /                 | x
-|A               |ø              |ø              | [underline]#/foo# | w
-|A               |[underline]#m# |C              | /bar              | w
-|A               |m              |C              | [underline]#/car# | w
-|A               |m              |C              | /car              | [underline]#y#
-|A               |[underline]#n# |B              | /                 | ø
-|A               |n              |[underline]#C# | /bar              | ø
-|[underline]#AB# |ø              |ø              | /                 | t
+|A                |ø               |ø               | /                  | x
+|A                |ø               |ø               | [.underline]#/foo# | w
+|A                |[.underline]#m# |C               | /bar               | w
+|A                |m               |C               | [.underline]#/car# | w
+|A                |m               |C               | /car               | [.underline]#y#
+|A                |[.underline]#n# |B               | /                  | ø
+|A                |n               |[.underline]#C# | /bar               | ø
+|[.underline]#AB# |ø               |ø               | /                  | t
 |=====================================================================================
 
 Conceptually, each field is compared in isolation; in practice this can be
