@@ -129,7 +129,7 @@ type unit struct {
 }
 
 // A unit represents a compilation unit (in base64-encoded wire format) to be analyzed.
-type unit_wire struct {
+type unitWire struct {
 	Unit            []byte `json:"unit"`
 	Revision        string `json:"rev,omitempty"`
 	FileDataService string `json:"fds,omitempty"`
@@ -202,7 +202,7 @@ func (p *Proxy) Run(h Handler) error {
 				if err != nil {
 					return fmt.Errorf("error marshalling compilation unit as wire format: %w", err)
 				}
-				p.reply("ok", &unit_wire{
+				p.reply("ok", &unitWire{
 					Unit:            u,
 					Revision:        req.Revision,
 					FileDataService: req.FileDataService,
