@@ -41,16 +41,16 @@ fn test_kzip_provider() {
     // Check the `exists` function
     let file_hash = "c9d04c9565fc665c80681fb1d829938026871f66e14f501e08531df66938a789";
     assert!(
-        kzip_provider.exists(file_hash),
+        kzip_provider.exists("/tmp/main.rs", file_hash),
         "File should exist in kzip but doesn't"
     );
     assert!(
-        !kzip_provider.exists("invalid"),
+        !kzip_provider.exists("invalid", "invalid"),
         "File shouldn't exist but does"
     );
 
     // Check the `contents` function
-    let contents_result = kzip_provider.contents(file_hash);
+    let contents_result = kzip_provider.contents("/tmp/main.rs", file_hash);
     assert!(!contents_result.is_err());
     let contents_string =
         String::from_utf8(contents_result.unwrap()).expect("File contents was not valid UTF-8");
@@ -59,7 +59,7 @@ fn test_kzip_provider() {
         "File contents did not match expected contents"
     );
 
-    let invalid_contents = kzip_provider.contents("invalid");
+    let invalid_contents = kzip_provider.contents("invalid", "invalid");
     assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file, but received file contents: {:?}", invalid_contents.unwrap());
     let contents_error = invalid_contents.err().unwrap();
     match contents_error {

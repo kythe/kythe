@@ -56,7 +56,7 @@ fn main() -> Result<()> {
             TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
         let temp_path = PathBuf::new().join(temp_dir.path());
 
-        // Extract all of the files from the kzip into the temporary directory
+        // Extract the analysis files from the kzip into the temporary directory
         extract_analysis_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
 
         // Index the CompilationUnit
@@ -80,7 +80,7 @@ pub fn extract_analysis_from_kzip(
         if let Some(os_str) = input_path_buf.extension() {
             if let Some("json") = os_str.to_str() {
                 let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(digest).with_context(|| {
+                let file_contents = provider.contents(input_path, digest).with_context(|| {
                     format!(
                         "Failed to get contents of file \"{}\" with digest \"{}\"",
                         input_path, digest
