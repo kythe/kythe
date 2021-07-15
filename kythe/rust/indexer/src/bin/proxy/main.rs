@@ -15,14 +15,12 @@ extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::ProxyWriter};
 
 use analysis_rust_proto::*;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde_json::Value;
 use std::{
     fs::File,
     io::{self, Write},
     path::{Path, PathBuf},
-    thread,
-    time
 };
 use tempdir::TempDir;
 
@@ -33,33 +31,27 @@ fn main() -> Result<()> {
 
     // Request and process
     loop {
-        let possible_unit = request_compilation_unit()?;
-        if let Some(unit) = possible_unit {
-            // Retrieve the save_analysis file
-            let temp_dir = TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
-            let temp_path = PathBuf::new().join(temp_dir.path());
-            write_analysis_to_directory(&unit, &temp_path, &mut file_provider)?;
+        let unit = request_compilation_unit()?;
+        // Retrieve the save_analysis file
+        let temp_dir = TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
+        let temp_path = PathBuf::new().join(temp_dir.path());
+        write_analysis_to_directory(&unit, &temp_path, &mut file_provider)?;
 
-            // Index the CompilationUnit and let the proxy know we are done
-            match indexer.index_cu(&unit, &temp_path, &mut file_provider) {
-                Ok(_) => {
-                    println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
-                },
-                Err(err) => {
-                    println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
-                },
-            };
+        // Index the CompilationUnit and let the proxy know we are done
+        match indexer.index_cu(&unit, &temp_path, &mut file_provider) {
+            Ok(_) => {
+                println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
+            },
+            Err(err) => {
+                println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
+            },
+        };
 
-            // Grab the response, but we don't care what it is so just throw it away
-            let mut response_string = String::new();
-            io::stdin()
-                .read_line(&mut response_string)
-                .context("Failed to read response from proxy")?;
-        } else {
-            // Sleep for 500ms before trying to request an analysis again
-            let duration = time::Duration::from_millis(500);
-            thread::sleep(duration);
-        }
+        // Grab the response, but we don't care what it is so just throw it away
+        let mut response_string = String::new();
+        io::stdin()
+            .read_line(&mut response_string)
+            .context("Failed to read response from proxy")?;
     }
 }
 
@@ -101,7 +93,7 @@ pub fn write_analysis_to_directory(
     Ok(())
 }
 
-fn request_compilation_unit() -> Result<Option<CompilationUnit>> {
+fn request_compilation_unit() -> Result<CompilationUnit> {
     println!(r#"{{"req":"analysis_wire"}}"#);
     io::stdout().flush().context("Failed to flush stdout")?;
 
@@ -120,8 +112,8 @@ fn request_compilation_unit() -> Result<Option<CompilationUnit>> {
         let unit_bytes = hex::decode(unit_base64).context("Failed to decode CompilationUnit sent by proxy")?;
         let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
             .context("Failed to parse protobuf")?;
-        Ok(Some(unit))
+        Ok(unit)
     } else {
-        Ok(None)
+        Err(anyhow!("Failed to get a CompilationUnit from the proxy"))
     }
 }
