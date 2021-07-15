@@ -19,7 +19,6 @@ quick_error! {
     pub enum KytheError {
         /// The FileProvider failed to find the file
         FileNotFoundError(name: String) {
-            from()
             display("The requested file could not be found: {}", name)
         }
         /// The FileProvider failed to read the file

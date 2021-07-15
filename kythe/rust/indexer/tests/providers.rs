@@ -41,11 +41,11 @@ fn test_kzip_provider() {
     // Check the `exists` function
     let file_hash = "c9d04c9565fc665c80681fb1d829938026871f66e14f501e08531df66938a789";
     assert!(
-        kzip_provider.exists("/tmp/main.rs", file_hash),
+        kzip_provider.exists("/tmp/main.rs", file_hash).unwrap(),
         "File should exist in kzip but doesn't"
     );
     assert!(
-        !kzip_provider.exists("invalid", "invalid"),
+        !kzip_provider.exists("invalid", "invalid").unwrap(),
         "File shouldn't exist but does"
     );
 

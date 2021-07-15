@@ -16,10 +16,10 @@ use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::ProxyWrite
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
+use serde_json::Value;
 use std::{
-    env,
     fs::File,
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     thread,
     time
@@ -42,12 +42,11 @@ fn main() -> Result<()> {
 
             // Index the CompilationUnit and let the proxy know we are done
             match indexer.index_cu(&unit, &temp_path, &mut file_provider) {
-                let template = r#"{"req":"done", "args"{"ok":{},"msg":"{:?}"}"#;
                 Ok(_) => {
-                    println!(template, "true", "");
+                    println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
                 },
                 Err(err) => {
-                    println!(template, "false", err);
+                    println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
                 },
             };
 
@@ -62,8 +61,6 @@ fn main() -> Result<()> {
             thread::sleep(duration);
         }
     }
-
-    Ok(())
 }
 
 /// Takes analysis files present in a CompilationUnit, requests the files
@@ -81,7 +78,7 @@ pub fn write_analysis_to_directory(
         if let Some(os_str) = input_path_buf.extension() {
             if let Some("json") = os_str.to_str() {
                 let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(digest).with_context(|| {
+                let file_contents = provider.contents(&input_path, digest).with_context(|| {
                     format!(
                         "Failed to get contents of file \"{}\" with digest \"{}\"",
                         input_path, digest
@@ -105,8 +102,8 @@ pub fn write_analysis_to_directory(
 }
 
 fn request_compilation_unit() -> Result<Option<CompilationUnit>> {
-    println!(r#"{"req":"analysis_wire"}"#);
-    io::stdout::flush().context("Failed to flush stdout")?;
+    println!(r#"{{"req":"analysis_wire"}}"#);
+    io::stdout().flush().context("Failed to flush stdout")?;
 
     // Read the response from the proxy
     let mut response_string = String::new();
@@ -117,11 +114,11 @@ fn request_compilation_unit() -> Result<Option<CompilationUnit>> {
     // Convert to json and extract information
     let response: Value = serde_json::from_str(&response_string)
         .context("Failed to parse response as JSON")?;
-    if response["rsp"].as_str() == "ok" {
-        let args = response["args"];
-        let unit_base64 = args["unit"].as_str();
+    if response["rsp"].as_str().unwrap() == "ok" {
+        let args = response["args"].clone();
+        let unit_base64 = args["unit"].as_str().unwrap();
         let unit_bytes = hex::decode(unit_base64).context("Failed to decode CompilationUnit sent by proxy")?;
-        let unit = protobuf::parse_from_bytes::<CompilationUnit>(unit_bytes)
+        let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
             .context("Failed to parse protobuf")?;
         Ok(Some(unit))
     } else {

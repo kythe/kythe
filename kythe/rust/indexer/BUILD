@@ -18,6 +18,7 @@ rust_library(
         "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
+        "//kythe/rust/cargo:serde_json",
         "//kythe/rust/cargo:hex",
     ] + PROTO_COMPILE_DEPS,
 )
@@ -53,6 +54,7 @@ rust_binary(
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:serde_json",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
