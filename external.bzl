@@ -17,7 +17,7 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 load("@rules_rust//rust:repositories.bzl", "rust_repositories")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
-load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "npm_install")
 load(
     "@bazelruby_rules_ruby//ruby:deps.bzl",
     "rules_ruby_dependencies",
@@ -1144,6 +1144,11 @@ def _rust_dependencies():
     raze_fetch_remote_crates()
 
 def _js_dependencies():
+    node_repositories(
+        package_json = ["@io_kythe//:package.json"],
+        node_version = "16.1.0",
+    )
+
     npm_install(
         name = "npm",
         package_json = "@io_kythe//:package.json",
