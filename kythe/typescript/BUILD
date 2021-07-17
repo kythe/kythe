@@ -73,4 +73,5 @@ nodejs_test(
 jasmine_node_test(
     name = "utf8_test",
     deps = [":utf8_test_ts"],
+    link_workspace_root = True,
 )
