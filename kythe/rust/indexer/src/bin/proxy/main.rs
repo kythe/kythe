@@ -1,4 +1,4 @@
-// Copyright 2020 The Kythe Authors. All rights reserved.
+// Copyright 2021 The Kythe Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,10 @@ fn main() -> Result<()> {
         // Retrieve the save_analysis file
         let temp_dir = TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
         let temp_path = PathBuf::new().join(temp_dir.path());
-        write_analysis_to_directory(&unit, &temp_path, &mut file_provider)?;
+        if let Err(err) = write_analysis_to_directory(&unit, &temp_path, &mut file_provider) {
+            println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
+            continue;
+        }
 
         // Index the CompilationUnit and let the proxy know we are done
         match indexer.index_cu(&unit, &temp_path, &mut file_provider) {
