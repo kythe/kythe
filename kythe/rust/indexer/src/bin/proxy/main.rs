@@ -37,6 +37,10 @@ fn main() -> Result<()> {
         let temp_path = PathBuf::new().join(temp_dir.path());
         if let Err(err) = write_analysis_to_directory(&unit, &temp_path, &mut file_provider) {
             println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
+            let mut response_string = String::new();
+            io::stdin()
+                .read_line(&mut response_string)
+                .context("Failed to read response from proxy")?;
             continue;
         }
 
