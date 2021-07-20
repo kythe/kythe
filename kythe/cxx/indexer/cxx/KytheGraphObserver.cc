@@ -612,6 +612,7 @@ VNameRef KytheGraphObserver::VNameRefFromNodeId(
     }
   }
   out_ref.set_signature(ConvertRef(node_id.IdentityRef()));
+  out_ref.set_corpus(default_token_.vname().corpus());
   return out_ref;
 }
 
