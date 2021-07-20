@@ -40,14 +40,19 @@ fn main() -> Result<()> {
         // Retrieve the save_analysis file
         let temp_dir = TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
         let temp_path = PathBuf::new().join(temp_dir.path());
-        match finish_unit(write_analysis_to_directory(&unit, &temp_path, &mut file_provider), true) {
-            Ok(true) => {},
-            Ok(false) => { continue; },
-            Err(err) => { return Err(err); },
-        };
+        let write_res = write_analysis_to_directory(&unit, &temp_path, &mut file_provider);
+        if write_res.is_err() {
+            send_done(false, write_res.err().unwrap().to_string())?;
+            continue;
+        }
 
         // Index the CompilationUnit and let the proxy know we are done
-        finish_unit(indexer.index_cu(&unit, &temp_path, &mut file_provider), false)?;
+        let index_res = indexer.index_cu(&unit, &temp_path, &mut file_provider);
+        if index_res.is_ok() {
+            send_done(true, String::new())?;
+        } else {
+            send_done(false, index_res.err().unwrap().to_string())?;
+        }
     }
 }
 
@@ -120,22 +125,13 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
     }
 }
 
-/// Takes a result from a function, and sends the alerts the proxy that we are done with the analysis
-/// If error_only is set to true, we only send "done" if the result was an error
-/// Returns a boolean value indicating whether the result that was passed in was Ok
-fn finish_unit(res: std::result::Result<(), KytheError>, error_only: bool) -> Result<bool> {
-    let result_was_ok: bool;
-    match res {
-        Ok(_) => {
-            if error_only  {return Ok(true)};
-            println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
-            result_was_ok = true;
-        },
-        Err(err) => {
-            println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{:?}"}}}}"#, err);
-            result_was_ok = false;
-        },
-    };
+/// Sends the "done" request to the proxy. The first argument sets the "ok" value, and the second sets the error message if the first argument is false.
+fn send_done(ok: bool, msg: String) -> Result<()> {
+    if ok {
+        println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
+    } else {
+        println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{}"}}}}"#, msg);
+    }
     io::stdout().flush().context("Failed to flush stdout")?;
 
     // Grab the response, but we don't care what it is so just throw it away
@@ -143,5 +139,5 @@ fn finish_unit(res: std::result::Result<(), KytheError>, error_only: bool) -> Re
     io::stdin()
         .read_line(&mut response_string)
         .context("Failed to read response from proxy")?;
-    Ok(result_was_ok)
+    Ok(())
 }
