@@ -88,7 +88,8 @@ pub fn extract_analysis_from_kzip(
                 })?;
 
                 let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file = File::create(&output_path).context("Failed to create file")?;
+                let mut output_file =
+                    File::create(&output_path).context("Failed to create file")?;
                 output_file.write_all(&file_contents).with_context(|| {
                     format!(
                         "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",

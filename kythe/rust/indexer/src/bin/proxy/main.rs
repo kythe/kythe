@@ -13,10 +13,7 @@
 // limitations under the License.
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{
-    error::KytheError,
-    indexer::KytheIndexer,
-    providers::*,
-    writer::ProxyWriter
+    error::KytheError, indexer::KytheIndexer, providers::*, writer::ProxyWriter,
 };
 
 use analysis_rust_proto::*;
@@ -38,7 +35,8 @@ fn main() -> Result<()> {
     loop {
         let unit = request_compilation_unit()?;
         // Retrieve the save_analysis file
-        let temp_dir = TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
+        let temp_dir =
+            TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
         let temp_path = PathBuf::new().join(temp_dir.path());
         let write_res = write_analysis_to_directory(&unit, &temp_path, &mut file_provider);
         if write_res.is_err() {
@@ -72,27 +70,24 @@ pub fn write_analysis_to_directory(
             if let Some("json") = os_str.to_str() {
                 let digest = required_input.get_info().get_digest();
                 let file_contents = provider.contents(&input_path, digest).map_err(|err| {
-                    KytheError::IndexerError(
-                        format!(
-                            "Failed to get contents of file \"{}\" with digest \"{}\": {:?}",
-                            input_path, digest, err
-                        )
-                    )
+                    KytheError::IndexerError(format!(
+                        "Failed to get contents of file \"{}\" with digest \"{}\": {:?}",
+                        input_path, digest, err
+                    ))
                 })?;
 
                 let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file = File::create(&output_path)
-                    .map_err(|err| KytheError::IndexerError(format!("Failed to create file: {:?}", err)))?;
+                let mut output_file = File::create(&output_path).map_err(|err| {
+                    KytheError::IndexerError(format!("Failed to create file: {:?}", err))
+                })?;
                 output_file.write_all(&file_contents).map_err(|err| {
-                    KytheError::IndexerError(
-                        format!(
-                            "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\": {:?}",
-                            input_path,
-                            digest,
-                            output_path.display(),
-                            err
-                        )
-                    )
+                    KytheError::IndexerError(format!(
+                        "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\": {:?}",
+                        input_path,
+                        digest,
+                        output_path.display(),
+                        err
+                    ))
                 })?;
             }
         }
@@ -106,17 +101,16 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 
     // Read the response from the proxy
     let mut response_string = String::new();
-    io::stdin()
-        .read_line(&mut response_string)
-        .context("Failed to read response from proxy")?;
+    io::stdin().read_line(&mut response_string).context("Failed to read response from proxy")?;
 
     // Convert to json and extract information
-    let response: Value = serde_json::from_str(&response_string)
-        .context("Failed to parse response as JSON")?;
+    let response: Value =
+        serde_json::from_str(&response_string).context("Failed to parse response as JSON")?;
     if response["rsp"].as_str().unwrap() == "ok" {
         let args = response["args"].clone();
         let unit_base64 = args["unit"].as_str().unwrap();
-        let unit_bytes = hex::decode(unit_base64).context("Failed to decode CompilationUnit sent by proxy")?;
+        let unit_bytes =
+            hex::decode(unit_base64).context("Failed to decode CompilationUnit sent by proxy")?;
         let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
             .context("Failed to parse protobuf")?;
         Ok(unit)
@@ -125,7 +119,8 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
     }
 }
 
-/// Sends the "done" request to the proxy. The first argument sets the "ok" value, and the second sets the error message if the first argument is false.
+/// Sends the "done" request to the proxy. The first argument sets the "ok"
+/// value, and the second sets the error message if the first argument is false.
 fn send_done(ok: bool, msg: String) -> Result<()> {
     if ok {
         println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
@@ -136,8 +131,6 @@ fn send_done(ok: bool, msg: String) -> Result<()> {
 
     // Grab the response, but we don't care what it is so just throw it away
     let mut response_string = String::new();
-    io::stdin()
-        .read_line(&mut response_string)
-        .context("Failed to read response from proxy")?;
+    io::stdin().read_line(&mut response_string).context("Failed to read response from proxy")?;
     Ok(())
 }
