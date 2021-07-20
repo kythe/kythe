@@ -133,7 +133,7 @@ impl<'a> UnitAnalyzer<'a> {
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
             if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(file_digest)?;
+                let file_bytes = self.provider.contents(&source_file, file_digest)?;
                 file_contents = String::from_utf8(file_bytes)
                     .map_err(|_| KytheError::IndexerError(
                         format!("Failed to read file {} as UTF8 string", source_file.to_string())
