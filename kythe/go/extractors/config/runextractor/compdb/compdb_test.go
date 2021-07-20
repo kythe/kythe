@@ -38,10 +38,7 @@ const (
 func setupEnvironment(t *testing.T) string {
 	t.Helper()
 	// TODO(shahms): ExtractCompilations should take an output path.
-	output := os.Getenv("TEST_TMPDIR")
-	if output == "" {
-		t.Skip("Skipping test due to incompatible environment (missing TEST_TMPDIR)")
-	}
+	output := t.TempDir()
 	if err := os.Setenv("KYTHE_OUTPUT_DIRECTORY", output); err != nil {
 		t.Fatalf("Error setting KYTHE_OUTPUT_DIRECTORY: %v", err)
 	}
@@ -52,7 +49,7 @@ func setupEnvironment(t *testing.T) string {
 	return root
 }
 
-func TestExtractCompilationsEndToEnd(t *testing.T) {
+func testExtractCompilationsEndToEndWithDatabase(t *testing.T, compdbPath string) {
 	root := setupEnvironment(t)
 	defer os.Chdir(root)
 
@@ -64,7 +61,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 	if err := os.Chdir(filepath.Join(root, testPath, "testdata")); err != nil {
 		t.Fatalf("Unable to change working directory: %v", err)
 	}
-	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json", nil); err != nil {
+	if err := ExtractCompilations(context.Background(), extractor, compdbPath, nil); err != nil {
 		t.Fatalf("Error running ExtractCompilations: %v", err)
 	}
 	err = filepath.Walk(os.Getenv("KYTHE_OUTPUT_DIRECTORY"), func(path string, info os.FileInfo, err error) error {
@@ -96,4 +93,13 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 		t.Fatalf("Error processing extracted output: %v", err)
 	}
 
+}
+
+func TestExtractCompilationsEndToEnd(t *testing.T) {
+	t.Run("command", func(t *testing.T) {
+		testExtractCompilationsEndToEndWithDatabase(t, "compilation_database.json")
+	})
+	t.Run("arguments", func(t *testing.T) {
+		testExtractCompilationsEndToEndWithDatabase(t, "compilation_database_arguments.json")
+	})
 }
