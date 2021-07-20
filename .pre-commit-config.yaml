@@ -86,4 +86,12 @@ repos:
         language: script
         entry: tools/git/test-affected-targets.sh
         stages: [push]
+    -   id: rustfmt
+        name: Format w/ rustfmt
+        description: Runs `rustfmt` on Rust files
+        language: system
+        entry: rustfmt
+        args: [--config-path, tools/rust/rustfmt.toml, --check]
+        types: [rust]
+        exclude: '^(kythe/proto/.*|third_party/.*)'
 exclude: '(.*/testdata/.*)|(third_party/.*)|(tools/platforms/configs/(versions.bzl|default_toolchain_config_spec_name/.*)$)'

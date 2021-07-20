@@ -17,5 +17,5 @@
 find kythe/rust/ tools/rust/ -name '*.rs' -not -wholename "*target/*" -not -wholename "*rust/*/testdata/*" -print0 | while read -r -d $'\0' f
 do
     echo "Formatting $f";
-    rustfmt --config-path "$(dirname "${BASH_SOURCE[0]}")" "$f";
+    rustfmt --config-path "$(dirname "${BASH_SOURCE[0]}")" "$@" "$f";
 done
