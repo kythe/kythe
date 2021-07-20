@@ -140,13 +140,15 @@ class KytheGraphObserver : public GraphObserver {
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              std::string build_config = "")
+                              std::string build_config = "",
+                              std::string default_corpus = "")
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs),
         build_config_(std::move(build_config)) {
     default_token_.set_rough_claimed(true);
+    set_default_corpus(default_corpus);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();

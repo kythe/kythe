@@ -881,6 +881,17 @@ cc_indexer_test(
     use_compilation_corpus_as_default = True,
 )
 
+sh_test(
+    name = "vname_corpus_empty_test",
+    srcs = ["basic/empty_corpus_test.sh"],
+    args = ["$(location :vname_corpus_entries)"],
+    data = [
+        ":vname_corpus_entries",
+        "//kythe/go/platform/tools/entrystream",
+        "//kythe/go/test/tools:empty_corpus_checker",
+    ],
+)
+
 cc_indexer_test(
     name = "macro_body",
     srcs = ["basic/macro_body.cc"],

@@ -60,8 +60,10 @@ constexpr absl::string_view kBuildDetailsURI =
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+  using iterator =
+      decltype(std::declval<kythe::proto::ContextDependentVersion>()
+                   .row()
+                   .begin());
 
   explicit FileContextRows(
       const kythe::proto::CompilationUnit::FileInput& file_input) {
@@ -213,9 +215,11 @@ std::string IndexCompilationUnit(
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
       new IndexVFS(Options.EffectiveWorkingDirectory, Files, Dirs, Style));
   KytheGraphRecorder Recorder(&Output);
+  std::string default_corpus =
+      Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent,
-                              ExtractBuildConfig(Unit));
+                              ExtractBuildConfig(Unit), default_corpus);
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();
@@ -224,9 +228,6 @@ std::string IndexCompilationUnit(
     Observer.DropRedundantWraiths();
   }
   Observer.set_claimant(Unit.v_name());
-  if (Options.UseCompilationCorpusAsDefault) {
-    Observer.set_default_corpus(Unit.v_name().corpus());
-  }
   Observer.set_starting_context(Unit.entry_context());
   for (const auto& Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
