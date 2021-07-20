@@ -44,20 +44,14 @@ fn test_kzip_provider() {
         kzip_provider.exists("/tmp/main.rs", file_hash).unwrap(),
         "File should exist in kzip but doesn't"
     );
-    assert!(
-        !kzip_provider.exists("invalid", "invalid").unwrap(),
-        "File shouldn't exist but does"
-    );
+    assert!(!kzip_provider.exists("invalid", "invalid").unwrap(), "File shouldn't exist but does");
 
     // Check the `contents` function
     let contents_result = kzip_provider.contents("/tmp/main.rs", file_hash);
     assert!(!contents_result.is_err());
     let contents_string =
         String::from_utf8(contents_result.unwrap()).expect("File contents was not valid UTF-8");
-    assert_eq!(
-        contents_string, "Test\n",
-        "File contents did not match expected contents"
-    );
+    assert_eq!(contents_string, "Test\n", "File contents did not match expected contents");
 
     let invalid_contents = kzip_provider.contents("invalid", "invalid");
     assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file, but received file contents: {:?}", invalid_contents.unwrap());
