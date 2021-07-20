@@ -38,6 +38,9 @@ const (
 func setupEnvironment(t *testing.T) string {
 	t.Helper()
 	// TODO(shahms): ExtractCompilations should take an output path.
+	if _, ok := os.LookupEnv("TEST_TMPDIR"); !ok {
+		t.Skip("Skipping test due to incompatible environment (missing TEST_TMPDIR)")
+	}
 	output := t.TempDir()
 	if err := os.Setenv("KYTHE_OUTPUT_DIRECTORY", output); err != nil {
 		t.Fatalf("Error setting KYTHE_OUTPUT_DIRECTORY: %v", err)
