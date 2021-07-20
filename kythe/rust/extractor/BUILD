@@ -27,7 +27,8 @@ rust_binary(
         "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:tempdir",
-        "//kythe/rust/cargo:rust_crypto",
+        "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:sha2",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -42,7 +43,7 @@ rust_clippy(
 
 rust_binary(
     name = "extractor_test_binary",
-    srcs = glob(["tests/test.rs"]),
+    srcs = ["tests/test.rs"],
     edition = "2018",
     rustc_flags = [
         "--test",
@@ -60,13 +61,11 @@ rust_extractor_test(
 
 rust_binary(
     name = "extractor_integration_test_binary",
-    srcs = glob(["tests/integration_test.rs"]),
+    srcs = ["tests/integration_test.rs"],
     edition = "2018",
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:assert_cmd",
-        "//kythe/rust/cargo:predicates",
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",

@@ -19,9 +19,9 @@ mod save_analysis;
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
-use crypto::{digest::Digest, sha2::Sha256};
 use extra_actions_base_rust_proto::*;
 use protobuf::Message;
+use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -44,12 +44,8 @@ fn main() -> Result<()> {
     )?;
 
     // Create the output kzip
-    let kzip_file = File::create(&config.output_path).with_context(|| {
-        format!(
-            "Failed to create kzip file at path {:?}",
-            config.output_path
-        )
-    })?;
+    let kzip_file = File::create(&config.output_path)
+        .with_context(|| format!("Failed to create kzip file at path {:?}", config.output_path))?;
     let mut kzip = ZipWriter::new(kzip_file);
     kzip.add_directory("root/", FileOptions::default())?;
 
@@ -120,15 +116,12 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
     let mut file = File::open(file_path).context("Failed to open extra action file")?;
 
     let mut file_contents_bytes = Vec::new();
-    file.read_to_end(&mut file_contents_bytes)
-        .context("Failed to read extra action file")?;
+    file.read_to_end(&mut file_contents_bytes).context("Failed to read extra action file")?;
 
     let extra_action = protobuf::parse_from_bytes::<ExtraActionInfo>(&file_contents_bytes)
         .context("Failed to parse extra action protobuf")?;
 
-    SPAWN_INFO
-        .get(&extra_action)
-        .ok_or_else(|| anyhow!("SpawnInfo extension missing"))
+    SPAWN_INFO.get(&extra_action).ok_or_else(|| anyhow!("SpawnInfo extension missing"))
 }
 
 /// Create an IndexedCompilation protobuf from the supplied arguments
@@ -166,8 +159,9 @@ fn create_indexed_compilation(
 /// Generate sha256 hex digest of a vector of bytes
 fn sha256digest(bytes: &[u8]) -> String {
     let mut sha256 = Sha256::new();
-    sha256.input(bytes);
-    sha256.result_str()
+    sha256.update(bytes);
+    let bytes = sha256.finalize();
+    hex::encode(bytes)
 }
 
 /// Add a file from a path to the kzip and the list of required inputs
@@ -190,11 +184,7 @@ fn kzip_add_required_input(
         .read_to_end(&mut source_file_contents)
         .with_context(|| format!("Failed read file {:?}", file_path_string))?;
     let digest = sha256digest(&source_file_contents);
-    kzip_add_file(
-        format!("root/files/{}", digest),
-        &source_file_contents,
-        zip_writer,
-    )?;
+    kzip_add_file(format!("root/files/{}", digest), &source_file_contents, zip_writer)?;
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();

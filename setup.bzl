@@ -1,12 +1,16 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
-def github_archive(name, repo_name, commit, kind = "zip", **kwargs):
+def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
     project = repo_name[repo_name.index("/"):]
     http_archive(
         name = name,
-        strip_prefix = "{project}-{commit}".format(project = project, commit = commit),
+        strip_prefix = "{project}-{commit}/{prefix}".format(
+            project = project,
+            commit = commit,
+            prefix = strip_prefix,
+        ),
         urls = [u.format(commit = commit, repo_name = repo_name, kind = kind) for u in [
             "https://mirror.bazel.build/github.com/{repo_name}/archive/{commit}.{kind}",
             "https://github.com/{repo_name}/archive/{commit}.{kind}",
@@ -134,14 +138,28 @@ def kythe_rule_repositories():
         url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
     )
 
+    # LLVM sticks the bazel configuration under a subdirectory, which expects to
+    # be the project root, so currently needs to be two distinct repositories
+    # from the same upstream source.
+    llvm_commit = "487f74a6c4151d13d3a7b54ee4ab7beaf3e87487"
+    llvm_sha256 = "cb8d1acf60e71894a692f273ab8c2a1fb6bd9e547de77cb9ee76829b2e429e7d"
+
     maybe(
-        http_archive,
+        github_archive,
+        repo_name = "llvm/llvm-project",
+        commit = llvm_commit,
+        name = "llvm-project-raw",
+        build_file_content = "#empty",
+        sha256 = llvm_sha256,
+    )
+
+    maybe(
+        github_archive,
+        repo_name = "llvm/llvm-project",
+        commit = llvm_commit,
         name = "llvm-bazel",
+        strip_prefix = "utils/bazel",
+        sha256 = llvm_sha256,
         patch_args = ["-p2"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
-        sha256 = "7f28107253563839a00705d328cd8a0c2ba94f3fbc3630148c770dc8a242ad1b",
-        strip_prefix = "llvm-bazel-7e975edbdfda63cdac85d64d63ff3b81982952b5/llvm-bazel",
-        urls = [
-            "https://github.com/google/llvm-bazel/archive/7e975edbdfda63cdac85d64d63ff3b81982952b5.zip",
-        ],
     )

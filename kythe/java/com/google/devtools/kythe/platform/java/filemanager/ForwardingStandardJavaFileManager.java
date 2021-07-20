@@ -254,6 +254,11 @@ public class ForwardingStandardJavaFileManager
   }
 
   // TODO(shahms): @Override; added in JDK9
+  // We've intentionally mirrored this functional interface
+  // as this is a compatibility shim which will be deleted when
+  // we can stop requiring that this be buildable on Java 8 but run
+  // on JDK11.
+  @SuppressWarnings("FunctionalInterfaceClash")
   public void setPathFactory(PathFactory factory) {
     // TODO(shahms): fileManager.setPathFactory(factory);
     try {

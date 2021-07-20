@@ -220,6 +220,12 @@ go_indexer_test(
     deps = [":types_test"],
 )
 
+go_indexer_test(
+    name = "tappcorpus_test",
+    srcs = ["testdata/basic/tappcorpus.go"],
+    use_compilation_corpus_as_default = True,
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(

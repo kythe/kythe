@@ -18,6 +18,14 @@ build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-s
 # This generates a lot of spurious warnings when compiling the definitions of proto fields
 # which are marked deprecated.
 build --per_file_copt=.*\.pb\.cc@-Wno-deprecated-declarations
+# Disable diagnostics on external repositories as we don't control them.
+build --per_file_copt=external/.*@-w
+# Disable diagnostics in host mode. There is no host_per_file_copt and
+# everything we build in the host configuration we either also build in the
+# target configuration or is external, so we can't control it.
+# If/when Bazel supports --host_per_file_copt, we could use that instead:
+# https://github.com/bazelbuild/bazel/issues/12406.
+build --host_copt=-w
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env

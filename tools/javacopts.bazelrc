@@ -1,7 +1,7 @@
 build --javacopt="-Xlint:-options"
 
 build --javacopt="-XepDisableWarningsInGeneratedCode"
-build --javacopt="-XepExcludedPaths:.*/(external|_javac)/.*"
+build --javacopt="-XepExcludedPaths:.*/(external|_javac|testdata)/.*"
 
 # TODO: enable once proto special-case is in Bazel release
 # build --javacopt="-Xep:BadImport"

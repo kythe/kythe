@@ -4,9 +4,6 @@
 
 [source,shell]
 ----
-# Build static website in _site
-./build.sh
-
-# Serve website locally on port 4000
-bundle exec jekyll serve
+# Build static website and serve it locally on port 4000
+bazel run :serve
 ----
