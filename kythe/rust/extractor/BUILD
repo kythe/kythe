@@ -12,6 +12,9 @@ rust_library(
         exclude = ["src/bin/**"],
     ),
     edition = "2018",
+    deps = [
+        "//kythe/rust/cargo:anyhow",
+    ],
 )
 
 rust_binary(

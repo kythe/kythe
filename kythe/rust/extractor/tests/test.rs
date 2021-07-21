@@ -25,7 +25,7 @@ fn empty_args_fails() {
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
     let analysis_directory = PathBuf::new().join(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
-    assert_eq!(result.unwrap_err(), "Arguments vector should not be empty".to_string());
+    assert_eq!(result.unwrap_err().to_string(), "Arguments vector should not be empty".to_string());
 }
 
 #[test]
@@ -34,7 +34,10 @@ fn nonempty_string_first_fails() {
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
     let analysis_directory = PathBuf::new().join(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
-    assert_eq!(result.unwrap_err(), "The first argument must be an empty string".to_string());
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "The first argument must be an empty string".to_string()
+    );
 }
 
 #[test]

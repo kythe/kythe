@@ -13,14 +13,21 @@
 // limitations under the License.
 #![feature(rustc_private)]
 
-extern crate rustc_driver;
+#[macro_use]
+extern crate anyhow;
+
+extern crate rustc_error_codes;
+extern crate rustc_errors;
 extern crate rustc_interface;
 extern crate rustc_save_analysis;
 extern crate rustc_session;
 
-use rustc_driver::{Callbacks, Compilation, RunCompiler};
-use rustc_interface::{interface, Queries};
+use anyhow::{Context, Result};
+use rustc_errors::registry::Registry;
+use rustc_interface::interface;
 use rustc_save_analysis::DumpHandler;
+use rustc_session::config::{self, Input};
+use rustc_session::{getopts, DiagnosticOutput};
 use std::path::PathBuf;
 
 /// Generate a save_analysis in `output_dir`
@@ -29,75 +36,81 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
+pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
     let first_arg =
-        rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
+        rustc_arguments.get(0).ok_or_else(|| anyhow!("Arguments vector should not be empty"))?;
     if first_arg != &"".to_string() {
-        return Err("The first argument must be an empty string".into());
+        return Err(anyhow!("The first argument must be an empty string"));
     }
 
-    let mut callback_shim = CallbackShim::new(output_dir);
+    // Generate the configuration to parse the options
+    let mut options = getopts::Options::new();
+    for option in config::rustc_optgroups() {
+        (option.apply)(&mut options);
+    }
+    let matches = options.parse(&rustc_arguments[1..]).context("Failed to parse options")?;
 
-    rustc_driver::catch_fatal_errors(|| {
-        RunCompiler::new(&rustc_arguments, &mut callback_shim).run()
+    // Create the session options
+    let sopts = config::build_session_options(&matches);
+
+    // Make PathBufs for the output directory and file name
+    let odir = matches.opt_str("out-dir").map(|o| PathBuf::from(&o));
+    let ofile = matches.opt_str("o").map(|o| PathBuf::from(&o));
+
+    // Process configuration flags
+    let cfg = interface::parse_cfgspecs(matches.opt_strs("cfg"));
+
+    // Create PathBufs for the input file
+    let ifile = &matches.free[0];
+
+    // Create the compilation configuration
+    let config = interface::Config {
+        opts: sopts,
+        crate_cfg: cfg,
+        input: Input::File(PathBuf::from(ifile)),
+        input_path: Some(PathBuf::from(ifile)),
+        output_file: ofile,
+        output_dir: odir,
+        file_loader: None,
+        diagnostic_output: DiagnosticOutput::Default,
+        stderr: None,
+        lint_caps: Default::default(),
+        parse_sess_created: None,
+        register_lints: None,
+        override_queries: None,
+        make_codegen_backend: None,
+        registry: Registry::new(&rustc_error_codes::DIAGNOSTICS),
+    };
+
+    interface::run_compiler(config, |compiler| {
+        compiler.enter(|queries| -> Result<()> {
+            queries.parse().map_err(|_| anyhow!("Failed to parse code"))?;
+            queries.expansion().map_err(|_| anyhow!("Failed to expand code"))?;
+            queries.prepare_outputs().map_err(|_| anyhow!("Failed to prepate outputs"))?;
+            queries.global_ctxt().map_err(|_| anyhow!("Failed to generate global context"))?;
+
+            std::env::set_var(
+                "RUST_SAVE_ANALYSIS_CONFIG",
+                r#"{"output_file":null,"full_docs":true,"pub_only":false,"reachable_only":false,"distro_crate":false,"signatures":false,"borrow_data":false}"#,
+            );
+
+            queries
+            .global_ctxt().map_err(|_| anyhow!("Failed to retrieve global context"))?.peek_mut().enter(|tcx| {
+                let input = compiler.input();
+                let crate_name = queries.crate_name().unwrap().peek().clone();
+                rustc_save_analysis::process_crate(
+                    tcx,
+                    &crate_name,
+                    &input,
+                    None,
+                    DumpHandler::new(Some(output_dir.as_path()), &crate_name),
+                );
+            });
+
+            Ok(())
+        })?;
+
+        Ok(())
     })
     .map(|_| ())
-    .map_err(|_| "A compiler error occurred".to_string())?;
-
-    Ok(())
-}
-
-/// Handles compiler callbacks to enable and dump the save_analysis
-#[derive(Default)]
-struct CallbackShim {
-    output_dir: PathBuf,
-}
-
-impl CallbackShim {
-    /// Create a new CallbackShim that dumps save_analysis files to `output_dir`
-    pub fn new(output_dir: PathBuf) -> Self {
-        Self { output_dir }
-    }
-}
-
-impl Callbacks for CallbackShim {
-    // Always enable save_analysis generation
-    fn config(&mut self, config: &mut interface::Config) {
-        config.opts.debugging_opts.save_analysis = true;
-    }
-
-    fn after_analysis<'tcx>(
-        &mut self,
-        compiler: &interface::Compiler,
-        queries: &'tcx Queries<'tcx>,
-    ) -> Compilation {
-        let input = compiler.input();
-        let crate_name = queries.crate_name().unwrap().peek().clone();
-
-        // Configure the save_analysis to include full documentation.
-        // Normally this would be set using a `rls_data::config::Config` struct on the
-        // fourth parameter of `process_crate`. However, the Rust compiler
-        // falsely claims that there is a mismatch between rustc_save_analysis's
-        // `rls_data::config::Config` and ours, even though we use the same version.
-        // This forces us to use the environment variable method of configuration
-        // instead.
-        std::env::set_var(
-            "RUST_SAVE_ANALYSIS_CONFIG",
-            r#"{"output_file":null,"full_docs":true,"pub_only":false,"reachable_only":false,"distro_crate":false,"signatures":false,"borrow_data":false}"#,
-        );
-
-        // Perform the save_analysis and dump it to the directory
-        // The JSON file is saved at {self.output_dir}/save-analysis/{crate_name}.json
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
-            rustc_save_analysis::process_crate(
-                tcx,
-                &crate_name,
-                &input,
-                None,
-                DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
-            )
-        });
-
-        Compilation::Stop
-    }
 }

@@ -128,12 +128,13 @@ fn correct_arguments_succeed(
 ) {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let kzip_path_str = format!("{}/output.kzip", temp_dir_str);
-    let exit_status = Command::new(&extractor_path)
+    let output = Command::new(&extractor_path)
         .arg(format!("--extra_action={}", extra_action_path_str))
         .arg(format!("--output={}", kzip_path_str))
-        .status()
+        .output()
         .unwrap();
-    assert_eq!(exit_status.code().unwrap(), 0);
+    assert_eq!("".to_string(), String::from_utf8_lossy(&output.stderr));
+    assert_eq!(output.status.code().unwrap(), 0);
 
     // Open kzip
     let kzip_path = Path::new(&kzip_path_str);
