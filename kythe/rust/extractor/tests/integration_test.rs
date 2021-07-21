@@ -133,7 +133,6 @@ fn correct_arguments_succeed(
         .arg(format!("--output={}", kzip_path_str))
         .output()
         .unwrap();
-    assert_eq!("".to_string(), String::from_utf8_lossy(&output.stderr));
     assert_eq!(output.status.code().unwrap(), 0);
 
     // Open kzip
