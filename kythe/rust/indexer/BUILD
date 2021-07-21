@@ -1,5 +1,4 @@
 load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
-load("@rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -14,13 +13,14 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
+        "//kythe/rust/cargo:hex",
         "//kythe/rust/cargo:quick_error",
-        "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
         "//kythe/rust/cargo:serde_json",
-        "//kythe/rust/cargo:hex",
-    ] + PROTO_COMPILE_DEPS,
+        "//kythe/rust/cargo:zip",
+        "@rules_rust//proto/raze:protobuf",
+    ],
 )
 
 rust_binary(
@@ -72,12 +72,13 @@ rust_test(
         "tests/testkzip.kzip",
     ],
     deps = [
-        ":kythe_rust_indexer",
         ":inline_tests",
+        ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
+        "@rules_rust//proto/raze:protobuf",
         "@rules_rust//tools/runfiles",
-    ] + PROTO_COMPILE_DEPS,
+    ],
 )
 
 rust_clippy(
