@@ -52,7 +52,7 @@ fn correct_arguments_succeed() {
         test_file.to_string(),
         format!("-L{}", sysroot),
         "--crate-name=test_crate".to_string(),
-        format!("--out-dir={:?}", temp_dir.path()),
+        format!("--out-dir={}", temp_dir.path().to_str().unwrap()),
     ];
     let analysis_directory = PathBuf::new().join(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
