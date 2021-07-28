@@ -136,7 +136,7 @@ func encodeDecorTargetOverride(prefix []byte, file *spb.VName, to *xspb.FileDeco
 	if err != nil {
 		return nil, err
 	}
-	val, err := proto.Marshal(&xspb.FileDecorations_TargetOverride{})
+	val, err := proto.Marshal(to)
 	if err != nil {
 		return nil, err
 	}
@@ -295,13 +295,13 @@ func decodeDecorTargetOverride(file *spb.VName, key string, val []byte) (*xspb.F
 	} else if key != "" {
 		return nil, fmt.Errorf("unexpected TargetOverride key suffix: %q", key)
 	}
+	var to xspb.FileDecorations_TargetOverride
+	if err = proto.Unmarshal(val, &to); err != nil {
+		return nil, err
+	}
 	return &xspb.FileDecorations{
-		File: file,
-		Entry: &xspb.FileDecorations_TargetOverride_{&xspb.FileDecorations_TargetOverride{
-			Kind:       xspb.FileDecorations_TargetOverride_Kind(kind),
-			Overridden: &overridden,
-			Overriding: &overriding,
-		}},
+		File:  file,
+		Entry: &xspb.FileDecorations_TargetOverride_{&to},
 	}, nil
 }
 
