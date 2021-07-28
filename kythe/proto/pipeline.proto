@@ -55,6 +55,7 @@ message DecorationPiece {
     kythe.proto.schema.Node node = 4;
     Definition definition = 5;
     kythe.proto.common.Diagnostic diagnostic = 6;
-    kythe.proto.serving.xrefs.FileDecorations.TargetOverride target_override = 7;
+    kythe.proto.serving.xrefs.FileDecorations.TargetOverride target_override =
+        7;
   }
 }
