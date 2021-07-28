@@ -17,6 +17,7 @@ go_test(
     srcs = ["compdb_test.go"],
     data = [
         "testdata/compilation_database.json",
+        "testdata/compilation_database_arguments.json",
         "testdata/test_file.cc",
         "//kythe/cxx/extractor:cxx_extractor",
     ],

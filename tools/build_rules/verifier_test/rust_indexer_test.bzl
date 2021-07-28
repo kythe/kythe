@@ -161,7 +161,7 @@ rust_entries = rule(
 
         # The location of the Rust indexer binary.
         "_indexer": attr.label(
-            default = Label("//kythe/rust/indexer"),
+            default = Label("//kythe/rust/indexer:bazel_indexer"),
             executable = True,
             cfg = "host",
         ),
