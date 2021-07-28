@@ -68,6 +68,7 @@ rust_library(
     ] + selects.with_or({
         # cfg(any(target_arch = "x86", target_arch = "x86_64"))
         (
+            "@rules_rust//rust/platform:x86_64-apple-darwin",
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
             "@raze__cpufeatures__0_1_4//:cpufeatures",

@@ -46,7 +46,7 @@ serial_test = "0.4.0"
 [package.metadata.raze]
 workspace_path = "//kythe/rust/cargo"
 genmode = "Remote"
-targets = ["x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin"]
 package_aliases_dir = "."
 
 #
