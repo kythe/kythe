@@ -84,6 +84,7 @@ fn main() -> Result<()> {
     };
     let arguments: Vec<String> = vec![
         "--".to_string(),
+        "rustc".to_string(),
         // Only the main source file gets passed to the compiler
         main_source_file.to_string(),
         format!("-L{}", matches.value_of("sysroot").unwrap()),
