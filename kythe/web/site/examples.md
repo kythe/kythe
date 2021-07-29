@@ -234,7 +234,7 @@ $ /opt/kythe/tools/runextractor cmake \
 
 ## Extracting projects built with `make`
 
-Projects built with make can be extracted by substituting the C/C++ compiler with Kythe's cxx_extractor binary.
+Projects built with make can be extracted by substituting the C/C++ compiler with a wrapper script that invokes both Kythe's cxx_extractor binary and the actual C/C++ compiler.
 
 Given a simple example project:
 
@@ -258,6 +258,14 @@ bin: main.cc
 
 ```
 
+```shell
+# cxx_wrapper.sh
+#!/bin/bash -e
+
+$KYTHE_RELEASE_DIR/extractors/cxx_extractor $@
+/usr/bin/c++ $@
+```
+
 Extraction is done by setting the `CXX` make variable as well as some environment variables that configure `cxx_extractor`.
 
 ```shell
@@ -269,7 +277,7 @@ export KYTHE_CORPUS=mycorpus
 export KYTHE_ROOT_DIRECTORY="$PWD"
 export KYTHE_OUTPUT_DIRECTORY=/tmp/extract
 
-export CXX="$KYTHE_RELEASE_DIR/extractors/cxx_extractor"
+export CXX="cxx_wrapper.sh"
 
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
