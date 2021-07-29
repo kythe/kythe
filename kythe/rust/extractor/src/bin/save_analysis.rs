@@ -38,10 +38,12 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
         .position(|arg| arg == "--")
         .ok_or_else(|| anyhow!("Could not find the start of the rustc arguments"))?;
 
-    // Keep the "--" argument and replace it with an empty string because
+    // The rust compiler executable path is the argument directly after "--"
+    // We keep the path argument and  replace it with an empty string because
     // `kythe_rust_extractor::generate_analysis` requires the first argument in
     // `arguments` to be an empty string
-    let mut rustc_arguments = arguments.split_at(argument_position).1.to_vec();
+    let mut rustc_arguments = arguments.split_at(argument_position + 1).1.to_vec();
+
     rustc_arguments[0] = String::from("");
 
     // Change the original compiler output to the temporary directory
