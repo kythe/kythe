@@ -37,7 +37,7 @@ def _rust_extractor_test_impl(ctx):
     )
 
     script = "\n".join(
-        ["export LD_LIBRARY_PATH=%s" % paths.dirname(rustc_lib[0].short_path)] +
+        ["export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s" % paths.dirname(rustc_lib[0].short_path)] +
         ["export SYSROOT=%s" % paths.dirname(rust_lib[0].short_path)] +
         ["export TEST_FILE=%s" % source_file.short_path] +
         ["export EXTRACTOR_PATH=%s" % extractor.short_path] +
