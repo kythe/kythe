@@ -262,8 +262,8 @@ bin: main.cc
 # cxx_wrapper.sh
 #!/bin/bash -e
 
-$KYTHE_RELEASE_DIR/extractors/cxx_extractor $@
-/usr/bin/c++ $@
+$KYTHE_RELEASE_DIR/extractors/cxx_extractor "$@" &
+/usr/bin/c++ "$@"
 ```
 
 Extraction is done by setting the `CXX` make variable as well as some environment variables that configure `cxx_extractor`.
