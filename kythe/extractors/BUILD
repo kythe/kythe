@@ -198,6 +198,8 @@ extractor_action(
     data = ["//external:vnames_config"],
     env = {
         "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib",
+        # TODO(wcalandro): Remove this once the extractor has support for VName configuration
+        "KYTHE_CORPUS": "kythe.io",
     },
     extractor = "@io_kythe//kythe/rust/extractor",
     mnemonics = [
