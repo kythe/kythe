@@ -43,6 +43,7 @@ fn main() -> Result<()> {
     let sysroot = std::env::var("SYSROOT").expect("SYSROOT variable missing");
     let arguments: Vec<String> = vec![
         "--".to_string(),
+        "rustc".to_string(),
         rust_test_source.clone(),
         format!("-L{}", sysroot),
         "--crate-name=test_crate".to_string(),
