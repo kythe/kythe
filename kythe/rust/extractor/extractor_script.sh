@@ -12,10 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Translate Bazel's special XCode parameters into paths based on the
-# environment variables `SDKROOT` and `DEVELOPER_DIR` before invoking
-# the C++ extractor.
 
 # --- begin runfiles.bash initialization ---
 set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
