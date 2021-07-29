@@ -32,9 +32,9 @@ source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/
 PATTERN="$RUNFILES_DIR/rust_*_x86_64/lib/rustlib*lib/librustc_driver-*.so"
 # Find the Rust directory first so that our next find doesn't search the
 # entire runfiles directory
-RUST_RUNFILES_LOCATION=$(find "$RUNFILES_DIR" -type d -wholename "$RUNFILES_DIR/rust_*_x86_64")
-LOCATION=$(find "$RUST_RUNFILES_LOCATION" -wholename "$PATTERN")
-LIB_DIRNAME=$(dirname "$LOCATION")
+RUST_RUNFILES_LOCATION="$(find "$RUNFILES_DIR" -type d -wholename "$RUNFILES_DIR/rust_*_x86_64")"
+LOCATION="$(find "$RUST_RUNFILES_LOCATION" -wholename "$PATTERN")"
+LIB_DIRNAME="$(dirname "$LOCATION")"
 
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$LIB_DIRNAME"
 exec "$(rlocation io_kythe/kythe/rust/extractor/extractor)" "$@"
