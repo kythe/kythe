@@ -165,10 +165,11 @@ fn correct_arguments_succeed(
     let compilation_unit = indexed_compilation.get_unit();
 
     let source_files: Vec<String> = compilation_unit.get_source_file().to_vec();
-    assert_eq!(
-        source_files,
-        vec!["kythe/rust/extractor/main.rs".to_string()],
-        "source_file field doesn't match"
+    assert_eq!(source_files.len(), 1);
+    assert!(
+        source_files.get(0).unwrap().contains("kythe/rust/extractor/main.rs"),
+        "source_file field doesn't contain \"kythe/rust/extractor/main.rs\": {}",
+        source_files.get(0).unwrap()
     );
 
     let output_key = compilation_unit.get_output_key();
@@ -183,7 +184,14 @@ fn correct_arguments_succeed(
     let required_inputs = compilation_unit.get_required_input().to_vec();
     let source_input = required_inputs.get(0).expect("Failed to get first required input");
     assert_eq!(source_input.get_v_name().get_corpus(), "test_corpus");
-    assert_eq!(source_input.get_info().get_path(), "kythe/rust/extractor/main.rs");
+
+    let source_file_path = source_input.get_info().get_path();
+    assert!(
+        source_file_path.contains("kythe/rust/extractor/main.rs"),
+        "source_file path doesn't contain \"kythe/rust/extractor/main.rs\": {}",
+        source_file_path
+    );
+
     assert_eq!(
         source_input.get_info().get_digest(),
         "7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03"
