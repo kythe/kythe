@@ -40,6 +40,14 @@
     }
   },
   {
+    "pattern": "/(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "/",
+      "path": "@1@"
+    }
+  },
+  {
     "pattern": "(.*)",
     "vname": {
       "corpus": "CORPUS",
