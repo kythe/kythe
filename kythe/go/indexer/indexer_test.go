@@ -26,7 +26,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
+	
+	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
@@ -168,6 +169,57 @@ func init() { println(foo.Foo()) }
 	}
 	for _, err := range pi.Errors {
 		t.Errorf("Unexpected resolution error: %v", err)
+	}
+}
+
+func TestResolveInlineMetadata(t *testing.T) {
+	const subject = "package subject\n\nvar Primary = struct {\n\tMyParam bool\n}{\n\tMyParam: true,\n}\n\n//gokythe-inline-metadata:ElISFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo1ChJJREVOVElGSUVSOlByaW1hcnkSB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgFSgcElsSFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo+ChtJREVOVElGSUVSOlByaW1hcnkubXlfcGFyYW0SB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgKSgw"
+	unit, digest := oneFileCompilation("testdata/subject.go", "subject", subject)
+	fetcher := memFetcher{
+		digest: subject,
+	}
+
+	featureRule := metadata.Rule{
+			EdgeIn:  edges.DefinesBinding,
+			EdgeOut: edges.Generates,
+			VName:   &spb.VName{
+				Corpus:    "default",
+				Language:  "lang",
+				Signature: "IDENTIFIER:Primary",
+				Path:      "test/example.txt",
+			},
+			Reverse: true,
+			Begin:   21,
+			End:     28,
+		}
+		
+	flagRule := metadata.Rule{
+		EdgeIn:  edges.DefinesBinding,
+		EdgeOut: edges.Generates,
+		VName:   &spb.VName{
+			Corpus:    "default",
+			Language:  "lang",
+			Signature: "IDENTIFIER:Primary.my_param",
+			Path:      "test/example.txt",
+		},
+		Reverse: true,
+		Begin:   41,
+		End:     48,
+	}
+	wantRules := metadata.Rules{featureRule, flagRule}
+	
+	pi, err := Resolve(unit, fetcher, nil)
+	if err != nil {
+		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
+	}
+	
+	gotRules := pi.Rules[pi.Files[0]]
+
+	if len(pi.Rules) != 1 {
+		t.Errorf("Resolve failed to load package rules in %v", unit.SourceFile)
+	}
+	if err := testutil.DeepEqual(wantRules, gotRules); err != nil {
+		t.Errorf("Rules diff %s", err)
 	}
 }
 
