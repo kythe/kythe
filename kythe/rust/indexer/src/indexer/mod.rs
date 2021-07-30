@@ -50,7 +50,7 @@ impl<'a> KytheIndexer<'a> {
         generator.handle_files()?;
 
         // Then, index all of the crates from the save_analysis
-        let analyzed_crates = save_analysis::load_analysis(&analysis_dir);
+        let analyzed_crates = save_analysis::load_analysis(analysis_dir);
         for krate in analyzed_crates {
             generator.index_crate(krate)?;
         }

@@ -92,7 +92,7 @@ impl Callbacks for CallbackShim {
             rustc_save_analysis::process_crate(
                 tcx,
                 &crate_name,
-                &input,
+                input,
                 None,
                 DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
             )
