@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # Copyright 2016 The Kythe Authors. All rights reserved.
 #
@@ -36,14 +36,17 @@ import shutil
 import stat
 import sys
 
+def string_output(args):
+    return check_output(args).decode('utf-8')
+
 # Find the locations of the workspace root and the generated files directory.
-workspace = check_output(['bazel', 'info', 'workspace']).strip()
-bazel_bin = check_output(['bazel', 'info', 'bazel-bin']).strip()
+workspace = string_output(['bazel', 'info', 'workspace']).strip()
+bazel_bin = string_output(['bazel', 'info', 'bazel-bin']).strip()
 targets = '//kythe/...'
 import_base = 'kythe.io'
 
 def do_lang(lang, ext):
-    protos = check_output([
+    protos = string_output([
         'bazel',
         'query',
         'kind("%s_proto_library", %s)' % (lang, targets),
