@@ -96,13 +96,13 @@ impl<'a> UnitAnalyzer<'a> {
         let mut file_digests = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
-            let storage_vname: VName = analysis_to_storage_vname(&analysis_vname);
+            let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
             let path = storage_vname.get_path().to_owned();
             file_vnames.insert(path.clone(), storage_vname);
             file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
         }
 
-        let unit_storage_vname: VName = analysis_to_storage_vname(&unit.get_v_name());
+        let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
         Self {
             unit,
             unit_storage_vname,
@@ -131,7 +131,7 @@ impl<'a> UnitAnalyzer<'a> {
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
             if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(&source_file, file_digest)?;
+                let file_bytes = self.provider.contents(source_file, file_digest)?;
                 file_contents = String::from_utf8(file_bytes).map_err(|_| {
                     KytheError::IndexerError(format!(
                         "Failed to read file {} as UTF8 string",
@@ -143,7 +143,7 @@ impl<'a> UnitAnalyzer<'a> {
             }
 
             // Add the file to the OffsetIndex
-            self.offset_index.add_file(&source_file, &file_contents);
+            self.offset_index.add_file(source_file, &file_contents);
 
             // Create text fact
             self.emitter.emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
@@ -422,7 +422,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             def_vname.set_signature(def_signature.clone());
             def_vname.set_language("rust".to_string());
             def_vname.clear_path();
-            self.emit_definition_node(&def_vname, &def, &file_vname.unwrap())?;
+            self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
         }
 
         // Normally you'd want to have a catch-all here where you emit childof edges
