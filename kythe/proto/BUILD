@@ -682,8 +682,8 @@ proto_library(
 )
 
 go_kythe_proto(
-	proto = ":metadata_proto",
-	deps = [":storage_go_proto"],
+    proto = ":metadata_proto",
+    deps = [":storage_go_proto"],
 )
 
 cc_proto_library(

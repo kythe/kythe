@@ -45,22 +45,22 @@ import (
 	"go/types"
 	"io"
 	"io/ioutil"
+	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/metadata"
+	"kythe.io/kythe/go/util/ptypes"
+	"kythe.io/kythe/go/util/schema/edges"
 	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"kythe.io/kythe/go/util/schema/edges"
-	"kythe.io/kythe/go/extractors/govname"
-	"kythe.io/kythe/go/util/metadata"
-	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
 
-	mpb "kythe.io/kythe/proto/metadata_go_proto"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
+	mpb "kythe.io/kythe/proto/metadata_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -303,7 +303,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			filev[parsed] = vname
 			srcs[parsed] = string(data)
 			smap[fpath] = parsed
-			
+
 			// If the file has inlined encoded metadata, add to rules.
 			var lastComment string
 			if len(parsed.Comments) > 0 {
@@ -900,17 +900,10 @@ func matchesBuildTags(fpath string, data []byte, bc *build.Context) bool {
 }
 
 // unmarshalProtoBase64 parses a base64 encoded proto string into the supplied
-// message, mutating msg. If the string cannot be unmarshalled, the function
-//  returns an error.
+// message, mutating msg.
 func unmarshalProtoBase64(base64Str string, msg proto.Message) error {
-	b, err := base64.StdEncoding.DecodeString(base64Str)
-	if err != nil {
-		return err
-	}
-	if err := proto.Unmarshal(b, msg); err != nil {
-		return err
-	}
-	return nil
+	b, _ := base64.StdEncoding.DecodeString(base64Str)
+	return proto.Unmarshal(b, msg)
 }
 
 // AllTypeInfo creates a new types.Info value with empty maps for each of the

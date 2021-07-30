@@ -26,11 +26,11 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	
-	"kythe.io/kythe/go/util/schema/edges"
+
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	"github.com/golang/protobuf/proto"
 
@@ -180,23 +180,23 @@ func TestResolveInlineMetadata(t *testing.T) {
 	}
 
 	featureRule := metadata.Rule{
-			EdgeIn:  edges.DefinesBinding,
-			EdgeOut: edges.Generates,
-			VName:   &spb.VName{
-				Corpus:    "default",
-				Language:  "lang",
-				Signature: "IDENTIFIER:Primary",
-				Path:      "test/example.txt",
-			},
-			Reverse: true,
-			Begin:   21,
-			End:     28,
-		}
-		
+		EdgeIn:  edges.DefinesBinding,
+		EdgeOut: edges.Generates,
+		VName: &spb.VName{
+			Corpus:    "default",
+			Language:  "lang",
+			Signature: "IDENTIFIER:Primary",
+			Path:      "test/example.txt",
+		},
+		Reverse: true,
+		Begin:   21,
+		End:     28,
+	}
+
 	flagRule := metadata.Rule{
 		EdgeIn:  edges.DefinesBinding,
 		EdgeOut: edges.Generates,
-		VName:   &spb.VName{
+		VName: &spb.VName{
 			Corpus:    "default",
 			Language:  "lang",
 			Signature: "IDENTIFIER:Primary.my_param",
@@ -207,12 +207,12 @@ func TestResolveInlineMetadata(t *testing.T) {
 		End:     48,
 	}
 	wantRules := metadata.Rules{featureRule, flagRule}
-	
+
 	pi, err := Resolve(unit, fetcher, nil)
 	if err != nil {
 		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
 	}
-	
+
 	gotRules := pi.Rules[pi.Files[0]]
 
 	if len(pi.Rules) != 1 {
