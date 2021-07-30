@@ -36,9 +36,11 @@ def _rust_extractor_test_impl(ctx):
         content = source_content,
     )
 
+    rustc_lib_path = paths.dirname(rustc_lib[0].short_path)
+    rust_lib_path = paths.dirname(rust_lib[0].short_path)
     script = "\n".join(
-        ["export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s" % paths.dirname(rustc_lib[0].short_path)] +
-        ["export SYSROOT=%s" % paths.dirname(rust_lib[0].short_path)] +
+        ["export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s:%s" % (rustc_lib_path, rust_lib_path)] +
+        ["export SYSROOT=%s" % rust_lib_path] +
         ["export TEST_FILE=%s" % source_file.short_path] +
         ["export EXTRACTOR_PATH=%s" % extractor.short_path] +
         ["export KYTHE_CORPUS=test_corpus"] +
@@ -61,13 +63,13 @@ rust_extractor_test = rule(
         "src": attr.label(
             mandatory = True,
             executable = True,
-            cfg = "host",
+            cfg = "target",
             doc = "The Rust binary to be executed",
         ),
         "_extractor": attr.label(
             default = Label("//kythe/rust/extractor:extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "target",
         ),
     },
     test = True,
