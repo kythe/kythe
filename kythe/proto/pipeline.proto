@@ -25,6 +25,7 @@ import "kythe/proto/common.proto";
 import "kythe/proto/schema.proto";
 import "kythe/proto/serving.proto";
 import "kythe/proto/storage.proto";
+import "kythe/proto/xref_serving.proto";
 
 message Reference {
   kythe.proto.VName source = 1;
@@ -54,6 +55,7 @@ message DecorationPiece {
     kythe.proto.schema.Node node = 4;
     Definition definition = 5;
     kythe.proto.common.Diagnostic diagnostic = 6;
-    // TODO(schroederc): overrides
+    kythe.proto.serving.xrefs.FileDecorations.TargetOverride target_override =
+        7;
   }
 }
