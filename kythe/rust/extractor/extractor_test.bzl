@@ -11,6 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+Implements a rule for testing the Rust extractor
+
+Generates a test source file and sets the proper environment variables to run
+the extractor
+"""
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _rust_extractor_test_impl(ctx):
