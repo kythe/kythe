@@ -49,7 +49,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	
+
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
