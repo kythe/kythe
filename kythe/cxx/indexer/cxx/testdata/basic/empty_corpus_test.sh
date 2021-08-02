@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# Copyright 2020 The Kythe Authors. All rights reserved.
+# Copyright 2021 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find kythe/rust/ tools/rust/ -name '*.rs' -not -wholename "*target/*" -not -wholename "*rust/*/testdata/*" -print0 | while read -r -d $'\0' f
-do
-    echo "Formatting $f";
-    rustfmt --config-path "$(dirname "${BASH_SOURCE[0]}")" "$@" "$f";
-done
+set -euo pipefail
+
+# Simple test that pipes a gzipped entrystream into the empty corpus checker to
+# verify that all vnames have a non-empty corpus.
+
+ENTRIES="$1"
+
+gunzip -c "$ENTRIES" | "$ENTRYSTREAM" | "$EMPTY_CORPUS_CHECKER"

@@ -41,6 +41,7 @@ import (
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
+	spb "kythe.io/kythe/proto/serving_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
@@ -126,6 +127,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 	var norm *span.Normalizer                                          // span normalizer for references
 	refsByTarget := make(map[string][]*xpb.DecorationsReply_Reference) // target -> set<Reference>
 	defs := stringset.New()                                            // set<needed definition tickets>
+	reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides)
 	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
@@ -216,7 +218,27 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 			refsByTarget[ref.TargetTicket] = append(refsByTarget[ref.TargetTicket], ref)
 			reply.Reference = append(reply.Reference, ref)
 		case *xspb.FileDecorations_TargetOverride_:
-			// TODO(schroederc): handle
+			overridingTicket := kytheuri.ToString(e.TargetOverride.Overriding)
+			t, ok := reply.ExtendsOverrides[overridingTicket]
+			if !ok {
+				t = &xpb.DecorationsReply_Overrides{}
+				reply.ExtendsOverrides[overridingTicket] = t
+			}
+			var kind xpb.DecorationsReply_Override_Kind
+			switch e.TargetOverride.Kind {
+			case spb.FileDecorations_Override_OVERRIDES:
+				kind = xpb.DecorationsReply_Override_OVERRIDES
+			case spb.FileDecorations_Override_EXTENDS:
+				kind = xpb.DecorationsReply_Override_EXTENDS
+			}
+			t.Override = append(t.Override, &xpb.DecorationsReply_Override{
+				Target:           kytheuri.ToString(e.TargetOverride.Overridden),
+				Kind:             kind,
+				TargetDefinition: e.TargetOverride.OverridingDefinition.Ticket,
+			})
+			if req.TargetDefinitions {
+				reply.DefinitionLocations[e.TargetOverride.OverridingDefinition.Ticket] = a2a(e.TargetOverride.OverridingDefinition, nil, false).Anchor
+			}
 		case *xspb.FileDecorations_TargetNode_:
 			if len(patterns) == 0 {
 				// TODO(schroederc): seek to next group

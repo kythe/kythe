@@ -1,6 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library")
-load("@rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 load(":extractor_test.bzl", "rust_extractor_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -20,16 +19,29 @@ rust_binary(
     edition = "2018",
     deps = [
         ":kythe_rust_extractor",
-        "//third_party/bazel:extra_actions_base_rust_proto",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:zip",
-        "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:rls_data",
         "//kythe/rust/cargo:sha2",
-    ] + PROTO_COMPILE_DEPS,
+        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:zip",
+        "//third_party/bazel:extra_actions_base_rust_proto",
+        "@rules_rust//proto/raze:protobuf",
+    ],
+)
+
+sh_binary(
+    name = "extractor_script",
+    srcs = [":extractor_script.sh"],
+    data = [
+        ":extractor",
+        "@bazel_tools//tools/bash/runfiles",
+    ] + select({
+        "@platforms//os:linux": ["@rust_linux_x86_64//:rustc_lib"],
+        "@platforms//os:osx": ["@rust_darwin_x86_64//:rustc_lib"],
+    }),
 )
 
 rust_clippy(

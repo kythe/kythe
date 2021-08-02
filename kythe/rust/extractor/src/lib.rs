@@ -30,9 +30,8 @@ use std::path::PathBuf;
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
 pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
-    let first_arg = rustc_arguments
-        .get(0)
-        .ok_or_else(|| "Arguments vector should not be empty".to_string())?;
+    let first_arg =
+        rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
     if first_arg != &"".to_string() {
         return Err("The first argument must be an empty string".into());
     }
@@ -93,7 +92,7 @@ impl Callbacks for CallbackShim {
             rustc_save_analysis::process_crate(
                 tcx,
                 &crate_name,
-                &input,
+                input,
                 None,
                 DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
             )

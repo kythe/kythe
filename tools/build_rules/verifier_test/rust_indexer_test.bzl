@@ -92,12 +92,12 @@ rust_extract = rule(
         "_extractor": attr.label(
             default = Label("//kythe/rust/extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_extra_action": attr.label(
             default = Label("//tools/rust/extra_action"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
@@ -161,9 +161,9 @@ rust_entries = rule(
 
         # The location of the Rust indexer binary.
         "_indexer": attr.label(
-            default = Label("//kythe/rust/indexer"),
+            default = Label("//kythe/rust/indexer:bazel_indexer"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},
