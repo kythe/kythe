@@ -51,6 +51,51 @@ void ProtoGraphBuilder::SetText(const VName& node_name,
   current_file_contents_ = content;
 }
 
+void ProtoGraphBuilder::MaybeAddEdgeFromMetadata(const Location& location,
+                                                 const VName& target) {
+  if (meta_ == nullptr) {
+    return;
+  }
+  LOG(ERROR) << "YIP";
+  LOG(ERROR) << "Maybe add edge " << location.begin << ", " << location.end;
+  auto rules = meta_->rules().equal_range(location.begin);
+  for (auto rule = rules.first; rule != rules.second; ++rule) {
+    if (location.end == rule->second.end) {
+      EdgeKindID edge_kind;
+      if (of_spelling(rule->second.edge_out, &edge_kind)) {
+        VName source(rule->second.vname);
+        source.set_corpus(target.corpus());
+        LOG(ERROR) << "Adding edge; ";
+        if (rule->second.reverse_edge) {
+          AddEdge(source, target, edge_kind);
+        } else {
+          AddEdge(target, source, edge_kind);
+        }
+      }
+    }
+  }
+}
+
+void ProtoGraphBuilder::MaybeAddMetadataFileRules(const VName& file) {
+  if (meta_ == nullptr) {
+    return;
+  }
+
+  for (const auto& rule : meta_->file_scope_rules()) {
+    EdgeKindID edge_kind;
+    if (of_spelling(rule.edge_out, &edge_kind)) {
+      LOG(ERROR) << "Adding file edge; ";
+      VName source(rule.vname);
+      source.set_corpus(file.corpus());
+      if (rule.reverse_edge) {
+        AddEdge(source, file, edge_kind);
+      } else {
+        AddEdge(file, source, edge_kind);
+      }
+    }
+  }
+}
+
 void ProtoGraphBuilder::AddNode(const VName& node_name, NodeKindID node_kind) {
   VLOG(1) << "Writing node: " << StringifyNode(node_name) << "["
           << StringifyKind(node_kind) << "]";
@@ -118,6 +163,7 @@ void ProtoGraphBuilder::AddValueToEnum(const VName& enum_type,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(value, NodeKindID::kVariable);
   AddEdge(anchor, value, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, value);
   AddEdge(value, enum_type, EdgeKindID::kChildOf);
 }
 
@@ -130,6 +176,7 @@ void ProtoGraphBuilder::AddFieldToMessage(const VName* parent,
   AddNode(field, NodeKindID::kVariable);
   recorder_->AddProperty(VNameRef(field), PropertyID::kSubkind, "field");
   AddEdge(anchor, field, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, field);
   if (parent != nullptr) {
     AddEdge(field, *parent, EdgeKindID::kChildOf);
   }
@@ -148,6 +195,7 @@ void ProtoGraphBuilder::AddOneofToMessage(const VName& message,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(oneof, NodeKindID::kSum);
   AddEdge(anchor, oneof, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, oneof);
   AddEdge(oneof, message, EdgeKindID::kChildOf);
 }
 
@@ -157,6 +205,7 @@ void ProtoGraphBuilder::AddMethodToService(const VName& service,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(method, NodeKindID::kFunction);
   AddEdge(anchor, method, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, method);
   AddEdge(method, service, EdgeKindID::kChildOf);
 }
 
@@ -165,6 +214,7 @@ void ProtoGraphBuilder::AddEnumType(const VName* parent, const VName& enum_type,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(enum_type, NodeKindID::kSum);
   AddEdge(anchor, enum_type, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, enum_type);
   if (parent != nullptr) {
     AddEdge(enum_type, *parent, EdgeKindID::kChildOf);
   }
@@ -176,6 +226,7 @@ void ProtoGraphBuilder::AddMessageType(const VName* parent,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(message, NodeKindID::kRecord);
   AddEdge(anchor, message, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, message);
   if (parent != nullptr) {
     AddEdge(message, *parent, EdgeKindID::kChildOf);
   }
@@ -196,6 +247,7 @@ void ProtoGraphBuilder::AddService(const VName* parent, const VName& service,
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(service, NodeKindID::kInterface);
   AddEdge(anchor, service, EdgeKindID::kDefinesBinding);
+  MaybeAddEdgeFromMetadata(location, service);
   if (parent != nullptr) {
     AddEdge(service, *parent, EdgeKindID::kChildOf);
   }

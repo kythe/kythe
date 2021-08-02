@@ -68,3 +68,15 @@ proto_library(
     srcs = [":testdata5_generated"],
     visibility = ["//visibility:public"],
 )
+
+copy_file(
+    name = "testdata6_generated",
+    src = "testdata6.proto",
+    out = "gen/testdata6.gen.proto",
+)
+
+proto_library(
+    name = "testdata6_proto",
+    srcs = [":testdata6_generated"],
+    visibility = ["//visibility:public"],
+)

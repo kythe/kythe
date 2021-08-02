@@ -45,24 +45,27 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
     absl::string_view buffer) {
+  LOG(ERROR) << "ParseFile: ";
   absl::string_view file_ref(filename);
   if (!(absl::EndsWith(filename, ".pb.h.meta") ||
         absl::EndsWith(filename, ".pb.h") ||
         absl::EndsWith(filename, ".proto.h.meta") ||
         absl::EndsWith(filename, ".proto.h") ||
+        absl::EndsWith(filename, ".gen.proto") ||
         absl::EndsWith(filename, ".stubby.h"))) {
     return nullptr;
   }
+  LOG(ERROR) << "buffer: " << buffer;
   proto::VName context_vname;
   if (!vname_lookup_(raw_filename, &context_vname)) {
-    LOG(WARNING) << "Failed getting VName for metadata: " << raw_filename;
+    LOG(ERROR) << "Failed getting VName for metadata: " << raw_filename;
   }
   google::protobuf::GeneratedCodeInfo info;
   if (!info.ParseFromArray(buffer.data(), buffer.size())) {
-    LOG(WARNING) << "Failed ParseFromArray: " << raw_filename;
+    LOG(ERROR) << "Failed ParseFromArray: " << raw_filename;
     return nullptr;
   }
-
+  LOG(ERROR) << info.DebugString();
   std::vector<MetadataFile::Rule> rules;
   int file_rule = -1;
   for (const auto& annotation : info.annotation()) {

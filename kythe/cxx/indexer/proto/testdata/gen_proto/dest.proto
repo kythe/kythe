@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+package pkg.dest;
+
+option java_package = "pkg.dest";
+
+//8 vname(_, "kythe", "", "kythe/cxx/indexer/proto/testdata/gen_proto/source.proto", "protobuf")
+//8     defines/binding SourceMessage
+//- @Nessage defines/binding DestMessage
+//- SourceMessage? generates DestMessage
+message Nessage {
+  optional string string_field = 1;
+}
+
+/* 2edd7046-a7df-4327-85b3-10393805a0ba
+CkMKAgQAEjdreXRoZS9jeHgvaW5kZXhlci9wcm90by90ZXN0ZGF0YS9nZW5fcHJvdG8vc291cmNl
+LnByb3RvGKsCILICCkQKAwQAAhI3a3l0aGUvY3h4L2luZGV4ZXIvcHJvdG8vdGVzdGRhdGEvZ2Vu
+X3Byb3RvL3NvdXJjZS5wcm90bxjHAiDTAg==
+*/

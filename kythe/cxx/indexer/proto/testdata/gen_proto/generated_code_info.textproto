@@ -1,0 +1,15 @@
+annotation {
+  path: 4
+  path: 0
+  source_file: "kythe/cxx/indexer/proto/testdata/gen_proto/source.proto"
+  begin: 299
+  end: 306
+}
+annotation {
+  path: 4
+  path: 0
+  path: 2
+  source_file: "kythe/cxx/indexer/proto/testdata/gen_proto/source.proto"
+  begin: 327
+  end: 339
+}

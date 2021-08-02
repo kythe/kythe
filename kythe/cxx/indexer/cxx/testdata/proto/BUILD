@@ -44,6 +44,9 @@ cc_proto_verifier_test(
     proto_libs = [
         "//kythe/testdata/indexers/proto:testdata5_proto",
     ],
+    verifier_opts = [
+        "--show_protos",
+    ],
 )
 
 bzl_library(

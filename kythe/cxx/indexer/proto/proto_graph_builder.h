@@ -28,6 +28,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
 #include "kythe/proto/common.pb.h"
@@ -56,9 +57,10 @@ class ProtoGraphBuilder {
   // object. `vname_for_rel_path` should return a VName for the given
   // relative (to the file under analysis) path.
   ProtoGraphBuilder(
-      KytheGraphRecorder* recorder,
+      KytheGraphRecorder* recorder, const MetadataFile* meta,
       std::function<proto::VName(const std::string&)> vname_for_rel_path)
       : recorder_(recorder),
+        meta_(meta),
         vname_for_rel_path_(std::move(vname_for_rel_path)) {}
 
   // disallow copy and assign
@@ -79,6 +81,9 @@ class ProtoGraphBuilder {
 
   // Records a node with the given VName and kind in the graph.
   void AddNode(const proto::VName& node_name, NodeKindID node_kind);
+
+  // Maybe add a generated file edge
+  void MaybeAddMetadataFileRules(const proto::VName& file);
 
   // Records an edge of the given kind between the named nodes in the graph.
   void AddEdge(const proto::VName& start, const proto::VName& end,
@@ -154,8 +159,15 @@ class ProtoGraphBuilder {
   void SetDeprecated(const proto::VName& node_name);
 
  private:
+  // Adds an edge from the metadata if metadata exists and a rule is found for
+  // location.
+  void MaybeAddEdgeFromMetadata(const Location& location,
+                                const proto::VName& target);
   // Where we output nodes, edges, etc..
   KytheGraphRecorder* recorder_;
+
+  // The metadata file for generated protos.
+  const MetadataFile* meta_;
 
   // A function to resolve relative paths to VNames.
   std::function<proto::VName(const std::string&)> vname_for_rel_path_;
