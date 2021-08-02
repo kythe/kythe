@@ -66,7 +66,6 @@ def _rust_extract_impl(ctx):
         outputs = [output],
         env = {
             "KYTHE_CORPUS": "test_corpus",
-            "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
         },
     )
 
@@ -90,7 +89,7 @@ rust_extract = rule(
             default = "test_crate",
         ),
         "_extractor": attr.label(
-            default = Label("//kythe/rust/extractor"),
+            default = Label("//kythe/rust/extractor:extractor_script"),
             executable = True,
             cfg = "exec",
         ),
