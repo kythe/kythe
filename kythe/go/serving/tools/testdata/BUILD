@@ -48,7 +48,7 @@ shell_tool_test(
         "JQ": "@com_github_stedolan_jq//:jq",
         "KWAZTHIS": "//kythe/go/serving/tools:kwazthis",
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
-        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools:http_server",
+        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools/http_server",
         "KYTHE_WRITE_ENTRIES": "//kythe/go/storage/tools:write_entries",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",
     },
