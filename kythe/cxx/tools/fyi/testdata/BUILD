@@ -27,7 +27,7 @@ shell_tool_test(
     tools = {
         "FYI": "//kythe/cxx/tools/fyi",
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
-        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools:http_server",
+        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools/http_server",
         "KYTHE_WRITE_ENTRIES": "//kythe/go/storage/tools:write_entries",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",
     },
@@ -48,7 +48,7 @@ shell_tool_test(
     tools = {
         "FYI": "//kythe/cxx/tools/fyi",
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
-        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools:http_server",
+        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools/http_server",
         "KYTHE_WRITE_ENTRIES": "//kythe/go/storage/tools:write_entries",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",
     },
@@ -68,7 +68,7 @@ shell_tool_test(
     tools = {
         "FYI": "//kythe/cxx/tools/fyi",
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
-        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools:http_server",
+        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools/http_server",
         "KYTHE_WRITE_ENTRIES": "//kythe/go/storage/tools:write_entries",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",
     },

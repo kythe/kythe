@@ -888,10 +888,10 @@ sh_test(
     data = [
         ":vname_corpus_entries.entries.gz",
         "//kythe/go/platform/tools/entrystream",
-        "//kythe/go/test/tools:empty_corpus_checker",
+        "//kythe/go/test/tools/empty_corpus_checker",
     ],
     env = {
-        "EMPTY_CORPUS_CHECKER": "$(location //kythe/go/test/tools:empty_corpus_checker)",
+        "EMPTY_CORPUS_CHECKER": "$(location //kythe/go/test/tools/empty_corpus_checker)",
         "ENTRYSTREAM": "$(location //kythe/go/platform/tools/entrystream)",
     },
 )
