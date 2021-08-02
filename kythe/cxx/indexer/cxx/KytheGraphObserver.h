@@ -143,8 +143,6 @@ struct KytheGraphObserverOptions {
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
-  // Nested classes in C++ are obnoxious, so Clang won't like the default
-  // construction below if `Options` is a nested class.
   using Options = KytheGraphObserverOptions;
 
   explicit KytheGraphObserver(KytheGraphRecorder* recorder,
