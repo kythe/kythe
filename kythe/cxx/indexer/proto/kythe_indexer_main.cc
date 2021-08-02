@@ -218,7 +218,7 @@ Examples:
               << "Read error for " << arg;
           ::close(read_fd);
         } else {
-          LOG(ERROR) << "Adding protoc argument: " << arg;
+          LOG(INFO) << "Adding protoc argument: " << arg;
           unit.add_argument(arg);
         }
       }

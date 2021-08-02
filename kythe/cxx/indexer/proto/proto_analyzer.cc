@@ -50,6 +50,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
                                 const VName& v_name,
                                 const std::string& content) {
   google::protobuf::DescriptorPool pool(descriptor_db_);
+
   ProtoGraphBuilder builder(recorder_, [&](const std::string& path) {
     return VNameFromRelPath(path);
   });
@@ -93,6 +94,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
   FileDescriptorWalker walker(descriptor, descriptor_proto.source_code_info(),
                               v_name, content, &builder, this);
   walker.PopulateCodeGraph();
+
   return true;
 }
 

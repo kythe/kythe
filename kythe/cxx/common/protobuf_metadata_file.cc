@@ -62,7 +62,6 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     LOG(WARNING) << "Failed ParseFromArray: " << raw_filename;
     return nullptr;
   }
-
   std::vector<MetadataFile::Rule> rules;
   int file_rule = -1;
   for (const auto& annotation : info.annotation()) {

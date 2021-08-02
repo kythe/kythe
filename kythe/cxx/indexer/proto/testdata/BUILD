@@ -1,9 +1,20 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":proto_verifier_test.bzl", "proto_verifier_test")
 
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
+
+proto_verifier_test(
+    name = "gen_proto_metadata",
+    srcs = [
+        ":gen_proto_dest_proto",
+        ":gen_proto_source_proto",
+    ],
+    tags = ["gen_proto"],
+    verifier_opts = ["--show_protos"],
+)
 
 proto_verifier_test(
     name = "file_node_existence",
@@ -228,4 +239,23 @@ proto_library(
 proto_library(
     name = "xlang_fields_api2_proto",
     srcs = ["xlang_fields_api2.proto"],
+)
+
+proto_library(
+    name = "gen_proto_source_proto",
+    srcs = ["gen_proto/source.proto"],
+)
+
+copy_file(
+    name = "gen_proto_fake_gen",
+    src = "gen_proto/dest.proto",
+    out = "gen_proto/dest.gen.proto",
+)
+
+proto_library(
+    name = "gen_proto_dest_proto",
+    srcs = [":gen_proto_fake_gen"],
+    deps = [
+        "//kythe/proto:generated_proto_info_proto",
+    ],
 )
