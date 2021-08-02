@@ -96,7 +96,6 @@ fn main() -> Result<()> {
         &mut kzip,
     )?;
 
-    println!("Generated {:?}", &config.output_path);
     Ok(())
 }
 
