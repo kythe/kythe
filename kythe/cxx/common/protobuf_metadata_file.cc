@@ -34,11 +34,11 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
   proto::VName out;
   if (!vname_lookup_(annotation.source_file(), &out)) {
     out.set_corpus(context_vname.corpus());
+    if (absl::EndsWith(annotation.source_file(), ".gen.proto")) {
+      out.set_root(context_vname.root());
+    }
   }
   out.set_path(annotation.source_file());
-  if (absl::EndsWith(annotation.source_file(), ".gen.proto")) {
-    out.set_root(context_vname.root());
-  }
   return VNameForProtoPath(out, annotation.path());
 }
 
