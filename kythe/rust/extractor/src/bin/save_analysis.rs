@@ -86,7 +86,7 @@ fn process_env_file(path: &Path) -> Result<()> {
     let lines = io::BufReader::new(file).lines();
     let pwd = std::env::current_dir().context("Couldn't determine pwd")?;
     for line in lines {
-        let line_string = line.context("Failed to read line of arg file")?;
+        let line_string = line.context("Failed to read line of env file")?;
         let split: Vec<&str> = line_string.split('=').collect();
         let value = split[1].replace("${pwd}", pwd.to_str().unwrap());
         std::env::set_var(split[0], value);
