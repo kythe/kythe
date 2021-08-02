@@ -63,7 +63,7 @@ func main() {
 
 		if r.URI.Corpus == "" {
 			log.Printf("Found source with empty corpus: %v", src)
-			emptyCorpusCount += 1
+			emptyCorpusCount++
 		}
 
 		return true
