@@ -884,9 +884,9 @@ cc_indexer_test(
 sh_test(
     name = "vname_corpus_empty_test",
     srcs = ["basic/empty_corpus_test.sh"],
-    args = ["$(location :vname_corpus_entries)"],
+    args = ["$(location :vname_corpus_entries.entries.gz)"],
     data = [
-        ":vname_corpus_entries",
+        ":vname_corpus_entries.entries.gz",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/test/tools:empty_corpus_checker",
     ],
