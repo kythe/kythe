@@ -74,14 +74,14 @@ fn main() -> Result<()> {
         .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
 
     // Add save analysis to kzip
-    let save_analysis_path: String = analysis_path_string(&build_output_path, &tmp_dir.path())?;
+    let save_analysis_path: String = analysis_path_string(build_output_path, tmp_dir.path())?;
     kzip_add_required_input(&save_analysis_path, &corpus, &mut kzip, &mut required_input)?;
 
     // Create the IndexedCompilation and add it to the kzip
     let indexed_compilation = create_indexed_compilation(
         rust_source_files,
         build_target_arguments,
-        &build_output_path,
+        build_output_path,
         required_input,
         &corpus,
     );
