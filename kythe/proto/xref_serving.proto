@@ -88,17 +88,12 @@ message FileDecorations {
   //
   // Columnar key: 20-target-kind-override
   message TargetOverride {
-    enum Kind {
-      UNKNOWN = 0;
-      OVERRIDES = 1;
-      EXTENDS = 2;
-    }
-
     // File decorations target node marked as overridden.
     kythe.proto.VName overridden = 1;
-    Kind kind = 2;
+    kythe.proto.serving.FileDecorations.Override.Kind kind = 2;
     // Node that overrides the file decoration target node.
     kythe.proto.VName overriding = 3;
+    kythe.proto.serving.ExpandedAnchor overriding_definition = 4;
   }
 
   // File decorations target node.

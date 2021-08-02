@@ -22,6 +22,7 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:go_go_proto",
+        "//kythe/proto:metadata_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
@@ -132,6 +133,12 @@ go_indexer_test(
 go_indexer_test(
     name = "structref_test",
     srcs = ["testdata/basic/structref.go"],
+)
+
+go_indexer_test(
+    name = "inline_test",
+    srcs = ["testdata/basic/inline.go"],
+    metadata_suffix = ".linkage",
 )
 
 go_indexer_test(

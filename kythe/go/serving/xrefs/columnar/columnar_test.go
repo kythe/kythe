@@ -61,7 +61,7 @@ func TestDecorationsEncodingRoundtrip(t *testing.T) {
 	}, {
 		File: file,
 		Entry: &xspb.FileDecorations_TargetOverride_{&xspb.FileDecorations_TargetOverride{
-			Kind:       xspb.FileDecorations_TargetOverride_EXTENDS,
+			Kind:       srvpb.FileDecorations_Override_EXTENDS,
 			Overridden: &spb.VName{Signature: "overridden"},
 			Overriding: &spb.VName{Signature: "overriding"},
 		}},

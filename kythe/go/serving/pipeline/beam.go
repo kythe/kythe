@@ -73,6 +73,8 @@ func init() {
 	beam.RegisterFunction(nodeToDocs)
 	beam.RegisterFunction(nodeToEdges)
 	beam.RegisterFunction(nodeToReverseEdges)
+	beam.RegisterFunction(overriddenToDecor)
+	beam.RegisterFunction(overridingToFile)
 	beam.RegisterFunction(parseMarkedSource)
 	beam.RegisterFunction(refToCallsite)
 	beam.RegisterFunction(refToCrossRef)
@@ -419,10 +421,57 @@ func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {
 		beam.CoGroupByKey(s, beam.ParDo(s, moveSourceToKey, bareNodes), targets))
 	defs := beam.ParDo(s, defToDecorPiece,
 		beam.CoGroupByKey(s, k.directDefinitions(), targets))
-	// TODO(schroederc): overrides
+	overrides := k.overrides(targets)
 	decorDiagnostics := k.diagnostics()
 
-	return beam.Flatten(s, decor, files, targetNodes, defs, decorDiagnostics)
+	return beam.Flatten(s, decor, files, targetNodes, defs, decorDiagnostics, overrides)
+}
+
+func (k *KytheBeam) overrides(targets beam.PCollection) beam.PCollection {
+	s := k.s.Scope("Overrides")
+	overriddenToEdge := beam.Seq(s, k.Nodes(), &nodes.Filter{IncludeEdges: []string{edges.Overrides, edges.Extends, edges.OverridesTransitive, edges.Satisfies}}, nodeToEdges)
+	overridingToDecor := beam.ParDo(s, overriddenToDecor, beam.CoGroupByKey(s, k.directDefinitions(), overriddenToEdge))
+	return beam.ParDo(s, overridingToFile, beam.CoGroupByKey(s, targets, overridingToDecor))
+}
+
+func overriddenToDecor(overridden *spb.VName, overriddenAnchors func(**srvpb.ExpandedAnchor) bool, edgeStream func(**scpb.Edge) bool, emit func(*spb.VName, *ppb.DecorationPiece)) {
+	var overriddenAnchor *srvpb.ExpandedAnchor
+	var e *scpb.Edge
+	if !overriddenAnchors(&overriddenAnchor) {
+		return
+	}
+	for edgeStream(&e) {
+		var kind srvpb.FileDecorations_Override_Kind
+		edgeKindString := schema.EdgeKindString(e.GetKytheKind())
+		if edges.IsVariant(edgeKindString, edges.Overrides) {
+			kind = srvpb.FileDecorations_Override_OVERRIDES
+		} else if edges.IsVariant(edgeKindString, edges.Extends) || edges.IsVariant(edgeKindString, edges.Satisfies) {
+			kind = srvpb.FileDecorations_Override_EXTENDS
+		} else {
+			continue
+		}
+		emit(e.Source, &ppb.DecorationPiece{
+			Piece: &ppb.DecorationPiece_TargetOverride{
+				TargetOverride: &xspb.FileDecorations_TargetOverride{
+					Overriding:           e.Source,
+					Overridden:           e.Target,
+					Kind:                 kind,
+					OverridingDefinition: overriddenAnchor,
+				},
+			},
+		})
+	}
+}
+
+func overridingToFile(target *spb.VName, files func(**spb.VName) bool, overrides func(**ppb.DecorationPiece) bool, emit func(*spb.VName, *ppb.DecorationPiece)) {
+	var file *spb.VName
+	if !files(&file) {
+		return
+	}
+	var override *ppb.DecorationPiece
+	for overrides(&override) {
+		emit(file, override)
+	}
 }
 
 func (k *KytheBeam) diagnostics() beam.PCollection {
@@ -580,6 +629,13 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 		})
 	case *ppb.DecorationPiece_Diagnostic:
 		accum.Diagnostic = append(accum.Diagnostic, p.Diagnostic)
+	case *ppb.DecorationPiece_TargetOverride:
+		accum.TargetOverride = append(accum.TargetOverride, &srvpb.FileDecorations_Override{
+			Overriding:           kytheuri.ToString(p.TargetOverride.Overriding),
+			Overridden:           kytheuri.ToString(p.TargetOverride.Overridden),
+			OverriddenDefinition: p.TargetOverride.OverridingDefinition.Ticket,
+			Kind:                 p.TargetOverride.Kind,
+		})
 	default:
 		panic(fmt.Errorf("unhandled DecorationPiece: %T", p))
 	}

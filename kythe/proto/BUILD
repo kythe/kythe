@@ -640,6 +640,7 @@ proto_library(
         ":schema_proto",
         ":serving_proto",
         ":storage_proto",
+        ":xref_serving_proto",
     ],
 )
 
@@ -650,6 +651,7 @@ go_kythe_proto(
         ":schema_go_proto",
         ":serving_go_proto",
         ":storage_go_proto",
+        ":xref_serving_go_proto",
     ],
 )
 
@@ -677,6 +679,11 @@ proto_library(
     name = "metadata_proto",
     srcs = ["metadata.proto"],
     deps = [":storage_proto"],
+)
+
+go_kythe_proto(
+    proto = ":metadata_proto",
+    deps = [":storage_go_proto"],
 )
 
 cc_proto_library(
