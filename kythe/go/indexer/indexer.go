@@ -35,6 +35,7 @@ package indexer // import "kythe.io/kythe/go/indexer"
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -52,6 +53,7 @@ import (
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -59,6 +61,7 @@ import (
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
+	mpb "kythe.io/kythe/proto/metadata_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -301,6 +304,23 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			filev[parsed] = vname
 			srcs[parsed] = string(data)
 			smap[fpath] = parsed
+
+			// If the file has inlined encoded metadata, add to rules.
+			var lastComment string
+			if len(parsed.Comments) > 0 {
+				lastComment = parsed.Comments[len(parsed.Comments)-1].Text()
+			}
+			const delimiter = "gokythe-inline-metadata:"
+
+			if strings.HasPrefix(lastComment, delimiter) {
+				encodedMetadata := strings.TrimPrefix(lastComment, delimiter)
+				newRule, err := loadInlineMetadata(ri, encodedMetadata)
+				if err != nil {
+					log.Printf("Error loading metadata in %q: %v", ri.Info.GetPath(), err)
+				} else {
+					rules = append(rules, newRule)
+				}
+			}
 			continue
 		}
 
@@ -839,6 +859,33 @@ func goPackageInfo(details []*ptypes.Any) *gopb.GoPackageInfo {
 	return nil
 }
 
+// loadInlineMetadata unmarshals the encoded metadata string and returns
+// the corresponding metadata rules which link source definitions
+// to the file fi. An error is returned if unmarshalling fails.
+func loadInlineMetadata(fi *apb.CompilationUnit_FileInput, encodedMetadata string) (*Ruleset, error) {
+	var gci mpb.GeneratedCodeInfo
+	err := unmarshalProtoBase64(encodedMetadata, &gci)
+	if err != nil {
+		return nil, err
+	}
+
+	rules := make(metadata.Rules, 0, len(gci.GetMeta()))
+	for _, r := range gci.GetMeta() {
+		rules = append(rules, metadata.Rule{
+			EdgeIn:  edges.DefinesBinding,
+			EdgeOut: edges.Generates,
+			VName:   r.GetVname(),
+			Reverse: true,
+			Begin:   int(r.GetBegin()),
+			End:     int(r.GetEnd()),
+		})
+	}
+	return &Ruleset{
+		Path:  fi.Info.GetPath(),
+		Rules: rules,
+	}, nil
+}
+
 // matchesBuildTags reports whether the file at fpath, whose content is in
 // data, would be matched by the settings in bc.
 func matchesBuildTags(fpath string, data []byte, bc *build.Context) bool {
@@ -851,6 +898,13 @@ func matchesBuildTags(fpath string, data []byte, bc *build.Context) bool {
 	}
 	match, err := bc.MatchFile(dir, name)
 	return err == nil && match
+}
+
+// unmarshalProtoBase64 parses a base64 encoded proto string into the supplied
+// message, mutating msg.
+func unmarshalProtoBase64(base64Str string, msg proto.Message) error {
+	b, _ := base64.StdEncoding.DecodeString(base64Str)
+	return proto.Unmarshal(b, msg)
 }
 
 // AllTypeInfo creates a new types.Info value with empty maps for each of the
