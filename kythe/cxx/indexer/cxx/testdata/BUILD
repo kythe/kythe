@@ -890,6 +890,10 @@ sh_test(
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/test/tools:empty_corpus_checker",
     ],
+    env = {
+        "EMPTY_CORPUS_CHECKER": "$(location //kythe/go/test/tools:empty_corpus_checker)",
+        "ENTRYSTREAM": "$(location //kythe/go/platform/tools/entrystream)",
+    },
 )
 
 cc_indexer_test(
