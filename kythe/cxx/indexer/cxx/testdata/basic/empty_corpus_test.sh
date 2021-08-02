@@ -6,7 +6,7 @@ set -euo pipefail
 
 ENTRIES="$1"
 
-CORPUS_CHECKER="kythe/go/test/tools/corpus_checker"
+CORPUS_CHECKER="kythe/go/test/tools/empty_corpus_checker"
 ENTRYSTREAM="kythe/go/platform/tools/entrystream/entrystream"
 
 gunzip -c "$ENTRIES" | "$ENTRYSTREAM" | "$CORPUS_CHECKER"
