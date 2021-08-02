@@ -41,7 +41,7 @@ import (
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
-	"kythe.io/kythe/proto/serving_go_proto"
+	spb "kythe.io/kythe/proto/serving_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
@@ -226,9 +226,9 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 			}
 			var kind xpb.DecorationsReply_Override_Kind
 			switch e.TargetOverride.Kind {
-			case serving_go_proto.FileDecorations_Override_OVERRIDES:
+			case spb.FileDecorations_Override_OVERRIDES:
 				kind = xpb.DecorationsReply_Override_OVERRIDES
-			case serving_go_proto.FileDecorations_Override_EXTENDS:
+			case spb.FileDecorations_Override_EXTENDS:
 				kind = xpb.DecorationsReply_Override_EXTENDS
 			}
 			t.Override = append(t.Override, &xpb.DecorationsReply_Override{
