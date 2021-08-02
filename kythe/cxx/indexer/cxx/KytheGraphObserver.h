@@ -131,24 +131,35 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   bool language_independent_ = false;
 };
 
+struct KytheGraphObserverOptions {
+  // The custom build_config, if any, to apply to anchor nodes.
+  std::string build_config = "";
+  // The default corpus to use for nodes which would otherwise have an empty
+  // corpus.
+  std::string default_corpus = "";
+};
+
 /// \brief Records details in the form of Kythe nodes and edges about elements
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
+  // Nested classes in C++ are obnoxious, so Clang won't like the default
+  // construction below if `Options` is a nested class.
+  using Options = KytheGraphObserverOptions;
+
   explicit KytheGraphObserver(KytheGraphRecorder* recorder,
                               KytheClaimClient* client,
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              std::string build_config = "",
-                              std::string default_corpus = "")
+                              const Options& options = {})
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs),
-        build_config_(std::move(build_config)) {
+        build_config_(options.build_config) {
     default_token_.set_rough_claimed(true);
-    set_default_corpus(default_corpus);
+    set_default_corpus(options.default_corpus);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
