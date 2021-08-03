@@ -71,4 +71,5 @@ func main() {
 	if emptyCorpusCount != 0 {
 		log.Fatalf("FAILURE: found %d sources with empty corpus", emptyCorpusCount)
 	}
+	log.Printf("Success! All vnames have a non-empty corpus.")
 }
