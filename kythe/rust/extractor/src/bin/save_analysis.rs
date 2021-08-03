@@ -58,7 +58,7 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
     rustc_arguments[outdir_position] = format!("--out-dir={}", outdir_str);
 
     // Check if there is a file containing environment variables
-    let env_file_position = arguments.iter().position(|arg| arg.contains("--env-file"));
+    let env_file_position = arguments.iter().position(|arg| arg == "--env-file");
     if let Some(position) = env_file_position {
         let env_file = &arguments[position + 1];
         let path = Path::new(env_file);
@@ -66,7 +66,7 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
     }
 
     // Check if there is a file containing extra compiler arguments
-    let arg_file_position = arguments.iter().position(|arg| arg.contains("--arg-file"));
+    let arg_file_position = arguments.iter().position(|arg| arg == "--arg-file");
     if let Some(position) = arg_file_position {
         let arg_file = &arguments[position + 1];
         let path = Path::new(arg_file);
@@ -82,12 +82,10 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
 ///
 /// * `path` - The path of the environment variable file
 fn process_env_file(path: &Path) -> Result<()> {
-    let file = File::open(path)?;
-    let lines = io::BufReader::new(file).lines();
     let pwd = std::env::current_dir().context("Couldn't determine pwd")?;
-    for line in lines {
+    for line in io::BufReader::new(File::open(path)?).lines() {
         let line_string = line.context("Failed to read line of env file")?;
-        let split: Vec<&str> = line_string.split('=').collect();
+        let split: Vec<&str> = line_string.trim().split('=').collect();
         let value = split[1].replace("${pwd}", pwd.to_str().unwrap());
         std::env::set_var(split[0], value);
     }
@@ -98,10 +96,8 @@ fn process_env_file(path: &Path) -> Result<()> {
 ///
 /// * `path` - The path of the compiler argument file
 fn process_arg_file(path: &Path) -> Result<Vec<String>> {
-    let file = File::open(path)?;
-    let lines = io::BufReader::new(file).lines();
     let mut arguments = Vec::new();
-    for line in lines {
+    for line in io::BufReader::new(File::open(path)?).lines() {
         let line_string = line.context("Failed to read line of arg file")?;
         arguments.push(line_string);
     }
