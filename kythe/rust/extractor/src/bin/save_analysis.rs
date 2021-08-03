@@ -96,10 +96,8 @@ fn process_env_file(path: &Path) -> Result<()> {
 ///
 /// * `path` - The path of the compiler argument file
 fn process_arg_file(path: &Path) -> Result<Vec<String>> {
-    let mut arguments = Vec::new();
-    for line in io::BufReader::new(File::open(path)?).lines() {
-        let line_string = line.context("Failed to read line of arg file")?;
-        arguments.push(line_string);
-    }
-    Ok(arguments)
+    io::BufReader::new(File::open(path)?)
+        .lines()
+        .map(|line| line.context("Failed to read line of arg file"))
+        .collect()
 }
