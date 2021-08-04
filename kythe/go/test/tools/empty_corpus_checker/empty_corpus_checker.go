@@ -63,7 +63,7 @@ func main() {
 
 		if r.URI.Corpus == "" {
 			log.Printf("Found source with empty corpus: %v", src)
-			emptyCorpusCount += 1
+			emptyCorpusCount++
 		}
 
 		return true
@@ -71,4 +71,5 @@ func main() {
 	if emptyCorpusCount != 0 {
 		log.Fatalf("FAILURE: found %d sources with empty corpus", emptyCorpusCount)
 	}
+	log.Printf("Success! All vnames have a non-empty corpus.")
 }

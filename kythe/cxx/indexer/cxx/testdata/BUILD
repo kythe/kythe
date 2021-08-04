@@ -5,6 +5,7 @@ load(
     "cc_indexer_test",
     "objc_indexer_test",
 )
+load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -881,19 +882,9 @@ cc_indexer_test(
     use_compilation_corpus_as_default = True,
 )
 
-sh_test(
-    name = "vname_corpus_empty_test",
-    srcs = ["basic/empty_corpus_test.sh"],
-    args = ["$(location :vname_corpus_entries.entries.gz)"],
-    data = [
-        ":vname_corpus_entries.entries.gz",
-        "//kythe/go/platform/tools/entrystream",
-        "//kythe/go/test/tools:empty_corpus_checker",
-    ],
-    env = {
-        "EMPTY_CORPUS_CHECKER": "$(location //kythe/go/test/tools:empty_corpus_checker)",
-        "ENTRYSTREAM": "$(location //kythe/go/platform/tools/entrystream)",
-    },
+empty_corpus_test(
+    name = "empty_corpus_test",
+    entries = ":vname_corpus_entries.entries.gz",
 )
 
 cc_indexer_test(
