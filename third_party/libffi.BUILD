@@ -26,7 +26,12 @@ configure_make(
         "--disable-dependency-tracking",
         "--disable-docs",
         "AR=ar",
-    ],
+    ] + select({
+        "@bazel_tools//src/conditions:darwin_arm64": [
+            "--build=aarch64-apple-darwin",
+        ],
+        "//conditions:default": [],
+    }),
     lib_source = ":all_srcs",
     visibility = ["//visibility:public"],
     alwayslink = True,

@@ -128,6 +128,7 @@ func buildContextEnv(bc build.Context) ([]string, error) {
 		cgo = "1"
 	}
 	vars := []string{
+		"GO111MODULE=auto",
 		"CGO_ENABLED=" + cgo,
 		"GOARCH=" + bc.GOARCH,
 		"GOOS=" + bc.GOOS,

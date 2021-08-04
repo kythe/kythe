@@ -11,12 +11,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:public"],
-)
-
 sh_test(
     name = "check_bazel_versions",
     srcs = ["//tools:check_bazel_versions.sh"],
