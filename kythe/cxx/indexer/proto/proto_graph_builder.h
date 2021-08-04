@@ -57,10 +57,9 @@ class ProtoGraphBuilder {
   // object. `vname_for_rel_path` should return a VName for the given
   // relative (to the file under analysis) path.
   ProtoGraphBuilder(
-      KytheGraphRecorder* recorder, const MetadataFile* meta,
+      KytheGraphRecorder* recorder,
       std::function<proto::VName(const std::string&)> vname_for_rel_path)
       : recorder_(recorder),
-        meta_(meta),
         vname_for_rel_path_(std::move(vname_for_rel_path)) {}
 
   // disallow copy and assign

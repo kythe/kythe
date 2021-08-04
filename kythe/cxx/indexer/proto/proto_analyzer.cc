@@ -93,7 +93,6 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
   FileDescriptorWalker walker(descriptor, descriptor_proto.source_code_info(),
                               v_name, content, &builder, this);
   walker.PopulateCodeGraph();
-
   return true;
 }
 
