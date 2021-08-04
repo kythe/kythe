@@ -216,11 +216,11 @@ std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
     }
     decoded_buffer = *decoded_buffer_storage;
   }
-  if (!decoded_buffer_storage && (absl::EndsWith(filename, ".h") ||
-                                  absl::EndsWith(filename, ".gen.proto"))) {
+  if (!decoded_buffer_storage && filename.size() >= 2 &&
+      filename.find(".h", filename.size() - 2) != std::string::npos) {
     decoded_buffer_storage = LoadHeaderMetadata(buffer);
     if (!decoded_buffer_storage) {
-      LOG(ERROR) << filename << " wasn't a metadata header.";
+      LOG(WARNING) << filename << " wasn't a metadata header.";
     } else {
       decoded_buffer = *decoded_buffer_storage;
       modified_filename = filename.substr(0, filename.size() - 2);

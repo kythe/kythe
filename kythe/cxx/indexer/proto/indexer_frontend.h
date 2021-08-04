@@ -23,7 +23,6 @@
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 
 namespace kythe {
-class MetadataSupports;
 namespace proto {
 class CompilationUnit;
 class FileData;
@@ -32,10 +31,9 @@ class FileData;
 // Indexes `unit`, reading file paths and content from `files` and writing
 // Kythe artifacts to `output`. Returns an empty string if OK; otherwise,
 // an error description.
-std::string IndexProtoCompilationUnit(
-    const proto::CompilationUnit& unit,
-    const std::vector<proto::FileData>& files,
-    const kythe::MetadataSupports& meta_supports, KytheOutputStream* output);
+std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
+                                      const std::vector<proto::FileData>& files,
+                                      KytheOutputStream* output);
 
 }  // namespace kythe
 

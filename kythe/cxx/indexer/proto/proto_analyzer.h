@@ -55,14 +55,12 @@ class ProtoAnalyzer {
 
   // A wrapper for AnalyzeFile that generates the VName and relativizes
   // the proto file path.
-  bool Parse(const std::string& proto_file, const std::string& content,
-             const kythe::MetadataSupports& meta_supports);
+  bool Parse(const std::string& proto_file, const std::string& content);
 
   // Given a string which contains a proto file, analyze it and record the
   // results.
   bool AnalyzeFile(const std::string& rel_path, const proto::VName& v_name,
-                   const std::string& content,
-                   const kythe::MetadataSupports& meta_supports);
+                   const std::string& content);
 
   // Returns a VName for the input 'simplified_path' joined with any prefix
   // (for example, a bazel-out/ subdirectory) needed to properly and fully
