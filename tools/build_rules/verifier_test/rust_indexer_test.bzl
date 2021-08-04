@@ -57,7 +57,7 @@ def _rust_extract_impl(ctx):
     output = ctx.outputs.kzip
     ctx.actions.run(
         mnemonic = "RustExtract",
-        executable = ctx.executable._extractor,
+        executable = ctx.executable.extractor,
         arguments = [
             "--extra_action=%s" % extra_action_file.path,
             "--output=%s" % output.path,
@@ -88,8 +88,9 @@ rust_extract = rule(
         "crate_name": attr.string(
             default = "test_crate",
         ),
-        "_extractor": attr.label(
+        "extractor": attr.label(
             default = Label("//kythe/rust/extractor:extractor_script"),
+            allow_files = True,
             executable = True,
             cfg = "exec",
         ),
