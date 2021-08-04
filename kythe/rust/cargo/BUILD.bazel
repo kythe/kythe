@@ -59,7 +59,7 @@ alias(
 
 alias(
     name = "quick_error",
-    actual = "@raze__quick_error__1_2_3//:quick_error",
+    actual = "@raze__quick_error__2_0_1//:quick_error",
     tags = [
         "cargo-raze",
         "manual",

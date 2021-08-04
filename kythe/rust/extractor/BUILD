@@ -34,10 +34,9 @@ rust_binary(
 
 sh_binary(
     name = "extractor_script",
-    srcs = [":extractor_script.sh"],
+    srcs = ["extractor_script.sh"],
     data = [
         ":extractor",
-        "@bazel_tools//tools/bash/runfiles",
     ] + select({
         "@platforms//os:linux": ["@rust_linux_x86_64//:rustc_lib"],
         "@platforms//os:osx": ["@rust_darwin_x86_64//:rustc_lib"],

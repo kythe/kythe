@@ -97,7 +97,7 @@ atomize_entries = rule(
             providers = ["kythe_entries"],
         ),
         "_atomizer": attr.label(
-            default = Label("//kythe/go/test/tools:xrefs_atomizer"),
+            default = Label("//kythe/go/test/tools/xrefs_atomizer"),
             executable = True,
             cfg = "host",
         ),

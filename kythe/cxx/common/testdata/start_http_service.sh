@@ -39,7 +39,7 @@
 #   "//kythe/go/platform/tools:entrystream",
 #   "//kythe/go/storage/tools:write_tables",
 #   "//kythe/go/storage/tools:write_entries",
-#   "//kythe/go/test/tools:http_server",
+#   "//kythe/go/test/tools/http_server",
 
 set -e
 
