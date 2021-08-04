@@ -45,7 +45,7 @@ cc_library(
     name = "libuuid",
     srcs = ["empty.cc"],
     linkopts = select({
-        "//:darwin": [],
+        "@bazel_tools//src/conditions:darwin": [],
         "//conditions:default": ["-luuid"],
     }),
 )
