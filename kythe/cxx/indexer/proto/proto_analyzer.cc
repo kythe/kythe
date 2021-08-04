@@ -47,10 +47,9 @@ ProtoAnalyzer::ProtoAnalyzer(
       descriptor_db_(descriptor_db) {}
 
 bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
-                                const VName& v_name,
-                                const std::string& content) {
+                                const VName& v_name, const std::string& content,
+                                const kythe::MetadataSupports& meta_supports) {
   google::protobuf::DescriptorPool pool(descriptor_db_);
-
   ProtoGraphBuilder builder(recorder_, [&](const std::string& path) {
     return VNameFromRelPath(path);
   });
@@ -71,6 +70,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
   // devtools/grok/proto/, it turns out), we at least get the partial info
   // of having the file in our index and acknowledging the lexer results.
   builder.AddNode(v_name, NodeKindID::kFile);
+  builder.MaybeAddMetadataFileRules(v_name);
 
   // TODO: If FileDescriptor surfaced the source code info, then we
   // wouldn't need to look up the proto as well.
@@ -99,9 +99,11 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
 }
 
 bool ProtoAnalyzer::Parse(const std::string& proto_file,
-                          const std::string& content) {
+                          const std::string& content,
+                          const kythe::MetadataSupports& meta_supports) {
   VLOG(1) << "FILE : " << proto_file << std::endl;
-  return AnalyzeFile(proto_file, VNameFromFullPath(proto_file), content);
+  return AnalyzeFile(proto_file, VNameFromFullPath(proto_file), content,
+                     meta_supports);
 }
 
 VName ProtoAnalyzer::VNameFromRelPath(

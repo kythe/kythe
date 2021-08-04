@@ -20,6 +20,7 @@
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
@@ -27,9 +28,10 @@
 
 namespace kythe {
 
-std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
-                                      const std::vector<proto::FileData>& files,
-                                      KytheOutputStream* output) {
+std::string IndexProtoCompilationUnit(
+    const proto::CompilationUnit& unit,
+    const std::vector<proto::FileData>& files,
+    const kythe::MetadataSupports& meta_supports, KytheOutputStream* output) {
   KytheGraphRecorder recorder(output);
 
   std::vector<std::string> unprocessed_args;
@@ -64,7 +66,7 @@ std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
       errors += "\n source_file " + file_path + " not in FileData.";
       continue;
     }
-    if (!analyzer.Parse(file_path, file_contents)) {
+    if (!analyzer.Parse(file_path, file_contents, meta_supports)) {
       errors += "\n Analyzer failed on " + file_path;
     }
   }

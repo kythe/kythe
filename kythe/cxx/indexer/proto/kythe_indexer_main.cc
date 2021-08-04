@@ -48,6 +48,7 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/proto/indexer_frontend.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
@@ -162,6 +163,7 @@ Examples:
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   std::vector<std::string> final_args(remain.begin() + 1, remain.end());
 
+  LOG(ERROR) << "Indexing protos";
   std::string kzip_file;
   if (!absl::GetFlag(FLAGS_index_file).empty()) {
     CHECK(final_args.empty())
@@ -185,18 +187,22 @@ Examples:
     kythe::FileOutputStream kythe_output(&raw_output);
     kythe_output.set_flush_after_each_entry(
         absl::GetFlag(FLAGS_flush_after_each_entry));
+    kythe::MetadataSupports meta_supports;
+    meta_supports.Add(absl::make_unique<ProtobufMetadataSupport>());
 
     if (!kzip_file.empty()) {
+      LOG(ERROR) << "kzip file: " << kzip_file;
       DecodeKzipFile(kzip_file, [&](const proto::CompilationUnit& unit,
                                     std::vector<proto::FileData> file_data) {
-        std::string err =
-            IndexProtoCompilationUnit(unit, file_data, &kythe_output);
+        std::string err = IndexProtoCompilationUnit(
+            unit, file_data, meta_supports, &kythe_output);
         if (!err.empty()) {
           had_error = true;
           LOG(ERROR) << "Error: " << err;
         }
       });
     } else {
+      LOG(ERROR) << "no kzip file ";
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
@@ -232,7 +238,8 @@ Examples:
             << "Read error for protobuf on STDIN";
       }
 
-      std::string err = IndexProtoCompilationUnit(unit, files, &kythe_output);
+      std::string err =
+          IndexProtoCompilationUnit(unit, files, meta_supports, &kythe_output);
       if (!err.empty()) {
         had_error = true;
         LOG(ERROR) << "Error: " << err;
