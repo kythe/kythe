@@ -14,10 +14,10 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("//kythe/go/indexer:testdata/go_indexer_test.bzl", "go_verifier_test")
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheEntries",
+    "verifier_test",
 )
 
 def _rust_extract_impl(ctx):
@@ -207,15 +207,17 @@ def rust_indexer_test(
         emit_anchor_scopes = emit_anchor_scopes,
     )
 
-    # Most of this code was copied from the Go verifier macros and modified for
-    # Rust. This function does not need to be modified, so we are just calling
-    # it directly here.
-    go_verifier_test(
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons"]
+    if log_entries:
+        opts.append("--show_protos")
+    if allow_duplicates:
+        opts.append("--ignore_dups")
+    if has_marked_source:
+        opts.append("--convert_marked_source")
+    return verifier_test(
         name = name,
         size = size,
-        allow_duplicates = allow_duplicates,
-        entries = ":" + entries,
-        has_marked_source = has_marked_source,
-        log_entries = log_entries,
+        opts = opts,
         tags = tags,
+        deps = [":" + entries],
     )
