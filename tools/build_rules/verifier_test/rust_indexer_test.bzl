@@ -176,11 +176,13 @@ def _rust_indexer(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
-        metadata_suffix = ""):
+        metadata_suffix = "",
+        extractor = None):
     kzip = name + "_units"
     rust_extract(
         name = kzip,
         srcs = srcs,
+        extractor = extractor,
     )
     entries = name + "_entries"
     rust_entries(
@@ -199,10 +201,12 @@ def rust_indexer_test(
         log_entries = False,
         has_marked_source = False,
         emit_anchor_scopes = False,
-        allow_duplicates = False):
+        allow_duplicates = False,
+        extractor = None):
     # Generate entries using the Rust indexer
     entries = _rust_indexer(
         name = name,
+        extractor = extractor,
         srcs = srcs,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
