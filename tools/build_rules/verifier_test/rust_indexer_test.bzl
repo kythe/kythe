@@ -90,6 +90,7 @@ rust_extract = rule(
         ),
         "_extractor": attr.label(
             default = Label("//kythe/rust/extractor:extractor_script"),
+            allow_files = True,
             executable = True,
             cfg = "exec",
         ),
