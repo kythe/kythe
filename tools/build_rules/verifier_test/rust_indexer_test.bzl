@@ -15,7 +15,7 @@
 """
 Implements a rule for testing the Rust indexer
 
-Extracts and indexes the source files for the test, then runs the entires
+Extracts and indexes the source files for the test, then runs the entries
 through the verifier
 """
 
