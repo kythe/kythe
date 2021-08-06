@@ -142,14 +142,13 @@ func TestReferences(t *testing.T) {
 		},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	refs := FromNodes(s, nodes).References()
 	debug.Print(s, refs)
 	passert.Equals(s, refs, beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_targetNode(t *testing.T) {
@@ -207,14 +206,13 @@ func TestDecorations_targetNode(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_decoration(t *testing.T) {
@@ -255,14 +253,13 @@ func TestDecorations_decoration(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_diagnostics(t *testing.T) {
@@ -331,14 +328,13 @@ func TestDecorations_diagnostics(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_targetDefinition(t *testing.T) {
@@ -441,14 +437,13 @@ func TestDecorations_targetDefinition(t *testing.T) {
 		TargetDefinitions: []*srvpb.ExpandedAnchor{def},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_overrides(t *testing.T) {
@@ -554,14 +549,13 @@ func TestDecorations_overrides(t *testing.T) {
 		File: &srvpb.File{Text: []byte("some text\n")},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestCrossReferences(t *testing.T) {
@@ -829,15 +823,14 @@ func TestCrossReferences(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, refs, nodes := ptest.CreateList2(testRefs, testNodes)
 	k := &KytheBeam{s: s, refs: refs, nodes: nodes}
 	sets, _ := k.CrossReferences()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestEdges_grouping(t *testing.T) {
@@ -873,15 +866,14 @@ func TestEdges_grouping(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	k := FromNodes(s, nodes)
 	sets, _ := k.Edges()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestEdges_reverses(t *testing.T) {
@@ -923,15 +915,14 @@ func TestEdges_reverses(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	k := FromNodes(s, nodes)
 	sets, _ := k.Edges()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_text(t *testing.T) {
@@ -952,14 +943,13 @@ func TestDocuments_text(t *testing.T) {
 		RawText: "raw document text",
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_children(t *testing.T) {
@@ -982,14 +972,13 @@ func TestDocuments_children(t *testing.T) {
 		ChildTicket: []string{"kythe:#child1"},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_markedSource(t *testing.T) {
@@ -1021,14 +1010,13 @@ func TestDocuments_markedSource(t *testing.T) {
 		MarkedSource: ms,
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestFileTree_registrations(t *testing.T) {

@@ -493,12 +493,11 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__quick_error__1_2_3",
-        url = "https://crates.io/api/v1/crates/quick-error/1.2.3/download",
+        name = "raze__quick_error__2_0_1",
+        url = "https://crates.io/api/v1/crates/quick-error/2.0.1/download",
         type = "tar.gz",
-        sha256 = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0",
-        strip_prefix = "quick-error-1.2.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.quick-error-1.2.3.bazel"),
+        strip_prefix = "quick-error-2.0.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.quick-error-2.0.1.bazel"),
     )
 
     maybe(

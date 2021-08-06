@@ -17,3 +17,5 @@ go_binary(
         "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
+
+exports_files(["empty_corpus_test.sh"])

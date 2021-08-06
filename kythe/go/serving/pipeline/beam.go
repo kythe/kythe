@@ -698,6 +698,7 @@ func (c *combineDecorPieces) ExtractOutput(fd *srvpb.FileDecorations) *srvpb.Fil
 		return fd.Decoration[i].Target < fd.Decoration[j].Target
 	})
 	sort.Slice(fd.Target, func(i, j int) bool { return fd.Target[i].Ticket < fd.Target[j].Ticket })
+	sort.Slice(fd.TargetDefinitions, func(i, j int) bool { return fd.TargetDefinitions[i].Ticket < fd.TargetDefinitions[j].Ticket })
 
 	sort.Slice(fd.Diagnostic, func(i, j int) bool {
 		a, b := fd.Diagnostic[i], fd.Diagnostic[j]

@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Implements a rule for testing the Rust indexer
+
+Extracts and indexes the source files for the test, then runs the entries
+through the verifier
+"""
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("//kythe/go/indexer:testdata/go_indexer_test.bzl", "go_verifier_test")
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheEntries",
+    "verifier_test",
 )
 
 def _rust_extract_impl(ctx):
@@ -66,7 +73,6 @@ def _rust_extract_impl(ctx):
         outputs = [output],
         env = {
             "KYTHE_CORPUS": "test_corpus",
-            "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
         },
     )
 
@@ -90,7 +96,8 @@ rust_extract = rule(
             default = "test_crate",
         ),
         "_extractor": attr.label(
-            default = Label("//kythe/rust/extractor"),
+            default = Label("//kythe/rust/extractor:extractor_script"),
+            allow_files = True,
             executable = True,
             cfg = "exec",
         ),
@@ -208,15 +215,17 @@ def rust_indexer_test(
         emit_anchor_scopes = emit_anchor_scopes,
     )
 
-    # Most of this code was copied from the Go verifier macros and modified for
-    # Rust. This function does not need to be modified, so we are just calling
-    # it directly here.
-    go_verifier_test(
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons"]
+    if log_entries:
+        opts.append("--show_protos")
+    if allow_duplicates:
+        opts.append("--ignore_dups")
+    if has_marked_source:
+        opts.append("--convert_marked_source")
+    return verifier_test(
         name = name,
         size = size,
-        allow_duplicates = allow_duplicates,
-        entries = ":" + entries,
-        has_marked_source = has_marked_source,
-        log_entries = log_entries,
+        opts = opts,
         tags = tags,
+        deps = [":" + entries],
     )

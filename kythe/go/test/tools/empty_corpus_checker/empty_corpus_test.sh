@@ -20,4 +20,4 @@ set -euo pipefail
 
 ENTRIES="$1"
 
-gunzip -c "$ENTRIES" | "$ENTRYSTREAM" | "$EMPTY_CORPUS_CHECKER"
+gunzip -c "$ENTRIES" | "$EMPTY_CORPUS_CHECKER"

@@ -117,7 +117,7 @@ cc_library(
     defines = [
         "LEVELDB_PLATFORM_POSIX",
     ] + select({
-        ":darwin": ["OS_MACOSX"],
+        "@bazel_tools//src/conditions:darwin": ["OS_MACOSX"],
         "//conditions:default": [],
     }),
     includes = ["include"],
@@ -126,10 +126,4 @@ cc_library(
         "-lpthread",
     ],
     deps = ["@com_github_google_snappy//:snappy"],
-)
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:public"],
 )
