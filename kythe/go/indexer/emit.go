@@ -538,8 +538,10 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		}
 		// Mark the interface as an extension of any embedded interfaces.
 		for i, n := 0, t.NumEmbeddeds(); i < n; i++ {
-			if eobj := t.Embedded(i).Obj(); e.checkImplements(obj, eobj) {
-				e.writeEdge(target, e.pi.ObjectVName(eobj), edges.Extends)
+			if named, ok := t.EmbeddedType(i).(*types.Named); ok {
+				if eobj := named.Obj(); e.checkImplements(obj, eobj) {
+					e.writeEdge(target, e.pi.ObjectVName(eobj), edges.Extends)
+				}
 			}
 		}
 
