@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 
+	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/storage/entryset"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
@@ -54,12 +55,16 @@ func main() {
 	}
 	set.Canonicalize()
 
+	allCorpora := stringset.New()
+
 	emptyCorpusCount := 0
 	set.Sources(func(src *intpb.Source) bool {
 		r, err := kytheuri.ParseRaw(src.GetTicket())
 		if err != nil {
 			log.Fatalf("Error parsing ticket: %q, %v", src.GetTicket(), err)
 		}
+
+		allCorpora.Add(r.URI.Corpus)
 
 		if r.URI.Corpus == "" {
 			log.Printf("Found source with empty corpus: %v", src)
@@ -68,6 +73,7 @@ func main() {
 
 		return true
 	})
+	log.Printf("Found the following corpora: %v", allCorpora)
 	if emptyCorpusCount != 0 {
 		log.Fatalf("FAILURE: found %d sources with empty corpus", emptyCorpusCount)
 	}

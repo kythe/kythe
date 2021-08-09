@@ -14,6 +14,7 @@ go_binary(
         "//kythe/go/util/schema/facts",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
