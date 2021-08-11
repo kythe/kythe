@@ -49,6 +49,15 @@ alias(
 )
 
 alias(
+    name = "hex",
+    actual = "@raze__hex__0_4_3//:hex",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
     name = "lazy_static",
     actual = "@raze__lazy_static__1_4_0//:lazy_static",
     tags = [

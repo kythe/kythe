@@ -69,7 +69,7 @@ pub fn write_analysis_to_directory(
         if let Some(os_str) = input_path_buf.extension() {
             if let Some("json") = os_str.to_str() {
                 let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(digest).map_err(|err| {
+                let file_contents = provider.contents(input_path, digest).map_err(|err| {
                     KytheError::IndexerError(format!(
                         "Failed to get contents of file \"{}\" with digest \"{}\": {:?}",
                         input_path, digest, err
