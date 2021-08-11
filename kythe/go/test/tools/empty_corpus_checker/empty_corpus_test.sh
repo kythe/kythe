@@ -21,4 +21,4 @@ set -euo pipefail
 ENTRIES="$1"
 shift
 
-gunzip -c "$ENTRIES" | "$EMPTY_CORPUS_CHECKER" $@
+gunzip -c "$ENTRIES" | "$EMPTY_CORPUS_CHECKER" "$@"
