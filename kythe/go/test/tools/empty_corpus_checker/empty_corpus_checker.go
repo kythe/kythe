@@ -36,7 +36,7 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-var allowedCorpora flagutil.StringList
+var allowedCorpora flagutil.StringSet
 
 func init() {
 	flag.Usage = flagutil.SimpleUsage("Checks a stream of Entry protos via stdin for empty vname.corpus")
@@ -83,8 +83,7 @@ func main() {
 	}
 
 	if len(allowedCorpora) > 0 {
-		allowedCorporaSet := stringset.New(allowedCorpora...)
-		diff := allCorpora.Diff(allowedCorporaSet)
+		diff := allCorpora.Diff(stringset.Set(allowedCorpora))
 		if !diff.Empty() {
 			log.Fatalf("FAILURE: found entries with disallowed corpora: %v", diff)
 		}
