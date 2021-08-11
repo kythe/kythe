@@ -19,5 +19,6 @@ set -euo pipefail
 # verify that all vnames have a non-empty corpus.
 
 ENTRIES="$1"
+shift
 
-gunzip -c "$ENTRIES" | "$EMPTY_CORPUS_CHECKER"
+gunzip -c "$ENTRIES" | "$EMPTY_CORPUS_CHECKER" $@

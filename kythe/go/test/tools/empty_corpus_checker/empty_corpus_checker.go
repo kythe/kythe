@@ -36,8 +36,12 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
+var allowedCorpora flagutil.StringList
+
 func init() {
 	flag.Usage = flagutil.SimpleUsage("Checks a stream of Entry protos via stdin for empty vname.corpus")
+
+	flag.Var(&allowedCorpora, "allowed_corpora", "Comma-separated list of corpora allowed in the input entrystream")
 }
 
 func main() {
@@ -77,5 +81,14 @@ func main() {
 	if emptyCorpusCount != 0 {
 		log.Fatalf("FAILURE: found %d sources with empty corpus", emptyCorpusCount)
 	}
+
+	if len(allowedCorpora) > 0 {
+		allowedCorporaSet := stringset.New(allowedCorpora...)
+		diff := allCorpora.Diff(allowedCorporaSet)
+		if !diff.Empty() {
+			log.Fatalf("FAILURE: found entries with disallowed corpora: %v", diff)
+		}
+	}
+
 	log.Printf("Success! All vnames have a non-empty corpus.")
 }
