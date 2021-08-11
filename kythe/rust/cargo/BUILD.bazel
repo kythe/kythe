@@ -22,6 +22,15 @@ alias(
 )
 
 alias(
+    name = "base64",
+    actual = "@raze__base64__0_13_0//:base64",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
     name = "clap",
     actual = "@raze__clap__2_33_3//:clap",
     tags = [

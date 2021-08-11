@@ -25,6 +25,7 @@ path = "fake_lib.rs"
 
 [dependencies]
 anyhow = "1.0"
+base64 = "0.13"
 clap = "2.33.1"
 colored = "2.0.0"
 hex = "0.4.3"
