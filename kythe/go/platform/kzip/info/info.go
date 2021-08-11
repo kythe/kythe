@@ -80,7 +80,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	var srcCorpora stringset.Set
 	srcsWithRI := stringset.New()
 	for _, ri := range u.Proto.RequiredInput {
-		if strings.HasPrefix(ri.GetVName().GetPath(), "/") {
+		if strings.HasPrefix(ri.GetVName().GetPath(), "/") && !strings.HasPrefix(ri.GetVName().GetPath(), "/kythe_builtins/") {
 			a.KzipInfo.AbsolutePaths = append(a.KzipInfo.AbsolutePaths, ri.GetVName().GetPath())
 		}
 
