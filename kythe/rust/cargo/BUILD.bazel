@@ -22,6 +22,15 @@ alias(
 )
 
 alias(
+    name = "base64",
+    actual = "@raze__base64__0_13_0//:base64",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
     name = "clap",
     actual = "@raze__clap__2_33_3//:clap",
     tags = [
@@ -33,15 +42,6 @@ alias(
 alias(
     name = "colored",
     actual = "@raze__colored__2_0_0//:colored",
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-)
-
-alias(
-    name = "hex",
-    actual = "@raze__hex__0_4_3//:hex",
     tags = [
         "cargo-raze",
         "manual",

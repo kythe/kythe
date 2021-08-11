@@ -24,18 +24,18 @@ use zip::ZipArchive;
 pub trait FileProvider {
     /// Checks whether a file exists and that the contents are available.
     ///
-    /// This function takes a file path and digest, and returns whether
+    /// This function takes a file digest, and returns whether
     /// the file exists and that the contents can be requested.
     ///
     /// # Errors
     ///
     /// If the file is not a valid zip archive, a [KytheError::KzipFileError]
     /// will be returned.
-    fn exists(&mut self, path: &str, digest: &str) -> Result<bool, KytheError>;
+    fn exists(&mut self, digest: &str) -> Result<bool, KytheError>;
 
     /// Retrieves the byte contents of a file.
     ///
-    /// This function takes a file path and digest, and returns the bytes
+    /// This function takes a file digest, and returns the bytes
     /// contents of the file in a vector.
     ///
     /// # Errors
@@ -44,7 +44,7 @@ pub trait FileProvider {
     /// [FileNotFoundError][KytheError::FileNotFoundError] will be returned.
     /// If the file can't be read, a [FileReadError][KytheError::FileReadError]
     /// will be returned.
-    fn contents(&mut self, path: &str, digest: &str) -> Result<Vec<u8>, KytheError>;
+    fn contents(&mut self, digest: &str) -> Result<Vec<u8>, KytheError>;
 }
 
 /// A [FileProvider] that is backed by a .kzip file.
@@ -114,7 +114,7 @@ impl KzipFileProvider {
 impl FileProvider for KzipFileProvider {
     /// Given a file path and digest, returns whether the file exists in the
     /// kzip.
-    fn exists(&mut self, _path: &str, digest: &str) -> Result<bool, KytheError> {
+    fn exists(&mut self, digest: &str) -> Result<bool, KytheError> {
         let name = format!("{}/files/{}", self.root_name, digest);
         Ok(self.zip_archive.by_name(&name).is_ok())
     }
@@ -125,7 +125,7 @@ impl FileProvider for KzipFileProvider {
     /// # Errors
     ///
     /// An error will be returned if the file does not exist or cannot be read.
-    fn contents(&mut self, _path: &str, digest: &str) -> Result<Vec<u8>, KytheError> {
+    fn contents(&mut self, digest: &str) -> Result<Vec<u8>, KytheError> {
         // Ensure the file exists in the kzip
         let name = format!("{}/files/{}", self.root_name, digest);
         let file =
@@ -155,9 +155,9 @@ impl Default for ProxyFileProvider {
 impl FileProvider for ProxyFileProvider {
     /// Given a file path and digest, returns whether the proxy can find the
     /// file.
-    fn exists(&mut self, path: &str, digest: &str) -> Result<bool, KytheError> {
+    fn exists(&mut self, digest: &str) -> Result<bool, KytheError> {
         // Submit the file request to the proxy
-        println!(r#"{{"req": "file","args":{{"path": "{}","digest": "{}"}}}}"#, path, digest);
+        println!(r#"{{"req": "file","args":{{"digest": "{}"}}}}"#, digest);
         io::stdout().flush().map_err(|err| {
             KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
         })?;
@@ -186,9 +186,9 @@ impl FileProvider for ProxyFileProvider {
         }
     }
 
-    fn contents(&mut self, path: &str, digest: &str) -> Result<Vec<u8>, KytheError> {
+    fn contents(&mut self, digest: &str) -> Result<Vec<u8>, KytheError> {
         // Submit the file request to the proxy
-        println!(r#"{{"req": "file","args":{{"path": "{}","digest": "{}"}}}}"#, path, digest);
+        println!(r#"{{"req": "file","args":{{"digest": "{}"}}}}"#, digest);
         io::stdout().flush().map_err(|err| {
             KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
         })?;
@@ -211,12 +211,12 @@ impl FileProvider for ProxyFileProvider {
         })?;
         if response["rsp"].as_str().unwrap() == "error" {
             // The file couldn't be found
-            Err(KytheError::FileNotFoundError(path.to_string()))
+            Err(KytheError::FileNotFoundError(digest.to_string()))
         } else {
             let args: Value = response["args"].clone();
             // Retrieve base64 content and convert to a Vec<u8>
             let content_base64: &str = args["content"].as_str().unwrap();
-            let content: Vec<u8> = hex::decode(&content_base64).map_err(|err| {
+            let content: Vec<u8> = base64::decode(&content_base64).map_err(|err| {
                 KytheError::IndexerError(format!(
                     "Failed to convert base64 file contents response to bytes: {:?}",
                     err

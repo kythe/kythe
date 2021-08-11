@@ -73,6 +73,15 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
+        name = "raze__base64__0_13_0",
+        url = "https://crates.io/api/v1/crates/base64/0.13.0/download",
+        type = "tar.gz",
+        strip_prefix = "base64-0.13.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.base64-0.13.0.bazel"),
+    )
+
+    maybe(
+        http_archive,
         name = "raze__bitflags__1_2_1",
         url = "https://crates.io/api/v1/crates/bitflags/1.2.1/download",
         type = "tar.gz",
@@ -319,16 +328,6 @@ def raze_fetch_remote_crates():
         sha256 = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c",
         strip_prefix = "hermit-abi-0.1.18",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.hermit-abi-0.1.18.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__hex__0_4_3",
-        url = "https://crates.io/api/v1/crates/hex/0.4.3/download",
-        type = "tar.gz",
-        sha256 = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70",
-        strip_prefix = "hex-0.4.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.hex-0.4.3.bazel"),
     )
 
     maybe(
