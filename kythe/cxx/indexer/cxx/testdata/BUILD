@@ -884,6 +884,10 @@ cc_indexer_test(
 
 empty_corpus_test(
     name = "empty_corpus_test",
+    allowed_corpora = [
+        "file",
+        "unit",
+    ],
     entries = ":vname_corpus_entries.entries.gz",
 )
 

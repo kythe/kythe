@@ -254,6 +254,7 @@ public class JavaEntrySets extends KytheEntrySets {
         emitAndReturn(
             newNode(NodeKind.PACKAGE)
                 .addSignatureSalt(name)
+                .setCorpusPath(defaultCorpusPath())
                 .setProperty(
                     "code",
                     MarkedSource.newBuilder()

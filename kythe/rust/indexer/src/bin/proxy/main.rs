@@ -109,8 +109,8 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
     if response["rsp"].as_str().unwrap() == "ok" {
         let args = response["args"].clone();
         let unit_base64 = args["unit"].as_str().unwrap();
-        let unit_bytes =
-            hex::decode(unit_base64).context("Failed to decode CompilationUnit sent by proxy")?;
+        let unit_bytes = base64::decode(unit_base64)
+            .context("Failed to decode CompilationUnit sent by proxy")?;
         let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
             .context("Failed to parse protobuf")?;
         Ok(unit)
@@ -123,9 +123,9 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 /// value, and the second sets the error message if the first argument is false.
 fn send_done(ok: bool, msg: String) -> Result<()> {
     if ok {
-        println!(r#"{{"req":"done", "args"{{"ok":"true","msg":""}}}}"#);
+        println!(r#"{{"req":"done", "args":{{"ok":true,"msg":""}}}}"#);
     } else {
-        println!(r#"{{"req":"done", "args"{{"ok":"false","msg":"{}"}}}}"#, msg);
+        println!(r#"{{"req":"done", "args":{{"ok":false,"msg":"{}"}}}}"#, msg);
     }
     io::stdout().flush().context("Failed to flush stdout")?;
 
