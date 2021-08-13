@@ -180,11 +180,18 @@ def _transitive_entries(deps):
             compressed += dep[KytheEntries].compressed
     return KytheEntries(compressed = depset(transitive = compressed), files = depset(transitive = files))
 
+def _fix_path_for_generated_file(path):
+    virtual_imports = "/_virtual_imports/"
+    if virtual_imports in path:
+        return path.split(virtual_imports)[1].split("/", 1)[1]
+    else:
+        return path
+
 def _generate_files(ctx, files, extension):
     return [
         ctx.actions.declare_file(
             paths.replace_extension(
-                paths.relativize(f.path, ctx.label.package),
+                paths.relativize(_fix_path_for_generated_file(f.path), ctx.label.package),
                 extension,
             ),
         )
@@ -192,10 +199,10 @@ def _generate_files(ctx, files, extension):
     ]
 
 def _format_path_and_short_path(f):
-    return "-I{0}={1}".format(f.short_path, f.path)
+    return "-I{0}={1}".format(_fix_path_for_generated_file(f.short_path), f.path)
 
 def _get_short_path(f):
-    return f.short_path
+    return _fix_path_for_generated_file(f.short_path)
 
 _KytheProtoInfo = provider()
 
