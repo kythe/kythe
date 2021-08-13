@@ -215,7 +215,11 @@ impl FileProvider for ProxyFileProvider {
         } else {
             let args: Value = response["args"].clone();
             // Retrieve base64 content and convert to a Vec<u8>
-            let content_base64: &str = args["content"].as_str().unwrap();
+            let content_option = args["content"].as_str();
+            if content_option.is_none() {
+                return Ok(vec![]);
+            }
+            let content_base64: &str = content_option.unwrap();
             let content: Vec<u8> = base64::decode(&content_base64).map_err(|err| {
                 KytheError::IndexerError(format!(
                     "Failed to convert base64 file contents response to bytes: {:?}",
