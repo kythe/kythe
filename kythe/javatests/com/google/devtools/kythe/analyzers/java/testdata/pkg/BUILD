@@ -529,5 +529,11 @@ java_verifier_test(
 
 empty_corpus_test(
     name = "empty_corpus_test",
+    # TODO(justinbuchanan): adjust extractor to assign 'kythe' instead of
+    # 'bazel_tools' corpus to files such java/lang/Object.java, etc.
+    allowed_corpora = [
+        "bazel_tools",
+        "kythe",
+    ],
     entries = ":default_corpus_test_entries.entries.gz",
 )

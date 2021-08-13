@@ -83,6 +83,10 @@ public class KytheEntrySets {
     this.useCompilationCorpusAsDefault = d;
   }
 
+  public final boolean getUseCompilationCorpusAsDefault() {
+    return useCompilationCorpusAsDefault;
+  }
+
   /** Returns the {@link FactEmitter} used to emit generated {@link EntrySet}s. */
   public final FactEmitter getEmitter() {
     return emitter;
