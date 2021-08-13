@@ -191,7 +191,7 @@ def _generate_files(ctx, files, extension):
     return [
         ctx.actions.declare_file(
             paths.replace_extension(
-                paths.relativize(_fix_path_for_generated_file(f.path), ctx.label.package),
+                paths.relativize(_fix_path_for_generated_file(f.short_path), ctx.label.package),
                 extension,
             ),
         )
