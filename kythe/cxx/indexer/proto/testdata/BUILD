@@ -256,6 +256,6 @@ proto_library(
     name = "gen_proto_dest_proto",
     srcs = [":gen_proto_fake_gen"],
     deps = [
-        "//kythe/proto:generated_proto_info_proto",
+        "//kythe/proto:generated_message_info_proto",
     ],
 )

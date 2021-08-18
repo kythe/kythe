@@ -51,7 +51,7 @@ cc_library(
         "//kythe/cxx/common/schema:edges",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
-        "//kythe/proto:generated_proto_info_cc_proto",
+        "//kythe/proto:generated_message_info_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//kythe/proto:xref_cc_proto",
         "@com_github_google_glog//:glog",

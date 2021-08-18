@@ -20,6 +20,7 @@ filegroup(
         "extraction_config.proto",
         "filecontext.proto",
         "filetree.proto",
+        "generated_message_info.proto",
         "go.proto",
         "graph.proto",
         "identifier.proto",
@@ -716,10 +717,10 @@ cc_proto_library(
     ],
 )
 
-# Public generated_proto_info file option.
+# Public GeneratedProtoInfo file option
 proto_library(
-    name = "generated_proto_info_proto",
-    srcs = ["generated_proto_info.proto"],
+    name = "generated_message_info_proto",
+    srcs = ["generated_message_info.proto"],
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
         "@com_google_protobuf//:descriptor_proto",
@@ -727,27 +728,28 @@ proto_library(
 )
 
 go_kythe_proto(
-    proto = ":generated_proto_info_proto",
+    proto = ":generated_message_info_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 java_proto_library(
-    name = "generated_proto_info_java_proto",
+    name = "generated_message_info_java_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
-        ":generated_proto_info_proto",
+        ":generated_message_info_proto",
     ],
 )
 
 cc_proto_library(
-    name = "generated_proto_info_cc_proto",
+    name = "generated_message_info_cc_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
-        ":generated_proto_info_proto",
+        ":generated_message_info_proto",
     ],
 )
 
 ts_proto_library(
-    name = "generated_proto_info_ts_proto",
-    proto = ":generated_proto_info_proto",
+    name = "generated_message_info_ts_proto",
+    proto = ":generated_message_info_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
 )
