@@ -30,7 +30,7 @@
 #include "kythe/cxx/indexer/proto/marked_source.h"
 #include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
-#include "kythe/proto/generated_proto_info.pb.h"
+#include "kythe/proto/generated_message_info.pb.h"
 #include "re2/re2.h"
 #include "re2/stringpiece.h"
 

@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package pkg.dest;
 
-import 'kythe/proto/generated_proto_info.proto';
+import 'kythe/proto/generated_message_info.proto';
 
 option java_package = "pkg.dest";
 
@@ -18,8 +18,8 @@ option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
   path: 4
   path: 0
   source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
-  begin: 214
-  end: 221
+  begin: 216
+  end: 223
 };
 option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
   path: 4
@@ -27,6 +27,6 @@ option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
   path: 2
   path: 0
   source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
-  begin: 327
-  end: 339
+  begin: 329
+  end: 341
 };
