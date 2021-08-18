@@ -1075,9 +1075,7 @@ class GraphObserver {
     absl::StrAppend(&id, vname.corpus());
     reinterpret_cast<size_t*>(id.data())[3] = id.size();
     absl::StrAppend(&id, vname.language());
-    auto node = NodeId::CreateUncompressed(getVNameClaimToken(), id);
-    DecodeMintedVName(node);
-    return node;
+    return NodeId::CreateUncompressed(getVNameClaimToken(), id);
   }
 
   VNameRef DecodeMintedVName(const NodeId& id) const {
