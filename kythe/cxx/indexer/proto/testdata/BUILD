@@ -7,16 +7,6 @@ licenses(["notice"])  # Apache 2.0
 exports_files(["LICENSE"])
 
 proto_verifier_test(
-    name = "gen_proto_metadata",
-    srcs = [
-        ":gen_proto_dest_proto",
-        ":gen_proto_source_proto",
-    ],
-    tags = ["gen_proto"],
-    verifier_opts = ["--show_protos"],
-)
-
-proto_verifier_test(
     name = "file_node_existence",
     srcs = [":basic_file_node_proto"],
     tags = ["basic"],
@@ -126,6 +116,16 @@ proto_verifier_test(
     name = "missing_package",
     srcs = [":corner_cases_nopackage_proto"],
     tags = ["corner_cases"],
+)
+
+proto_verifier_test(
+    name = "generate_proto",
+    srcs = [
+        ":gen_proto_dest_proto",
+        ":gen_proto_source_proto",
+    ],
+    tags = ["corner_cases"],
+    verifier_opts = ["--show_protos"],
 )
 
 test_suite(
@@ -243,13 +243,13 @@ proto_library(
 
 proto_library(
     name = "gen_proto_source_proto",
-    srcs = ["gen_proto/source.proto"],
+    srcs = ["corner_cases/gen-proto-source.proto"],
 )
 
 copy_file(
     name = "gen_proto_fake_gen",
-    src = "gen_proto/dest.proto",
-    out = "gen_proto/dest.gen.proto",
+    src = "corner_cases/gen-proto-dest.proto",
+    out = "corner_cases/gen-proto-dest.gen.proto",
 )
 
 proto_library(

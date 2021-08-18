@@ -9,13 +9,15 @@ option java_package = "pkg.dest";
 //- @Nessage defines/binding DestMessage
 //- SourceMessage? generates DestMessage
 message Nessage {
+  //- @string_field defines/binding DestField
+  //- SourceField? generates DestField
   optional string string_field = 1;
 }
 
 option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
   path: 4
   path: 0
-  source_file: "kythe/cxx/indexer/proto/testdata/gen_proto/source.proto"
+  source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
   begin: 214
   end: 221
 };
@@ -23,7 +25,8 @@ option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
   path: 4
   path: 0
   path: 2
-  source_file: "kythe/cxx/indexer/proto/testdata/gen_proto/source.proto"
-  begin: 242
-  end: 254
+  path: 0
+  source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
+  begin: 327
+  end: 339
 };

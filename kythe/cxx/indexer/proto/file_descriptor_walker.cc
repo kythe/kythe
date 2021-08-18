@@ -26,7 +26,6 @@
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
-#include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
 #include "kythe/cxx/indexer/proto/offset_util.h"
@@ -302,14 +301,30 @@ void FileDescriptorWalker::VisitImports() {
   }
 }
 
+namespace {
+std::string SignAnnotation(
+    google::protobuf::GeneratedCodeInfo::Annotation annotation) {
+  std::string signature;
+  std::stringstream sig(signature);
+  bool first_node = true;
+  for (const auto& node : annotation.path()) {
+    sig << (first_node ? "" : ".") << node;
+    first_node = false;
+  }
+  return sig.str();
+}
+
 VName VNameForAnnotation(
-    const VName& context_vname,
-    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
+    VName context_vname,
+    google::protobuf::GeneratedCodeInfo::Annotation annotation) {
   VName out;
   out.set_corpus(context_vname.corpus());
   out.set_path(annotation.source_file());
-  return VNameForProtoPath(out, annotation.path());
+  out.set_signature(SignAnnotation(annotation));
+  out.set_language(kLanguageName);
+  return out;
 }
+}  // anonymous namespace
 
 void FileDescriptorWalker::VisitGeneratedProtoInfo() {
   if (!file_descriptor_->options().HasExtension(proto::generated_proto_info)) {
