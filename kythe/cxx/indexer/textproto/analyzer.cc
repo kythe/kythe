@@ -830,7 +830,7 @@ std::string FullPathToRelative(
 absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder) {
-  PluginLoadCallback nil_loader = [](const google::protobuf::Message& proto)
+  auto nil_loader = [](const google::protobuf::Message& proto)
       -> std::vector<std::unique_ptr<Plugin>> { return {}; };
   return AnalyzeCompilationUnit(nil_loader, unit, files, recorder);
 }
