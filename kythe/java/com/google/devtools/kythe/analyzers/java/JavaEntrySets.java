@@ -131,11 +131,13 @@ public class JavaEntrySets extends KytheEntrySets {
 
     VName v = lookupVName(enclClass);
     if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
-      v =
-          VName.newBuilder()
-              .setCorpus(
-                  config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk")
-              .build();
+      String corpus;
+      if (getUseCompilationCorpusAsDefault()) {
+        corpus = defaultCorpusPath().getCorpus();
+      } else {
+        corpus = config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk";
+      }
+      v = VName.newBuilder().setCorpus(corpus).build();
     }
 
     if (v == null && sym.owner != null && sym.owner.asType().isPrimitive()) {
@@ -254,6 +256,7 @@ public class JavaEntrySets extends KytheEntrySets {
         emitAndReturn(
             newNode(NodeKind.PACKAGE)
                 .addSignatureSalt(name)
+                .setCorpusPath(defaultCorpusPath())
                 .setProperty(
                     "code",
                     MarkedSource.newBuilder()
@@ -372,6 +375,9 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
   public CorpusPath jvmCorpusPath(Symbol sym) {
+    if (getUseCompilationCorpusAsDefault()) {
+      return defaultCorpusPath();
+    }
     return new CorpusPath(
         Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
   }

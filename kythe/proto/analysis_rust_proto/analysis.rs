@@ -1900,6 +1900,7 @@ pub struct KzipInfo {
     // message fields
     pub corpora: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo>,
     pub size: i64,
+    pub absolute_paths: ::protobuf::RepeatedField<::std::string::String>,
     pub critical_kzip_errors: ::protobuf::RepeatedField<::std::string::String>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1957,6 +1958,31 @@ impl KzipInfo {
         self.size = v;
     }
 
+    // repeated string absolute_paths = 6;
+
+
+    pub fn get_absolute_paths(&self) -> &[::std::string::String] {
+        &self.absolute_paths
+    }
+    pub fn clear_absolute_paths(&mut self) {
+        self.absolute_paths.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_absolute_paths(&mut self, v: ::protobuf::RepeatedField<::std::string::String>) {
+        self.absolute_paths = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_absolute_paths(&mut self) -> &mut ::protobuf::RepeatedField<::std::string::String> {
+        &mut self.absolute_paths
+    }
+
+    // Take field
+    pub fn take_absolute_paths(&mut self) -> ::protobuf::RepeatedField<::std::string::String> {
+        ::std::mem::replace(&mut self.absolute_paths, ::protobuf::RepeatedField::new())
+    }
+
     // repeated string critical_kzip_errors = 5;
 
 
@@ -2002,6 +2028,9 @@ impl ::protobuf::Message for KzipInfo {
                     let tmp = is.read_int64()?;
                     self.size = tmp;
                 },
+                6 => {
+                    ::protobuf::rt::read_repeated_string_into(wire_type, is, &mut self.absolute_paths)?;
+                },
                 5 => {
                     ::protobuf::rt::read_repeated_string_into(wire_type, is, &mut self.critical_kzip_errors)?;
                 },
@@ -2021,6 +2050,9 @@ impl ::protobuf::Message for KzipInfo {
         if self.size != 0 {
             my_size += ::protobuf::rt::value_size(4, self.size, ::protobuf::wire_format::WireTypeVarint);
         }
+        for value in &self.absolute_paths {
+            my_size += ::protobuf::rt::string_size(6, &value);
+        };
         for value in &self.critical_kzip_errors {
             my_size += ::protobuf::rt::string_size(5, &value);
         };
@@ -2034,6 +2066,9 @@ impl ::protobuf::Message for KzipInfo {
         if self.size != 0 {
             os.write_int64(4, self.size)?;
         }
+        for v in &self.absolute_paths {
+            os.write_string(6, &v)?;
+        };
         for v in &self.critical_kzip_errors {
             os.write_string(5, &v)?;
         };
@@ -2090,6 +2125,11 @@ impl ::protobuf::Message for KzipInfo {
                     |m: &mut KzipInfo| { &mut m.size },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                    "absolute_paths",
+                    |m: &KzipInfo| { &m.absolute_paths },
+                    |m: &mut KzipInfo| { &mut m.absolute_paths },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                     "critical_kzip_errors",
                     |m: &KzipInfo| { &m.critical_kzip_errors },
                     |m: &mut KzipInfo| { &mut m.critical_kzip_errors },
@@ -2118,6 +2158,7 @@ impl ::protobuf::Clear for KzipInfo {
     fn clear(&mut self) {
         self.corpora.clear();
         self.size = 0;
+        self.absolute_paths.clear();
         self.critical_kzip_errors.clear();
         self.unknown_fields.clear();
     }
@@ -4001,39 +4042,40 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     leInfoR\x04info\x12.\n\x07details\x18\x04\x20\x03(\x0b2\x14.google.proto\
     buf.AnyR\x07detailsJ\x04\x08\x03\x10\x04\x1a/\n\x03Env\x12\x12\n\x04name\
     \x18\x01\x20\x01(\tR\x04name\x12\x14\n\x05value\x18\x02\x20\x01(\tR\x05v\
-    alueJ\x04\x08\x02\x10\x03\"\x8c\x06\n\x08KzipInfo\x12<\n\x07corpora\x18\
+    alueJ\x04\x08\x02\x10\x03\"\xb3\x06\n\x08KzipInfo\x12<\n\x07corpora\x18\
     \x01\x20\x03(\x0b2\".kythe.proto.KzipInfo.CorporaEntryR\x07corpora\x12\
-    \x12\n\x04size\x18\x04\x20\x01(\x03R\x04size\x120\n\x14critical_kzip_err\
-    ors\x18\x05\x20\x03(\tR\x12criticalKzipErrors\x1a\x91\x04\n\nCorpusInfo\
-    \x12v\n\x18language_required_inputs\x18\x04\x20\x03(\x0b2<.kythe.proto.K\
-    zipInfo.CorpusInfo.LanguageRequiredInputsEntryR\x16languageRequiredInput\
-    s\x12`\n\x10language_sources\x18\x05\x20\x03(\x0b25.kythe.proto.KzipInfo\
-    .CorpusInfo.LanguageSourcesEntryR\x0flanguageSources\x1a&\n\x0eRequiredI\
-    nputs\x12\x14\n\x05count\x18\x01\x20\x01(\x05R\x05count\x1az\n\x1bLangua\
-    geRequiredInputsEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12E\n\
-    \x05value\x18\x02\x20\x01(\x0b2/.kythe.proto.KzipInfo.CorpusInfo.Require\
-    dInputsR\x05value:\x028\x01\x1as\n\x14LanguageSourcesEntry\x12\x10\n\x03\
-    key\x18\x01\x20\x01(\tR\x03key\x12E\n\x05value\x18\x02\x20\x01(\x0b2/.ky\
-    the.proto.KzipInfo.CorpusInfo.RequiredInputsR\x05value:\x028\x01J\x04\
-    \x08\x01\x10\x02J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\x1a\\\n\x0cCo\
-    rporaEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x126\n\x05value\
-    \x18\x02\x20\x01(\x0b2\x20.kythe.proto.KzipInfo.CorpusInfoR\x05value:\
-    \x028\x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\"V\n\rBuildMetadata\
-    \x12E\n\x10commit_timestamp\x18\x01\x20\x01(\x0b2\x1a.google.protobuf.Ti\
-    mestampR\x0fcommitTimestamp\";\n\x0cFilesRequest\x12+\n\x05files\x18\x01\
-    \x20\x03(\x0b2\x15.kythe.proto.FileInfoR\x05files\"6\n\x08FileInfo\x12\
-    \x12\n\x04path\x18\x01\x20\x01(\tR\x04path\x12\x16\n\x06digest\x18\x02\
-    \x20\x01(\tR\x06digest\"i\n\x08FileData\x12\x18\n\x07content\x18\x01\x20\
-    \x01(\x0cR\x07content\x12)\n\x04info\x18\x02\x20\x01(\x0b2\x15.kythe.pro\
-    to.FileInfoR\x04info\x12\x18\n\x07missing\x18\x03\x20\x01(\x08R\x07missi\
-    ng\"r\n\x11CompilationBundle\x120\n\x04unit\x18\x01\x20\x01(\x0b2\x1c.ky\
-    the.proto.CompilationUnitR\x04unit\x12+\n\x05files\x18\x02\x20\x03(\x0b2\
-    \x15.kythe.proto.FileDataR\x05files\"\xaa\x01\n\x12IndexedCompilation\
-    \x120\n\x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.proto.CompilationUnitR\
-    \x04unit\x12;\n\x05index\x18\x02\x20\x01(\x0b2%.kythe.proto.IndexedCompi\
-    lation.IndexR\x05index\x1a%\n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\
-    \x03(\tR\trevisionsB7\n\x1fcom.google.devtools.kythe.protoZ\x11analysis_\
-    go_proto\xf8\x01\x01b\x06proto3\
+    \x12\n\x04size\x18\x04\x20\x01(\x03R\x04size\x12%\n\x0eabsolute_paths\
+    \x18\x06\x20\x03(\tR\rabsolutePaths\x120\n\x14critical_kzip_errors\x18\
+    \x05\x20\x03(\tR\x12criticalKzipErrors\x1a\x91\x04\n\nCorpusInfo\x12v\n\
+    \x18language_required_inputs\x18\x04\x20\x03(\x0b2<.kythe.proto.KzipInfo\
+    .CorpusInfo.LanguageRequiredInputsEntryR\x16languageRequiredInputs\x12`\
+    \n\x10language_sources\x18\x05\x20\x03(\x0b25.kythe.proto.KzipInfo.Corpu\
+    sInfo.LanguageSourcesEntryR\x0flanguageSources\x1a&\n\x0eRequiredInputs\
+    \x12\x14\n\x05count\x18\x01\x20\x01(\x05R\x05count\x1az\n\x1bLanguageReq\
+    uiredInputsEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12E\n\x05v\
+    alue\x18\x02\x20\x01(\x0b2/.kythe.proto.KzipInfo.CorpusInfo.RequiredInpu\
+    tsR\x05value:\x028\x01\x1as\n\x14LanguageSourcesEntry\x12\x10\n\x03key\
+    \x18\x01\x20\x01(\tR\x03key\x12E\n\x05value\x18\x02\x20\x01(\x0b2/.kythe\
+    .proto.KzipInfo.CorpusInfo.RequiredInputsR\x05value:\x028\x01J\x04\x08\
+    \x01\x10\x02J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\x1a\\\n\x0cCorpor\
+    aEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x126\n\x05value\x18\
+    \x02\x20\x01(\x0b2\x20.kythe.proto.KzipInfo.CorpusInfoR\x05value:\x028\
+    \x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\"V\n\rBuildMetadata\x12E\
+    \n\x10commit_timestamp\x18\x01\x20\x01(\x0b2\x1a.google.protobuf.Timesta\
+    mpR\x0fcommitTimestamp\";\n\x0cFilesRequest\x12+\n\x05files\x18\x01\x20\
+    \x03(\x0b2\x15.kythe.proto.FileInfoR\x05files\"6\n\x08FileInfo\x12\x12\n\
+    \x04path\x18\x01\x20\x01(\tR\x04path\x12\x16\n\x06digest\x18\x02\x20\x01\
+    (\tR\x06digest\"i\n\x08FileData\x12\x18\n\x07content\x18\x01\x20\x01(\
+    \x0cR\x07content\x12)\n\x04info\x18\x02\x20\x01(\x0b2\x15.kythe.proto.Fi\
+    leInfoR\x04info\x12\x18\n\x07missing\x18\x03\x20\x01(\x08R\x07missing\"r\
+    \n\x11CompilationBundle\x120\n\x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.p\
+    roto.CompilationUnitR\x04unit\x12+\n\x05files\x18\x02\x20\x03(\x0b2\x15.\
+    kythe.proto.FileDataR\x05files\"\xaa\x01\n\x12IndexedCompilation\x120\n\
+    \x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.proto.CompilationUnitR\x04unit\
+    \x12;\n\x05index\x18\x02\x20\x01(\x0b2%.kythe.proto.IndexedCompilation.I\
+    ndexR\x05index\x1a%\n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\x03(\tR\
+    \trevisionsB7\n\x1fcom.google.devtools.kythe.protoZ\x11analysis_go_proto\
+    \xf8\x01\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

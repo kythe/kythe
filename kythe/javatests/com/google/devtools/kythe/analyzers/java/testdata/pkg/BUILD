@@ -1,6 +1,7 @@
 load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
+load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 
 java_library(
     name = "pkg",
@@ -524,4 +525,15 @@ java_verifier_test(
         "--verbose",
         "--use_compilation_corpus_as_default",
     ],
+)
+
+empty_corpus_test(
+    name = "empty_corpus_test",
+    # TODO(justinbuchanan): adjust extractor to assign 'kythe' instead of
+    # 'bazel_tools' corpus to files such java/lang/Object.java, etc.
+    allowed_corpora = [
+        "bazel_tools",
+        "kythe",
+    ],
+    entries = ":default_corpus_test_entries.entries.gz",
 )

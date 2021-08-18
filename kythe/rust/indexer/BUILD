@@ -13,7 +13,7 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:base64",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
@@ -52,7 +52,7 @@ rust_binary(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:base64",
         "//kythe/rust/cargo:serde_json",
         "//kythe/rust/cargo:tempdir",
         "@rules_rust//proto/raze:protobuf",
