@@ -159,6 +159,7 @@ class KytheGraphObserver : public GraphObserver {
     default_token_.set_rough_claimed(true);
     set_default_corpus(options.default_corpus);
     type_token_.set_rough_claimed(true);
+    vname_token_.set_rough_claimed(true);
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
@@ -169,6 +170,10 @@ class KytheGraphObserver : public GraphObserver {
 
   const KytheClaimToken* getDefaultClaimToken() const override {
     return &default_token_;
+  }
+
+  const KytheClaimToken* getVNameClaimToken() const override {
+    return &vname_token_;
   }
 
   void applyMetadataFile(clang::FileID ID, const clang::FileEntry* file,
@@ -650,6 +655,8 @@ class KytheGraphObserver : public GraphObserver {
   KytheClaimToken default_token_;
   /// The claim token to use for structural types.
   KytheClaimToken type_token_;
+  /// The claim token to use for encoded VNames.
+  KytheClaimToken vname_token_;
   /// Name of the platform or build configuration to emit on anchors.
   const std::string build_config_;
   /// Information about builtin nodes.

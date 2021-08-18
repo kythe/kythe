@@ -266,6 +266,16 @@ class GraphObserver {
     Unclaimable  ///< This edge must always be emitted.
   };
 
+  /// \brief Classifies a use site.
+  enum class UseKind {
+    /// No specific determination. Similar to a read.
+    kUnknown,
+    /// This use site is a write.
+    kWrite,
+    /// This use site is both a read and a write.
+    kReadWrite,
+  };
+
   GraphObserver() {}
 
   /// \brief Sets the `SourceManager` that this `GraphObserver` should use.
@@ -292,6 +302,9 @@ class GraphObserver {
 
   /// \brief Returns a claim token that provides no additional information.
   virtual const ClaimToken* getDefaultClaimToken() const = 0;
+
+  /// \brief Returns a claim token that identifies holders as VNames.
+  virtual const ClaimToken* getVNameClaimToken() const = 0;
 
   /// \brief Returns a claim token for namespaces declared at `Loc`.
   /// \param Loc The declaration site of the namespace.
@@ -829,16 +842,6 @@ class GraphObserver {
                                    const NodeId& BlameId, Claimability Cl,
                                    Implicit I) {}
 
-  /// \brief Classifies a use site.
-  enum class UseKind {
-    /// No specific determination. Similar to a read.
-    kUnknown,
-    /// This use site is a write.
-    kWrite,
-    /// This use site is both a read and a write.
-    kReadWrite,
-  };
-
   /// \brief Records a use site for some decl with additional semantic
   /// information.
   virtual void recordSemanticDeclUseLocation(const Range& SourceRange,
@@ -1059,6 +1062,44 @@ class GraphObserver {
     }
   }
 
+  /// \brief Create a NodeId that points to some VName.
+  NodeId MintNodeIdForVName(const proto::VName& vname) {
+    std::string id;
+    id.resize(sizeof(size_t) * 4);
+    absl::StrAppend(&id, vname.signature());
+    reinterpret_cast<size_t*>(id.data())[0] = id.size();
+    absl::StrAppend(&id, vname.path());
+    reinterpret_cast<size_t*>(id.data())[1] = id.size();
+    absl::StrAppend(&id, vname.root());
+    reinterpret_cast<size_t*>(id.data())[2] = id.size();
+    absl::StrAppend(&id, vname.corpus());
+    reinterpret_cast<size_t*>(id.data())[3] = id.size();
+    absl::StrAppend(&id, vname.language());
+    auto node = NodeId::CreateUncompressed(getVNameClaimToken(), id);
+    DecodeMintedVName(node);
+    return node;
+  }
+
+  VNameRef DecodeMintedVName(const NodeId& id) const {
+    const auto& bytes = id.getRawIdentity();
+    size_t path, root, corpus, language;
+    VNameRef ref;
+    CHECK(sizeof(size_t) * 4 <= bytes.size());
+    path = reinterpret_cast<const size_t*>(bytes.data())[0];
+    root = reinterpret_cast<const size_t*>(bytes.data())[1];
+    corpus = reinterpret_cast<const size_t*>(bytes.data())[2];
+    language = reinterpret_cast<const size_t*>(bytes.data())[3];
+    CHECK(sizeof(size_t) * 4 <= path && path <= root && root <= corpus &&
+          corpus <= language && language <= bytes.size());
+    ref.set_signature(
+        {bytes.data() + sizeof(size_t) * 4, path - sizeof(size_t) * 4});
+    ref.set_path({bytes.data() + path, root - path});
+    ref.set_root({bytes.data() + root, corpus - root});
+    ref.set_corpus({bytes.data() + corpus, language - corpus});
+    ref.set_language({bytes.data() + language, bytes.size() - language});
+    return ref;
+  }
+
   virtual ~GraphObserver() = 0;
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
@@ -1161,10 +1202,14 @@ class NullGraphObserver : public GraphObserver {
     return &DefaultToken;
   }
 
+  const ClaimToken* getVNameClaimToken() const override { return &VnameToken; }
+
   ~NullGraphObserver() {}
 
  private:
   NullClaimToken DefaultToken;
+
+  NullClaimToken VnameToken;
 };
 
 /// \brief Emits a stringified representation of the given `NameId`,
