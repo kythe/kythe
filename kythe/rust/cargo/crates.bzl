@@ -73,6 +73,15 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
+        name = "raze__base64__0_13_0",
+        url = "https://crates.io/api/v1/crates/base64/0.13.0/download",
+        type = "tar.gz",
+        strip_prefix = "base64-0.13.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.base64-0.13.0.bazel"),
+    )
+
+    maybe(
+        http_archive,
         name = "raze__bitflags__1_2_1",
         url = "https://crates.io/api/v1/crates/bitflags/1.2.1/download",
         type = "tar.gz",

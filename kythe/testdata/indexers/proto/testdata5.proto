@@ -2,7 +2,8 @@ syntax = "proto3";
 
 package pkg.proto5;
 
-option java_package = "pkg.proto5";
+option java_package = "pkg.proto5";;
+
 
 //- @Message defines/binding Message
 message Message {

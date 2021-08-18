@@ -105,7 +105,7 @@ impl KytheWriter for ProxyWriter {
         let bytes = entry.write_to_bytes().map_err(KytheError::WriterError)?;
         // Convert the entry bytes to base64 and surround with quotes to prepare for
         // inserting into a JSON array
-        let b64 = format!(r#""{}""#, hex::encode(&bytes));
+        let b64 = format!(r#""{}""#, base64::encode(&bytes));
         self.buffer.push(b64);
         if self.buffer.len() >= 1000 {
             self.flush()?;
