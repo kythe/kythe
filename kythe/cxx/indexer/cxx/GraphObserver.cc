@@ -43,4 +43,55 @@ std::string CompressString(absl::string_view InString, bool Force) {
   return Result;
 }
 
+namespace {
+struct MintedVNameHeader {
+  size_t path_offset;
+  size_t root_offset;
+  size_t corpus_offset;
+  size_t language_offset;
+};
+}  // anonymous namespace
+
+GraphObserver::NodeId GraphObserver::MintNodeIdForVName(
+    const proto::VName& vname) {
+  std::string id;
+  MintedVNameHeader header;
+  id.resize(sizeof(MintedVNameHeader));
+  absl::StrAppend(&id, vname.signature());
+  header.path_offset = id.size();
+  absl::StrAppend(&id, vname.path());
+  header.root_offset = id.size();
+  absl::StrAppend(&id, vname.root());
+  header.corpus_offset = id.size();
+  absl::StrAppend(&id, vname.corpus());
+  header.language_offset = id.size();
+  absl::StrAppend(&id, vname.language());
+  std::memcpy(id.data(), &header, sizeof(MintedVNameHeader));
+  return NodeId::CreateUncompressed(getVNameClaimToken(), id);
+}
+
+VNameRef GraphObserver::DecodeMintedVName(const NodeId& id) const {
+  const auto& bytes = id.getRawIdentity();
+  VNameRef ref;
+  CHECK(sizeof(MintedVNameHeader) <= bytes.size());
+  MintedVNameHeader header;
+  std::memcpy(&header, bytes.data(), sizeof(MintedVNameHeader));
+  CHECK(sizeof(MintedVNameHeader) <= header.path_offset &&
+        header.path_offset <= header.root_offset &&
+        header.root_offset <= header.corpus_offset &&
+        header.corpus_offset <= header.language_offset &&
+        header.language_offset <= bytes.size());
+  ref.set_signature({bytes.data() + sizeof(MintedVNameHeader),
+                     header.path_offset - sizeof(MintedVNameHeader)});
+  ref.set_path({bytes.data() + header.path_offset,
+                header.root_offset - header.path_offset});
+  ref.set_root({bytes.data() + header.root_offset,
+                header.corpus_offset - header.root_offset});
+  ref.set_corpus({bytes.data() + header.corpus_offset,
+                  header.language_offset - header.corpus_offset});
+  ref.set_language({bytes.data() + header.language_offset,
+                    bytes.size() - header.language_offset});
+  return ref;
+}
+
 }  // namespace kythe
