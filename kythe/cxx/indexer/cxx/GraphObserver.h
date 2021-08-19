@@ -1063,40 +1063,12 @@ class GraphObserver {
   }
 
   /// \brief Create a NodeId that points to some VName.
-  NodeId MintNodeIdForVName(const proto::VName& vname) {
-    std::string id;
-    id.resize(sizeof(size_t) * 4);
-    absl::StrAppend(&id, vname.signature());
-    reinterpret_cast<size_t*>(id.data())[0] = id.size();
-    absl::StrAppend(&id, vname.path());
-    reinterpret_cast<size_t*>(id.data())[1] = id.size();
-    absl::StrAppend(&id, vname.root());
-    reinterpret_cast<size_t*>(id.data())[2] = id.size();
-    absl::StrAppend(&id, vname.corpus());
-    reinterpret_cast<size_t*>(id.data())[3] = id.size();
-    absl::StrAppend(&id, vname.language());
-    return NodeId::CreateUncompressed(getVNameClaimToken(), id);
-  }
+  NodeId MintNodeIdForVName(const proto::VName& vname);
 
-  VNameRef DecodeMintedVName(const NodeId& id) const {
-    const auto& bytes = id.getRawIdentity();
-    size_t path, root, corpus, language;
-    VNameRef ref;
-    CHECK(sizeof(size_t) * 4 <= bytes.size());
-    path = reinterpret_cast<const size_t*>(bytes.data())[0];
-    root = reinterpret_cast<const size_t*>(bytes.data())[1];
-    corpus = reinterpret_cast<const size_t*>(bytes.data())[2];
-    language = reinterpret_cast<const size_t*>(bytes.data())[3];
-    CHECK(sizeof(size_t) * 4 <= path && path <= root && root <= corpus &&
-          corpus <= language && language <= bytes.size());
-    ref.set_signature(
-        {bytes.data() + sizeof(size_t) * 4, path - sizeof(size_t) * 4});
-    ref.set_path({bytes.data() + path, root - path});
-    ref.set_root({bytes.data() + root, corpus - root});
-    ref.set_corpus({bytes.data() + corpus, language - corpus});
-    ref.set_language({bytes.data() + language, bytes.size() - language});
-    return ref;
-  }
+  /// \brief Creates a VNameRef for the VName stored in `id`.
+  ///
+  /// Note that the `VNameRef` should not outlive `id`.
+  VNameRef DecodeMintedVName(const NodeId& id) const;
 
   virtual ~GraphObserver() = 0;
 
