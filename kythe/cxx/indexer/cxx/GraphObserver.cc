@@ -75,7 +75,7 @@ VNameRef GraphObserver::DecodeMintedVName(const NodeId& id) const {
   VNameRef ref;
   CHECK(sizeof(MintedVNameHeader) <= bytes.size());
   MintedVNameHeader header;
-  memcpy(&header, bytes.data(), sizeof(MintedVNameHeader));
+  std::memcpy(&header, bytes.data(), sizeof(MintedVNameHeader));
   CHECK(sizeof(MintedVNameHeader) <= header.path_offset &&
         header.path_offset <= header.root_offset &&
         header.root_offset <= header.corpus_offset &&
