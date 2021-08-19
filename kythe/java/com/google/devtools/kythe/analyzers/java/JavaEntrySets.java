@@ -129,13 +129,17 @@ public class JavaEntrySets extends KytheEntrySets {
       return v;
     }
 
+    // The vname corpus for jdk entities is determined by:
+    // * --override_jdk_corpus if present
+    // * the compilation's corpus if --use_compilation_corpus_as_default is set
+    // * "jdk" if the above two flags are unset
     VName v = lookupVName(enclClass);
-    if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
-      String corpus;
-      if (getUseCompilationCorpusAsDefault()) {
+    if (v == null && fromJDK(sym)) {
+      String corpus = "jdk";
+      if (config.getOverrideJdkCorpus() != null) {
+        corpus = config.getOverrideJdkCorpus();
+      } else if (getUseCompilationCorpusAsDefault()) {
         corpus = defaultCorpusPath().getCorpus();
-      } else {
-        corpus = config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk";
       }
       v = VName.newBuilder().setCorpus(corpus).build();
     }
