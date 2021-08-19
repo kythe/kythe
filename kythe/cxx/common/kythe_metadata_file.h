@@ -31,6 +31,13 @@ namespace kythe {
 
 class MetadataFile {
  public:
+  /// \brief An additional semantic to apply to the given (C++) node.
+  enum class Semantic {
+    kNone,       ///< No special semantics.
+    kWrite,      ///< Write semantics.
+    kReadWrite,  ///< Read+write semantics.
+  };
+
   /// \brief A single metadata rule.
   struct Rule {
     unsigned begin;        ///< Beginning of the range to match.
@@ -44,6 +51,7 @@ class MetadataFile {
     unsigned anchor_begin;  ///< The beginning of the anchor.
     unsigned anchor_end;    ///< The end of the anchor.
     bool whole_file;        ///< Whether to ignore begin/end
+    Semantic semantic;      ///< Whether to apply special semantics.
   };
 
   /// Creates a new MetadataFile from a list of rules ranging from `begin` to
