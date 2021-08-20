@@ -1071,9 +1071,11 @@ class GraphObserver {
   /// Note that the `VNameRef` should not outlive `id`.
   VNameRef DecodeMintedVName(const NodeId& id) const;
 
-  /// \brief Return a map of file IDs to metadata.
-  virtual const std::multimap<clang::FileID, std::shared_ptr<MetadataFile>>&
-  meta() = 0;
+  /// \brief Return a vector of loaded metadata files.
+  virtual std::vector<std::pair<clang::FileID, const MetadataFile*>>
+  GetMetadataFiles() {
+    return {};
+  }
 
   virtual ~GraphObserver() = 0;
 
@@ -1179,19 +1181,12 @@ class NullGraphObserver : public GraphObserver {
 
   const ClaimToken* getVNameClaimToken() const override { return &VnameToken; }
 
-  const std::multimap<clang::FileID, std::shared_ptr<MetadataFile>>& meta()
-      override {
-    return meta_;
-  }
-
   ~NullGraphObserver() {}
 
  private:
   NullClaimToken DefaultToken;
 
   NullClaimToken VnameToken;
-
-  std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
 };
 
 /// \brief Emits a stringified representation of the given `NameId`,

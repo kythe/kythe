@@ -5709,7 +5709,7 @@ void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
 
 void IndexerASTVisitor::PrepareAlternateSemanticCache() {
   if (!DataflowEdges) return;
-  for (const auto& meta : Observer.meta()) {
+  for (const auto& meta : Observer.GetMetadataFiles()) {
     for (const auto& rule : meta.second->rules()) {
       GraphObserver::UseKind kind = GraphObserver::UseKind::kUnknown;
       if (rule.second.semantic == MetadataFile::Semantic::kNone) continue;
