@@ -400,7 +400,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
                                          const VNameRef& decl) {
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
-    if (rule->second.begin == range_begin && rule->second.end == range_end &&
+    if (rule->second.semantic == MetadataFile::Semantic::kNone &&
+        rule->second.begin == range_begin && rule->second.end == range_end &&
         (rule->second.edge_in == kythe::common::schema::kDefines ||
          rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
       VNameRef remote(rule->second.vname);
@@ -602,6 +603,9 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
 
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId& node_id) const {
+  if (node_id.getToken() == getVNameClaimToken()) {
+    return DecodeMintedVName(node_id);
+  }
   VNameRef out_ref;
   out_ref.set_language(absl::string_view(supported_language::kIndexerLang));
   if (const auto* token =

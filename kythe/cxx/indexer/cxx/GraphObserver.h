@@ -266,6 +266,16 @@ class GraphObserver {
     Unclaimable  ///< This edge must always be emitted.
   };
 
+  /// \brief Classifies a use site.
+  enum class UseKind {
+    /// No specific determination. Similar to a read.
+    kUnknown,
+    /// This use site is a write.
+    kWrite,
+    /// This use site is both a read and a write.
+    kReadWrite,
+  };
+
   GraphObserver() {}
 
   /// \brief Sets the `SourceManager` that this `GraphObserver` should use.
@@ -292,6 +302,9 @@ class GraphObserver {
 
   /// \brief Returns a claim token that provides no additional information.
   virtual const ClaimToken* getDefaultClaimToken() const = 0;
+
+  /// \brief Returns a claim token that identifies holders as VNames.
+  virtual const ClaimToken* getVNameClaimToken() const = 0;
 
   /// \brief Returns a claim token for namespaces declared at `Loc`.
   /// \param Loc The declaration site of the namespace.
@@ -829,16 +842,6 @@ class GraphObserver {
                                    const NodeId& BlameId, Claimability Cl,
                                    Implicit I) {}
 
-  /// \brief Classifies a use site.
-  enum class UseKind {
-    /// No specific determination. Similar to a read.
-    kUnknown,
-    /// This use site is a write.
-    kWrite,
-    /// This use site is both a read and a write.
-    kReadWrite,
-  };
-
   /// \brief Records a use site for some decl with additional semantic
   /// information.
   virtual void recordSemanticDeclUseLocation(const Range& SourceRange,
@@ -1059,6 +1062,14 @@ class GraphObserver {
     }
   }
 
+  /// \brief Create a NodeId that points to some VName.
+  NodeId MintNodeIdForVName(const proto::VName& vname);
+
+  /// \brief Creates a VNameRef for the VName stored in `id`.
+  ///
+  /// Note that the `VNameRef` should not outlive `id`.
+  VNameRef DecodeMintedVName(const NodeId& id) const;
+
   virtual ~GraphObserver() = 0;
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
@@ -1161,10 +1172,14 @@ class NullGraphObserver : public GraphObserver {
     return &DefaultToken;
   }
 
+  const ClaimToken* getVNameClaimToken() const override { return &VnameToken; }
+
   ~NullGraphObserver() {}
 
  private:
   NullClaimToken DefaultToken;
+
+  NullClaimToken VnameToken;
 };
 
 /// \brief Emits a stringified representation of the given `NameId`,
