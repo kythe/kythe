@@ -303,7 +303,7 @@ void FileDescriptorWalker::VisitImports() {
 
 namespace {
 std::string SignAnnotation(
-    google::protobuf::GeneratedCodeInfo::Annotation annotation) {
+    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
   std::string signature;
   std::stringstream sig(signature);
   bool first_node = true;
@@ -315,8 +315,8 @@ std::string SignAnnotation(
 }
 
 VName VNameForAnnotation(
-    VName context_vname,
-    google::protobuf::GeneratedCodeInfo::Annotation annotation) {
+    const VName& context_vname,
+    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
   VName out;
   out.set_corpus(context_vname.corpus());
   out.set_path(annotation.source_file());
@@ -330,10 +330,10 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
   if (!file_descriptor_->options().HasExtension(proto::generated_proto_info)) {
     return;
   }
-  proto::VName context_vname(file_name_);
-  GeneratedProtoInfo proto_info =
-      file_descriptor_->options().GetExtension(proto::generated_proto_info);
-  google::protobuf::GeneratedCodeInfo info = proto_info.generated_code_info();
+  const google::protobuf::GeneratedCodeInfo& info =
+      file_descriptor_->options()
+          .GetExtension(proto::generated_proto_info)
+          .generated_code_info();
 
   std::vector<MetadataFile::Rule> rules;
   int file_rule = -1;
@@ -342,7 +342,7 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
     rule.whole_file = false;
     rule.begin = annotation.begin();
     rule.end = annotation.end();
-    rule.vname = VNameForAnnotation(context_vname, annotation);
+    rule.vname = VNameForAnnotation(file_name_, annotation);
     rule.edge_in = kythe::common::schema::kDefinesBinding;
     rule.edge_out = kythe::common::schema::kGenerates;
     rule.reverse_edge = true;
