@@ -1042,7 +1042,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   absl::flat_hash_map<const clang::Stmt*, GraphObserver::UseKind> use_kinds_;
 
   struct AlternateSemantic {
-    clang::SourceLocation end;
     GraphObserver::UseKind use_kind;
     std::optional<GraphObserver::NodeId> node;
   };
@@ -1050,9 +1049,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \return the alternate semantic for `decl` or null.
   AlternateSemantic* AlternateSemanticForDecl(const clang::Decl* decl);
 
-  /// \brief Maps from declaring token source locations (as encoded
-  /// clang::SourceLocations) to alternate semantics.
-  absl::flat_hash_map<unsigned, AlternateSemantic> alternate_semantic_cache_;
+  /// \brief Maps from declaring token (begin, end) locations (as pairs of
+  /// encoded clang::SourceLocations) to alternate semantics.
+  absl::flat_hash_map<std::pair<unsigned, unsigned>, AlternateSemantic>
+      alternate_semantic_cache_;
 
   /// \brief Decls known to have alternate semantics.
   absl::flat_hash_map<const clang::Decl*, AlternateSemantic*>

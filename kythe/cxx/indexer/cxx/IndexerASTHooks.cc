@@ -3072,6 +3072,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   if (SkipAliasedDecl(Decl)) {
     return true;
   }
+  // Add the decl to the cache. This helps if a declaration is annotated, its
+  // definition is not, and a later use site uses the definition.
   (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
@@ -5721,13 +5723,14 @@ void IndexerASTVisitor::PrepareAlternateSemanticCache() {
         default:
           break;
       }
+      AlternateSemantic semantic{
+          kind, Observer.MintNodeIdForVName(rule.second.vname)};
+      auto begin = Observer.getSourceManager()->getComposedLoc(
+          meta.first, rule.second.begin);
       auto end = Observer.getSourceManager()->getComposedLoc(meta.first,
                                                              rule.second.end);
-      AlternateSemantic semantic{
-          end, kind, Observer.MintNodeIdForVName(rule.second.vname)};
-      auto loc = Observer.getSourceManager()->getComposedLoc(meta.first,
-                                                             rule.second.begin);
-      alternate_semantic_cache_[loc.getRawEncoding()] = semantic;
+      alternate_semantic_cache_[{begin.getRawEncoding(),
+                                 end.getRawEncoding()}] = semantic;
     }
   }
 }
@@ -5746,10 +5749,9 @@ IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
   // (like the callee of a call expression).
   if (named == nullptr) return nullptr;
   auto range = RangeForNameOfDeclaration(named);
-  if (auto cached =
-          alternate_semantic_cache_.find(range.getBegin().getRawEncoding());
-      cached != alternate_semantic_cache_.end() &&
-      cached->second.end == range.getEnd()) {
+  if (auto cached = alternate_semantic_cache_.find(
+          {range.getBegin().getRawEncoding(), range.getEnd().getRawEncoding()});
+      cached != alternate_semantic_cache_.end()) {
     alternate_semantics_[canonical] = &cached->second;
     return &cached->second;
   }
