@@ -123,15 +123,26 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
   }
 
   absl::string_view edge_string = mapping.edge();
-  if (edge_string.empty()) {
+  if (edge_string.empty() && !(mapping.type() == MappingRule::ANCHOR_DEFINES &&
+                               mapping.semantic() != MappingRule::SEMA_NONE)) {
     LOG(WARNING) << "When loading metadata: empty edge.";
     return absl::nullopt;
   }
-
   bool reverse_edge = absl::ConsumePrefix(&edge_string, "%");
   if (mapping.type() == MappingRule::ANCHOR_DEFINES) {
     if (!CheckVName(mapping.vname())) {
       return absl::nullopt;
+    }
+    Semantic sema;
+    switch (mapping.semantic()) {
+      case MappingRule::SEMA_WRITE:
+        sema = Semantic::kWrite;
+        break;
+      case MappingRule::SEMA_READ_WRITE:
+        sema = Semantic::kReadWrite;
+        break;
+      default:
+        sema = Semantic::kNone;
     }
     return MetadataFile::Rule{mapping.begin(),
                               mapping.end(),
@@ -141,7 +152,9 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
                               reverse_edge,
                               false,
                               0,
-                              0};
+                              0,
+                              false,
+                              sema};
   } else if (mapping.type() == MappingRule::ANCHOR_ANCHOR) {
     if (!CheckVName(mapping.source_vname())) {
       return absl::nullopt;
