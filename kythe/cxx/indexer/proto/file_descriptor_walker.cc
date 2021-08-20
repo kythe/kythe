@@ -304,14 +304,7 @@ void FileDescriptorWalker::VisitImports() {
 namespace {
 std::string SignAnnotation(
     const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
-  std::string signature;
-  std::stringstream sig(signature);
-  bool first_node = true;
-  for (const auto& node : annotation.path()) {
-    sig << (first_node ? "" : ".") << node;
-    first_node = false;
-  }
-  return sig.str();
+  return absl::StrJoin(annotation.path(), ".");
 }
 
 VName VNameForAnnotation(
