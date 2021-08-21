@@ -331,7 +331,7 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
   std::vector<MetadataFile::Rule> rules;
   int file_rule = -1;
   for (const auto& annotation : info.annotation()) {
-    MetadataFile::Rule rule;
+    MetadataFile::Rule rule{};
     rule.whole_file = false;
     rule.begin = annotation.begin();
     rule.end = annotation.end();
