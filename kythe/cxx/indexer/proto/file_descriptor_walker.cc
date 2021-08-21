@@ -352,7 +352,7 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
 
   // Add a file-scoped rule for the last encountered vname.
   if (file_rule >= 0) {
-    MetadataFile::Rule rule;
+    MetadataFile::Rule rule{};
     rule.whole_file = true;
     rule.vname = rules[file_rule].vname;
     rule.vname.set_signature("");
