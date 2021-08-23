@@ -63,7 +63,7 @@ rust_library(
         "@raze__log__0_4_14//:log",
         "@raze__rls_data__0_19_1//:rls_data",
         "@raze__rls_span__0_5_4//:rls_span",
-        "@raze__serde__1_0_126//:serde",
-        "@raze__serde_json__1_0_64//:serde_json",
+        "@raze__serde__1_0_128//:serde",
+        "@raze__serde_json__1_0_66//:serde_json",
     ],
 )
