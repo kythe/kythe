@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":proto_verifier_test.bzl", "proto_verifier_test")
 
@@ -117,6 +118,16 @@ proto_verifier_test(
     tags = ["corner_cases"],
 )
 
+proto_verifier_test(
+    name = "generate_proto",
+    srcs = [
+        ":gen_proto_dest_proto",
+        ":gen_proto_source_proto",
+    ],
+    tags = ["corner_cases"],
+    verifier_opts = ["--show_protos"],
+)
+
 test_suite(
     name = "indexer_corner_cases",
     tags = ["corner_cases"],
@@ -228,4 +239,23 @@ proto_library(
 proto_library(
     name = "xlang_fields_api2_proto",
     srcs = ["xlang_fields_api2.proto"],
+)
+
+proto_library(
+    name = "gen_proto_source_proto",
+    srcs = ["corner_cases/gen-proto-source.proto"],
+)
+
+copy_file(
+    name = "gen_proto_fake_gen",
+    src = "corner_cases/gen-proto-dest.proto",
+    out = "corner_cases/gen-proto-dest.gen.proto",
+)
+
+proto_library(
+    name = "gen_proto_dest_proto",
+    srcs = [":gen_proto_fake_gen"],
+    deps = [
+        "//kythe/proto:generated_message_info_proto",
+    ],
 )

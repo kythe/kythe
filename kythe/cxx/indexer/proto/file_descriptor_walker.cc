@@ -25,9 +25,12 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/stubs/map_util.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
+#include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
 #include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
+#include "kythe/proto/generated_message_info.pb.h"
 #include "re2/re2.h"
 #include "re2/stringpiece.h"
 
@@ -295,6 +298,74 @@ void FileDescriptorWalker::VisitImports() {
                           location);
     }
   }
+}
+
+namespace {
+std::string SignAnnotation(
+    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
+  return absl::StrJoin(annotation.path(), ".");
+}
+
+VName VNameForAnnotation(
+    const VName& context_vname,
+    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
+  VName out;
+  out.set_corpus(context_vname.corpus());
+  out.set_path(annotation.source_file());
+  out.set_signature(SignAnnotation(annotation));
+  out.set_language(kLanguageName);
+  return out;
+}
+}  // anonymous namespace
+
+void FileDescriptorWalker::VisitGeneratedProtoInfo() {
+  if (!file_descriptor_->options().HasExtension(proto::generated_proto_info)) {
+    return;
+  }
+  const google::protobuf::GeneratedCodeInfo& info =
+      file_descriptor_->options()
+          .GetExtension(proto::generated_proto_info)
+          .generated_code_info();
+
+  std::vector<MetadataFile::Rule> rules;
+  int file_rule = -1;
+  for (const auto& annotation : info.annotation()) {
+    MetadataFile::Rule rule{};
+    rule.whole_file = false;
+    rule.begin = annotation.begin();
+    rule.end = annotation.end();
+    rule.vname = VNameForAnnotation(file_name_, annotation);
+    rule.edge_in = kythe::common::schema::kDefinesBinding;
+    rule.edge_out = kythe::common::schema::kGenerates;
+    rule.reverse_edge = true;
+    rule.generate_anchor = false;
+    rule.anchor_begin = 0;
+    rule.anchor_end = 0;
+    rules.push_back(rule);
+    if (!rule.vname.path().empty()) {
+      if (file_rule < 0 || rule.begin > rules[file_rule].begin) {
+        file_rule = rules.size() - 1;
+      }
+    }
+  }
+
+  // Add a file-scoped rule for the last encountered vname.
+  if (file_rule >= 0) {
+    MetadataFile::Rule rule{};
+    rule.whole_file = true;
+    rule.vname = rules[file_rule].vname;
+    rule.vname.set_signature("");
+    rule.vname.set_language("");
+    rule.edge_out = kythe::common::schema::kGenerates;
+    rule.reverse_edge = true;
+    rule.generate_anchor = false;
+    rules.push_back(rule);
+  }
+
+  auto meta = MetadataFile::LoadFromRules(file_name_.path(), rules.begin(),
+                                          rules.end());
+  builder_->SetMetadata(std::move(meta));
+  builder_->MaybeAddMetadataFileRules(file_name_);
 }
 
 namespace {
@@ -863,6 +934,7 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
 
 void FileDescriptorWalker::PopulateCodeGraph() {
   BuildLocationMap(*source_code_info_);
+  VisitGeneratedProtoInfo();
   VisitImports();
 
   const VName* ns = nullptr;
