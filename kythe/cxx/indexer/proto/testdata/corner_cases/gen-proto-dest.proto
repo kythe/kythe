@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package pkg.dest;
 
-import 'kythe/proto/generated_message_info.proto';
+import "kythe/proto/generated_message_info.proto";
 
 option java_package = "pkg.dest";
 
