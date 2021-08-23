@@ -31,18 +31,17 @@ licenses([
 # Generated Targets
 
 rust_library(
-    name = "crossbeam_deque",
+    name = "thiserror",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "crossbeam-epoch",
-        "crossbeam-utils",
-        "default",
-        "std",
     ],
     crate_root = "src/lib.rs",
     crate_type = "lib",
     data = [],
     edition = "2018",
+    proc_macro_deps = [
+        "@raze__thiserror_impl__1_0_26//:thiserror_impl",
+    ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -50,19 +49,30 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "0.8.0",
+    version = "1.0.26",
     # buildifier: leave-alone
     deps = [
-        "@raze__cfg_if__1_0_0//:cfg_if",
-        "@raze__crossbeam_epoch__0_9_5//:crossbeam_epoch",
-        "@raze__crossbeam_utils__0_8_5//:crossbeam_utils",
     ],
 )
 
-# Unsupported target "fifo" with type "test" omitted
+# Unsupported target "compiletest" with type "test" omitted
 
-# Unsupported target "injector" with type "test" omitted
+# Unsupported target "test_backtrace" with type "test" omitted
 
-# Unsupported target "lifo" with type "test" omitted
+# Unsupported target "test_display" with type "test" omitted
 
-# Unsupported target "steal" with type "test" omitted
+# Unsupported target "test_error" with type "test" omitted
+
+# Unsupported target "test_expr" with type "test" omitted
+
+# Unsupported target "test_from" with type "test" omitted
+
+# Unsupported target "test_lints" with type "test" omitted
+
+# Unsupported target "test_option" with type "test" omitted
+
+# Unsupported target "test_path" with type "test" omitted
+
+# Unsupported target "test_source" with type "test" omitted
+
+# Unsupported target "test_transparent" with type "test" omitted
