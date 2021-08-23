@@ -43,7 +43,7 @@ fn main() -> Result<()> {
         if let Some(arg) = matches.value_of("tmp_directory") {
             fs::canonicalize(arg).context("Failed to canonicalize tmp_directory path")?
         } else {
-            PathBuf::new().join("/tmp")
+            std::env::temp_dir()
         }
     };
 
