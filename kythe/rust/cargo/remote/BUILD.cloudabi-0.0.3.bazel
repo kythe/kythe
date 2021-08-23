@@ -51,6 +51,6 @@ rust_library(
     version = "0.0.3",
     # buildifier: leave-alone
     deps = [
-        "@raze__bitflags__1_2_1//:bitflags",
+        "@raze__bitflags__1_3_2//:bitflags",
     ],
 )
