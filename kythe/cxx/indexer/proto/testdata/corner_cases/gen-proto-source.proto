@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package pkg.source2;
+
+option java_package = "pkg.source";
+
+//- @Message defines/binding SourceMessage
+message Message {
+  //- @string_field defines/binding SourceField
+  optional string string_field = 1;
+}
