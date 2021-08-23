@@ -52,7 +52,6 @@ using ::google::protobuf::OneofDescriptor;
 using ::google::protobuf::ServiceDescriptor;
 using ::google::protobuf::ServiceDescriptorProto;
 using ::google::protobuf::SourceCodeInfo;
-using ::kythe::proto::GeneratedProtoInfo;
 using ::kythe::proto::VName;
 
 namespace {
