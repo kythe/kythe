@@ -20,6 +20,7 @@ package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -95,6 +96,8 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 			return c.Fail("Marshaling text: %v", err)
 		}
 	}
+	// Add a new line to the output after we write the kzip info.
+	defer func() { fmt.Println() }()
 	if _, err := os.Stdout.Write(rec); err != nil {
 		return c.Fail("Writing unit: %v", err)
 	}
