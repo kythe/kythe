@@ -18,15 +18,41 @@ use kythe_rust_indexer::{
 
 use analysis_rust_proto::*;
 use anyhow::{anyhow, Context, Result};
+use clap::{App, Arg};
 use serde_json::Value;
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{self, Write},
     path::{Path, PathBuf},
 };
 use tempdir::TempDir;
 
 fn main() -> Result<()> {
+    let matches = App::new("Kythe Rust Extractor")
+        .arg(
+            Arg::with_name("tmp_directory")
+                .long("tmp_directory")
+                .required(false)
+                .takes_value(true)
+                .help("A directory where to write save_analysis files"),
+        )
+        .get_matches();
+
+    // Get the absolute path of the tmp_directory argument or default to /tmp
+    let tmp_path_arg = {
+        if let Some(arg) = matches.value_of("tmp_directory") {
+            fs::canonicalize(arg).context("Failed to canonicalize tmp_directory path")?
+        } else {
+            std::env::temp_dir()
+        }
+    };
+
+    // Check if the tmp_directory exists
+    if !tmp_path_arg.exists() {
+        eprintln!("tmp_directory path is not a directory or does not exist");
+        std::process::exit(1);
+    }
+
     let mut file_provider = ProxyFileProvider::new();
     let mut kythe_writer = ProxyWriter::new();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
@@ -35,17 +61,17 @@ fn main() -> Result<()> {
     loop {
         let unit = request_compilation_unit()?;
         // Retrieve the save_analysis file
-        let temp_dir =
-            TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
-        let temp_path = PathBuf::new().join(temp_dir.path());
-        let write_res = write_analysis_to_directory(&unit, &temp_path, &mut file_provider);
+        let analysis_temp_dir = TempDir::new_in(tmp_path_arg.clone(), "rust_indexer_tmp")
+            .context("Couldn't create temporary directory")?;
+        let analysis_temp_path = PathBuf::new().join(analysis_temp_dir.path());
+        let write_res = write_analysis_to_directory(&unit, &analysis_temp_path, &mut file_provider);
         if write_res.is_err() {
             send_done(false, write_res.err().unwrap().to_string())?;
             continue;
         }
 
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res = indexer.index_cu(&unit, &temp_path, &mut file_provider);
+        let index_res = indexer.index_cu(&unit, &analysis_temp_path, &mut file_provider);
         if index_res.is_ok() {
             send_done(true, String::new())?;
         } else {

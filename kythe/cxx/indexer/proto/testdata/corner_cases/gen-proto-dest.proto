@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package pkg.dest;
+
+import "kythe/proto/generated_message_info.proto";
+
+option java_package = "pkg.dest";
+
+//- @Nessage defines/binding DestMessage
+//- SourceMessage generates DestMessage
+message Nessage {
+  //- @string_field defines/binding DestField
+  //- SourceField generates DestField
+  optional string string_field = 1;
+}
+
+option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
+  path: 4
+  path: 0
+  source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
+  begin: 215
+  end: 222
+};
+option (kythe.proto.generated_proto_info).generated_code_info.annotation = {
+  path: 4
+  path: 0
+  path: 2
+  path: 0
+  source_file: "kythe/cxx/indexer/proto/testdata/corner_cases/gen-proto-source.proto"
+  begin: 327
+  end: 339
+};
