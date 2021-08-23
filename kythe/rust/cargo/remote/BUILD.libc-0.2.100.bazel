@@ -37,7 +37,7 @@ load(
 )
 
 cargo_build_script(
-    name = "anyhow_build_script",
+    name = "libc_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
@@ -47,7 +47,7 @@ cargo_build_script(
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
-    edition = "2018",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -55,14 +55,14 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.41",
+    version = "0.2.100",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
 rust_library(
-    name = "anyhow",
+    name = "libc",
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "default",
@@ -71,7 +71,7 @@ rust_library(
     crate_root = "src/lib.rs",
     crate_type = "lib",
     data = [],
-    edition = "2018",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -79,35 +79,11 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.41",
+    version = "0.2.100",
     # buildifier: leave-alone
     deps = [
-        ":anyhow_build_script",
+        ":libc_build_script",
     ],
 )
 
-# Unsupported target "compiletest" with type "test" omitted
-
-# Unsupported target "test_autotrait" with type "test" omitted
-
-# Unsupported target "test_backtrace" with type "test" omitted
-
-# Unsupported target "test_boxed" with type "test" omitted
-
-# Unsupported target "test_chain" with type "test" omitted
-
-# Unsupported target "test_context" with type "test" omitted
-
-# Unsupported target "test_convert" with type "test" omitted
-
-# Unsupported target "test_downcast" with type "test" omitted
-
-# Unsupported target "test_ffi" with type "test" omitted
-
-# Unsupported target "test_fmt" with type "test" omitted
-
-# Unsupported target "test_macros" with type "test" omitted
-
-# Unsupported target "test_repr" with type "test" omitted
-
-# Unsupported target "test_source" with type "test" omitted
+# Unsupported target "const_fn" with type "test" omitted

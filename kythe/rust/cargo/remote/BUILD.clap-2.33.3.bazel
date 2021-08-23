@@ -59,7 +59,7 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__atty__0_2_14//:atty",
-        "@raze__bitflags__1_2_1//:bitflags",
+        "@raze__bitflags__1_3_2//:bitflags",
         "@raze__strsim__0_8_0//:strsim",
         "@raze__textwrap__0_11_0//:textwrap",
         "@raze__unicode_width__0_1_8//:unicode_width",
