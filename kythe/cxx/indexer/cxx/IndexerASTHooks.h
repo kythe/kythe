@@ -672,6 +672,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return *Job;
   }
 
+  /// \brief Call after sema but before traversal. Applies semantic metadata
+  /// (e.g., write tags, alias tags).
+  void PrepareAlternateSemanticCache();
+
   void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
@@ -1036,6 +1040,23 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief AST nodes we know are used in specific ways.
   absl::flat_hash_map<const clang::Stmt*, GraphObserver::UseKind> use_kinds_;
+
+  struct AlternateSemantic {
+    GraphObserver::UseKind use_kind;
+    std::optional<GraphObserver::NodeId> node;
+  };
+
+  /// \return the alternate semantic for `decl` or null.
+  AlternateSemantic* AlternateSemanticForDecl(const clang::Decl* decl);
+
+  /// \brief Maps from declaring token (begin, end) locations (as pairs of
+  /// encoded clang::SourceLocations) to alternate semantics.
+  absl::flat_hash_map<std::pair<unsigned, unsigned>, AlternateSemantic>
+      alternate_semantic_cache_;
+
+  /// \brief Decls known to have alternate semantics.
+  absl::flat_hash_map<const clang::Decl*, AlternateSemantic*>
+      alternate_semantics_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -1070,6 +1091,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         DataflowEdges, TemplateInstanceExcludePathPattern);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
+      Visitor.PrepareAlternateSemanticCache();
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
     }
   }
