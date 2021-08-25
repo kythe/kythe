@@ -31,6 +31,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
@@ -1069,6 +1070,12 @@ class GraphObserver {
   ///
   /// Note that the `VNameRef` should not outlive `id`.
   VNameRef DecodeMintedVName(const NodeId& id) const;
+
+  /// \brief Return a vector of loaded metadata files.
+  virtual std::vector<std::pair<clang::FileID, const MetadataFile*>>
+  GetMetadataFiles() {
+    return {};
+  }
 
   virtual ~GraphObserver() = 0;
 

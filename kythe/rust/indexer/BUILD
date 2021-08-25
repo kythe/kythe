@@ -53,6 +53,7 @@ rust_binary(
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:base64",
+        "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:serde_json",
         "//kythe/rust/cargo:tempdir",
         "@rules_rust//proto/raze:protobuf",

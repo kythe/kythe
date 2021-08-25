@@ -71,7 +71,7 @@ rust_library(
             "@rules_rust//rust/platform:x86_64-apple-darwin",
             "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
         ): [
-            "@raze__cpufeatures__0_1_4//:cpufeatures",
+            "@raze__cpufeatures__0_1_5//:cpufeatures",
         ],
         "//conditions:default": [],
     }),
