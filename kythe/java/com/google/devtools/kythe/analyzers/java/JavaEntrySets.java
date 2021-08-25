@@ -134,7 +134,7 @@ public class JavaEntrySets extends KytheEntrySets {
     // * the compilation's corpus if --use_compilation_corpus_as_default is set
     // * "jdk" if the above two flags are unset
     VName v = lookupVName(enclClass);
-    if (v == null && fromJDK(sym)) {
+    if (fromJDK(sym)) {
       String corpus = "jdk";
       if (config.getOverrideJdkCorpus() != null) {
         corpus = config.getOverrideJdkCorpus();
