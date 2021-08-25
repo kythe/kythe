@@ -223,6 +223,8 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
       case Tokenizer::TYPE_END:
         LOG(FATAL) << "cannot happen";
         break;
+      default:
+        break;
     }
   }
   return true;
@@ -273,6 +275,8 @@ bool ParseTextProtoHandler::ParseFieldValue(
     case Tokenizer::TYPE_START:
     case Tokenizer::TYPE_END:
       LOG(FATAL) << "cannot happen";
+      break;
+    default:
       break;
   }
   return true;
