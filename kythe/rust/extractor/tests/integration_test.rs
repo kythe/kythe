@@ -13,7 +13,6 @@
 // limitations under the License.
 #[macro_use]
 extern crate anyhow;
-extern crate runfiles;
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};

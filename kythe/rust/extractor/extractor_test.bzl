@@ -63,6 +63,7 @@ def _rust_extractor_test_impl(ctx):
     runfiles = ctx.runfiles(
         files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_lib,
     )
+    runfiles = runfiles.merge(ctx.attr.src[DefaultInfo].data_runfiles)
 
     return [DefaultInfo(runfiles = runfiles)]
 
