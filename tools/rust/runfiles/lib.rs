@@ -39,7 +39,7 @@ impl Runfiles {
             while current_path.pop() {
                 if let Some(dir_name_os) = current_path.file_name() {
                     let dir_name = dir_name_os.to_string_lossy();
-                    if dir_name.starts_with(&executable_name) && dir_name.ends_with(".runfiles") {
+                    if dir_name.ends_with(".runfiles") {
                         return Ok(Self { runfiles_path: current_path });
                     }
                 } else {
