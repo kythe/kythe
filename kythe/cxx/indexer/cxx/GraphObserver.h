@@ -1073,7 +1073,7 @@ class GraphObserver {
 
   /// \brief Return a vector of loaded metadata files.
   virtual std::vector<std::pair<clang::FileID, const MetadataFile*>>
-  GetMetadataFiles() {
+  GetMetadataFiles() const {
     return {};
   }
 
