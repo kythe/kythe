@@ -65,17 +65,12 @@ pub struct VNameRule {
 impl VNameRule {
     /// Processed vname rules defined in files
     pub fn parse_vname_rules(config_path: &Path) -> Result<Vec<Self>> {
-        if config_path.is_dir() {
-            eprintln!("--vnames_config must be a path to a file");
-            std::process::exit(1);
-        }
-
         let mut processed_rules = Vec::new();
         let file = File::open(&config_path)
-            .with_context(|| format!("Failed to open {}", config_path.to_string_lossy()))?;
+            .with_context(|| format!("Failed to open file: {}", config_path.to_string_lossy()))?;
         let reader = BufReader::new(file);
         let rules: Vec<RawRule> = serde_json::from_reader(reader)
-            .with_context(|| format!("Failed to parse {}", config_path.to_string_lossy()))?;
+            .with_context(|| format!("Failed to parse file: {}", config_path.to_string_lossy()))?;
 
         for rule in rules {
             processed_rules.push(rule.process());
