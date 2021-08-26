@@ -113,7 +113,7 @@ alias(
 
 alias(
     name = "serde",
-    actual = "@raze__serde__1_0_128//:serde",
+    actual = "@raze__serde__1_0_129//:serde",
     tags = [
         "cargo-raze",
         "manual",
