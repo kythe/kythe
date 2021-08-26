@@ -13,11 +13,13 @@
 // limitations under the License.
 #[macro_use]
 extern crate anyhow;
+extern crate runfiles;
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
 use extra_actions_base_rust_proto::*;
 use protobuf::Message;
+use runfiles::Runfiles;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::Path;
@@ -110,11 +112,14 @@ fn missing_arguments_fail() {
 }
 
 fn bad_extra_action_path_fails() {
+    let r = Runfiles::create().unwrap();
+    let vnames_path = r.rlocation("io_kythe/external/io_kythe/kythe/data/vnames_config.json");
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
 
     let output = Command::new(&extractor_path)
         .arg("--extra_action=badPath")
         .arg("--output=/tmp/wherever")
+        .arg(format!("--vnames_config={}", vnames_path.to_string_lossy()))
         .output()
         .unwrap();
     assert_eq!(output.status.code().unwrap(), 1);
@@ -127,11 +132,15 @@ fn correct_arguments_succeed(
     expected_output_key: &str,
     expected_arguments: Vec<String>,
 ) {
+    let r = Runfiles::create().unwrap();
+    let vnames_path = r.rlocation("io_kythe/external/io_kythe/kythe/data/vnames_config.json");
+
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let kzip_path_str = format!("{}/output.kzip", temp_dir_str);
     let exit_status = Command::new(&extractor_path)
         .arg(format!("--extra_action={}", extra_action_path_str))
         .arg(format!("--output={}", kzip_path_str))
+        .arg(format!("--vnames_config={}", vnames_path.to_string_lossy()))
         .status()
         .unwrap();
     assert_eq!(exit_status.code().unwrap(), 0);
@@ -177,13 +186,13 @@ fn correct_arguments_succeed(
 
     let unit_vname = compilation_unit.get_v_name();
     assert_eq!(unit_vname.get_language(), "rust", "VName language field doesn't match");
+    assert_eq!(unit_vname.get_corpus(), "test_corpus", "VName corpus field doesn't match");
 
     let arguments = compilation_unit.get_argument();
     assert_eq!(arguments, expected_arguments, "Argument field doesn't match");
 
     let required_inputs = compilation_unit.get_required_input().to_vec();
     let source_input = required_inputs.get(0).expect("Failed to get first required input");
-    assert_eq!(source_input.get_v_name().get_corpus(), "test_corpus");
 
     let source_file_path = source_input.get_info().get_path();
     assert!(
@@ -198,7 +207,6 @@ fn correct_arguments_succeed(
     );
 
     let analysis_input = required_inputs.get(1).expect("Failed to get second required input");
-    assert_eq!(analysis_input.get_v_name().get_corpus(), "test_corpus");
     let analysis_path = analysis_input.get_info().get_path();
     assert!(
         analysis_path.contains("save-analysis/test_crate.json"),

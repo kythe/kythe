@@ -11,6 +11,13 @@ rust_library(
         exclude = ["src/bin/**"],
     ),
     edition = "2018",
+    deps = [
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:regex",
+        "//kythe/rust/cargo:serde",
+        "//kythe/rust/cargo:serde_json",
+    ],
 )
 
 rust_binary(
@@ -61,6 +68,8 @@ rust_binary(
     ],
     deps = [
         ":kythe_rust_extractor",
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/rust/cargo:regex",
         "//kythe/rust/cargo:tempdir",
     ],
 )
@@ -73,6 +82,7 @@ rust_extractor_test(
 rust_binary(
     name = "extractor_integration_test_binary",
     srcs = ["tests/integration_test.rs"],
+    data = ["//external:vnames_config"],
     edition = "2018",
     deps = [
         "//kythe/proto:analysis_rust_proto",
@@ -81,6 +91,7 @@ rust_binary(
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "@rules_rust//proto/raze:protobuf",
+        "@rules_rust//tools/runfiles",
     ],
 )
 

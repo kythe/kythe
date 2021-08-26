@@ -18,6 +18,8 @@ extern crate rustc_interface;
 extern crate rustc_save_analysis;
 extern crate rustc_session;
 
+pub mod vname_util;
+
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_interface::{interface, Queries};
 use rustc_save_analysis::DumpHandler;

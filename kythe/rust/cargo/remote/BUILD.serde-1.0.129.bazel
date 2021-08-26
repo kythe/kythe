@@ -57,7 +57,7 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.128",
+    version = "1.0.129",
     visibility = ["//visibility:private"],
     deps = [
     ],
@@ -77,7 +77,7 @@ rust_library(
     data = [],
     edition = "2015",
     proc_macro_deps = [
-        "@raze__serde_derive__1_0_128//:serde_derive",
+        "@raze__serde_derive__1_0_129//:serde_derive",
     ],
     rustc_flags = [
         "--cap-lints=allow",
@@ -86,7 +86,7 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.128",
+    version = "1.0.129",
     # buildifier: leave-alone
     deps = [
         ":serde_build_script",
