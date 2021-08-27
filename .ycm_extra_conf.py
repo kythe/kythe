@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright 2017 Google Inc. All rights reserved.
 #
@@ -26,10 +26,11 @@
 # included command line flags.
 # ==============================================================================
 
+import logging
 import os
+import pathlib
 import re
 import subprocess
-import logging
 
 BAZEL_PRINT_FLAGS = [
     # Run bazel.
@@ -66,20 +67,21 @@ def InitBazelConfig():
   """
   global WORKSPACE_PATH
   global EXECUTION_ROOT
-  EXECUTION_ROOT = subprocess.check_output(['bazel', 'info',
-                                            'execution_root']).strip()
-  WORKSPACE_PATH = subprocess.check_output(['bazel', 'info',
-                                            'workspace']).strip()
+  EXECUTION_ROOT = pathlib.Path(
+      os.fsdecode(
+          subprocess.check_output(['bazel', 'info', 'execution_root']).strip()))
+  WORKSPACE_PATH = pathlib.Path(
+      os.fsdecode(
+          subprocess.check_output(['bazel', 'info', 'workspace']).strip()))
 
 
-def ExpandAndNormalizePath(filename, basepath=None):
-  """Resolves |filename| relative to |basepath| and expands symlinks."""
+def ExpandAndNormalizePath(filepath, basepath=None):
+  """Resolves |filepath| relative to |basepath| and expands symlinks."""
   if basepath is None:
     basepath = WORKSPACE_PATH
-  if not os.path.isabs(filename) and basepath:
-    filename = os.path.join(basepath, filename)
-  filename = os.path.realpath(filename)
-  return str(filename)
+  if not filepath.is_absolute() and basepath:
+    filepath = basepath.joinpath(filepath)
+  return filepath.resolve()
 
 
 def RelativePath(filename, root=None):
@@ -87,9 +89,10 @@ def RelativePath(filename, root=None):
   if root is None:
     root = WORKSPACE_PATH
   path = ExpandAndNormalizePath(filename, basepath=root)
-  if path.startswith(root):
-    path = path[len(root):].lstrip('/')
-  return path
+  try:
+    return path.relative_to(root)
+  except ValueError:
+    return path
 
 
 # Entrypoint for YouCompleteMe.
@@ -100,11 +103,11 @@ def Settings(**kwargs):
   if EXECUTION_ROOT is None:
     InitBazelConfig()
 
-  filename = RelativePath(kwargs.pop('filename'))
+  filename = RelativePath(pathlib.Path(kwargs.pop('filename')))
   logging.info('Calling bazel print_action for %s', filename)
   try:
     action = subprocess.check_output(
-        BAZEL_PRINT_FLAGS + [filename], stderr=subprocess.STDOUT)
+        BAZEL_PRINT_FLAGS + [str(filename)], stderr=subprocess.STDOUT).decode()
   except subprocess.CalledProcessError as err:
     logging.error('Error calling bazel %s (%s)', err, err.output)
     return {}
