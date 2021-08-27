@@ -149,6 +149,11 @@ filegroup(
     srcs = ["extractors/bazel_proto_extractor"],
 )
 
+filegroup(
+    name = "bazel_rust_extractor",
+    srcs = ["extractors/bazel_rust_extractor"],
+)
+
 extractor_action(
     name = "extract_kzip_cxx",
     args = [
@@ -234,4 +239,19 @@ extractor_action(
     extractor = ":bazel_proto_extractor",
     mnemonics = ["GenProtoDescriptorSet"],
     output = "$(ACTION_ID).protobuf.kzip",
+)
+
+extractor_action(
+    name = "extract_kzip_rust",
+    args = [
+        "--extra_action=$(EXTRA_ACTION_FILE)",
+        "--output=$(output $(ACTION_ID).rust.kzip)",
+        "--vnames_config=$(location :vnames_config)",
+    ],
+    data = [":vnames_config"],
+    extractor = ":bazel_rust_extractor",
+    mnemonics = [
+        "Rustc",
+    ],
+    output = "$(ACTION_ID).rust.kzip",
 )
