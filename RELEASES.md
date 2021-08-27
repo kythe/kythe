@@ -1,5 +1,108 @@
 # Release Notes
 
+## [v0.0.53] - 2021-08-27
+
+#### Bug Fixes
+
+*   style nit in the TS indexer (#5044) ([2f1f2a37](https://github.com/kythe/kythe/commit/2f1f2a3763dd02c841c70f16234f6a2907f71e16))
+*   Added correct underline syntax (#4967) ([733a6cf6](https://github.com/kythe/kythe/commit/733a6cf674bda52660d5c2354ea6dc771a07a458))
+*   update link to re2 syntax (#4952) ([e8808410](https://github.com/kythe/kythe/commit/e88084101133c9810ec28e399022fb4053a71f4c))
+*   force selection of `ar` to unbreak os x build of libffi (#4905) ([99ccb48d](https://github.com/kythe/kythe/commit/99ccb48dc4e7aec2fa6a4286d823755952719bf0))
+* **build:**  move BUILD rules next to go code (#5009) ([3dc332be](https://github.com/kythe/kythe/commit/3dc332be9b254ddd34de4ac2051d11bd5ec59dd3))
+* **cc_indexer_test:**  use short_path for generated files (#5036) ([da29f512](https://github.com/kythe/kythe/commit/da29f512cc4e8920a565e6006a91338cbc69cb51))
+* **cxx_indexer:**
+  *  fix dangling reference (#5039) ([8c0140b4](https://github.com/kythe/kythe/commit/8c0140b45b161c4f9f603adc306bc974d59c4540))
+  *  assign usr nodes to the empty corpus (#4928) ([12f483af](https://github.com/kythe/kythe/commit/12f483af42203c83dea45effaf27378945281f78))
+  *  refactor lvalue handling for dataflow (#4907) ([9035307b](https://github.com/kythe/kythe/commit/9035307bd5090505e8a6aecc527abf5baeebf870))
+* **docs:**
+  *  include a note about anchor-to-file childof edges (#5007) ([98391d0a](https://github.com/kythe/kythe/commit/98391d0af65e4bbbb018afe030a319453ba5672f))
+  *  use wrapper script for extracting make-based projects (#4997) ([1df8f54c](https://github.com/kythe/kythe/commit/1df8f54cc9b56ee7cf6c197e7e3aca08387a4554))
+  *  better highlight macos link, remove bazelisk recommendation (#4939) ([dee76d77](https://github.com/kythe/kythe/commit/dee76d776b88f9c7bb74d95c7eab66809e8de166))
+* **fuschia-extractor:**  Fix panic format string for Rust 2021 (#4958) ([5edce0e5](https://github.com/kythe/kythe/commit/5edce0e54e3406d0a69a2fdbedc701d7a66e2691))
+* **go_indexer:**  check whether embedded type is Named (#5028) ([7babd407](https://github.com/kythe/kythe/commit/7babd407db6e5e6918634df063cd972f4240fc54))
+* **java:**
+  *  guard against possible null sym field (#4892) ([b5e52f15](https://github.com/kythe/kythe/commit/b5e52f1555198d5796bde2f31fea576c82f9fad5))
+  *  properly elide type arguments for constructor calls (#4889) ([160b28af](https://github.com/kythe/kythe/commit/160b28af24a477fd75458e033523cf9ce81733ee))
+  *  verifier test exposing the compiler implicitly tagging enum values as "static" (#4887) ([9b4aace9](https://github.com/kythe/kythe/commit/9b4aace96d66d76a075d9fc0ef850c7610d1a545))
+* **java indexer:**  --override_jdk_corpus takes precedence over default corpus (#5043) ([08aea04e](https://github.com/kythe/kythe/commit/08aea04e05c29bf4541ca419ebe1013fe5cb4ef2))
+* **java_extractor:**  properly filter/normalize Bazel javacopts (#4977) ([59a94bf7](https://github.com/kythe/kythe/commit/59a94bf76c016a6d13a6d41d9f3b8e31de178a0f))
+* **kzip info:**  allow paths that begin with /kythe_builtins/ (#5030) ([7a909d91](https://github.com/kythe/kythe/commit/7a909d91690893fdd5c3dc09dfcf4163cdac61e5))
+* **rust_common:**
+  *  remove reference to PROTO_COMPILE_DEPS (#5018) ([bbaf4eb6](https://github.com/kythe/kythe/commit/bbaf4eb6d20c450cfa7dcee95c884dedf8b7d983))
+  *  remove references to PROTO_COMPILE_DEPS (#4992) ([efa7141f](https://github.com/kythe/kythe/commit/efa7141fec3019cd743e635eb80c994700924b50))
+* **rust_extractor:**
+  *  process env vars and compiler args passed to wrapper (#5014) ([d315b5be](https://github.com/kythe/kythe/commit/d315b5be015f7a62ef68b35e287f60a8219653b8))
+  *  fix running the Rust extractor on macOS (#5013) ([5db173cd](https://github.com/kythe/kythe/commit/5db173cd66773704f9a6f4ba8eb6a4c7f8bd332a))
+  *  make extractor tests more resilient (#5002) ([6f719653](https://github.com/kythe/kythe/commit/6f719653e8b5d6c61d88f6c62ae3612d3f92605d))
+  *  change argument processing due to rules_rust change (#4996) ([3044115c](https://github.com/kythe/kythe/commit/3044115c9a2c319d85358a0d98d30205a90f90c7))
+  *  fix --out-dir path (#4993) ([c1afdc7a](https://github.com/kythe/kythe/commit/c1afdc7abdc4a66a637d06cd146f7150baa90b16))
+  *  Remove assert_cmd dependency from integration test (#4972) ([f36068ae](https://github.com/kythe/kythe/commit/f36068aec92977ecf2c591c1749cb5ddd288c4d6))
+* **rust_indexer:**
+  *  properly handle empty file contents (#5034) ([b89f1678](https://github.com/kythe/kythe/commit/b89f167819a745472376cd5bc8a1fa7fe0a524a9))
+  *  Fix proxy indexer (#5032) ([d1ccce08](https://github.com/kythe/kythe/commit/d1ccce08e895d481d47fb1f0a175994ea174d7bb))
+  *  allow files to be passed in for the extractor (#5024) ([65ec646d](https://github.com/kythe/kythe/commit/65ec646d2a65578d856e4de9b6543753984dd291))
+  *  remove reference to go_verifier_test (#5020) ([8dd99679](https://github.com/kythe/kythe/commit/8dd99679e7a96f821ca3d48bd9ff7a63d096a865))
+  *  copy all generated proto files (#4968) ([1e199931](https://github.com/kythe/kythe/commit/1e199931015b5a37d371041df950c6002b6c4945))
+  *  rustfmt everything (#4941) ([82504c0a](https://github.com/kythe/kythe/commit/82504c0a51ddc77ffc29e1e37a3d11edce980b43))
+  *  update to a recent nightly toolchain (#4940) ([e77b26d4](https://github.com/kythe/kythe/commit/e77b26d4c74bb42d8b13851cec9698d492c1c8e8))
+* **tool:**  add alias support to kythe command, add alias for "decor" (#4937) ([9fe7e8ea](https://github.com/kythe/kythe/commit/9fe7e8ea7da05eb074581ac988cf117d10c346e7))
+* **typescript_indexer:**  fix compilation issues with TypeScript 4.3 (#4945) ([828d622c](https://github.com/kythe/kythe/commit/828d622c024358e6de4b84e82757299e66536a6e))
+* **verifier:**  remove darwin stubs and alwayslink libffi to satisfy dyld (#4906) ([795ce805](https://github.com/kythe/kythe/commit/795ce80580f292863e9ac9ef94dadec77414669e))
+* **vscode:**  update vscode dependencies (#4920) ([ed78ca68](https://github.com/kythe/kythe/commit/ed78ca68d82a9b2d512f1f6c9a8fe2938567889b))
+
+#### Features
+
+* **api:**  add set of languages appearing in Origin (#4947) ([d5419f31](https://github.com/kythe/kythe/commit/d5419f314ab4e9c6d72096c8714751066e580327))
+* **build:**
+  *  add image and cloudbuild configs for pre-commit (#4898) ([63fa149b](https://github.com/kythe/kythe/commit/63fa149b5d4e5cb9c8373a60a4eb8a0403ca8a52))
+  *  include a custom bazelrc for cloud builder (#4897) ([b0c64e1d](https://github.com/kythe/kythe/commit/b0c64e1dd7a5040086253fef1725a9c5afa300d5))
+  *  add cloud build configuration for presubmit tests (#4894) ([407fa2b6](https://github.com/kythe/kythe/commit/407fa2b69f9a282b85241d4cfe350de686fdee72))
+* **corpus checker:**  allow specifying an allowlist of corpora (#5033) ([14585948](https://github.com/kythe/kythe/commit/145859480b64849c1911cebfc09c42be69835476))
+* **cxx_common:**  properly index generated protos (#4984) ([19c7da51](https://github.com/kythe/kythe/commit/19c7da51372f23809575331a6714ce51b8a29cb1))
+* **cxx_indexer:**
+  *  Allow VNames as NodeIds for #5037 (#5041) ([3040754f](https://github.com/kythe/kythe/commit/3040754fd0e341ec61cf5b23c9ac2ddd69280327))
+  *  Read the semantic field into metadata for #5037 (#5040) ([06c49fc1](https://github.com/kythe/kythe/commit/06c49fc1d52acd42b47c26049ddaf3fa618e496b))
+  *  Add semantics to metadata for #5037 (#5038) ([96ed0a4b](https://github.com/kythe/kythe/commit/96ed0a4ba0ccc0a05eab007f0766f4311cff3419))
+  *  use default corpus for meta, builtin nodes (#5008) ([fd30e097](https://github.com/kythe/kythe/commit/fd30e09760112e1be760bbaee9fb3b741c959b48))
+  *  add kRefFile to EdgeKinds (#4931) ([c0e92993](https://github.com/kythe/kythe/commit/c0e929931375e985e2dc0eacdcb6ca1614bac679))
+  *  r/w refs and influence for += style operators (#4909) ([9dd66234](https://github.com/kythe/kythe/commit/9dd66234bb4d1c3b9f5e3759cd1dd5c23fb13435))
+  *  support ++ and -- for influence and r/w refs (#4908) ([fe3b10dc](https://github.com/kythe/kythe/commit/fe3b10dce54dc301c3ac258450845d9c9ed18ee3))
+* **dev:**  add rustfmt checks in linter (#4989) ([f21f37e4](https://github.com/kythe/kythe/commit/f21f37e4adaddf00fda085ac59927f84bc29bed6))
+* **empty_corpus_checker:**  print out all corpora seen in the input (#5027) ([b263fd0d](https://github.com/kythe/kythe/commit/b263fd0dfc98fda6d9628b4bb5fa93ba82f85ffe))
+* **extraction:**
+  *  accept "arguments" in addition to "command" in compdb (#4986) ([c71a871e](https://github.com/kythe/kythe/commit/c71a871e3e66598fa1115036564f931e1bcdc8bd))
+  *  support tree artifacts in bazel extractor (#4932) ([147034d1](https://github.com/kythe/kythe/commit/147034d195bff4cfe7b2072a9a3bbffa65276751))
+* **go_indexer:**
+  *  load inline metadata (#5001) ([23a9265f](https://github.com/kythe/kythe/commit/23a9265f6e09170793dcb0448adf3f5435fcb701))
+  *  add option to put tapp nodes in the CU corpus (#4951) ([a367ca6f](https://github.com/kythe/kythe/commit/a367ca6ff4fd9d9ea99a5d7b3fec27a4e5cc9027))
+* **indexing:**  add metadata support for generated protos (#5021) ([baed7a22](https://github.com/kythe/kythe/commit/baed7a223701f49b10c5823a507ebd57274b57c6))
+* **java:**
+  *  add empty corpus test and assign corpus to PACKAGE nodes (#5026) ([24740e0e](https://github.com/kythe/kythe/commit/24740e0ef86c421cfd18a9c689818654171e6914))
+  *  emit visibility and other modifier facts (#4886) ([04347f60](https://github.com/kythe/kythe/commit/04347f60f392ff088799fbd48ab2cdb403f29de8))
+* **java indexer:**  use compilation corpus for jvm and jdk nodes (#5035) ([fb7df986](https://github.com/kythe/kythe/commit/fb7df9864a30d94c5feeee9e1feca2d5f90ae5ea))
+* **java_indexer:**
+  *  place builtins in the compilation unit corpus (#4976) ([0291fced](https://github.com/kythe/kythe/commit/0291fcede6f6b50c113a8a97df6d0fdbfeedfb3c))
+  *  add option to put tapps in the CU corpus (#4960) ([0198d461](https://github.com/kythe/kythe/commit/0198d461e84cf94d1d5e2393bf685c13122b37e0))
+* **kzip info:**  check for invalid absolute paths (#5022) ([3bb00e01](https://github.com/kythe/kythe/commit/3bb00e01d705324042414bcbca5f997c9ca29d70))
+* **post_processing:**  implement extends_overrides. (#4995) ([6889771f](https://github.com/kythe/kythe/commit/6889771f8cc764248b8cd5b6c523b25c59724eff))
+* **proxy:**  Add support for transmitting protos in wire format (#4983) ([ae132ac1](https://github.com/kythe/kythe/commit/ae132ac1df57e7e80e34c4824d308884bff75015))
+* **rust_common:**  prepare for Kythe release (#5055) ([a5f0fdfa](https://github.com/kythe/kythe/commit/a5f0fdfaee458ba5b2cf843ab1d37c984b8b34d2))
+* **rust_extractor:**
+  *  add support for processing vname configuration (#5053) ([3139303d](https://github.com/kythe/kythe/commit/3139303d761bd4a774b8f422550232503c7ac8cf))
+  *  add script to automatically set LD_LIBRARY_PATH (#4998) ([8a4c2498](https://github.com/kythe/kythe/commit/8a4c2498d80132900a5f79c05415a8d7f128f82f))
+* **rust_indexer:**
+  *  add cli argument for temporary directory (#5051) ([6faca9f8](https://github.com/kythe/kythe/commit/6faca9f871e5bf17ff31d6998a7391a04f4519ac))
+  *  Add support for communicating with the analyzer driver (#4985) ([7e542813](https://github.com/kythe/kythe/commit/7e54281377ff20dd6150bb7cf811f9a13f236732))
+  *  Get source file contents from the FileProvider (#4974) ([70e517d4](https://github.com/kythe/kythe/commit/70e517d4f8c5df1bcf4a1d6f42d789f2a7414095))
+  *  generate and check in rust protos (#4949) ([703eb64f](https://github.com/kythe/kythe/commit/703eb64f5b7ebd17363b62d5606aac5f71ba5a03))
+* **schema:**  add ref/writes to edge kinds (#4933) ([ddb0c19c](https://github.com/kythe/kythe/commit/ddb0c19c3cfc074b42668b407c8a7a353c5e3df5))
+* **site:**  add a target for serving website locally (#4970) ([b43e03f4](https://github.com/kythe/kythe/commit/b43e03f4945d4e774f04eb85dec7fa320df0a485))
+* **testing:**  refactor empty corpus test and add one for golang (#5017) ([dd19c9ff](https://github.com/kythe/kythe/commit/dd19c9fffa4467055fd9dafebff63813a8ab9054))
+
+#### Performance
+
+* **serving:**  default to more performant approximate totals (#4896) ([0ebe1919](https://github.com/kythe/kythe/commit/0ebe19191b9468810df6416fbfaa9058a554d895))
+
 ## [v0.0.52] - 2021-04-09
 
 #### Features
@@ -1104,7 +1207,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.52...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.53...HEAD
+[v0.0.53] https://github.com/kythe/kythe/compare/v0.0.52...v0.0.53
 [v0.0.52] https://github.com/kythe/kythe/compare/v0.0.51...v0.0.52
 [v0.0.51] https://github.com/kythe/kythe/compare/v0.0.50...v0.0.51
 [v0.0.50] https://github.com/kythe/kythe/compare/v0.0.49...v0.0.50
