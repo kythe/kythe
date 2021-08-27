@@ -36,6 +36,7 @@ genrule(
         ":bazel_java_extractor",
         ":bazel_jvm_extractor",
         ":bazel_proto_extractor",
+        ":bazel_rust_extractor",
         ":javac_extractor",
         ":javac_wrapper",
         ":cc_proto_metadata_plugin",
@@ -45,6 +46,7 @@ genrule(
         ":jvm_indexer",
         ":cxx_indexer",
         ":go_indexer",
+        ":rust_indexer",
         ":proto_extractor",
         "@maven//:org_apache_tomcat_tomcat_annotations_api",
         ":proto_indexer",
@@ -75,6 +77,7 @@ genrule(
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location go_indexer) indexers/go_indexer",
         "--cp $(location proto_indexer) indexers/proto_indexer",
+        "--cp $(location rust_indexer) indexers/rust_indexer",
         "--cp $(location textproto_indexer) indexers/textproto_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
@@ -83,6 +86,7 @@ genrule(
         "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
         "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
+        "--cp $(location bazel_rust_extractor) extractors/bazel_rust_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location fuchsia_rust_extractor) extractors/fuchsia_rust_extractor",
         "--cp $(location @maven//:org_apache_tomcat_tomcat_annotations_api) jsr250-api-1.0.jar",
@@ -242,6 +246,16 @@ filegroup(
 filegroup(
     name = "fuchsia_rust_extractor",
     srcs = ["//kythe/rust/fuchsia_extractor"],
+)
+
+filegroup(
+    name = "bazel_rust_extractor",
+    srcs = ["//kythe/rust/extractor"],
+)
+
+filegroup(
+    name = "rust_indexer",
+    srcs = ["//kythe/rust/indexer:bazel_indexer"],
 )
 
 filegroup(
