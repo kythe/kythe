@@ -194,12 +194,9 @@ extractor_action(
     args = [
         "--extra_action=$(EXTRA_ACTION_FILE)",
         "--output=$(output $(ACTION_ID).rust.kzip)",
+        "--vnames_config=$(location //external:vnames_config)",
     ],
     data = ["//external:vnames_config"],
-    env = {
-        # TODO(wcalandro): Remove this once the extractor has support for VName configuration
-        "KYTHE_CORPUS": "kythe.io",
-    },
     extractor = "@io_kythe//kythe/rust/extractor:extractor_script",
     mnemonics = [
         "Rustc",

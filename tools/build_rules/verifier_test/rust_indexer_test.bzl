@@ -68,8 +68,9 @@ def _rust_extract_impl(ctx):
         arguments = [
             "--extra_action=%s" % extra_action_file.path,
             "--output=%s" % output.path,
+            "--vnames_config=%s" % ctx.file._vnames_config_file.path,
         ],
-        inputs = [extra_action_file] + rustc_lib + rust_lib + ctx.files.srcs,
+        inputs = [extra_action_file, ctx.file._vnames_config_file] + rustc_lib + rust_lib + ctx.files.srcs,
         outputs = [output],
         env = {
             "KYTHE_CORPUS": "test_corpus",
@@ -105,6 +106,10 @@ rust_extract = rule(
             default = Label("//tools/rust/extra_action"),
             executable = True,
             cfg = "exec",
+        ),
+        "_vnames_config_file": attr.label(
+            default = Label("//external:vnames_config"),
+            allow_single_file = True,
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
