@@ -445,8 +445,8 @@ class KytheGraphObserver : public GraphObserver {
 
   absl::string_view getBuildConfig() const override { return build_config_; }
 
-  std::vector<std::pair<clang::FileID, const MetadataFile*>>
-  GetMetadataFiles() {
+  std::vector<std::pair<clang::FileID, const MetadataFile*>> GetMetadataFiles()
+      const override {
     std::vector<std::pair<clang::FileID, const MetadataFile*>> files;
     for (const auto& meta : meta_) {
       files.push_back({meta.first, meta.second.get()});
