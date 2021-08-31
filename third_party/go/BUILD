@@ -21,7 +21,6 @@ filegroup(
         "@com_github_google_uuid//:LICENSE",
         "@com_github_googleapis_gax_go_v2//:LICENSE",
         "@com_github_jmhodges_levigo//:LICENSE",
-        "@com_github_mholt_archiver//:LICENSE",
         "@com_github_minio_highwayhash//:LICENSE",
         "@com_github_nwaples_rardecode//:LICENSE",
         "@com_github_pierrec_lz4//:LICENSE",

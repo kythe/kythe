@@ -726,16 +726,6 @@ def _go_dependencies():
         version = "v0.1.0",
     )
     go_repository(
-        name = "com_github_mholt_archiver",
-        importpath = "github.com/mholt/archiver",
-        patch_args = ["-p1"],
-        patches = [
-            "@io_kythe//third_party/go:add_export_license.patch",
-        ],
-        sum = "h1:1dCVxuqs0dJseYEhi5pl7MYPH9zDa1wBi7mF09cbNkU=",
-        version = "v3.1.1+incompatible",
-    )
-    go_repository(
         name = "com_github_minio_highwayhash",
         importpath = "github.com/minio/highwayhash",
         patch_args = ["-p1"],
