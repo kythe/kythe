@@ -22,7 +22,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hanwen/go-fuse v1.0.0
 	github.com/jmhodges/levigo v1.0.0
-	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/minio/highwayhash v1.0.2
 	github.com/nwaples/rardecode v1.1.1 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
