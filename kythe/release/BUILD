@@ -266,7 +266,6 @@ filegroup(
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/kzip",
-        "//kythe/go/platform/tools/kzip_validator",
         "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:kythe",
         "//kythe/go/serving/tools:write_tables",
