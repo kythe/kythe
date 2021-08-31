@@ -6,15 +6,15 @@ DO NOT EDIT! Replaced on runs of cargo-raze
 """
 
 # buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
 load(
-    "@io_bazel_rules_rust//rust:rust.bzl",
+    "@rules_rust//rust:rust.bzl",
     "rust_binary",
     "rust_library",
     "rust_test",
 )
-
-# buildifier: disable=load
-load("@bazel_skylib//lib:selects.bzl", "selects")
 
 package(default_visibility = [
     # Public for visibility by "@raze__crate__version//" targets.
@@ -29,8 +29,52 @@ licenses([
 ])
 
 # Generated Targets
+# buildifier: disable=out-of-order-load
+# buildifier: disable=load-on-top
+load(
+    "@rules_rust//cargo:cargo_build_script.bzl",
+    "cargo_build_script",
+)
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+cargo_build_script(
+    name = "winapi_build_script",
+    srcs = glob(["**/*.rs"]),
+    build_script_env = {
+    },
+    crate_features = [
+        "consoleapi",
+        "errhandlingapi",
+        "fileapi",
+        "handleapi",
+        "minwinbase",
+        "minwindef",
+        "ntdef",
+        "ntsecapi",
+        "ntstatus",
+        "processenv",
+        "profileapi",
+        "std",
+        "sysinfoapi",
+        "timezoneapi",
+        "winbase",
+        "winerror",
+        "winnt",
+    ],
+    crate_root = "build.rs",
+    data = glob(["**"]),
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "0.3.9",
+    visibility = ["//visibility:private"],
+    deps = [
+    ],
+)
 
 rust_library(
     name = "winapi",
@@ -56,6 +100,7 @@ rust_library(
     ],
     crate_root = "src/lib.rs",
     crate_type = "lib",
+    data = [],
     edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
@@ -67,5 +112,6 @@ rust_library(
     version = "0.3.9",
     # buildifier: leave-alone
     deps = [
+        ":winapi_build_script",
     ],
 )

@@ -131,23 +131,35 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   bool language_independent_ = false;
 };
 
+struct KytheGraphObserverOptions {
+  // The custom build_config, if any, to apply to anchor nodes.
+  std::string build_config = "";
+  // The default corpus to use for nodes which would otherwise have an empty
+  // corpus.
+  std::string default_corpus = "";
+};
+
 /// \brief Records details in the form of Kythe nodes and edges about elements
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
+  using Options = KytheGraphObserverOptions;
+
   explicit KytheGraphObserver(KytheGraphRecorder* recorder,
                               KytheClaimClient* client,
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              std::string build_config = "")
+                              const Options& options = {})
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs),
-        build_config_(std::move(build_config)) {
+        build_config_(options.build_config) {
     default_token_.set_rough_claimed(true);
+    set_default_corpus(options.default_corpus);
     type_token_.set_rough_claimed(true);
+    vname_token_.set_rough_claimed(true);
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
@@ -158,6 +170,10 @@ class KytheGraphObserver : public GraphObserver {
 
   const KytheClaimToken* getDefaultClaimToken() const override {
     return &default_token_;
+  }
+
+  const KytheClaimToken* getVNameClaimToken() const override {
+    return &vname_token_;
   }
 
   void applyMetadataFile(clang::FileID ID, const clang::FileEntry* file,
@@ -429,6 +445,15 @@ class KytheGraphObserver : public GraphObserver {
 
   absl::string_view getBuildConfig() const override { return build_config_; }
 
+  std::vector<std::pair<clang::FileID, const MetadataFile*>> GetMetadataFiles()
+      const override {
+    std::vector<std::pair<clang::FileID, const MetadataFile*>> files;
+    for (const auto& meta : meta_) {
+      files.push_back({meta.first, meta.second.get()});
+    }
+    return files;
+  }
+
  private:
   /// A pair of tokens to use for namespaces.
   struct NamespaceTokens {
@@ -639,6 +664,8 @@ class KytheGraphObserver : public GraphObserver {
   KytheClaimToken default_token_;
   /// The claim token to use for structural types.
   KytheClaimToken type_token_;
+  /// The claim token to use for encoded VNames.
+  KytheClaimToken vname_token_;
   /// Name of the platform or build configuration to emit on anchors.
   const std::string build_config_;
   /// Information about builtin nodes.

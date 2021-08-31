@@ -20,7 +20,6 @@ import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 
 public class JavaIndexerConfig extends IndexerConfig {
-
   @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
   private boolean emitJvmSignatures;
 
@@ -58,16 +57,16 @@ public class JavaIndexerConfig extends IndexerConfig {
   private boolean emitAnchorScopes;
 
   @Parameter(
-      names = "--experimental_use_path_file_manager",
-      description = "Use the experimental Path-based FileManager on JDK9+")
-  private boolean useExperimentalPathFileManager;
-
-  @Parameter(
       names = "--temp_directory",
       description =
           "Directory on the local file system that can be used to store files that the java"
               + " compiler insists on being read from the local file system.")
   private String temporaryDirectory;
+
+  @Parameter(
+      names = "--use_compilation_corpus_as_default",
+      description = "Use the CompilationUnit VName corpus as the default.")
+  private boolean useCompilationCorpusAsDefault;
 
   public JavaIndexerConfig(String programName) {
     super(programName);
@@ -93,12 +92,12 @@ public class JavaIndexerConfig extends IndexerConfig {
     return emitAnchorScopes;
   }
 
-  public boolean getUseExperimentalPathFileManager() {
-    return useExperimentalPathFileManager;
-  }
-
   public String getTemporaryDirectory() {
     return temporaryDirectory;
+  }
+
+  public boolean getUseCompilationCorpusAsDefault() {
+    return useCompilationCorpusAsDefault;
   }
 
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
@@ -126,14 +125,13 @@ public class JavaIndexerConfig extends IndexerConfig {
     return this;
   }
 
-  public JavaIndexerConfig setUseExperimentalPathFileManager(
-      boolean useExperimentalPathFileManager) {
-    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
+  public JavaIndexerConfig setTemporaryDirectory(String temporaryDirectory) {
+    this.temporaryDirectory = temporaryDirectory;
     return this;
   }
 
-  public JavaIndexerConfig setTemporaryDirectory(String temporaryDirectory) {
-    this.temporaryDirectory = temporaryDirectory;
+  public JavaIndexerConfig setUseCompilationCorpusAsDefault(boolean useCompilationCorpusAsDefault) {
+    this.useCompilationCorpusAsDefault = useCompilationCorpusAsDefault;
     return this;
   }
 }

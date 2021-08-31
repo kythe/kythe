@@ -244,6 +244,9 @@ class FileDescriptorWalker {
   void VisitNestedFields(const std::string& name_prefix,
                          const google::protobuf::Descriptor* dp,
                          std::vector<int> lookup_path);
+
+  // Checks for generated proto info
+  void VisitGeneratedProtoInfo();
 };
 
 }  // namespace lang_proto

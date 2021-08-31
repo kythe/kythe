@@ -142,14 +142,13 @@ func TestReferences(t *testing.T) {
 		},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	refs := FromNodes(s, nodes).References()
 	debug.Print(s, refs)
 	passert.Equals(s, refs, beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_targetNode(t *testing.T) {
@@ -207,14 +206,13 @@ func TestDecorations_targetNode(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_decoration(t *testing.T) {
@@ -255,14 +253,13 @@ func TestDecorations_decoration(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_diagnostics(t *testing.T) {
@@ -331,14 +328,13 @@ func TestDecorations_diagnostics(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDecorations_targetDefinition(t *testing.T) {
@@ -441,14 +437,125 @@ func TestDecorations_targetDefinition(t *testing.T) {
 		TargetDefinitions: []*srvpb.ExpandedAnchor{def},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	decor := FromNodes(s, nodes).Decorations()
 	debug.Print(s, decor)
 	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
+}
+
+func TestDecorations_overrides(t *testing.T) {
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+	}, {
+		Source: &spb.VName{Path: "path2", Signature: "def1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("8"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path2", Signature: "def2"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("4"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("7"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "node2"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "node2"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FUNCTION},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_OVERRIDES},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path2"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some def\n"),
+		}},
+	}}
+
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{Text: []byte("some def\n")},
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Anchor:           &srvpb.RawAnchor{StartOffset: 4, EndOffset: 7},
+			Kind:             "/kythe/edge/defines/binding",
+			Target:           "kythe:#node2",
+			TargetDefinition: "kythe:?path=path2#def2",
+		}, {
+			Anchor:           &srvpb.RawAnchor{StartOffset: 5, EndOffset: 8},
+			Kind:             "/kythe/edge/defines/binding",
+			Target:           "kythe:#node1",
+			TargetDefinition: "kythe:?path=path2#def1",
+		}},
+		Target: []*srvpb.Node{{
+			Ticket: "kythe:#node2",
+			Fact:   []*cpb.Fact{{Name: "/kythe/node/kind", Value: []byte("function")}},
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{{
+			Ticket: "kythe:?path=path2#def1",
+			Text:   "def",
+			Span: &cpb.Span{
+				Start: &cpb.Point{ByteOffset: 5, LineNumber: 1, ColumnOffset: 5},
+				End:   &cpb.Point{ByteOffset: 8, LineNumber: 1, ColumnOffset: 8},
+			},
+			Snippet: "some def",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 8, LineNumber: 1, ColumnOffset: 8},
+			},
+		}, {
+			Ticket: "kythe:?path=path2#def2",
+			Text:   " de",
+			Span: &cpb.Span{
+				Start: &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+				End:   &cpb.Point{ByteOffset: 7, LineNumber: 1, ColumnOffset: 7},
+			},
+			Snippet: "some def",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 8, LineNumber: 1, ColumnOffset: 8},
+			},
+		}},
+		TargetOverride: []*srvpb.FileDecorations_Override{{
+			Overriding:           "kythe:#node2",
+			Overridden:           "kythe:#node1",
+			OverriddenDefinition: "kythe:?path=path2#def1",
+		}},
+	}, {
+		File: &srvpb.File{Text: []byte("some text\n")},
+	}}
+
+	beam.Init()
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
+
+	ptest.RunAndValidate(t, p)
 }
 
 func TestCrossReferences(t *testing.T) {
@@ -716,15 +823,14 @@ func TestCrossReferences(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, refs, nodes := ptest.CreateList2(testRefs, testNodes)
 	k := &KytheBeam{s: s, refs: refs, nodes: nodes}
 	sets, _ := k.CrossReferences()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestEdges_grouping(t *testing.T) {
@@ -760,15 +866,14 @@ func TestEdges_grouping(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	k := FromNodes(s, nodes)
 	sets, _ := k.Edges()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestEdges_reverses(t *testing.T) {
@@ -810,15 +915,14 @@ func TestEdges_reverses(t *testing.T) {
 		}},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	k := FromNodes(s, nodes)
 	sets, _ := k.Edges()
 	debug.Print(s, sets)
 	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_text(t *testing.T) {
@@ -839,14 +943,13 @@ func TestDocuments_text(t *testing.T) {
 		RawText: "raw document text",
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_children(t *testing.T) {
@@ -869,14 +972,13 @@ func TestDocuments_children(t *testing.T) {
 		ChildTicket: []string{"kythe:#child1"},
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestDocuments_markedSource(t *testing.T) {
@@ -908,14 +1010,13 @@ func TestDocuments_markedSource(t *testing.T) {
 		MarkedSource: ms,
 	}}
 
+	beam.Init()
 	p, s, nodes := ptest.CreateList(testNodes)
 	docs := FromNodes(s, nodes).Documents()
 	debug.Print(s, docs)
 	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
 
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
+	ptest.RunAndValidate(t, p)
 }
 
 func TestFileTree_registrations(t *testing.T) {

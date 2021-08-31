@@ -27,13 +27,13 @@ import (
 )
 
 type nodesCommand struct {
+	baseKytheCommand
 	nodeFilters       string
 	factSizeThreshold int
 }
 
 func (nodesCommand) Name() string     { return "nodes" }
 func (nodesCommand) Synopsis() string { return "retrieve a node's facts" }
-func (nodesCommand) Usage() string    { return "" }
 func (c *nodesCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of node fact filters (default returns all)")
 	flag.IntVar(&c.factSizeThreshold, "max_fact_size", 64,

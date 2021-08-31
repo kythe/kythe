@@ -1,5 +1,4 @@
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
-load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
 load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -14,19 +13,22 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
+        "//kythe/rust/cargo:base64",
         "//kythe/rust/cargo:quick_error",
-        "//kythe/rust/cargo:zip",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
-    ] + PROTO_COMPILE_DEPS,
+        "//kythe/rust/cargo:serde_json",
+        "//kythe/rust/cargo:zip",
+        "@rules_rust//proto/raze:protobuf",
+    ],
 )
 
 rust_binary(
-    name = "indexer",
+    name = "bazel_indexer",
     srcs = glob(
-        include = ["src/bin/**/*.rs"],
+        include = ["src/bin/bazel/*.rs"],
     ),
-    crate_root = ":src/bin/main.rs",
+    crate_root = ":src/bin/bazel/main.rs",
     edition = "2018",
     deps = [
         ":kythe_rust_indexer",
@@ -34,7 +36,27 @@ rust_binary(
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:tempdir",
-        "@io_bazel_rules_rust//proto/raze:protobuf",
+        "@rules_rust//proto/raze:protobuf",
+    ],
+)
+
+rust_binary(
+    name = "proxy_indexer",
+    srcs = glob(
+        include = ["src/bin/proxy/*.rs"],
+    ),
+    crate_root = ":src/bin/proxy/main.rs",
+    edition = "2018",
+    deps = [
+        ":kythe_rust_indexer",
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/proto:storage_rust_proto",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:base64",
+        "//kythe/rust/cargo:clap",
+        "//kythe/rust/cargo:serde_json",
+        "//kythe/rust/cargo:tempdir",
+        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -51,19 +73,21 @@ rust_test(
         "tests/testkzip.kzip",
     ],
     deps = [
-        ":kythe_rust_indexer",
         ":inline_tests",
+        ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "@io_bazel_rules_rust//tools/runfiles",
-    ] + PROTO_COMPILE_DEPS,
+        "@rules_rust//proto/raze:protobuf",
+        "@rules_rust//tools/runfiles",
+    ],
 )
 
 rust_clippy(
     name = "clippy",
     deps = [
-        ":indexer",
+        ":bazel_indexer",
         ":kythe_rust_indexer",
+        ":proxy_indexer",
     ],
 )
 

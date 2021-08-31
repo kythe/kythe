@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Needed for indexer::offset::OffsetIndexer
-#![feature(split_inclusive)]
-
 #[macro_use]
 extern crate quick_error;
 

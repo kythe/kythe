@@ -31,9 +31,18 @@ cc_proto_verifier_test(
     size = "medium",
     srcs = ["proto4.cc"],
     proto_libs = [
-        "//kythe/testdata/indexers/proto:testdata4b_proto",
         "//kythe/testdata/indexers/proto:testdata4a_proto",
+        "//kythe/testdata/indexers/proto:testdata4b_proto",
         "//kythe/testdata/indexers/proto:testdata4c_proto",
+    ],
+)
+
+cc_proto_verifier_test(
+    name = "proto5_test",
+    size = "medium",
+    srcs = ["proto5.cc"],
+    proto_libs = [
+        "//kythe/testdata/indexers/proto:testdata5_proto",
     ],
 )
 

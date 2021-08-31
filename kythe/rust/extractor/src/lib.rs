@@ -18,8 +18,9 @@ extern crate rustc_interface;
 extern crate rustc_save_analysis;
 extern crate rustc_session;
 
-use rustc_driver::run_compiler;
-use rustc_driver::{Callbacks, Compilation};
+pub mod vname_util;
+
+use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_interface::{interface, Queries};
 use rustc_save_analysis::DumpHandler;
 use std::path::PathBuf;
@@ -40,7 +41,7 @@ pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> R
     let mut callback_shim = CallbackShim::new(output_dir);
 
     rustc_driver::catch_fatal_errors(|| {
-        run_compiler(&rustc_arguments, &mut callback_shim, None, None)
+        RunCompiler::new(&rustc_arguments, &mut callback_shim).run()
     })
     .map(|_| ())
     .map_err(|_| "A compiler error occurred".to_string())?;
@@ -93,12 +94,12 @@ impl Callbacks for CallbackShim {
             rustc_save_analysis::process_crate(
                 tcx,
                 &crate_name,
-                &input,
+                input,
                 None,
                 DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
             )
         });
 
-        Compilation::Continue
+        Compilation::Stop
     }
 }

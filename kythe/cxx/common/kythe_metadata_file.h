@@ -31,19 +31,28 @@ namespace kythe {
 
 class MetadataFile {
  public:
+  /// \brief An additional semantic to apply to the given (C++) node.
+  enum class Semantic {
+    kNone,       ///< No special semantics.
+    kWrite,      ///< Write semantics.
+    kReadWrite,  ///< Read+write semantics.
+  };
+
   /// \brief A single metadata rule.
   struct Rule {
-    unsigned begin;        ///< Beginning of the range to match.
-    unsigned end;          ///< End of the range to match.
+    unsigned begin = 0;    ///< Beginning of the range to match.
+    unsigned end = 0;      ///< End of the range to match.
     std::string edge_in;   ///< Edge kind to match from anchor over [begin,end).
     std::string edge_out;  ///< Edge to create.
     proto::VName vname;    ///< VName to create edge to or from.
-    bool reverse_edge;     ///< If false, draw edge to vname; if true, draw
-                           ///< from.
-    bool generate_anchor;  ///< If this rule should generate an anchor.
-    unsigned anchor_begin;  ///< The beginning of the anchor.
-    unsigned anchor_end;    ///< The end of the anchor.
-    bool whole_file;        ///< Whether to ignore begin/end
+    bool reverse_edge = false;  ///< If false, draw edge to vname; if true, draw
+                                ///< from.
+    bool generate_anchor = false;  ///< If this rule should generate an anchor.
+    unsigned anchor_begin = 0;     ///< The beginning of the anchor.
+    unsigned anchor_end = 0;       ///< The end of the anchor.
+    bool whole_file = false;       ///< Whether to ignore begin/end
+    Semantic semantic =
+        Semantic::kNone;  ///< Whether to apply special semantics.
   };
 
   /// Creates a new MetadataFile from a list of rules ranging from `begin` to

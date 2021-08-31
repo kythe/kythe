@@ -63,19 +63,6 @@ struct ClaimedStringFormatter {
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
-
-EdgeKindID EdgeKindForUseKind(GraphObserver::UseKind kind,
-                              GraphObserver::Implicit i) {
-  switch (kind) {
-    case GraphObserver::UseKind::kUnknown:
-      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
-                                                : EdgeKindID::kRef);
-    case GraphObserver::UseKind::kWrite:
-      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefWritesImplicit
-                                                : EdgeKindID::kRefWrites);
-  }
-}
-
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -413,7 +400,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
                                          const VNameRef& decl) {
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
-    if (rule->second.begin == range_begin && rule->second.end == range_end &&
+    if (rule->second.semantic == MetadataFile::Semantic::kNone &&
+        rule->second.begin == range_begin && rule->second.end == range_end &&
         (rule->second.edge_in == kythe::common::schema::kDefines ||
          rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
       VNameRef remote(rule->second.vname);
@@ -615,6 +603,9 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
 
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId& node_id) const {
+  if (node_id.getToken() == getVNameClaimToken()) {
+    return DecodeMintedVName(node_id);
+  }
   VNameRef out_ref;
   out_ref.set_language(absl::string_view(supported_language::kIndexerLang));
   if (const auto* token =
@@ -914,7 +905,8 @@ void KytheGraphObserver::recordIntegerConstantNode(const NodeId& node_id,
                                                    const llvm::APSInt& Value) {
   VNameRef node_vname(VNameRefFromNodeId(node_id));
   recorder_->AddProperty(node_vname, NodeKindID::kConstant);
-  recorder_->AddProperty(node_vname, PropertyID::kText, Value.toString(10));
+  recorder_->AddProperty(node_vname, PropertyID::kText,
+                         llvm::toString(Value, 10));
 }
 
 void KytheGraphObserver::recordFunctionNode(
@@ -940,7 +932,7 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
                       std::min(hash.size(), static_cast<size_t>(byte_size))));
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
-  usr_vname.set_corpus(type_token_.vname().corpus());
+  usr_vname.set_corpus("");  // usr nodes always use the empty corpus
   usr_vname.set_signature(hex);
   usr_vname.set_language("usr");
   recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
@@ -1093,7 +1085,20 @@ void KytheGraphObserver::recordBlameLocation(
 void KytheGraphObserver::recordSemanticDeclUseLocation(
     const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
     Claimability claimability, Implicit i) {
-  RecordAnchor(source_range, node, EdgeKindForUseKind(kind, i), claimability);
+  if (kind == GraphObserver::UseKind::kUnknown ||
+      kind == GraphObserver::UseKind::kReadWrite) {
+    auto out_kind =
+        (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
+                                           : EdgeKindID::kRef);
+    RecordAnchor(source_range, node, out_kind, claimability);
+  }
+  if (kind == GraphObserver::UseKind::kWrite ||
+      kind == GraphObserver::UseKind::kReadWrite) {
+    auto out_kind =
+        (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefWritesImplicit
+                                           : EdgeKindID::kRefWrites);
+    RecordAnchor(source_range, node, out_kind, claimability);
+  }
 }
 
 void KytheGraphObserver::recordInitLocation(

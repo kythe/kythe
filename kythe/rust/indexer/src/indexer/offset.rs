@@ -126,11 +126,9 @@ impl LineIndex {
             Some(self.offset + column - 1)
         } else {
             // Get column offset from vector if it exists
-            if let Some(column_offset) = self.column_indices.get(column as usize - 1) {
-                Some(self.offset + column_offset)
-            } else {
-                None
-            }
+            self.column_indices
+                .get(column as usize - 1)
+                .map(|column_offset| self.offset + column_offset)
         }
     }
 }

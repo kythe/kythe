@@ -87,10 +87,13 @@ func Execute(ctx context.Context, api API) subcommands.ExitStatus {
 // RegisterCommand adds a KytheCommand to the list of subcommands for the
 // specified group.
 func RegisterCommand(c KytheCommand, group string) {
-	subcommands.Register(&commandWrapper{c}, group)
+	cmd := &commandWrapper{c}
+	subcommands.Register(cmd, group)
+	for _, a := range c.Aliases() {
+		subcommands.Alias(a, cmd)
+	}
 }
 
-// TODO(schroederc): subcommand aliases
 // TODO(schroederc): more documentation per command
 // TODO(schroederc): split commands into separate packages
 
@@ -114,11 +117,18 @@ func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...i
 // A KytheCommand is a type-safe version of the subcommands.Command interface.
 type KytheCommand interface {
 	Name() string
+	Aliases() []string
 	Synopsis() string
 	Usage() string
 	SetFlags(*flag.FlagSet)
 	Run(context.Context, *flag.FlagSet, API) error
 }
+
+type baseKytheCommand struct{}
+
+func (kc *baseKytheCommand) Aliases() []string      { return nil }
+func (kc *baseKytheCommand) Usage() string          { return "" }
+func (kc *baseKytheCommand) SetFlags(*flag.FlagSet) {}
 
 // LogRequest should be passed all proto request messages for logging.
 func LogRequest(req proto.Message) {

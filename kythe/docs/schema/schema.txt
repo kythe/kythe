@@ -256,6 +256,11 @@ Points toward::
   semantic nodes
 Ordinals are used::
   never
+Notes::
+  <<anchor>>s should not be `childof` the <<file>> in which they reside.  As an
+  optimization due to the overwhelming number of such edges, the parentage
+  relationship between these nodes is determined by the shared `corpus`,
+  `path`, and `root` VName fields.
 
 [kythe,C++,"Enumerators are children of enumerations."]
 --------------------------------------------------------------------------------

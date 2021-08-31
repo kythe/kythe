@@ -157,6 +157,7 @@ enum EdgeKind {
   REF_INIT = 35 [(metadata).label = "/kythe/edge/ref/init"];
   REF_INIT_IMPLICIT = 36 [(metadata).label = "/kythe/edge/ref/init/implicit"];
   REF_QUERIES = 37 [(metadata).label = "/kythe/edge/ref/queries"];
+  REF_WRITES = 47 [(metadata).label = "/kythe/edge/ref/writes"];
   SATISFIES = 38 [(metadata).label = "/kythe/edge/satisfies"];
   SPECIALIZES = 39 [(metadata).label = "/kythe/edge/specializes"];
   SPECIALIZES_SPECULATIVE = 40

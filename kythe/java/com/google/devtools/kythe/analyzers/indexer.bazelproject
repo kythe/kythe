@@ -14,8 +14,8 @@
 
 # Project file to work on the java indexer in IntelliJ.
 #
-# See http://ij.bazel.io/docs/bazel-plugin.html for documentation and instructions on how to use the IntelliJ with Bazel
-# plugin.
+# See https://ij.bazel.build/docs/bazel-plugin.html for documentation and
+# instructions on how to use the IntelliJ with Bazel plugin.
 directories:
   kythe/java/com/google/devtools/kythe/analyzers/
   kythe/java/com/google/devtools/kythe/platform/java/helpers

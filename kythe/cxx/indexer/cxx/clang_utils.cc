@@ -96,30 +96,32 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
   }
 }
 
-bool IsUsedAsWrite(const IndexedParentMap& map, const clang::Stmt* stmt) {
-  // TODO(zarko): Improve coverage (or get rid of this entirely and maintain
-  // traversal state in the AST walker; this would be more of a maintenance
-  // and correctness burden, but may be required for richer representations.)
-  if (stmt == nullptr) return false;
-  const auto* indexed_parent = map.GetIndexedParent(*stmt);
-  if (indexed_parent == nullptr) return false;
-  const auto* parent_stmt = indexed_parent->parent.get<clang::Stmt>();
-  while (llvm::isa_and_nonnull<clang::MemberExpr>(parent_stmt)) {
-    indexed_parent = map.GetIndexedParent(*parent_stmt);
-    if (indexed_parent == nullptr) return false;
-    parent_stmt = indexed_parent->parent.get<clang::Stmt>();
-  }
-  if (parent_stmt == nullptr) return false;
-
-  switch (parent_stmt->getStmtClass()) {
-    case clang::Stmt::StmtClass::BinaryOperatorClass: {
-      const auto* binop = clang::dyn_cast<clang::BinaryOperator>(parent_stmt);
-      if (binop == nullptr) return false;
-      return binop->getOpcode() == clang::BinaryOperator::Opcode::BO_Assign &&
-             binop->getLHS() == stmt;
-    }
+const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
+  if (stmt == nullptr) return nullptr;
+  switch (stmt->getStmtClass()) {
+    case clang::Stmt::StmtClass::DeclRefExprClass:
+    case clang::Stmt::StmtClass::ObjCIvarRefExprClass:
+    case clang::Stmt::StmtClass::MemberExprClass:
+      return stmt;
     default:
-      return false;
+      return nullptr;
   }
+}
+
+const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head) {
+  if (head == nullptr) return nullptr;
+  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
+      expr != nullptr && expr->getFoundDecl() != nullptr &&
+      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    return expr->getFoundDecl();
+  }
+  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(head);
+      expr != nullptr) {
+    if (auto* member = expr->getMemberDecl(); member != nullptr) {
+      return member;
+    }
+  }
+  return nullptr;
 }
 }  // namespace kythe

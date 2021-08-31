@@ -42,6 +42,7 @@ const (
 	Generates               = Prefix + "generates"
 	Named                   = Prefix + "named"
 	Overrides               = Prefix + "overrides"
+	OverridesTransitive     = Prefix + "overrides/transitive"
 	Param                   = Prefix + "param"
 	Satisfies               = Prefix + "satisfies"
 	Typed                   = Prefix + "typed"

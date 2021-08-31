@@ -30,6 +30,7 @@ import (
 )
 
 type lsCommand struct {
+	baseKytheCommand
 	lsURIs    bool
 	filesOnly bool
 	dirsOnly  bool
@@ -37,7 +38,6 @@ type lsCommand struct {
 
 func (lsCommand) Name() string     { return "ls" }
 func (lsCommand) Synopsis() string { return "list a directory's contents" }
-func (lsCommand) Usage() string    { return "" }
 func (c *lsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.lsURIs, "uris", false, "Display files/directories as Kythe URIs")
 	flag.BoolVar(&c.filesOnly, "files", false, "Display only files")

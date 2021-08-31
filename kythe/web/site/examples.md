@@ -232,6 +232,61 @@ $ /opt/kythe/tools/runextractor cmake \
     ```
 
 
+## Extracting projects built with `make`
+
+Projects built with make can be extracted by substituting the C/C++ compiler with a wrapper script that invokes both Kythe's cxx_extractor binary and the actual C/C++ compiler.
+
+Given a simple example project:
+
+```c++
+# main.cc
+
+#include <iostream>
+
+int main(int argc, char** argv) {
+    std::cout << "Hello" << std::endl;
+}
+```
+
+```shell
+# makefile
+
+all: bin
+
+bin: main.cc
+  $(CXX) main.cc -o bin
+
+```
+
+```shell
+# cxx_wrapper.sh
+#!/bin/bash -e
+
+$KYTHE_RELEASE_DIR/extractors/cxx_extractor "$@" &
+/usr/bin/c++ "$@"
+```
+
+Extraction is done by setting the `CXX` make variable as well as some environment variables that configure `cxx_extractor`.
+
+```shell
+# directory where kythe release has been installed
+export KYTHE_RELEASE_DIR=/opt/kythe-v0.0.50
+
+# parameters for cxx_extractor
+export KYTHE_CORPUS=mycorpus
+export KYTHE_ROOT_DIRECTORY="$PWD"
+export KYTHE_OUTPUT_DIRECTORY=/tmp/extract
+
+export CXX="cxx_wrapper.sh"
+
+mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
+
+make
+```
+
+If all goes well, this will populate `$KYTHE_OUTPUT_DIRECTORY` with kzip files, one for each compiler invocation. These files can be inspected with the `kzip` tool distributed as part of the kythe release. For example `kzip view $KYTHE_OUTPUT_DIRECTORY/some.file.kzip | jq`.
+
+
 ## Indexing Compilations
 
 All Kythe indexers analyze compilations emitted from

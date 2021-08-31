@@ -18,8 +18,8 @@ quick_error! {
     #[derive(Debug)]
     pub enum KytheError {
         /// The FileProvider failed to find the file
-        FileNotFoundError {
-            display("The requested file could not be found")
+        FileNotFoundError(name: String) {
+            display("The requested file could not be found: {}", name)
         }
         /// The FileProvider failed to read the file
         FileReadError(err: std::io::Error) {

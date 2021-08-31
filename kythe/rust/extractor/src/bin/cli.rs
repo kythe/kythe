@@ -18,16 +18,8 @@ use std::path::PathBuf;
 /// Contains the configuration options for the extractor
 pub struct ExtractorConfig {
     pub extra_action_path: PathBuf,
-    // TODO(Arm1stice): To be re-added when vname configs are supported
-    // pub vnames_config_path: PathBuf,
+    pub vnames_config_path: PathBuf,
     pub output_path: PathBuf,
-}
-
-impl ExtractorConfig {
-    /// Create a new ExtractorConfig using the supplied parameters
-    pub fn new(extra_action_path: PathBuf, output_path: PathBuf) -> Self {
-        Self { extra_action_path, output_path }
-    }
 }
 
 /// Parse the command line arguments into an `ExtractorConfig`
@@ -50,13 +42,14 @@ pub fn parse_arguments() -> ExtractorConfig {
         .arg(
             Arg::with_name("vnames_config")
                 .long("vnames_config")
-                .required(false) // TODO: Create Rust vnames regex
+                .required(true)
                 .takes_value(true)
                 .help("Location of vnames configuration file"),
         )
         .get_matches();
 
     let extra_action_path = PathBuf::new().join(matches.value_of("extra_action").unwrap());
+    let vnames_config_path = PathBuf::new().join(matches.value_of("vnames_config").unwrap());
     let output_path = PathBuf::new().join(matches.value_of("output").unwrap());
-    ExtractorConfig::new(extra_action_path, output_path)
+    ExtractorConfig { extra_action_path, vnames_config_path, output_path }
 }

@@ -13,22 +13,22 @@ def raze_fetch_remote_crates():
     """This function defines a collection of repos and should be called in a WORKSPACE file"""
     maybe(
         http_archive,
-        name = "raze__adler__0_2_3",
-        url = "https://crates.io/api/v1/crates/adler/0.2.3/download",
+        name = "raze__adler__1_0_2",
+        url = "https://crates.io/api/v1/crates/adler/1.0.2/download",
         type = "tar.gz",
-        sha256 = "ee2a4ec343196209d6594e19543ae87a39f96d5534d7174822a3ad825dd6ed7e",
-        strip_prefix = "adler-0.2.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.adler-0.2.3.bazel"),
+        sha256 = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe",
+        strip_prefix = "adler-1.0.2",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.adler-1.0.2.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__aho_corasick__0_7_13",
-        url = "https://crates.io/api/v1/crates/aho-corasick/0.7.13/download",
+        name = "raze__aho_corasick__0_7_18",
+        url = "https://crates.io/api/v1/crates/aho-corasick/0.7.18/download",
         type = "tar.gz",
-        sha256 = "043164d8ba5c4c3035fec9bbee8647c0261d788f3474306f93bb65901cae0e86",
-        strip_prefix = "aho-corasick-0.7.13",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.aho-corasick-0.7.13.bazel"),
+        sha256 = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f",
+        strip_prefix = "aho-corasick-0.7.18",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.aho-corasick-0.7.18.bazel"),
     )
 
     maybe(
@@ -43,22 +43,12 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__anyhow__1_0_32",
-        url = "https://crates.io/api/v1/crates/anyhow/1.0.32/download",
+        name = "raze__anyhow__1_0_43",
+        url = "https://crates.io/api/v1/crates/anyhow/1.0.43/download",
         type = "tar.gz",
-        sha256 = "6b602bfe940d21c130f3895acd65221e8a61270debe89d628b9cb4e3ccb8569b",
-        strip_prefix = "anyhow-1.0.32",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.anyhow-1.0.32.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__assert_cmd__1_0_1",
-        url = "https://crates.io/api/v1/crates/assert_cmd/1.0.1/download",
-        type = "tar.gz",
-        sha256 = "c88b9ca26f9c16ec830350d309397e74ee9abdfd8eb1f71cb6ecc71a3fc818da",
-        strip_prefix = "assert_cmd-1.0.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.assert_cmd-1.0.1.bazel"),
+        sha256 = "28ae2b3dec75a406790005a200b1bd89785afc02517a00ca99ecfe093ee9e6cf",
+        strip_prefix = "anyhow-1.0.43",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.anyhow-1.0.43.bazel"),
     )
 
     maybe(
@@ -73,62 +63,82 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__autocfg__1_0_0",
-        url = "https://crates.io/api/v1/crates/autocfg/1.0.0/download",
+        name = "raze__autocfg__1_0_1",
+        url = "https://crates.io/api/v1/crates/autocfg/1.0.1/download",
         type = "tar.gz",
-        sha256 = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d",
-        strip_prefix = "autocfg-1.0.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.autocfg-1.0.0.bazel"),
+        sha256 = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a",
+        strip_prefix = "autocfg-1.0.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.autocfg-1.0.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__bitflags__1_2_1",
-        url = "https://crates.io/api/v1/crates/bitflags/1.2.1/download",
+        name = "raze__base64__0_13_0",
+        url = "https://crates.io/api/v1/crates/base64/0.13.0/download",
         type = "tar.gz",
-        sha256 = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693",
-        strip_prefix = "bitflags-1.2.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.bitflags-1.2.1.bazel"),
+        sha256 = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd",
+        strip_prefix = "base64-0.13.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.base64-0.13.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__byteorder__1_3_4",
-        url = "https://crates.io/api/v1/crates/byteorder/1.3.4/download",
+        name = "raze__bitflags__1_3_2",
+        url = "https://crates.io/api/v1/crates/bitflags/1.3.2/download",
         type = "tar.gz",
-        sha256 = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de",
-        strip_prefix = "byteorder-1.3.4",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.byteorder-1.3.4.bazel"),
+        sha256 = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a",
+        strip_prefix = "bitflags-1.3.2",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.bitflags-1.3.2.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__bzip2__0_3_3",
-        url = "https://crates.io/api/v1/crates/bzip2/0.3.3/download",
+        name = "raze__block_buffer__0_9_0",
+        url = "https://crates.io/api/v1/crates/block-buffer/0.9.0/download",
         type = "tar.gz",
-        sha256 = "42b7c3cbf0fa9c1b82308d57191728ca0256cb821220f4e2fd410a72ade26e3b",
-        strip_prefix = "bzip2-0.3.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.bzip2-0.3.3.bazel"),
+        sha256 = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4",
+        strip_prefix = "block-buffer-0.9.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.block-buffer-0.9.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__bzip2_sys__0_1_9_1_0_8",
-        url = "https://crates.io/api/v1/crates/bzip2-sys/0.1.9+1.0.8/download",
+        name = "raze__byteorder__1_4_3",
+        url = "https://crates.io/api/v1/crates/byteorder/1.4.3/download",
         type = "tar.gz",
-        sha256 = "ad3b39a260062fca31f7b0b12f207e8f2590a67d32ec7d59c20484b07ea7285e",
-        strip_prefix = "bzip2-sys-0.1.9+1.0.8",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.bzip2-sys-0.1.9+1.0.8.bazel"),
+        sha256 = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610",
+        strip_prefix = "byteorder-1.4.3",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.byteorder-1.4.3.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__cc__1_0_58",
-        url = "https://crates.io/api/v1/crates/cc/1.0.58/download",
+        name = "raze__bzip2__0_4_3",
+        url = "https://crates.io/api/v1/crates/bzip2/0.4.3/download",
         type = "tar.gz",
-        sha256 = "f9a06fb2e53271d7c279ec1efea6ab691c35a2ae67ec0d91d7acec0caf13b518",
-        strip_prefix = "cc-1.0.58",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.cc-1.0.58.bazel"),
+        sha256 = "6afcd980b5f3a45017c57e57a2fcccbb351cc43a356ce117ef760ef8052b89b0",
+        strip_prefix = "bzip2-0.4.3",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.bzip2-0.4.3.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__bzip2_sys__0_1_11_1_0_8",
+        url = "https://crates.io/api/v1/crates/bzip2-sys/0.1.11+1.0.8/download",
+        type = "tar.gz",
+        sha256 = "736a955f3fa7875102d57c82b8cac37ec45224a07fd32d58f9f7a186b6cd4cdc",
+        strip_prefix = "bzip2-sys-0.1.11+1.0.8",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.bzip2-sys-0.1.11+1.0.8.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__cc__1_0_69",
+        url = "https://crates.io/api/v1/crates/cc/1.0.69/download",
+        type = "tar.gz",
+        sha256 = "e70cc2f62c6ce1868963827bd677764c62d07c3d9a3e1fb1177ee1a9ab199eb2",
+        strip_prefix = "cc-1.0.69",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.cc-1.0.69.bazel"),
     )
 
     maybe(
@@ -146,18 +156,19 @@ def raze_fetch_remote_crates():
         name = "raze__cfg_if__1_0_0",
         url = "https://crates.io/api/v1/crates/cfg-if/1.0.0/download",
         type = "tar.gz",
+        sha256 = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd",
         strip_prefix = "cfg-if-1.0.0",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.cfg-if-1.0.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__clap__2_33_1",
-        url = "https://crates.io/api/v1/crates/clap/2.33.1/download",
+        name = "raze__clap__2_33_3",
+        url = "https://crates.io/api/v1/crates/clap/2.33.3/download",
         type = "tar.gz",
-        sha256 = "bdfa80d47f954d53a35a64987ca1422f495b8d6483c0fe9f7117b36c2a792129",
-        strip_prefix = "clap-2.33.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.clap-2.33.1.bazel"),
+        sha256 = "37e58ac78573c40708d45522f0d80fa2f01cc4f9b4e2bf749807255454312002",
+        strip_prefix = "clap-2.33.3",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.clap-2.33.3.bazel"),
     )
 
     maybe(
@@ -165,6 +176,7 @@ def raze_fetch_remote_crates():
         name = "raze__cloudabi__0_0_3",
         url = "https://crates.io/api/v1/crates/cloudabi/0.0.3/download",
         type = "tar.gz",
+        sha256 = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f",
         strip_prefix = "cloudabi-0.0.3",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.cloudabi-0.0.3.bazel"),
     )
@@ -181,117 +193,102 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__const_fn__0_4_4",
-        url = "https://crates.io/api/v1/crates/const_fn/0.4.4/download",
+        name = "raze__cpufeatures__0_1_5",
+        url = "https://crates.io/api/v1/crates/cpufeatures/0.1.5/download",
         type = "tar.gz",
-        strip_prefix = "const_fn-0.4.4",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.const_fn-0.4.4.bazel"),
+        sha256 = "66c99696f6c9dd7f35d486b9d04d7e6e202aa3e8c40d553f2fdf5e7e0c6a71ef",
+        strip_prefix = "cpufeatures-0.1.5",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.cpufeatures-0.1.5.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__crc32fast__1_2_0",
-        url = "https://crates.io/api/v1/crates/crc32fast/1.2.0/download",
+        name = "raze__crc32fast__1_2_1",
+        url = "https://crates.io/api/v1/crates/crc32fast/1.2.1/download",
         type = "tar.gz",
-        sha256 = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1",
-        strip_prefix = "crc32fast-1.2.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.crc32fast-1.2.0.bazel"),
+        sha256 = "81156fece84ab6a9f2afdb109ce3ae577e42b1228441eded99bd77f627953b1a",
+        strip_prefix = "crc32fast-1.2.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.crc32fast-1.2.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__crossbeam_channel__0_5_0",
-        url = "https://crates.io/api/v1/crates/crossbeam-channel/0.5.0/download",
+        name = "raze__crossbeam_channel__0_5_1",
+        url = "https://crates.io/api/v1/crates/crossbeam-channel/0.5.1/download",
         type = "tar.gz",
-        strip_prefix = "crossbeam-channel-0.5.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-channel-0.5.0.bazel"),
+        sha256 = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4",
+        strip_prefix = "crossbeam-channel-0.5.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-channel-0.5.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__crossbeam_deque__0_8_0",
-        url = "https://crates.io/api/v1/crates/crossbeam-deque/0.8.0/download",
+        name = "raze__crossbeam_deque__0_8_1",
+        url = "https://crates.io/api/v1/crates/crossbeam-deque/0.8.1/download",
         type = "tar.gz",
-        strip_prefix = "crossbeam-deque-0.8.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-deque-0.8.0.bazel"),
+        sha256 = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e",
+        strip_prefix = "crossbeam-deque-0.8.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-deque-0.8.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__crossbeam_epoch__0_9_1",
-        url = "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.1/download",
+        name = "raze__crossbeam_epoch__0_9_5",
+        url = "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.5/download",
         type = "tar.gz",
-        strip_prefix = "crossbeam-epoch-0.9.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-epoch-0.9.1.bazel"),
+        sha256 = "4ec02e091aa634e2c3ada4a392989e7c3116673ef0ac5b72232439094d73b7fd",
+        strip_prefix = "crossbeam-epoch-0.9.5",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-epoch-0.9.5.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__crossbeam_utils__0_8_1",
-        url = "https://crates.io/api/v1/crates/crossbeam-utils/0.8.1/download",
+        name = "raze__crossbeam_utils__0_8_5",
+        url = "https://crates.io/api/v1/crates/crossbeam-utils/0.8.5/download",
         type = "tar.gz",
-        strip_prefix = "crossbeam-utils-0.8.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-utils-0.8.1.bazel"),
+        sha256 = "d82cfc11ce7f2c3faef78d8a684447b40d503d9681acebed6cb728d45940c4db",
+        strip_prefix = "crossbeam-utils-0.8.5",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.crossbeam-utils-0.8.5.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__derive_new__0_5_8",
-        url = "https://crates.io/api/v1/crates/derive-new/0.5.8/download",
+        name = "raze__derive_new__0_5_9",
+        url = "https://crates.io/api/v1/crates/derive-new/0.5.9/download",
         type = "tar.gz",
-        sha256 = "71f31892cd5c62e414316f2963c5689242c43d8e7bbcaaeca97e5e28c95d91d9",
-        strip_prefix = "derive-new-0.5.8",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.derive-new-0.5.8.bazel"),
+        sha256 = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535",
+        strip_prefix = "derive-new-0.5.9",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.derive-new-0.5.9.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__difference__2_0_0",
-        url = "https://crates.io/api/v1/crates/difference/2.0.0/download",
+        name = "raze__digest__0_9_0",
+        url = "https://crates.io/api/v1/crates/digest/0.9.0/download",
         type = "tar.gz",
-        sha256 = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198",
-        strip_prefix = "difference-2.0.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.difference-2.0.0.bazel"),
+        sha256 = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066",
+        strip_prefix = "digest-0.9.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.digest-0.9.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__doc_comment__0_3_3",
-        url = "https://crates.io/api/v1/crates/doc-comment/0.3.3/download",
+        name = "raze__either__1_6_1",
+        url = "https://crates.io/api/v1/crates/either/1.6.1/download",
         type = "tar.gz",
-        sha256 = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10",
-        strip_prefix = "doc-comment-0.3.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.doc-comment-0.3.3.bazel"),
+        sha256 = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457",
+        strip_prefix = "either-1.6.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.either-1.6.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__either__1_5_3",
-        url = "https://crates.io/api/v1/crates/either/1.5.3/download",
+        name = "raze__flate2__1_0_20",
+        url = "https://crates.io/api/v1/crates/flate2/1.0.20/download",
         type = "tar.gz",
-        sha256 = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3",
-        strip_prefix = "either-1.5.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.either-1.5.3.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__flate2__1_0_16",
-        url = "https://crates.io/api/v1/crates/flate2/1.0.16/download",
-        type = "tar.gz",
-        sha256 = "68c90b0fc46cf89d227cc78b40e494ff81287a92dd07631e5af0d06fe3cf885e",
-        strip_prefix = "flate2-1.0.16",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.flate2-1.0.16.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__float_cmp__0_8_0",
-        url = "https://crates.io/api/v1/crates/float-cmp/0.8.0/download",
-        type = "tar.gz",
-        sha256 = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4",
-        strip_prefix = "float-cmp-0.8.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.float-cmp-0.8.0.bazel"),
+        sha256 = "cd3aec53de10fe96d7d8c565eb17f2c687bb5518a2ec453b5b1252964526abe0",
+        strip_prefix = "flate2-1.0.20",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.flate2-1.0.20.bazel"),
     )
 
     maybe(
@@ -316,22 +313,32 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__gcc__0_3_55",
-        url = "https://crates.io/api/v1/crates/gcc/0.3.55/download",
+        name = "raze__generic_array__0_14_4",
+        url = "https://crates.io/api/v1/crates/generic-array/0.14.4/download",
         type = "tar.gz",
-        sha256 = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2",
-        strip_prefix = "gcc-0.3.55",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.gcc-0.3.55.bazel"),
+        sha256 = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817",
+        strip_prefix = "generic-array-0.14.4",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.generic-array-0.14.4.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__hermit_abi__0_1_15",
-        url = "https://crates.io/api/v1/crates/hermit-abi/0.1.15/download",
+        name = "raze__hermit_abi__0_1_19",
+        url = "https://crates.io/api/v1/crates/hermit-abi/0.1.19/download",
         type = "tar.gz",
-        sha256 = "3deed196b6e7f9e44a2ae8d94225d80302d81208b1bb673fd21fe634645c85a9",
-        strip_prefix = "hermit-abi-0.1.15",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.hermit-abi-0.1.15.bazel"),
+        sha256 = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33",
+        strip_prefix = "hermit-abi-0.1.19",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.hermit-abi-0.1.19.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__hex__0_4_3",
+        url = "https://crates.io/api/v1/crates/hex/0.4.3/download",
+        type = "tar.gz",
+        sha256 = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70",
+        strip_prefix = "hex-0.4.3",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.hex-0.4.3.bazel"),
     )
 
     maybe(
@@ -346,12 +353,12 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__itoa__0_4_6",
-        url = "https://crates.io/api/v1/crates/itoa/0.4.6/download",
+        name = "raze__itoa__0_4_8",
+        url = "https://crates.io/api/v1/crates/itoa/0.4.8/download",
         type = "tar.gz",
-        sha256 = "dc6f3ad7b9d11a0c00842ff8de1b60ee58661048eb8049ed33c73594f359d7e6",
-        strip_prefix = "itoa-0.4.6",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.itoa-0.4.6.bazel"),
+        sha256 = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4",
+        strip_prefix = "itoa-0.4.8",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.itoa-0.4.8.bazel"),
     )
 
     maybe(
@@ -376,12 +383,12 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__libc__0_2_74",
-        url = "https://crates.io/api/v1/crates/libc/0.2.74/download",
+        name = "raze__libc__0_2_100",
+        url = "https://crates.io/api/v1/crates/libc/0.2.100/download",
         type = "tar.gz",
-        sha256 = "a2f02823cf78b754822df5f7f268fb59822e7296276d3e069d8e8cb26a14bd10",
-        strip_prefix = "libc-0.2.74",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.libc-0.2.74.bazel"),
+        sha256 = "a1fa8cddc8fbbee11227ef194b5317ed014b8acbf15139bd716a18ad3fe99ec5",
+        strip_prefix = "libc-0.2.100",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.libc-0.2.100.bazel"),
     )
 
     maybe(
@@ -389,67 +396,49 @@ def raze_fetch_remote_crates():
         name = "raze__lock_api__0_3_4",
         url = "https://crates.io/api/v1/crates/lock_api/0.3.4/download",
         type = "tar.gz",
+        sha256 = "c4da24a77a3d8a6d4862d95f72e6fdb9c09a643ecdb402d754004a557f2bec75",
         strip_prefix = "lock_api-0.3.4",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.lock_api-0.3.4.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__log__0_4_11",
-        url = "https://crates.io/api/v1/crates/log/0.4.11/download",
+        name = "raze__log__0_4_14",
+        url = "https://crates.io/api/v1/crates/log/0.4.14/download",
         type = "tar.gz",
-        sha256 = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b",
-        strip_prefix = "log-0.4.11",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.log-0.4.11.bazel"),
+        sha256 = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710",
+        strip_prefix = "log-0.4.14",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.log-0.4.14.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__memchr__2_3_3",
-        url = "https://crates.io/api/v1/crates/memchr/2.3.3/download",
+        name = "raze__memchr__2_4_1",
+        url = "https://crates.io/api/v1/crates/memchr/2.4.1/download",
         type = "tar.gz",
-        sha256 = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400",
-        strip_prefix = "memchr-2.3.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.memchr-2.3.3.bazel"),
+        sha256 = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a",
+        strip_prefix = "memchr-2.4.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.memchr-2.4.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__memoffset__0_6_1",
-        url = "https://crates.io/api/v1/crates/memoffset/0.6.1/download",
+        name = "raze__memoffset__0_6_4",
+        url = "https://crates.io/api/v1/crates/memoffset/0.6.4/download",
         type = "tar.gz",
-        strip_prefix = "memoffset-0.6.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.memoffset-0.6.1.bazel"),
+        sha256 = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9",
+        strip_prefix = "memoffset-0.6.4",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.memoffset-0.6.4.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__miniz_oxide__0_4_0",
-        url = "https://crates.io/api/v1/crates/miniz_oxide/0.4.0/download",
+        name = "raze__miniz_oxide__0_4_4",
+        url = "https://crates.io/api/v1/crates/miniz_oxide/0.4.4/download",
         type = "tar.gz",
-        sha256 = "be0f75932c1f6cfae3c04000e40114adf955636e19040f9c0a2c380702aa1c7f",
-        strip_prefix = "miniz_oxide-0.4.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.miniz_oxide-0.4.0.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__normalize_line_endings__0_3_0",
-        url = "https://crates.io/api/v1/crates/normalize-line-endings/0.3.0/download",
-        type = "tar.gz",
-        sha256 = "61807f77802ff30975e01f4f071c8ba10c022052f98b3294119f3e615d13e5be",
-        strip_prefix = "normalize-line-endings-0.3.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.normalize-line-endings-0.3.0.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__num_traits__0_2_12",
-        url = "https://crates.io/api/v1/crates/num-traits/0.2.12/download",
-        type = "tar.gz",
-        sha256 = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611",
-        strip_prefix = "num-traits-0.2.12",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.num-traits-0.2.12.bazel"),
+        sha256 = "a92518e98c078586bc6c934028adcca4c92a53d6a958196de835170a01d84e4b",
+        strip_prefix = "miniz_oxide-0.4.4",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.miniz_oxide-0.4.4.bazel"),
     )
 
     maybe(
@@ -457,8 +446,19 @@ def raze_fetch_remote_crates():
         name = "raze__num_cpus__1_13_0",
         url = "https://crates.io/api/v1/crates/num_cpus/1.13.0/download",
         type = "tar.gz",
+        sha256 = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3",
         strip_prefix = "num_cpus-1.13.0",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.num_cpus-1.13.0.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__opaque_debug__0_3_0",
+        url = "https://crates.io/api/v1/crates/opaque-debug/0.3.0/download",
+        type = "tar.gz",
+        sha256 = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5",
+        strip_prefix = "opaque-debug-0.3.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.opaque-debug-0.3.0.bazel"),
     )
 
     maybe(
@@ -466,6 +466,7 @@ def raze_fetch_remote_crates():
         name = "raze__parking_lot__0_10_2",
         url = "https://crates.io/api/v1/crates/parking_lot/0.10.2/download",
         type = "tar.gz",
+        sha256 = "d3a704eb390aafdc107b0e392f56a82b668e3a71366993b5340f5833fd62505e",
         strip_prefix = "parking_lot-0.10.2",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.parking_lot-0.10.2.bazel"),
     )
@@ -475,98 +476,49 @@ def raze_fetch_remote_crates():
         name = "raze__parking_lot_core__0_7_2",
         url = "https://crates.io/api/v1/crates/parking_lot_core/0.7.2/download",
         type = "tar.gz",
+        sha256 = "d58c7c768d4ba344e3e8d72518ac13e259d7c7ade24167003b8488e10b6740a3",
         strip_prefix = "parking_lot_core-0.7.2",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.parking_lot_core-0.7.2.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__pkg_config__0_3_18",
-        url = "https://crates.io/api/v1/crates/pkg-config/0.3.18/download",
+        name = "raze__pkg_config__0_3_19",
+        url = "https://crates.io/api/v1/crates/pkg-config/0.3.19/download",
         type = "tar.gz",
-        sha256 = "d36492546b6af1463394d46f0c834346f31548646f6ba10849802c9c9a27ac33",
-        strip_prefix = "pkg-config-0.3.18",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.pkg-config-0.3.18.bazel"),
+        sha256 = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c",
+        strip_prefix = "pkg-config-0.3.19",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.pkg-config-0.3.19.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__podio__0_1_7",
-        url = "https://crates.io/api/v1/crates/podio/0.1.7/download",
+        name = "raze__proc_macro2__1_0_28",
+        url = "https://crates.io/api/v1/crates/proc-macro2/1.0.28/download",
         type = "tar.gz",
-        sha256 = "b18befed8bc2b61abc79a457295e7e838417326da1586050b919414073977f19",
-        strip_prefix = "podio-0.1.7",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.podio-0.1.7.bazel"),
+        sha256 = "5c7ed8b8c7b886ea3ed7dde405212185f423ab44682667c8c6dd14aa1d9f6612",
+        strip_prefix = "proc-macro2-1.0.28",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.proc-macro2-1.0.28.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__predicates__1_0_5",
-        url = "https://crates.io/api/v1/crates/predicates/1.0.5/download",
+        name = "raze__quick_error__2_0_1",
+        url = "https://crates.io/api/v1/crates/quick-error/2.0.1/download",
         type = "tar.gz",
-        sha256 = "96bfead12e90dccead362d62bb2c90a5f6fc4584963645bc7f71a735e0b0735a",
-        strip_prefix = "predicates-1.0.5",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.predicates-1.0.5.bazel"),
+        sha256 = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3",
+        strip_prefix = "quick-error-2.0.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.quick-error-2.0.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__predicates_core__1_0_0",
-        url = "https://crates.io/api/v1/crates/predicates-core/1.0.0/download",
+        name = "raze__quote__1_0_9",
+        url = "https://crates.io/api/v1/crates/quote/1.0.9/download",
         type = "tar.gz",
-        sha256 = "06075c3a3e92559ff8929e7a280684489ea27fe44805174c3ebd9328dcb37178",
-        strip_prefix = "predicates-core-1.0.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.predicates-core-1.0.0.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__predicates_tree__1_0_0",
-        url = "https://crates.io/api/v1/crates/predicates-tree/1.0.0/download",
-        type = "tar.gz",
-        sha256 = "8e63c4859013b38a76eca2414c64911fba30def9e3202ac461a2d22831220124",
-        strip_prefix = "predicates-tree-1.0.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.predicates-tree-1.0.0.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__proc_macro2__1_0_19",
-        url = "https://crates.io/api/v1/crates/proc-macro2/1.0.19/download",
-        type = "tar.gz",
-        sha256 = "04f5f085b5d71e2188cb8271e5da0161ad52c3f227a661a3c135fdf28e258b12",
-        strip_prefix = "proc-macro2-1.0.19",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.proc-macro2-1.0.19.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__quick_error__1_2_3",
-        url = "https://crates.io/api/v1/crates/quick-error/1.2.3/download",
-        type = "tar.gz",
-        sha256 = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0",
-        strip_prefix = "quick-error-1.2.3",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.quick-error-1.2.3.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__quote__1_0_7",
-        url = "https://crates.io/api/v1/crates/quote/1.0.7/download",
-        type = "tar.gz",
-        sha256 = "aa563d17ecb180e500da1cfd2b028310ac758de548efdd203e18f283af693f37",
-        strip_prefix = "quote-1.0.7",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.quote-1.0.7.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__rand__0_3_23",
-        url = "https://crates.io/api/v1/crates/rand/0.3.23/download",
-        type = "tar.gz",
-        sha256 = "64ac302d8f83c0c1974bf758f6b041c6c8ada916fbb44a609158ca8b064cc76c",
-        strip_prefix = "rand-0.3.23",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rand-0.3.23.bazel"),
+        sha256 = "c3d0b9745dc2debf507c8422de05d7226cc1f0644216dfdfead988f9b1ab32a7",
+        strip_prefix = "quote-1.0.9",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.quote-1.0.9.bazel"),
     )
 
     maybe(
@@ -601,20 +553,22 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__rayon__1_5_0",
-        url = "https://crates.io/api/v1/crates/rayon/1.5.0/download",
+        name = "raze__rayon__1_5_1",
+        url = "https://crates.io/api/v1/crates/rayon/1.5.1/download",
         type = "tar.gz",
-        strip_prefix = "rayon-1.5.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rayon-1.5.0.bazel"),
+        sha256 = "c06aca804d41dbc8ba42dfd964f0d01334eceb64314b9ecf7c5fad5188a06d90",
+        strip_prefix = "rayon-1.5.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.rayon-1.5.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__rayon_core__1_9_0",
-        url = "https://crates.io/api/v1/crates/rayon-core/1.9.0/download",
+        name = "raze__rayon_core__1_9_1",
+        url = "https://crates.io/api/v1/crates/rayon-core/1.9.1/download",
         type = "tar.gz",
-        strip_prefix = "rayon-core-1.9.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rayon-core-1.9.0.bazel"),
+        sha256 = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e",
+        strip_prefix = "rayon-core-1.9.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.rayon-core-1.9.1.bazel"),
     )
 
     maybe(
@@ -632,28 +586,29 @@ def raze_fetch_remote_crates():
         name = "raze__redox_syscall__0_1_57",
         url = "https://crates.io/api/v1/crates/redox_syscall/0.1.57/download",
         type = "tar.gz",
+        sha256 = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce",
         strip_prefix = "redox_syscall-0.1.57",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.redox_syscall-0.1.57.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__regex__1_3_9",
-        url = "https://crates.io/api/v1/crates/regex/1.3.9/download",
+        name = "raze__regex__1_5_4",
+        url = "https://crates.io/api/v1/crates/regex/1.5.4/download",
         type = "tar.gz",
-        sha256 = "9c3780fcf44b193bc4d09f36d2a3c87b251da4a046c87795a0d35f4f927ad8e6",
-        strip_prefix = "regex-1.3.9",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.regex-1.3.9.bazel"),
+        sha256 = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461",
+        strip_prefix = "regex-1.5.4",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.regex-1.5.4.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__regex_syntax__0_6_18",
-        url = "https://crates.io/api/v1/crates/regex-syntax/0.6.18/download",
+        name = "raze__regex_syntax__0_6_25",
+        url = "https://crates.io/api/v1/crates/regex-syntax/0.6.25/download",
         type = "tar.gz",
-        sha256 = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8",
-        strip_prefix = "regex-syntax-0.6.18",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.regex-syntax-0.6.18.bazel"),
+        sha256 = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b",
+        strip_prefix = "regex-syntax-0.6.25",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.regex-syntax-0.6.25.bazel"),
     )
 
     maybe(
@@ -678,42 +633,22 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__rls_data__0_19_0",
-        url = "https://crates.io/api/v1/crates/rls-data/0.19.0/download",
+        name = "raze__rls_data__0_19_1",
+        url = "https://crates.io/api/v1/crates/rls-data/0.19.1/download",
         type = "tar.gz",
-        sha256 = "76c72ea97e045be5f6290bb157ebdc5ee9f2b093831ff72adfaf59025cf5c491",
-        strip_prefix = "rls-data-0.19.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rls-data-0.19.0.bazel"),
+        sha256 = "a58135eb039f3a3279a33779192f0ee78b56f57ae636e25cec83530e41debb99",
+        strip_prefix = "rls-data-0.19.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.rls-data-0.19.1.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__rls_span__0_5_2",
-        url = "https://crates.io/api/v1/crates/rls-span/0.5.2/download",
+        name = "raze__rls_span__0_5_4",
+        url = "https://crates.io/api/v1/crates/rls-span/0.5.4/download",
         type = "tar.gz",
-        sha256 = "f2e9bed56f6272bd85d9d06d1aaeef80c5fddc78a82199eb36dceb5f94e7d934",
-        strip_prefix = "rls-span-0.5.2",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rls-span-0.5.2.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__rust_crypto__0_2_36",
-        url = "https://crates.io/api/v1/crates/rust-crypto/0.2.36/download",
-        type = "tar.gz",
-        sha256 = "f76d05d3993fd5f4af9434e8e436db163a12a9d40e1a58a726f27a01dfd12a2a",
-        strip_prefix = "rust-crypto-0.2.36",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rust-crypto-0.2.36.bazel"),
-    )
-
-    maybe(
-        http_archive,
-        name = "raze__rustc_serialize__0_3_24",
-        url = "https://crates.io/api/v1/crates/rustc-serialize/0.3.24/download",
-        type = "tar.gz",
-        sha256 = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda",
-        strip_prefix = "rustc-serialize-0.3.24",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.rustc-serialize-0.3.24.bazel"),
+        sha256 = "b6e80f614ad4b37910bfe9b029af19c6f92612bb8e1af66e37d35829bf4ef6d1",
+        strip_prefix = "rls-span-0.5.4",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.rls-span-0.5.4.bazel"),
     )
 
     maybe(
@@ -731,28 +666,39 @@ def raze_fetch_remote_crates():
         name = "raze__scopeguard__1_1_0",
         url = "https://crates.io/api/v1/crates/scopeguard/1.1.0/download",
         type = "tar.gz",
+        sha256 = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd",
         strip_prefix = "scopeguard-1.1.0",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.scopeguard-1.1.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__serde__1_0_114",
-        url = "https://crates.io/api/v1/crates/serde/1.0.114/download",
+        name = "raze__serde__1_0_129",
+        url = "https://crates.io/api/v1/crates/serde/1.0.129/download",
         type = "tar.gz",
-        sha256 = "5317f7588f0a5078ee60ef675ef96735a1442132dc645eb1d12c018620ed8cd3",
-        strip_prefix = "serde-1.0.114",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.serde-1.0.114.bazel"),
+        sha256 = "d1f72836d2aa753853178eda473a3b9d8e4eefdaf20523b919677e6de489f8f1",
+        strip_prefix = "serde-1.0.129",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.serde-1.0.129.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__serde_json__1_0_57",
-        url = "https://crates.io/api/v1/crates/serde_json/1.0.57/download",
+        name = "raze__serde_derive__1_0_129",
+        url = "https://crates.io/api/v1/crates/serde_derive/1.0.129/download",
         type = "tar.gz",
-        sha256 = "164eacbdb13512ec2745fb09d51fd5b22b0d65ed294a1dcf7285a360c80a675c",
-        strip_prefix = "serde_json-1.0.57",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.serde_json-1.0.57.bazel"),
+        sha256 = "e57ae87ad533d9a56427558b516d0adac283614e347abf85b0dc0cbbf0a249f3",
+        strip_prefix = "serde_derive-1.0.129",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.serde_derive-1.0.129.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__serde_json__1_0_66",
+        url = "https://crates.io/api/v1/crates/serde_json/1.0.66/download",
+        type = "tar.gz",
+        sha256 = "336b10da19a12ad094b59d870ebde26a45402e5b470add4b5fd03c5048a32127",
+        strip_prefix = "serde_json-1.0.66",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.serde_json-1.0.66.bazel"),
     )
 
     maybe(
@@ -760,6 +706,7 @@ def raze_fetch_remote_crates():
         name = "raze__serial_test__0_4_0",
         url = "https://crates.io/api/v1/crates/serial_test/0.4.0/download",
         type = "tar.gz",
+        sha256 = "fef5f7c7434b2f2c598adc6f9494648a1e41274a75c0ba4056f680ae0c117fd6",
         strip_prefix = "serial_test-0.4.0",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.serial_test-0.4.0.bazel"),
     )
@@ -769,17 +716,29 @@ def raze_fetch_remote_crates():
         name = "raze__serial_test_derive__0_4_0",
         url = "https://crates.io/api/v1/crates/serial_test_derive/0.4.0/download",
         type = "tar.gz",
+        sha256 = "d08338d8024b227c62bd68a12c7c9883f5c66780abaef15c550dc56f46ee6515",
         strip_prefix = "serial_test_derive-0.4.0",
         build_file = Label("//kythe/rust/cargo/remote:BUILD.serial_test_derive-0.4.0.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__smallvec__1_5_1",
-        url = "https://crates.io/api/v1/crates/smallvec/1.5.1/download",
+        name = "raze__sha2__0_9_5",
+        url = "https://crates.io/api/v1/crates/sha2/0.9.5/download",
         type = "tar.gz",
-        strip_prefix = "smallvec-1.5.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.smallvec-1.5.1.bazel"),
+        sha256 = "b362ae5752fd2137731f9fa25fd4d9058af34666ca1966fb969119cc35719f12",
+        strip_prefix = "sha2-0.9.5",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.sha2-0.9.5.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__smallvec__1_6_1",
+        url = "https://crates.io/api/v1/crates/smallvec/1.6.1/download",
+        type = "tar.gz",
+        sha256 = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e",
+        strip_prefix = "smallvec-1.6.1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.smallvec-1.6.1.bazel"),
     )
 
     maybe(
@@ -794,12 +753,12 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__syn__1_0_36",
-        url = "https://crates.io/api/v1/crates/syn/1.0.36/download",
+        name = "raze__syn__1_0_75",
+        url = "https://crates.io/api/v1/crates/syn/1.0.75/download",
         type = "tar.gz",
-        sha256 = "4cdb98bcb1f9d81d07b536179c269ea15999b5d14ea958196413869445bb5250",
-        strip_prefix = "syn-1.0.36",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.syn-1.0.36.bazel"),
+        sha256 = "b7f58f7e8eaa0009c5fec437aabf511bd9933e4b2d7407bd05273c01a8906ea7",
+        strip_prefix = "syn-1.0.75",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.syn-1.0.75.bazel"),
     )
 
     maybe(
@@ -824,32 +783,42 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__thread_local__1_0_1",
-        url = "https://crates.io/api/v1/crates/thread_local/1.0.1/download",
+        name = "raze__thiserror__1_0_26",
+        url = "https://crates.io/api/v1/crates/thiserror/1.0.26/download",
         type = "tar.gz",
-        sha256 = "d40c6d1b69745a6ec6fb1ca717914848da4b44ae29d9b3080cbee91d72a69b14",
-        strip_prefix = "thread_local-1.0.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.thread_local-1.0.1.bazel"),
+        sha256 = "93119e4feac1cbe6c798c34d3a53ea0026b0b1de6a120deef895137c0529bfe2",
+        strip_prefix = "thiserror-1.0.26",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.thiserror-1.0.26.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__time__0_1_43",
-        url = "https://crates.io/api/v1/crates/time/0.1.43/download",
+        name = "raze__thiserror_impl__1_0_26",
+        url = "https://crates.io/api/v1/crates/thiserror-impl/1.0.26/download",
         type = "tar.gz",
-        sha256 = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438",
-        strip_prefix = "time-0.1.43",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.time-0.1.43.bazel"),
+        sha256 = "060d69a0afe7796bf42e9e2ff91f5ee691fb15c53d38b4b62a9a53eb23164745",
+        strip_prefix = "thiserror-impl-1.0.26",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.thiserror-impl-1.0.26.bazel"),
     )
 
     maybe(
         http_archive,
-        name = "raze__treeline__0_1_0",
-        url = "https://crates.io/api/v1/crates/treeline/0.1.0/download",
+        name = "raze__time__0_1_44",
+        url = "https://crates.io/api/v1/crates/time/0.1.44/download",
         type = "tar.gz",
-        sha256 = "a7f741b240f1a48843f9b8e0444fb55fb2a4ff67293b50a9179dfd5ea67f8d41",
-        strip_prefix = "treeline-0.1.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.treeline-0.1.0.bazel"),
+        sha256 = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255",
+        strip_prefix = "time-0.1.44",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.time-0.1.44.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__typenum__1_13_0",
+        url = "https://crates.io/api/v1/crates/typenum/1.13.0/download",
+        type = "tar.gz",
+        sha256 = "879f6906492a7cd215bfa4cf595b600146ccfac0c79bcbd1f3000162af5e8b06",
+        strip_prefix = "typenum-1.13.0",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.typenum-1.13.0.bazel"),
     )
 
     maybe(
@@ -864,12 +833,12 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__unicode_xid__0_2_1",
-        url = "https://crates.io/api/v1/crates/unicode-xid/0.2.1/download",
+        name = "raze__unicode_xid__0_2_2",
+        url = "https://crates.io/api/v1/crates/unicode-xid/0.2.2/download",
         type = "tar.gz",
-        sha256 = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564",
-        strip_prefix = "unicode-xid-0.2.1",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.unicode-xid-0.2.1.bazel"),
+        sha256 = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3",
+        strip_prefix = "unicode-xid-0.2.2",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.unicode-xid-0.2.2.bazel"),
     )
 
     maybe(
@@ -884,12 +853,22 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__wait_timeout__0_2_0",
-        url = "https://crates.io/api/v1/crates/wait-timeout/0.2.0/download",
+        name = "raze__version_check__0_9_3",
+        url = "https://crates.io/api/v1/crates/version_check/0.9.3/download",
         type = "tar.gz",
-        sha256 = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6",
-        strip_prefix = "wait-timeout-0.2.0",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.wait-timeout-0.2.0.bazel"),
+        sha256 = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe",
+        strip_prefix = "version_check-0.9.3",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.version_check-0.9.3.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__wasi__0_10_0_wasi_snapshot_preview1",
+        url = "https://crates.io/api/v1/crates/wasi/0.10.0+wasi-snapshot-preview1/download",
+        type = "tar.gz",
+        sha256 = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f",
+        strip_prefix = "wasi-0.10.0+wasi-snapshot-preview1",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.wasi-0.10.0+wasi-snapshot-preview1.bazel"),
     )
 
     maybe(
@@ -924,10 +903,10 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__zip__0_5_6",
-        url = "https://crates.io/api/v1/crates/zip/0.5.6/download",
+        name = "raze__zip__0_5_13",
+        url = "https://crates.io/api/v1/crates/zip/0.5.13/download",
         type = "tar.gz",
-        sha256 = "58287c28d78507f5f91f2a4cf1e8310e2c76fd4c6932f93ac60fd1ceb402db7d",
-        strip_prefix = "zip-0.5.6",
-        build_file = Label("//kythe/rust/cargo/remote:BUILD.zip-0.5.6.bazel"),
+        sha256 = "93ab48844d61251bb3835145c521d88aa4031d7139e8485990f60ca911fa0815",
+        strip_prefix = "zip-0.5.13",
+        build_file = Label("//kythe/rust/cargo/remote:BUILD.zip-0.5.13.bazel"),
     )

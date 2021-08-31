@@ -1,17 +1,16 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
-def maybe(repo_rule, name, **kwargs):
-    """Defines a repository if it does not already exist.
-    """
-    if name not in native.existing_rules():
-        repo_rule(name = name, **kwargs)
-
-def github_archive(name, repo_name, commit, kind = "zip", **kwargs):
+def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
     project = repo_name[repo_name.index("/"):]
     http_archive(
         name = name,
-        strip_prefix = "{project}-{commit}".format(project = project, commit = commit),
+        strip_prefix = "{project}-{commit}/{prefix}".format(
+            project = project,
+            commit = commit,
+            prefix = strip_prefix,
+        ),
         urls = [u.format(commit = commit, repo_name = repo_name, kind = kind) for u in [
             "https://mirror.bazel.build/github.com/{repo_name}/archive/{commit}.{kind}",
             "https://github.com/{repo_name}/archive/{commit}.{kind}",
@@ -37,10 +36,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "6f111c57fd50baf5b8ee9d63024874dd2a014b069426156c55adbf6d3d22cb7b",
+        sha256 = "8e968b5fcea1d2d64071872b12737bbb5514524ee5f0a4f54f5920266c261acb",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.0/rules_go-v0.25.0.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.25.0/rules_go-v0.25.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.28.0/rules_go-v0.28.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.28.0/rules_go-v0.28.0.zip",
         ],
     )
 
@@ -74,10 +73,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "b85f48fa105c4403326e9525ad2b2cc437babaa6e15a3fc0b1dbab0ab064bc7c",
+        sha256 = "62ca106be173579c0a167deb23358fdfe71ffa1e4cfdddf5582af26520f1c66f",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.2/bazel-gazelle-v0.22.2.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
         ],
     )
 
@@ -109,11 +108,11 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
-        name = "io_bazel_rules_rust",
-        sha256 = "6d37b1ffc71eb101717bc85c695dc872b0c30c0e2c13906a2f6823278b99bc03",
-        strip_prefix = "rules_rust-997a8a19a6893026a94bee5d1a775c2ba3d75a42",
+        name = "rules_rust",
+        sha256 = "f8c0132ea3855781d41ac574df0ca44959f17694d368c03c7cbaa5f29ef42d8b",
+        strip_prefix = "rules_rust-5bb12cc451317581452b5441692d57eb4310b839",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/997a8a19a6893026a94bee5d1a775c2ba3d75a42.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/archive/5bb12cc451317581452b5441692d57eb4310b839.tar.gz",
         ],
     )
 
@@ -126,7 +125,7 @@ def kythe_rule_repositories():
             "https://github.com/bazelruby/rules_ruby/archive/v0.4.1.zip",
         ],
         patches = [
-            "//third_party:rules_ruby_allow_empty.patch",
+            "@io_kythe//third_party:rules_ruby_allow_empty.patch",
         ],
         patch_args = ["-p1"],
     )
@@ -137,4 +136,30 @@ def kythe_rule_repositories():
         sha256 = "e60cfd0a8426fa4f5fd2156e768493ca62b87d125cb35e94c44e79a3f0d8635f",
         strip_prefix = "rules_foreign_cc-0.2.0",
         url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
+    )
+
+    # LLVM sticks the bazel configuration under a subdirectory, which expects to
+    # be the project root, so currently needs to be two distinct repositories
+    # from the same upstream source.
+    llvm_commit = "487f74a6c4151d13d3a7b54ee4ab7beaf3e87487"
+    llvm_sha256 = "cb8d1acf60e71894a692f273ab8c2a1fb6bd9e547de77cb9ee76829b2e429e7d"
+
+    maybe(
+        github_archive,
+        repo_name = "llvm/llvm-project",
+        commit = llvm_commit,
+        name = "llvm-project-raw",
+        build_file_content = "#empty",
+        sha256 = llvm_sha256,
+    )
+
+    maybe(
+        github_archive,
+        repo_name = "llvm/llvm-project",
+        commit = llvm_commit,
+        name = "llvm-bazel",
+        strip_prefix = "utils/bazel",
+        sha256 = llvm_sha256,
+        patch_args = ["-p2"],
+        patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
     )

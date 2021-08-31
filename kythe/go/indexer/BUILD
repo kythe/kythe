@@ -1,6 +1,7 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
+load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -22,6 +23,7 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:go_go_proto",
+        "//kythe/proto:metadata_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
@@ -135,6 +137,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "inline_test",
+    srcs = ["testdata/basic/inline.go"],
+    metadata_suffix = ".linkage",
+)
+
+go_indexer_test(
     name = "code_function_test",
     srcs = ["testdata/code/funcdecl.go"],
     has_marked_source = True,
@@ -218,6 +226,17 @@ go_indexer_test(
     srcs = ["testdata/dependent.go"],
     has_marked_source = True,
     deps = [":types_test"],
+)
+
+go_indexer_test(
+    name = "tappcorpus_test",
+    srcs = ["testdata/basic/tappcorpus.go"],
+    use_compilation_corpus_as_default = True,
+)
+
+empty_corpus_test(
+    name = "empty_corpus_test",
+    entries = ":tappcorpus_test_entries.entries.gz",
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")

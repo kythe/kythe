@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
 exports_files(glob(["*.proto"]))
@@ -53,5 +54,17 @@ proto_library(
 proto_library(
     name = "testdata4c_proto",
     srcs = ["testdata4c.proto"],
+    visibility = ["//visibility:public"],
+)
+
+copy_file(
+    name = "testdata5_generated",
+    src = "testdata5.proto",
+    out = "gen/testdata5.gen.proto",
+)
+
+proto_library(
+    name = "testdata5_proto",
+    srcs = [":testdata5_generated"],
     visibility = ["//visibility:public"],
 )

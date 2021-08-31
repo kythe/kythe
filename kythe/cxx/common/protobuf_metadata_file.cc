@@ -34,6 +34,9 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
   proto::VName out;
   if (!vname_lookup_(annotation.source_file(), &out)) {
     out.set_corpus(context_vname.corpus());
+    if (absl::EndsWith(annotation.source_file(), ".gen.proto")) {
+      out.set_root(context_vname.root());
+    }
   }
   out.set_path(annotation.source_file());
   return VNameForProtoPath(out, annotation.path());
@@ -63,7 +66,7 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
   std::vector<MetadataFile::Rule> rules;
   int file_rule = -1;
   for (const auto& annotation : info.annotation()) {
-    MetadataFile::Rule rule;
+    MetadataFile::Rule rule{};
     rule.whole_file = false;
     rule.begin = annotation.begin();
     rule.end = annotation.end();
@@ -87,7 +90,7 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
   // source file. (Other VNames end up due to the inclusion of
   // forward-declarations early in the .h).
   if (file_rule >= 0) {
-    MetadataFile::Rule rule;
+    MetadataFile::Rule rule{};
     rule.whole_file = true;
     rule.vname = rules[file_rule].vname;
     rule.vname.set_signature("");

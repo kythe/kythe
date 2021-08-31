@@ -1,0 +1,80 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:rust.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//kythe/rust/cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
+])
+
+# Generated Targets
+
+# Unsupported target "sha256" with type "bench" omitted
+
+# Unsupported target "sha512" with type "bench" omitted
+
+# Unsupported target "sha256sum" with type "example" omitted
+
+# Unsupported target "sha512sum" with type "example" omitted
+
+rust_library(
+    name = "sha2",
+    srcs = glob(["**/*.rs"]),
+    aliases = {
+    },
+    crate_features = [
+        "default",
+        "std",
+    ],
+    crate_root = "src/lib.rs",
+    crate_type = "lib",
+    data = [],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "0.9.5",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__block_buffer__0_9_0//:block_buffer",
+        "@raze__cfg_if__1_0_0//:cfg_if",
+        "@raze__digest__0_9_0//:digest",
+        "@raze__opaque_debug__0_3_0//:opaque_debug",
+    ] + selects.with_or({
+        # cfg(any(target_arch = "x86", target_arch = "x86_64"))
+        (
+            "@rules_rust//rust/platform:x86_64-apple-darwin",
+            "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+        ): [
+            "@raze__cpufeatures__0_1_5//:cpufeatures",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+# Unsupported target "lib" with type "test" omitted

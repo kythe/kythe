@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
+import com.google.devtools.build.buildjar.javac.JavacOptions;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.JavaCompileInfo;
@@ -105,15 +106,11 @@ public class JavaExtractor {
     }
 
     List<String> javacOpts =
-        jInfo.getJavacOptList().stream()
-            .filter(
-                // Filter out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
-                // flags) to the javac_opt list that cannot be handled by the standard javac
-                // compiler, or in turn, by this extractor.
-                opt ->
-                    !(opt.startsWith("-Werror:")
-                        || opt.startsWith("-extra_checks")
-                        || opt.startsWith("-Xep")))
+        JavacOptions.removeBazelSpecificFlags(
+                JavacOptions.normalizeOptionsWithNormalizers(
+                    jInfo.getJavacOptList(), new JavacOptions.ReleaseOptionNormalizer()))
+            .stream()
+            .filter(opt -> !opt.startsWith("-extra_checks"))
             .collect(toCollection(ArrayList::new));
 
     // Set up a fresh output directory

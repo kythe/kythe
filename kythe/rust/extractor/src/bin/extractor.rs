@@ -19,9 +19,10 @@ mod save_analysis;
 
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
-use crypto::{digest::Digest, sha2::Sha256};
 use extra_actions_base_rust_proto::*;
+use kythe_rust_extractor::vname_util::VNameRule;
 use protobuf::Message;
+use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -30,6 +31,9 @@ use zip::{write::FileOptions, ZipWriter};
 
 fn main() -> Result<()> {
     let config = cli::parse_arguments();
+
+    // Parse the VName configuration rules
+    let mut vname_rules = VNameRule::parse_vname_rules(config.vnames_config_path.as_path())?;
 
     // Retrieve the SpawnInfo from the extra action file
     let spawn_info = get_spawn_info(&config.extra_action_path)?;
@@ -49,9 +53,8 @@ fn main() -> Result<()> {
     let mut kzip = ZipWriter::new(kzip_file);
     kzip.add_directory("root/", FileOptions::default())?;
 
-    // Get KYTHE_CORPUS variable
-    let corpus = std::env::var("KYTHE_CORPUS")
-        .with_context(|| "KYTHE_CORPUS environment variable is not set".to_string())?;
+    // See if the KYTHE_CORPUS variable is set
+    let default_corpus = std::env::var("KYTHE_CORPUS").unwrap_or_default();
 
     // Loop through each source file and insert into kzip
     // Collect input files
@@ -64,7 +67,9 @@ fn main() -> Result<()> {
         .collect();
     let mut required_input: Vec<CompilationUnit_FileInput> = Vec::new();
     for file_path in &rust_source_files {
-        kzip_add_required_input(file_path, &corpus, &mut kzip, &mut required_input)?;
+        // Generate the file vname based on the vname rules
+        let file_vname: VName = create_vname(&mut vname_rules, file_path, &default_corpus);
+        kzip_add_required_input(file_path, file_vname, &mut kzip, &mut required_input)?;
     }
 
     // Grab the build target's output path
@@ -74,16 +79,28 @@ fn main() -> Result<()> {
         .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
 
     // Add save analysis to kzip
-    let save_analysis_path: String = analysis_path_string(&build_output_path, &tmp_dir.path())?;
-    kzip_add_required_input(&save_analysis_path, &corpus, &mut kzip, &mut required_input)?;
+    let save_analysis_path: String = analysis_path_string(build_output_path, tmp_dir.path())?;
+    let save_analysis_vname: VName =
+        create_vname(&mut vname_rules, &save_analysis_path, &default_corpus);
+    kzip_add_required_input(
+        &save_analysis_path,
+        save_analysis_vname,
+        &mut kzip,
+        &mut required_input,
+    )?;
 
     // Create the IndexedCompilation and add it to the kzip
+    let main_source_path = &rust_source_files[0];
+    let mut unit_vname = create_vname(&mut vname_rules, main_source_path, &default_corpus);
+    if !default_corpus.is_empty() {
+        unit_vname.set_corpus(default_corpus);
+    }
     let indexed_compilation = create_indexed_compilation(
         rust_source_files,
         build_target_arguments,
-        &build_output_path,
+        build_output_path,
         required_input,
-        &corpus,
+        unit_vname,
     );
     let mut indexed_compilation_bytes: Vec<u8> = Vec::new();
     indexed_compilation
@@ -96,7 +113,6 @@ fn main() -> Result<()> {
         &mut kzip,
     )?;
 
-    println!("Generated {:?}", &config.output_path);
     Ok(())
 }
 
@@ -137,15 +153,12 @@ fn create_indexed_compilation(
     arguments: Vec<String>,
     build_output_path: &str,
     required_input: Vec<CompilationUnit_FileInput>,
-    corpus: &str,
+    mut unit_vname: VName,
 ) -> IndexedCompilation {
     let mut compilation_unit = CompilationUnit::new();
 
-    let mut vname = VName::new();
-    // TODO(Arm1stice): Determine proper Corpus/Root/Path for VName
-    vname.set_corpus(corpus.to_string());
-    vname.set_language("rust".into());
-    compilation_unit.set_v_name(vname);
+    unit_vname.set_language("rust".into());
+    compilation_unit.set_v_name(unit_vname);
     compilation_unit.set_source_file(protobuf::RepeatedField::from_vec(source_files));
     compilation_unit.set_argument(protobuf::RepeatedField::from_vec(arguments));
     compilation_unit.set_required_input(protobuf::RepeatedField::from_vec(required_input));
@@ -159,8 +172,9 @@ fn create_indexed_compilation(
 /// Generate sha256 hex digest of a vector of bytes
 fn sha256digest(bytes: &[u8]) -> String {
     let mut sha256 = Sha256::new();
-    sha256.input(bytes);
-    sha256.result_str()
+    sha256.update(bytes);
+    let bytes = sha256.finalize();
+    hex::encode(bytes)
 }
 
 /// Add a file from a path to the kzip and the list of required inputs
@@ -172,7 +186,7 @@ fn sha256digest(bytes: &[u8]) -> String {
 ///   be added to
 fn kzip_add_required_input(
     file_path_string: &str,
-    corpus: &str,
+    file_vname: VName,
     zip_writer: &mut ZipWriter<File>,
     required_inputs: &mut Vec<CompilationUnit_FileInput>,
 ) -> Result<()> {
@@ -187,9 +201,6 @@ fn kzip_add_required_input(
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
-    let mut file_vname = VName::new();
-    file_vname.set_corpus(corpus.to_string());
-    file_vname.set_path(file_path_string.to_string());
     file_input.set_v_name(file_vname);
 
     let mut file_info = FileInfo::new();
@@ -240,4 +251,17 @@ fn analysis_path_string(build_output_path: &str, temp_dir_path: &Path) -> Result
         .to_str()
         .ok_or_else(|| anyhow!("save_analysis file path is not valid UTF-8"))
         .map(|path_str| path_str.to_string())
+}
+
+fn create_vname(rules: &mut [VNameRule], path: &str, default_corpus: &str) -> VName {
+    for rule in rules {
+        if rule.matches(path) {
+            return rule.produce_vname(path, default_corpus);
+        }
+    }
+    // This should never happen but if we don't match at all just return an empty
+    // vname with the corpus set
+    let mut vname = VName::new();
+    vname.set_corpus(default_corpus.to_string());
+    vname
 }

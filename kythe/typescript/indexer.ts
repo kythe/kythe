@@ -580,11 +580,11 @@ class StandardIndexerContext implements IndexerHost {
     const stored = this.symbolNames.get(sym, ns, context);
     if (stored) return stored;
 
-    let declarations = sym.declarations;
-    if (!declarations || declarations.length < 1) {
+    if (!sym.declarations || sym.declarations.length < 1) {
       return undefined;
     }
 
+    let declarations = sym.declarations;
     // Disambiguate symbols with multiple declarations using a context.
     if (sym.declarations.length > 1) {
       switch (context) {
@@ -637,6 +637,17 @@ class StandardIndexerContext implements IndexerHost {
 
   /**
    * pathToVName returns the VName for a given file path.
+   *
+   * This function is used for 2 distinct cases that should be ideally separated
+   * in 2 different functions. `path` can be one of two:
+   * 1. Full path like 'bazel-out/genfiles/path/to/file.ts'.
+   *    This path is used to build VNames for files and anchors.
+   * 2. Module name like 'path/to/file'.
+   *    This path is used to build VNames for semantic nodes.
+   *
+   * Only for full paths `pathVnames` contains an entry. For short paths (module
+   * names) this function will defaults to calculating vname based on path
+   * and compilation unit.
    */
   pathToVName(path: string): VName {
     const vname = this.pathVNames.get(path);
@@ -1427,7 +1438,9 @@ class Visitor {
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
     const sym = this.host.getSymbolAtLocation(decl.name);
-    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+    if (!sym || !sym.declarations) {
+      throw new Error('Getter/setter declaration has no symbols.');
+    }
 
     if (sym.declarations.find(ts.isGetAccessor)) {
       // Emit a "property/reads" edge between the getter and the property
@@ -1849,7 +1862,7 @@ class Visitor {
       // getter is present, it will bind this entry; otherwise a setter will.
       if (ts.isGetAccessor(decl) ||
           (ts.isSetAccessor(decl) &&
-           !sym.declarations.find(ts.isGetAccessor))) {
+           (!sym.declarations || !sym.declarations.find(ts.isGetAccessor)))) {
         this.emitImplicitProperty(decl, declAnchor, vname);
       }
 
@@ -2048,7 +2061,7 @@ class Visitor {
 
       // If the class has a constructor, emit an entry for it.
       const ctorSymbol = this.getCtorSymbol(decl);
-      if (ctorSymbol) {
+      if (ctorSymbol && ctorSymbol.declarations) {
         const ctorDecl = ctorSymbol.declarations[0];
         const span = this.getTextSpan(ctorDecl, 'constructor');
         const classCtorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
@@ -2183,7 +2196,8 @@ class Visitor {
         ts.getJSDocTags(node).find(tag => tag.tagName.text === 'deprecated');
     if (deprecatedTag) {
       this.emitFact(
-          nodeVName, FactName.TAG_DEPRECATED, deprecatedTag.comment || '');
+          nodeVName, FactName.TAG_DEPRECATED,
+          (deprecatedTag.comment || '') as any);
     }
   }
 

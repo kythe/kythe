@@ -1,5 +1,4 @@
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy")
-load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,10 +7,11 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     edition = "2018",
     deps = [
-        "//third_party/bazel:extra_actions_base_rust_proto",
-        "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:anyhow",
-    ] + PROTO_COMPILE_DEPS,
+        "//kythe/rust/cargo:clap",
+        "//third_party/bazel:extra_actions_base_rust_proto",
+        "@rules_rust//proto/raze:protobuf",
+    ],
 )
 
 rust_clippy(

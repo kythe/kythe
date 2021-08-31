@@ -17,7 +17,7 @@ shell_tool_test(
     scriptfile = "net_client_test_runner.sh",
     tools = {
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
-        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools:http_server",
+        "KYTHE_HTTP_SERVER": "//kythe/go/test/tools/http_server",
         "KYTHE_WRITE_ENTRIES": "//kythe/go/storage/tools:write_entries",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",
     },

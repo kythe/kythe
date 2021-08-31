@@ -29,6 +29,8 @@ RUN apt-get update \
                 git \
                 # Needed to apply local patches to Bazel reposiories.
                 patch \
+                # Needed to configure the LLVM repository.
+                python3 \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
@@ -42,3 +44,5 @@ RUN curl -s https://api.github.com/repos/bazelbuild/bazelisk/releases/latest \
 
 # Add the wrapper script for USE_BAZEL_VERSION=min support.
 ADD bazel /usr/bin/bazel
+# Use a custom system bazelrc file as well.
+ADD bazelrc /etc/bazel.bazelrc

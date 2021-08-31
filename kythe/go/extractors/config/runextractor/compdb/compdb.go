@@ -39,8 +39,23 @@ import (
 // A compileCommand holds the decoded arguments of a LLVM compilation database
 // JSON command spec.
 type compileCommand struct {
+	Arguments []string
 	Command   string
 	Directory string
+}
+
+func (cc *compileCommand) asCommand() string {
+	if len(cc.Arguments) > 0 {
+		return shell.Join(cc.Arguments)
+	}
+	return cc.Command
+}
+
+func (cc *compileCommand) asArguments() ([]string, bool) {
+	if len(cc.Arguments) > 0 {
+		return cc.Arguments, true
+	}
+	return shell.Split(cc.Command)
 }
 
 // ExtractOptions holds additional options related to compilation DB extraction.
@@ -77,7 +92,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string, opts *Extr
 			if err := extractOne(ctx, extractor, entry, env, opts); err != nil {
 				// Log error, but continue processing other compilations.
 				atomic.AddUint64(&failCount, 1)
-				log.Printf("Error extracting compilation with command '%s': %v", entry.Command, err)
+				log.Printf("Error extracting compilation with command '%s': %v", entry.asCommand(), err)
 			}
 		}(entry)
 	}
@@ -93,7 +108,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string, opts *Extr
 // extractOne invokes the extractor for the given compileCommand.
 func extractOne(ctx context.Context, extractor string, cc compileCommand, env []string, opts *ExtractOptions) error {
 	cmd := exec.CommandContext(ctx, extractor, "--with_executable")
-	args, ok := shell.Split(cc.Command)
+	args, ok := cc.asArguments()
 	if !ok {
 		return fmt.Errorf("unable to split command line")
 	}

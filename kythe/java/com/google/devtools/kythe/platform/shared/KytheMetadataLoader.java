@@ -53,7 +53,6 @@ public class KytheMetadataLoader implements MetadataLoader {
   private static final String META = "meta";
 
   private static final Gson GSON = JsonUtil.registerProtoTypes(new GsonBuilder()).create();
-  private static final JsonParser PARSER = new JsonParser();
 
   @AutoValue
   abstract static class RuleXorError {
@@ -112,7 +111,7 @@ public class KytheMetadataLoader implements MetadataLoader {
     JsonElement root = null;
     try (ByteArrayInputStream stream = new ByteArrayInputStream(data);
         InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-      root = PARSER.parse(reader);
+      root = JsonParser.parseReader(reader);
     } catch (IOException ex) {
       emitWarning(ex.getMessage(), fileName);
       return null;

@@ -1,4 +1,4 @@
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
+load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,7 +14,7 @@ rust_library(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "@com_google_absl//absl/status",
-        "@io_bazel_rules_rust//proto/raze:protobuf",
+        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -51,14 +51,15 @@ rust_binary(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:clap",
+        "//kythe/rust/cargo:hex",
         "//kythe/rust/cargo:lazy_static",
         "//kythe/rust/cargo:rayon",
         "//kythe/rust/cargo:regex",
         "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:rust_crypto",
         "//kythe/rust/cargo:serde_json",
+        "//kythe/rust/cargo:sha2",
         "//kythe/rust/cargo:tempdir",
-        "@io_bazel_rules_rust//proto/raze:protobuf",
+        "@rules_rust//proto/raze:protobuf",
     ],
 )
 

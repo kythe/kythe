@@ -73,6 +73,7 @@ public class JavaEntrySets extends KytheEntrySets {
       JavaIndexerConfig config) {
     super(statistics, emitter, compilationVName, requiredInputs);
     this.config = config;
+    setUseCompilationCorpusAsDefault(config.getUseCompilationCorpusAsDefault());
   }
 
   Map<Symbol, VName> getSymbolNodes() {
@@ -128,13 +129,19 @@ public class JavaEntrySets extends KytheEntrySets {
       return v;
     }
 
+    // The vname corpus for jdk entities is determined by:
+    // * --override_jdk_corpus if present
+    // * the compilation's corpus if --use_compilation_corpus_as_default is set
+    // * "jdk" if the above two flags are unset
     VName v = lookupVName(enclClass);
-    if ((v == null || config.getOverrideJdkCorpus() != null) && fromJDK(sym)) {
-      v =
-          VName.newBuilder()
-              .setCorpus(
-                  config.getOverrideJdkCorpus() != null ? config.getOverrideJdkCorpus() : "jdk")
-              .build();
+    if (fromJDK(sym)) {
+      String corpus = "jdk";
+      if (config.getOverrideJdkCorpus() != null) {
+        corpus = config.getOverrideJdkCorpus();
+      } else if (getUseCompilationCorpusAsDefault()) {
+        corpus = defaultCorpusPath().getCorpus();
+      }
+      v = VName.newBuilder().setCorpus(corpus).build();
     }
 
     if (v == null && sym.owner != null && sym.owner.asType().isPrimitive()) {
@@ -253,6 +260,7 @@ public class JavaEntrySets extends KytheEntrySets {
         emitAndReturn(
             newNode(NodeKind.PACKAGE)
                 .addSignatureSalt(name)
+                .setCorpusPath(defaultCorpusPath())
                 .setProperty(
                     "code",
                     MarkedSource.newBuilder()
@@ -371,6 +379,9 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
   public CorpusPath jvmCorpusPath(Symbol sym) {
+    if (getUseCompilationCorpusAsDefault()) {
+      return defaultCorpusPath();
+    }
     return new CorpusPath(
         Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
   }

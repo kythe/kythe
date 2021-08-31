@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.7.0)
+    addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
     asciidoctor (2.0.12)
     colorator (1.1.0)
@@ -48,8 +48,8 @@ GEM
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     mercenary (0.4.0)
-    mini_portile2 (2.5.0)
-    nokogiri (1.11.1)
+    mini_portile2 (2.5.1)
+    nokogiri (1.11.4)
       mini_portile2 (~> 2.5.0)
       racc (~> 1.4)
     pathutil (0.16.2)
@@ -60,7 +60,7 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rexml (3.2.4)
+    rexml (3.2.5)
     rouge (3.26.0)
     safe_yaml (1.0.5)
     sassc (2.4.0)

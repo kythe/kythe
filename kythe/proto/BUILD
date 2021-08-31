@@ -4,7 +4,7 @@ load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load(":go.bzl", "go_kythe_proto")
 load("@npm//@bazel/labs:index.bzl", "ts_proto_library")
-load("@io_bazel_rules_rust//proto:proto.bzl", "rust_proto_library")
+load("@rules_rust//proto:proto.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -20,6 +20,7 @@ filegroup(
         "extraction_config.proto",
         "filecontext.proto",
         "filetree.proto",
+        "generated_message_info.proto",
         "go.proto",
         "graph.proto",
         "identifier.proto",
@@ -640,6 +641,7 @@ proto_library(
         ":schema_proto",
         ":serving_proto",
         ":storage_proto",
+        ":xref_serving_proto",
     ],
 )
 
@@ -650,6 +652,7 @@ go_kythe_proto(
         ":schema_go_proto",
         ":serving_go_proto",
         ":storage_go_proto",
+        ":xref_serving_go_proto",
     ],
 )
 
@@ -679,8 +682,18 @@ proto_library(
     deps = [":storage_proto"],
 )
 
+go_kythe_proto(
+    proto = ":metadata_proto",
+    deps = [":storage_go_proto"],
+)
+
 cc_proto_library(
     name = "metadata_cc_proto",
+    deps = [":metadata_proto"],
+)
+
+java_proto_library(
+    name = "metadata_java_proto",
     deps = [":metadata_proto"],
 )
 
@@ -702,4 +715,41 @@ cc_proto_library(
     deps = [
         ":bazel_artifact_selector_proto",
     ],
+)
+
+# Public GeneratedProtoInfo file option
+proto_library(
+    name = "generated_message_info_proto",
+    srcs = ["generated_message_info.proto"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":generated_message_info_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+)
+
+java_proto_library(
+    name = "generated_message_info_java_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [
+        ":generated_message_info_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "generated_message_info_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [
+        ":generated_message_info_proto",
+    ],
+)
+
+ts_proto_library(
+    name = "generated_message_info_ts_proto",
+    proto = ":generated_message_info_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )

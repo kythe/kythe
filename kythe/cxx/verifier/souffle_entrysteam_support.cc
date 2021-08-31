@@ -20,15 +20,6 @@
 #include "kythe/proto/storage.pb.h"
 #include "souffle/io/IOSystem.h"
 
-#ifdef __APPLE__
-extern "C" {
-// TODO(zarko): fix these on darwin
-void ffi_call() { abort(); }
-void ffi_prep_cif_machdep() { abort(); }
-void ffi_prep_closure_loc() { abort(); }
-}
-#endif  // defined(__APPLE__)
-
 namespace kythe {
 namespace {
 

@@ -33,13 +33,27 @@ import * as indexer from './indexer';
 import * as kythe from './kythe';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
-const RUNFILES = process.env['RUNFILES_DIR'];
+const RUNFILES = process.env['TEST_SRCDIR'];
+
+
 
 const ENTRYSTREAM = RUNFILES ?
     path.resolve('kythe/go/platform/tools/entrystream/entrystream') :
     path.resolve(KYTHE_PATH, 'tools/entrystream');
 const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
                             path.resolve(KYTHE_PATH, 'tools/verifier');
+
+/** Record representing a single test case to run. */
+interface TestCase {
+  /** Name of the test case. Used for reporting. */
+  readonly name: string;
+  /**
+   * List of files used for indexing. All these files passed together as source
+   * files to the indexer.
+   */
+  readonly files: string[];
+}
+
 
 /**
  * createTestCompilerHost creates a ts.CompilerHost that caches the default
@@ -73,7 +87,7 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
  * be run async; if there's an error, it will reject the promise.
  */
 function verify(
-    host: ts.CompilerHost, options: ts.CompilerOptions, testFiles: string[],
+    host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
     plugins?: indexer.Plugin[]): Promise<void> {
   const compilationUnit: kythe.VName = {
     corpus: 'testcorpus',
@@ -82,20 +96,26 @@ function verify(
     signature: '',
     language: '',
   };
+  const testFiles = testCase.files;
   const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
-      `${ENTRYSTREAM} --read_format=json | \
-        ${VERIFIER} --convert_marked_source ${testFiles.join(' ')}`,
+      `${ENTRYSTREAM} --read_format=json | ` +
+          `${VERIFIER} --convert_marked_source ${testFiles.join(' ')}`,
       [], {
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
+  const pathVnames = new Map<string, kythe.VName>();
+  for (const file of testFiles) {
+    pathVnames.set(file, {...compilationUnit, path: file});
+  }
 
   try {
-    indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
-      verifier.stdin.write(JSON.stringify(obj) + '\n');
-    }, plugins);
+    indexer.index(
+        compilationUnit, pathVnames, testFiles, program, (obj: {}) => {
+          verifier.stdin.write(JSON.stringify(obj) + '\n');
+        }, plugins);
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
     // we hang waiting for the verifier to complete.
@@ -142,20 +162,26 @@ function collectTSFilesInDirectoryRecursively(dir: string, result: string[]) {
  * 3. All individual files in subfolders not ending with '_group' will be
  *    returned as group of one file. So they are tested separately.
  */
-function getTestFileGroups(dir: string): string[][] {
+function getTestCases(options: ts.CompilerOptions, dir: string): TestCase[] {
   const result = [];
   for (const file of fs.readdirSync(dir, {withFileTypes: true})) {
     const relativeName = `${dir}/${file.name}`;
     if (file.isDirectory()) {
       if (file.name.endsWith('_group')) {
-        const group: string[] = [];
-        collectTSFilesInDirectoryRecursively(relativeName, group);
-        result.push(group);
+        const files: string[] = [];
+        collectTSFilesInDirectoryRecursively(relativeName, files);
+        result.push({
+          name: relativeName,
+          files,
+        });
       } else {
-        result.push(...getTestFileGroups(`${dir}/${file.name}`));
+        result.push(...getTestCases(options, relativeName));
       }
     } else if (file.name.endsWith('.ts')) {
-      result.push([path.resolve(relativeName)]);
+      result.push({
+        name: relativeName,
+        files: [path.resolve(relativeName)],
+      });
     }
   }
   return result;
@@ -166,10 +192,9 @@ function getTestFileGroups(dir: string): string[][] {
  * groups that contain at least one file that matches at least one filter.
  * Matching is done by simply checking for substring.
  */
-function filterTestFileGroups(
-    testFileGroups: string[][], filters: string[]): string[][] {
-  return testFileGroups.filter(fileGroup => {
-    for (const file of fileGroup) {
+function filterTestCases(testCases: TestCase[], filters: string[]): TestCase[] {
+  return testCases.filter(testCase => {
+    for (const file of testCase.files) {
       if (filters.some(filter => file.includes(filter))) {
         return true;
       }
@@ -181,30 +206,27 @@ function filterTestFileGroups(
 async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
   const config =
       indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
-  let testFilesGroups = getTestFileGroups('testdata');
+  let testCases = getTestCases(config.options, 'testdata');
   if (filters.length !== 0) {
-    testFilesGroups = filterTestFileGroups(testFilesGroups, filters);
+    testCases = filterTestCases(testCases, filters);
   }
 
   const host = createTestCompilerHost(config.options);
-  for (const testFiles of testFilesGroups) {
-    for (const testFile of testFiles) {
-      const testName = path.relative(config.options.rootDir!, testFile);
-      if (testName.endsWith('plugin.ts')) {
-        // plugin.ts is tested by testPlugin() test.
-        continue;
-      }
-      const start = new Date().valueOf();
-      process.stdout.write(`${testName}: `);
-      try {
-        await verify(host, config.options, testFiles, plugins);
-      } catch (e) {
-        console.log('FAIL');
-        throw e;
-      }
-      const time = new Date().valueOf() - start;
-      console.log('PASS', `${time}ms`);
+  for (const testCase of testCases) {
+    if (testCase.name.endsWith('plugin.ts')) {
+      // plugin.ts is tested by testPlugin() test.
+      continue;
     }
+    const start = new Date().valueOf();
+    process.stdout.write(`${testCase.name}: `);
+    try {
+      await verify(host, config.options, testCase, plugins);
+    } catch (e) {
+      console.log('FAIL');
+      throw e;
+    }
+    const time = new Date().valueOf() - start;
+    console.log('PASS', `${time}ms`);
   }
   return 0;
 }

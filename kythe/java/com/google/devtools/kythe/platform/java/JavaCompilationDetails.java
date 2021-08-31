@@ -68,7 +68,6 @@ public class JavaCompilationDetails implements AutoCloseable {
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
       List<Processor> processors,
-      boolean useExperimentalPathFileManager,
       @Nullable Path temporaryDirectory) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
@@ -83,7 +82,7 @@ public class JavaCompilationDetails implements AutoCloseable {
     StandardJavaFileManager fileManager =
         // The Path-based JavaFileManager is only compatible with JDK9+ and for now,
         // we have to remain compatible with JDK8.
-        useExperimentalPathFileManager && isJdk9OrNewer()
+        isJdk9OrNewer()
             ? new CompilationUnitPathFileManager(
                 compilationUnit,
                 fileDataProvider,

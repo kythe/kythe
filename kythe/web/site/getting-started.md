@@ -46,8 +46,10 @@ Kythe relies on the following external dependencies:
 
 You will need to ensure these packages are installed on the system where you
 intend to build Kythe. There are instructions for using `apt-get` below.
-If you are using macOS, see [Instructions for macOS]({{site.baseuri}}/getting-started-macos).
 
+#### macOS
+
+If you are using macOS, see [Instructions for macOS]({{site.baseuri}}/getting-started-macos).
 
 #### Installing Debian Jessie Packages
 
@@ -191,7 +193,6 @@ gem install bundler
 Build and serve:
 {% highlight bash %}
 cd ./kythe/web/site
-./build.sh
 # Serve website locally on port 4000
-bundle exec jekyll serve
+bazel run :serve
 {% endhighlight %}

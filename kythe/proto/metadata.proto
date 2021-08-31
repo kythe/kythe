@@ -50,6 +50,8 @@ message MappingRule {
   // If type == anchor_anchor, this should generally be a forward imputes edge,
   // /kythe/edge/imputes, indicating that the range in the source file produced
   // the text in the target file.
+  // If semantic is not NONE, this field is ignored and the identified
+  // declaration at the indicated text range is given the associated semantic.
   string edge = 2;
 
   // Fields only relevant if type == anchor_defines.
@@ -57,6 +59,14 @@ message MappingRule {
                                 // which generated the text range.
   uint32 begin = 4;  // Beginning of the range to match in the generated text.
   uint32 end = 5;    // End of the range to match in the generated text.
+
+  enum Semantic {
+    SEMA_NONE = 0;
+    SEMA_WRITE = 1;
+    SEMA_READ_WRITE = 2;
+  };
+
+  Semantic semantic = 11;
 
   // Fields only relevant if type == anchor_anchor.
   kythe.proto.VName source_vname =

@@ -4,6 +4,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
@@ -12,15 +13,15 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "1adf5db506a7e3c465a26988514cfc3971af6d5b3c2218925cd6e71ee443fc3f",
-    strip_prefix = "bazel-toolchains-4.0.0",
+    sha256 = "179ec02f809e86abf56356d8898c8bd74069f1bd7c56044050c2cd3d79d0e024",
+    strip_prefix = "bazel-toolchains-4.1.0",
     urls = [
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.0.0/bazel-toolchains-4.0.0.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.0.0/bazel-toolchains-4.0.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
     ],
 )
 
-load("//:setup.bzl", "kythe_rule_repositories", "maybe")
+load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
 

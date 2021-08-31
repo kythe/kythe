@@ -1,5 +1,13 @@
 [
   {
+    "pattern": "bazel-out/[^/]+/bin/.*/_virtual_imports/[^/]+/(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/bin",
+      "path": "@1@"
+    }
+  },
+  {
     "pattern": "bazel-out/[^/]+/bin/external/([^/]+)/(.+)",
     "vname": {
       "corpus": "@1@",
@@ -20,6 +28,14 @@
       "corpus": "CORPUS",
       "path": "@2@",
       "root": "bazel-out/@1@"
+    }
+  },
+  {
+    "pattern": "(.+).gen.proto",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/bin",
+      "path": "@1@.gen.proto"
     }
   },
   {

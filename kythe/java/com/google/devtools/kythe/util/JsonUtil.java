@@ -67,10 +67,10 @@ public class JsonUtil {
     if (registry.equals(JsonUtil.registry)) {
       return;
     }
-    GeneratedMessageV3TypeAdapter.PARSER =
-        GeneratedMessageV3TypeAdapter.PARSER.usingTypeRegistry(registry);
-    GeneratedMessageV3TypeAdapter.PRINTER =
-        GeneratedMessageV3TypeAdapter.PRINTER.usingTypeRegistry(registry);
+    GeneratedMessageV3TypeAdapter.parser =
+        GeneratedMessageV3TypeAdapter.parser.usingTypeRegistry(registry);
+    GeneratedMessageV3TypeAdapter.printer =
+        GeneratedMessageV3TypeAdapter.printer.usingTypeRegistry(registry);
     JsonUtil.registry = registry;
   }
 
@@ -89,14 +89,14 @@ public class JsonUtil {
 
   private static class GeneratedMessageV3TypeAdapter
       implements JsonSerializer<GeneratedMessageV3>, JsonDeserializer<GeneratedMessageV3> {
-    private static JsonFormat.Parser PARSER = JsonFormat.parser();
-    private static JsonFormat.Printer PRINTER =
+    private static JsonFormat.Parser parser = JsonFormat.parser();
+    private static JsonFormat.Printer printer =
         JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();
 
     @Override
     public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
       try {
-        return new JsonParser().parse(PRINTER.print(msg));
+        return JsonParser.parseString(printer.print(msg));
       } catch (InvalidProtocolBufferException e) {
         throw new RuntimeException(e);
       }
@@ -112,7 +112,7 @@ public class JsonUtil {
         GeneratedMessageV3.Builder<?> protoBuilder =
             (GeneratedMessageV3.Builder<?>) protoClass.getMethod("newBuilder").invoke(null);
         String msg = json instanceof JsonPrimitive ? json.getAsString() : json.toString();
-        PARSER.merge(msg, protoBuilder);
+        parser.merge(msg, protoBuilder);
         return (GeneratedMessageV3) protoBuilder.build();
       } catch (ReflectiveOperationException e) {
         throw new JsonParseException(
