@@ -85,7 +85,7 @@ fi
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
-find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' -print0 | \
+find bazel-out/*/extra_actions/ -name '*.kzip' -print0 | \
   xargs --null -r /kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
 
 # Record the timestamp of the git commit in a metadata kzip.
