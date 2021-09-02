@@ -40,7 +40,7 @@ rust_library(
     data = [],
     edition = "2018",
     proc_macro_deps = [
-        "@raze__thiserror_impl__1_0_26//:thiserror_impl",
+        "@raze__thiserror_impl__1_0_28//:thiserror_impl",
     ],
     rustc_flags = [
         "--cap-lints=allow",
@@ -49,7 +49,7 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.26",
+    version = "1.0.28",
     # buildifier: leave-alone
     deps = [
     ],
