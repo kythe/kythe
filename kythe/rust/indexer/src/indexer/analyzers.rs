@@ -421,7 +421,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // crate
                 let mut diagnostic_vname = file_vname.unwrap().clone();
                 diagnostic_vname.set_signature(format!(
-                    "{}_diagnostic_{}",
+                    "{}_diagnostic_{}_cant_find_crate",
                     file_vname.unwrap().get_signature(),
                     def.qualname
                 ));
