@@ -38,6 +38,14 @@ fn main() -> Result<()> {
     // Retrieve the SpawnInfo from the extra action file
     let spawn_info = get_spawn_info(&config.extra_action_path)?;
 
+    // Set environment variables from spawn info
+    let environment_variables = spawn_info.get_variable().to_vec();
+    let pwd = std::env::current_dir().context("Couldn't determine pwd")?;
+    for variable in environment_variables {
+        let value = variable.get_value().replace("${pwd}", pwd.to_str().unwrap());
+        std::env::set_var(variable.get_name(), value);
+    }
+
     // Create temporary directory and run the analysis
     let tmp_dir = TempDir::new("rust_extractor")
         .with_context(|| "Failed to make temporary directory".to_string())?;
