@@ -406,7 +406,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // Check for "./" at the beginning and remove it
                 let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
 
-                // save_analysis sometimes references files that we have as file nodes
+                // save_analysis sometimes references files that we don't have as file nodes
                 if file_vname.is_none() {
                     continue;
                 }
@@ -508,13 +508,24 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         // Emit the childof edge between this node and the parent
                         self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
                     } else {
-                        // TODO(wcalandro): This error should no longer happen once we support
-                        // macros
-                        eprintln!(
-                            "{}: Failed to get vname for parent of definition {:?}",
-                            def.span.file_name.display(),
-                            def.id
-                        )
+                        // Generate a diagnostic node indicating that we couldn't find the parent
+                        let mut diagnostic_vname = def_vname.clone();
+                        let mut anchor_vname = def_vname.clone();
+                        let def_signature = def_vname.get_signature();
+                        diagnostic_vname.set_signature(format!("{}_diagnostic", def_signature));
+                        anchor_vname.set_signature(format!("{}_anchor", def_signature));
+                        self.emitter.emit_node(
+                            &diagnostic_vname,
+                            "/kythe/node/kind",
+                            b"diagnostic".to_vec(),
+                        )?;
+                        self.emitter.emit_node(
+                            &diagnostic_vname,
+                            "/kythe/message",
+                            b"XRef could not be generated".to_vec(),
+                        )?;
+                        self.emitter.emit_node(&diagnostic_vname, "/kythe/details", b"Failed to generate cross reference because the parent could not be found".to_vec())?;
+                        self.emitter.emit_edge(&def_vname, &anchor_vname, "/kythe/edge/tagged")?;
                     }
                 }
             }
