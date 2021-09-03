@@ -397,32 +397,33 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let analysis = self.krate.analysis.clone();
 
         for def in &analysis.defs {
-            let krate_id = self.krate_ids.get(&def.id.krate).ok_or_else(||{
-                KytheError::IndexerError(format!(
-                    "Definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap",
-                    def.qualname, def.id.krate
-                ))}
-            )?;
-            let krate_signature = format!(
-                "{}_{}_{}",
-                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-            );
+            if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
+                let krate_signature = format!(
+                    "{}_{}_{}",
+                    krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
+                );
 
-            // Check for "./" at the beginning and remove it
-            let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
+                // Check for "./" at the beginning and remove it
+                let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
 
-            // save_analysis sometimes references files that we have as file nodes
-            if file_vname.is_none() {
-                continue;
+                // save_analysis sometimes references files that we have as file nodes
+                if file_vname.is_none() {
+                    continue;
+                }
+
+                // Generate node based on definition type
+                let mut def_vname = self.krate_vname.clone();
+                let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
+                def_vname.set_signature(def_signature.clone());
+                def_vname.set_language("rust".to_string());
+                def_vname.clear_path();
+                self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
+            } else {
+                eprintln!(
+                    "{}: Definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap - Ignoring",
+                    self.krate_vname.get_path(), def.qualname, def.id.krate
+                )
             }
-
-            // Generate node based on definition type
-            let mut def_vname = self.krate_vname.clone();
-            let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
-            def_vname.set_signature(def_signature.clone());
-            def_vname.set_language("rust".to_string());
-            def_vname.clear_path();
-            self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
         }
 
         // Normally you'd want to have a catch-all here where you emit childof edges
@@ -503,14 +504,18 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 if let Some(parent_id) = def.parent {
                     // Field definitions come after their parent's definitions so their VName should
                     // be in the list of VNames
-                    let parent_vname = self.definition_vnames.get(&parent_id).ok_or_else(|| {
-                        KytheError::IndexerError(format!(
-                            "Failed to get vname for parent of definition {:?}",
+                    if let Some(parent_vname) = self.definition_vnames.get(&parent_id) {
+                        // Emit the childof edge between this node and the parent
+                        self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
+                    } else {
+                        // TODO(wcalandro): This error should no longer happen once we support
+                        // macros
+                        eprintln!(
+                            "{}: Failed to get vname for parent of definition {:?}",
+                            self.krate_vname.get_path(),
                             def.id
-                        ))
-                    })?;
-                    // Emit the childof edge between this node and the parent
-                    self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
+                        )
+                    }
                 }
             }
             DefKind::Function => {
