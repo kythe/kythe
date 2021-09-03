@@ -397,19 +397,17 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let analysis = self.krate.analysis.clone();
 
         for def in &analysis.defs {
+            let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
+            // save_analysis sometimes references files that we don't have as file nodes
+            if file_vname.is_none() {
+                continue;
+            }
+
             if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
                 let krate_signature = format!(
                     "{}_{}_{}",
                     krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
                 );
-
-                // Check for "./" at the beginning and remove it
-                let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
-
-                // save_analysis sometimes references files that we don't have as file nodes
-                if file_vname.is_none() {
-                    continue;
-                }
 
                 // Generate node based on definition type
                 let mut def_vname = self.krate_vname.clone();
@@ -419,10 +417,21 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 def_vname.clear_path();
                 self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
             } else {
-                eprintln!(
-                    "{}: Definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap - Ignoring",
-                    def.span.file_name.display(), def.qualname, def.id.krate
-                )
+                // Generate a diagnostic node indicating that we couldn't find the refernced
+                // crate
+                let mut diagnostic_vname = file_vname.unwrap().clone();
+                diagnostic_vname.set_signature(format!(
+                    "{}_diagnostic_{}",
+                    file_vname.unwrap().get_signature(),
+                    def.qualname
+                ));
+                self.emitter.emit_diagnostic(
+                    file_vname.unwrap(),
+                    &diagnostic_vname,
+                    "Cross reference could not be generated",
+                    Some(format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
+                    None
+                )?;
             }
         }
 
@@ -514,18 +523,13 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         let def_signature = def_vname.get_signature();
                         diagnostic_vname.set_signature(format!("{}_diagnostic", def_signature));
                         anchor_vname.set_signature(format!("{}_anchor", def_signature));
-                        self.emitter.emit_node(
+                        self.emitter.emit_diagnostic(
+                            &anchor_vname,
                             &diagnostic_vname,
-                            "/kythe/node/kind",
-                            b"diagnostic".to_vec(),
+                            "Cross reference could not be generated",
+                            Some("Failed to generate cross reference because the parent could not be found"),
+                            None
                         )?;
-                        self.emitter.emit_node(
-                            &diagnostic_vname,
-                            "/kythe/message",
-                            b"XRef could not be generated".to_vec(),
-                        )?;
-                        self.emitter.emit_node(&diagnostic_vname, "/kythe/details", b"Failed to generate cross reference because the parent could not be found".to_vec())?;
-                        self.emitter.emit_edge(&def_vname, &anchor_vname, "/kythe/edge/tagged")?;
                     }
                 }
             }

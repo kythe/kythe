@@ -108,4 +108,37 @@ impl<'a> EntryEmitter<'a> {
         self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/ref")
     }
+
+    /// Creates a diagnostic node with a tagged edge from an anchor or file
+    /// vname to the node Accepts a message, optional details, and an
+    /// optional url
+    ///
+    /// # Errors
+    /// If an error occurs while writing the entry, an error is returned.
+    pub fn emit_diagnostic<S: Into<String>>(
+        &mut self,
+        source_vname: &VName,
+        diagnostic_vname: &VName,
+        message: &str,
+        details: Option<S>,
+        url: Option<S>,
+    ) -> Result<(), KytheError> {
+        self.emit_node(&diagnostic_vname, "/kythe/node/kind", b"diagnostic".to_vec())?;
+        self.emit_node(&diagnostic_vname, "/kythe/message", message.as_bytes().to_vec())?;
+        if details.is_some() {
+            self.emit_node(
+                &diagnostic_vname,
+                "/kythe/details",
+                details.unwrap().into().as_str().as_bytes().to_vec(),
+            )?;
+        }
+        if url.is_some() {
+            self.emit_node(
+                &diagnostic_vname,
+                "/kythe/context/url",
+                url.unwrap().into().as_str().as_bytes().to_vec(),
+            )?;
+        }
+        self.emit_edge(&source_vname, &diagnostic_vname, "/kythe/edge/tagged")
+    }
 }
