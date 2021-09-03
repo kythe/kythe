@@ -421,7 +421,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             } else {
                 eprintln!(
                     "{}: Definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap - Ignoring",
-                    self.krate_vname.get_path(), def.qualname, def.id.krate
+                    def.span.file_name.display(), def.qualname, def.id.krate
                 )
             }
         }
@@ -512,7 +512,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         // macros
                         eprintln!(
                             "{}: Failed to get vname for parent of definition {:?}",
-                            self.krate_vname.get_path(),
+                            def.span.file_name.display(),
                             def.id
                         )
                     }
