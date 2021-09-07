@@ -19,7 +19,7 @@ use kythe_rust_indexer::error::KytheError;
 use kythe_rust_indexer::indexer::entries::EntryEmitter;
 use storage_rust_proto::*;
 
-// This test checks that the emit_node function works properly
+// This test checks that the emit_fact function works properly
 #[test]
 fn nodes_properly_emitted() -> Result<(), KytheError> {
     // Create an emitter that writes to the ArrayWriter. This makes it easier to
@@ -31,7 +31,7 @@ fn nodes_properly_emitted() -> Result<(), KytheError> {
     let mut vname = VName::new();
     vname.set_signature("test_signature".to_string());
 
-    emitter.emit_node(&vname, "/kythe/node/kind", b"file".to_vec())?;
+    emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
 
     // Ensure that there is one emitted Entry and that the values match what we
     // expect

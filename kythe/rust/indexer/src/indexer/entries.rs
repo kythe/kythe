@@ -33,7 +33,7 @@ impl<'a> EntryEmitter<'a> {
     ///
     /// # Errors
     /// If an error occurs while writing the entry, an error is returned.
-    pub fn emit_node(
+    pub fn emit_fact(
         &mut self,
         vname: &VName,
         fact_name: &str,
@@ -78,13 +78,13 @@ impl<'a> EntryEmitter<'a> {
         byte_start: u32,
         byte_end: u32,
     ) -> Result<(), KytheError> {
-        self.emit_node(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
-        self.emit_node(
+        self.emit_fact(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+        self.emit_fact(
             anchor_vname,
             "/kythe/loc/start",
             byte_start.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_fact(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/defines/binding")
     }
 
@@ -100,13 +100,13 @@ impl<'a> EntryEmitter<'a> {
         byte_start: u32,
         byte_end: u32,
     ) -> Result<(), KytheError> {
-        self.emit_node(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
-        self.emit_node(
+        self.emit_fact(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+        self.emit_fact(
             anchor_vname,
             "/kythe/loc/start",
             byte_start.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_node(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_fact(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/ref")
     }
 
@@ -125,7 +125,7 @@ impl<'a> EntryEmitter<'a> {
     ) -> Result<(), KytheError> {
         // Combine diagnostic message fields and create sha256 sum
         let combined_description =
-            format!("{}||{}||{}", message, details.unwrap_or("NONE"), url.unwrap_or("NONE"));
+            format!("{}||{}||{}", message, details.unwrap_or_default(), url.unwrap_or_default());
         let mut sha256 = Sha256::new();
         sha256.update(combined_description.as_str().as_bytes());
         let bytes = sha256.finalize();
@@ -137,17 +137,17 @@ impl<'a> EntryEmitter<'a> {
         diagnostic_vname.set_signature(format!("{}_{}", source_signature, sha256sum));
 
         // Emit diagnostic node
-        self.emit_node(&diagnostic_vname, "/kythe/node/kind", b"diagnostic".to_vec())?;
-        self.emit_node(&diagnostic_vname, "/kythe/message", message.as_bytes().to_vec())?;
+        self.emit_fact(&diagnostic_vname, "/kythe/node/kind", b"diagnostic".to_vec())?;
+        self.emit_fact(&diagnostic_vname, "/kythe/message", message.as_bytes().to_vec())?;
         if details.is_some() {
-            self.emit_node(
+            self.emit_fact(
                 &diagnostic_vname,
                 "/kythe/details",
                 details.unwrap().as_bytes().to_vec(),
             )?;
         }
         if url.is_some() {
-            self.emit_node(
+            self.emit_fact(
                 &diagnostic_vname,
                 "/kythe/context/url",
                 url.unwrap().as_bytes().to_vec(),

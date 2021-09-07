@@ -122,10 +122,10 @@ impl<'a> UnitAnalyzer<'a> {
             let vname = self.get_file_vname(source_file)?;
 
             // Create the file node fact
-            self.emitter.emit_node(&vname, "/kythe/node/kind", b"file".to_vec())?;
+            self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
 
             // Create language fact
-            self.emitter.emit_node(&vname, "/kythe/language", b"rust".to_vec())?;
+            self.emitter.emit_fact(&vname, "/kythe/language", b"rust".to_vec())?;
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
@@ -146,7 +146,7 @@ impl<'a> UnitAnalyzer<'a> {
             self.offset_index.add_file(source_file, &file_contents);
 
             // Create text fact
-            self.emitter.emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
+            self.emitter.emit_fact(&vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -275,7 +275,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
         let krate_vname = self.generate_crate_vname(&krate_signature);
         self.krate_vname = krate_vname.clone();
-        self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
+        self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_id.clone());
 
         // Then, do the same for all of the external crates
@@ -286,7 +286,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
             );
             let krate_vname = self.generate_crate_vname(&krate_signature);
-            self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
+            self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
             self.krate_ids.insert((krate_num + 1) as u32, krate_id.clone());
         }
 
@@ -296,7 +296,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emits tbuiltin nodes for all of the Rust built-in types
     pub fn emit_tbuiltin_nodes(&mut self) -> Result<(), KytheError> {
         for vname in self.type_vnames.values() {
-            self.emitter.emit_node(vname, "/kythe/node/kind", b"tbuiltin".to_vec())?;
+            self.emitter.emit_fact(vname, "/kythe/node/kind", b"tbuiltin".to_vec())?;
         }
 
         Ok(())
@@ -650,7 +650,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // Emit nodes for all fact/value pairs
         for (fact_name, fact_value) in facts.iter() {
-            self.emitter.emit_node(def_vname, fact_name, fact_value.to_vec())?;
+            self.emitter.emit_fact(def_vname, fact_name, fact_value.to_vec())?;
         }
 
         // Calculate the byte_start and byte_end using the OffsetIndex
@@ -680,9 +680,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Module definitions need special logic if they are implicit
         if def.kind == DefKind::Mod && self.is_module_implicit(def) {
             // Emit a 0-length anchor and defines edge at the top of the file
-            self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
-            self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
-            self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+            self.emitter.emit_fact(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+            self.emitter.emit_fact(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+            self.emitter.emit_fact(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
             self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
         } else {
             self.emitter.emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
@@ -695,8 +695,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let mut doc_vname = def_vname.clone();
             let doc_signature = format!("{}_doc", def_vname.get_signature());
             doc_vname.set_signature(doc_signature);
-            self.emitter.emit_node(&doc_vname, "/kythe/node/kind", b"doc".to_vec())?;
-            self.emitter.emit_node(
+            self.emitter.emit_fact(&doc_vname, "/kythe/node/kind", b"doc".to_vec())?;
+            self.emitter.emit_fact(
                 &doc_vname,
                 "/kythe/text",
                 def.docs.trim().as_bytes().to_vec(),
