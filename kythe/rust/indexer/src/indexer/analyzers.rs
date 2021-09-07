@@ -419,17 +419,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             } else {
                 // Generate a diagnostic node indicating that we couldn't find the refernced
                 // crate
-                let mut diagnostic_vname = file_vname.unwrap().clone();
-                diagnostic_vname.set_signature(format!(
-                    "{}_diagnostic_{}_cant_find_crate",
-                    file_vname.unwrap().get_signature(),
-                    def.qualname
-                ));
                 self.emitter.emit_diagnostic(
                     file_vname.unwrap(),
-                    &diagnostic_vname,
                     "Cross reference could not be generated",
-                    Some(format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
+                    Some(&format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
                     None
                 )?;
             }
@@ -518,14 +511,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         self.emitter.emit_edge(def_vname, parent_vname, "/kythe/edge/childof")?;
                     } else {
                         // Generate a diagnostic node indicating that we couldn't find the parent
-                        let mut diagnostic_vname = def_vname.clone();
                         let mut anchor_vname = def_vname.clone();
                         let def_signature = def_vname.get_signature();
-                        diagnostic_vname.set_signature(format!("{}_diagnostic", def_signature));
                         anchor_vname.set_signature(format!("{}_anchor", def_signature));
                         self.emitter.emit_diagnostic(
                             &anchor_vname,
-                            &diagnostic_vname,
                             "Cross reference could not be generated",
                             Some("Failed to generate cross reference because the parent could not be found"),
                             None
