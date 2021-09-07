@@ -17,6 +17,8 @@ syntax = "proto3";
 
 package kythe.proto.metadata;
 
+option java_package = "com.google.devtools.kythe.proto";
+
 import "kythe/proto/storage.proto";
 
 // Schema for the JSON-encoded Kythe metadata describing the relationship
