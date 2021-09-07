@@ -253,6 +253,21 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "inline_metadata_tests",
+    srcs = [
+        "InlineMetadata.java",
+    ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
+    verifier_opts = [
+        "--annotated_graphviz",
+    ],
+    deps = ["@maven//:org_apache_tomcat_tomcat_annotations_api"],
+)
+
+java_verifier_test(
     name = "processing_metadata_tests",
     srcs = [
         "ProcessingMetadata.java",

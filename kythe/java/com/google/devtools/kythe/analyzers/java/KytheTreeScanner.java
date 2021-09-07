@@ -1596,6 +1596,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  private void loadInlineMetadata() {
+    String fullPath = filePositions.getSourceFile().toUri().getPath();
+    try {
+      if (metadataFilePaths.contains(fullPath)) {
+        return;
+      }
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
+      if (file == null) {
+        logger.atWarning().log("Can't find metadata at %s", fullPath);
+        return;
+      }
+      loadAnnotationsFile(fullPath, file);
+    } catch (IllegalArgumentException ex) {
+      logger.atWarning().withCause(ex).log("Can't read metadata at %s", fullPath);
+    }
+  }
+
   private void loadAnnotationsFromClassDecl(JCClassDecl decl) {
     for (JCAnnotation annotation : decl.getModifiers().getAnnotations()) {
       Symbol annotationSymbol = null;
@@ -1624,6 +1641,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         String comments = (String) rhs.getValue();
         if (comments.startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
           loadAnnotationsFile(comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length()));
+        } else if (comments.startsWith(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX)) {
+          loadInlineMetadata();
         }
       }
     }

@@ -30,6 +30,7 @@ import com.google.devtools.kythe.platform.kzip.KZipException;
 import com.google.devtools.kythe.platform.kzip.KZipReader;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
+import com.google.devtools.kythe.platform.shared.KytheInlineMetadataLoader;
 import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
 import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
@@ -162,6 +163,7 @@ public class JavaIndexer {
     metadataLoaders.addLoader(
         new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
     metadataLoaders.addLoader(new KytheMetadataLoader());
+    metadataLoaders.addLoader(new KytheInlineMetadataLoader());
 
     KytheJavacAnalyzer analyzer =
         new KytheJavacAnalyzer(
