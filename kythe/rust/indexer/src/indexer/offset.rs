@@ -117,8 +117,16 @@ impl LineIndex {
     /// in this line, or if `all_single_byte` is false and the index of
     /// `column - 1` isn't in `column_indices`
     pub fn get_offset_at_col(&self, column: u32) -> Option<u32> {
-        // Column is past total number of columns
-        if column > self.num_columns || column < 1 {
+        // Some generated files do not have a newline at the end of the file.
+        // If there is a module definition, the ending column will be one larger
+        // than the number of columns in the row. Therefore we will just return
+        // the end of the column.
+        if column > self.num_columns {
+            return Some(self.offset + self.num_columns - 1);
+        }
+
+        // Should never happen but we cover it just in case
+        if column < 1 {
             return None;
         }
 
