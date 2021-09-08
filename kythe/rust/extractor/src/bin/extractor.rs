@@ -73,10 +73,12 @@ fn main() -> Result<()> {
         .filter(|file| file.ends_with(".rs"))
         .map(String::from) // Map the &String to a new String
         .collect();
+    let mut source_file_processed_paths = Vec::new();
     let mut required_input: Vec<CompilationUnit_FileInput> = Vec::new();
     for file_path in &rust_source_files {
         // Generate the file vname based on the vname rules
         let file_vname: VName = create_vname(&mut vname_rules, file_path, &default_corpus);
+        source_file_processed_paths.push(file_vname.get_path().to_string());
         kzip_add_required_input(file_path, file_vname, &mut kzip, &mut required_input)?;
     }
 
@@ -104,7 +106,7 @@ fn main() -> Result<()> {
         unit_vname.set_corpus(default_corpus);
     }
     let indexed_compilation = create_indexed_compilation(
-        rust_source_files,
+        source_file_processed_paths,
         build_target_arguments,
         build_output_path,
         required_input,
