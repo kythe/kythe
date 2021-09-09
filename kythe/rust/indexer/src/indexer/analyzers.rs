@@ -28,8 +28,6 @@ use storage_rust_proto::*;
 
 /// A data structure to analyze and index CompilationUnit protobufs
 pub struct UnitAnalyzer<'a> {
-    // The CompilationUnit being analyzed
-    unit: &'a CompilationUnit,
     // The storage_rust_proto VName for the CompilationUnit
     unit_storage_vname: VName,
     // The emitter used to  write generated nodes and edges
@@ -104,7 +102,6 @@ impl<'a> UnitAnalyzer<'a> {
 
         let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
         Self {
-            unit,
             unit_storage_vname,
             emitter: EntryEmitter::new(writer),
             file_vnames,
@@ -118,35 +115,33 @@ impl<'a> UnitAnalyzer<'a> {
     /// generate the OffsetIndex
     pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
-        for source_file in self.unit.get_source_file() {
-            let vname = self.get_file_vname(source_file)?;
-
+        for (file_path, vname) in &self.file_vnames {
             // Create the file node fact
-            self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
+            self.emitter.emit_fact(vname, "/kythe/node/kind", b"file".to_vec())?;
 
             // Create language fact
-            self.emitter.emit_fact(&vname, "/kythe/language", b"rust".to_vec())?;
+            self.emitter.emit_fact(vname, "/kythe/language", b"rust".to_vec())?;
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
-            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(source_file, file_digest)?;
+            if let Some(file_digest) = self.file_digests.get(file_path) {
+                let file_bytes = self.provider.contents(file_path, file_digest)?;
                 file_contents = String::from_utf8(file_bytes).map_err(|_| {
                     KytheError::IndexerError(format!(
                         "Failed to read file {} as UTF8 string",
-                        source_file.to_string()
+                        file_path
                     ))
                 })?;
             } else {
-                return Err(KytheError::FileNotFoundError(source_file.to_string()));
+                return Err(KytheError::FileNotFoundError(file_path.to_string()));
             }
 
             // Add the file to the OffsetIndex
-            self.offset_index.add_file(source_file, &file_contents);
+            self.offset_index.add_file(file_path, &file_contents);
 
             // Create text fact
-            self.emitter.emit_fact(&vname, "/kythe/text", file_contents.into_bytes())?;
+            self.emitter.emit_fact(vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -166,20 +161,6 @@ impl<'a> UnitAnalyzer<'a> {
         crate_analyzer.emit_definitions()?;
         crate_analyzer.emit_xrefs()?;
         Ok(())
-    }
-
-    /// Given a file name, returns a [Result] with the file's VName from the
-    /// Compilation Unit.
-    ///
-    /// # Errors
-    /// If the file name isn't found, a [KytheError::IndexerError] is returned.
-    fn get_file_vname(&mut self, file_name: &str) -> Result<VName, KytheError> {
-        let err_msg = format!(
-            "Failed to find VName for file \"{}\" located in the save analysis. Is it included in the required inputs of the Compilation Unit?",
-            file_name
-        );
-        let vname = self.file_vnames.get(file_name).ok_or(KytheError::IndexerError(err_msg))?;
-        Ok(vname.clone())
     }
 }
 
