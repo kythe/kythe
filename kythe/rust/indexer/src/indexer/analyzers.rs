@@ -97,9 +97,11 @@ impl<'a> UnitAnalyzer<'a> {
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
             let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
-            let path = storage_vname.get_path().to_owned();
+            let info = required_input.get_info();
+            let path = info.get_path().to_owned();
+            let digest = info.get_digest().to_owned();
             file_vnames.insert(path.clone(), storage_vname);
-            file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
+            file_digests.insert(path.clone(), digest);
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
