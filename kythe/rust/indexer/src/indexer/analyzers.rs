@@ -38,6 +38,9 @@ pub struct UnitAnalyzer<'a> {
     file_vnames: HashMap<String, VName>,
     // A map between a file name and its sha256 digest
     file_digests: HashMap<String, String>,
+    // A map between the compiler path of generated files and the path shown in
+    // the save_analysis file
+    generated_file_names: HashMap<String, String>,
     // An index for computing byte offsets in files based on line and column number
     offset_index: OffsetIndex,
     // A file provider
@@ -94,14 +97,19 @@ impl<'a> UnitAnalyzer<'a> {
         // later to emit nodes and create a HashMap between a file path and its digest
         let mut file_vnames = HashMap::new();
         let mut file_digests = HashMap::new();
+        let mut generated_file_names = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
             let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
             let info = required_input.get_info();
-            let path = info.get_path().to_owned();
+            let source_path = info.get_path().to_owned();
+            let processed_path = storage_vname.get_path().to_owned();
+            if source_path != processed_path {
+                generated_file_names.insert(processed_path, source_path.clone());
+            }
             let digest = info.get_digest().to_owned();
-            file_vnames.insert(path.clone(), storage_vname);
-            file_digests.insert(path.clone(), digest);
+            file_vnames.insert(source_path.clone(), storage_vname);
+            file_digests.insert(source_path.clone(), digest);
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
@@ -111,6 +119,7 @@ impl<'a> UnitAnalyzer<'a> {
             emitter: EntryEmitter::new(writer),
             file_vnames,
             file_digests,
+            generated_file_names,
             offset_index: OffsetIndex::default(),
             provider,
         }
@@ -121,7 +130,14 @@ impl<'a> UnitAnalyzer<'a> {
     pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
         for source_file in self.unit.get_source_file() {
-            let vname = self.get_file_vname(source_file)?;
+            let file_path = {
+                if let Some(generated_file_name) = self.generated_file_names.get(source_file) {
+                    generated_file_name
+                } else {
+                    source_file
+                }
+            };
+            let vname = self.get_file_vname(&file_path)?;
 
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
@@ -132,8 +148,8 @@ impl<'a> UnitAnalyzer<'a> {
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
-            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(source_file, file_digest)?;
+            if let Some(file_digest) = self.file_digests.get(&file_path.to_string()) {
+                let file_bytes = self.provider.contents(&file_path, file_digest)?;
                 file_contents = String::from_utf8(file_bytes).map_err(|_| {
                     KytheError::IndexerError(format!(
                         "Failed to read file {} as UTF8 string",
@@ -175,7 +191,7 @@ impl<'a> UnitAnalyzer<'a> {
     ///
     /// # Errors
     /// If the file name isn't found, a [KytheError::IndexerError] is returned.
-    fn get_file_vname(&mut self, file_name: &str) -> Result<VName, KytheError> {
+    fn get_file_vname(&self, file_name: &str) -> Result<VName, KytheError> {
         let err_msg = format!(
             "Failed to find VName for file \"{}\" located in the save analysis. Is it included in the required inputs of the Compilation Unit?",
             file_name
