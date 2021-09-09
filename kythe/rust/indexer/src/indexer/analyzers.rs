@@ -800,6 +800,6 @@ fn analysis_to_storage_vname(analysis_vname: &analysis_rust_proto::VName) -> VNa
     vname.set_corpus(analysis_vname.get_corpus().to_string());
     vname.set_root(analysis_vname.get_root().to_string());
     vname.set_path(analysis_vname.get_path().to_string());
-    vname.set_language(analysis_vname.get_signature().to_string());
+    vname.set_language(analysis_vname.get_language().to_string());
     vname
 }
