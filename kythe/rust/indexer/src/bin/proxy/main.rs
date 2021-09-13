@@ -13,7 +13,7 @@
 // limitations under the License.
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{
-    error::KytheError, indexer::KytheIndexer, providers::*, writer::ProxyWriter,
+    error::KytheError, indexer::KytheIndexer, providers::*, proxyrequests, writer::ProxyWriter,
 };
 
 use analysis_rust_proto::*;
@@ -152,11 +152,8 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 /// Sends the "done" request to the proxy. The first argument sets the "ok"
 /// value, and the second sets the error message if the first argument is false.
 fn send_done(ok: bool, msg: String) -> Result<()> {
-    if ok {
-        println!(r#"{{"req":"done", "args":{{"ok":true,"msg":""}}}}"#);
-    } else {
-        println!(r#"{{"req":"done", "args":{{"ok":false,"msg":"{}"}}}}"#, msg);
-    }
+    let request = proxyrequests::done(ok, msg)?;
+    println!("{}", request);
     io::stdout().flush().context("Failed to flush stdout")?;
 
     // Grab the response, but we don't care what it is so just throw it away
