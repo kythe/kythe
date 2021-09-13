@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::error::KytheError;
+use crate::proxyrequests;
 use analysis_rust_proto::*;
 use serde_json::Value;
 use std::fs::File;
@@ -157,7 +158,8 @@ impl FileProvider for ProxyFileProvider {
     /// file.
     fn exists(&mut self, path: &str, digest: &str) -> Result<bool, KytheError> {
         // Submit the file request to the proxy
-        println!(r#"{{"req": "file","args":{{"path": "{}","digest": "{}"}}}}"#, path, digest);
+        let request = proxyrequests::file(path.to_string(), digest.to_string())?;
+        println!("{}", request);
         io::stdout().flush().map_err(|err| {
             KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
         })?;
@@ -188,7 +190,8 @@ impl FileProvider for ProxyFileProvider {
 
     fn contents(&mut self, path: &str, digest: &str) -> Result<Vec<u8>, KytheError> {
         // Submit the file request to the proxy
-        println!(r#"{{"req": "file","args":{{"path": "{}","digest": "{}"}}}}"#, path, digest);
+        let request = proxyrequests::file(path.to_string(), digest.to_string())?;
+        println!("{}", request);
         io::stdout().flush().map_err(|err| {
             KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
         })?;

@@ -41,6 +41,11 @@ quick_error! {
             from()
             display("Failed to parse Protobuf: {}", err)
         }
+        /// There was an issue serializing a type to JSON
+        JsonSerializationError(err: serde_json::Error) {
+            from()
+            display("JSON Serialization Error: {}", err)
+        }
         /// The KytheWriter encounters an error
         WriterError(err: ProtobufError) {
             display("Writer encountered an error: {}", err)
