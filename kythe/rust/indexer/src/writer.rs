@@ -104,8 +104,7 @@ impl KytheWriter for ProxyWriter {
     /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let bytes = entry.write_to_bytes().map_err(KytheError::WriterError)?;
-        // Convert the entry bytes to base64 and surround with quotes to prepare for
-        // inserting into a JSON array
+        // Convert the entry bytes to base64
         self.buffer.push(base64::encode(&bytes));
         if self.buffer.len() >= 1000 {
             self.flush()?;
