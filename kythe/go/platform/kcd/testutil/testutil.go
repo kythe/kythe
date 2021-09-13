@@ -25,6 +25,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"testing"
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd"
@@ -69,15 +70,19 @@ func regexps(exprs ...string) (res []*regexp.Regexp) {
 // Run applies a sequence of correctness tests to db, which must be initially
 // empty, and returns any errors that occur.  If db passes all the tests, the
 // return value is nil; otherwise each error is of concrete type *TestError.
-func Run(ctx context.Context, db kcd.ReadWriter) []error {
+func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 	var errs []error
 
 	// Each check is passed a function to report errors.  The errors are packed
 	// into *TestError wrappers and accumulated to return.
 	type failer func(method string, err error)
 	check := func(desc string, test func(failer)) {
+		t.Helper()
 		test(func(method string, err error) {
-			errs = append(errs, &TestError{desc, method, err})
+			t.Helper()
+			err = &TestError{desc, method, err}
+			t.Error(err)
+			errs = append(errs, err)
 		})
 	}
 
@@ -188,10 +193,18 @@ func Run(ctx context.Context, db kcd.ReadWriter) []error {
 	var unitDigest string // set by the test below
 
 	check("written units round-trip", func(fail failer) {
+		const inputDigest = "b05ffa4eea8fb5609d576a68c1066be3f99e4dc53d365a0ac2a78259b2dd91f9"
 		dummy := kythe.Unit{&apb.CompilationUnit{
 			VName:      &spb.VName{Signature: "//foo/bar/baz:quux", Language: "go"},
 			SourceFile: []string{"quux.cc"},
-			OutputKey:  "quux.a",
+			RequiredInput: []*apb.CompilationUnit_FileInput{{
+				VName: &spb.VName{Path: "foo/bar/baz/quux.cc"},
+				Info: &apb.FileInfo{
+					Path:   "quux.cc",
+					Digest: inputDigest,
+				},
+			}},
+			OutputKey: "quux.a",
 		}}
 		digest, err := db.WriteUnit(ctx, Revision, Corpus, FormatKey, dummy)
 		if err != nil {
@@ -216,6 +229,14 @@ func Run(ctx context.Context, db kcd.ReadWriter) []error {
 			return nil
 		}); err != nil {
 			fail("Units", err)
+		}
+
+		// Check that required input digests do not exist until their contents are written.
+		if err := db.FilesExist(ctx, []string{inputDigest}, func(digest string) error {
+			fail("FilesExist", fmt.Errorf("unexpected digest %q", digest))
+			return nil
+		}); err != nil {
+			fail("FilesExist", err)
 		}
 	})
 
