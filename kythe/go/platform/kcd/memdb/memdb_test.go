@@ -25,7 +25,5 @@ import (
 
 func TestMemDB(t *testing.T) {
 	var db DB
-	for _, err := range testutil.Run(context.Background(), &db) {
-		t.Error(err)
-	}
+	testutil.Run(t, context.Background(), &db)
 }
