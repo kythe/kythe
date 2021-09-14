@@ -1617,12 +1617,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       for (Comment comment :
           comments.values().stream().flatMap(List::stream).collect(Collectors.toList())) {
-        if (comment.text.contains(inlineMetadataPrefix)) {
+        int index = comment.text.indexOf(inlineMetadataPrefix);
+        if (index != -1) {
           loadAnnotationsData(
               fullPath,
               Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX
-                  + comment.text.substring(
-                      comment.text.indexOf(inlineMetadataPrefix) + inlineMetadataPrefix.length()));
+                  + comment.text.substring(index + inlineMetadataPrefix.length()));
           break;
         }
       }
