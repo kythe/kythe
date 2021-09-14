@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::error::KytheError;
+use crate::proxyrequests;
 use protobuf::{self, CodedOutputStream, Message};
 use serde_json::Value;
 use std::io::{self, Write};
@@ -103,10 +104,7 @@ impl KytheWriter for ProxyWriter {
     /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let bytes = entry.write_to_bytes().map_err(KytheError::WriterError)?;
-        // Convert the entry bytes to base64 and surround with quotes to prepare for
-        // inserting into a JSON array
-        let b64 = format!(r#""{}""#, base64::encode(&bytes));
-        self.buffer.push(b64);
+        self.buffer.push(base64::encode(&bytes));
         if self.buffer.len() >= 1000 {
             self.flush()?;
         }
@@ -114,12 +112,10 @@ impl KytheWriter for ProxyWriter {
     }
 
     fn flush(&mut self) -> Result<(), KytheError> {
-        // Combine all of the entries
-        let buffer_json_array = self.buffer.join(", ");
-        self.buffer.clear();
-
         // Write the proxy command to output
-        println!(r#"{{"req":"output_wire","args":[{}]}}"#, buffer_json_array);
+        let request = proxyrequests::output(self.buffer.clone())?;
+        self.buffer.clear();
+        println!("{}", request);
         io::stdout().flush().map_err(|err| {
             KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
         })?;

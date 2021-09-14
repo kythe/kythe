@@ -18,6 +18,7 @@ rust_library(
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
+        "//kythe/rust/cargo:serde",
         "//kythe/rust/cargo:serde_json",
         "//kythe/rust/cargo:sha2",
         "//kythe/rust/cargo:zip",
