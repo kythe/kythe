@@ -262,7 +262,8 @@ java_verifier_test(
         "--default_metadata_corpus=default",
     ],
     verifier_opts = [
-        "--annotated_graphviz",
+        "--graphviz",
+        "--ignore_dups",
     ],
     deps = ["@maven//:org_apache_tomcat_tomcat_annotations_api"],
 )

@@ -89,8 +89,11 @@ public final class KytheInlineMetadataLoader implements MetadataLoader {
     for (MappingRule mapping : javaMetadata.getMetaList()) {
       Metadata.Rule rule = new Metadata.Rule();
       rule.begin = mapping.getBegin();
+      logger.atWarning().log(mapping.getBegin()+"");
       rule.end = mapping.getEnd();
+      logger.atWarning().log(mapping.getEnd()+"");
       rule.vname = mapping.getVname();
+      logger.atWarning().log(mapping.getVname().toString());
       rule.edgeOut = EdgeKind.GENERATES;
       rule.reverseEdge = true;
       metadata.addRule(rule);
