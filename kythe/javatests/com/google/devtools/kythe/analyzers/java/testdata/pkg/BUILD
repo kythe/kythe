@@ -261,10 +261,6 @@ java_verifier_test(
         "--verbose",
         "--default_metadata_corpus=default",
     ],
-    verifier_opts = [
-        "--graphviz",
-        "--ignore_dups",
-    ],
     deps = ["@maven//:org_apache_tomcat_tomcat_annotations_api"],
 )
 

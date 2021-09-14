@@ -84,7 +84,6 @@ Example:
   }
 
   if (absl::GetFlag(FLAGS_ignore_dups)) {
-    absl::FPrintF(stderr, "Ignoring dups");
     v.IgnoreDuplicateFacts();
   }
 
