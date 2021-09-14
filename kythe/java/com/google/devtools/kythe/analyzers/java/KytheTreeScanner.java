@@ -1615,15 +1615,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (metadataFilePaths.contains(fullPath)) {
         return;
       }
-      for (Comment comment :
-          comments.values().stream().flatMap(List::stream).collect(Collectors.toList())) {
-        int index = comment.text.indexOf(metadataPrefix);
-        if (index != -1) {
-          loadAnnotationsData(
-              fullPath,
-              Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX
-                  + comment.text.substring(index + metadataPrefix.length()));
-          break;
+      for (List<Comment> commentList : comments.values()) {
+        for (Comment comment : commentList){
+          int index = comment.text.indexOf(metadataPrefix);
+          if (index != -1) {
+            loadAnnotationsData(
+                fullPath,
+                Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX
+                    + comment.text.substring(index + metadataPrefix.length()));
+            break;
+          }
         }
       }
     } catch (IllegalArgumentException ex) {
