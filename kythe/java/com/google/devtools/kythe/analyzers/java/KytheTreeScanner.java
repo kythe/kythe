@@ -1608,8 +1608,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       metadataFilePaths.add(fullPath);
   }
 
-  private void loadInlineMetadata(String inlineMetadataPrefix) {
-    inlineMetadataPrefix += ":";
+  private void loadInlineMetadata(String metadataPrefix) {
+    metadataPrefix += ":";
     String fullPath = filePositions.getSourceFile().toUri().getPath();
     try {
       if (metadataFilePaths.contains(fullPath)) {
@@ -1617,12 +1617,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       for (Comment comment :
           comments.values().stream().flatMap(List::stream).collect(Collectors.toList())) {
-        int index = comment.text.indexOf(inlineMetadataPrefix);
+        int index = comment.text.indexOf(metadataPrefix);
         if (index != -1) {
           loadAnnotationsData(
               fullPath,
               Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX
-                  + comment.text.substring(index + inlineMetadataPrefix.length()));
+                  + comment.text.substring(index + metadataPrefix.length()));
           break;
         }
       }
