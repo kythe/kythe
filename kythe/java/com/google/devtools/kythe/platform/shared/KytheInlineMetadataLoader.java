@@ -23,6 +23,7 @@ import com.google.common.io.BaseEncoding;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Metadata.GeneratedCodeInfo;
 import com.google.devtools.kythe.proto.Metadata.MappingRule;
+import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
@@ -75,7 +76,7 @@ public final class KytheInlineMetadataLoader implements MetadataLoader {
       throws InvalidProtocolBufferException {
     String metadata = new String(data, UTF_8).substring(ANNOTATION_PREFIX_STRING.length());
     byte[] protoData = BaseEncoding.base64().decode(metadata);
-    return GeneratedCodeInfo.parseFrom(protoData);
+    return GeneratedCodeInfo.parseFrom(protoData, ExtensionRegistry.getEmptyRegistry());
   }
 
   private static Metadata constructMetadata(GeneratedCodeInfo javaMetadata) {
