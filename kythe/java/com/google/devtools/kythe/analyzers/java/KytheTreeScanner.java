@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -1596,6 +1598,40 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  private void loadAnnotationsData(String fullPath, String metadataComment) {
+    Metadata newMetadata = metadataLoaders.parseFile(fullPath, metadataComment.getBytes(UTF_8));
+    if (newMetadata == null) {
+      logger.atWarning().log("Can't load metadata %s", fullPath);
+      return;
+    }
+    metadata.add(newMetadata);
+    metadataFilePaths.add(fullPath);
+  }
+
+  private void loadInlineMetadata(String metadataPrefix) {
+    metadataPrefix += ":";
+    String fullPath = filePositions.getSourceFile().toUri().getPath();
+    try {
+      if (metadataFilePaths.contains(fullPath)) {
+        return;
+      }
+      for (List<Comment> commentList : comments.values()) {
+        for (Comment comment : commentList) {
+          int index = comment.text.indexOf(metadataPrefix);
+          if (index != -1) {
+            loadAnnotationsData(
+                fullPath,
+                Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX
+                    + comment.text.substring(index + metadataPrefix.length()));
+            break;
+          }
+        }
+      }
+    } catch (IllegalArgumentException ex) {
+      logger.atWarning().withCause(ex).log("Can't read metadata at %s", fullPath);
+    }
+  }
+
   private void loadAnnotationsFromClassDecl(JCClassDecl decl) {
     for (JCAnnotation annotation : decl.getModifiers().getAnnotations()) {
       Symbol annotationSymbol = null;
@@ -1624,6 +1660,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         String comments = (String) rhs.getValue();
         if (comments.startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
           loadAnnotationsFile(comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length()));
+        } else if (comments.startsWith(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX)) {
+          loadInlineMetadata(
+              comments.substring(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX.length()));
         }
       }
     }

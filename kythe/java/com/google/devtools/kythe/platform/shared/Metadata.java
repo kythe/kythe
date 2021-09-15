@@ -93,4 +93,6 @@ public class Metadata {
    * participate in metadata rules.
    */
   public static final String ANNOTATION_COMMENT_PREFIX = "annotations:";
+
+  public static final String ANNOTATION_COMMENT_INLINE_METADATA_PREFIX = "kythe-inline-metadata:";
 }

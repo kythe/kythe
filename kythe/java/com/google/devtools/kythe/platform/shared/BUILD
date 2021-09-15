@@ -33,6 +33,7 @@ java_library(
 java_library(
     name = "metadata",
     srcs = [
+        "KytheInlineMetadataLoader.java",
         "KytheMetadataLoader.java",
         "Metadata.java",
         "MetadataLoader.java",
@@ -45,6 +46,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:metadata_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
