@@ -1598,14 +1598,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  private void loadAnnotationsData(String fullPath, String metadataComment){
-      Metadata newMetadata = metadataLoaders.parseFile(fullPath, metadataComment.getBytes(UTF_8));
-      if (newMetadata == null) {
-        logger.atWarning().log("Can't load metadata %s", fullPath);
-        return;
-      }
-      metadata.add(newMetadata);
-      metadataFilePaths.add(fullPath);
+  private void loadAnnotationsData(String fullPath, String metadataComment) {
+    Metadata newMetadata = metadataLoaders.parseFile(fullPath, metadataComment.getBytes(UTF_8));
+    if (newMetadata == null) {
+      logger.atWarning().log("Can't load metadata %s", fullPath);
+      return;
+    }
+    metadata.add(newMetadata);
+    metadataFilePaths.add(fullPath);
   }
 
   private void loadInlineMetadata(String metadataPrefix) {
@@ -1616,7 +1616,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return;
       }
       for (List<Comment> commentList : comments.values()) {
-        for (Comment comment : commentList){
+        for (Comment comment : commentList) {
           int index = comment.text.indexOf(metadataPrefix);
           if (index != -1) {
             loadAnnotationsData(
@@ -1661,7 +1661,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         if (comments.startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
           loadAnnotationsFile(comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length()));
         } else if (comments.startsWith(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX)) {
-          loadInlineMetadata(comments.substring(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX.length()));
+          loadInlineMetadata(
+              comments.substring(Metadata.ANNOTATION_COMMENT_INLINE_METADATA_PREFIX.length()));
         }
       }
     }
