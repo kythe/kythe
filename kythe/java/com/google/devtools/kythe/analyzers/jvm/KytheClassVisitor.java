@@ -78,6 +78,10 @@ public final class KytheClassVisitor extends ClassVisitor {
     return new KytheClassVisitor(jvmGraph, enclosingJarFile);
   }
 
+  public KytheEntrySets getEntrySets() {
+    return this.entrySets;
+  }
+
   @Override
   public void visit(
       int version,
