@@ -137,9 +137,11 @@ public class ClassFileIndexer {
       StatisticsCollector statistics,
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
-      FactEmitter emitter)
+      FactEmitter emitter,
+      boolean useCompilationCorpusAsDefault)
       throws AnalysisException {
     KytheClassVisitor classVisitor = new KytheClassVisitor(statistics, emitter);
+    classVisitor.getEntrySets().setUseCompilationCorpusAsDefault(useCompilationCorpusAsDefault);
     analyzeCompilation(compilationUnit, fileDataProvider, classVisitor);
   }
 
