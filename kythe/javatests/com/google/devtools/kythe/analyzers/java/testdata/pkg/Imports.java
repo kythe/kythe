@@ -47,8 +47,8 @@ public class Imports {
     System.err.println(Entry.class);
 
     //- @isNull ref IsNullMethod
-    isNull(CASE_INSENSITIVE_ORDER);
-    isNull(new ArrayList<>());
+    boolean unused1 = isNull(CASE_INSENSITIVE_ORDER);
+    boolean unused2 = isNull(new ArrayList<>());
 
     //- @staticMethod ref StaticBool
     staticMethod(member() == staticMember());
