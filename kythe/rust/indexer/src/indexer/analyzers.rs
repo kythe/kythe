@@ -119,7 +119,12 @@ impl<'a> UnitAnalyzer<'a> {
     pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
         for source_file in self.unit.get_source_file() {
-            let vname = self.get_file_vname(source_file)?;
+            let vname_result = self.get_file_vname(source_file);
+            // Generated files won't have a file vname returned
+            if vname_result.is_err() {
+                continue;
+            }
+            let vname = vname_result.unwrap();
 
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
