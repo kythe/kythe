@@ -24,9 +24,9 @@ load(
     "rules_ruby_select_sdk",
 )
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-load("@llvm-bazel//:configure.bzl", "llvm_configure")
-load("@llvm-bazel//:terminfo.bzl", "llvm_terminfo_disable")
-load("@llvm-bazel//:zlib.bzl", "llvm_zlib_external")
+load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
+load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
+load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 
 # The raze macros automatically check for duplicated dependencies so we can
 # simply load each macro here.
@@ -80,9 +80,6 @@ def _cc_dependencies():
     maybe(
         llvm_configure,
         name = "llvm-project",
-        overlay_workspace = "@llvm-bazel//:WORKSPACE",
-        src_path = ".",
-        src_workspace = "@llvm-project-raw//:WORKSPACE",
     )
 
     maybe(

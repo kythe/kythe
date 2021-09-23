@@ -1473,7 +1473,7 @@ void KytheGraphObserver::RegisterBuiltins() {
   RegisterTokenBuiltin("float", "float");
   RegisterTokenBuiltin("double", "double");
   RegisterTokenBuiltin("long double", "long double");
-  RegisterTokenBuiltin("nullptr_t", "nullptr_t");
+  RegisterTokenBuiltin("std::nullptr_t", "nullptr_t");
   RegisterTokenBuiltin("<dependent type>", "dependent");
   RegisterTokenBuiltin("auto", "auto");
   RegisterTokenBuiltin("knrfn", "function");

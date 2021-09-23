@@ -138,28 +138,13 @@ def kythe_rule_repositories():
         url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.zip",
     )
 
-    # LLVM sticks the bazel configuration under a subdirectory, which expects to
-    # be the project root, so currently needs to be two distinct repositories
-    # from the same upstream source.
-    llvm_commit = "487f74a6c4151d13d3a7b54ee4ab7beaf3e87487"
-    llvm_sha256 = "cb8d1acf60e71894a692f273ab8c2a1fb6bd9e547de77cb9ee76829b2e429e7d"
-
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = llvm_commit,
+        commit = "43d6991c2a4cc2ac374e68c029634f2b59ffdfdf",
         name = "llvm-project-raw",
         build_file_content = "#empty",
-        sha256 = llvm_sha256,
-    )
-
-    maybe(
-        github_archive,
-        repo_name = "llvm/llvm-project",
-        commit = llvm_commit,
-        name = "llvm-bazel",
-        strip_prefix = "utils/bazel",
-        sha256 = llvm_sha256,
-        patch_args = ["-p2"],
+        sha256 = "64893db02cecbb33e888f9801ea370b99e331e27c8e3f20b122381def7839092",
+        patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
     )
