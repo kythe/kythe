@@ -1,34 +1,23 @@
-diff --git a/llvm-bazel/llvm-project-overlay/clang/BUILD.bazel b/llvm-bazel/llvm-project-overlay/clang/BUILD.bazel
+diff --git a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
 index 6a61b99f9..5cce43bb1 100644
---- a/llvm-bazel/llvm-project-overlay/clang/BUILD.bazel
-+++ b/llvm-bazel/llvm-project-overlay/clang/BUILD.bazel
+--- a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
 @@ -2,6 +2,7 @@
  # See https://llvm.org/LICENSE.txt for license information.
  # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
+
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
  load("//llvm:tblgen.bzl", "gentbl")
  load("//llvm:binary_alias.bzl", "binary_alias")
  load("//llvm:cc_plugin_library.bzl", "cc_plugin_library")
-@@ -446,9 +447,9 @@ cc_library(
-         ":basic_arm_sve_builtins_gen",
-         ":basic_arm_sve_typeflags_gen",
-         ":basic_attr_gen",
-+        ":basic_internal_headers",
-         ":basic_riscv_vector_builtin_cg_gen",
-         ":basic_riscv_vector_builtins_gen",
--        ":basic_internal_headers",
-         ":config",
-         ":diagnostic_defs_gen",
-         ":sema_attr_gen",
-diff --git a/llvm-bazel/llvm-project-overlay/llvm/BUILD.bazel b/llvm-bazel/llvm-project-overlay/llvm/BUILD.bazel
+diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
 index 93e905260..2c3cedcd9 100644
---- a/llvm-bazel/llvm-project-overlay/llvm/BUILD.bazel
-+++ b/llvm-bazel/llvm-project-overlay/llvm/BUILD.bazel
+--- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
 @@ -2,6 +2,7 @@
  # See https://llvm.org/LICENSE.txt for license information.
  # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
+
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
  load(":template_rule.bzl", "template_rule")
  load(":tblgen.bzl", "gentbl")
