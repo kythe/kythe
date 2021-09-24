@@ -253,10 +253,17 @@ fn analysis_path_string(build_output_path: &str, temp_dir_path: &Path) -> Result
 
     // Join the temp_dir_path with "save-analysis/${analysis_file_str}" to get the
     // full path of the save_analysis JSON file
-    temp_dir_path
-        .join("save-analysis")
-        .join(analysis_file_str)
-        .to_str()
+    let mut path = temp_dir_path.join("save-analysis").join(analysis_file_str);
+
+    // The path should almost always exist. However, if the target name had
+    // hyphens, then the final save_analysis file has underscores. We can't
+    // always replace the hyphens with underscores because the save_analysis
+    // files for libraries have hyphens in them.
+    if !path.exists() {
+        path = temp_dir_path.join("save-analysis").join(analysis_file_str.replace("-", "_"));
+    }
+
+    path.to_str()
         .ok_or_else(|| anyhow!("save_analysis file path is not valid UTF-8"))
         .map(|path_str| path_str.to_string())
 }
