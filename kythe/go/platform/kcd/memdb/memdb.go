@@ -179,7 +179,8 @@ func (db *DB) WriteRevision(_ context.Context, rev kcd.Revision, replace bool) e
 
 // WriteUnit implements a method of kcd.Writer.  On success, the returned
 // digest is the kcd.HexDigest of whatever unit.MarshalBinary returned.
-func (db *DB) WriteUnit(_ context.Context, revision, corpus, formatKey string, unit kcd.Unit) (string, error) {
+func (db *DB) WriteUnit(_ context.Context, rev kcd.Revision, formatKey string, unit kcd.Unit) (string, error) {
+	revision, corpus := rev.Revision, rev.Corpus
 	if revision == "" {
 		return "", errors.New("empty revision marker")
 	}

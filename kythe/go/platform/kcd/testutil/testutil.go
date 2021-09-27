@@ -206,7 +206,10 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 			}},
 			OutputKey: "quux.a",
 		}}
-		digest, err := db.WriteUnit(ctx, Revision, Corpus, FormatKey, dummy)
+		digest, err := db.WriteUnit(ctx, kcd.Revision{
+			Revision: Revision,
+			Corpus:   Corpus,
+		}, FormatKey, dummy)
 		if err != nil {
 			fail("WriteUnit", err)
 			return
