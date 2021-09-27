@@ -98,13 +98,13 @@ func (db *locker) WriteRevision(ctx context.Context, rev kcd.Revision, replace b
 }
 
 // WriteUnit implements a method of kcd.Writer.
-func (db *locker) WriteUnit(ctx context.Context, revision, corpus, formatKey string, unit kcd.Unit) (string, error) {
+func (db *locker) WriteUnit(ctx context.Context, rev kcd.Revision, formatKey string, unit kcd.Unit) (string, error) {
 	if db.wr == nil {
 		return "", ErrNotSupported
 	}
 	db.μ.Lock()
 	defer db.μ.Unlock()
-	return db.wr.WriteUnit(ctx, revision, corpus, formatKey, unit)
+	return db.wr.WriteUnit(ctx, rev, formatKey, unit)
 }
 
 // WriteFile implements a method of kcd.Writer.

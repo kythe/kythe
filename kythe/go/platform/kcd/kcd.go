@@ -74,8 +74,9 @@ type Writer interface {
 	WriteRevision(_ context.Context, rev Revision, replace bool) error
 
 	// WriteUnit records unit in the store at the given revision, and returns
-	// the digest of the stored unit.  It is an error if revision == "".
-	WriteUnit(_ context.Context, revision, corpus, formatKey string, unit Unit) (string, error)
+	// the digest of the stored unit.  It is an error if rev is invalid per
+	// WriteRevision.
+	WriteUnit(_ context.Context, rev Revision, formatKey string, unit Unit) (string, error)
 
 	// WriteFile fully reads r and records its content as a file in the store.
 	// Returns the digest of the stored file.
