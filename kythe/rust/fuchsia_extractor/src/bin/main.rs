@@ -207,6 +207,7 @@ fn make_file_input(
     let mut result = CompilationUnit_FileInput::new();
     result.set_info(file_info);
     result.set_v_name(vname);
+    println!("compilation unit: {:?}", &result);
     Ok(result)
 }
 
@@ -366,7 +367,6 @@ fn add_source_input(
     // absolute path to "
     let src_base_dir = partial_canonicalize_path(&options.base_dir.join(corpus_relative_path))
         .with_context(|| format!("add_source_input: while canonicalizing"))?;
-    println!("src_path:\n\t{:?}\ncorpus_root:\n\t{:?}", &src_path, &corpus_root_info);
     add_input(
         &mut archive,
         &options.corpus_name,

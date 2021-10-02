@@ -132,6 +132,10 @@ impl<'a> UnitAnalyzer<'a> {
             // Create language fact
             self.emitter.emit_fact(&vname, "/kythe/language", b"rust".to_vec())?;
 
+            if !source_file.to_string().ends_with(".rs") {
+                continue;
+            }
+
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
@@ -183,7 +187,12 @@ impl<'a> UnitAnalyzer<'a> {
             "Failed to find VName for file \"{}\" located in the save analysis. Is it included in the required inputs of the Compilation Unit?",
             file_name
         );
-        let vname = self.file_vnames.get(file_name).ok_or(KytheError::IndexerError(err_msg))?;
+        let fixup_filename = if file_name.starts_with(".././.") {
+            file_name.strip_prefix("../../").unwrap()
+        } else {
+            file_name
+        };
+        let vname = self.file_vnames.get(fixup_filename).ok_or(KytheError::IndexerError(err_msg))?;
         Ok(vname.clone())
     }
 }
