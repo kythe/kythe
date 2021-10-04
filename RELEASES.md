@@ -1,5 +1,9 @@
 # Release Notes
 
+## [v0.0.54] - 2021-10-04
+
+fuchsia_extractor has been updated to no longer include .rlib files
+
 ## [v0.0.53] - 2021-08-27
 
 #### Bug Fixes
@@ -1207,7 +1211,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.53...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.54...HEAD
+[v0.0.54] https://github.com/kythe/kythe/compare/v0.0.53...v0.0.54
 [v0.0.53] https://github.com/kythe/kythe/compare/v0.0.52...v0.0.53
 [v0.0.52] https://github.com/kythe/kythe/compare/v0.0.51...v0.0.52
 [v0.0.51] https://github.com/kythe/kythe/compare/v0.0.50...v0.0.51
