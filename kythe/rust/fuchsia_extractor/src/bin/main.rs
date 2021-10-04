@@ -218,7 +218,10 @@ lazy_static! {
 }
 
 /// Examines a set of rustc arguments and extracts the "rlib" files from it.
-fn extract_rlibs(arguments: &[impl AsRef<str>]) -> Vec<String> {
+fn extract_rlibs(arguments: &[impl AsRef<str>], extract_rlibs: bool) -> Vec<String> {
+    if !extract_rlibs {
+        return vec![];
+    }
     let result: Vec<String> = arguments
         .iter()
         .filter(|e| MATCH_RLIBS.is_match(e.as_ref()))
@@ -459,7 +462,7 @@ fn process_file(
     }
 
     // For each rlib file under the directory, add it.
-    let rlibs = extract_rlibs(&arguments);
+    let rlibs = extract_rlibs(&arguments, options.with_rlibs);
     for rlib in rlibs {
         let rlib = PathBuf::from(rlib);
         add_input(
@@ -608,6 +611,8 @@ struct Options {
     revisions: Vec<String>,
     /// If set, no non-error log messages are printed.
     quiet: bool,
+    /// If set, the `rlib` files are packaged into kzip files too.
+    with_rlibs: bool,
 }
 
 fn main() -> Result<()> {
@@ -621,6 +626,7 @@ fn main() -> Result<()> {
             (about: "A Kythe compilation extractor binary specifically made for the Fuchsia repository.")
             (@arg BASE_DIR: --basedir +takes_value "The directory from which the build was made, default '.'")
             (@arg QUIET: --quiet "If set, no non-error messages are logged")
+            (@arg WITH_RLIBS: --withrlibs "If set, the extractor will package rlib files too.")
             (@arg INPUT_DIR: --inputdir +takes_value "The directory containing save analysis files")
             (@arg INPUT: --inputfiles +takes_value "A comma-separated list of specific save-analysis files to read")
             (@arg OUTPUT_DIR: --output +takes_value +required "(required) The directory to save output kzips into; the directory must exist")
@@ -656,6 +662,7 @@ fn main() -> Result<()> {
         .map(|e| e.into())
         .collect::<Vec<String>>();
     let quiet = matches.is_present("QUIET");
+    let with_rlibs = matches.is_present("WITH_RLIBS");
 
     let options = Options {
         corpus_name: corpus_name.to_string(),
@@ -664,6 +671,7 @@ fn main() -> Result<()> {
         output_dir,
         revisions,
         quiet,
+        with_rlibs,
     };
     process_files(&all_files, &options).with_context(|| "while reading save-analysis files")?;
     Ok(())
@@ -790,7 +798,7 @@ mod testing {
 
     #[test]
     #[serial]
-    fn text_extract_rlibs() {
+    fn test_extract_rlibs_skip() {
         let args = vec![
             "--extern",
             "a=foo.rlib",
@@ -801,7 +809,25 @@ mod testing {
             "some-other-thing=bar.rlibbib",
             "some-other-thing=barrlib",
         ];
-        let result = extract_rlibs(&args);
+        let result: Vec<String> = extract_rlibs(&args, false);
+        let expected: Vec<String> = vec![];
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    #[serial]
+    fn test_extract_rlibs() {
+        let args = vec![
+            "--extern",
+            "a=foo.rlib",
+            "--extern",
+            "b=dir1/dir2/foo-something.rlib",
+            "--extern",
+            "some-other-thing=bar.rlib",
+            "some-other-thing=bar.rlibbib",
+            "some-other-thing=barrlib",
+        ];
+        let result = extract_rlibs(&args, true);
         assert_eq!(vec!["foo.rlib", "dir1/dir2/foo-something.rlib", "bar.rlib",], result);
     }
 
@@ -927,6 +953,7 @@ mod testing {
             output_dir: temp_dir.path().clone().to_path_buf(),
             revisions: vec!["revision1".into()],
             quiet: true,
+            with_rlibs: true,
         };
         let all_files: Vec<PathBuf> =
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
@@ -1011,6 +1038,7 @@ mod testing {
             output_dir: temp_dir.path().clone().to_path_buf(),
             revisions: vec!["revision1".into()],
             quiet: true,
+            with_rlibs: true,
         };
         let all_files: Vec<PathBuf> =
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
@@ -1055,6 +1083,7 @@ mod testing {
             output_dir: temp_dir.path().clone().to_path_buf(),
             revisions: vec!["revision1".into()],
             quiet: true,
+            with_rlibs: true,
         };
         let all_files: Vec<PathBuf> =
             vec![data_dir.join("out/terminal.x64/save-analysis-temp/nom.json")];
