@@ -74,7 +74,6 @@ impl OffsetIndex {
                 None
             }
         } else {
-            eprintln!("File not found");
             None
         }
     }
