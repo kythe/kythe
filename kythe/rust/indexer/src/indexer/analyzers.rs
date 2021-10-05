@@ -96,8 +96,8 @@ impl<'a> UnitAnalyzer<'a> {
         let mut file_digests = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
+            let path = required_input.get_info().get_path().to_owned();
             let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
-            let path = storage_vname.get_path().to_owned();
             file_vnames.insert(path.clone(), storage_vname);
             file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
         }
@@ -118,13 +118,21 @@ impl<'a> UnitAnalyzer<'a> {
     /// generate the OffsetIndex
     pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
-        for source_file in self.unit.get_source_file() {
-            let vname_result = self.get_file_vname(source_file);
+        for required_input in self.unit.get_required_input() {
+            let info_path = required_input.get_info().get_path();
+            let vname_result = self.get_file_vname(&info_path);
+
             // Generated files won't have a file vname returned
             if vname_result.is_err() {
                 continue;
             }
             let vname = vname_result.unwrap();
+
+            // Not all required inputs are Rust source files, so ignore if not
+            // a source file
+            if !info_path.ends_with(".rs") {
+                continue;
+            }
 
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
@@ -135,20 +143,20 @@ impl<'a> UnitAnalyzer<'a> {
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
-            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(source_file, file_digest)?;
+            if let Some(file_digest) = self.file_digests.get(info_path) {
+                let file_bytes = self.provider.contents(info_path, file_digest)?;
                 file_contents = String::from_utf8(file_bytes).map_err(|_| {
                     KytheError::IndexerError(format!(
                         "Failed to read file {} as UTF8 string",
-                        source_file.to_string()
+                        &info_path
                     ))
                 })?;
             } else {
-                return Err(KytheError::FileNotFoundError(source_file.to_string()));
+                return Err(KytheError::FileNotFoundError(info_path.to_string()));
             }
 
             // Add the file to the OffsetIndex
-            self.offset_index.add_file(source_file, &file_contents);
+            self.offset_index.add_file(&info_path, &file_contents);
 
             // Create text fact
             self.emitter.emit_fact(&vname, "/kythe/text", file_contents.into_bytes())?;
@@ -659,22 +667,23 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         }
 
         // Calculate the byte_start and byte_end using the OffsetIndex
+        let file_name = def.span.file_name.to_str().unwrap();
         let byte_start = self
             .offset_index
-            .get_byte_offset(file_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .get_byte_offset(file_name, def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get starting offset for definition {:?}",
-                    def.id
+                    "Failed to get starting offset for definition {}, {:?}",
+                    file_name, def.id
                 ))
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(file_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .get_byte_offset(file_name, def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get ending offset for definition {:?}",
-                    def.id
+                    "Failed to get ending offset for definition {}, {:?}",
+                    file_name, def.id
                 ))
             })?;
 
