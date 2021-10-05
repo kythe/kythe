@@ -120,7 +120,7 @@ impl<'a> UnitAnalyzer<'a> {
         // https://kythe.io/docs/schema/#file
         for required_input in self.unit.get_required_input() {
             let info_path = required_input.get_info().get_path();
-            let vname_result = self.get_file_vname(&info_path);
+            let vname_result = self.get_file_vname(info_path);
 
             // Generated files won't have a file vname returned
             if vname_result.is_err() {
@@ -156,7 +156,7 @@ impl<'a> UnitAnalyzer<'a> {
             }
 
             // Add the file to the OffsetIndex
-            self.offset_index.add_file(&info_path, &file_contents);
+            self.offset_index.add_file(info_path, &file_contents);
 
             // Create text fact
             self.emitter.emit_fact(&vname, "/kythe/text", file_contents.into_bytes())?;
