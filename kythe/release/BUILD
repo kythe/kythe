@@ -7,6 +7,7 @@ docker_build(
     data = [
         "kythe.sh",
         "maven_extractor.sh",
+        "rust_extractor.sh",
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/go/indexer/cmd/go_indexer",
         "//kythe/go/platform/tools/dedup_stream",

@@ -154,6 +154,11 @@ filegroup(
     srcs = ["extractors/bazel_rust_extractor"],
 )
 
+filegroup(
+    name = "bazel_rust_extractor_script",
+    srcs = ["rust_extractor.sh"],
+)
+
 extractor_action(
     name = "extract_kzip_cxx",
     args = [
@@ -249,7 +254,7 @@ extractor_action(
         "--vnames_config=$(location :vnames_config)",
     ],
     data = [":vnames_config"],
-    extractor = ":bazel_rust_extractor",
+    extractor = ":bazel_rust_extractor_script",
     mnemonics = [
         "Rustc",
     ],
