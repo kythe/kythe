@@ -42,9 +42,7 @@ fn main() -> Result<()> {
     let tmp_path_arg = {
         if let Some(arg) = matches.value_of("tmp_directory") {
             let path = PathBuf::new().join(arg);
-            if !path.is_dir() {
-                panic!("tmp_directory argument \"{}\" does not exist", arg);
-            }
+            assert!(path.is_dir(), "tmp_directory argument \"{}\" does not exist", arg);
             path
         } else {
             std::env::temp_dir()
