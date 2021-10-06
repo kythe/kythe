@@ -96,8 +96,8 @@ impl<'a> UnitAnalyzer<'a> {
         let mut file_digests = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
+            let path = required_input.get_info().get_path().to_owned();
             let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
-            let path = storage_vname.get_path().to_owned();
             file_vnames.insert(path.clone(), storage_vname);
             file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
         }
@@ -659,22 +659,23 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         }
 
         // Calculate the byte_start and byte_end using the OffsetIndex
+        let file_name = def.span.file_name.to_str().unwrap();
         let byte_start = self
             .offset_index
-            .get_byte_offset(file_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .get_byte_offset(file_name, def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get starting offset for definition {:?}",
-                    def.id
+                    "Failed to get starting offset for definition {}, {:?}",
+                    file_name, def.id
                 ))
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(file_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .get_byte_offset(file_name, def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get ending offset for definition {:?}",
-                    def.id
+                    "Failed to get ending offset for definition {}, {:?}",
+                    file_name, def.id
                 ))
             })?;
 
