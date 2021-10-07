@@ -7,7 +7,6 @@ docker_build(
     data = [
         "kythe.sh",
         "maven_extractor.sh",
-        "rust_extractor.sh",
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/go/indexer/cmd/go_indexer",
         "//kythe/go/platform/tools/dedup_stream",
@@ -38,6 +37,7 @@ genrule(
         ":bazel_jvm_extractor",
         ":bazel_proto_extractor",
         ":bazel_rust_extractor",
+        ":bazel_rust_extractor_script",
         ":javac_extractor",
         ":javac_wrapper",
         ":cc_proto_metadata_plugin",
@@ -88,6 +88,7 @@ genrule(
         "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location bazel_rust_extractor) extractors/bazel_rust_extractor",
+        "--cp $(location bazel_rust_extractor_script) extractors/bazel_rust_extractor_script.sh",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location fuchsia_rust_extractor) extractors/fuchsia_rust_extractor",
         "--cp $(location @maven//:org_apache_tomcat_tomcat_annotations_api) jsr250-api-1.0.jar",
@@ -257,6 +258,11 @@ filegroup(
 filegroup(
     name = "rust_indexer",
     srcs = ["//kythe/rust/indexer:bazel_indexer"],
+)
+
+filegroup(
+    name = "bazel_rust_extractor_script",
+    srcs = [":bazel_rust_extractor_script.sh"],
 )
 
 filegroup(

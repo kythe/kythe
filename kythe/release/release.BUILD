@@ -156,7 +156,7 @@ filegroup(
 
 filegroup(
     name = "bazel_rust_extractor_script",
-    srcs = ["rust_extractor.sh"],
+    srcs = ["extractors/bazel_rust_extractor_script.sh"],
 )
 
 extractor_action(
@@ -253,7 +253,11 @@ extractor_action(
         "--output=$(output $(ACTION_ID).rust.kzip)",
         "--vnames_config=$(location :vnames_config)",
     ],
-    data = [":vnames_config"],
+    data = [
+        ":bazel_rust_extractor",
+        ":vnames_config",
+        "@rust_linux_x86_64//:rustc_lib",
+    ],
     extractor = ":bazel_rust_extractor_script",
     mnemonics = [
         "Rustc",

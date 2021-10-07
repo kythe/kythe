@@ -13,12 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The base bazel directory name is based of the workspace name
-DIRNAME="$(dirname)"
-WORKSPACE_NAME="$(basename "$DIRNAME")"
-
 # Add the Rust compiler shared library path
-LIBRARY_DIR="bazel-$WORKSPACE_NAME/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+LIBRARY_DIR="external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$LIBRARY_DIR"
 
-exec "extractors/bazel_rust_extractor" "$@"
+exec external/kythe_release/extractors/bazel_rust_extractor "$@"
