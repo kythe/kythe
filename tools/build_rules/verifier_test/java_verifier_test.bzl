@@ -121,10 +121,6 @@ java_extract_kzip = rule(
         "deps": attr.label_list(
             providers = [JavaInfo],
         ),
-        "_host_javabase": attr.label(
-            cfg = "host",
-            default = Label("@bazel_tools//tools/jdk:current_host_java_runtime"),
-        ),
         "_java_toolchain": attr.label(
             default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
         ),
