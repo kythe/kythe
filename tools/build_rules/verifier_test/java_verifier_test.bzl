@@ -66,12 +66,10 @@ def _java_extract_kzip_impl(ctx):
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
 
     java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
-    host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
         java_toolchain = java_toolchain,
-        host_javabase = host_javabase,
         source_jars = srcjars,
         source_files = srcs,
         output = jar,
@@ -122,10 +120,6 @@ java_extract_kzip = rule(
         ),
         "deps": attr.label_list(
             providers = [JavaInfo],
-        ),
-        "_host_javabase": attr.label(
-            cfg = "host",
-            default = Label("@bazel_tools//tools/jdk:current_host_java_runtime"),
         ),
         "_java_toolchain": attr.label(
             default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
