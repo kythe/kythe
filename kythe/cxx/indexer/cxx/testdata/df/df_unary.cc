@@ -16,7 +16,7 @@ void f() {
     //- VarX influences VarX
     //- !{ @x ref/writes VarX }
     //- !{ @z ref/writes VarZ }
-    //- !{ @y ref VarY }
+    //- // !{ @y ref VarY } todo(zarko): transitional change.
     //- @z ref VarZ
     //- @x ref VarX
     //- @y ref/writes VarY
