@@ -99,8 +99,8 @@ absl::Status WriteMessageAsJsonToStringInternal(
       resolver.get(), message.GetDescriptor()->full_name(),
       message.SerializeAsString(), out, options);
   if (!status.ok()) {
-    return absl::Status(static_cast<absl::StatusCode>(status.error_code()),
-                        std::string(status.error_message()));
+    return absl::Status(static_cast<absl::StatusCode>(status.code()),
+                        std::string(status.message()));
   }
   return absl::OkStatus();
 }
@@ -207,8 +207,8 @@ absl::Status ParseFromJsonStream(
       options);
 
   if (!status.ok()) {
-    return absl::Status(static_cast<absl::StatusCode>(status.error_code()),
-                        std::string(status.error_message()));
+    return absl::Status(static_cast<absl::StatusCode>(status.code()),
+                        std::string(status.message()));
   }
   if (!message->ParseFromString(binary)) {
     return absl::InvalidArgumentError(
