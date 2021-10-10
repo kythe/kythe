@@ -6,7 +6,7 @@ void fn() {
 
   //- @Message ref CxxMessage
   Message msg;
-  //- @set_string_field ref CxxSetStringField
+  //- @set_string_field ref CxxSetStringFieldTapp
   msg.set_string_field("value");
   //- @string_field ref CxxGetStringField
   msg.string_field();
@@ -17,7 +17,7 @@ void fn() {
 
   //- @NestedMessage ref CxxNestedMessage
   Message::NestedMessage nested;
-  //- @set_nested_string ref CxxSetNestedStringField
+  //- @set_nested_string ref CxxSetNestedStringFieldTapp
   nested.set_nested_string("value");
   //- @nested_string ref CxxGetNestedStringField
   nested.nested_string();
@@ -36,21 +36,30 @@ void fn() {
   msg.clear_oneof_field();
   //- @oneof_field_case ref CxxOneofFieldCase
   msg.oneof_field_case();
-  //- @set_oneof_string ref CxxSetOneofString
+  //- @set_oneof_string ref CxxSetOneofStringTapp
   msg.set_oneof_string("hello");
 }
 //- Message generates CxxMessage
-//- StringField generates CxxSetStringField
+//- CxxSetStringFieldTapp param.0 CxxSetStringFieldAbs
+//- CxxSetStringFieldAbsBindingAnchor defines/binding CxxSetStringFieldAbs
+//- CxxSetStringFieldAbsBindingAnchor completes/uniquely SetStringFieldAbs
+//- StringField generates SetStringFieldAbs
 //- StringField generates CxxGetStringField
 //- Int32Field generates CxxSetInt32Field
 //- Int32Field generates CxxGetInt32Field
 //- NestedMessageField generates CxxSetNestedMessageField
 //- NestedMessageField generates CxxGetNestedMessageField
 //- NestedMessage generates CxxNestedMessage
-//- NestedString generates CxxSetNestedStringField
+//- CxxSetNestedStringFieldTapp param.0 CxxSetNestedStringFieldAbs
+//- CxxSetNestedStringFieldAbsBindingAnchor defines/binding CxxSetNestedStringFieldAbs
+//- CxxSetNestedStringFieldAbsBindingAnchor completes/uniquely SetNestedStringFieldAbs
+//- NestedString generates SetNestedStringFieldAbs
 //- NestedString generates CxxGetNestedStringField
 //- NestedBool generates CxxSetNestedBoolField
 //- NestedBool generates CxxGetNestedBoolField
 //- OneofField generates CxxOneofFieldCase
 //- OneofField generates CxxClearOneofField
-//- OneofString generates CxxSetOneofString
+//- CxxSetOneofStringTapp param.0 CxxSetOneofStringAbs
+//- CxxSetOneofStringAbsBindingAnchor defines/binding CxxSetOneofStringAbs
+//- CxxSetOneofStringAbsBindingAnchor completes/uniquely SetOneofStringAbs
+//- OneofString generates SetOneofStringAbs
