@@ -38,7 +38,9 @@ pub struct RawRule {
 impl RawRule {
     /// Process a RawRule into a VNameRule
     pub fn process(&self) -> VNameRule {
-        let r = Regex::new(&self.pattern).unwrap();
+        // Enclose the raw pattern in an explicitly-anchored non-capturing group
+        // to mirror the expected RE2::FullMatch semantics.
+        let r = Regex::new(format!(r"\A(?:{})\z", &self.pattern).as_ref()).unwrap();
 
         let corpus_pattern = Self::convert_vname_pattern(&self.vname.corpus);
         let root_pattern = Self::convert_vname_pattern(&self.vname.root);
