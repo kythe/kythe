@@ -8,6 +8,7 @@ java_library(
         "Nodes.java",
         ":schema_index",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/proto:internal_java_proto",

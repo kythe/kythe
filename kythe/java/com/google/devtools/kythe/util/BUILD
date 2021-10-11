@@ -17,6 +17,7 @@ java_library(
 java_library(
     name = "normalizer",
     srcs = ["Normalizer.java"],
+    visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:common_java_proto",
         "//kythe/proto:serving_java_proto",

@@ -1,6 +1,6 @@
 load("//tools:build_rules/shims.bzl", "go_binary")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 go_binary(
     name = "dedup_stream",
