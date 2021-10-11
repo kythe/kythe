@@ -40,7 +40,7 @@
     }
   },
   {
-    "pattern": "/(.*)",
+    "pattern": "^/(.*)",
     "vname": {
       "corpus": "CORPUS",
       "root": "/",
