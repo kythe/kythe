@@ -504,6 +504,7 @@ go_kythe_proto(
 java_proto_library(
     name = "serving_java_proto",
     deps = [":serving_proto"],
+    visibility = ["//visibility:public"],
 )
 
 proto_library(

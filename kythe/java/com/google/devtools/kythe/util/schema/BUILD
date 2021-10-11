@@ -16,6 +16,7 @@ java_library(
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
+    visibility = ["//visibility:public"],
 )
 
 genrule(

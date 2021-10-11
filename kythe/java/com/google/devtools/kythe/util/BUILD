@@ -22,6 +22,7 @@ java_library(
         "//kythe/proto:serving_java_proto",
         "@com_google_protobuf//:protobuf_java",
     ],
+    visibility = ["//visibility:public"],
 )
 
 # N.B. This package is given proto visibility although it is not a proto,
