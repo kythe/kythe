@@ -17,12 +17,12 @@ java_library(
 java_library(
     name = "normalizer",
     srcs = ["Normalizer.java"],
+    visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:common_java_proto",
         "//kythe/proto:serving_java_proto",
         "@com_google_protobuf//:protobuf_java",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # N.B. This package is given proto visibility although it is not a proto,
