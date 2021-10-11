@@ -3,7 +3,7 @@ tasks:
   ubuntu_2004:
     platform: ubuntu2004
     shell_commands:
-      - apt-get -y install bison flex uuid-dev asciidoc graphviz source-highlight
+      - "sudo apt-get -y install bison flex uuid-dev asciidoc graphviz source-highlight"
     build_targets:
       - "//kythe/..."
     test_targets:
