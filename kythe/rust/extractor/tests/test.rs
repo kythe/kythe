@@ -111,3 +111,14 @@ fn test_vname_translation() {
     assert_eq!(vname_2.get_root(), "rust_test".to_string());
     assert_eq!(vname_2.get_path(), "vname_rules/lib.rs".to_string());
 }
+
+#[test]
+fn test_patterns_are_anchored() {
+    let rule = vname_util::RawRule {
+        pattern: "/absolute/path".to_string(),
+        vname: vname_util::RawRulePatterns { corpus: None, root: None, path: None },
+    }
+    .process();
+    assert!(rule.matches("/absolute/path"));
+    assert!(!rule.matches("sub/absolute/path"));
+}
