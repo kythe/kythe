@@ -141,10 +141,10 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "43d6991c2a4cc2ac374e68c029634f2b59ffdfdf",
+        commit = "40d85f16c45e09c1e280bcb8e63342392036f1eb",
         name = "llvm-project-raw",
         build_file_content = "#empty",
-        sha256 = "64893db02cecbb33e888f9801ea370b99e331e27c8e3f20b122381def7839092",
+        sha256 = "938127d27b04c2fcff4814075771e2e434eb5e20a8b6935e0141454effaf6be7",
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
     )
