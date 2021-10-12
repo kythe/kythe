@@ -42,6 +42,7 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/cxx_details.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include "re2/re2.h"
@@ -144,7 +145,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       }
       HeaderSearch.ClearFileInfo();
       HeaderSearch.SetSearchPaths(Lookups, HeaderConfig.angled_dir_idx,
-                                  HeaderConfig.system_dir_idx, false);
+                                  HeaderConfig.system_dir_idx, false,
+                                  llvm::DenseMap<unsigned, unsigned>());
       HeaderSearch.SetSystemHeaderPrefixes(HeaderConfig.system_prefixes);
     }
     if (Observer) {
