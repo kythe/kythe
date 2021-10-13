@@ -743,7 +743,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 )?;
                 continue;
             }
-            reference_vname.set_path(span.file_name.to_str().unwrap().to_string());
+            reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
             // Get byte span
             let start_byte_option = self.offset_index.get_byte_offset(
