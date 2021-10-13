@@ -725,7 +725,25 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         for reference in &analysis.refs {
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
-            reference_vname.set_path(span.file_name.to_str().unwrap().to_string());
+
+            // Create VName for target of reference
+            let mut target_vname = template_vname.clone();
+            target_vname
+                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
+            target_vname.set_language("rust".to_string());
+
+            // Create VName for the reference node
+            let file_vname = self.file_vnames.get(span.file_name.to_str().unwrap());
+            if file_vname.is_none() {
+                self.emitter.emit_diagnostic(
+                    &target_vname,
+                    "Failed to get file VName for reference",
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
+                    None,
+                )?;
+                continue;
+            }
+            reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
             // Get byte span
             let start_byte_option = self.offset_index.get_byte_offset(
@@ -758,22 +776,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             // Create signature based on span
             reference_vname
                 .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
-
-            // Create VName being referenced
-            let krate_id = self.krate_ids.get(&reference.ref_id.krate).ok_or_else(|| {
-                KytheError::IndexerError(format!(
-                    "Failed to get krate disambiguator for reference {:?}",
-                    reference
-                ))
-            })?;
-            let krate_signature = format!(
-                "{}_{}_{}",
-                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-            );
-            let mut target_vname = template_vname.clone();
-            target_vname
-                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
-            target_vname.set_language("rust".to_string());
 
             self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
         }
