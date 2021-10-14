@@ -129,6 +129,9 @@ impl<'a> UnitAnalyzer<'a> {
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
 
+            // Create language fact
+            self.emitter.emit_fact(&vname, "/kythe/language", b"rust".to_vec())?;
+
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
             let file_contents: String;
