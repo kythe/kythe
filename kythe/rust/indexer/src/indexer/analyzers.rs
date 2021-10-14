@@ -126,8 +126,9 @@ impl<'a> UnitAnalyzer<'a> {
             }
             let mut vname = vname_result.unwrap();
 
-            // Remove the language field from the VName
+            // Remove the language and signature fields from the VName
             vname.clear_language();
+            vname.clear_signature();
 
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
