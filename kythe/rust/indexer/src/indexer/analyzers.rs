@@ -124,7 +124,10 @@ impl<'a> UnitAnalyzer<'a> {
             if vname_result.is_err() {
                 continue;
             }
-            let vname = vname_result.unwrap();
+            let mut vname = vname_result.unwrap();
+
+            // Remove the language field from the VName
+            vname.clear_language();
 
             // Create the file node fact
             self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
@@ -430,6 +433,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(&format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
                     None
                 )?;
+                eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname);
             }
         }
 
@@ -525,6 +529,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                             Some("Failed to generate cross reference because the parent could not be found"),
                             None
                         )?;
+                        eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the parent could not be found", def.qualname);
                     }
                 }
             }
@@ -741,6 +746,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
                     None,
                 )?;
+                eprintln!("Failed to get file VName for reference: The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap());
                 continue;
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
