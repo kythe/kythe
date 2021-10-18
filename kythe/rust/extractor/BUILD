@@ -90,8 +90,8 @@ rust_binary(
         "//kythe/rust/cargo:tempdir",
         "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
-        "//tools/rust/runfiles",
         "@rules_rust//proto/raze:protobuf",
+        "@rules_rust//tools/runfiles",
     ],
 )
 
