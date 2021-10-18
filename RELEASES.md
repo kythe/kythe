@@ -1,5 +1,9 @@
 # Release Notes
 
+## [v0.0.55] - 2021-10-18
+
+* Fixes an issue with the Bazel Rust extractor
+
 ## [v0.0.54] - 2021-10-04
 
 fuchsia_extractor has been updated to no longer include .rlib files
@@ -1211,7 +1215,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.54...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.55...HEAD
+[v0.0.55] https://github.com/kythe/kythe/compare/v0.0.54...v0.0.55
 [v0.0.54] https://github.com/kythe/kythe/compare/v0.0.53...v0.0.54
 [v0.0.53] https://github.com/kythe/kythe/compare/v0.0.52...v0.0.53
 [v0.0.52] https://github.com/kythe/kythe/compare/v0.0.51...v0.0.52
