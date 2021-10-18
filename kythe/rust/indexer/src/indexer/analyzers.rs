@@ -747,7 +747,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
                     None,
                 )?;
-                eprintln!("Failed to get file VName for reference: The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap());
                 continue;
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
