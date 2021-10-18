@@ -21,33 +21,10 @@ pub struct Runfiles {
 
 impl Runfiles {
     pub fn create() -> std::io::Result<Self> {
-        let executable_path = std::env::current_exe()?.canonicalize()?;
-        // Unwrap is okay because we know the executable path is a file path
-        let executable_name_os_str = executable_path.file_name().unwrap();
-        // OsStr -> Cow<'_, str> -> String
-        let executable_name = executable_name_os_str.to_string_lossy().to_string();
-
-        // See if there is an ${executable_path}.runfiles directory
-        // If so, that's the runfiles directory
-        let local_path = executable_path.with_file_name(format!("{}.runfiles/", executable_name));
-        if local_path.exists() {
-            return Ok(Self { runfiles_path: local_path });
-        } else {
-            // We are probably a test binary and the runfiles directory is one of the parent
-            // folders
-            let mut current_path = executable_path;
-            while current_path.pop() {
-                if let Some(dir_name_os) = current_path.file_name() {
-                    let dir_name = dir_name_os.to_string_lossy();
-                    if dir_name.ends_with(".runfiles") {
-                        return Ok(Self { runfiles_path: current_path });
-                    }
-                } else {
-                    break;
-                }
-            }
+        match std::env::var("RUNFILES_DIR") {
+            Ok(p) => Ok(Self { runfiles_path: PathBuf::from(p) }),
+            Err(_) => Err(Error::new(ErrorKind::NotFound, "Failed to find runfiles directory")),
         }
-        Err(Error::new(ErrorKind::NotFound, "Failed to find runfiles directory"))
     }
 
     /// Returns the full path of a file inside the runfiles directory
