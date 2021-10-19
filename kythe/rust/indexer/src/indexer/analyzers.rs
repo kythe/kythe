@@ -82,7 +82,7 @@ pub struct MethodImpl {
 }
 
 /// A struct containing byte offsets for xrefs
-struct ByteOffsets {
+pub struct ByteSpan {
     pub start_byte: u32,
     pub end_byte: u32,
 }
@@ -266,9 +266,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Given a signature, generates a VName for a crate based on the VName of
     /// the CompilationUnit
-    fn generate_crate_vname(&self, signature: &str) -> VName {
+    fn generate_crate_vname(&self, krate_id: &rls_analysis::CrateId) -> VName {
+        let signature =
+            format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
         let mut crate_v_name = self.unit_vname.clone();
-        crate_v_name.set_signature(signature.to_string());
+        crate_v_name.set_signature(signature);
         crate_v_name.set_language("rust".to_string());
         crate_v_name.clear_path();
         crate_v_name
@@ -287,9 +289,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // First emit the node for our own crate and add it to the hashmap
         let krate_id = &krate_prelude.crate_id;
-        let krate_signature =
-            format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
-        let krate_vname = self.generate_crate_vname(&krate_signature);
+        let krate_vname = self.generate_crate_vname(krate_id);
         self.krate_vname = krate_vname.clone();
         self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_id.clone());
@@ -297,11 +297,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Then, do the same for all of the external crates
         for (krate_num, external_krate) in krate_prelude.external_crates.iter().enumerate() {
             let krate_id = &external_krate.id;
-            let krate_signature = format!(
-                "{}_{}_{}",
-                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-            );
-            let krate_vname = self.generate_crate_vname(&krate_signature);
+            let krate_vname = self.generate_crate_vname(krate_id);
             self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
             self.krate_ids.insert((krate_num + 1) as u32, krate_id.clone());
         }
@@ -420,15 +416,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
 
             if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
-                let krate_signature = format!(
-                    "{}_{}_{}",
-                    krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-                );
-
                 // Generate node based on definition type
                 let mut def_vname = self.krate_vname.clone();
-                let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
-                def_vname.set_signature(def_signature.clone());
+                def_vname.set_signature(self.create_def_signature(krate_id, def.id.index));
                 def_vname.set_language("rust".to_string());
                 def_vname.clear_path();
                 self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
@@ -441,7 +431,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(&format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
                     None
                 )?;
-                eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname);
             }
         }
 
@@ -537,7 +526,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                             Some("Failed to generate cross reference because the parent could not be found"),
                             None
                         )?;
-                        eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the parent could not be found", def.qualname);
                     }
                 }
             }
@@ -597,14 +585,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                                     def.id, def.name
                                 ))
                             })?;
-                        let krate_signature = format!(
-                            "{}_{}_{}",
-                            krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
+                        vname.set_signature(
+                            self.create_def_signature(krate_id, method_impl.struct_target.index),
                         );
-                        vname.set_signature(format!(
-                            "{}_def_{}",
-                            krate_signature, &method_impl.struct_target.index
-                        ));
                         vname
                     };
                     // Emit a childof edge to the parent struct
@@ -751,42 +734,58 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
 
+            // Get the CrateId for the referenced crate
+            let krate_id_option = self.krate_ids.get(&ref_id.krate);
+            if krate_id_option.is_none() {
+                // This is a little bit of chicken and egg here. We could try
+                // and find the file vname first before the crate id, but then
+                // we wouldn't have a definition anchor to emit the diagnostic
+                // node to because we wouldn't have the crate id yet. The chance
+                // of a crate id not being in our HashMap is very low, so if this
+                // fails we just emit a diagnostic node to the first source file
+                // of the crate we are indexing
+                let file_vname = self.file_vnames.values().next().unwrap();
+                self.emitter.emit_diagnostic(
+                    file_vname,
+                    "Cross reference could not be generated",
+                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    None
+                )?;
+            }
+            let krate_id = krate_id_option.unwrap();
+
             // Create VName for target of reference
             let mut target_vname = template_vname.clone();
-            target_vname.set_signature(format!("{}_def_{}", krate_signature, ref_id.index));
+            target_vname.set_signature(self.create_def_signature(krate_id, ref_id.index));
             target_vname.set_language("rust".to_string());
 
             // Create VName for the reference node
-            let file_vname = self.file_vnames.get(span.file_name.to_str().unwrap());
+            let file_name = span.file_name.to_str().unwrap();
+            let file_vname = self.file_vnames.get(file_name);
             if file_vname.is_none() {
                 self.emitter.emit_diagnostic(
                     &target_vname,
                     "Failed to get file VName for reference",
-                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
                     None,
                 )?;
                 continue;
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            let byte_offsets_option = self.get_byte_offsets(&ref_id, span)?;
-            if byte_offsets_option.is_none() {
+            let byte_span_option = self.get_byte_span(&ref_id, span)?;
+            if byte_span_option.is_none() {
                 continue;
             }
-            let byte_offsets = byte_offsets_option.unwrap();
+            let byte_span = byte_span_option.unwrap();
 
             // Create signature based on span
             reference_vname.set_signature(format!(
                 "{}_ref_{}_{}",
-                krate_signature, byte_offsets.start_byte, byte_offsets.end_byte
+                krate_signature, byte_span.start_byte, byte_span.end_byte
             ));
 
-            self.emitter.emit_reference(
-                &reference_vname,
-                &target_vname,
-                byte_offsets.start_byte,
-                byte_offsets.end_byte,
-            )?;
+            self.emitter.emit_reference(&reference_vname, &target_vname, byte_span)?;
         }
         Ok(())
     }
@@ -805,60 +804,81 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         for reference in &analysis.refs {
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
+            let ref_id = reference.ref_id;
+
+            // Get the CrateId for the referenced crate
+            let krate_id_option = self.krate_ids.get(&ref_id.krate);
+            if krate_id_option.is_none() {
+                // This is a little bit of chicken and egg here. We could try
+                // and find the file vname first before the crate id, but then
+                // we wouldn't have a definition anchor to emit the diagnostic
+                // node to because we wouldn't have the crate id yet. The chance
+                // of a crate id not being in our HashMap is very low, so if this
+                // fails we just emit a diagnostic node to the first source file
+                // of the crate we are indexing
+                let file_vname = self.file_vnames.values().next().unwrap();
+                self.emitter.emit_diagnostic(
+                    file_vname,
+                    "Cross reference could not be generated",
+                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    None
+                )?;
+            }
+            let krate_id = krate_id_option.unwrap();
 
             // Create VName for target of reference
             let mut target_vname = template_vname.clone();
-            target_vname
-                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
+            target_vname.set_signature(self.create_def_signature(krate_id, ref_id.index));
             target_vname.set_language("rust".to_string());
 
             // Create VName for the reference node
-            let file_vname = self.file_vnames.get(span.file_name.to_str().unwrap());
+            let file_name = span.file_name.to_str().unwrap();
+            let file_vname = self.file_vnames.get(file_name);
             if file_vname.is_none() {
                 self.emitter.emit_diagnostic(
                     &target_vname,
                     "Failed to get file VName for reference",
-                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
                     None,
                 )?;
                 continue;
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            let byte_offsets_option = self.get_byte_offsets(&reference.ref_id, span)?;
-            if byte_offsets_option.is_none() {
+            let byte_span_option = self.get_byte_span(&reference.ref_id, span)?;
+            if byte_span_option.is_none() {
                 continue;
             }
-            let byte_offsets = byte_offsets_option.unwrap();
+            let byte_span = byte_span_option.unwrap();
 
             // Create signature based on span
             reference_vname.set_signature(format!(
                 "{}_ref_{}_{}",
-                krate_signature, byte_offsets.start_byte, byte_offsets.end_byte
+                krate_signature, byte_span.start_byte, byte_span.end_byte
             ));
 
-            self.emitter.emit_reference(
-                &reference_vname,
-                &target_vname,
-                byte_offsets.start_byte,
-                byte_offsets.end_byte,
-            )?;
+            self.emitter.emit_reference(&reference_vname, &target_vname, byte_span)?;
         }
         Ok(())
     }
 
-    /// Return byte offsets for a span
-    fn get_byte_offsets(
+    /// Creates a signature for a definition with the given id
+    fn create_def_signature(&self, crate_id: &rls_analysis::CrateId, index: u32) -> String {
+        let crate_signature =
+            format!("{}_{}_{}", crate_id.disambiguator.0, crate_id.disambiguator.1, crate_id.name);
+        format!("{}_def_{}", crate_signature, index)
+    }
+
+    /// Return byte span for an analysis span
+    fn get_byte_span(
         &self,
         ref_id: &rls_data::Id,
         span: &rls_data::SpanData,
-    ) -> Result<Option<ByteOffsets>, KytheError> {
+    ) -> Result<Option<ByteSpan>, KytheError> {
+        let file_name = span.file_name.to_str().unwrap();
         // Get byte span
-        let start_byte_option = self.offset_index.get_byte_offset(
-            span.file_name.to_str().unwrap(),
-            span.line_start.0,
-            span.column_start.0,
-        );
+        let start_byte_option =
+            self.offset_index.get_byte_offset(file_name, span.line_start.0, span.column_start.0);
 
         // If the start byte is none, then the save_analysis is giving information about
         // standard library files and we should skip
@@ -869,7 +889,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let start_byte = start_byte_option.unwrap();
         let end_byte = self
             .offset_index
-            .get_byte_offset(span.file_name.to_str().unwrap(), span.line_end.0, span.column_end.0)
+            .get_byte_offset(file_name, span.line_end.0, span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for reference {:?}",
@@ -877,7 +897,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 ))
             })?;
 
-        Ok(Some(ByteOffsets { start_byte, end_byte }))
+        Ok(Some(ByteSpan { start_byte, end_byte }))
     }
 }
 
