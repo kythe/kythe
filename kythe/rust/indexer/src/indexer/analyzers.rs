@@ -419,7 +419,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // Generate node based on definition type
                 let mut def_vname = self.krate_vname.clone();
                 def_vname.set_signature(self.create_def_signature(krate_id, def.id.index));
-                def_vname.set_language("rust".to_string());
                 def_vname.clear_path();
                 self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
             } else {
@@ -714,8 +713,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // We must clone to avoid double borrowing "self"
         let analysis = self.krate.analysis.clone();
 
-        let mut template_vname = self.krate_vname.clone();
-        template_vname.set_language("rust".to_string());
+        let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
 
         for reference in &analysis.imports {
@@ -729,12 +727,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 continue;
             }
 
-            let ref_id = reference.ref_id.unwrap();
-
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
 
             // Get the CrateId for the referenced crate
+            let ref_id = reference.ref_id.unwrap();
             let krate_id_option = self.krate_ids.get(&ref_id.krate);
             if krate_id_option.is_none() {
                 // This is a little bit of chicken and egg here. We could try
@@ -757,7 +754,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             // Create VName for target of reference
             let mut target_vname = template_vname.clone();
             target_vname.set_signature(self.create_def_signature(krate_id, ref_id.index));
-            target_vname.set_language("rust".to_string());
 
             // Create VName for the reference node
             let file_name = span.file_name.to_str().unwrap();
@@ -780,10 +776,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let byte_span = byte_span_option.unwrap();
 
             // Create signature based on span
-            reference_vname.set_signature(format!(
-                "{}_ref_{}_{}",
-                krate_signature, byte_span.start_byte, byte_span.end_byte
-            ));
+            reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
 
             self.emitter.emit_reference(&reference_vname, &target_vname, byte_span)?;
         }
@@ -852,10 +845,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let byte_span = byte_span_option.unwrap();
 
             // Create signature based on span
-            reference_vname.set_signature(format!(
-                "{}_ref_{}_{}",
-                krate_signature, byte_span.start_byte, byte_span.end_byte
-            ));
+            reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
 
             self.emitter.emit_reference(&reference_vname, &target_vname, byte_span)?;
         }
@@ -867,6 +857,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let crate_signature =
             format!("{}_{}_{}", crate_id.disambiguator.0, crate_id.disambiguator.1, crate_id.name);
         format!("{}_def_{}", crate_signature, index)
+    }
+
+    /// Creates a signature for a definition with the given id
+    fn create_ref_signature(&self, signature: &str, byte_span: &ByteSpan) -> String {
+        format!("{}_ref_{}_{}", signature, byte_span.start_byte, byte_span.end_byte)
     }
 
     /// Return byte span for an analysis span

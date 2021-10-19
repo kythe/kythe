@@ -15,6 +15,9 @@ mod log;
 //- @hello_world ref HelloWorldFn
 use log::hello_world;
 
+//- !{ @std defines/binding _ }
+use std::path::Path;
+
 //- @NUM defines/binding NumConst
 //- NumConst.node/kind constant
 const NUM: u32 = 0;
@@ -120,6 +123,9 @@ fn main() {
     //- @crate_import ref CrateImportMod
     //- @run_import_test ref RCIT_Fn
     crate_import::run_import_test();
+
+    // Appease the compiler so we don't get warnings
+    let _path = Path::new("/");
 }
 
 //- @crate_import defines/binding CrateImportMod
