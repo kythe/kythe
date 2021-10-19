@@ -8,8 +8,12 @@
 //- MainMod.subkind module
 //- MainMod.complete definition
 
-////- @log ref LogMod
+//- @log ref LogMod
 mod log;
+
+//- @log ref LogMod
+//- @hello_world ref HelloWorldFn
+use log::hello_world;
 
 //- @NUM defines/binding NumConst
 //- NumConst.node/kind constant
@@ -61,6 +65,13 @@ impl TestTrait for TestStruct {
     }
 }
 
+//- @crate_import_test defines/binding CrateImportTestFn
+//- CrateImportTestFn.node/kind function
+//- CrateImportTestFn.complete definition
+pub fn crate_import_test() {
+    println!("Hello, crate xrefs!");
+}
+
 fn main() {
     //- @var1 defines/binding Var1
     let var1 = 1;
@@ -99,7 +110,26 @@ fn main() {
     //- @TestStruct ref Struct
     TestStruct::hello();
 
-    ////- @log ref LogMod
+    //- @log ref LogMod
     //- @hello_world ref HelloWorldFn
     log::hello_world();
+
+    //- @hello_world ref HelloWorldFn
+    hello_world();
+
+    //- @crate_import ref CrateImportMod
+    //- @run_import_test ref RCIT_Fn
+    crate_import::run_import_test();
+}
+
+//- @crate_import defines/binding CrateImportMod
+mod crate_import {
+    //- @crate_import_test ref CrateImportTestFn
+    use crate::crate_import_test;
+
+    //- @run_import_test defines/binding RCIT_Fn
+    pub fn run_import_test() {
+        //- @crate_import_test ref CrateImportTestFn
+        crate_import_test();
+    }
 }

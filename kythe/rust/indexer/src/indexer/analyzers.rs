@@ -81,6 +81,12 @@ pub struct MethodImpl {
     pub trait_target: Option<rls_data::Id>,
 }
 
+/// A struct containing byte offsets for xrefs
+struct ByteOffsets {
+    pub start_byte: u32,
+    pub end_byte: u32,
+}
+
 impl<'a> UnitAnalyzer<'a> {
     /// Create an instance to assist in analyzing `unit`. Graph information will
     /// be written to the `writer` and source file contents will be read using
@@ -173,6 +179,7 @@ impl<'a> UnitAnalyzer<'a> {
         crate_analyzer.emit_tbuiltin_nodes()?;
         crate_analyzer.process_implementations()?;
         crate_analyzer.emit_definitions()?;
+        crate_analyzer.emit_import_xrefs()?;
         crate_analyzer.emit_xrefs()?;
         Ok(())
     }
@@ -719,6 +726,73 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         Ok(())
     }
 
+    /// Emit the Kythe edges for cross references for imports in this crate
+    pub fn emit_import_xrefs(&mut self) -> Result<(), KytheError> {
+        // We must clone to avoid double borrowing "self"
+        let analysis = self.krate.analysis.clone();
+
+        let mut template_vname = self.krate_vname.clone();
+        template_vname.set_language("rust".to_string());
+        let krate_signature = template_vname.get_signature();
+
+        for reference in &analysis.imports {
+            // If there is no reference id, we can't emit a cross reference
+            if reference.ref_id.is_none() {
+                continue;
+            }
+
+            // Currently this is only known to support `Use` ImportKinds
+            if reference.kind != rls_data::ImportKind::Use {
+                continue;
+            }
+
+            let ref_id = reference.ref_id.unwrap();
+
+            let mut reference_vname = template_vname.clone();
+            let span = &reference.span;
+
+            // Create VName for target of reference
+            let mut target_vname = template_vname.clone();
+            target_vname.set_signature(format!("{}_def_{}", krate_signature, ref_id.index));
+            target_vname.set_language("rust".to_string());
+
+            // Create VName for the reference node
+            let file_vname = self.file_vnames.get(span.file_name.to_str().unwrap());
+            if file_vname.is_none() {
+                self.emitter.emit_diagnostic(
+                    &target_vname,
+                    "Failed to get file VName for reference",
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
+                    None,
+                )?;
+                continue;
+            }
+            reference_vname.set_path(file_vname.unwrap().get_path().to_string());
+
+            let byte_offsets_option = self.get_byte_offsets(&ref_id, span)?;
+            if byte_offsets_option.is_none() {
+                continue;
+            }
+            let byte_offsets = byte_offsets_option.unwrap();
+
+            // Create signature based on span
+            reference_vname.set_signature(format!(
+                "{}_ref_{}_{}",
+                krate_signature, byte_offsets.start_byte, byte_offsets.end_byte
+            ));
+
+            self.emitter.emit_reference(
+                &reference_vname,
+                &target_vname,
+                byte_offsets.start_byte,
+                byte_offsets.end_byte,
+            )?;
+        }
+        Ok(())
+    }
+
+    // We need separate functions for import xrefs and normal xrefs due to
+    // different types being looped through
     /// Emit the Kythe edges for cross references in this crate
     pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
@@ -751,41 +825,59 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            // Get byte span
-            let start_byte_option = self.offset_index.get_byte_offset(
-                span.file_name.to_str().unwrap(),
-                span.line_start.0,
-                span.column_start.0,
-            );
-
-            // If the start byte is none, then the save_analysis is giving information about
-            // standard library files and we should skip
-            if start_byte_option.is_none() {
+            let byte_offsets_option = self.get_byte_offsets(&reference.ref_id, span)?;
+            if byte_offsets_option.is_none() {
                 continue;
             }
-
-            let start_byte = start_byte_option.unwrap();
-            let end_byte = self
-                .offset_index
-                .get_byte_offset(
-                    span.file_name.to_str().unwrap(),
-                    span.line_end.0,
-                    span.column_end.0,
-                )
-                .ok_or_else(|| {
-                    KytheError::IndexerError(format!(
-                        "Failed to get ending offset for reference {:?}",
-                        reference
-                    ))
-                })?;
+            let byte_offsets = byte_offsets_option.unwrap();
 
             // Create signature based on span
-            reference_vname
-                .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
+            reference_vname.set_signature(format!(
+                "{}_ref_{}_{}",
+                krate_signature, byte_offsets.start_byte, byte_offsets.end_byte
+            ));
 
-            self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
+            self.emitter.emit_reference(
+                &reference_vname,
+                &target_vname,
+                byte_offsets.start_byte,
+                byte_offsets.end_byte,
+            )?;
         }
         Ok(())
+    }
+
+    /// Return byte offsets for a span
+    fn get_byte_offsets(
+        &self,
+        ref_id: &rls_data::Id,
+        span: &rls_data::SpanData,
+    ) -> Result<Option<ByteOffsets>, KytheError> {
+        // Get byte span
+        let start_byte_option = self.offset_index.get_byte_offset(
+            span.file_name.to_str().unwrap(),
+            span.line_start.0,
+            span.column_start.0,
+        );
+
+        // If the start byte is none, then the save_analysis is giving information about
+        // standard library files and we should skip
+        if start_byte_option.is_none() {
+            return Ok(None);
+        }
+
+        let start_byte = start_byte_option.unwrap();
+        let end_byte = self
+            .offset_index
+            .get_byte_offset(span.file_name.to_str().unwrap(), span.line_end.0, span.column_end.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get ending offset for reference {:?}",
+                    ref_id
+                ))
+            })?;
+
+        Ok(Some(ByteOffsets { start_byte, end_byte }))
     }
 }
 
