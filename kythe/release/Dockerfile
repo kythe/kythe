@@ -45,7 +45,7 @@ RUN echo 'exec /kythe/bin/c++_indexer.bin --flush_after_each_entry --ignore_unim
 
 # Java
 ADD kythe/java/com/google/devtools/kythe/analyzers/java/indexer_deploy.jar /kythe/bin/java_indexer_deploy.jar
-ADD third_party/javac/javac-9-dev-r4023-1.jar /kythe/bin/javac9.jar
+ADD third_party/javac/javac-9+181-r4173-1.jar /kythe/bin/javac9.jar
 RUN echo 'exec java -Xbootclasspath/p:/kythe/bin/javac9.jar -jar /kythe/bin/java_indexer_deploy.jar "$@"' > /kythe/bin/java_indexer
 
 # Go
