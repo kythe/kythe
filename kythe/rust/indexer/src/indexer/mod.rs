@@ -44,7 +44,7 @@ impl<'a> KytheIndexer<'a> {
         analysis_dir: &Path,
         provider: &mut dyn FileProvider,
     ) -> Result<(), KytheError> {
-        let mut generator = UnitAnalyzer::new(unit, self.writer, provider);
+        let mut generator = UnitAnalyzer::new(unit, self.writer, provider)?;
 
         // First, create file nodes for all of the source files in the CompilationUnit
         generator.handle_files()?;

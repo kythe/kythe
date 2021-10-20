@@ -95,11 +95,20 @@ impl<'a> UnitAnalyzer<'a> {
         unit: &'a CompilationUnit,
         writer: &'a mut dyn KytheWriter,
         provider: &'a mut dyn FileProvider,
-    ) -> Self {
+    ) -> Result<Self, KytheError> {
         // Create a HashMap between the file path and the VName which we can retrieve
         // later to emit nodes and create a HashMap between a file path and its digest
         let mut file_vnames = HashMap::new();
         let mut file_digests = HashMap::new();
+        let required_inputs = unit.get_required_input();
+
+        // Check if there are no required inputs
+        if required_inputs.is_empty() {
+            return Err(KytheError::IndexerError(
+                "There are no required inputs present in the CompilationUnit".to_owned(),
+            ));
+        }
+
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
             let path = required_input.get_info().get_path().to_owned();
@@ -112,7 +121,7 @@ impl<'a> UnitAnalyzer<'a> {
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
-        Self {
+        Ok(Self {
             unit,
             unit_storage_vname,
             emitter: EntryEmitter::new(writer),
@@ -120,7 +129,7 @@ impl<'a> UnitAnalyzer<'a> {
             file_digests,
             offset_index: OffsetIndex::default(),
             provider,
-        }
+        })
     }
 
     /// Emits file nodes for all of the source files in a CompilationUnit and
@@ -719,6 +728,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 // of a crate id not being in our HashMap is very low, so if this
                 // fails we just emit a diagnostic node to the first source file
                 // of the crate we are indexing
+                // Unwrap is safe because file_vnames will never be empty
                 let file_vname = self.file_vnames.values().next().unwrap();
                 self.emitter.emit_diagnostic(
                     file_vname,
