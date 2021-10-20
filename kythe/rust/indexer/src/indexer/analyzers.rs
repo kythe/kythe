@@ -400,9 +400,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit Kythe graph information for the definitions in the crate
     pub fn emit_definitions(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let analysis = self.krate.analysis.clone();
+        let defs = self.krate.analysis.defs.clone();
 
-        for def in &analysis.defs {
+        for def in &defs {
             let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
             // save_analysis sometimes references files that we don't have as file nodes
             if file_vname.is_none() {
@@ -698,12 +698,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit the Kythe edges for cross references for imports in this crate
     pub fn emit_import_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let analysis = self.krate.analysis.clone();
+        let imports = self.krate.analysis.imports.clone();
 
         let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
 
-        for reference in &analysis.imports {
+        for reference in &imports {
             // If there is no reference id, we can't emit a cross reference
             if reference.ref_id.is_none() {
                 continue;
@@ -781,12 +781,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit the Kythe edges for cross references in this crate
     pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let analysis = self.krate.analysis.clone();
+        let refs = self.krate.analysis.refs.clone();
 
         let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
 
-        for reference in &analysis.refs {
+        for reference in &refs {
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
             let ref_id = reference.ref_id;
