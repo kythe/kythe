@@ -81,7 +81,7 @@ pub struct MethodImpl {
     pub trait_target: Option<rls_data::Id>,
 }
 
-/// A struct containing byte offsets for xrefs
+/// Represents a span within a file based on byte offets
 pub struct ByteSpan {
     pub start_byte: u32,
     pub end_byte: u32,
@@ -269,11 +269,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     fn generate_crate_vname(&self, krate_id: &rls_analysis::CrateId) -> VName {
         let signature =
             format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
-        let mut crate_v_name = self.unit_vname.clone();
-        crate_v_name.set_signature(signature);
-        crate_v_name.set_language("rust".to_string());
-        crate_v_name.clear_path();
-        crate_v_name
+        let mut krate_vname = self.unit_vname.clone();
+        krate_vname.set_signature(signature);
+        krate_vname.set_language("rust".to_string());
+        krate_vname.clear_path();
+        krate_vname
     }
 
     /// Generates and emits package nodes for the main crate and external crates
@@ -417,9 +417,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
             if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
                 // Generate node based on definition type
-                let mut def_vname = self.krate_vname.clone();
-                def_vname.set_signature(self.create_def_signature(krate_id, def.id.index));
-                def_vname.clear_path();
+                let def_vname = self.create_def_vname(krate_id, def.id.index);
                 self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
             } else {
                 // Generate a diagnostic node indicating that we couldn't find the refernced
@@ -571,10 +569,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     let parent_vname = if let Some(vname) = parent_vname_option {
                         vname.clone()
                     } else {
-                        // Create a default VName based on the krate's vname and use the target's
-                        // krate disambiguator and index to create the signature. Usually this
-                        // occurs if the save_analysis feeds us data that isn't part of our crate.
-                        let mut vname = self.krate_vname.clone();
+                        // Usually this condition occurs if the save_analysis
+                        // feeds us data that isn't part of our crate.
                         let krate_id = self
                             .krate_ids
                             .get(&method_impl.struct_target.krate)
@@ -584,10 +580,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                                     def.id, def.name
                                 ))
                             })?;
-                        vname.set_signature(
-                            self.create_def_signature(krate_id, method_impl.struct_target.index),
-                        );
-                        vname
+                        self.create_def_vname(krate_id, method_impl.struct_target.index)
                     };
                     // Emit a childof edge to the parent struct
                     self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
@@ -748,12 +741,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
                     None
                 )?;
+                continue;
             }
             let krate_id = krate_id_option.unwrap();
 
             // Create VName for target of reference
-            let mut target_vname = template_vname.clone();
-            target_vname.set_signature(self.create_def_signature(krate_id, ref_id.index));
+            let target_vname = self.create_def_vname(krate_id, ref_id.index);
 
             // Create VName for the reference node
             let file_name = span.file_name.to_str().unwrap();
@@ -790,8 +783,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // We must clone to avoid double borrowing "self"
         let analysis = self.krate.analysis.clone();
 
-        let mut template_vname = self.krate_vname.clone();
-        template_vname.set_language("rust".to_string());
+        let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
 
         for reference in &analysis.refs {
@@ -816,13 +808,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
                     None
                 )?;
+                continue;
             }
             let krate_id = krate_id_option.unwrap();
 
             // Create VName for target of reference
-            let mut target_vname = template_vname.clone();
-            target_vname.set_signature(self.create_def_signature(krate_id, ref_id.index));
-            target_vname.set_language("rust".to_string());
+            let target_vname = self.create_def_vname(krate_id, ref_id.index);
 
             // Create VName for the reference node
             let file_name = span.file_name.to_str().unwrap();
@@ -853,10 +844,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     }
 
     /// Creates a signature for a definition with the given id
-    fn create_def_signature(&self, crate_id: &rls_analysis::CrateId, index: u32) -> String {
-        let crate_signature =
-            format!("{}_{}_{}", crate_id.disambiguator.0, crate_id.disambiguator.1, crate_id.name);
-        format!("{}_def_{}", crate_signature, index)
+    fn create_def_vname(&self, crate_id: &rls_analysis::CrateId, index: u32) -> VName {
+        let mut crate_vname = self.generate_crate_vname(crate_id);
+        let crate_signature = crate_vname.get_signature().to_owned();
+        crate_vname.set_signature(format!("{}_def_{}", crate_signature, index));
+        crate_vname
     }
 
     /// Creates a signature for a definition with the given id
