@@ -1,4 +1,4 @@
-load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
 load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
 
 package(default_visibility = ["//visibility:public"])
