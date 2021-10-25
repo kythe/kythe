@@ -1,4 +1,4 @@
-load("@rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_clippy")
 
 package(default_visibility = ["//visibility:public"])
 
