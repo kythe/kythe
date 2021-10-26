@@ -158,7 +158,7 @@ impl<'a> UnitAnalyzer<'a> {
                 file_contents = String::from_utf8(file_bytes).map_err(|_| {
                     KytheError::IndexerError(format!(
                         "Failed to read file {} as UTF8 string",
-                        source_file.to_string()
+                        source_file
                     ))
                 })?;
             } else {
