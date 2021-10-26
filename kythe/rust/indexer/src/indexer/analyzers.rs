@@ -747,13 +747,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let file_name = span.file_name.to_str().unwrap();
             let file_vname = self.file_vnames.get(file_name);
             if file_vname.is_none() {
-                // Convert the definition VName to an anchor vname
-                let definition_signature = definition_vname.get_signature().to_owned();
-                let anchor_signature = format!("{}_anchor", definition_signature);
-                let mut anchor_vname = definition_vname.clone();
-                anchor_vname.set_signature(anchor_signature);
+                // Emit a diagostic node to the top level file for the current crate
+                let file_vname = self.file_vnames.values().next().unwrap();
                 self.emitter.emit_diagnostic(
-                    &anchor_vname,
+                    file_vname,
                     "Failed to get file VName for reference",
                     Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
                     None,
