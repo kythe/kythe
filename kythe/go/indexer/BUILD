@@ -239,6 +239,28 @@ empty_corpus_test(
     entries = ":tappcorpus_test_entries.entries.gz",
 )
 
+go_indexer_test(
+    name = "stdlibimport_test",
+    srcs = ["testdata/basic/stdlibimport.go"],
+    extra_extractor_args = [
+        "--use_default_corpus_for_stdlib",
+        "--corpus=kythe",
+    ],
+    use_compilation_corpus_as_default = True,
+)
+
+# Test that extracting and indexing a go package that imports standard libraries
+# does not contain entries in the "golang.org" corpus when
+# --use_default_corpus_for_stdlib is enabled.
+empty_corpus_test(
+    name = "stdlibimport_corpus_test",
+    allowed_corpora = [
+        "kythe",
+        "golang.org",  # TODO(justbuchanan): modify the indexer to emit these in the main corpus instead
+    ],
+    entries = ":stdlibimport_test_entries.entries.gz",
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(
