@@ -215,6 +215,45 @@ var infoTests = []struct {
 			CriticalKzipErrors: []string{"unable to determine corpus for required_input \"file1.py\" in CU language:\"python\""},
 		},
 	},
+
+	// kzip info checks that each source file has a corresponding required_input
+	// entry. This test case checks that the required_input path is normalized
+	// before doing the check.
+	{
+		&apb.CompilationUnit{
+			VName: &spb.VName{Language: "c++"},
+			RequiredInput: []*apb.CompilationUnit_FileInput{
+				{
+					VName: &spb.VName{
+						Language: "c++",
+						Corpus:   "kythe",
+						Path:     "kythe/cxx/verifier/parser.yy.cc",
+						Root:     "bazel-out/bin",
+					},
+					Info: &apb.FileInfo{
+						Path: "bazel-out/k8-fastbuild/bin/kythe/cxx/verifier/../../../../../../bazel-out/k8-fastbuild/bin/kythe/cxx/verifier/parser.yy.cc",
+					},
+				},
+			},
+			SourceFile: []string{"bazel-out/k8-fastbuild/bin/kythe/cxx/verifier/parser.yy.cc"},
+		},
+		&apb.KzipInfo{
+			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
+				"kythe": {
+					LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+						"c++": {
+							Count: 1,
+						},
+					},
+					LanguageSources: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+						"c++": {
+							Count: 1,
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestInfo(t *testing.T) {
