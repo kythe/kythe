@@ -81,6 +81,12 @@ pub struct MethodImpl {
     pub trait_target: Option<rls_data::Id>,
 }
 
+/// Represents a span within a file based on byte offets
+pub struct ByteSpan {
+    pub start_byte: u32,
+    pub end_byte: u32,
+}
+
 impl<'a> UnitAnalyzer<'a> {
     /// Create an instance to assist in analyzing `unit`. Graph information will
     /// be written to the `writer` and source file contents will be read using
@@ -89,21 +95,33 @@ impl<'a> UnitAnalyzer<'a> {
         unit: &'a CompilationUnit,
         writer: &'a mut dyn KytheWriter,
         provider: &'a mut dyn FileProvider,
-    ) -> Self {
+    ) -> Result<Self, KytheError> {
         // Create a HashMap between the file path and the VName which we can retrieve
         // later to emit nodes and create a HashMap between a file path and its digest
         let mut file_vnames = HashMap::new();
         let mut file_digests = HashMap::new();
+        let required_inputs = unit.get_required_input();
+
+        // Check if there are no required inputs
+        if required_inputs.is_empty() {
+            return Err(KytheError::IndexerError(
+                "There are no required inputs present in the CompilationUnit".to_owned(),
+            ));
+        }
+
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
             let path = required_input.get_info().get_path().to_owned();
-            let storage_vname: VName = analysis_to_storage_vname(analysis_vname);
+            let mut storage_vname: VName = analysis_to_storage_vname(analysis_vname);
+            // Remove the language and signature fields from the VName
+            storage_vname.clear_language();
+            storage_vname.clear_signature();
             file_vnames.insert(path.clone(), storage_vname);
             file_digests.insert(path.clone(), required_input.get_info().get_digest().to_string());
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(unit.get_v_name());
-        Self {
+        Ok(Self {
             unit,
             unit_storage_vname,
             emitter: EntryEmitter::new(writer),
@@ -111,7 +129,7 @@ impl<'a> UnitAnalyzer<'a> {
             file_digests,
             offset_index: OffsetIndex::default(),
             provider,
-        }
+        })
     }
 
     /// Emits file nodes for all of the source files in a CompilationUnit and
@@ -119,22 +137,18 @@ impl<'a> UnitAnalyzer<'a> {
     pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
         for source_file in self.unit.get_source_file() {
-            let vname_result = self.get_file_vname(source_file);
+            let vname_result = self.file_vnames.get(source_file);
             // Generated files won't have a file vname returned
-            if vname_result.is_err() {
+            if vname_result.is_none() {
                 continue;
             }
-            let mut vname = vname_result.unwrap();
-
-            // Remove the language and signature fields from the VName
-            vname.clear_language();
-            vname.clear_signature();
+            let vname = vname_result.unwrap();
 
             // Create the file node fact
-            self.emitter.emit_fact(&vname, "/kythe/node/kind", b"file".to_vec())?;
+            self.emitter.emit_fact(vname, "/kythe/node/kind", b"file".to_vec())?;
 
             // Create language fact
-            self.emitter.emit_fact(&vname, "/kythe/language", b"rust".to_vec())?;
+            self.emitter.emit_fact(vname, "/kythe/language", b"rust".to_vec())?;
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
@@ -155,7 +169,7 @@ impl<'a> UnitAnalyzer<'a> {
             self.offset_index.add_file(source_file, &file_contents);
 
             // Create text fact
-            self.emitter.emit_fact(&vname, "/kythe/text", file_contents.into_bytes())?;
+            self.emitter.emit_fact(vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -173,22 +187,9 @@ impl<'a> UnitAnalyzer<'a> {
         crate_analyzer.emit_tbuiltin_nodes()?;
         crate_analyzer.process_implementations()?;
         crate_analyzer.emit_definitions()?;
+        crate_analyzer.emit_import_xrefs()?;
         crate_analyzer.emit_xrefs()?;
         Ok(())
-    }
-
-    /// Given a file name, returns a [Result] with the file's VName from the
-    /// Compilation Unit.
-    ///
-    /// # Errors
-    /// If the file name isn't found, a [KytheError::IndexerError] is returned.
-    fn get_file_vname(&mut self, file_name: &str) -> Result<VName, KytheError> {
-        let err_msg = format!(
-            "Failed to find VName for file \"{}\" located in the save analysis. Is it included in the required inputs of the Compilation Unit?",
-            file_name
-        );
-        let vname = self.file_vnames.get(file_name).ok_or(KytheError::IndexerError(err_msg))?;
-        Ok(vname.clone())
     }
 }
 
@@ -259,12 +260,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Given a signature, generates a VName for a crate based on the VName of
     /// the CompilationUnit
-    fn generate_crate_vname(&self, signature: &str) -> VName {
-        let mut crate_v_name = self.unit_vname.clone();
-        crate_v_name.set_signature(signature.to_string());
-        crate_v_name.set_language("rust".to_string());
-        crate_v_name.clear_path();
-        crate_v_name
+    fn generate_crate_vname(&self, krate_id: &rls_analysis::CrateId) -> VName {
+        let signature =
+            format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
+        let mut krate_vname = self.unit_vname.clone();
+        krate_vname.set_signature(signature);
+        krate_vname.set_language("rust".to_owned());
+        krate_vname.clear_path();
+        krate_vname
     }
 
     /// Generates and emits package nodes for the main crate and external crates
@@ -280,9 +283,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // First emit the node for our own crate and add it to the hashmap
         let krate_id = &krate_prelude.crate_id;
-        let krate_signature =
-            format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
-        let krate_vname = self.generate_crate_vname(&krate_signature);
+        let krate_vname = self.generate_crate_vname(krate_id);
         self.krate_vname = krate_vname.clone();
         self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_id.clone());
@@ -290,11 +291,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Then, do the same for all of the external crates
         for (krate_num, external_krate) in krate_prelude.external_crates.iter().enumerate() {
             let krate_id = &external_krate.id;
-            let krate_signature = format!(
-                "{}_{}_{}",
-                krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-            );
-            let krate_vname = self.generate_crate_vname(&krate_signature);
+            let krate_vname = self.generate_crate_vname(krate_id);
             self.emitter.emit_fact(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
             self.krate_ids.insert((krate_num + 1) as u32, krate_id.clone());
         }
@@ -403,9 +400,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit Kythe graph information for the definitions in the crate
     pub fn emit_definitions(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let analysis = self.krate.analysis.clone();
+        let defs = self.krate.analysis.defs.clone();
 
-        for def in &analysis.defs {
+        for def in &defs {
             let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
             // save_analysis sometimes references files that we don't have as file nodes
             if file_vname.is_none() {
@@ -413,17 +410,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
 
             if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
-                let krate_signature = format!(
-                    "{}_{}_{}",
-                    krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-                );
-
                 // Generate node based on definition type
-                let mut def_vname = self.krate_vname.clone();
-                let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
-                def_vname.set_signature(def_signature.clone());
-                def_vname.set_language("rust".to_string());
-                def_vname.clear_path();
+                let def_vname = self.generate_def_vname(krate_id, def.id.index);
                 self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
             } else {
                 // Generate a diagnostic node indicating that we couldn't find the refernced
@@ -434,7 +422,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     Some(&format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
                     None
                 )?;
-                eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname);
             }
         }
 
@@ -530,7 +517,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                             Some("Failed to generate cross reference because the parent could not be found"),
                             None
                         )?;
-                        eprintln!("Cross reference could not be generated: Failed to generate cross reference for \"{}\" because the parent could not be found", def.qualname);
                     }
                 }
             }
@@ -572,15 +558,12 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 if let Some(method_impl) = self.method_index.remove(&def.id) {
                     // Get the vname of the parent struct
                     // Need to have the option variable to avoid multiple borrows on "self".
-                    let parent_vname_option =
-                        self.definition_vnames.get(&method_impl.struct_target);
-                    let parent_vname = if let Some(vname) = parent_vname_option {
+                    let parent_vname = self.definition_vnames.get(&method_impl.struct_target);
+                    let parent_vname = if let Some(vname) = parent_vname {
                         vname.clone()
                     } else {
-                        // Create a default VName based on the krate's vname and use the target's
-                        // krate disambiguator and index to create the signature. Usually this
-                        // occurs if the save_analysis feeds us data that isn't part of our crate.
-                        let mut vname = self.krate_vname.clone();
+                        // Usually this condition occurs if the save_analysis
+                        // feeds us data that isn't part of our crate.
                         let krate_id = self
                             .krate_ids
                             .get(&method_impl.struct_target.krate)
@@ -590,15 +573,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                                     def.id, def.name
                                 ))
                             })?;
-                        let krate_signature = format!(
-                            "{}_{}_{}",
-                            krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name
-                        );
-                        vname.set_signature(format!(
-                            "{}_def_{}",
-                            krate_signature, &method_impl.struct_target.index
-                        ));
-                        vname
+                        self.generate_def_vname(krate_id, method_impl.struct_target.index)
                     };
                     // Emit a childof edge to the parent struct
                     self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
@@ -719,73 +694,193 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         Ok(())
     }
 
-    /// Emit the Kythe edges for cross references in this crate
-    pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
+    /// Emit the Kythe edges for cross references for imports in this crate
+    pub fn emit_import_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let analysis = self.krate.analysis.clone();
+        let imports = self.krate.analysis.imports.clone();
 
-        let mut template_vname = self.krate_vname.clone();
-        template_vname.set_language("rust".to_string());
+        let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
 
-        for reference in &analysis.refs {
+        for reference in &imports {
+            // If there is no reference id, we can't emit a cross reference
+            if reference.ref_id.is_none() {
+                continue;
+            }
+
+            // Currently this is only known to support `Use` ImportKinds
+            if reference.kind != rls_data::ImportKind::Use {
+                continue;
+            }
+
             let mut reference_vname = template_vname.clone();
             let span = &reference.span;
 
+            // Get the CrateId for the referenced crate
+            let ref_id = reference.ref_id.unwrap();
+            let krate_id = self.krate_ids.get(&ref_id.krate);
+            if krate_id.is_none() {
+                // This is a little bit of chicken and egg here. We could try
+                // and find the file vname first before the crate id, but then
+                // we wouldn't have a definition anchor to emit the diagnostic
+                // node to because we wouldn't have the crate id yet. The chance
+                // of a crate id not being in our HashMap is very low, so if this
+                // fails we just emit a diagnostic node to the first source file
+                // of the crate we are indexing
+                // Unwrap is safe because file_vnames will never be empty
+                let file_vname = self.file_vnames.values().next().unwrap();
+                self.emitter.emit_diagnostic(
+                    file_vname,
+                    "Cross reference could not be generated",
+                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    None
+                )?;
+                continue;
+            }
+            let krate_id = krate_id.unwrap();
+
             // Create VName for target of reference
-            let mut target_vname = template_vname.clone();
-            target_vname
-                .set_signature(format!("{}_def_{}", krate_signature, reference.ref_id.index));
-            target_vname.set_language("rust".to_string());
+            let definition_vname = self.generate_def_vname(krate_id, ref_id.index);
 
             // Create VName for the reference node
-            let file_vname = self.file_vnames.get(span.file_name.to_str().unwrap());
+            let file_name = span.file_name.to_str().unwrap();
+            let file_vname = self.file_vnames.get(file_name);
             if file_vname.is_none() {
+                // Emit a diagostic node to the top level file for the current crate
+                let file_vname = self.file_vnames.values().next().unwrap();
                 self.emitter.emit_diagnostic(
-                    &target_vname,
+                    file_vname,
                     "Failed to get file VName for reference",
-                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", span.file_name.to_str().unwrap()).as_ref()),
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
                     None,
                 )?;
                 continue;
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            // Get byte span
-            let start_byte_option = self.offset_index.get_byte_offset(
-                span.file_name.to_str().unwrap(),
-                span.line_start.0,
-                span.column_start.0,
-            );
-
-            // If the start byte is none, then the save_analysis is giving information about
-            // standard library files and we should skip
-            if start_byte_option.is_none() {
+            let byte_span = self.get_byte_span(&ref_id, span)?;
+            if byte_span.is_none() {
                 continue;
             }
-
-            let start_byte = start_byte_option.unwrap();
-            let end_byte = self
-                .offset_index
-                .get_byte_offset(
-                    span.file_name.to_str().unwrap(),
-                    span.line_end.0,
-                    span.column_end.0,
-                )
-                .ok_or_else(|| {
-                    KytheError::IndexerError(format!(
-                        "Failed to get ending offset for reference {:?}",
-                        reference
-                    ))
-                })?;
+            let byte_span = byte_span.unwrap();
 
             // Create signature based on span
-            reference_vname
-                .set_signature(format!("{}_ref_{}_{}", krate_signature, start_byte, end_byte));
+            reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
 
-            self.emitter.emit_reference(&reference_vname, &target_vname, start_byte, end_byte)?;
+            self.emitter.emit_reference(&reference_vname, &definition_vname, byte_span)?;
         }
         Ok(())
+    }
+
+    // We need separate functions for import xrefs and normal xrefs due to
+    // different types being looped through
+    /// Emit the Kythe edges for cross references in this crate
+    pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
+        // We must clone to avoid double borrowing "self"
+        let refs = self.krate.analysis.refs.clone();
+
+        let template_vname = self.krate_vname.clone();
+        let krate_signature = template_vname.get_signature();
+
+        for reference in &refs {
+            let mut reference_vname = template_vname.clone();
+            let span = &reference.span;
+            let ref_id = reference.ref_id;
+
+            // Get the CrateId for the referenced crate
+            let krate_id = self.krate_ids.get(&ref_id.krate);
+            if krate_id.is_none() {
+                // This is a little bit of chicken and egg here. We could try
+                // and find the file vname first before the crate id, but then
+                // we wouldn't have a definition anchor to emit the diagnostic
+                // node to because we wouldn't have the crate id yet. The chance
+                // of a crate id not being in our HashMap is very low, so if this
+                // fails we just emit a diagnostic node to the first source file
+                // of the crate we are indexing
+                let file_vname = self.file_vnames.values().next().unwrap();
+                self.emitter.emit_diagnostic(
+                    file_vname,
+                    "Cross reference could not be generated",
+                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    None
+                )?;
+                continue;
+            }
+            let krate_id = krate_id.unwrap();
+
+            // Create VName for target of reference
+            let target_vname = self.generate_def_vname(krate_id, ref_id.index);
+
+            // Create VName for the reference node
+            let file_name = span.file_name.to_str().unwrap();
+            let file_vname = self.file_vnames.get(file_name);
+            if file_vname.is_none() {
+                self.emitter.emit_diagnostic(
+                    &target_vname,
+                    "Failed to get file VName for reference",
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
+                    None,
+                )?;
+                continue;
+            }
+            reference_vname.set_path(file_vname.unwrap().get_path().to_string());
+
+            let byte_span = self.get_byte_span(&reference.ref_id, span)?;
+            if byte_span.is_none() {
+                continue;
+            }
+            let byte_span = byte_span.unwrap();
+
+            // Create signature based on span
+            reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
+
+            self.emitter.emit_reference(&reference_vname, &target_vname, byte_span)?;
+        }
+        Ok(())
+    }
+
+    /// Creates a signature for a definition with the given id
+    fn create_ref_signature(&self, signature: &str, byte_span: &ByteSpan) -> String {
+        format!("{}_ref_{}_{}", signature, byte_span.start_byte, byte_span.end_byte)
+    }
+
+    /// Creates a signature for a definition with the given id
+    fn generate_def_vname(&self, crate_id: &rls_analysis::CrateId, index: u32) -> VName {
+        let mut crate_vname = self.generate_crate_vname(crate_id);
+        let crate_signature = crate_vname.get_signature().to_owned();
+        crate_vname.set_signature(format!("{}_def_{}", crate_signature, index));
+        crate_vname
+    }
+
+    /// Return byte span for an analysis span
+    fn get_byte_span(
+        &self,
+        ref_id: &rls_data::Id,
+        span: &rls_data::SpanData,
+    ) -> Result<Option<ByteSpan>, KytheError> {
+        let file_name = span.file_name.to_str().unwrap();
+        // Get byte span
+        let start_byte =
+            self.offset_index.get_byte_offset(file_name, span.line_start.0, span.column_start.0);
+
+        // If the start byte is none, then the save_analysis is giving information about
+        // standard library files and we should skip
+        if start_byte.is_none() {
+            return Ok(None);
+        }
+
+        let start_byte = start_byte.unwrap();
+        let end_byte = self
+            .offset_index
+            .get_byte_offset(file_name, span.line_end.0, span.column_end.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get ending offset for reference {:?}",
+                    ref_id
+                ))
+            })?;
+
+        Ok(Some(ByteSpan { start_byte, end_byte }))
     }
 }
 
