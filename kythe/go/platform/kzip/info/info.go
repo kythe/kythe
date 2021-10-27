@@ -70,7 +70,12 @@ func NewAccumulator(fileSize int64) *Accumulator {
 // Accumulate should be called for each unit in the kzip so its counts can be
 // recorded.
 func (a *Accumulator) Accumulate(u *kzip.Unit) {
-	srcs := stringset.New(u.Proto.SourceFile...)
+	// Set of canonicalized source file paths in the kzip
+	srcs := stringset.New()
+	for _, p := range u.Proto.SourceFile {
+		srcs.Add(filepath.Clean(p))
+	}
+
 	cuLang := u.Proto.GetVName().GetLanguage()
 	if cuLang == "" {
 		msg := fmt.Sprintf("CU does not specify a language %v", u.Proto.GetVName())
