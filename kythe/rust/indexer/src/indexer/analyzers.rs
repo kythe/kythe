@@ -265,7 +265,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             format!("{}_{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1, krate_id.name);
         let mut krate_vname = self.unit_vname.clone();
         krate_vname.set_signature(signature);
-        krate_vname.set_language("rust".to_string());
+        krate_vname.set_language("rust".to_owned());
         krate_vname.clear_path();
         krate_vname
     }
@@ -558,9 +558,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 if let Some(method_impl) = self.method_index.remove(&def.id) {
                     // Get the vname of the parent struct
                     // Need to have the option variable to avoid multiple borrows on "self".
-                    let parent_vname_option =
-                        self.definition_vnames.get(&method_impl.struct_target);
-                    let parent_vname = if let Some(vname) = parent_vname_option {
+                    let parent_vname = self.definition_vnames.get(&method_impl.struct_target);
+                    let parent_vname = if let Some(vname) = parent_vname {
                         vname.clone()
                     } else {
                         // Usually this condition occurs if the save_analysis
@@ -719,8 +718,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
             // Get the CrateId for the referenced crate
             let ref_id = reference.ref_id.unwrap();
-            let krate_id_option = self.krate_ids.get(&ref_id.krate);
-            if krate_id_option.is_none() {
+            let krate_id = self.krate_ids.get(&ref_id.krate);
+            if krate_id.is_none() {
                 // This is a little bit of chicken and egg here. We could try
                 // and find the file vname first before the crate id, but then
                 // we wouldn't have a definition anchor to emit the diagnostic
@@ -738,7 +737,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 )?;
                 continue;
             }
-            let krate_id = krate_id_option.unwrap();
+            let krate_id = krate_id.unwrap();
 
             // Create VName for target of reference
             let definition_vname = self.generate_def_vname(krate_id, ref_id.index);
@@ -759,11 +758,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            let byte_span_option = self.get_byte_span(&ref_id, span)?;
-            if byte_span_option.is_none() {
+            let byte_span = self.get_byte_span(&ref_id, span)?;
+            if byte_span.is_none() {
                 continue;
             }
-            let byte_span = byte_span_option.unwrap();
+            let byte_span = byte_span.unwrap();
 
             // Create signature based on span
             reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
@@ -789,8 +788,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let ref_id = reference.ref_id;
 
             // Get the CrateId for the referenced crate
-            let krate_id_option = self.krate_ids.get(&ref_id.krate);
-            if krate_id_option.is_none() {
+            let krate_id = self.krate_ids.get(&ref_id.krate);
+            if krate_id.is_none() {
                 // This is a little bit of chicken and egg here. We could try
                 // and find the file vname first before the crate id, but then
                 // we wouldn't have a definition anchor to emit the diagnostic
@@ -807,7 +806,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 )?;
                 continue;
             }
-            let krate_id = krate_id_option.unwrap();
+            let krate_id = krate_id.unwrap();
 
             // Create VName for target of reference
             let target_vname = self.generate_def_vname(krate_id, ref_id.index);
@@ -826,11 +825,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
-            let byte_span_option = self.get_byte_span(&reference.ref_id, span)?;
-            if byte_span_option.is_none() {
+            let byte_span = self.get_byte_span(&reference.ref_id, span)?;
+            if byte_span.is_none() {
                 continue;
             }
-            let byte_span = byte_span_option.unwrap();
+            let byte_span = byte_span.unwrap();
 
             // Create signature based on span
             reference_vname.set_signature(self.create_ref_signature(krate_signature, &byte_span));
@@ -861,16 +860,16 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     ) -> Result<Option<ByteSpan>, KytheError> {
         let file_name = span.file_name.to_str().unwrap();
         // Get byte span
-        let start_byte_option =
+        let start_byte =
             self.offset_index.get_byte_offset(file_name, span.line_start.0, span.column_start.0);
 
         // If the start byte is none, then the save_analysis is giving information about
         // standard library files and we should skip
-        if start_byte_option.is_none() {
+        if start_byte.is_none() {
             return Ok(None);
         }
 
-        let start_byte = start_byte_option.unwrap();
+        let start_byte = start_byte.unwrap();
         let end_byte = self
             .offset_index
             .get_byte_offset(file_name, span.line_end.0, span.column_end.0)
