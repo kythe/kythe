@@ -23,7 +23,7 @@ use tempdir::TempDir;
 fn empty_args_fails() {
     let args: Vec<String> = Vec::new();
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
-    let analysis_directory = PathBuf::new().join(temp_dir.path());
+    let analysis_directory = PathBuf::from(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
     assert_eq!(result.unwrap_err(), "Arguments vector should not be empty".to_string());
 }
@@ -32,7 +32,7 @@ fn empty_args_fails() {
 fn nonempty_string_first_fails() {
     let args: Vec<String> = vec!["nonempty".to_string()];
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
-    let analysis_directory = PathBuf::new().join(temp_dir.path());
+    let analysis_directory = PathBuf::from(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
     assert_eq!(result.unwrap_err(), "The first argument must be an empty string".to_string());
 }
@@ -54,7 +54,7 @@ fn correct_arguments_succeed() {
         "--crate-name=test_crate".to_string(),
         format!("--out-dir={}", temp_dir.path().to_str().unwrap()),
     ];
-    let analysis_directory = PathBuf::new().join(temp_dir.path());
+    let analysis_directory = PathBuf::from(temp_dir.path());
     let result = generate_analysis(args, analysis_directory);
     assert_eq!(result.unwrap(), (), "generate_analysis result wasn't void");
 

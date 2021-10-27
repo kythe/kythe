@@ -27,7 +27,7 @@ use std::path::PathBuf;
 fn load_analysis_works_properly() {
     // rls_analysis can't see files that are symlinks, so we must copy the test file
     // to a temporary directory for the test to properly work
-    let temp_path = PathBuf::new().join(std::env::var("TEST_TMPDIR").unwrap());
+    let temp_path = PathBuf::from(std::env::var("TEST_TMPDIR").unwrap());
     let r = Runfiles::create().unwrap();
     let path = r.rlocation("io_kythe/kythe/rust/indexer/tests/testanalysis.json");
     fs::copy(&path, temp_path.join("main.json")).expect("Couldn't copy file");
