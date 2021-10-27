@@ -48,8 +48,8 @@ pub fn parse_arguments() -> ExtractorConfig {
         )
         .get_matches();
 
-    let extra_action_path = PathBuf::new().join(matches.value_of("extra_action").unwrap());
-    let vnames_config_path = PathBuf::new().join(matches.value_of("vnames_config").unwrap());
-    let output_path = PathBuf::new().join(matches.value_of("output").unwrap());
+    let extra_action_path = PathBuf::from(matches.value_of("extra_action").unwrap());
+    let vnames_config_path = PathBuf::from(matches.value_of("vnames_config").unwrap());
+    let output_path = PathBuf::from(matches.value_of("output").unwrap());
     ExtractorConfig { extra_action_path, vnames_config_path, output_path }
 }

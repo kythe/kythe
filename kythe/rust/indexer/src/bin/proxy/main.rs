@@ -41,7 +41,7 @@ fn main() -> Result<()> {
     // Get the absolute path of the tmp_directory argument or default to /tmp
     let tmp_path_arg = {
         if let Some(arg) = matches.value_of("tmp_directory") {
-            let path = PathBuf::new().join(arg);
+            let path = PathBuf::from(arg);
             assert!(path.is_dir(), "tmp_directory argument \"{}\" does not exist", arg);
             path
         } else {
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
         // Retrieve the save_analysis file
         let analysis_temp_dir = TempDir::new_in(tmp_path_arg.clone(), "rust_indexer_tmp")
             .context("Couldn't create temporary directory")?;
-        let analysis_temp_path = PathBuf::new().join(analysis_temp_dir.path());
+        let analysis_temp_path = PathBuf::from(analysis_temp_dir.path());
         let write_res = write_analysis_to_directory(&unit, &analysis_temp_path, &mut file_provider);
         if write_res.is_err() {
             send_done(false, write_res.err().unwrap().to_string())?;
@@ -91,7 +91,7 @@ pub fn write_analysis_to_directory(
 ) -> std::result::Result<(), KytheError> {
     for required_input in c_unit.get_required_input() {
         let input_path = required_input.get_info().get_path();
-        let input_path_buf = PathBuf::new().join(input_path);
+        let input_path_buf = PathBuf::from(input_path);
 
         // save_analysis files are JSON files
         if let Some(os_str) = input_path_buf.extension() {

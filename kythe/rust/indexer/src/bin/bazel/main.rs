@@ -54,7 +54,7 @@ fn main() -> Result<()> {
         // Create a temporary directory to store required files
         let temp_dir =
             TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
-        let temp_path = PathBuf::new().join(temp_dir.path());
+        let temp_path = PathBuf::from(temp_dir.path());
 
         // Extract the analysis files from the kzip into the temporary directory
         extract_analysis_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
@@ -74,7 +74,7 @@ pub fn extract_analysis_from_kzip(
 ) -> Result<()> {
     for required_input in c_unit.get_required_input() {
         let input_path = required_input.get_info().get_path();
-        let input_path_buf = PathBuf::new().join(input_path);
+        let input_path_buf = PathBuf::from(input_path);
 
         // save_analysis files are JSON files
         if let Some(os_str) = input_path_buf.extension() {
