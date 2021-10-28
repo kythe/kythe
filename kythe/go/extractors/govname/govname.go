@@ -59,6 +59,10 @@ type PackageVNameOptions struct {
 	// applying vname rules (if any). If unset, the module root (if using
 	// modules) or the gopath directory is used instead.
 	RootDirectory string
+
+	// UseDefaultCorpusForStdLib tells the extractor to assign the DefaultCorpus
+	// to go stdlib files rather than the default of 'golang.org'.
+	UseDefaultCorpusForStdLib bool
 }
 
 // ForPackage returns a VName for a Go package.
@@ -145,8 +149,14 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 
 	v.Path = ip
 	if pkg.Goroot {
-		// This is a Go standard library package; the corpus is implicit.
-		v.Corpus = golangCorpus
+		// This is a Go standard library package. By default the corpus is
+		// implied to be "golang.org", but can be configured to use the default
+		// corpus instead.
+		if opts.UseDefaultCorpusForStdLib {
+			v.Corpus = opts.DefaultCorpus
+		} else {
+			v.Corpus = golangCorpus
+		}
 	} else if strings.HasPrefix(ip, ".") {
 		// Local import; no corpus
 	} else if i := strings.Index(ip, "/"); i > 0 {
