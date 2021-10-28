@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::error::KytheError;
+use crate::indexer::analyzers::ByteSpan;
 use crate::writer::KytheWriter;
 
 use sha2::{Digest, Sha256};
@@ -97,16 +98,19 @@ impl<'a> EntryEmitter<'a> {
         &mut self,
         anchor_vname: &VName,
         target_vname: &VName,
-        byte_start: u32,
-        byte_end: u32,
+        byte_span: ByteSpan,
     ) -> Result<(), KytheError> {
         self.emit_fact(anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
         self.emit_fact(
             anchor_vname,
             "/kythe/loc/start",
-            byte_start.to_string().into_bytes().to_vec(),
+            byte_span.start_byte.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_fact(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
+        self.emit_fact(
+            anchor_vname,
+            "/kythe/loc/end",
+            byte_span.end_byte.to_string().into_bytes().to_vec(),
+        )?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/ref")
     }
 

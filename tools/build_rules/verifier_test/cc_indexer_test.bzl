@@ -263,7 +263,6 @@ _cc_kythe_proto_library_aspect = aspect(
         ),
     },
     fragments = ["cpp"],
-    incompatible_use_toolchain_transition = True,
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_kythe_proto_library_aspect_impl,
 )

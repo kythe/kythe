@@ -122,7 +122,6 @@ rust_extract = rule(
         "@rules_rust//rust:toolchain",
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
-    incompatible_use_toolchain_transition = True,
 )
 
 def _rust_entries_impl(ctx):

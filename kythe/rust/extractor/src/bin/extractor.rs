@@ -52,7 +52,7 @@ fn main() -> Result<()> {
     let build_target_arguments: Vec<String> = spawn_info.get_argument().to_vec();
     save_analysis::generate_save_analysis(
         build_target_arguments.clone(),
-        PathBuf::new().join(tmp_dir.path()),
+        PathBuf::from(tmp_dir.path()),
     )?;
 
     // Create the output kzip
