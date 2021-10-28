@@ -149,7 +149,9 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 
 	v.Path = ip
 	if pkg.Goroot {
-		// This is a Go standard library package; the corpus is implicit.
+		// This is a Go standard library package. By default the corpus is
+		// implied to be "golang.org", but can be configured to use the default
+		// corpus instead.
 		if opts.UseDefaultCorpusForStdLib {
 			v.Corpus = opts.DefaultCorpus
 		} else {
