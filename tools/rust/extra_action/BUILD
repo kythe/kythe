@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 rust_binary(
     name = "extra_action",
     srcs = glob(["src/**/*.rs"]),
-    edition = "2018",
+    edition = "2021",
     deps = [
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:clap",

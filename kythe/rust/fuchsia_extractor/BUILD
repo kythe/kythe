@@ -8,7 +8,7 @@ rust_library(
         include = ["src/**/*.rs"],
         exclude = ["src/bin/**/*.rs"],
     ),
-    edition = "2018",
+    edition = "2021",
     deps = [
         "//kythe/cxx/common:kzip_writer_c_api",
         "//kythe/proto:analysis_rust_proto",
@@ -21,7 +21,7 @@ rust_library(
 rust_test(
     name = "fuchsia_extractor_lib_test",
     crate = ":fuchsia_extractor_lib",
-    edition = "2018",
+    edition = "2021",
     # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
     # rust binaries require their deps to be compiled with -fPIC, which is not
     # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
@@ -41,7 +41,7 @@ rust_test(
 rust_binary(
     name = "fuchsia_extractor",
     srcs = glob(["src/bin/**/*.rs"]),
-    edition = "2018",
+    edition = "2021",
     rustc_flags = select({
         ":if_opt": ["-Crelocation-model=static"],
         "//conditions:default": [],
@@ -70,7 +70,7 @@ rust_test(
         "//kythe/go/platform/tools/kzip",
         "//kythe/rust/fuchsia_extractor/testdata",
     ],
-    edition = "2018",
+    edition = "2021",
     # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
     # rust binaries require their deps to be compiled with -fPIC, which is not
     # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust

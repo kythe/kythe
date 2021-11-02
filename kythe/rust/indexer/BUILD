@@ -9,7 +9,7 @@ rust_library(
         include = ["src/**/*.rs"],
         exclude = ["src/bin/**"],
     ),
-    edition = "2018",
+    edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
@@ -32,7 +32,7 @@ rust_binary(
         include = ["src/bin/bazel/*.rs"],
     ),
     crate_root = ":src/bin/bazel/main.rs",
-    edition = "2018",
+    edition = "2021",
     deps = [
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
@@ -49,7 +49,7 @@ rust_binary(
         include = ["src/bin/proxy/*.rs"],
     ),
     crate_root = ":src/bin/proxy/main.rs",
-    edition = "2018",
+    edition = "2021",
     deps = [
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
