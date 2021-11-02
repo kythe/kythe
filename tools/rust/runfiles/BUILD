@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "runfiles",
     srcs = ["lib.rs"],
-    edition = "2018",
+    edition = "2021",
 )
 
 rust_clippy(

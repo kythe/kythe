@@ -10,7 +10,7 @@ rust_library(
         include = ["src/**/*.rs"],
         exclude = ["src/bin/**"],
     ),
-    edition = "2018",
+    edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
@@ -23,7 +23,7 @@ rust_library(
 rust_binary(
     name = "extractor",
     srcs = glob(["src/bin/**/*.rs"]),
-    edition = "2018",
+    edition = "2021",
     deps = [
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
@@ -62,7 +62,7 @@ rust_clippy(
 rust_binary(
     name = "extractor_test_binary",
     srcs = ["tests/test.rs"],
-    edition = "2018",
+    edition = "2021",
     rustc_flags = [
         "--test",
     ],
@@ -83,7 +83,7 @@ rust_binary(
     name = "extractor_integration_test_binary",
     srcs = ["tests/integration_test.rs"],
     data = ["//external:vnames_config"],
-    edition = "2018",
+    edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
