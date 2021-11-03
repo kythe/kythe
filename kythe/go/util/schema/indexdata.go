@@ -46,6 +46,7 @@ var (
 		"tbuiltin":   21,
 		"tnominal":   22,
 		"tsigma":     23,
+		"tvar":       26,
 		"variable":   24,
 		"vcs":        25,
 	}
@@ -139,6 +140,7 @@ var (
 		"/kythe/edge/specializes":              39,
 		"/kythe/edge/specializes/speculative":  40,
 		"/kythe/edge/tagged":                   41,
+		"/kythe/edge/tparam":                   48,
 		"/kythe/edge/typed":                    42,
 		"/kythe/edge/undefines":                43,
 	}
@@ -169,6 +171,7 @@ var (
 		23: "tsigma",
 		24: "variable",
 		25: "vcs",
+		26: "tvar",
 	}
 
 	subkindsRev = map[scpb.Subkind]string{
@@ -262,6 +265,7 @@ var (
 		45: "/kythe/edge/property/writes",
 		46: "/kythe/edge/ref/id",
 		47: "/kythe/edge/ref/writes",
+		48: "/kythe/edge/tparam",
 	}
 )
 
