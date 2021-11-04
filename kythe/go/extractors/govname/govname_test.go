@@ -135,7 +135,7 @@ func TestForBuiltin(t *testing.T) {
 		Root:      "ref/spec",
 		Signature: signature,
 	}
-	got := ForBuiltin("blah", GolangCorpus)
+	got := ForBuiltin(GolangCorpus, "blah")
 	if !proto.Equal(got, want) {
 		t.Errorf("ForBuiltin(%q): got %+v, want %+v", signature, got, want)
 	}
@@ -151,7 +151,7 @@ func TestForStandardLibrary(t *testing.T) {
 		{"strconv", &spb.VName{Corpus: "golang.org", Path: "strconv", Signature: "package", Language: "go"}},
 	}
 	for _, test := range tests {
-		got := ForStandardLibrary(test.input, GolangCorpus)
+		got := ForStandardLibrary(GolangCorpus, test.input)
 		if !proto.Equal(got, test.want) {
 			t.Errorf("ForStandardLibrary(%q): got %+v\nwant %+v", test.input, got, test.want)
 		} else if !IsStandardLibrary(got) {
