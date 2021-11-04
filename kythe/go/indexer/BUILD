@@ -254,10 +254,7 @@ go_indexer_test(
 # --use_default_corpus_for_stdlib is enabled.
 empty_corpus_test(
     name = "stdlibimport_corpus_test",
-    allowed_corpora = [
-        "kythe",
-        "golang.org",  # TODO(justbuchanan): modify the indexer to emit these in the main corpus instead
-    ],
+    allowed_corpora = ["kythe"],
     entries = ":stdlibimport_test_entries.entries.gz",
 )
 

@@ -34,7 +34,7 @@ import (
 const (
 	pathTail     = `(?:/(?P<path>.+))?$`
 	packageSig   = "package"
-	golangCorpus = "golang.org"
+	GolangCorpus = "golang.org"
 )
 
 // Language is the language string to use for Go VNames.
@@ -155,7 +155,7 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 		if opts.UseDefaultCorpusForStdLib {
 			v.Corpus = opts.DefaultCorpus
 		} else {
-			v.Corpus = golangCorpus
+			v.Corpus = GolangCorpus
 		}
 	} else if strings.HasPrefix(ip, ".") {
 		// Local import; no corpus
@@ -172,9 +172,9 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 }
 
 // ForBuiltin returns a VName for a Go built-in with the given signature.
-func ForBuiltin(signature string) *spb.VName {
+func ForBuiltin(corpus string, signature string) *spb.VName {
 	return &spb.VName{
-		Corpus:    golangCorpus,
+		Corpus:    corpus,
 		Language:  Language,
 		Root:      "ref/spec",
 		Signature: signature,
@@ -183,9 +183,9 @@ func ForBuiltin(signature string) *spb.VName {
 
 // ForStandardLibrary returns a VName for a standard library package with the
 // given import path.
-func ForStandardLibrary(importPath string) *spb.VName {
+func ForStandardLibrary(corpus, importPath string) *spb.VName {
 	return &spb.VName{
-		Corpus:    golangCorpus,
+		Corpus:    corpus,
 		Language:  Language,
 		Path:      importPath,
 		Signature: "package",
@@ -196,7 +196,7 @@ func ForStandardLibrary(importPath string) *spb.VName {
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
-	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == golangCorpus
+	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == GolangCorpus
 }
 
 // ImportPath returns the putative Go import path corresponding to v.  The

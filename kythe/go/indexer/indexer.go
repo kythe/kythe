@@ -215,6 +215,10 @@ type ResolveOptions struct {
 	//    _, err     -- an error attempting to load a ruleset
 	//
 	CheckRules func(ri *apb.CompilationUnit_FileInput, f Fetcher) (*Ruleset, error)
+
+	// Nodes that otherwise wouldn't have a corpus (such as tapps) are given the
+	// corpus of the compilation unit being indexed.
+	UseCompilationCorpusAsDefault bool
 }
 
 func (r *ResolveOptions) info() *types.Info {
@@ -429,7 +433,11 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		}
 	}
 	if _, ok := pi.Dependencies["unsafe"]; ok {
-		pi.PackageVName[types.Unsafe] = govname.ForStandardLibrary("unsafe")
+		corpus := govname.GolangCorpus
+		if opts.UseCompilationCorpusAsDefault {
+			corpus = unit.VName.Corpus
+		}
+		pi.PackageVName[types.Unsafe] = govname.ForStandardLibrary(corpus, "unsafe")
 	}
 
 	// Set this package's own vname.
@@ -475,7 +483,7 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 }
 
 // ObjectVName returns a VName for obj relative to that of its package.
-func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
+func (pi *PackageInfo) ObjectVName(obj types.Object, useCompilationCorpusAsDefault bool) *spb.VName {
 	if pkg, ok := obj.(*types.PkgName); ok {
 		return pi.PackageVName[pkg.Imported()]
 	}
@@ -485,7 +493,11 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	if base := pi.PackageVName[pkg]; base != nil {
 		vname = proto.Clone(base).(*spb.VName)
 	} else if pkg == nil {
-		return govname.ForBuiltin(sig)
+		corpus := govname.GolangCorpus
+		if useCompilationCorpusAsDefault {
+			corpus = pi.VName.Corpus
+		}
+		return govname.ForBuiltin(corpus, sig)
 	} else {
 		// This is an indirect import, that is, a name imported but not
 		// mentioned explicitly by the package being indexed.

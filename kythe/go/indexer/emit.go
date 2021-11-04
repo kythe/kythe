@@ -206,7 +206,7 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
-	target := e.pi.ObjectVName(obj)
+	target := e.pi.ObjectVName(obj, e.opts.UseCompilationCorpusAsDefault)
 	if target == nil {
 		// This should not happen in well-formed packages, but can if the
 		// extractor gets confused. Avoid emitting confusing references in such
@@ -265,7 +265,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 
 		// The method should be a child of its (named) enclosing type.
 		if named, _ := deref(sig.Recv().Type()).(*types.Named); named != nil {
-			base := e.pi.ObjectVName(named.Obj())
+			base := e.pi.ObjectVName(named.Obj(), e.opts.UseCompilationCorpusAsDefault)
 			e.writeEdge(info.vname, base, edges.ChildOf)
 		}
 	}
@@ -311,27 +311,32 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		return v
 	}
 
+	corpus := govname.GolangCorpus
+	if e.opts.UseCompilationCorpusAsDefault {
+		corpus = e.pi.VName.GetCorpus()
+	}
+
 	switch typ := typ.(type) {
 	case *types.Named:
-		v = e.pi.ObjectVName(typ.Obj())
+		v = e.pi.ObjectVName(typ.Obj(), e.opts.UseCompilationCorpusAsDefault)
 	case *types.Basic:
-		v = govname.BasicType(typ)
+		v = govname.BasicType(corpus, typ)
 		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
 			e.emitBuiltinMarkedSource(v)
 		}
 	case *types.Array:
-		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
+		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(corpus, typ.Len()), e.emitType(typ.Elem()))
 	case *types.Slice:
-		v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+		v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(corpus), e.emitType(typ.Elem()))
 	case *types.Pointer:
-		v = e.emitTApp(pointerTAppMS, nodes.TBuiltin, govname.PointerConstructorType(), e.emitType(typ.Elem()))
+		v = e.emitTApp(pointerTAppMS, nodes.TBuiltin, govname.PointerConstructorType(corpus), e.emitType(typ.Elem()))
 	case *types.Chan:
-		v = e.emitTApp(chanTAppMS(typ.Dir()), nodes.TBuiltin, govname.ChanConstructorType(typ.Dir()), e.emitType(typ.Elem()))
+		v = e.emitTApp(chanTAppMS(typ.Dir()), nodes.TBuiltin, govname.ChanConstructorType(corpus, typ.Dir()), e.emitType(typ.Elem()))
 	case *types.Map:
-		v = e.emitTApp(mapTAppMS, nodes.TBuiltin, govname.MapConstructorType(), e.emitType(typ.Key()), e.emitType(typ.Elem()))
+		v = e.emitTApp(mapTAppMS, nodes.TBuiltin, govname.MapConstructorType(corpus), e.emitType(typ.Key()), e.emitType(typ.Elem()))
 	case *types.Tuple: // function return types
-		v = e.emitTApp(tupleTAppMS, nodes.TBuiltin, govname.TupleConstructorType(), e.visitTuple(typ)...)
+		v = e.emitTApp(tupleTAppMS, nodes.TBuiltin, govname.TupleConstructorType(corpus), e.visitTuple(typ)...)
 	case *types.Signature: // function types
 		ms := &cpb.MarkedSource{
 			Kind: cpb.MarkedSource_TYPE,
@@ -349,7 +354,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			// Convert last parameter type from slice type to variadic type.
 			last := len(params) - 1
 			if slice, ok := typ.Params().At(last).Type().(*types.Slice); ok {
-				params[last] = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(slice.Elem()))
+				params[last] = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(corpus), e.emitType(slice.Elem()))
 			}
 		}
 
@@ -386,7 +391,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			recv = e.emitType(types.NewTuple())
 		}
 
-		v = e.emitTApp(ms, nodes.TBuiltin, govname.FunctionConstructorType(),
+		v = e.emitTApp(ms, nodes.TBuiltin, govname.FunctionConstructorType(corpus),
 			append([]*spb.VName{ret, recv}, params...)...)
 	case *types.Interface:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
@@ -495,7 +500,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		e.writeFact(target, facts.Subkind, nodes.Struct)
 		// Add parent edges for all fields, including promoted ones.
 		for i, n := 0, t.NumFields(); i < n; i++ {
-			e.writeEdge(e.pi.ObjectVName(t.Field(i)), target, edges.ChildOf)
+			e.writeEdge(e.pi.ObjectVName(t.Field(i), e.opts.UseCompilationCorpusAsDefault), target, edges.ChildOf)
 		}
 
 		// Add bindings for the explicitly-named fields in this declaration.
@@ -521,7 +526,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 					// part of the ref to the type, and we don't want duplicate
 					// outputs.
 					anchor := e.pi.AnchorVName(e.pi.Span(id))
-					target := e.pi.ObjectVName(obj)
+					target := e.pi.ObjectVName(obj, e.opts.UseCompilationCorpusAsDefault)
 					e.writeEdge(anchor, target, edges.DefinesBinding)
 					e.writeFact(target, facts.NodeKind, nodes.Variable)
 					e.writeFact(target, facts.Subkind, nodes.Field)
@@ -534,13 +539,13 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		e.writeFact(target, facts.NodeKind, nodes.Interface)
 		// Add parent edges for all methods, including inherited ones.
 		for i, n := 0, t.NumMethods(); i < n; i++ {
-			e.writeEdge(e.pi.ObjectVName(t.Method(i)), target, edges.ChildOf)
+			e.writeEdge(e.pi.ObjectVName(t.Method(i), e.opts.UseCompilationCorpusAsDefault), target, edges.ChildOf)
 		}
 		// Mark the interface as an extension of any embedded interfaces.
 		for i, n := 0, t.NumEmbeddeds(); i < n; i++ {
 			if named, ok := t.EmbeddedType(i).(*types.Named); ok {
 				if eobj := named.Obj(); e.checkImplements(obj, eobj) {
-					e.writeEdge(target, e.pi.ObjectVName(eobj), edges.Extends)
+					e.writeEdge(target, e.pi.ObjectVName(eobj, e.opts.UseCompilationCorpusAsDefault), edges.Extends)
 				}
 			}
 		}
@@ -672,7 +677,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.
 func (e *emitter) emitPosRef(loc ast.Node, obj types.Object, kind string) {
-	target := e.pi.ObjectVName(obj)
+	target := e.pi.ObjectVName(obj, e.opts.UseCompilationCorpusAsDefault)
 	file, start, end := e.pi.Span(loc)
 	anchor := e.pi.AnchorVName(file, start, end)
 	e.writeAnchor(loc, anchor, start, end)
@@ -875,8 +880,8 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 			continue
 		}
 
-		xvname := e.pi.ObjectVName(xobj)
-		yvname := e.pi.ObjectVName(yobj)
+		xvname := e.pi.ObjectVName(xobj, e.opts.UseCompilationCorpusAsDefault)
+		yvname := e.pi.ObjectVName(yobj, e.opts.UseCompilationCorpusAsDefault)
 		e.writeEdge(xvname, yvname, edges.Overrides)
 
 		xt := e.emitType(xobj.Type())
@@ -907,7 +912,7 @@ func (e *emitter) checkImplements(src, tgt types.Object) bool {
 
 func (e *emitter) writeSatisfies(src, tgt types.Object) {
 	if e.checkImplements(src, tgt) {
-		e.writeEdge(e.pi.ObjectVName(src), e.pi.ObjectVName(tgt), edges.Satisfies)
+		e.writeEdge(e.pi.ObjectVName(src, e.opts.UseCompilationCorpusAsDefault), e.pi.ObjectVName(tgt, e.opts.UseCompilationCorpusAsDefault), edges.Satisfies)
 	}
 }
 
@@ -1005,7 +1010,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		log.Printf("ERROR: Missing definition for id %q at %s", id.Name, loc)
 		return nil
 	}
-	target := e.pi.ObjectVName(obj)
+	target := e.pi.ObjectVName(obj, e.opts.UseCompilationCorpusAsDefault)
 	if kind != "" {
 		e.writeFact(target, facts.NodeKind, kind)
 	}
