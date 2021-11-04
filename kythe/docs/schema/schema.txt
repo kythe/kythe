@@ -1713,6 +1713,9 @@ Brief description::
 See also::
   <<absvar>>, <<specializes>>, <<tapp>>
 
+WARNING: *abs* nodes are deprecated.  Their structure should be replaced with
+the one documented for <<tparam>>.
+
 It is not necessarily the case that the child of the abs node be a type;
 for example, in $$C++$$, it may be a variable or a function.
 
@@ -1753,7 +1756,10 @@ absvar
 Brief description::
   An *absvar* is bound by an <<abs>> and valid in its children.
 See also::
-  <<abs>>, <<specializes>>
+  <<abs>>, <<specializes>>, <<tvar>>
+
+WARNING: *absvar* nodes are deprecated.  They should be replaced with <<tvar>>
+nodes.
 
 [kythe,C++,"Type variables are absvars."]
 --------------------------------------------------------------------------------
@@ -2440,7 +2446,7 @@ tvar
 ~~~~
 
 Brief description::
-  An *tvar* is a type/template parameter and bound to a semantic node with a
+  A *tvar* is a type/template parameter and bound to a semantic node with a
   <<tparam>> edge.
 See also::
   <<tapp>>, <<tparam>>, <<specializes>>
