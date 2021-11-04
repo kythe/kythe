@@ -69,6 +69,7 @@ public enum EdgeKind {
   SATISFIES("satisfies"),
   SPECIALIZES("specializes"),
   SPECIALIZES_SPECULATIVE("specializes/speculative"),
+  TPARAM("tparam"),
   TYPED("typed");
 
   private static final String EDGE_PREFIX = "/kythe/edge/";

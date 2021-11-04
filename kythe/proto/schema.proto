@@ -57,6 +57,7 @@ enum NodeKind {
   SYMBOL = 18 [(metadata).label = "symbol"];
   TALIAS = 19 [(metadata).label = "talias"];
   TAPP = 20 [(metadata).label = "tapp"];
+  TVAR = 26 [(metadata).label = "tvar"];
   TBUILTIN = 21 [(metadata).label = "tbuiltin"];
   TNOMINAL = 22 [(metadata).label = "tnominal"];
   TSIGMA = 23 [(metadata).label = "tsigma"];
@@ -163,6 +164,7 @@ enum EdgeKind {
   SPECIALIZES_SPECULATIVE = 40
       [(metadata).label = "/kythe/edge/specializes/speculative"];
   TAGGED = 41 [(metadata).label = "/kythe/edge/tagged"];
+  TPARAM = 48 [(metadata).label = "/kythe/edge/tparam"];
   TYPED = 42 [(metadata).label = "/kythe/edge/typed"];
   UNDEFINES = 43 [(metadata).label = "/kythe/edge/undefines"];
 }
