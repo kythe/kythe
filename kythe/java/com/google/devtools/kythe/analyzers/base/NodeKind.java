@@ -39,6 +39,7 @@ public enum NodeKind {
   TALIAS("talias"),
   TAPPLY("tapp"),
   TBUILTIN("tbuiltin"),
+  TVAR("tvar"),
 
   // Sub-kinds
   ANCHOR_IMPLICIT("anchor", "implicit"),

@@ -176,23 +176,23 @@ bounded/upper or bounded/lower
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Brief description::
-  <<absvar>> A is *bounded/upper* by B when A is constrained to be a subtype
-  of B. <<absvar>> A is *bounded/lower* by B when A is constrained to be a
-  supertype of B.
+  <<absvar>>/<<tvar>> A is *bounded/upper* by B when A is constrained to be a
+  subtype of B. <<absvar>>/<<tvar>> A is *bounded/lower* by B when A is
+  constrained to be a supertype of B.
 See also::
-  <<absvar>>
+  <<absvar>>, <<tvar>>
 Commonly arises from::
   Type parameters
 Notes::
-  * Kythe leaves the interpretation of unbounded <<absvar>> nodes to each
-    language. For example, an <<absvar>> with no *bounded* edges in Java may be
-    assigned any subtype of Object, but no primitive type.
-  * It is possible for an <<absvar>> to have multiple bounds. For example, this
-    occurs in Java when a type parameter must implement several interfaces.
-    In cases where the order of the bounds matters (e.g., in Java, where the
-    order affects type erasure), the bound edge kind may be qualified by an ordinal,
-    so that A is *bounded/upper.N* by B if B is the Nth upper bound of A.
-    Code interpreting *bounded* edges should be able to handle both
+  * Kythe leaves the interpretation of unbounded <<absvar>>/<<tvar>> nodes to
+    each language. For example, an <<absvar>>/<<tvar>> with no *bounded* edges
+    in Java may be assigned any subtype of Object, but no primitive type.
+  * It is possible for an <<absvar>>/<<tvar>> to have multiple bounds. For
+    example, this occurs in Java when a type parameter must implement several
+    interfaces.  In cases where the order of the bounds matters (e.g., in Java,
+    where the order affects type erasure), the bound edge kind may be qualified
+    by an ordinal, so that A is *bounded/upper.N* by B if B is the Nth upper
+    bound of A.  Code interpreting *bounded* edges should be able to handle both
     ordered and unordered edges.
 
 [kythe,Java,"Generic type parameters can be bound."]
@@ -1534,6 +1534,24 @@ Points toward::
 Ordinals are used::
   never
 
+
+[[tparam]]
+tparam
+~~~~~~
+
+Brief description::
+  A *tparam.N* B if B is the Nth type/template parameter of A.
+Commonly arises from::
+  templates, generic types
+Points from::
+  semantic nodes
+Points toward::
+  <<tvar>>
+Ordinals are used::
+  always
+
+// TODO(schroederc): Add in Go example once this feature is added
+
 [[typed]]
 typed
 ~~~~~
@@ -1695,6 +1713,9 @@ Brief description::
 See also::
   <<absvar>>, <<specializes>>, <<tapp>>
 
+WARNING: *abs* nodes are deprecated.  Their structure should be replaced with
+the one documented for <<tparam>>.
+
 It is not necessarily the case that the child of the abs node be a type;
 for example, in $$C++$$, it may be a variable or a function.
 
@@ -1735,7 +1756,10 @@ absvar
 Brief description::
   An *absvar* is bound by an <<abs>> and valid in its children.
 See also::
-  <<abs>>, <<specializes>>
+  <<abs>>, <<specializes>>, <<tvar>>
+
+WARNING: *absvar* nodes are deprecated.  They should be replaced with <<tvar>>
+nodes.
 
 [kythe,C++,"Type variables are absvars."]
 --------------------------------------------------------------------------------
@@ -2416,6 +2440,18 @@ int g(double x) { f(1, x); }
 //- Sigma param.1 DoubleType
 --------------------------------------------------------------------------------
 
+
+[[tvar]]
+tvar
+~~~~
+
+Brief description::
+  A *tvar* is a type/template parameter and bound to a semantic node with a
+  <<tparam>> edge.
+See also::
+  <<tapp>>, <<tparam>>, <<specializes>>
+
+// TODO(schroederc): Add in Go example once this feature is added
 
 [[variable]]
 variable
