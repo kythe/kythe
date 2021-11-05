@@ -366,6 +366,12 @@ class Verifier {
   /// Identifier for MarkedSource LOOKUP_BY_PARAM kinds.
   AstNode* marked_source_lookup_by_param_id_;
 
+  /// Identifier for MarkedSource PARAMETER_LOOKUP_BY_TPARAM kinds.
+  AstNode* marked_source_parameter_lookup_by_tparam_id_;
+
+  /// Identifier for MarkedSource LOOKUP_BY_TPARAM kinds.
+  AstNode* marked_source_lookup_by_tparam_id_;
+
   /// Identifier for MarkedSource LOOKUP_BY_PARAM_WITH_DEFAULTS kinds.
   AstNode* marked_source_parameter_lookup_by_param_with_defaults_id_;
 

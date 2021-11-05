@@ -142,6 +142,12 @@ message MarkedSource {
     // Substitute this node with the marked source derived from the typed edge
     // of the context node.
     LOOKUP_BY_TYPED = 9;
+    // Substitute this node with a PARAMETER formed from the tparam edges from
+    // the context node starting with `lookup_index`.
+    PARAMETER_LOOKUP_BY_TPARAM = 10;
+    // Substitute this node with the marked source derived from the
+    // `lookup_index`th tparam edge of the context node.
+    LOOKUP_BY_TPARAM = 11;
   }
   Kind kind = 1;
   // Nodes expect to be printed as:
