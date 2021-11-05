@@ -617,6 +617,10 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
       IdentifierFor(builtin_location_, "PARAMETER_LOOKUP_BY_PARAM");
   marked_source_lookup_by_param_id_ =
       IdentifierFor(builtin_location_, "LOOKUP_BY_PARAM");
+  marked_source_parameter_lookup_by_tparam_id_ =
+      IdentifierFor(builtin_location_, "PARAMETER_LOOKUP_BY_TPARAM");
+  marked_source_lookup_by_tparam_id_ =
+      IdentifierFor(builtin_location_, "LOOKUP_BY_TPARAM");
   marked_source_parameter_lookup_by_param_with_defaults_id_ = IdentifierFor(
       builtin_location_, "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS");
   marked_source_lookup_by_typed_id_ =
@@ -1356,6 +1360,13 @@ AstNode* Verifier::ConvertMarkedSource(
       break;
     case proto::common::MarkedSource::LOOKUP_BY_PARAM:
       emit_fact(marked_source_kind_id_, marked_source_lookup_by_param_id_);
+      break;
+    case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_TPARAM:
+      emit_fact(marked_source_kind_id_,
+                marked_source_parameter_lookup_by_tparam_id_);
+      break;
+    case proto::common::MarkedSource::LOOKUP_BY_TPARAM:
+      emit_fact(marked_source_kind_id_, marked_source_lookup_by_tparam_id_);
       break;
     case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
       emit_fact(marked_source_kind_id_,
