@@ -1086,9 +1086,7 @@ void KytheGraphObserver::recordSemanticDeclUseLocation(
     const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
     Claimability claimability, Implicit i) {
   if (kind == GraphObserver::UseKind::kUnknown ||
-      kind == GraphObserver::UseKind::kReadWrite ||
-      kind == GraphObserver::UseKind::kWrite) {
-    // TODO(zarko): remove kWrite.
+      kind == GraphObserver::UseKind::kReadWrite) {
     auto out_kind =
         (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
                                            : EdgeKindID::kRef);
