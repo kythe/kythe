@@ -304,6 +304,37 @@ template <typename T> struct C {
 template struct C<int>;
 --------------------------------------------------------------------------------
 
+[[completedby]]
+completedby
+~~~~~~~~~~~
+
+Brief description::
+  Declaration A *completedby* definition B if B fully specifies A.
+  There may exist other definitions that may also fully specify A.
+Commonly arises from::
+  definitions of forward declarations
+Points from::
+  semantic nodes with `complete` facts set to `incomplete` or `complete`
+Points toward::
+  semantic nodes with `complete` facts set to `complete`
+See also::
+  <<record>>, <<sum>>
+
+[kythe,C++,"Declarations are completed by definitions."]
+--------------------------------------------------------------------------------
+#include "test.h"
+//- Decl1 completedby Defn
+//- Decl2 completedby Defn
+//- @C defines/binding Defn
+class C { };
+
+#example test.h
+//- @C defines/binding Decl1
+class C;
+//- @C defines/binding Decl2
+class C;
+--------------------------------------------------------------------------------
+
 [[completes]]
 completes
 ~~~~~~~~~
@@ -319,6 +350,9 @@ Points toward::
   semantic nodes with `complete` facts set to `incomplete` or `complete`
 See also::
   <<record>>, <<sum>>, <<completesuniquely,[completes/uniquely]>>
+
+WARNING: *completes* edges are deprecated.  Their structure should be replaced
+with the one documented for <<completedby>>.
 
 [kythe,C++,"Definitions complete forward declarations in headers."]
 --------------------------------------------------------------------------------
@@ -350,6 +384,9 @@ Points toward::
   semantic nodes with `complete` facts set to `incomplete` or `complete`
 See also::
   <<completes>>, <<record>>, <<sum>>
+
+WARNING: *completes/uniquely* edges are deprecated.  Their structure should be
+replaced with the one documented for <<completedby>>.
 
 [kythe,C++,"Definitions uniquely complete same-file forward declarations."]
 --------------------------------------------------------------------------------
