@@ -360,7 +360,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Generic classes record the source range of the class name for the abs node, regular
     // classes record the source range of the class name for the record node.
-    EntrySet absNode =
+    VName absNode =
         defineTypeParameters(
             ctx,
             classNode,
@@ -374,10 +374,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (classIdent != null) {
         EntrySet absAnchor =
             entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-        emitDefinesBindingEdge(classIdent, absAnchor, absNode.getVName(), getScope(ctx));
+        emitDefinesBindingEdge(classIdent, absAnchor, absNode, getScope(ctx));
       }
       if (!documented) {
-        emitComment(classDef, absNode.getVName());
+        emitComment(classDef, absNode);
       }
     }
     if (absNode == null && classIdent != null) {
@@ -538,7 +538,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitModifiers(methodNode, methodDef.getModifiers());
     emitVisibility(methodNode, methodDef.getModifiers(), ctx);
 
-    EntrySet absNode =
+    VName absNode =
         defineTypeParameters(
             ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
@@ -596,13 +596,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         emitComment(methodDef, methodNode);
       }
       if (absNode != null) {
-        emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode.getVName(), getScope(ctx));
+        emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode, getScope(ctx));
         Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
         if (span != null) {
-          emitMetadata(span, absNode.getVName());
+          emitMetadata(span, absNode);
         }
         if (!documented) {
-          emitComment(methodDef, absNode.getVName());
+          emitComment(methodDef, absNode);
         }
       }
       emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
@@ -1020,8 +1020,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return scanAll(owner.downAsSnippet(assgnOp), assgnOp.lhs, assgnOp.rhs);
   }
 
-  private boolean visitDocComment(VName node, EntrySet absNode, JCModifiers modifiers) {
-    // TODO(#1501): always use absNode
+  private boolean visitDocComment(VName node, VName absNode, JCModifiers modifiers) {
     Optional<String> deprecation = Optional.empty();
     boolean documented = false;
     if (docScanner != null) {
@@ -1061,7 +1060,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     emitDeprecated(deprecation, node);
     if (absNode != null) {
-      emitDeprecated(deprecation, absNode.getVName());
+      emitDeprecated(deprecation, absNode);
     }
     return documented;
   }
@@ -1110,12 +1109,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return Streams.stream(nodes).map(JavaNode::getVName).collect(Collectors.toList());
   }
 
-  // TODO When we want to refer to a type or method that is generic, we need to point to the abs
-  // node. The code currently does not have an easy way to access that node but this method might
-  // offer a way to change that.
-  // See #1501 for more discussion and detail.
   /** Create an abs node if we have type variables or if we have wildcards. */
-  private EntrySet defineTypeParameters(
+  private VName defineTypeParameters(
       TreeContext ownerContext,
       VName owner,
       List<JCTypeParameter> params,
@@ -1154,7 +1149,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
     // node that has 1 named absvar (T) and 5 unnamed absvars.
     typeParams.addAll(wildcards);
-    return entrySets.newAbstractAndEmit(owner, typeParams, markedSource);
+
+    if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
+      return entrySets.newAbstractAndEmit(owner, typeParams, markedSource).getVName();
+    }
+    entrySets.emitOrdinalEdges(owner, EdgeKind.TPARAM, typeParams);
+    return owner;
   }
 
   /** Returns the node associated with a {@link Symbol} or {@code null}. */
@@ -1331,7 +1331,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }
       JavaNode node = getJavaNode(sym);
-      if (node != null
+      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
+          && node != null
           && sym instanceof ClassSymbol
           && inGenericContext
           && !sym.getTypeParameters().isEmpty()) {
@@ -1360,11 +1361,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
   private JavaNode getJavaLangEnumNode(VName enumVName) {
     if (javaLangEnumNode == null) {
-      javaLangEnumNode =
-          new JavaNode(
-              entrySets
-                  .newAbstractAndEmit(resolveJavaLangSymbol(getSymbols().enumSym).getVName())
-                  .getVName());
+      VName v = resolveJavaLangSymbol(getSymbols().enumSym).getVName();
+      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
+        v = entrySets.newAbstractAndEmit(v).getVName();
+      }
+      javaLangEnumNode = new JavaNode(v);
     }
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(
@@ -1467,7 +1468,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     EntrySet doc =
         entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
-    // TODO(#1501): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
     if (absNode != null) {
       entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, absNode);

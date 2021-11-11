@@ -21,7 +21,6 @@ import static com.google.devtools.kythe.analyzers.java.KytheTreeScanner.DocKind.
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
-import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.ReferenceTree;
@@ -75,8 +74,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     }
   }
 
-  public DocCommentVisitResult visitDocComment(TreePath treePath, VName node, EntrySet absNode) {
-    // TODO(#1501): always use absNode
+  public DocCommentVisitResult visitDocComment(TreePath treePath, VName node, VName absNode) {
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
       return DocCommentVisitResult.UNDOCUMENTED;
@@ -100,8 +98,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(
-        JAVADOC, bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
+    treeScanner.emitDoc(JAVADOC, bracketed, anchoredTo, node, absNode);
     return DocCommentVisitResult.create(deprecation);
   }
 
