@@ -94,17 +94,17 @@ type SplitTable struct {
 	// Documentation is a table of srvpb.Documents keyed by their node ticket.
 	Documentation table.Proto
 
-	// EdgeFilter is an optional callback to rewrite edge labels.
+	// RewriteEdgeLabel is an optional callback to rewrite edge labels.
 	// It will be called once per request; the function it returns will then be
 	// called once per edge.
-	EdgeFilter func(context.Context) func(*string)
+	RewriteEdgeLabel func(context.Context) func(*string)
 }
 
-func (s *SplitTable) filterFileDecorations(ctx context.Context, fd *srvpb.FileDecorations, err error) (*srvpb.FileDecorations, error) {
-	if fd == nil || err != nil || s.EdgeFilter == nil || fd.Decoration == nil {
+func (s *SplitTable) rewriteFileDecorations(ctx context.Context, fd *srvpb.FileDecorations, err error) (*srvpb.FileDecorations, error) {
+	if fd == nil || err != nil || s.RewriteEdgeLabel == nil || fd.Decoration == nil {
 		return fd, err
 	}
-	f := s.EdgeFilter(ctx)
+	f := s.RewriteEdgeLabel(ctx)
 	if f == nil {
 		return fd, err
 	}
@@ -114,46 +114,46 @@ func (s *SplitTable) filterFileDecorations(ctx context.Context, fd *srvpb.FileDe
 	return fd, err
 }
 
-func filterCrossReferencesGroup(g *srvpb.PagedCrossReferences_Group, f func(*string)) {
+func rewriteCrossReferencesGroup(g *srvpb.PagedCrossReferences_Group, f func(*string)) {
 	if f != nil && g != nil {
 		f(&g.Kind)
 	}
 }
 
-func (s *SplitTable) filterCrossReferences(ctx context.Context, cr *srvpb.PagedCrossReferences, err error) (*srvpb.PagedCrossReferences, error) {
-	if cr == nil || err != nil || s.EdgeFilter == nil || cr.Group == nil {
+func (s *SplitTable) rewriteCrossReferences(ctx context.Context, cr *srvpb.PagedCrossReferences, err error) (*srvpb.PagedCrossReferences, error) {
+	if cr == nil || err != nil || s.RewriteEdgeLabel == nil || cr.Group == nil {
 		return cr, err
 	}
-	f := s.EdgeFilter(ctx)
+	f := s.RewriteEdgeLabel(ctx)
 	for _, g := range cr.Group {
-		filterCrossReferencesGroup(g, f)
+		rewriteCrossReferencesGroup(g, f)
 	}
 	return cr, err
 }
 
-func (s *SplitTable) filterCrossReferencesPage(ctx context.Context, cr *srvpb.PagedCrossReferences_Page, err error) (*srvpb.PagedCrossReferences_Page, error) {
-	if cr == nil || err != nil || s.EdgeFilter == nil || cr.Group == nil {
+func (s *SplitTable) rewriteCrossReferencesPage(ctx context.Context, cr *srvpb.PagedCrossReferences_Page, err error) (*srvpb.PagedCrossReferences_Page, error) {
+	if cr == nil || err != nil || s.RewriteEdgeLabel == nil || cr.Group == nil {
 		return cr, err
 	}
-	f := s.EdgeFilter(ctx)
-	filterCrossReferencesGroup(cr.Group, f)
+	f := s.RewriteEdgeLabel(ctx)
+	rewriteCrossReferencesGroup(cr.Group, f)
 	return cr, err
 }
 
 func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	tracePrintf(ctx, "Reading FileDecorations: %s", ticket)
 	var fd srvpb.FileDecorations
-	return s.filterFileDecorations(ctx, &fd, s.Decorations.Lookup(ctx, []byte(ticket), &fd))
+	return s.rewriteFileDecorations(ctx, &fd, s.Decorations.Lookup(ctx, []byte(ticket), &fd))
 }
 func (s *SplitTable) crossReferences(ctx context.Context, ticket string) (*srvpb.PagedCrossReferences, error) {
 	tracePrintf(ctx, "Reading PagedCrossReferences: %s", ticket)
 	var cr srvpb.PagedCrossReferences
-	return s.filterCrossReferences(ctx, &cr, s.CrossReferences.Lookup(ctx, []byte(ticket), &cr))
+	return s.rewriteCrossReferences(ctx, &cr, s.CrossReferences.Lookup(ctx, []byte(ticket), &cr))
 }
 func (s *SplitTable) crossReferencesPage(ctx context.Context, key string) (*srvpb.PagedCrossReferences_Page, error) {
 	tracePrintf(ctx, "Reading PagedCrossReferences.Page: %s", key)
 	var p srvpb.PagedCrossReferences_Page
-	return s.filterCrossReferencesPage(ctx, &p, s.CrossReferencePages.Lookup(ctx, []byte(key), &p))
+	return s.rewriteCrossReferencesPage(ctx, &p, s.CrossReferencePages.Lookup(ctx, []byte(key), &p))
 }
 func (s *SplitTable) documentation(ctx context.Context, ticket string) (*srvpb.Document, error) {
 	tracePrintf(ctx, "Reading Document: %s", ticket)
