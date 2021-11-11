@@ -274,7 +274,11 @@ public class JavaEntrySets extends KytheEntrySets {
   public EntrySet newWildcardNodeAndEmit(JCTree.JCWildcard wild, String sourcePath) {
     int counter = sourceToWildcardCounter.getOrDefault(sourcePath, 0);
     sourceToWildcardCounter.put(sourcePath, counter + 1);
-    return emitAndReturn(newNode(NodeKind.ABS_VAR).addSignatureSalt(sourcePath + counter));
+    NodeKind kind =
+        config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
+            ? NodeKind.TVAR
+            : NodeKind.ABS_VAR;
+    return emitAndReturn(newNode(kind).addSignatureSalt(sourcePath + counter));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
@@ -303,7 +307,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
   @Nullable
-  private static NodeKind elementNodeKind(ElementKind kind) {
+  private NodeKind elementNodeKind(ElementKind kind) {
     switch (kind) {
       case CLASS:
         return NodeKind.RECORD_CLASS;
@@ -331,7 +335,10 @@ public class JavaEntrySets extends KytheEntrySets {
       case METHOD:
         return NodeKind.FUNCTION;
       case TYPE_PARAMETER:
-        return NodeKind.ABS_VAR;
+        if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
+          return NodeKind.ABS_VAR;
+        }
+        return NodeKind.TVAR;
       default:
         // TODO(#1845): handle all cases, make this exceptional, and remove all null checks
         return null;

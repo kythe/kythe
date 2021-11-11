@@ -222,6 +222,17 @@ java_verifier_test(
     name = "generics_tests",
     size = "small",
     srcs = ["Generics.java"],
+    indexer_opts = [
+        "--verbose",
+        "--generics_structure=tparam",
+    ],
+    visibility = ["//kythe/go/serving/tools/testdata:__pkg__"],
+)
+
+java_verifier_test(
+    name = "generics_abs_tests",
+    size = "small",
+    srcs = ["GenericsAbs.java"],
     visibility = ["//kythe/go/serving/tools/testdata:__pkg__"],
 )
 
