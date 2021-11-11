@@ -95,22 +95,28 @@ type SplitTable struct {
 	Documentation table.Proto
 
 	// EdgeFilter is an optional callback to rewrite edge labels.
-	EdgeFilter func(context.Context, *string)
+	// It will be called once per request; the function it returns will then be
+	// called once per edge.
+	EdgeFilter func(context.Context) func(*string)
 }
 
 func (s *SplitTable) filterFileDecorations(ctx context.Context, fd *srvpb.FileDecorations, err error) (*srvpb.FileDecorations, error) {
 	if fd == nil || err != nil || s.EdgeFilter == nil || fd.Decoration == nil {
 		return fd, err
 	}
+	f := s.EdgeFilter(ctx)
+	if f == nil {
+		return fd, err
+	}
 	for _, d := range fd.Decoration {
-		s.EdgeFilter(ctx, &d.Kind)
+		f(&d.Kind)
 	}
 	return fd, err
 }
 
-func (s *SplitTable) filterCrossReferencesGroup(ctx context.Context, g *srvpb.PagedCrossReferences_Group) {
-	if s.EdgeFilter != nil && g != nil {
-		s.EdgeFilter(ctx, &g.Kind)
+func filterCrossReferencesGroup(g *srvpb.PagedCrossReferences_Group, f func(*string)) {
+	if f != nil && g != nil {
+		f(&g.Kind)
 	}
 }
 
@@ -118,8 +124,9 @@ func (s *SplitTable) filterCrossReferences(ctx context.Context, cr *srvpb.PagedC
 	if cr == nil || err != nil || s.EdgeFilter == nil || cr.Group == nil {
 		return cr, err
 	}
+	f := s.EdgeFilter(ctx)
 	for _, g := range cr.Group {
-		s.filterCrossReferencesGroup(ctx, g)
+		filterCrossReferencesGroup(g, f)
 	}
 	return cr, err
 }
@@ -128,7 +135,8 @@ func (s *SplitTable) filterCrossReferencesPage(ctx context.Context, cr *srvpb.Pa
 	if cr == nil || err != nil || s.EdgeFilter == nil || cr.Group == nil {
 		return cr, err
 	}
-	s.filterCrossReferencesGroup(ctx, cr.Group)
+	f := s.EdgeFilter(ctx)
+	filterCrossReferencesGroup(cr.Group, f)
 	return cr, err
 }
 
