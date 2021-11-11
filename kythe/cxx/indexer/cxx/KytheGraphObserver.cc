@@ -804,6 +804,8 @@ void KytheGraphObserver::recordCompletionRange(
                           ? EdgeKindID::kUniquelyCompletes
                           : EdgeKindID::kCompletes,
                       completing_node);
+  recorder_->AddEdge(VNameRefFromNodeId(node), EdgeKindID::kCompletedby,
+                     VNameRefFromNodeId(completing_node));
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
