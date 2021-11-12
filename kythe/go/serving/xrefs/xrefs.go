@@ -97,7 +97,7 @@ type SplitTable struct {
 	// RewriteEdgeLabel is an optional callback to rewrite edge labels.
 	// It will be called once per request; the function it returns will then be
 	// called once per edge.
-	RewriteEdgeLabel func(context.Context) func(*string)
+	RewriteEdgeLabel func(context.Context) func(string) string
 }
 
 func (s *SplitTable) rewriteFileDecorations(ctx context.Context, fd *srvpb.FileDecorations, err error) (*srvpb.FileDecorations, error) {
@@ -109,14 +109,14 @@ func (s *SplitTable) rewriteFileDecorations(ctx context.Context, fd *srvpb.FileD
 		return fd, err
 	}
 	for _, d := range fd.Decoration {
-		f(&d.Kind)
+		d.Kind = f(d.Kind)
 	}
 	return fd, err
 }
 
-func rewriteCrossReferencesGroup(g *srvpb.PagedCrossReferences_Group, f func(*string)) {
+func rewriteCrossReferencesGroup(g *srvpb.PagedCrossReferences_Group, f func(string) string) {
 	if f != nil && g != nil {
-		f(&g.Kind)
+		g.Kind = f(g.Kind)
 	}
 }
 
