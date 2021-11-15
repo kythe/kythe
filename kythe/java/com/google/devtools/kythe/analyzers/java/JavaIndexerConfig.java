@@ -20,6 +20,18 @@ import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 
 public class JavaIndexerConfig extends IndexerConfig {
+  @Parameter(names = "--generics_structure", description = "Structure to emit for generics.")
+  private GenericsStructure genericsStructure = GenericsStructure.ABS;
+
+  public enum GenericsStructure {
+    // Emit the legacy { n -[childof]-> abs -[param.#]-> absvar } structure
+    // See: https://kythe.io/docs/schema/#absvar
+    ABS,
+    // Emit the { n -[tparam.#]-> tvar } structure
+    // See: https://kythe.io/docs/schema/#tvar
+    TPARAM;
+  }
+
   @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
   private boolean emitJvmSignatures;
 
@@ -72,6 +84,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     super(programName);
   }
 
+  public final GenericsStructure getGenericsStructure() {
+    return genericsStructure;
+  }
+
   public final boolean getIgnoreVNamePaths() {
     return ignoreVNamePaths;
   }
@@ -98,6 +114,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getUseCompilationCorpusAsDefault() {
     return useCompilationCorpusAsDefault;
+  }
+
+  public JavaIndexerConfig setGenericsStructure(GenericsStructure genericsStructure) {
+    this.genericsStructure = genericsStructure;
+    return this;
   }
 
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {

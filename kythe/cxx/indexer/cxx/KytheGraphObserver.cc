@@ -804,6 +804,8 @@ void KytheGraphObserver::recordCompletionRange(
                           ? EdgeKindID::kUniquelyCompletes
                           : EdgeKindID::kCompletes,
                       completing_node);
+  recorder_->AddEdge(VNameRefFromNodeId(node), EdgeKindID::kCompletedby,
+                     VNameRefFromNodeId(completing_node));
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
@@ -1086,9 +1088,7 @@ void KytheGraphObserver::recordSemanticDeclUseLocation(
     const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
     Claimability claimability, Implicit i) {
   if (kind == GraphObserver::UseKind::kUnknown ||
-      kind == GraphObserver::UseKind::kReadWrite ||
-      kind == GraphObserver::UseKind::kWrite) {
-    // TODO(zarko): remove kWrite.
+      kind == GraphObserver::UseKind::kReadWrite) {
     auto out_kind =
         (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
                                            : EdgeKindID::kRef);
