@@ -84,6 +84,7 @@ export enum EdgeKind {
   SPECIALIZES = '/kythe/edge/specializes',
   SPECIALIZES_SPECULATIVE = '/kythe/edge/specializes/speculative',
   TAGGED = '/kythe/edge/tagged',
+  TPARAM = '/kythe/edge/tparam',
   TYPED = '/kythe/edge/typed',
   UNDEFINES = '/kythe/edge/undefines',
 }
@@ -108,7 +109,6 @@ export function makeOrdinalEdge(edge: EdgeKind, ordinal: number): OrdinalEdge {
  *   https://github.com/kythe/kythe/tree/master/kythe/data/schema_index.textproto#L64
  */
 export enum NodeKind {
-  ABS = 'abs',
   ABSVAR = 'absvar',
   ANCHOR = 'anchor',
   CONSTANT = 'constant',
@@ -131,6 +131,7 @@ export enum NodeKind {
   TBUILTIN = 'tbuiltin',
   TNOMINAL = 'tnominal',
   TSIGMA = 'tsigma',
+  TVAR = 'tvar',
   VARIABLE = 'variable',
   VCS = 'vcs',
 }
