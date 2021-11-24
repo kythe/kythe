@@ -85,6 +85,12 @@ enum EmitDataflowEdges : bool {
   Yes = true   ///< Emit dataflow edges.
 };
 
+/// \brief Specifies whether to use abs nodes.
+enum UseAbsNodes : bool {
+  Abs = true,    ///< Use abs nodes.
+  NoAbs = false  ///< Don't use abs nodes.
+};
+
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -106,6 +112,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
                     GraphObserver* GO = nullptr, int UsrByteSize = 0,
                     EmitDataflowEdges EDE = EmitDataflowEdges::No,
+                    UseAbsNodes UAN = UseAbsNodes::Abs,
                     std::shared_ptr<re2::RE2> TIEPP = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -120,7 +127,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         UsrByteSize(UsrByteSize),
         DataflowEdges(EDE),
-        TemplateInstanceExcludePathPattern(TIEPP) {}
+        AbsNodes(UAN),
+        TemplateInstanceExcludePathPattern(TIEPP) {
+    (void)AbsNodes;  // TODO(zarko): remove once this is used.
+  }
 
   bool VisitDecl(const clang::Decl* Decl);
   bool TraverseFieldDecl(clang::FieldDecl* Decl);
@@ -1034,6 +1044,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges;
 
+  /// \brief Controls whether abs nodes are emitted.
+  UseAbsNodes AbsNodes;
+
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
@@ -1069,7 +1082,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      int UsrByteSize, EmitDataflowEdges EDE, std::shared_ptr<re2::RE2> TIEPP)
+      int UsrByteSize, EmitDataflowEdges EDE, UseAbsNodes UAN,
+      std::shared_ptr<re2::RE2> TIEPP)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -1081,6 +1095,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         CreateWorklist(std::move(CreateWorklist)),
         UsrByteSize(UsrByteSize),
         DataflowEdges(EDE),
+        AbsNodes(UAN),
         TemplateInstanceExcludePathPattern(TIEPP) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
@@ -1088,7 +1103,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
     IndexerASTVisitor Visitor(
         Context, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
         CppFwdDocs, Supports, *Sema, ShouldStopIndexing, Observer, UsrByteSize,
-        DataflowEdges, TemplateInstanceExcludePathPattern);
+        DataflowEdges, AbsNodes, TemplateInstanceExcludePathPattern);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.PrepareAlternateSemanticCache();
@@ -1126,6 +1141,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   int UsrByteSize = 0;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges;
+  /// \brief Controls whether abs nodes are emitted.
+  UseAbsNodes AbsNodes;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;

@@ -266,6 +266,7 @@ std::string IndexCompilationUnit(
   Action->setTemplateInstanceExcludePathPattern(
       Options.TemplateInstanceExcludePathPattern);
   Action->setEmitDataflowEdges(Options.DataflowEdges);
+  Action->setUseAbsNodes(Options.AbsNodes);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());

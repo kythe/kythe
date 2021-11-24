@@ -58,6 +58,7 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
+ABSL_FLAG(bool, use_abs_nodes, true, "Use abs nodes.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
@@ -99,6 +100,9 @@ int main(int argc, char* argv[]) {
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes
           : kythe::EmitDataflowEdges::No;
+  options.AbsNodes = absl::GetFlag(FLAGS_use_abs_nodes)
+                         ? kythe::UseAbsNodes::Abs
+                         : kythe::UseAbsNodes::NoAbs;
   options.UseCompilationCorpusAsDefault =
       absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =

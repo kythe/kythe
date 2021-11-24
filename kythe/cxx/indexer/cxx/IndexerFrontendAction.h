@@ -112,6 +112,9 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \brief Emit dataflow edges?
   void setEmitDataflowEdges(EmitDataflowEdges EDE) { DataflowEdges = EDE; }
 
+  /// \brief Use abs nodes?
+  void setUseAbsNodes(UseAbsNodes UAN) { AbsNodes = UAN; }
+
   /// \brief Pattern used to exclude paths from template instance indexing.
   void setTemplateInstanceExcludePathPattern(std::shared_ptr<re2::RE2> P) {
     TemplateInstanceExcludePathPattern = P;
@@ -157,7 +160,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
     return absl::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
         CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize,
-        DataflowEdges, TemplateInstanceExcludePathPattern);
+        DataflowEdges, AbsNodes, TemplateInstanceExcludePathPattern);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
@@ -200,6 +203,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   int UsrByteSize = 0;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Controls whether abs nodes are used.
+  UseAbsNodes AbsNodes = UseAbsNodes::Abs;
   /// \brief Pattern used to exclude paths from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };
@@ -286,6 +291,8 @@ struct IndexerOptions {
   bool UseCompilationCorpusAsDefault = false;
   /// \brief Whether to emit dataflow edges.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
+  /// \brief Whether to use abs nodes.
+  UseAbsNodes AbsNodes = UseAbsNodes::Abs;
   /// \brief Pattern used to exclude paths from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern;
 };

@@ -64,6 +64,7 @@ _INDEXER_FLAGS = {
     "experimental_drop_objc_fwd_class_docs": False,
     "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
+    "use_abs_nodes": True,
     "template_instance_exclude_path_pattern": "",
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
