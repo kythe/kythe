@@ -177,13 +177,13 @@ class TextErrorBuffer : public clang::DiagnosticConsumer {
 };
 }  // anonymous namespace
 
-std::string IndexCompilationUnit(
-    const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
-    KytheClaimClient& Client, HashCache* Cache, KytheCachingOutput& Output,
-    const IndexerOptions& Options, const MetadataSupports* MetaSupports,
-    const LibrarySupports* LibrarySupports,
-    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
-        CreateWorklist) {
+std::string IndexCompilationUnit(const proto::CompilationUnit& Unit,
+                                 std::vector<proto::FileData>& Files,
+                                 KytheClaimClient& Client, HashCache* Cache,
+                                 KytheCachingOutput& Output,
+                                 const IndexerOptions& Options,
+                                 const MetadataSupports* MetaSupports,
+                                 const LibrarySupports* LibrarySupports) {
   llvm::sys::path::Style Style =
       kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
           Unit.working_directory())
@@ -255,18 +255,7 @@ std::string IndexCompilationUnit(
   }
   std::unique_ptr<IndexerFrontendAction> Action =
       absl::make_unique<IndexerFrontendAction>(
-          &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
-          std::move(CreateWorklist), LibrarySupports);
-  Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
-  Action->setTemplateMode(Options.TemplateBehavior);
-  Action->setVerbosity(Options.Verbosity);
-  Action->setObjCFwdDeclEmitDocs(Options.ObjCFwdDocs);
-  Action->setCppFwdDeclEmitDocs(Options.CppFwdDocs);
-  Action->setUsrByteSize(Options.UsrByteSize);
-  Action->setTemplateInstanceExcludePathPattern(
-      Options.TemplateInstanceExcludePathPattern);
-  Action->setEmitDataflowEdges(Options.DataflowEdges);
-  Action->setUseAbsNodes(Options.AbsNodes);
+          &Observer, HSIValid ? &HSI : nullptr, LibrarySupports, Options);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());

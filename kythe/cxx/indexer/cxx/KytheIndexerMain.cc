@@ -75,12 +75,12 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> final_args(remain.begin(), remain.end());
   IndexerContext context(final_args, "stdin.cc");
   IndexerOptions options;
-  options.TemplateBehavior = absl::GetFlag(FLAGS_index_template_instantiations)
-                                 ? BehaviorOnTemplates::VisitInstantiations
-                                 : BehaviorOnTemplates::SkipInstantiations;
-  options.UnimplementedBehavior = context.ignore_unimplemented()
-                                      ? kythe::BehaviorOnUnimplemented::Continue
-                                      : kythe::BehaviorOnUnimplemented::Abort;
+  options.TemplateMode = absl::GetFlag(FLAGS_index_template_instantiations)
+                             ? BehaviorOnTemplates::VisitInstantiations
+                             : BehaviorOnTemplates::SkipInstantiations;
+  options.IgnoreUnimplemented = context.ignore_unimplemented()
+                                    ? kythe::BehaviorOnUnimplemented::Continue
+                                    : kythe::BehaviorOnUnimplemented::Abort;
   options.Verbosity = absl::GetFlag(FLAGS_experimental_index_lite)
                           ? kythe::Verbosity::Lite
                           : kythe::Verbosity::Classic;
@@ -114,6 +114,9 @@ int main(int argc, char* argv[]) {
                     event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
+  options.CreateWorklist = [](IndexerASTVisitor* indexer) {
+    return IndexerWorklist::CreateDefaultWorklist(indexer);
+  };
 
   bool had_errors = false;
   NullOutputStream null_stream;
@@ -135,10 +138,7 @@ int main(int argc, char* argv[]) {
         context.hash_cache(),
         job.silent ? static_cast<KytheCachingOutput&>(null_stream)
                    : static_cast<KytheCachingOutput&>(*context.output()),
-        options, &meta_supports, &library_supports,
-        [](IndexerASTVisitor* indexer) {
-          return IndexerWorklist::CreateDefaultWorklist(indexer);
-        });
+        options, &meta_supports, &library_supports);
 
     if (!result.empty()) {
       absl::FPrintF(stderr, "Error: %s\n", result);
