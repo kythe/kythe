@@ -177,13 +177,12 @@ class TextErrorBuffer : public clang::DiagnosticConsumer {
 };
 }  // anonymous namespace
 
-std::string IndexCompilationUnit(const proto::CompilationUnit& Unit,
-                                 std::vector<proto::FileData>& Files,
-                                 KytheClaimClient& Client, HashCache* Cache,
-                                 KytheCachingOutput& Output,
-                                 const IndexerOptions& Options,
-                                 const MetadataSupports* MetaSupports,
-                                 const LibrarySupports* LibrarySupports) {
+std::string IndexCompilationUnit(
+    const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
+    KytheClaimClient& Client, HashCache* Cache, KytheCachingOutput& Output,
+    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    const MetadataSupports* MetaSupports,
+    const LibrarySupports* LibrarySupports) {
   llvm::sys::path::Style Style =
       kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
           Unit.working_directory())

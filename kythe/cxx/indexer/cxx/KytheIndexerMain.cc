@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes
           : kythe::EmitDataflowEdges::No;
-  options.AbsNodes = absl::GetFlag(FLAGS_use_abs_nodes)
+  options.AbsNodes = absl::GetFlag(FLAGS_experimental_use_abs_nodes)
                          ? kythe::UseAbsNodes::Abs
                          : kythe::UseAbsNodes::NoAbs;
   options.UseCompilationCorpusAsDefault =

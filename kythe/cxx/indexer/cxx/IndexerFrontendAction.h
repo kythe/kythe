@@ -70,7 +70,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
  public:
   IndexerFrontendAction(GraphObserver* GO, const HeaderSearchInfo* Info,
                         const LibrarySupports* LibrarySupports,
-                        const IndexerOptions& options)
+                        const IndexerOptions& options
+                            ABSL_ATTRIBUTE_LIFETIME_BOUND)
       : Observer(CHECK_NOTNULL(GO)),
         HeaderConfigValid(Info != nullptr),
         Supports(*CHECK_NOTNULL(LibrarySupports)),
@@ -203,13 +204,12 @@ class StdinAdjustSingleFrontendActionFactory
 /// \param MetaSupports Metadata support for this run.
 /// \param LibrarySupports Library support for this run.
 /// \return empty if OK; otherwise, an error description.
-std::string IndexCompilationUnit(const proto::CompilationUnit& Unit,
-                                 std::vector<proto::FileData>& Files,
-                                 KytheClaimClient& ClaimClient,
-                                 HashCache* Cache, KytheCachingOutput& Output,
-                                 const IndexerOptions& Options,
-                                 const MetadataSupports* MetaSupports,
-                                 const LibrarySupports* LibrarySupports);
+std::string IndexCompilationUnit(
+    const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
+    KytheClaimClient& ClaimClient, HashCache* Cache, KytheCachingOutput& Output,
+    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    const MetadataSupports* MetaSupports,
+    const LibrarySupports* LibrarySupports);
 
 }  // namespace kythe
 

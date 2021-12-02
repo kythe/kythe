@@ -26,6 +26,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_join.h"
@@ -151,7 +152,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
  public:
   IndexerASTVisitor(clang::ASTContext& C, const LibrarySupports& S,
-                    clang::Sema& Sema, const IndexerOptions& IO,
+                    clang::Sema& Sema,
+                    const IndexerOptions& IO ABSL_ATTRIBUTE_LIFETIME_BOUND,
                     GraphObserver* GO = nullptr)
       : Observer(GO ? *GO : NullObserver),
         Context(C),
@@ -1077,7 +1079,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 class IndexerASTConsumer : public clang::SemaConsumer {
  public:
   explicit IndexerASTConsumer(GraphObserver* GO, const LibrarySupports& S,
-                              const IndexerOptions& IO)
+                              const IndexerOptions& IO
+                                  ABSL_ATTRIBUTE_LIFETIME_BOUND)
       : Observer(GO), Supports(S), options_(IO) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
