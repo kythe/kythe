@@ -58,6 +58,7 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
+ABSL_FLAG(bool, experimental_use_abs_nodes, true, "Use abs nodes.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
@@ -74,12 +75,12 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> final_args(remain.begin(), remain.end());
   IndexerContext context(final_args, "stdin.cc");
   IndexerOptions options;
-  options.TemplateBehavior = absl::GetFlag(FLAGS_index_template_instantiations)
-                                 ? BehaviorOnTemplates::VisitInstantiations
-                                 : BehaviorOnTemplates::SkipInstantiations;
-  options.UnimplementedBehavior = context.ignore_unimplemented()
-                                      ? kythe::BehaviorOnUnimplemented::Continue
-                                      : kythe::BehaviorOnUnimplemented::Abort;
+  options.TemplateMode = absl::GetFlag(FLAGS_index_template_instantiations)
+                             ? BehaviorOnTemplates::VisitInstantiations
+                             : BehaviorOnTemplates::SkipInstantiations;
+  options.IgnoreUnimplemented = context.ignore_unimplemented()
+                                    ? kythe::BehaviorOnUnimplemented::Continue
+                                    : kythe::BehaviorOnUnimplemented::Abort;
   options.Verbosity = absl::GetFlag(FLAGS_experimental_index_lite)
                           ? kythe::Verbosity::Lite
                           : kythe::Verbosity::Classic;
@@ -99,6 +100,9 @@ int main(int argc, char* argv[]) {
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes
           : kythe::EmitDataflowEdges::No;
+  options.AbsNodes = absl::GetFlag(FLAGS_experimental_use_abs_nodes)
+                         ? kythe::UseAbsNodes::Abs
+                         : kythe::UseAbsNodes::NoAbs;
   options.UseCompilationCorpusAsDefault =
       absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
@@ -110,6 +114,9 @@ int main(int argc, char* argv[]) {
                     event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
+  options.CreateWorklist = [](IndexerASTVisitor* indexer) {
+    return IndexerWorklist::CreateDefaultWorklist(indexer);
+  };
 
   bool had_errors = false;
   NullOutputStream null_stream;
@@ -131,10 +138,7 @@ int main(int argc, char* argv[]) {
         context.hash_cache(),
         job.silent ? static_cast<KytheCachingOutput&>(null_stream)
                    : static_cast<KytheCachingOutput&>(*context.output()),
-        options, &meta_supports, &library_supports,
-        [](IndexerASTVisitor* indexer) {
-          return IndexerWorklist::CreateDefaultWorklist(indexer);
-        });
+        options, &meta_supports, &library_supports);
 
     if (!result.empty()) {
       absl::FPrintF(stderr, "Error: %s\n", result);
