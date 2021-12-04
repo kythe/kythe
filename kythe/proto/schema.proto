@@ -122,6 +122,7 @@ enum EdgeKind {
   BOUNDED_UPPER = 5 [(metadata).label = "/kythe/edge/bounded/upper"];
   CHILD_OF = 6 [(metadata).label = "/kythe/edge/childof"];
   CHILD_OF_CONTEXT = 7 [(metadata).label = "/kythe/edge/childof/context"];
+  COMPLETED_BY = 49 [(metadata).label = "/kythe/edge/completedby"];
   COMPLETES = 8 [(metadata).label = "/kythe/edge/completes"];
   COMPLETES_UNIQUELY = 9 [(metadata).label = "/kythe/edge/completes/uniquely"];
   DEFINES = 10 [(metadata).label = "/kythe/edge/defines"];
