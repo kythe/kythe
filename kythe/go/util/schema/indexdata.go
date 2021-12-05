@@ -102,6 +102,7 @@ var (
 		"/kythe/edge/bounded/upper":            5,
 		"/kythe/edge/childof":                  6,
 		"/kythe/edge/childof/context":          7,
+		"/kythe/edge/completedby":              49,
 		"/kythe/edge/completes":                8,
 		"/kythe/edge/completes/uniquely":       9,
 		"/kythe/edge/defines":                  10,
@@ -266,6 +267,7 @@ var (
 		46: "/kythe/edge/ref/id",
 		47: "/kythe/edge/ref/writes",
 		48: "/kythe/edge/tparam",
+		49: "/kythe/edge/completedby",
 	}
 )
 
