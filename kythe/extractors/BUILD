@@ -51,7 +51,7 @@ proto_lang_toolchain(
         "@com_google_protobuf//:type_proto",
         "@com_google_protobuf//:wrappers_proto",
     ],
-    command_line = "--$(PLUGIN_OUT)=:$(OUT)",
+    command_line = "--PLUGIN_java_stubby_out=:%s",
     plugin = "//kythe/cxx/tools:proto_metadata_plugin",
     runtime = "@com_google_protobuf//:protobuf",
 )
