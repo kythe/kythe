@@ -23,10 +23,10 @@
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
 //- @Box defines/binding BoxAbs
-//- TypeVar.node/kind absvar
+//- TypeVar.node/kind tvar
 //- BoxDecl childof BoxAbs
 //- BoxAbs.node/kind abs
-//- BoxAbs param.0 TypeVar
+//- BoxDecl tparam.0 TypeVar
 @interface Box<Type> : Obj
 
 //- @addToList defines/binding FuncDecl

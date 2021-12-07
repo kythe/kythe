@@ -7,7 +7,7 @@ template<typename U>
 using T = U;
 
 //- AliasTemplate.node/kind abs
-//- TyvarU.node/kind absvar
-//- AliasTemplate param.0 TyvarU
+//- TyvarU.node/kind tvar
+//- T tparam.0 TyvarU
 //- Alias childof AliasTemplate
 //- Alias.node/kind talias

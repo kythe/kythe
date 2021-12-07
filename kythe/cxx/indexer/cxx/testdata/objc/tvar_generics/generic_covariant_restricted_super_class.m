@@ -30,10 +30,10 @@
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
 //- @Box defines/binding BoxAbs
-//- TypeVar.node/kind absvar
+//- TypeVar.node/kind tvar
 //- BoxDecl childof BoxAbs
 //- BoxAbs.node/kind abs
-//- BoxAbs param.0 TypeVar
+//- BoxDecl tparam.0 TypeVar
 //- TypeVar bounded/upper ObjParentDeclPtrType
 //- ObjParentDeclPtrType.node/kind tapp
 //- ObjParentDeclPtrType param.0 vname("ptr#builtin", _, _, _, _)
