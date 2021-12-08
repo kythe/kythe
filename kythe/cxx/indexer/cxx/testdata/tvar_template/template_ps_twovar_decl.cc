@@ -5,14 +5,15 @@ template
 class C;
 
 template
-//- @U defines/binding AbsU
+//- @U defines/binding TU
 <typename U>
-//- @C defines/binding PCDecl
+//- @C defines/binding APCDecl
 class C
 <int, U>;
 
-//- PCDecl specializes TAppCDeclIntAbsU
+//- APCDecl specializes TAppCDeclIntAbsU
 //- TAppCDeclIntAbsU.node/kind tapp
-//- TAppCDeclIntAbsU param.2 AbsU
-//- PCDecl param.0 AbsU
+//- TAppCDeclIntAbsU param.2 TU
+//- PCDecl childof APCDecl
+//- PCDecl tparam.0 TU
 //- TAppCDeclIntAbsU param.0 CNominal

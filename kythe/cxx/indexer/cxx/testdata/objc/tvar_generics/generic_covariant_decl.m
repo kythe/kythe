@@ -4,11 +4,11 @@
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
 //- @Box defines/binding BoxAbs
-//- TypeVar.node/kind absvar
+//- TypeVar.node/kind tvar
 //- TypeVar.variance covariant
 //- BoxDecl childof BoxAbs
 //- BoxAbs.node/kind abs
-//- BoxAbs param.0 TypeVar
+//- BoxDecl tparam.0 TypeVar
 @interface Box<__covariant Type>
 -(int) addToList:(Type)item;
 @end

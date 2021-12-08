@@ -2881,7 +2881,10 @@ GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     // specific to this context, which is how it interacts with the generic type
     // (BodyID). See VisitObjCTypeParamDecl for where we record this other
     // information.
-    Observer.recordParamEdge(AbsId, TP->getIndex(), TypeParamId);
+    if (options_.AbsNodes)
+      Observer.recordParamEdge(AbsId, TP->getIndex(), TypeParamId);
+    else
+      Observer.recordTParamEdge(BodyId, TP->getIndex(), TypeParamId);
   }
   return AbsId;
 }
@@ -2898,12 +2901,18 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     auto Marks = MarkedSources.Generate(ND);
     if (const auto* TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      if (options_.AbsNodes)
+        Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      else
+        Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = TTPD->getIndex();
     } else if (const auto* NTTPD =
                    dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      if (options_.AbsNodes)
+        Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      else
+        Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = NTTPD->getIndex();
     } else if (const auto* TTPD =
                    dyn_cast<clang::TemplateTemplateParmDecl>(ND)) {
@@ -2911,7 +2920,11 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
       // uses of the ParmDecl later on point at the Abs and not the wrapped
       // AbsVar.
       GraphObserver::NodeId ParamBodyId = BuildNodeIdForDecl(ND, 0);
-      Observer.recordAbsVarNode(ParamBodyId,
+      if (options_.AbsNodes)
+        Observer.recordAbsVarNode(ParamBodyId,
+                                  Marks.GenerateMarkedSource(ParamBodyId));
+      else
+        Observer.recordTVarNode(ParamBodyId,
                                 Marks.GenerateMarkedSource(ParamBodyId));
       ParamId = RecordTemplate(TTPD, ParamBodyId);
       ParamIndex = TTPD->getIndex();
@@ -2922,7 +2935,10 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     MaybeRecordDefinitionRange(
         RangeInCurrentContext(Decl->isImplicit(), ParamId, Range), ParamId,
         absl::nullopt);
-    Observer.recordParamEdge(DeclNode, ParamIndex, ParamId);
+    if (options_.AbsNodes)
+      Observer.recordParamEdge(DeclNode, ParamIndex, ParamId);
+    else
+      Observer.recordTParamEdge(BodyDeclNode, ParamIndex, ParamId);
   }
   return DeclNode;
 }
@@ -3425,7 +3441,11 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
     const clang::ObjCTypeParamDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(Decl);
-  Observer.recordAbsVarNode(TypeParamId,
+  if (options_.AbsNodes)
+    Observer.recordAbsVarNode(TypeParamId,
+                              Marks.GenerateMarkedSource(TypeParamId));
+  else
+    Observer.recordTVarNode(TypeParamId,
                             Marks.GenerateMarkedSource(TypeParamId));
   SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(

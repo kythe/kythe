@@ -1,28 +1,31 @@
 // Checks that templates can accept typename arguments.
 
 template
-//- @T defines/binding AbsT
+//- @T defines/binding TT
 <typename T>
-//- @C defines/binding CDecl1
+//- @C defines/binding ACDecl1
 class C;
 
 template
-//- @S defines/binding AbsS
+//- @S defines/binding TS
 <typename S>
-//- @C defines/binding CDecl2
+//- @C defines/binding ACDecl2
 class C;
 
 template
-//- @V defines/binding AbsV
+//- @V defines/binding TV
 <typename V>
-//- @C defines/binding CDefn
-//- @C completes/uniquely CDecl1
-//- @C completes/uniquely CDecl2
+//- @C defines/binding ACDefn
+//- @C completes/uniquely ACDecl1
+//- @C completes/uniquely ACDecl2
 class C { };
 
-//- AbsT.node/kind absvar
-//- AbsS.node/kind absvar
-//- AbsV.node/kind absvar
-//- CDefn param.0 AbsV
-//- CDecl2 param.0 AbsS
-//- CDecl1 param.0 AbsT
+//- CDefn childof ACDefn
+//- CDecl1 childof ACDecl1
+//- CDecl2 childof ACDecl2
+//- TT.node/kind tvar
+//- TS.node/kind tvar
+//- TV.node/kind tvar
+//- CDefn tparam.0 TV
+//- CDecl2 tparam.0 TS
+//- CDecl1 tparam.0 TT

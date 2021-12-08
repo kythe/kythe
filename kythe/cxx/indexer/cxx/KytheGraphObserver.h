@@ -214,6 +214,10 @@ class KytheGraphObserver : public GraphObserver {
       const NodeId& node,
       const absl::optional<MarkedSource>& marked_source) override;
 
+  void recordTVarNode(
+      const NodeId& node,
+      const absl::optional<MarkedSource>& marked_source) override;
+
   void recordAbsNode(const NodeId& node) override;
 
   void recordMarkedSource(
@@ -225,6 +229,9 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordParamEdge(const NodeId& param_of_id, uint32_t ordinal,
                        const NodeId& param_id) override;
+
+  void recordTParamEdge(const NodeId& param_of_id, uint32_t ordinal,
+                        const NodeId& param_id) override;
 
   void recordInterfaceNode(
       const NodeId& node,
