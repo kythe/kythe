@@ -10,11 +10,11 @@
 //- BoxDecl childof BoxAbs
 //- @FooType defines/binding FooTypeVar
 //- @BarType defines/binding BarTypeVar
-//- FooTypeVar.node/kind absvar
-//- BarTypeVar.node/kind absvar
+//- FooTypeVar.node/kind tvar
+//- BarTypeVar.node/kind tvar
 //- BoxAbs.node/kind abs
-//- BoxAbs param.0 FooTypeVar
-//- BoxAbs param.1 BarTypeVar
+//- BoxDecl tparam.0 FooTypeVar
+//- BoxDecl tparam.1 BarTypeVar
 @interface Box<FooType, BarType> : O
 
 //- @BarType ref BarTypeVar
