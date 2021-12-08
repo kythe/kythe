@@ -372,8 +372,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForIncompleteArray(const clang::IncompleteArrayType& TL);
   NodeSet BuildNodeSetForDependentSizedArray(
       const clang::DependentSizedArrayType& T);
-  NodeSet BuildNodeSetForExtInt(const clang::ExtIntType& T);
-  NodeSet BuildNodeSetForDependentExtInt(const clang::DependentExtIntType& T);
+  NodeSet BuildNodeSetForBitInt(const clang::BitIntType& T);
+  NodeSet BuildNodeSetForDependentBitInt(const clang::DependentBitIntType& T);
   NodeSet BuildNodeSetForFunctionProto(const clang::FunctionProtoType& T);
   NodeSet BuildNodeSetForFunctionNoProto(const clang::FunctionNoProtoType& T);
   NodeSet BuildNodeSetForParen(const clang::ParenType& T);

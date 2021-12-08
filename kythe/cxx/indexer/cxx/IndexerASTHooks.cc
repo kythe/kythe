@@ -4488,16 +4488,16 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
   return NodeSet::Empty();
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForExtInt(const clang::ExtIntType& T) {
+NodeSet IndexerASTVisitor::BuildNodeSetForBitInt(const clang::BitIntType& T) {
   return Observer.getNodeIdForBuiltinType(absl::StrCat(
-      T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", "#", T.getNumBits()));
+      T.isUnsigned() ? "unsigned _BitInt" : "_BitInt", "#", T.getNumBits()));
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentExtInt(
-    const clang::DependentExtIntType& T) {
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentBitInt(
+    const clang::DependentBitIntType& T) {
   if (auto ExprID = BuildNodeIdForExpr(T.getNumBitsExpr(), EmitRanges::No)) {
     return ApplyBuiltinTypeConstructor(
-        T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", *ExprID);
+        T.isUnsigned() ? "unsigned _BitInt" : "_BitInt", *ExprID);
   }
   return NodeSet::Empty();
 }
@@ -4842,8 +4842,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(TemplateSpecialization);
     DELEGATE_TYPE(Attributed);
     DELEGATE_TYPE(DependentAddressSpace);
-    DELEGATE_TYPE(ExtInt);
-    DELEGATE_TYPE(DependentExtInt);
+    DELEGATE_TYPE(BitInt);
+    DELEGATE_TYPE(DependentBitInt);
     UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(VariableArray);
