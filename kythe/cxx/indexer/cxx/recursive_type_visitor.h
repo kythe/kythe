@@ -355,8 +355,8 @@ DEF_TRAVERSE_TYPEPAIR(DependentTemplateSpecializationType, {
 DEF_TRAVERSE_TYPEPAIR(PackExpansionType, {
   return getDerived().TraverseTypePair(TL.getPatternLoc(), T->getPattern());
 });
-DEF_TRAVERSE_TYPEPAIR(ExtIntType, {});
-DEF_TRAVERSE_TYPEPAIR(DependentExtIntType, {
+DEF_TRAVERSE_TYPEPAIR(BitIntType, {});
+DEF_TRAVERSE_TYPEPAIR(DependentBitIntType, {
   return getDerived().TraverseStmt(T->getNumBitsExpr());
 });
 DEF_TRAVERSE_TYPEPAIR(ObjCTypeParamType, {});
