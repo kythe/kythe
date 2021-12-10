@@ -241,6 +241,8 @@ class EmbeddedMetadataGenerator : public CppGenerator {
                 GeneratorContext* context, std::string* error) const override {
     std::string cpp_parameter = parameter;
     WrappedContext wrapper(context, CompressMetadata(&cpp_parameter));
+    // Must forward AccessInfoMap to spawned context.
+    wrapper.SetAccessInfoMap(context->GetAccessInfoMap());
     if (CppGenerator::Generate(file, cpp_parameter, &wrapper, error)) {
       return wrapper.WriteEmbeddedMetadata(error);
     }
