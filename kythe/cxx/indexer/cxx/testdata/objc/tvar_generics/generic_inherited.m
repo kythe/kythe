@@ -22,12 +22,10 @@
 
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
-//- @Box defines/binding BoxAbs
+//- @Box defines/binding BoxDecl
 //- @O1 ref O1Impl
 //- TypeVar.node/kind tvar
 //- TypeVar bounded/upper O1Ptr
-//- BoxDecl childof BoxAbs
-//- BoxAbs.node/kind abs
 //- BoxDecl tparam.0 TypeVar
 //- BoxDecl extends O2Impl
 //- @O2 ref O2Impl
@@ -42,12 +40,10 @@
 
 // No source range defines PackageDecl since this is a generic type.
 //- @Type defines/binding PTypeVar
-//- @Package defines/binding PackageAbs
+//- @Package defines/binding PackageDecl
 //- @O1 ref O1Impl
 //- PTypeVar.node/kind tvar
 //- PTypeVar bounded/upper O1Ptr
-//- PackageDecl childof PackageAbs
-//- PackageAbs.node/kind abs
 //- PackageDecl tparam.0 PTypeVar
 @interface Package<Type : O1*>
 //- @Type ref PTypeVar
