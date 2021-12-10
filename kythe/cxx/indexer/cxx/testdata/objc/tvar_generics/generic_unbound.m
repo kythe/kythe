@@ -11,10 +11,8 @@
 
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
-//- @Box defines/binding BoxAbs
+//- @Box defines/binding BoxDecl
 //- TypeVar.node/kind tvar
-//- BoxDecl childof BoxAbs
-//- BoxAbs.node/kind abs
 //- BoxDecl tparam.0 TypeVar
 @interface Box<Type> : O
 -(int) doSomething:(Type)t;
@@ -22,7 +20,7 @@
 
 //- @Box defines/binding BoxImpl
 //- File.node/kind file
-//- @Box completes/uniquely BoxAbs
+//- @Box completes/uniquely BoxDecl
 @implementation Box
 -(int) doSomething:(id)t {
   return 0;

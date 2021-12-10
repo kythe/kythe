@@ -2870,9 +2870,12 @@ absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
 GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     const ObjCInterfaceDecl* IDecl, const ObjCTypeParamList* TPL,
     const GraphObserver::NodeId& BodyId) {
-  auto AbsId = BuildNodeIdForDecl(IDecl);
-  Observer.recordAbsNode(AbsId);
-  Observer.recordChildOfEdge(BodyId, AbsId);
+  GraphObserver::NodeId AbsId = BodyId;
+  if (options_.AbsNodes) {
+    AbsId = BuildNodeIdForDecl(IDecl);
+    Observer.recordAbsNode(AbsId);
+    Observer.recordChildOfEdge(BodyId, AbsId);
+  }
 
   for (const ObjCTypeParamDecl* TP : *TPL) {
     GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(TP);
@@ -2884,7 +2887,7 @@ GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     if (options_.AbsNodes)
       Observer.recordParamEdge(AbsId, TP->getIndex(), TypeParamId);
     else
-      Observer.recordTParamEdge(BodyId, TP->getIndex(), TypeParamId);
+      Observer.recordTParamEdge(AbsId, TP->getIndex(), TypeParamId);
   }
   return AbsId;
 }
@@ -5229,7 +5232,8 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
   // If we have type arguments, treat this as a generic type and indirect
   // through an abs node.
   if (const auto* TPL = Decl->getTypeParamList()) {
-    BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
+    BodyDeclNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
+                                     : BuildNodeIdForDecl(Decl);
     DeclNode = RecordGenericClass(Decl, TPL, BodyDeclNode);
   } else {
     BodyDeclNode = BuildNodeIdForDecl(Decl);
