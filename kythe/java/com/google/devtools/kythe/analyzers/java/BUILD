@@ -89,9 +89,9 @@ java_binary(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_beust_jcommander",
+        "@maven//:com_google_flogger_flogger",
     ],
 )
 

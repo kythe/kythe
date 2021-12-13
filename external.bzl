@@ -277,23 +277,6 @@ def _cc_dependencies():
 
 def _java_dependencies():
     maybe(
-        # For @com_google_common_flogger
-        http_archive,
-        name = "google_bazel_common",
-        strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
-        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
-            "https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
-        ],
-    )
-    maybe(
-        git_repository,
-        name = "com_google_common_flogger",
-        commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
-        remote = "https://github.com/google/flogger",
-    )
-    maybe(
         git_repository,
         name = "io_bazel",
         commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
@@ -302,6 +285,8 @@ def _java_dependencies():
     maven_install(
         name = "maven",
         artifacts = [
+            "com.google.flogger:flogger:0.7.2",
+            "com.google.flogger:flogger-system-backend:0.7.2",
             "com.beust:jcommander:1.81",
             "com.google.auto.service:auto-service:1.0",
             "com.google.auto.service:auto-service-annotations:1.0",
