@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
+import com.google.devtools.kythe.extractors.java.standalone.Javac9CompilationUnitFromArgs;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
@@ -66,7 +67,7 @@ public class JavaIndexer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException, IOException {
-    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
+    // JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
@@ -122,7 +123,10 @@ public class JavaIndexer {
             throw new IllegalArgumentException(
                 "given empty .kzip file \"" + compilationPath + "\"; try --ignore_empty_kzip");
           }
-        } else {
+        } else if (config.extractInPlace) {
+	        new Javac9CompilationUnitFromArgs().process(args);
+	      } else {
+		
           // java_indexer kindex-file
           logger.atWarning().atMostEvery(1, TimeUnit.DAYS).log(
               ".kindex files are deprecated; "
@@ -218,6 +222,11 @@ public class JavaIndexer {
         names = {"--out", "-out"},
         description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
+    @Parameter(
+         names = {"--extract_in_place"},
+         description = "no kzip/kindex is passed, but binary is run in context of javac")
+	 private boolean extractInPlace = true;
+
 
     public StandaloneConfig() {
       super("java-indexer");
@@ -250,5 +259,10 @@ public class JavaIndexer {
     public final List<String> getCompilation() {
       return compilation;
     }
+
+    public final boolean getExtractInPlace() {
+	return extractInPlace;
+    }
+      
   }
 }

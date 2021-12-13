@@ -28,6 +28,7 @@ java_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":abstract_javac_wrapper",
+	":java9_compilation_from_unit_args",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
@@ -41,6 +42,23 @@ java_library(
     name = "abstract_javac_wrapper",
     srcs = ["AbstractJavacWrapper.java"],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/extractors/java",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
+        "//kythe/java/com/google/devtools/kythe/util:json",
+        "//kythe/proto:analysis_java_proto",
+        "//third_party/guava",
+        "//third_party/javac",
+        "@com_google_common_flogger//api",
+    ],
+)
+
+java_library(
+    name = "javac9_compilation_unit_from_args",
+    srcs = ["Javac9CompilationUnitFromArgs.java"],
+    deps = [
+        ":abstract_javac_wrapper",    
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
