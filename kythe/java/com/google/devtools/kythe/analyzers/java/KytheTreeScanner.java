@@ -841,7 +841,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (!field.name.contentEquals("*")) {
         String msg = "Could not determine selected Symbol for " + field;
         if (config.getVerboseLogging()) {
-          logger.atWarning().log(msg);
+          logger.atWarning().log("%s", msg);
         }
         return emitDiagnostic(ctx, msg, null, null);
       }
