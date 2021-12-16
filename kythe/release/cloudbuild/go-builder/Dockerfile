@@ -21,3 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libleveldb-dev libbrotli-dev && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/*
+
+# Install beta for early generics adoption
+RUN go install golang.org/dl/go1.18beta1@latest && \
+    go1.18beta1 download && \
+    ln -s /go/bin/go1.18beta1 /go/bin/go
