@@ -35,7 +35,6 @@ filegroup(
         "@com_github_google_leveldb//:license",
         "@com_github_google_snappy//:license",
         "@com_github_tencent_rapidjson//:license",
-        "@com_google_common_flogger//:LICENSE",
         "@com_google_protobuf//:LICENSE",
         "@org_brotli//:LICENSE",
     ],

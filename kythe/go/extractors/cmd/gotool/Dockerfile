@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/cloud-builders/go:debian
+FROM gcr.io/cloud-builders/go:debian-1.17
 
 RUN apt-get update && \
     apt-get install -y parallel && \

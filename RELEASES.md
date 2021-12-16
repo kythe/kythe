@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.56] - 2021-12-13
+
+#### Bug Fixes
+
+* **java:** Update Flogger dependency to 0.7.2 due to log4j (#5147) ([ec0359e](https://github.com/kythe/kythe/commit/ec0359e92f253e6e412cb063539eaf4e571ef6a2)))
+
 ## [v0.0.55] - 2021-10-18
 
 * Fixes an issue with the Bazel Rust extractor
@@ -1215,7 +1221,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.55...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.56...HEAD
+[v0.0.56] https://github.com/kythe/kythe/compare/v0.0.55...v0.0.56
 [v0.0.55] https://github.com/kythe/kythe/compare/v0.0.54...v0.0.55
 [v0.0.54] https://github.com/kythe/kythe/compare/v0.0.53...v0.0.54
 [v0.0.53] https://github.com/kythe/kythe/compare/v0.0.52...v0.0.53

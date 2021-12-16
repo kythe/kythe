@@ -160,8 +160,8 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "e9b9e38f67a008d66133535a72ada843bd66013f",
-        sha256 = "49c93740b3b09f73cd2f10da778ea4129d59733085393f458a4acd17774503fb",
+        commit = "ec0d76f1d012cc1a4b3b08dfafcfc5237f5ba2c9",
+        sha256 = "32a00f5834195d6656097c800a773e2fc766741e434d1eff092ed5578a21dd3a",
     )
 
     maybe(
@@ -277,23 +277,6 @@ def _cc_dependencies():
 
 def _java_dependencies():
     maybe(
-        # For @com_google_common_flogger
-        http_archive,
-        name = "google_bazel_common",
-        strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
-        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
-            "https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
-        ],
-    )
-    maybe(
-        git_repository,
-        name = "com_google_common_flogger",
-        commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
-        remote = "https://github.com/google/flogger",
-    )
-    maybe(
         git_repository,
         name = "io_bazel",
         commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
@@ -302,6 +285,8 @@ def _java_dependencies():
     maven_install(
         name = "maven",
         artifacts = [
+            "com.google.flogger:flogger:0.7.2",
+            "com.google.flogger:flogger-system-backend:0.7.2",
             "com.beust:jcommander:1.81",
             "com.google.auto.service:auto-service:1.0",
             "com.google.auto.service:auto-service-annotations:1.0",
@@ -1168,17 +1153,22 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.5, as of 2021-06-09
+        # v0.1.7, latest as of 2021-10-06
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.5.zip",
-            "https://github.com/golang/tools/archive/v0.1.5.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.7.zip",
+            "https://github.com/golang/tools/archive/v0.1.7.zip",
         ],
-        #sha256 = "60a5cee8304b4d9130344f156a10ba648e315b5fca4b84939b765b26ce217dee",
-        strip_prefix = "tools-0.1.5",
+        sha256 = "c069fd1d1dcbbfd2e396993307adf0edde5ef5d419c5db92649ab8cfabec255e",
+        strip_prefix = "tools-0.1.7",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
-            # gazelle args: -repo_root . -go_prefix golang.org/x/tools -go_naming_convention import_alias
+            # deletegopls removes the gopls subdirectory. It contains a nested
+            # module with additional dependencies. It's not needed by rules_go.
+            # releaser:patch-cmd rm -rf gopls
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
+            # releaser:patch-cmd gazelle -repo_root . -go_prefix golang.org/x/tools -go_naming_convention import_alias
             "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-public-visibility.patch",
         ],
         patch_args = ["-p1"],
     )
