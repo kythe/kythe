@@ -206,6 +206,13 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
+	// Receiver type parameter identifiers are both usages and definitions; take
+	// the opportunity to emit a binding and do not continue to emit a Ref edge.
+	if def, ok := e.pi.Info.Defs[id].(*types.TypeName); ok && def == obj {
+		e.writeBinding(id, nodes.TVar, nil)
+		return
+	}
+
 	target := e.pi.ObjectVName(obj)
 	if target == nil {
 		// This should not happen in well-formed packages, but can if the
@@ -410,6 +417,8 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 				})
 			}
 		}
+	case *types.TypeParam:
+		v = e.pi.ObjectVName(typ.Obj())
 	default:
 		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
 	}
@@ -487,6 +496,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	target := e.mustWriteBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
 	e.writeDoc(specComment(spec, stack), target)
+
+	mapFields(spec.TypeParams, func(i int, id *ast.Ident) {
+		v := e.writeBinding(id, nodes.TVar, nil)
+		e.writeEdge(target, v, edges.TParamIndex(i))
+	})
 
 	// Emit type-specific structure.
 	switch t := obj.Type().Underlying().(type) {
@@ -709,6 +723,11 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Results are not considered parameters.
 	mapFields(ftype.Results, func(i int, id *ast.Ident) {
 		e.writeBinding(id, nodes.Variable, info.vname)
+	})
+	// Emit bindings for type parameters
+	mapFields(ftype.TypeParams, func(i int, id *ast.Ident) {
+		v := e.writeBinding(id, nodes.TVar, nil)
+		e.writeEdge(info.vname, v, edges.TParamIndex(i))
 	})
 }
 
