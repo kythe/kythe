@@ -285,8 +285,8 @@ def _java_dependencies():
     maven_install(
         name = "maven",
         artifacts = [
-            "com.google.flogger:flogger:0.7.2",
-            "com.google.flogger:flogger-system-backend:0.7.2",
+            "com.google.flogger:flogger:0.7.3",
+            "com.google.flogger:flogger-system-backend:0.7.3",
             "com.beust:jcommander:1.81",
             "com.google.auto.service:auto-service:1.0",
             "com.google.auto.service:auto-service-annotations:1.0",
