@@ -552,6 +552,7 @@ const (
 	tagLabel  = "label"
 	tagMethod = "method"
 	tagParam  = "param"
+	tagTVar   = "tvar"
 	tagType   = "type"
 	tagVar    = "var"
 )
@@ -610,6 +611,9 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 		}
 
 	case *types.TypeName:
+		if param, ok := t.Type().(*types.TypeParam); ok {
+			return tagTVar, fmt.Sprintf("[%p]%s", t, param.String())
+		}
 		topLevelTag = tagType
 		if t.Pkg() == nil {
 			return isBuiltin + tagType, t.Name()
@@ -693,6 +697,14 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 // names.  They should be rare in readable code.
 func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Position]types.Object, unownedByPos map[token.Position][]types.Object) {
 	scope := pkg.Scope()
+	addTypeParams := func(obj types.Object, params *types.TypeParamList) {
+		mapTypeParams(params, func(i int, param *types.TypeParam) {
+			typeName := param.Obj()
+			if _, ok := pi.owner[typeName]; !ok {
+				pi.owner[typeName] = obj
+			}
+		})
+	}
 	addFunc := func(obj *types.Func) {
 		// Inspect the receiver, parameters, and result values.
 		fsig := obj.Type().(*types.Signature)
@@ -709,6 +721,8 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 				pi.owner[res.At(i)] = obj
 			}
 		}
+		addTypeParams(obj, fsig.TypeParams())
+		addTypeParams(obj, fsig.RecvTypeParams())
 	}
 	addMethods := func(obj types.Object, n int, method func(i int) *types.Func) {
 		for i := 0; i < n; i++ {
@@ -762,6 +776,7 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			if !ok {
 				continue
 			}
+			addTypeParams(obj, named.TypeParams())
 			switch t := named.Underlying().(type) {
 			case *types.Struct:
 				// Inspect the fields of a struct.
@@ -788,6 +803,17 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 		case *types.Func:
 			addFunc(obj)
 		}
+	}
+}
+
+// mapTypeParams applies f to each type parameter declared in params.  Each call
+// to f is given the offset and the type parameter.
+func mapTypeParams(params *types.TypeParamList, f func(i int, id *types.TypeParam)) {
+	if params == nil {
+		return
+	}
+	for i := 0; i < params.Len(); i++ {
+		f(i, params.At(i))
 	}
 }
 
