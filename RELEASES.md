@@ -1,5 +1,7 @@
 # Release Notes
 
+## [v0.0.57] - 2021-12-16
+
 ## [v0.0.56] - 2021-12-13
 
 #### Bug Fixes
@@ -1221,7 +1223,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.56...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.57...HEAD
+[v0.0.57] https://github.com/kythe/kythe/compare/v0.0.56...v0.0.57
 [v0.0.56] https://github.com/kythe/kythe/compare/v0.0.55...v0.0.56
 [v0.0.55] https://github.com/kythe/kythe/compare/v0.0.54...v0.0.55
 [v0.0.54] https://github.com/kythe/kythe/compare/v0.0.53...v0.0.54
