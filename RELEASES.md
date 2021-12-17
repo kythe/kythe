@@ -2,6 +2,10 @@
 
 ## [v0.0.57] - 2021-12-16
 
+#### Bug Fixes
+
+* **java:** Update Flogger dependency to 0.7.3 due to log4j (#5152) ([9a9fb44](https://github.com/kythe/kythe/commit/9a9fb44c710dc3dabf1309840f20790a7325fc83)))
+
 ## [v0.0.56] - 2021-12-13
 
 #### Bug Fixes
