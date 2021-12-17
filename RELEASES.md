@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.57] - 2021-12-16
+
+#### Bug Fixes
+
+* **java:** Update Flogger dependency to 0.7.3 due to log4j (#5152) ([9a9fb44](https://github.com/kythe/kythe/commit/9a9fb44c710dc3dabf1309840f20790a7325fc83)))
+
 ## [v0.0.56] - 2021-12-13
 
 #### Bug Fixes
@@ -1221,7 +1227,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.56...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.57...HEAD
+[v0.0.57] https://github.com/kythe/kythe/compare/v0.0.56...v0.0.57
 [v0.0.56] https://github.com/kythe/kythe/compare/v0.0.55...v0.0.56
 [v0.0.55] https://github.com/kythe/kythe/compare/v0.0.54...v0.0.55
 [v0.0.54] https://github.com/kythe/kythe/compare/v0.0.53...v0.0.54
