@@ -772,15 +772,22 @@ func (o overrides) seen(x, y types.Object) bool {
 // indexed, and emits edges connecting it to any known interfaces its method
 // set satisfies.
 func (e *emitter) emitSatisfactions() {
-	// Find the names of all defined types mentioned in this compilation.
-	var allNames []*types.TypeName
+	// Find all the Named types mentioned in this compilation.
+	var allTypes []*types.Named
 
 	// For the current source package, use all names, even local ones.
 	for _, obj := range e.pi.Info.Defs {
 		if obj, ok := obj.(*types.TypeName); ok {
-			if _, ok := obj.Type().(*types.Named); ok {
-				allNames = append(allNames, obj)
+			if n, ok := obj.Type().(*types.Named); ok {
+				allTypes = append(allTypes, n)
 			}
+		}
+	}
+
+	// Include instance types.
+	for _, t := range e.pi.Info.Types {
+		if n, ok := t.Type.(*types.Named); ok && n.TypeArgs().Len() > 0 {
+			allTypes = append(allTypes, n)
 		}
 	}
 
@@ -795,8 +802,8 @@ func (e *emitter) emitSatisfactions() {
 				// compiled package headers omit the names if they are not
 				// needed.  Skip such cases, even though they would qualify if
 				// we had the source package.
-				if _, ok := obj.Type().(*types.Named); ok && obj.Name() != "" {
-					allNames = append(allNames, obj)
+				if n, ok := obj.Type().(*types.Named); ok && obj.Name() != "" {
+					allTypes = append(allTypes, n)
 				}
 			}
 		}
@@ -806,13 +813,13 @@ func (e *emitter) emitSatisfactions() {
 	var msets typeutil.MethodSetCache
 	// Cache the overrides we've noticed to avoid duplicate entries.
 	cache := make(overrides)
-	for _, xobj := range allNames {
+	for _, x := range allTypes {
+		xobj := x.Obj()
 		if xobj.Pkg() != e.pi.Package {
 			continue // not from this package
 		}
 
 		// Check whether x is a named type with methods; if not, skip it.
-		x := xobj.Type()
 		if len(typeutil.IntuitiveMethodSet(x, &msets)) == 0 {
 			continue // no methods to consider
 		}
@@ -822,16 +829,16 @@ func (e *emitter) emitSatisfactions() {
 		// single compilation.
 
 		// Check the method sets of both x and pointer-to-x for overrides.
-		xmset := msets.MethodSet(x)
-		pxmset := msets.MethodSet(types.NewPointer(x))
+		xmset := msets.MethodSet(xobj.Type())
+		pxmset := msets.MethodSet(types.NewPointer(xobj.Type()))
 
-		for _, yobj := range allNames {
+		for _, y := range allTypes {
+			yobj := y.Obj()
 			if xobj == yobj {
 				continue
 			}
 
-			y := yobj.Type()
-			ymset := msets.MethodSet(y)
+			ymset := msets.MethodSet(yobj.Type())
 
 			ifx, ify := isInterface(x), isInterface(y)
 			switch {

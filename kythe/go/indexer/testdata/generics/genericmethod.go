@@ -1,5 +1,6 @@
 package genericmethod
 
+//- @Container defines/binding Container
 //- @T defines/binding TVar
 type Container[T any] struct {
 	//- @T ref TVar
@@ -8,6 +9,7 @@ type Container[T any] struct {
 
 // Methods introduce unique tvars
 // TODO(schroederc): relate these to the struct tvar
+//- @Get defines/binding Get
 //- @#0T defines/binding GetTVar
 //- GetTVar.node/kind tvar
 //- @#1T ref GetTVar
@@ -21,6 +23,7 @@ func (c *Container[T]) Get() T {
 }
 
 // And can technically be renamed
+//- @Put defines/binding Put
 //- @#0A defines/binding PutTVar
 //- PutTVar.node/kind tvar
 //- @#1A ref PutTVar
@@ -34,6 +37,18 @@ func (c *Container[A]) Put(t A) A {
 	var temp A = c.Element
 	c.Element = temp
 	return temp
+}
+
+//- @Interface defines/binding Interface
+type Interface interface {
+	//- @Get defines/binding GetI
+	Get() string
+	//- @Put defines/binding PutI
+	Put(string) string
+
+	//- Container satisfies Interface
+	//- Get overrides GetI
+	//- Put overrides PutI
 }
 
 // kythe/go/indexer/genericmethod_test.Container.Get.T
