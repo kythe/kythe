@@ -1,5 +1,14 @@
 package genericmethod
 
+func main() {
+	//- @Container ref Container
+	c := &Container[string]{"element"}
+	//- @Get ref Get
+	c.Get()
+	//- @Put ref Put
+	c.Put("yup")
+}
+
 //- @Container defines/binding Container
 //- @T defines/binding TVar
 type Container[T any] struct {

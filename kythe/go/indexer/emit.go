@@ -206,6 +206,16 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
+	if sig, ok := obj.Type().(*types.Signature); ok && sig.RecvTypeParams().Len() > 0 {
+		// Lookup the original non-instantiated method to reference.
+		if n, ok := deref(sig.Recv().Type()).(*types.Named); ok {
+			f, _, _ := types.LookupFieldOrMethod(n.Origin(), true, obj.Pkg(), obj.Name())
+			if f != nil {
+				obj = f
+			}
+		}
+	}
+
 	// Receiver type parameter identifiers are both usages and definitions; take
 	// the opportunity to emit a binding and do not continue to emit a Ref edge.
 	if def, ok := e.pi.Info.Defs[id].(*types.TypeName); ok && def == obj {

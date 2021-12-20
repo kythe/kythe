@@ -1,5 +1,10 @@
 package genericfunc
 
+func main() {
+	//- @Map ref Func
+	Map([]string{}, func(s string) string { return s })
+}
+
 //- @Map defines/binding Func
 //- Func.node/kind function
 //- @#0T defines/binding TVar
