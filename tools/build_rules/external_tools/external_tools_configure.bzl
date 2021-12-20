@@ -40,6 +40,7 @@ def _external_toolchain_autoconf_impl(repository_ctx):
         "mkdir",
         "mktemp",
         "mv",
+        "python3",
         "readlink",
         "rm",
         "sed",
