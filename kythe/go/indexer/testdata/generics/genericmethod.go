@@ -1,7 +1,6 @@
 package genericmethod
 
 func main() {
-	//- @Container ref Container
 	c := &Container[string]{"element"}
 	//- @Get ref Get
 	c.Get()

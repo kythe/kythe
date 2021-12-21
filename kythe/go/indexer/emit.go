@@ -168,6 +168,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				e.visitRangeStmt(n, stack)
 			case *ast.CompositeLit:
 				e.visitCompositeLit(n, stack)
+			case *ast.IndexExpr:
+				e.visitIndexExpr(n, stack)
+			case *ast.IndexListExpr:
+				e.visitIndexListExpr(n, stack)
 			}
 			return true
 		}), file)
@@ -223,7 +227,14 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
-	target := e.pi.ObjectVName(obj)
+	var target *spb.VName
+	if n, ok := obj.(*types.TypeName); ok && obj.Pkg() == nil {
+		// Handle type arguments in instantiated types.
+		target = e.emitType(n.Type())
+	} else {
+		target = e.pi.ObjectVName(obj)
+	}
+
 	if target == nil {
 		// This should not happen in well-formed packages, but can if the
 		// extractor gets confused. Avoid emitting confusing references in such
@@ -293,7 +304,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 // with given constructor and parameters.  The constructor's kind is also
 // emitted if this is the first time seeing it.
 func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
-	if e.pi.typeEmitted.Add(ctor.Signature) {
+	if ctorKind != "" && e.pi.typeEmitted.Add(ctor.Signature) {
 		e.writeFact(ctor, facts.NodeKind, ctorKind)
 		if ctorKind == nodes.TBuiltin {
 			e.emitBuiltinMarkedSource(ctor)
@@ -330,7 +341,18 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 
 	switch typ := typ.(type) {
 	case *types.Named:
-		v = e.pi.ObjectVName(typ.Obj())
+		if typ.TypeArgs().Len() == 0 {
+			v = e.pi.ObjectVName(typ.Obj())
+		} else {
+			// Instantiated Named types produce tapps
+			ctor := e.emitType(typ.Origin())
+			args := typ.TypeArgs()
+			var params []*spb.VName
+			for i := 0; i < args.Len(); i++ {
+				params = append(params, e.emitType(args.At(i)))
+			}
+			v = e.emitTApp(genericTAppMS, "", ctor, params...)
+		}
 	case *types.Basic:
 		v = govname.BasicType(typ)
 		if e.pi.typeEmitted.Add(v.Signature) {
@@ -691,6 +713,22 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 		default:
 			e.emitPosRef(t, sv.Field(i), edges.RefInit)
 		}
+	}
+}
+
+// visitIndexExpr handles references to instantiated types with a single type
+// parameter.
+func (e *emitter) visitIndexExpr(expr *ast.IndexExpr, stack stackFunc) {
+	if n, ok := e.pi.Info.TypeOf(expr).(*types.Named); ok && n.TypeArgs().Len() > 0 {
+		e.writeRef(expr, e.emitType(n), edges.Ref)
+	}
+}
+
+// visitIndexListExpr handles references to instantiated types with multiple
+// type parameters.
+func (e *emitter) visitIndexListExpr(expr *ast.IndexListExpr, stack stackFunc) {
+	if n, ok := e.pi.Info.TypeOf(expr).(*types.Named); ok && n.TypeArgs().Len() > 0 {
+		e.writeRef(expr, e.emitType(n), edges.Ref)
 	}
 }
 

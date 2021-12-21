@@ -334,6 +334,22 @@ var (
 		}},
 		PreText: "<-chan ",
 	}
+	genericTAppMS = &cpb.MarkedSource{
+		Kind: cpb.MarkedSource_TYPE,
+		Child: []*cpb.MarkedSource{{
+			Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+			LookupIndex: 0,
+		}, {
+			Kind:     cpb.MarkedSource_BOX,
+			PreText:  "[",
+			PostText: "]",
+			Child: []*cpb.MarkedSource{{
+				Kind:        cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+				LookupIndex: 1,
+			}},
+			PostChildText: ", ",
+		}},
+	}
 )
 
 func arrayTAppMS(length int64) *cpb.MarkedSource {
