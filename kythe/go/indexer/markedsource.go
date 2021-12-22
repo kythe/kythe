@@ -99,6 +99,15 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		}
 		fn.Child = append(fn.Child, ms)
 
+		if sig.TypeParams().Len() > 0 {
+			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+				PreText:       "[",
+				PostText:      "]",
+				PostChildText: ", ",
+			})
+		}
+
 		// If there are no parameters, the lookup will not produce anything.
 		// Ensure when this happens we still get parentheses for notational
 		// purposes.

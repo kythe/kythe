@@ -24,6 +24,14 @@ func Map[T any, U any](l []T, f func(T) U) []U {
 	return res
 }
 
+//- Func code FuncCode
+//- FuncCode.kind "BOX"
+//- FuncCode child.2 FuncParams
+//- FuncParams.kind "PARAMETER_LOOKUP_BY_TPARAM"
+//- FuncParams.pre_text "["
+//- FuncParams.post_text "]"
+//- FuncParams.post_child_text ", "
+
 // kythe/go/indexer/genericfunc_test.Map.T
 //- TVar code TVarCode
 //- TVarCode.kind "BOX"
@@ -33,10 +41,10 @@ func Map[T any, U any](l []T, f func(T) U) []U {
 //- C.post_child_text "."
 //- C.add_final_list_token "true"
 //- C child.0 Pkg
-//- C child.1 FuncCode
+//- C child.1 FuncCtxCode
 //- Pkg.kind "IDENTIFIER"
 //- Pkg.pre_text "kythe/go/indexer/genericfunc_test"
-//- FuncCode.kind "IDENTIFIER"
-//- FuncCode.pre_text "Map"
+//- FuncCtxCode.kind "IDENTIFIER"
+//- FuncCtxCode.pre_text "Map"
 //- I.kind "IDENTIFIER"
 //- I.pre_text "T"
