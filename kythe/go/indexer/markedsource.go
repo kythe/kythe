@@ -87,12 +87,13 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		if recv := sig.Recv(); recv != nil {
 			// Parenthesized receiver type, e.g. (R).
 			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				// TODO(schroederc): use LOOKUP_BY_PARAM
 				Kind:     cpb.MarkedSource_PARAMETER,
 				PreText:  "(",
 				PostText: ") ",
 				Child: []*cpb.MarkedSource{{
 					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(recv.Type()),
+					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
 				}},
 			})
 			firstParam = 1
@@ -187,6 +188,21 @@ func typeName(typ types.Type) string {
 		return "*" + typeName(t.Elem())
 	}
 	return typ.String()
+}
+
+// typeArgs returns a human readable string for a type's list of type arguments
+// (or "" if the type does not have any).
+func typeArgs(typ types.Type) string {
+	n, ok := deref(typ).(*types.Named)
+	if !ok || n.TypeArgs().Len() == 0 {
+		return ""
+	}
+	args := n.TypeArgs()
+	var ss []string
+	for i := 0; i < args.Len(); i++ {
+		ss = append(ss, typeName(args.At(i)))
+	}
+	return "[" + strings.Join(ss, ", ") + "]"
 }
 
 // typeContext returns the package, type, and function context identifiers that
