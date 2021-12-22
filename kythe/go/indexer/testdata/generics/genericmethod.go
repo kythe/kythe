@@ -30,6 +30,14 @@ func (c *Container[T]) Get() T {
 	return res
 }
 
+//- Get code GetCode
+//- GetCode.kind "BOX"
+//- GetCode child.1 RecvCode
+//- RecvCode.kind "PARAMETER"
+//- RecvCode child.0 RecvType
+//- RecvType.kind "TYPE"
+//- RecvType.pre_text "*Container[T]"
+
 // And can technically be renamed
 //- @Put defines/binding Put
 //- @#0A defines/binding PutTVar
