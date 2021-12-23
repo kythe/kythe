@@ -765,6 +765,31 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			}
 		}
 	}
+	addNamed := func(obj types.Object, named *types.Named) {
+		addTypeParams(obj, named.TypeParams())
+		switch t := named.Underlying().(type) {
+		case *types.Struct:
+			// Inspect the fields of a struct.
+			for i := 0; i < t.NumFields(); i++ {
+				f := t.Field(i)
+				if f.Pkg() != pkg {
+					continue // wrong package
+				}
+				if _, ok := pi.owner[f]; !ok {
+					pi.owner[f] = obj
+				}
+			}
+			addMethods(obj, named.NumMethods(), named.Method)
+
+		case *types.Interface:
+			// Inspect the declared methods of an interface.
+			addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)
+
+		default:
+			// Inspect declared methods of other named types.
+			addMethods(obj, named.NumMethods(), named.Method)
+		}
+	}
 
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
@@ -776,32 +801,19 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			if !ok {
 				continue
 			}
-			addTypeParams(obj, named.TypeParams())
-			switch t := named.Underlying().(type) {
-			case *types.Struct:
-				// Inspect the fields of a struct.
-				for i := 0; i < t.NumFields(); i++ {
-					f := t.Field(i)
-					if f.Pkg() != pkg {
-						continue // wrong package
-					}
-					if _, ok := pi.owner[f]; !ok {
-						pi.owner[f] = obj
-					}
-				}
-				addMethods(obj, named.NumMethods(), named.Method)
-
-			case *types.Interface:
-				// Inspect the declared methods of an interface.
-				addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)
-
-			default:
-				// Inspect declared methods of other named types.
-				addMethods(obj, named.NumMethods(), named.Method)
-			}
+			addNamed(obj, named)
 
 		case *types.Func:
 			addFunc(obj)
+		}
+	}
+
+	if pkg == pi.Package {
+		// Add owners for members of known known instantiations
+		for _, t := range pi.Info.Types {
+			if n, ok := t.Type.(*types.Named); ok && n.TypeArgs().Len() > 0 {
+				addNamed(n.Obj(), n)
+			}
 		}
 	}
 }
