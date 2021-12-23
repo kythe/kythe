@@ -260,7 +260,7 @@ fn analysis_path_string(build_output_path: &str, temp_dir_path: &Path) -> Result
     // always replace the hyphens with underscores because the save_analysis
     // files for libraries have hyphens in them.
     if !path.exists() {
-        path = temp_dir_path.join("save-analysis").join(analysis_file_str.replace("-", "_"));
+        path = temp_dir_path.join("save-analysis").join(analysis_file_str.replace('-', "_"));
     }
 
     path.to_str()

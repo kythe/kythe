@@ -152,18 +152,18 @@ impl<'a> UnitAnalyzer<'a> {
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
-            let file_contents: String;
-            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(source_file, file_digest)?;
-                file_contents = String::from_utf8(file_bytes).map_err(|_| {
-                    KytheError::IndexerError(format!(
-                        "Failed to read file {} as UTF8 string",
-                        source_file
-                    ))
-                })?;
-            } else {
-                return Err(KytheError::FileNotFoundError(source_file.to_string()));
-            }
+            let file_contents: String =
+                if let Some(file_digest) = self.file_digests.get(source_file) {
+                    let file_bytes = self.provider.contents(source_file, file_digest)?;
+                    String::from_utf8(file_bytes).map_err(|_| {
+                        KytheError::IndexerError(format!(
+                            "Failed to read file {} as UTF8 string",
+                            source_file
+                        ))
+                    })?
+                } else {
+                    return Err(KytheError::FileNotFoundError(source_file.to_string()));
+                };
 
             // Add the file to the OffsetIndex
             self.offset_index.add_file(source_file, &file_contents);
