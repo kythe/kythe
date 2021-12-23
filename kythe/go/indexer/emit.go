@@ -951,7 +951,9 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 
 		xvname := e.pi.ObjectVName(xobj)
 		yvname := e.pi.ObjectVName(yobj)
-		e.writeEdge(xvname, yvname, edges.Overrides)
+		if e.pi.typeEmitted.Add(xvname.Signature + "+" + yvname.Signature) {
+			e.writeEdge(xvname, yvname, edges.Overrides)
+		}
 
 		xt := e.emitType(xobj.Type())
 		yt := e.emitType(yobj.Type())

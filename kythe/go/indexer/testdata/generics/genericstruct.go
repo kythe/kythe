@@ -4,10 +4,13 @@ func main() {
 	//- @"Container[string]" ref ContainerApp
 	//- @Container ref Container
 	//- @string ref String
-	_ = &Container[string]{"element"}
+	c := &Container[string]{"element"}
 	//- ContainerApp.node/kind "tapp"
 	//- ContainerApp param.0 Container
 	//- ContainerApp param.1 String
+
+	//- @Element ref Element
+	_ = c.Element
 
 	//- @"Pair[string, int]" ref PairApp
 	//- @Pair ref Pair
@@ -27,7 +30,11 @@ func main() {
 //- Container tparam.0 TVar
 type Container[T any] struct {
 	//- @T ref TVar
+	//- @Element defines/binding Element
 	Element T
+
+	//- Element.node/kind variable
+	//- Element.subkind field
 }
 
 //- @T defines/binding TVar2
