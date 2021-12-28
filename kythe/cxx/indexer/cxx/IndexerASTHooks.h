@@ -224,6 +224,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
+  bool VisitUsingTypeLoc(clang::UsingTypeLoc TL);
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
   bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
   bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
@@ -380,6 +381,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForDecltype(const clang::DecltypeType& T);
   NodeSet BuildNodeSetForElaborated(const clang::ElaboratedType& T);
   NodeSet BuildNodeSetForTypedef(const clang::TypedefType& T);
+  NodeSet BuildNodeSetForUsing(const clang::UsingType& T);
 
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
       const clang::SubstTemplateTypeParmType& T);

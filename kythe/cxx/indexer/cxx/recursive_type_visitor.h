@@ -273,6 +273,7 @@ DEF_TRAVERSE_TYPEPAIR(FunctionProtoType, {
 });
 DEF_TRAVERSE_TYPEPAIR(UnresolvedUsingType, {});
 DEF_TRAVERSE_TYPEPAIR(TypedefType, {});
+DEF_TRAVERSE_TYPEPAIR(UsingType, {});
 DEF_TRAVERSE_TYPEPAIR(TypeOfExprType, {
   return getDerived().TraverseStmt(TL.getUnderlyingExpr());
 });
