@@ -56,6 +56,10 @@ load("@maven//:compat.bzl", "compat_repositories")
 
 compat_repositories()
 
+load("@maven//:defs.bzl", "pinned_maven_install")
+
+pinned_maven_install()
+
 # If the configuration here changes, run tools/platforms/configs/rebuild.sh
 load("@bazel_toolchains//rules:environments.bzl", "clang_env")
 load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
