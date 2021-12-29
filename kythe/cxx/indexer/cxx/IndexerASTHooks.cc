@@ -1915,6 +1915,13 @@ bool IndexerASTVisitor::VisitTypedefTypeLoc(clang::TypedefTypeLoc TL) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitUsingTypeLoc(clang::UsingTypeLoc TL) {
+  // Uses of using-declared types should match uses of other using-declared
+  // names and reference the underlying entity.
+  RecordTypeLocSpellingLocation(TL);
+  return true;
+}
+
 bool IndexerASTVisitor::VisitInjectedClassNameTypeLoc(
     clang::InjectedClassNameTypeLoc TL) {
   RecordTypeLocSpellingLocation(TL);
@@ -4566,6 +4573,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForElaborated(
   return BuildNodeSetForType(T.getNamedType());
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForUsing(const clang::UsingType& T) {
+  return BuildNodeSetForType(T.getUnderlyingType());
+}
+
 NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(const clang::TypedefType& T) {
   // TODO(zarko): Return canonicalized versions as well.
   GraphObserver::NameId AliasID = BuildNameIdForDecl(T.getDecl());
@@ -4853,6 +4864,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(Typedef);
     DELEGATE_TYPE(Decltype);
     DELEGATE_TYPE(Elaborated);
+    DELEGATE_TYPE(Using);
     // "Within an instantiated template, all template type parameters have
     // been replaced with these. They are used solely to record that a type
     // was originally written as a template type parameter; therefore they are
