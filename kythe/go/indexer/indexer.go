@@ -772,8 +772,8 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			// Inspect the fields of a struct.
 			for i := 0; i < t.NumFields(); i++ {
 				f := t.Field(i)
-				if f.Pkg() != pkg {
-					continue // wrong package
+				if f.Pkg() != pkg && named.TypeArgs().Len() == 0 {
+					continue // wrong package (and not an instantiated type)
 				}
 				if _, ok := pi.owner[f]; !ok {
 					pi.owner[f] = obj

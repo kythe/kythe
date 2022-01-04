@@ -24,7 +24,11 @@ var _ Interface[string] = &Thing{"hello"}
 
 //- @Container defines/binding Container
 //- Container satisfies Interface
-type Container[T any] struct{ Element T }
+type Container[T any] struct {
+	//- @Element defines/binding Element
+	//- Element.node/kind variable
+	Element T
+}
 
 //- @Accept defines/binding ContainerAccept
 //- ContainerAccept overrides Accept
