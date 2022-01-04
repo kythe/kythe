@@ -76,6 +76,13 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "genericdep_test",
+    srcs = ["testdata/generics/genericdep.go"],
+    has_marked_source = True,
+    deps = [":genericinterface_test"],
+)
+
+go_indexer_test(
     name = "syntax_test",
     srcs = ["testdata/syntax.go"],
 )
