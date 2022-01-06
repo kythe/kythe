@@ -29,6 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/flagutil"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
@@ -37,9 +38,10 @@ import (
 type filterCommand struct {
 	cmdutil.Info
 
-	input    string
-	output   string
-	encoding flags.EncodingFlag
+	input     string
+	output    string
+	encoding  flags.EncodingFlag
+	languages flagutil.StringList
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -56,6 +58,7 @@ func (c *filterCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.StringVar(&c.input, "input", "", "Path to input kzip file")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
+	fs.Var(&c.languages, "languages", "When specified retains only compilation units for given language.")
 }
 
 // Execute implements the subcommands interface and filters the input file.
@@ -83,7 +86,20 @@ func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		return c.Fail("Error creating temp output: %v", err)
 	}
 	units := stringset.New(fs.Args()...)
-	if err := filterArchive(ctx, tmpOut, c.input, units, opt); err != nil {
+	languages := stringset.New(c.languages...)
+	var filter func(*kzip.Unit) bool
+	if !units.Empty() && !languages.Empty() {
+		return c.Fail("Error filtering can be done only by either digests or languages but not both simultaneously.")
+	} else if !units.Empty() {
+		filter = func(u *kzip.Unit) bool {
+			return units.Contains(u.Digest)
+		}
+	} else if !languages.Empty() {
+		filter = func(u *kzip.Unit) bool {
+			return languages.Contains(u.Proto.VName.Language)
+		}
+	}
+	if err := filterArchive(ctx, tmpOut, c.input, filter, opt); err != nil {
 		return c.Fail("Error filtering archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -92,7 +108,7 @@ func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 	return subcommands.ExitSuccess
 }
 
-func filterArchive(ctx context.Context, out io.WriteCloser, input string, digests stringset.Set, opts ...kzip.WriterOption) error {
+func filterArchive(ctx context.Context, out io.WriteCloser, input string, filter func(*kzip.Unit) bool, opts ...kzip.WriterOption) error {
 	filesAdded := stringset.New()
 
 	f, err := vfs.Open(ctx, input)
@@ -123,7 +139,7 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, digest
 
 	// scan the input, and for matching units, copy into output
 	err = rd.Scan(func(u *kzip.Unit) error {
-		if !digests.Contains(u.Digest) {
+		if !filter(u) {
 			// non-matching unit, do not copy
 			return nil
 		}
