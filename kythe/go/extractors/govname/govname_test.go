@@ -39,13 +39,15 @@ func TestForPackage(t *testing.T) {
 		}}]`
 
 	tests := []struct {
-		path      string // import path
-		dir       string // on-disk directory that contains this package
-		root      string // GOPATH if set, otherwise working directory from which extractor was invoked
-		ticket    string
-		canonical string
-		isRoot    bool
-		rulesJSON string
+		path                    string // import path
+		dir                     string // on-disk directory that contains this package
+		root                    string // GOPATH if set, otherwise working directory from which extractor was invoked
+		ticket                  string
+		canonical               string
+		isRoot                  bool
+		rulesJSON               string
+		defaultCorpus           string
+		useDefaultCorpusForDeps bool
 	}{
 		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#package", isRoot: true},
 		// Rules should have no effect on go stdlib packages.
@@ -63,6 +65,7 @@ func TestForPackage(t *testing.T) {
 		{path: "bitbucket.org/creachadair/stringset/makeset", ticket: "kythe://bitbucket.org/creachadair/stringset?lang=go?path=makeset#package"},
 		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go#package"},
 		{path: "launchpad.net/~frood/blee/blor/baz", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go?path=baz#package"},
+		{path: "bitbucket.org/creachadair/stringset/makeset", defaultCorpus: "github.com/kythe/kythe", useDefaultCorpusForDeps: true, ticket: "kythe://github.com/kythe/kythe?lang=go?path=makeset?root=bitbucket.org/creachadair/stringset#package"},
 	}
 	for _, test := range tests {
 		var rules vnameutil.Rules
@@ -80,7 +83,11 @@ func TestForPackage(t *testing.T) {
 			Dir:        test.dir,
 			Root:       test.root,
 		}
-		got := ForPackage(pkg, &PackageVNameOptions{Rules: rules})
+		got := ForPackage(pkg, &PackageVNameOptions{
+			DefaultCorpus:           test.defaultCorpus,
+			UseDefaultCorpusForDeps: test.useDefaultCorpusForDeps,
+			Rules:                   rules,
+		})
 		gotTicket := kytheuri.ToString(got)
 		if gotTicket != test.ticket {
 			t.Errorf(`ForPackage([%s], nil): got %q, want %q`, test.path, gotTicket, test.ticket)
