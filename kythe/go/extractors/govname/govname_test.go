@@ -97,7 +97,12 @@ func TestForPackage(t *testing.T) {
 		if test.canonical != "" {
 			canonical = test.canonical
 		}
-		canonicalOpts := &PackageVNameOptions{CanonicalizePackageCorpus: true, Rules: rules}
+		canonicalOpts := &PackageVNameOptions{
+			DefaultCorpus:             test.defaultCorpus,
+			UseDefaultCorpusForDeps:   test.useDefaultCorpusForDeps,
+			CanonicalizePackageCorpus: true,
+			Rules:                     rules,
+		}
 		if got := kytheuri.ToString(ForPackage(pkg, canonicalOpts)); got != canonical {
 			t.Errorf(`ForPackage([%s], %#v): got %q, want canonicalized %q`, test.path, canonicalOpts, got, canonical)
 		}
