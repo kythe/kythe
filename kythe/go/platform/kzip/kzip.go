@@ -191,7 +191,7 @@ func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	if len(archive.File) == 0 {
 		return nil, errors.New("archive is empty")
 	} else if fi := archive.File[0].FileInfo(); !fi.IsDir() {
-		return nil, errors.New("archive root is not a directory")
+		return nil, fmt.Errorf("archive root directory missing: expected a 'root' directory but got %v", archive.File[0].Name)
 	}
 	root := archive.File[0].Name
 	pref, err := unitPrefix(root, archive.File)
