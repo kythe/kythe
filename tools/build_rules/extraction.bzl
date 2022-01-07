@@ -39,3 +39,39 @@ merge_kzips = rule(
     outputs = {"kzip": "%{name}.kzip"},
     implementation = _merge_kzips_impl,
 )
+
+def _filter_kzip_impl(ctx):
+    output = ctx.outputs.kzip
+    args = ctx.actions.args()
+    args.add("filter")
+    args.add("--input", ctx.file.src.path)
+    args.add_joined("--languages", ctx.attr.languages, join_with = ",")
+    args.add("--output", output.path)
+    ctx.actions.run(
+        outputs = [output],
+        inputs = [ctx.file.src],
+        executable = ctx.executable._kzip,
+        mnemonic = "FilterKZips",
+        arguments = [args],
+    )
+    return [DefaultInfo(files = depset([output]))]
+
+filter_kzip = rule(
+    attrs = {
+        "src": attr.label(
+            allow_single_file = True,
+            mandatory = True,
+        ),
+        "languages": attr.string_list(
+            doc = "List of languages to retain from the input kzip.",
+            mandatory = True,
+        ),
+        "_kzip": attr.label(
+            default = Label("//kythe/go/platform/tools/kzip"),
+            executable = True,
+            cfg = "host",
+        ),
+    },
+    outputs = {"kzip": "%{name}.kzip"},
+    implementation = _filter_kzip_impl,
+)
