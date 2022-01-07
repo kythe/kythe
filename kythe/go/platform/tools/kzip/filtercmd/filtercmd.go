@@ -41,7 +41,7 @@ type filterCommand struct {
 	input     string
 	output    string
 	encoding  flags.EncodingFlag
-	languages flagutil.StringList
+	languages flagutil.StringSet
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -86,17 +86,17 @@ func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		return c.Fail("Error creating temp output: %v", err)
 	}
 	units := stringset.New(fs.Args()...)
-	languages := stringset.New(c.languages...)
+	langs := stringset.Set(c.languages)
 	var filter func(*kzip.Unit) bool
-	if !units.Empty() && !languages.Empty() {
+	if !units.Empty() && !langs.Empty() {
 		return c.Fail("Error filtering can be done only by either digests or languages but not both simultaneously.")
 	} else if !units.Empty() {
 		filter = func(u *kzip.Unit) bool {
 			return units.Contains(u.Digest)
 		}
-	} else if !languages.Empty() {
+	} else if !langs.Empty() {
 		filter = func(u *kzip.Unit) bool {
-			return languages.Contains(u.Proto.VName.Language)
+			return langs.Contains(u.Proto.VName.Language)
 		}
 	}
 	if err := filterArchive(ctx, tmpOut, c.input, filter, opt); err != nil {

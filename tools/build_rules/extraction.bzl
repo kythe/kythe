@@ -45,7 +45,7 @@ def _filter_kzip_impl(ctx):
     args = ctx.actions.args()
     args.add("filter")
     args.add("--input", ctx.file.src.path)
-    args.add_joined("--languages", ctx.attr.languages, join_with=",")
+    args.add_joined("--languages", ctx.attr.languages, join_with = ",")
     args.add("--output", output.path)
     ctx.actions.run(
         outputs = [output],
