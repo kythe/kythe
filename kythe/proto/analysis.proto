@@ -18,13 +18,13 @@ syntax = "proto3";
 
 package kythe.proto;
 
-option go_package = "analysis_go_proto";
-option java_package = "com.google.devtools.kythe.proto";
-option cc_enable_arenas = true;
-
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "kythe/proto/storage.proto";
+
+option go_package = "analysis_go_proto";
+option java_package = "com.google.devtools.kythe.proto";
+option cc_enable_arenas = true;
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
 // CompilationUnit.
@@ -48,10 +48,9 @@ message AnalysisRequest {
 // place.  A given analysis may not produce any outputs.  It is okay for an
 // indexer to send an empty AnalysisOutput message if needed to keep the RPC
 // channel alive; the driver must correctly handle this.
-//
-// The format of value is determined by the analyzer. Kythe language indexers
-// emit wire-format kythe.proto.Entry messages.
 message AnalysisOutput {
+  // The format of `value` is determined by the analyzer. Kythe language
+  // indexers emit wire-format kythe.proto.Entry messages.
   bytes value = 1;
 
   // An analyzer may optionally report the final result of analysis by
