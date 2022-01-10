@@ -1899,7 +1899,7 @@ bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
 
 bool IndexerASTVisitor::VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
   // Only decorate the `decltype` keyword, not the entire expression, by
-  // truncating the fully source range (DecltypeLoc, RParenLoc) to just
+  // truncating the source range from (DecltypeLoc, RParenLoc) to just
   // (DecltypeLoc, DecltypeLoc).
   TL.setRParenLoc(TL.getDecltypeLoc());
   RecordTypeLocSpellingLocation(TL);
