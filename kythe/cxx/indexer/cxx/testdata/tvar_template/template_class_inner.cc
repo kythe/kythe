@@ -1,7 +1,6 @@
 // Checks that inner defns are children of outer classes.
 template <typename T>
-//- @C defines/binding AbsC
-//- ClassC childof AbsC
+//- @C defines/binding ClassC
 class C {
   //- @R defines/binding EnumR
   //- EnumR childof ClassC

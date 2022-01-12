@@ -2,10 +2,9 @@
 //- @g defines/binding FnG
 bool g() { return false; }
 //- PtCall=@"g()" ref/call FnG
-//- PtCall childof FnF  // We should collapse K in abs(K) into cluster abs(K)
+//- PtCall childof FnF
 //- FnF childof CBody
-//- CBody childof AbsC
-//- @C defines/binding AbsC
+//- @C defines/binding CBody
 template <typename T, typename S> struct C { bool f(T* t) { return g(); } };
 
 //- TsCall childof SpecF

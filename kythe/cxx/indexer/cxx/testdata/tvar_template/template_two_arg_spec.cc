@@ -1,14 +1,13 @@
-// Checks that record nodes underneath abstractions are given distinct names.
+// Checks that specializations of record nodes underneath abstractions are
+// given distinct names.
 // (This test's verifier load is mainly in the well-formedness checks.)
 
-//- @C defines/binding TemplateC
-//- TemplateC.node/kind abs
-//- TemplaceCBody childof TemplateC
+//- @C defines/binding TemplateCBody
 //- TemplaceCBody.node/kind record
 template <typename T, typename S> class C { };
 
 //- @C defines/binding PartialSpecializationC
-//- PartialSpecializationC.node/kind abs
+//- PartialSpecializationC.node/kind record
 template <typename U> class C<int, U> { };
 
 //- @C defines/binding TotalSpecializationC

@@ -3,11 +3,9 @@
 //- TT.node/kind tvar
 template <typename T>
 T
-//- @id defines/binding Abs
+//- @id defines/binding IdFun
 id(T x)
 { return x; }
-//- Abs.node/kind abs
-//- IdFun childof Abs
 //- IdFun.node/kind function
 //- IdFun.complete definition
 //- IdFun tparam.0 TT

@@ -1,7 +1,6 @@
 // Checks that we index references to member variables of templates.
 //- @f defines/binding PField
-//- @S defines/binding SAbs
-//- SBody childof SAbs
+//- @S defines/binding SBody
 //- SBody.node/kind record
 //- PField childof SBody
 template <typename T> struct S { int f; };
