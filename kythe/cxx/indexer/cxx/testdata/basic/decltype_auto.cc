@@ -6,7 +6,7 @@ const int x = 42;
 // NB: "auto" doesn't refer to anything here; it's just taking up space.
 //- @v defines/binding VarV
 //- VarV typed ConstIntType
-//- @decltype ref ConstIntType
+//- @"decltype(auto)" ref ConstIntType
 decltype(auto) v = x;
 //- @auto ref IntType
 auto w = x;
