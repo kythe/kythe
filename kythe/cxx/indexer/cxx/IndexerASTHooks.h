@@ -241,6 +241,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
                                         const clang::Type* Resolved);
+  NodeSet RecordTypeSpellingLocation(const clang::Type* Type,
+                                     clang::SourceRange Range);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 

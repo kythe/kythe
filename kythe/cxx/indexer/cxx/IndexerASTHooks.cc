@@ -1887,6 +1887,15 @@ bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypePair(
 
 bool IndexerASTVisitor::VisitAutoTypePair(clang::AutoTypeLoc TL,
                                           const clang::AutoType* T) {
+  if (TL.getTypePtr()->isDecltypeAuto()) {
+    // For consistency with DecltypeTypeLoc below, only decorate the `decltype`
+    // keyword, even if Clang would normally attribute the entirety of
+    // `decltype(auto)`.
+    auto Range = TL.getSourceRange();
+    Range.setEnd(TL.getNameLoc());
+    RecordTypeSpellingLocation(T, Range);
+    return true;
+  }
   RecordTypeLocSpellingLocation(TL, T);
   return true;
 }
@@ -2272,8 +2281,13 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(
     clang::TypeLoc Written, const clang::Type* Resolved) {
-  if (auto RCC = ExpandedRangeInCurrentContext(Written.getSourceRange())) {
-    if (auto Nodes = BuildNodeSetForType(Resolved)) {
+  return RecordTypeSpellingLocation(Resolved, Written.getSourceRange());
+}
+
+NodeSet IndexerASTVisitor::RecordTypeSpellingLocation(
+    const clang::Type* Type, clang::SourceRange Range) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Range)) {
+    if (auto Nodes = BuildNodeSetForType(Type)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
       return Nodes;
