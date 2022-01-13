@@ -53,6 +53,7 @@ var (
 
 	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
 	useDefaultCorpusForStdLib = flag.Bool("use_default_corpus_for_stdlib", false, "By default, go stdlib files are given the 'golang.org' corpus. If this flag is enabled, they will instead be assigned the corpus from the --corpus flag.")
+	useDefaultCorpusForDeps   = flag.Bool("use_default_corpus_for_deps", false, "By default, imported modules are assigned a corpus based on their import path. If this flag is enabled, they will instead be assigned the corpus from the --corpus flag and a root corresponding the their import path.")
 
 	buildTags flagutil.StringList
 )
@@ -123,6 +124,7 @@ func main() {
 			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
 			RootDirectory:             os.Getenv("KYTHE_ROOT_DIRECTORY"),
 			UseDefaultCorpusForStdLib: *useDefaultCorpusForStdLib,
+			UseDefaultCorpusForDeps:   *useDefaultCorpusForDeps,
 		},
 	}
 	if *extraFiles != "" {

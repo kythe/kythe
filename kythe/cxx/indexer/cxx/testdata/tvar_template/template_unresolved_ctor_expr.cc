@@ -2,8 +2,7 @@
 //   see also CXXUnresolvedConstructExpr.
 //- @T defines/binding TyvarT
 template<typename T, typename A1>
-//- @make_a defines/binding AbsMakeA
-//- MakeA childof AbsMakeA
+//- @make_a defines/binding MakeA
 //- MakeA.node/kind function
 inline T make_a(const A1& a1) {
   //- CallAnchor=@"T(a1)" ref/call LookupCtorT

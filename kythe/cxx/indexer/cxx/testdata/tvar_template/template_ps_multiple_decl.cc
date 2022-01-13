@@ -21,6 +21,6 @@ class C
 //- CVDecl specializes TAppCNameV
 //- TAppCNameW.node/kind tapp
 //- TAppCNameV.node/kind tapp
-//- TAppCNameW param.0 NominalC
-//- TAppCNameV param.0 NominalC
-//- NominalC.node/kind tnominal
+//- TAppCNameW param.0 CDecl
+//- TAppCNameV param.0 CDecl
+//- CDecl.node/kind record

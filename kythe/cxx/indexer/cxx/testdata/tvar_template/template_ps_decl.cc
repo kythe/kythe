@@ -1,7 +1,7 @@
 // Checks that single-variable specialization decls are recorded.
 template
 <typename T>
-//- @C defines/binding CDecl
+//- @C defines/binding IncompleteC
 class C;
 
 template
@@ -13,7 +13,6 @@ class C
 //- PCDecl specializes TAppNomCInt
 //- TAppNomCInt.node/kind tapp
 //- TAppNomCInt param.0 NominalC
-//- IncompleteC childof CDecl
 //- IncompleteC.node/kind record
 //- IncompleteC.complete incomplete
 //- PCDecl.node/kind record

@@ -1,7 +1,6 @@
 // We point at the correct abs nodes in overrides when aliasing is on.
 //- @f defines/binding CF
-//- @C defines/binding TemplateC
-//- ClassC childof TemplateC
+//- @C defines/binding ClassC
 //- CF childof ClassC
 //- !{CF overrides/root _}
 template <typename T> class C { virtual void f() { } };
