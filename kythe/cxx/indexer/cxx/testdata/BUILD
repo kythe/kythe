@@ -268,6 +268,19 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "tvar_auto_zoo",
+    srcs = ["basic/tvar_auto_zoo.cc"],
+    check_for_singletons = True,
+    experimental_use_abs_nodes = False,
+    ignore_dups = True,
+    std = "c++14",
+    tags = [
+        "basic",
+        "c++14",
+    ],
+)
+
+cc_indexer_test(
     name = "enum_fwd_ref",
     srcs = ["basic/enum_fwd_ref.cc"],
     tags = ["basic"],
@@ -1450,6 +1463,48 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "tvar_docs_template_alias",
+    srcs = ["docs/tvar_docs_template_alias.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
+    name = "tvar_docs_template_function",
+    srcs = ["docs/tvar_docs_template_function.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
+    name = "tvar_docs_template_record",
+    srcs = ["docs/tvar_docs_template_record.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
+    name = "tvar_docs_template_var",
+    srcs = ["docs/tvar_docs_template_var.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
+    name = "tvar_docs_template_partial_spec_record",
+    srcs = ["docs/tvar_docs_template_partial_spec_record.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
+    name = "tvar_docs_template_partial_spec_var",
+    srcs = ["docs/tvar_docs_template_partial_spec_var.cc"],
+    experimental_use_abs_nodes = False,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
     name = "docs_template_alias",
     srcs = ["docs/docs_template_alias.cc"],
     tags = ["docs"],
@@ -1487,7 +1542,7 @@ cc_indexer_test(
 
 cc_indexer_test(
     name = "docs_template_partial_spec_var",
-    srcs = ["docs/docs_template_partial_spec_record.cc"],
+    srcs = ["docs/docs_template_partial_spec_var.cc"],
     tags = ["docs"],
 )
 
@@ -1676,6 +1731,13 @@ cc_indexer_test(
 cc_indexer_test(
     name = "rec_class_base_dependent",
     srcs = ["rec/rec_class_base_dependent.cc"],
+    tags = ["rec"],
+)
+
+cc_indexer_test(
+    name = "tvar_rec_class_base_dependent",
+    srcs = ["rec/tvar_rec_class_base_dependent.cc"],
+    experimental_use_abs_nodes = False,
     tags = ["rec"],
 )
 
@@ -3446,6 +3508,15 @@ cc_indexer_test(
     name = "ms_absvar",
     srcs = ["marked_source/ms_absvar.cc"],
     convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
+    name = "tvar_ms_absvar",
+    srcs = ["marked_source/tvar_ms_absvar.cc"],
+    convert_marked_source = True,
+    experimental_use_abs_nodes = False,
     std = "c++14",
     tags = ["marked_source"],
 )
