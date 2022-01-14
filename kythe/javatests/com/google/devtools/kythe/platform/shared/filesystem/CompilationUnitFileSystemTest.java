@@ -68,7 +68,7 @@ public final class CompilationUnitFileSystemTest {
     }
 
     CompilationUnitFileSystem build() {
-      List<FileData> fileData = ExtractorUtils.convertBytesToFileDatas(inputFiles.build());
+      List<FileData> fileData = ExtractorUtils.convertBytesToFileDatas(inputFiles.buildOrThrow());
       CompilationUnit compilationUnit =
           CompilationUnit.newBuilder()
               .addAllRequiredInput(ExtractorUtils.toFileInputs(fileData))
