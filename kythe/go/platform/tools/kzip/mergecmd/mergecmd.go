@@ -39,11 +39,12 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output    string
-	append    bool
-	encoding  flags.EncodingFlag
-	recursive bool
-	rules     vnameRules
+	output             string
+	append             bool
+	encoding           flags.EncodingFlag
+	recursive          bool
+	ignoreDuplicateCUs bool
+	rules              vnameRules
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -62,6 +63,7 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
 	fs.Var(&c.rules, "rules", "VName rules to apply while merging (optional)")
+	fs.BoolVar(&c.ignoreDuplicateCUs, "ignore_duplicate_cus", false, "Do not fail if we try to add the same CU twice")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -173,6 +175,10 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 		}
 		// TODO(schroederc): duplicate compilations with different revisions
 		_, err = wr.AddUnit(u.Proto, u.Index)
+		if c.ignoreDuplicateCUs && err == kzip.ErrUnitExists {
+			log.Printf("Found duplicate CU: %v", u.Proto.GetDetails())
+			return nil
+		}
 		return err
 	})
 }
