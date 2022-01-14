@@ -974,31 +974,38 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
         VisitComment(CommentOrNull, DCxt, DCID.value());
       }
     }
-    if (const auto* CTPSD =
-            dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
-      auto NodeId = BuildNodeIdForDecl(CTPSD);
-      VisitAttributes(Decl, NodeId);
-      if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
-    }
-    if (const auto* FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
-      if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
-        auto NodeId = BuildNodeIdForDecl(FTD);
+    if (options_.AbsNodes) {
+      if (const auto* CTPSD =
+              dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
+        auto NodeId = BuildNodeIdForDecl(CTPSD);
         VisitAttributes(Decl, NodeId);
         if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
+      if (const auto* FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
+        if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
+          auto NodeId = BuildNodeIdForDecl(FTD);
+          VisitAttributes(Decl, NodeId);
+          if (CommentOrNull != nullptr)
+            VisitComment(CommentOrNull, DCxt, NodeId);
+        }
+      }
     }
   } else {
-    if (const auto* VD = dyn_cast_or_null<VarDecl>(Decl)) {
-      if (const auto* VTD = VD->getDescribedVarTemplate()) {
-        auto NodeId = BuildNodeIdForDecl(VTD);
-        VisitAttributes(VTD, NodeId);
-        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
-      }
-    } else if (const auto* AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
-      if (const auto* TATD = AD->getDescribedAliasTemplate()) {
-        auto NodeId = BuildNodeIdForDecl(TATD);
-        VisitAttributes(TATD, NodeId);
-        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
+    if (options_.AbsNodes) {
+      if (const auto* VD = dyn_cast_or_null<VarDecl>(Decl)) {
+        if (const auto* VTD = VD->getDescribedVarTemplate()) {
+          auto NodeId = BuildNodeIdForDecl(VTD);
+          VisitAttributes(VTD, NodeId);
+          if (CommentOrNull != nullptr)
+            VisitComment(CommentOrNull, DCxt, NodeId);
+        }
+      } else if (const auto* AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+        if (const auto* TATD = AD->getDescribedAliasTemplate()) {
+          auto NodeId = BuildNodeIdForDecl(TATD);
+          VisitAttributes(TATD, NodeId);
+          if (CommentOrNull != nullptr)
+            VisitComment(CommentOrNull, DCxt, NodeId);
+        }
       }
     }
     auto NodeId = BuildNodeIdForDecl(Decl);

@@ -5,7 +5,7 @@
 auto glambda =
 //- @int ref IntType
 //- @auto ref ImplicitTyvar
-//- ImplicitTyvar.node/kind absvar
+//- ImplicitTyvar.node/kind tvar
     [](int i, auto a) { return i; };
 
 //- @auto ref IntType
