@@ -40,7 +40,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
-    rust_repositories(version = "nightly", iso_date = "2021-12-20", dev_components = True)
+    rust_repositories(version = "nightly", iso_date = "2022-01-09", dev_components = True)
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
