@@ -157,7 +157,7 @@ public class JavaEntrySets extends KytheEntrySets {
                   + " during extraction.",
               sym, enclClass);
       if (config.getVerboseLogging()) {
-        logger.atWarning().log(msg);
+        logger.atWarning().log("%s", msg);
       }
       Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
       return emitDiagnostic(d.build()).getVName();

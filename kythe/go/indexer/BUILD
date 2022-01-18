@@ -52,6 +52,37 @@ bzl_library(
 )
 
 go_indexer_test(
+    name = "genericstruct_test",
+    srcs = ["testdata/generics/genericstruct.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericmethod_test",
+    srcs = ["testdata/generics/genericmethod.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericinterface_test",
+    srcs = ["testdata/generics/genericinterface.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericfunc_test",
+    srcs = ["testdata/generics/genericfunc.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericdep_test",
+    srcs = ["testdata/generics/genericdep.go"],
+    has_marked_source = True,
+    deps = [":genericinterface_test"],
+)
+
+go_indexer_test(
     name = "syntax_test",
     srcs = ["testdata/syntax.go"],
 )

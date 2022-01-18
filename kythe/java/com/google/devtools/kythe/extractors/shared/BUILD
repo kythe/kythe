@@ -28,7 +28,7 @@ java_library(
     ],
     deps = [
         "//third_party/guava",
-        "@com_google_common_flogger//api",
+        "@maven//:com_google_flogger_flogger",
     ],
 )
 

@@ -224,6 +224,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
+  bool VisitUsingTypeLoc(clang::UsingTypeLoc TL);
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
   bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
   bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
@@ -240,6 +241,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
                                         const clang::Type* Resolved);
+  NodeSet RecordTypeSpellingLocation(const clang::Type* Type,
+                                     clang::SourceRange Range);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -372,14 +375,15 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForIncompleteArray(const clang::IncompleteArrayType& TL);
   NodeSet BuildNodeSetForDependentSizedArray(
       const clang::DependentSizedArrayType& T);
-  NodeSet BuildNodeSetForExtInt(const clang::ExtIntType& T);
-  NodeSet BuildNodeSetForDependentExtInt(const clang::DependentExtIntType& T);
+  NodeSet BuildNodeSetForBitInt(const clang::BitIntType& T);
+  NodeSet BuildNodeSetForDependentBitInt(const clang::DependentBitIntType& T);
   NodeSet BuildNodeSetForFunctionProto(const clang::FunctionProtoType& T);
   NodeSet BuildNodeSetForFunctionNoProto(const clang::FunctionNoProtoType& T);
   NodeSet BuildNodeSetForParen(const clang::ParenType& T);
   NodeSet BuildNodeSetForDecltype(const clang::DecltypeType& T);
   NodeSet BuildNodeSetForElaborated(const clang::ElaboratedType& T);
   NodeSet BuildNodeSetForTypedef(const clang::TypedefType& T);
+  NodeSet BuildNodeSetForUsing(const clang::UsingType& T);
 
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
       const clang::SubstTemplateTypeParmType& T);

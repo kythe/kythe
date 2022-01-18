@@ -49,7 +49,7 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_google_common_flogger//api",
+        "@maven//:com_google_flogger_flogger",
     ],
 )
 

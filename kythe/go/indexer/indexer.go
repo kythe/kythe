@@ -552,6 +552,7 @@ const (
 	tagLabel  = "label"
 	tagMethod = "method"
 	tagParam  = "param"
+	tagTVar   = "tvar"
 	tagType   = "type"
 	tagVar    = "var"
 )
@@ -610,6 +611,9 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 		}
 
 	case *types.TypeName:
+		if param, ok := t.Type().(*types.TypeParam); ok {
+			return tagTVar, fmt.Sprintf("[%p]%s", t, param.String())
+		}
 		topLevelTag = tagType
 		if t.Pkg() == nil {
 			return isBuiltin + tagType, t.Name()
@@ -693,6 +697,14 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 // names.  They should be rare in readable code.
 func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Position]types.Object, unownedByPos map[token.Position][]types.Object) {
 	scope := pkg.Scope()
+	addTypeParams := func(obj types.Object, params *types.TypeParamList) {
+		mapTypeParams(params, func(i int, param *types.TypeParam) {
+			typeName := param.Obj()
+			if _, ok := pi.owner[typeName]; !ok {
+				pi.owner[typeName] = obj
+			}
+		})
+	}
 	addFunc := func(obj *types.Func) {
 		// Inspect the receiver, parameters, and result values.
 		fsig := obj.Type().(*types.Signature)
@@ -709,6 +721,8 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 				pi.owner[res.At(i)] = obj
 			}
 		}
+		addTypeParams(obj, fsig.TypeParams())
+		addTypeParams(obj, fsig.RecvTypeParams())
 	}
 	addMethods := func(obj types.Object, n int, method func(i int) *types.Func) {
 		for i := 0; i < n; i++ {
@@ -751,6 +765,31 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			}
 		}
 	}
+	addNamed := func(obj types.Object, named *types.Named) {
+		addTypeParams(obj, named.TypeParams())
+		switch t := named.Underlying().(type) {
+		case *types.Struct:
+			// Inspect the fields of a struct.
+			for i := 0; i < t.NumFields(); i++ {
+				f := t.Field(i)
+				if f.Pkg() != pkg && named.TypeArgs().Len() == 0 {
+					continue // wrong package (and not an instantiated type)
+				}
+				if _, ok := pi.owner[f]; !ok {
+					pi.owner[f] = obj
+				}
+			}
+			addMethods(obj, named.NumMethods(), named.Method)
+
+		case *types.Interface:
+			// Inspect the declared methods of an interface.
+			addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)
+
+		default:
+			// Inspect declared methods of other named types.
+			addMethods(obj, named.NumMethods(), named.Method)
+		}
+	}
 
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
@@ -762,32 +801,31 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			if !ok {
 				continue
 			}
-			switch t := named.Underlying().(type) {
-			case *types.Struct:
-				// Inspect the fields of a struct.
-				for i := 0; i < t.NumFields(); i++ {
-					f := t.Field(i)
-					if f.Pkg() != pkg {
-						continue // wrong package
-					}
-					if _, ok := pi.owner[f]; !ok {
-						pi.owner[f] = obj
-					}
-				}
-				addMethods(obj, named.NumMethods(), named.Method)
-
-			case *types.Interface:
-				// Inspect the declared methods of an interface.
-				addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)
-
-			default:
-				// Inspect declared methods of other named types.
-				addMethods(obj, named.NumMethods(), named.Method)
-			}
+			addNamed(obj, named)
 
 		case *types.Func:
 			addFunc(obj)
 		}
+	}
+
+	if pkg == pi.Package {
+		// Add owners for members of known known instantiations
+		for _, t := range pi.Info.Types {
+			if n, ok := t.Type.(*types.Named); ok && n.TypeArgs().Len() > 0 {
+				addNamed(n.Obj(), n)
+			}
+		}
+	}
+}
+
+// mapTypeParams applies f to each type parameter declared in params.  Each call
+// to f is given the offset and the type parameter.
+func mapTypeParams(params *types.TypeParamList, f func(i int, id *types.TypeParam)) {
+	if params == nil {
+		return
+	}
+	for i := 0; i < params.Len(); i++ {
+		f(i, params.At(i))
 	}
 }
 

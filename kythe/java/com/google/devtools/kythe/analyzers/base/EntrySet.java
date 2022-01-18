@@ -260,7 +260,7 @@ public final class EntrySet {
 
     /** Builds a new {@link EntrySet}. */
     public EntrySet build() {
-      ImmutableSortedMap<String, byte[]> properties = this.properties.build();
+      ImmutableSortedMap<String, byte[]> properties = this.properties.buildOrThrow();
       VName source = this.source;
       if (source == null) {
         if (!sourceBuilder.getSignature().isEmpty()) {

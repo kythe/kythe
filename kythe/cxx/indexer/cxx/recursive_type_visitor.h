@@ -273,6 +273,7 @@ DEF_TRAVERSE_TYPEPAIR(FunctionProtoType, {
 });
 DEF_TRAVERSE_TYPEPAIR(UnresolvedUsingType, {});
 DEF_TRAVERSE_TYPEPAIR(TypedefType, {});
+DEF_TRAVERSE_TYPEPAIR(UsingType, {});
 DEF_TRAVERSE_TYPEPAIR(TypeOfExprType, {
   return getDerived().TraverseStmt(TL.getUnderlyingExpr());
 });
@@ -355,8 +356,8 @@ DEF_TRAVERSE_TYPEPAIR(DependentTemplateSpecializationType, {
 DEF_TRAVERSE_TYPEPAIR(PackExpansionType, {
   return getDerived().TraverseTypePair(TL.getPatternLoc(), T->getPattern());
 });
-DEF_TRAVERSE_TYPEPAIR(ExtIntType, {});
-DEF_TRAVERSE_TYPEPAIR(DependentExtIntType, {
+DEF_TRAVERSE_TYPEPAIR(BitIntType, {});
+DEF_TRAVERSE_TYPEPAIR(DependentBitIntType, {
   return getDerived().TraverseStmt(T->getNumBitsExpr());
 });
 DEF_TRAVERSE_TYPEPAIR(ObjCTypeParamType, {});

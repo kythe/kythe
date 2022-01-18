@@ -626,6 +626,13 @@ void KytheGraphObserver::recordParamEdge(const NodeId& param_of_id,
                      VNameRefFromNodeId(param_id), ordinal);
 }
 
+void KytheGraphObserver::recordTParamEdge(const NodeId& param_of_id,
+                                          uint32_t ordinal,
+                                          const NodeId& param_id) {
+  recorder_->AddEdge(VNameRefFromNodeId(param_of_id), EdgeKindID::kTParam,
+                     VNameRefFromNodeId(param_id), ordinal);
+}
+
 void KytheGraphObserver::recordChildOfEdge(const NodeId& child_id,
                                            const NodeId& parent_id) {
   recorder_->AddEdge(VNameRefFromNodeId(child_id), EdgeKindID::kChildOf,
@@ -955,6 +962,13 @@ void KytheGraphObserver::recordAbsVarNode(
     const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
   auto node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kAbsVar);
+  AddMarkedSource(node_vname, marked_source);
+}
+
+void KytheGraphObserver::recordTVarNode(
+    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
+  auto node_vname = VNameRefFromNodeId(node_id);
+  recorder_->AddProperty(node_vname, NodeKindID::kTVar);
   AddMarkedSource(node_vname, marked_source);
 }
 

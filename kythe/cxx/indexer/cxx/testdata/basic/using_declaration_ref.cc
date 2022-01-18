@@ -13,4 +13,9 @@ using nasa::Shuttle;
 //- @Launch ref FnLaunch
 //- @Launch ref FnLaunchInt
 using nasa::Launch;
+
+void fn() {
+  // @Shuttle ref StructS
+  Shuttle s;
+}
 }

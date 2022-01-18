@@ -578,6 +578,13 @@ class GraphObserver {
   virtual void recordAbsVarNode(
       const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
 
+  /// \brief Records a node representing a variable in a dependent type
+  /// abstraction.
+  /// \param Node The `NodeId` of the variable.
+  /// \param MarkedSource marked source for this variable.
+  virtual void recordTVarNode(
+      const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
+
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.
   /// \param Name The `Name` for which resolution has been deferred
@@ -590,6 +597,13 @@ class GraphObserver {
   /// \param `ParamNode` The `NodeId` for the parameter.
   virtual void recordParamEdge(const NodeId& ParamOfNode, uint32_t Ordinal,
                                const NodeId& ParamNode) {}
+
+  /// \brief Records a type parameter relationship.
+  /// \param `ParamOfNode` The node this `ParamNode` is the type parameter of.
+  /// \param `Ordinal` The ordinal for the parameter (0 is the first).
+  /// \param `ParamNode` The `NodeId` for the parameter.
+  virtual void recordTParamEdge(const NodeId& ParamOfNode, uint32_t Ordinal,
+                                const NodeId& ParamNode) {}
 
   /// \brief Records a node representing an enumerated type.
   /// \param Compl Whether the enum is complete.

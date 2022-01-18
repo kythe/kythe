@@ -168,6 +168,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				e.visitRangeStmt(n, stack)
 			case *ast.CompositeLit:
 				e.visitCompositeLit(n, stack)
+			case *ast.IndexExpr:
+				e.visitIndexExpr(n, stack)
+			case *ast.IndexListExpr:
+				e.visitIndexListExpr(n, stack)
 			}
 			return true
 		}), file)
@@ -206,7 +210,31 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
-	target := e.pi.ObjectVName(obj)
+	if sig, ok := obj.Type().(*types.Signature); ok && sig.RecvTypeParams().Len() > 0 {
+		// Lookup the original non-instantiated method to reference.
+		if n, ok := deref(sig.Recv().Type()).(*types.Named); ok {
+			f, _, _ := types.LookupFieldOrMethod(n.Origin(), true, obj.Pkg(), obj.Name())
+			if f != nil {
+				obj = f
+			}
+		}
+	}
+
+	// Receiver type parameter identifiers are both usages and definitions; take
+	// the opportunity to emit a binding and do not continue to emit a Ref edge.
+	if def, ok := e.pi.Info.Defs[id].(*types.TypeName); ok && def == obj {
+		e.writeBinding(id, nodes.TVar, nil)
+		return
+	}
+
+	var target *spb.VName
+	if n, ok := obj.(*types.TypeName); ok && obj.Pkg() == nil {
+		// Handle type arguments in instantiated types.
+		target = e.emitType(n.Type())
+	} else {
+		target = e.pi.ObjectVName(obj)
+	}
+
 	if target == nil {
 		// This should not happen in well-formed packages, but can if the
 		// extractor gets confused. Avoid emitting confusing references in such
@@ -276,7 +304,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 // with given constructor and parameters.  The constructor's kind is also
 // emitted if this is the first time seeing it.
 func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
-	if e.pi.typeEmitted.Add(ctor.Signature) {
+	if ctorKind != "" && e.pi.typeEmitted.Add(ctor.Signature) {
 		e.writeFact(ctor, facts.NodeKind, ctorKind)
 		if ctorKind == nodes.TBuiltin {
 			e.emitBuiltinMarkedSource(ctor)
@@ -313,7 +341,18 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 
 	switch typ := typ.(type) {
 	case *types.Named:
-		v = e.pi.ObjectVName(typ.Obj())
+		if typ.TypeArgs().Len() == 0 {
+			v = e.pi.ObjectVName(typ.Obj())
+		} else {
+			// Instantiated Named types produce tapps
+			ctor := e.emitType(typ.Origin())
+			args := typ.TypeArgs()
+			var params []*spb.VName
+			for i := 0; i < args.Len(); i++ {
+				params = append(params, e.emitType(args.At(i)))
+			}
+			v = e.emitTApp(genericTAppMS, "", ctor, params...)
+		}
 	case *types.Basic:
 		v = govname.BasicType(typ)
 		if e.pi.typeEmitted.Add(v.Signature) {
@@ -410,6 +449,8 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 				})
 			}
 		}
+	case *types.TypeParam:
+		v = e.pi.ObjectVName(typ.Obj())
 	default:
 		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
 	}
@@ -487,6 +528,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	target := e.mustWriteBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
 	e.writeDoc(specComment(spec, stack), target)
+
+	mapFields(spec.TypeParams, func(i int, id *ast.Ident) {
+		v := e.writeBinding(id, nodes.TVar, nil)
+		e.writeEdge(target, v, edges.TParamIndex(i))
+	})
 
 	// Emit type-specific structure.
 	switch t := obj.Type().Underlying().(type) {
@@ -670,6 +716,22 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 	}
 }
 
+// visitIndexExpr handles references to instantiated types with a single type
+// parameter.
+func (e *emitter) visitIndexExpr(expr *ast.IndexExpr, stack stackFunc) {
+	if n, ok := e.pi.Info.TypeOf(expr).(*types.Named); ok && n.TypeArgs().Len() > 0 {
+		e.writeRef(expr, e.emitType(n), edges.Ref)
+	}
+}
+
+// visitIndexListExpr handles references to instantiated types with multiple
+// type parameters.
+func (e *emitter) visitIndexListExpr(expr *ast.IndexListExpr, stack stackFunc) {
+	if n, ok := e.pi.Info.TypeOf(expr).(*types.Named); ok && n.TypeArgs().Len() > 0 {
+		e.writeRef(expr, e.emitType(n), edges.Ref)
+	}
+}
+
 // emitPosRef emits an anchor spanning loc, pointing to obj.
 func (e *emitter) emitPosRef(loc ast.Node, obj types.Object, kind string) {
 	target := e.pi.ObjectVName(obj)
@@ -709,6 +771,11 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Results are not considered parameters.
 	mapFields(ftype.Results, func(i int, id *ast.Ident) {
 		e.writeBinding(id, nodes.Variable, info.vname)
+	})
+	// Emit bindings for type parameters
+	mapFields(ftype.TypeParams, func(i int, id *ast.Ident) {
+		v := e.writeBinding(id, nodes.TVar, nil)
+		e.writeEdge(info.vname, v, edges.TParamIndex(i))
 	})
 }
 
@@ -753,15 +820,22 @@ func (o overrides) seen(x, y types.Object) bool {
 // indexed, and emits edges connecting it to any known interfaces its method
 // set satisfies.
 func (e *emitter) emitSatisfactions() {
-	// Find the names of all defined types mentioned in this compilation.
-	var allNames []*types.TypeName
+	// Find all the Named types mentioned in this compilation.
+	var allTypes []*types.Named
 
 	// For the current source package, use all names, even local ones.
 	for _, obj := range e.pi.Info.Defs {
 		if obj, ok := obj.(*types.TypeName); ok {
-			if _, ok := obj.Type().(*types.Named); ok {
-				allNames = append(allNames, obj)
+			if n, ok := obj.Type().(*types.Named); ok {
+				allTypes = append(allTypes, n)
 			}
+		}
+	}
+
+	// Include instance types.
+	for _, t := range e.pi.Info.Types {
+		if n, ok := t.Type.(*types.Named); ok && n.TypeArgs().Len() > 0 {
+			allTypes = append(allTypes, n)
 		}
 	}
 
@@ -776,8 +850,8 @@ func (e *emitter) emitSatisfactions() {
 				// compiled package headers omit the names if they are not
 				// needed.  Skip such cases, even though they would qualify if
 				// we had the source package.
-				if _, ok := obj.Type().(*types.Named); ok && obj.Name() != "" {
-					allNames = append(allNames, obj)
+				if n, ok := obj.Type().(*types.Named); ok && obj.Name() != "" {
+					allTypes = append(allTypes, n)
 				}
 			}
 		}
@@ -787,13 +861,13 @@ func (e *emitter) emitSatisfactions() {
 	var msets typeutil.MethodSetCache
 	// Cache the overrides we've noticed to avoid duplicate entries.
 	cache := make(overrides)
-	for _, xobj := range allNames {
+	for _, x := range allTypes {
+		xobj := x.Obj()
 		if xobj.Pkg() != e.pi.Package {
 			continue // not from this package
 		}
 
 		// Check whether x is a named type with methods; if not, skip it.
-		x := xobj.Type()
 		if len(typeutil.IntuitiveMethodSet(x, &msets)) == 0 {
 			continue // no methods to consider
 		}
@@ -803,16 +877,16 @@ func (e *emitter) emitSatisfactions() {
 		// single compilation.
 
 		// Check the method sets of both x and pointer-to-x for overrides.
-		xmset := msets.MethodSet(x)
-		pxmset := msets.MethodSet(types.NewPointer(x))
+		xmset := msets.MethodSet(xobj.Type())
+		pxmset := msets.MethodSet(types.NewPointer(xobj.Type()))
 
-		for _, yobj := range allNames {
+		for _, y := range allTypes {
+			yobj := y.Obj()
 			if xobj == yobj {
 				continue
 			}
 
-			y := yobj.Type()
-			ymset := msets.MethodSet(y)
+			ymset := msets.MethodSet(yobj.Type())
 
 			ifx, ify := isInterface(x), isInterface(y)
 			switch {
@@ -877,7 +951,9 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 
 		xvname := e.pi.ObjectVName(xobj)
 		yvname := e.pi.ObjectVName(yobj)
-		e.writeEdge(xvname, yvname, edges.Overrides)
+		if e.pi.typeEmitted.Add(xvname.Signature + "+" + yvname.Signature) {
+			e.writeEdge(xvname, yvname, edges.Overrides)
+		}
 
 		xt := e.emitType(xobj.Type())
 		yt := e.emitType(yobj.Type())

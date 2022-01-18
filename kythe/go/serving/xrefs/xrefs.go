@@ -583,6 +583,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		totalsQuality = xpb.CrossReferencesRequest_TotalsQuality(xpb.CrossReferencesRequest_TotalsQuality_value[strings.ToUpper(*defaultTotalsQuality)])
 	}
 
+	// Set of xref page keys to read for further indirection nodes.
+	var indirectionPages []string
+
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
 		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
@@ -715,28 +718,29 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
 				var p *srvpb.PagedCrossReferences_Page
 
-				// If requested, add related nodes to merge node set.
-				if indirections.Contains(idx.Kind) {
-					p, err = t.crossReferencesPage(ctx, idx.PageKey)
-					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
-					}
-
-					for _, rn := range p.Group.RelatedNode {
-						tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
-					}
-				}
-
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
 					reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
 					if wantMoreCrossRefs && !stats.skipPage(idx) {
-						if p == nil {
-							p, err = t.crossReferencesPage(ctx, idx.PageKey)
-							if err != nil {
-								return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
-							}
+						p, err = t.crossReferencesPage(ctx, idx.PageKey)
+						if err != nil {
+							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 						}
 						stats.addRelatedNodes(reply, crs, p.Group, patterns)
+					}
+				}
+
+				// If requested, add related nodes to merge node set.
+				if indirections.Contains(idx.Kind) {
+					if p == nil {
+						// We haven't needed to read the page yet; save it until we need
+						// more tickets.
+						indirectionPages = append(indirectionPages, idx.PageKey)
+					} else {
+						// We've already read the page, immediately populate the indirect
+						// nodes.
+						for _, rn := range p.Group.RelatedNode {
+							tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
+						}
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
@@ -754,6 +758,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
 			reply.CrossReferences[crs.Ticket] = crs
 			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
+		}
+
+		for i == len(tickets)-1 && len(indirectionPages) > 0 {
+			// We've hit the end of known tickets to pull for xrefs; read an
+			// indirection page until we've found another ticket or we've exhausted
+			// all indirection pages.
+			pageKey := indirectionPages[len(indirectionPages)-1]
+			indirectionPages = indirectionPages[:len(indirectionPages)-1]
+			p, err := t.crossReferencesPage(ctx, pageKey)
+			if err != nil {
+				return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", pageKey)
+			}
+			for _, rn := range p.Group.RelatedNode {
+				tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
+			}
 		}
 	}
 	if !foundCrossRefs {
