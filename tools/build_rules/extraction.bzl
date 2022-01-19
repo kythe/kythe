@@ -21,7 +21,7 @@ def _merge_kzips_impl(ctx):
         inputs = ctx.files.srcs,
         executable = ctx.executable._kzip,
         mnemonic = "MergeKZips",
-        arguments = ["merge", "--output", output.path] + [f.path for f in ctx.files.srcs],
+        arguments = ["merge", "--ignore_duplicate_cus", "--output", output.path] + [f.path for f in ctx.files.srcs],
     )
     return [DefaultInfo(files = depset([output]))]
 
