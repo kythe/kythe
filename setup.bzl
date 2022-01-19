@@ -138,7 +138,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "c490f8feb71e837dd7011e7a7d8a7928507c9c76",
+        commit = "347d4d7323c4cf0d89fb14530e27ec5e2b1afeda",
         name = "llvm-project-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
