@@ -195,6 +195,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr* E);
   bool VisitCXXUnresolvedConstructExpr(
       const clang::CXXUnresolvedConstructExpr* E);
+  bool TraverseCXXOperatorCallExpr(clang::CXXOperatorCallExpr* E);
   bool VisitCallExpr(const clang::CallExpr* Expr);
   bool VisitMemberExpr(const clang::MemberExpr* Expr);
   bool VisitCXXDependentScopeMemberExpr(
