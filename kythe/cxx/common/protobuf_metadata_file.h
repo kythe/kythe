@@ -59,7 +59,7 @@ class ProtobufMetadataSupport : public MetadataSupport {
 
   void UseVNameLookup(VNameLookup lookup) override { vname_lookup_ = lookup; }
 
-  bool GuessSemantics(bool should_guess_semantics) {
+  void GuessSemantics(bool should_guess_semantics) {
     should_guess_semantics_ = should_guess_semantics;
   };
 

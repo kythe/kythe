@@ -84,7 +84,8 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     if (should_guess_semantics_) {
       if (rule.begin > target_buffer.size() ||
           rule.end > target_buffer.size() || rule.end < rule.begin ||
-          annotation.path().size() < 2 || (annotation.path().size() & 1 != 0) ||
+          annotation.path().size() < 2 ||
+          ((annotation.path().size() & 1) != 0) ||
           (annotation.path()[annotation.path().size() - 2] != 2 &&
            annotation.path()[annotation.path().size() - 2] != 8)) {
         auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
