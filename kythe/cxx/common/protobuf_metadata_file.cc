@@ -27,7 +27,6 @@
 #include "kythe/cxx/common/vname_ordering.h"
 
 namespace kythe {
-
 proto::VName ProtobufMetadataSupport::VNameForAnnotation(
     const proto::VName& context_vname,
     const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
@@ -44,7 +43,7 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
-    absl::string_view buffer) {
+    absl::string_view buffer, absl::string_view target_buffer) {
   absl::string_view file_ref(filename);
   if (!(absl::EndsWith(filename, ".pb.h.meta") ||
         absl::EndsWith(filename, ".pb.h") ||
@@ -77,12 +76,31 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     rule.generate_anchor = false;
     rule.anchor_begin = 0;
     rule.anchor_end = 0;
-    rules.push_back(rule);
     if (!rule.vname.path().empty()) {
       if (file_rule < 0 || rule.begin > rules[file_rule].begin) {
         file_rule = rules.size() - 1;
       }
     }
+    if (should_guess_semantics_) {
+      if (rule.begin > target_buffer.size() ||
+          rule.end > target_buffer.size() || rule.end < rule.begin ||
+          annotation.path().size() < 2 || (annotation.path().size() & 1 != 0) ||
+          (annotation.path()[annotation.path().size() - 2] != 2 &&
+           annotation.path()[annotation.path().size() - 2] != 8)) {
+        auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
+        rules.push_back(rule);
+        continue;
+      }
+      // token names something related to a field or a oneof.
+      auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
+      if (absl::StartsWith(token, "clear_") ||
+          absl::StartsWith(token, "set_")) {
+        rule.semantic = kythe::MetadataFile::Semantic::kWrite;
+      } else if (absl::StartsWith(token, "mutable_")) {
+        rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;
+      }
+    }
+    rules.push_back(rule);
   }
 
   // Add a file-scoped rule for the last encountered vname; this

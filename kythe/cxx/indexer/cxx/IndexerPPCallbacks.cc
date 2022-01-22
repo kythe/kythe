@@ -343,8 +343,14 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   }
   clang::FileID pragma_file_id =
       Observer.getSourceManager()->getFileID(FirstToken.getLocation());
+  const auto* target =
+      Observer.getSourceManager()->getFileEntryForID(pragma_file_id);
+  if (target == nullptr) {
+    LOG(WARNING) << "Missing target file entry for kythe_metadata";
+    return;
+  }
   if (!pragma_file_id.isInvalid()) {
-    Observer.applyMetadataFile(pragma_file_id, file, "");
+    Observer.applyMetadataFile(pragma_file_id, file, "", target);
   } else {
     absl::FPrintF(stderr, "Metadata pragma was in an impossible place\n");
   }
@@ -375,7 +381,8 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
     LOG(WARNING) << "Missing file entry for kythe_inline_metadata";
     return;
   }
-  Observer.applyMetadataFile(pragma_file_id, pragma_file_entry, search_string);
+  Observer.applyMetadataFile(pragma_file_id, pragma_file_entry, search_string,
+                             pragma_file_entry);
 }
 
 }  // namespace kythe

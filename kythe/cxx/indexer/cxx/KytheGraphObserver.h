@@ -177,7 +177,8 @@ class KytheGraphObserver : public GraphObserver {
   }
 
   void applyMetadataFile(clang::FileID ID, const clang::FileEntry* file,
-                         const std::string& search_string) override;
+                         const std::string& search_string,
+                         const clang::FileEntry* target_file) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
   void DropRedundantWraiths() { drop_redundant_wraiths_ = true; }
   void Delimit() override { recorder_->PushEntryGroup(); }
