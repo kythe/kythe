@@ -1090,6 +1090,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   boolean emitCommentsOnLine(int line, VName node, int defLine) {
+    if (!config.getEmitDocForNonJavadoc()) {
+      return false;
+    }
     List<Comment> lst = comments.get(line);
     if (lst == null || commentClaims.computeIfAbsent(line, l -> defLine) != defLine) {
       return false;
