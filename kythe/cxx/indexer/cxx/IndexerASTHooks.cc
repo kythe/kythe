@@ -1589,6 +1589,43 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
   return true;
 }
 
+bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
+    clang::CXXOperatorCallExpr* E) {
+  if (!options_.DataflowEdges ||
+      (!E->isAssignmentOp() && E->getOperator() != clang::OO_PlusPlus &&
+       E->getOperator() != clang::OO_MinusMinus))
+    return Base::TraverseCXXOperatorCallExpr(E);
+  if (!WalkUpFromCXXOperatorCallExpr(E)) return false;
+  auto arg_begin = E->arg_begin();
+  auto arg_end = E->arg_end();
+  if (arg_begin != arg_end && *arg_begin != nullptr) {
+    // `this` is the first argument in the case of a member function.
+    auto* lvhead = FindLValueHead(*arg_begin);
+    if (E->getOperator() == clang::OO_Equal) {
+      UsedAsWrite(lvhead);
+    } else {
+      UsedAsReadWrite(lvhead);
+    }
+    if (!TraverseStmt(*arg_begin)) return false;
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
+    for (++arg_begin; arg_begin != arg_end; ++arg_begin) {
+      if (*arg_begin != nullptr && !TraverseStmt(*arg_begin)) return false;
+    }
+    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl),
+                                  BuildNodeIdForDecl(influenced));
+      }
+      if (E->getOperator() != clang::OO_Equal) {
+        Observer.recordInfluences(BuildNodeIdForDecl(influenced),
+                                  BuildNodeIdForDecl(influenced));
+      }
+    }
+    return true;
+  }
+  return Base::TraverseCXXOperatorCallExpr(E);
+}
+
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
   clang::SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
