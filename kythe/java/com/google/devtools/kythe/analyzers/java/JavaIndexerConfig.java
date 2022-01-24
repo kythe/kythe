@@ -32,6 +32,11 @@ public class JavaIndexerConfig extends IndexerConfig {
     TPARAM;
   }
 
+  @Parameter(
+      names = "--emit_doc_for_non_javadoc",
+      description = "Emit documentation nodes for non-javadoc comments")
+  private boolean emitDocForNonJavadoc;
+
   @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
   private boolean emitJvmSignatures;
 
@@ -100,6 +105,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     return overrideJdkCorpus;
   }
 
+  public boolean getEmitDocForNonJavadoc() {
+    return emitDocForNonJavadoc;
+  }
+
   public boolean getEmitJvmSignatures() {
     return emitJvmSignatures;
   }
@@ -138,6 +147,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setEmitAnchorScopes(boolean emitAnchorScopes) {
     this.emitAnchorScopes = emitAnchorScopes;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitDocForNonJavadoc(boolean emitDocForNonJavadoc) {
+    this.emitDocForNonJavadoc = emitDocForNonJavadoc;
     return this;
   }
 
