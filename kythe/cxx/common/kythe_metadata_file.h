@@ -114,11 +114,12 @@ class MetadataSupport {
  public:
   virtual ~MetadataSupport() {}
   /// \brief Attempt to parse the file originally named `raw_filename` with
-  /// decoded filename `filename` and contents in `buffer`.
+  /// decoded filename `filename` and contents in `buffer` to be applied
+  /// to a target file with contents `target_buffer`.
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      absl::string_view buffer) {
+      absl::string_view buffer, absl::string_view target_buffer) {
     return nullptr;
   }
 
@@ -154,7 +155,7 @@ class MetadataSupports {
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& filename, absl::string_view buffer,
-      const std::string& search_string) const;
+      const std::string& search_string, absl::string_view target_buffer) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
 
@@ -167,7 +168,7 @@ class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      absl::string_view buffer) override;
+      absl::string_view buffer, absl::string_view target_buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.
