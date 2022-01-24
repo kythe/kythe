@@ -1163,9 +1163,9 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
   return info->second.node_id;
 }
 
-void KytheGraphObserver::applyMetadataFile(clang::FileID id,
-                                           const clang::FileEntry* file,
-                                           const std::string& search_string) {
+void KytheGraphObserver::applyMetadataFile(
+    clang::FileID id, const clang::FileEntry* file,
+    const std::string& search_string, const clang::FileEntry* target_file) {
   const llvm::Optional<llvm::MemoryBufferRef> buffer =
       SourceManager->getMemoryBufferForFileOrNone(file);
   if (!buffer) {
@@ -1173,11 +1173,20 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
                   file->getName().str());
     return;
   }
+  const llvm::Optional<llvm::MemoryBufferRef> target_buffer =
+      SourceManager->getMemoryBufferForFileOrNone(target_file);
+  if (!target_buffer) {
+    absl::FPrintF(stderr, "Couldn't get content for %s\n",
+                  target_file->getName().str());
+    return;
+  }
   if (auto metadata = meta_supports_->ParseFile(
           std::string(file->getName()),
           absl::string_view(buffer->getBuffer().data(),
                             buffer->getBufferSize()),
-          search_string)) {
+          search_string,
+          absl::string_view(target_buffer->getBuffer().data(),
+                            target_buffer->getBufferSize()))) {
     meta_.emplace(id, std::move(metadata));
   }
 }
