@@ -1,4 +1,5 @@
 // Package funcdecl tests code facts for a function declaration.
+//- @funcdecl defines/binding Pkg
 package funcdecl
 
 //- @Positive defines/binding Pos
@@ -20,6 +21,7 @@ package funcdecl
 //- XCtx child.1 XFunc
 //- XPkg.kind "IDENTIFIER"
 //- XPkg.pre_text "funcdecl"
+//- XPkg link Pkg
 //- XFunc.kind "IDENTIFIER"
 //- XFunc.pre_text "Positive"
 //- XId.kind "IDENTIFIER"
@@ -53,9 +55,10 @@ package funcdecl
 //- PCContext.kind "CONTEXT"
 //- PCContext child.0 PCPkg
 //- PCPkg.pre_text "funcdecl"
+//- PCPkg link Pkg
 //- PCIdent.kind "IDENTIFIER"
 //- PCIdent.pre_text "Positive"
-//-
+//- PCIdent link Pos
 func Positive(x int) bool {
 	return x > 0
 }
