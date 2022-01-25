@@ -12,49 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 extern crate kythe_rust_indexer;
-use kythe_rust_indexer::{
-    error::KytheError, indexer::KytheIndexer, providers::*, proxyrequests, writer::ProxyWriter,
-};
+use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, proxyrequests, writer::ProxyWriter};
 
 use analysis_rust_proto::*;
 use anyhow::{anyhow, Context, Result};
-use clap::{App, Arg};
 use serde_json::Value;
-use std::{
-    fs::File,
-    io::{self, Write},
-    path::{Path, PathBuf},
-};
-use tempdir::TempDir;
+use std::io::{self, Write};
 
 fn main() -> Result<()> {
-    let matches = App::new("Kythe Rust Extractor")
-        .arg(
-            Arg::with_name("tmp_directory")
-                .long("tmp_directory")
-                .required(false)
-                .takes_value(true)
-                .help("A directory where to write save_analysis files"),
-        )
-        .get_matches();
-
-    // Get the absolute path of the tmp_directory argument or default to /tmp
-    let tmp_path_arg = {
-        if let Some(arg) = matches.value_of("tmp_directory") {
-            let path = PathBuf::from(arg);
-            assert!(path.is_dir(), "tmp_directory argument \"{}\" does not exist", arg);
-            path
-        } else {
-            std::env::temp_dir()
-        }
-    };
-
-    // Check if the tmp_directory exists
-    if !tmp_path_arg.exists() {
-        eprintln!("tmp_directory path is not a directory or does not exist");
-        std::process::exit(1);
-    }
-
     let mut file_provider = ProxyFileProvider::new();
     let mut kythe_writer = ProxyWriter::new();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
@@ -62,65 +27,14 @@ fn main() -> Result<()> {
     // Request and process
     loop {
         let unit = request_compilation_unit()?;
-        // Retrieve the save_analysis file
-        let analysis_temp_dir = TempDir::new_in(tmp_path_arg.clone(), "rust_indexer_tmp")
-            .context("Couldn't create temporary directory")?;
-        let analysis_temp_path = PathBuf::from(analysis_temp_dir.path());
-        let write_res = write_analysis_to_directory(&unit, &analysis_temp_path, &mut file_provider);
-        if write_res.is_err() {
-            send_done(false, write_res.err().unwrap().to_string())?;
-            continue;
-        }
-
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res = indexer.index_cu(&unit, &analysis_temp_path, &mut file_provider);
+        let index_res = indexer.index_cu(&unit, &mut file_provider);
         if index_res.is_ok() {
             send_done(true, String::new())?;
         } else {
             send_done(false, index_res.err().unwrap().to_string())?;
         }
     }
-}
-
-/// Takes analysis files present in a CompilationUnit, requests the files
-/// from the proxy, and writes them to `temp_path`
-pub fn write_analysis_to_directory(
-    c_unit: &CompilationUnit,
-    temp_path: &Path,
-    provider: &mut dyn FileProvider,
-) -> std::result::Result<(), KytheError> {
-    for required_input in c_unit.get_required_input() {
-        let input_path = required_input.get_info().get_path();
-        let input_path_buf = PathBuf::from(input_path);
-
-        // save_analysis files are JSON files
-        if let Some(os_str) = input_path_buf.extension() {
-            if let Some("json") = os_str.to_str() {
-                let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(input_path, digest).map_err(|err| {
-                    KytheError::IndexerError(format!(
-                        "Failed to get contents of file \"{}\" with digest \"{}\": {:?}",
-                        input_path, digest, err
-                    ))
-                })?;
-
-                let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file = File::create(&output_path).map_err(|err| {
-                    KytheError::IndexerError(format!("Failed to create file: {:?}", err))
-                })?;
-                output_file.write_all(&file_contents).map_err(|err| {
-                    KytheError::IndexerError(format!(
-                        "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\": {:?}",
-                        input_path,
-                        digest,
-                        output_path.display(),
-                        err
-                    ))
-                })?;
-            }
-        }
-    }
-    Ok(())
 }
 
 fn request_compilation_unit() -> Result<CompilationUnit> {
