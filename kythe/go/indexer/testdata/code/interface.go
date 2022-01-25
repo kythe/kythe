@@ -1,4 +1,5 @@
 // Package iface tests code facts for an interface type.
+//- @iface defines/binding Pkg
 package iface
 
 //- @Thinger defines/binding Thinger
@@ -10,6 +11,7 @@ package iface
 //- TName child.1 TIdent
 //- TIdent.kind "IDENTIFIER"
 //- TIdent.pre_text "Thinger"
+//- TIdent link Thinger
 type Thinger interface {
 	//- @Thing defines/binding Thing
 	//- Thing code MCode
@@ -38,9 +40,12 @@ type Thinger interface {
 	//- MContext.kind "CONTEXT"
 	//- MContext.post_child_text "."
 	//- MContext child.0 MPkg
+	//- MPkg link Pkg
 	//- MContext child.1 MOwner
+	//- MOwner link Thinger
 	//- MPkg.pre_text "test/iface"
 	//- MOwner.pre_text "Thinger"
 	//- MIdent.pre_text "Thing"
+	//- MIdent link Thing
 	Thing()
 }

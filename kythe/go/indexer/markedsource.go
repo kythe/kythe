@@ -22,6 +22,7 @@ import (
 	"log"
 	"strings"
 
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/golang/protobuf/proto"
@@ -37,6 +38,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),
+			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj))}}},
 		}},
 	}
 
@@ -94,6 +96,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 				Child: []*cpb.MarkedSource{{
 					Kind:    cpb.MarkedSource_TYPE,
 					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
+					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv))}}},
 				}},
 			})
 			firstParam = 1
@@ -210,23 +213,27 @@ func typeArgs(typ types.Type) string {
 // are no appropriate qualifiers.
 func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
 	var ms []*cpb.MarkedSource
-	addID := func(s string) {
-		ms = append(ms, &cpb.MarkedSource{
+	addID := func(s string, v *spb.VName) {
+		id := &cpb.MarkedSource{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: s,
-		})
+		}
+		if v != nil {
+			id.Link = []*cpb.Link{{Definition: []string{kytheuri.ToString(v)}}}
+		}
+		ms = append(ms, id)
 	}
 	for cur := pi.owner[obj]; cur != nil; cur = pi.owner[cur] {
 		if t, ok := cur.(interface {
 			Name() string
 		}); ok {
-			addID(t.Name())
+			addID(t.Name(), pi.ObjectVName(cur))
 		} else {
-			addID(typeName(cur.Type()))
+			addID(typeName(cur.Type()), pi.ObjectVName(cur))
 		}
 	}
 	if pkg := obj.Pkg(); pkg != nil {
-		addID(pi.importPath(pkg))
+		addID(pi.importPath(pkg), pi.PackageVName[pkg])
 	}
 	for i, j := 0, len(ms)-1; i < j; {
 		ms[i], ms[j] = ms[j], ms[i]
