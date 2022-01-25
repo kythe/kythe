@@ -23,4 +23,5 @@ package pkgvar
 //-
 //- VIdent.kind "IDENTIFIER"
 //- VIdent.pre_text "V"
+//- VIdent link Var
 var V int

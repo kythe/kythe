@@ -418,7 +418,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		Error: func(err error) { pi.Errors = append(pi.Errors, err) },
 	}
 	pi.Package, _ = c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info)
-	pi.PackageVName[pi.Package] = unit.VName
 
 	// Fill in the mapping from packages to vnames.
 	for ip, vname := range imap {
@@ -436,6 +435,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 	pi.VName = proto.Clone(unit.VName).(*spb.VName)
 	pi.VName.Language = govname.Language
 	pi.VName.Signature = "package"
+	pi.PackageVName[pi.Package] = pi.VName
 
 	return pi, nil
 }
