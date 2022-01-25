@@ -26,28 +26,27 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT"
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
 ])
 
 # Generated Targets
+# buildifier: disable=out-of-order-load
+# buildifier: disable=load-on-top
+load(
+    "@rules_rust//cargo:cargo_build_script.bzl",
+    "cargo_build_script",
+)
 
-rust_library(
-    name = "clap",
+cargo_build_script(
+    name = "typenum_build_script",
     srcs = glob(["**/*.rs"]),
-    aliases = {
+    build_script_env = {
     },
     crate_features = [
-        "ansi_term",
-        "atty",
-        "color",
-        "default",
-        "strsim",
-        "suggestions",
-        "vec_map",
     ],
-    crate_root = "src/lib.rs",
-    data = [],
-    edition = "2015",
+    crate_root = "build/main.rs",
+    data = glob(["**"]),
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -55,23 +54,33 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "2.33.3",
+    version = "1.15.0",
+    visibility = ["//visibility:private"],
+    deps = [
+    ],
+)
+
+rust_library(
+    name = "typenum",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "src/lib.rs",
+    data = [],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "crate-name=typenum",
+        "manual",
+    ],
+    version = "1.15.0",
     # buildifier: leave-alone
     deps = [
-        "@raze__atty__0_2_14//:atty",
-        "@raze__bitflags__1_3_2//:bitflags",
-        "@raze__strsim__0_8_0//:strsim",
-        "@raze__textwrap__0_11_0//:textwrap",
-        "@raze__unicode_width__0_1_8//:unicode_width",
-        "@raze__vec_map__0_8_2//:vec_map",
-    ] + selects.with_or({
-        # cfg(not(windows))
-        (
-            "@rules_rust//rust/platform:x86_64-apple-darwin",
-            "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
-        ): [
-            "@raze__ansi_term__0_11_0//:ansi_term",
-        ],
-        "//conditions:default": [],
-    }),
+        ":typenum_build_script",
+    ],
 )
+
+# Unsupported target "test" with type "test" omitted

@@ -31,9 +31,13 @@ licenses([
 
 # Generated Targets
 
+# Unsupported target "values" with type "example" omitted
+
 rust_library(
-    name = "version_check",
+    name = "num_cpus",
     srcs = glob(["**/*.rs"]),
+    aliases = {
+    },
     crate_features = [
     ],
     crate_root = "src/lib.rs",
@@ -44,10 +48,20 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=num_cpus",
         "manual",
     ],
-    version = "0.9.3",
+    version = "1.13.1",
     # buildifier: leave-alone
     deps = [
-    ],
+    ] + selects.with_or({
+        # cfg(not(windows))
+        (
+            "@rules_rust//rust/platform:x86_64-apple-darwin",
+            "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+        ): [
+            "@raze__libc__0_2_114//:libc",
+        ],
+        "//conditions:default": [],
+    }),
 )

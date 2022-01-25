@@ -26,44 +26,53 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # Apache-2.0 from expression "Apache-2.0 OR MIT"
+    "notice",  # MIT from expression "MIT"
 ])
 
 # Generated Targets
 
-# Unsupported target "std_api_crate" with type "bench" omitted
-
-# Unsupported target "print-crate-id" with type "example" omitted
-
 rust_library(
-    name = "rls_analysis",
+    name = "clap",
     srcs = glob(["**/*.rs"]),
+    aliases = {
+    },
     crate_features = [
+        "ansi_term",
+        "atty",
+        "color",
         "default",
+        "strsim",
+        "suggestions",
+        "vec_map",
     ],
     crate_root = "src/lib.rs",
     data = [],
     edition = "2018",
-    proc_macro_deps = [
-        "@raze__derive_new__0_5_9//:derive_new",
-    ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
     tags = [
         "cargo-raze",
+        "crate-name=clap",
         "manual",
     ],
-    version = "0.18.2",
+    version = "2.34.0",
     # buildifier: leave-alone
     deps = [
-        "@raze__fst__0_4_7//:fst",
-        "@raze__itertools__0_9_0//:itertools",
-        "@raze__json__0_12_4//:json",
-        "@raze__log__0_4_14//:log",
-        "@raze__rls_data__0_19_1//:rls_data",
-        "@raze__rls_span__0_5_4//:rls_span",
-        "@raze__serde__1_0_130//:serde",
-        "@raze__serde_json__1_0_67//:serde_json",
-    ],
+        "@raze__atty__0_2_14//:atty",
+        "@raze__bitflags__1_3_2//:bitflags",
+        "@raze__strsim__0_8_0//:strsim",
+        "@raze__textwrap__0_11_0//:textwrap",
+        "@raze__unicode_width__0_1_9//:unicode_width",
+        "@raze__vec_map__0_8_2//:vec_map",
+    ] + selects.with_or({
+        # cfg(not(windows))
+        (
+            "@rules_rust//rust/platform:x86_64-apple-darwin",
+            "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+        ): [
+            "@raze__ansi_term__0_12_1//:ansi_term",
+        ],
+        "//conditions:default": [],
+    }),
 )

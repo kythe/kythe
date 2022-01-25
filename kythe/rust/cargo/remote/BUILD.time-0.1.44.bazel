@@ -44,11 +44,12 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=time",
         "manual",
     ],
     version = "0.1.44",
     # buildifier: leave-alone
     deps = [
-        "@raze__libc__0_2_101//:libc",
+        "@raze__libc__0_2_114//:libc",
     ],
 )

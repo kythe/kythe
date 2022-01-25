@@ -38,18 +38,16 @@ load(
 )
 
 cargo_build_script(
-    name = "crossbeam_epoch_build_script",
+    name = "serde_derive_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
-        "alloc",
-        "lazy_static",
-        "std",
+        "default",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
-    edition = "2018",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],
@@ -57,48 +55,35 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "0.9.5",
+    version = "1.0.135",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
-# Unsupported target "defer" with type "bench" omitted
-
-# Unsupported target "flush" with type "bench" omitted
-
-# Unsupported target "pin" with type "bench" omitted
-
-# Unsupported target "sanitize" with type "example" omitted
-
-rust_library(
-    name = "crossbeam_epoch",
+rust_proc_macro(
+    name = "serde_derive",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "alloc",
-        "lazy_static",
-        "std",
+        "default",
     ],
     crate_root = "src/lib.rs",
     data = [],
-    edition = "2018",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],
     tags = [
         "cargo-raze",
+        "crate-name=serde_derive",
         "manual",
     ],
-    version = "0.9.5",
+    version = "1.0.135",
     # buildifier: leave-alone
     deps = [
-        ":crossbeam_epoch_build_script",
-        "@raze__cfg_if__1_0_0//:cfg_if",
-        "@raze__crossbeam_utils__0_8_5//:crossbeam_utils",
-        "@raze__lazy_static__1_4_0//:lazy_static",
-        "@raze__memoffset__0_6_4//:memoffset",
-        "@raze__scopeguard__1_1_0//:scopeguard",
+        ":serde_derive_build_script",
+        "@raze__proc_macro2__1_0_36//:proc_macro2",
+        "@raze__quote__1_0_15//:quote",
+        "@raze__syn__1_0_86//:syn",
     ],
 )
-
-# Unsupported target "loom" with type "test" omitted
