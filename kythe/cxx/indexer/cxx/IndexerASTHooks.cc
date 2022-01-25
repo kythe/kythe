@@ -1642,7 +1642,6 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
             RCC.value(), *(semantic->node), semantic->use_kind,
             GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
       }
-
     } else if (const auto* CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
         RecordCallEdges(RCC.value(), CalleeId.value());
@@ -5868,6 +5867,13 @@ IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
       found != alternate_semantics_.end()) {
     return found->second;
   }
+  if (const auto* fn = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+    if (const auto* pt = fn->getPrimaryTemplate()) {
+      if (auto* semantic = AlternateSemanticForDecl(pt)) {
+        return semantic;
+      }
+    }
+  }
   const auto* named = llvm::dyn_cast<clang::NamedDecl>(decl);
   // No sense in annotating an unnamed declaration. We still deal in `Decl`s
   // in this function, though, because bare `Decl`s appear in many contexts
@@ -5879,6 +5885,17 @@ IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
       cached != alternate_semantic_cache_.end()) {
     alternate_semantics_[canonical] = &cached->second;
     return &cached->second;
+  }
+  // Last-ditch effort: see if we haven't cached the canonical definition.
+  if (const auto* canon_name = llvm::dyn_cast<clang::NamedDecl>(canonical)) {
+    auto canon_range = RangeForNameOfDeclaration(canon_name);
+    if (auto cached = alternate_semantic_cache_.find(
+            {canon_range.getBegin().getRawEncoding(),
+             canon_range.getEnd().getRawEncoding()});
+        cached != alternate_semantic_cache_.end()) {
+      alternate_semantics_[canonical] = &cached->second;
+      return &cached->second;
+    }
   }
   return nullptr;
 }

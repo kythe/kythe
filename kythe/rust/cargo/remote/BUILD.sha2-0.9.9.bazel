@@ -56,9 +56,10 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=sha2",
         "manual",
     ],
-    version = "0.9.6",
+    version = "0.9.9",
     # buildifier: leave-alone
     deps = [
         "@raze__block_buffer__0_9_0//:block_buffer",

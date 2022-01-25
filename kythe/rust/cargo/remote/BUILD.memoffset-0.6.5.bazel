@@ -26,7 +26,7 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT OR Apache-2.0"
+    "notice",  # MIT from expression "MIT"
 ])
 
 # Generated Targets
@@ -38,13 +38,12 @@ load(
 )
 
 cargo_build_script(
-    name = "libc_build_script",
+    name = "memoffset_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
         "default",
-        "std",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
@@ -56,18 +55,18 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "0.2.101",
+    version = "0.6.5",
     visibility = ["//visibility:private"],
     deps = [
+        "@raze__autocfg__1_0_1//:autocfg",
     ],
 )
 
 rust_library(
-    name = "libc",
+    name = "memoffset",
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "default",
-        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -77,13 +76,12 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=memoffset",
         "manual",
     ],
-    version = "0.2.101",
+    version = "0.6.5",
     # buildifier: leave-alone
     deps = [
-        ":libc_build_script",
+        ":memoffset_build_script",
     ],
 )
-
-# Unsupported target "const_fn" with type "test" omitted

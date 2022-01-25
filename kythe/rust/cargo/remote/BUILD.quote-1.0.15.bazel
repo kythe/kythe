@@ -31,12 +31,12 @@ licenses([
 
 # Generated Targets
 
-# Unsupported target "bench" with type "bench" omitted
-
 rust_library(
-    name = "smallvec",
+    name = "quote",
     srcs = glob(["**/*.rs"]),
     crate_features = [
+        "default",
+        "proc-macro",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -46,12 +46,16 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=quote",
         "manual",
     ],
-    version = "1.6.1",
+    version = "1.0.15",
     # buildifier: leave-alone
     deps = [
+        "@raze__proc_macro2__1_0_36//:proc_macro2",
     ],
 )
 
-# Unsupported target "macro" with type "test" omitted
+# Unsupported target "compiletest" with type "test" omitted
+
+# Unsupported target "test" with type "test" omitted

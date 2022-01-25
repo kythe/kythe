@@ -46,6 +46,7 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=quick-error",
         "manual",
     ],
     version = "2.0.1",
