@@ -232,6 +232,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "anonref_test",
+    srcs = ["testdata/basic/anonref.go"],
+    deps = [":anonymous_test"],
+)
+
+go_indexer_test(
     name = "structinit_test",
     srcs = ["testdata/structinit.go"],
 )
