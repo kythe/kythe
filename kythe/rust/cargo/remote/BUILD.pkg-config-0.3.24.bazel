@@ -26,15 +26,13 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT"
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
 ])
 
 # Generated Targets
 
-# Unsupported target "colours" with type "example" omitted
-
 rust_library(
-    name = "ansi_term",
+    name = "pkg_config",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
@@ -46,10 +44,13 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=pkg-config",
         "manual",
     ],
-    version = "0.11.0",
+    version = "0.3.24",
     # buildifier: leave-alone
     deps = [
     ],
 )
+
+# Unsupported target "test" with type "test" omitted

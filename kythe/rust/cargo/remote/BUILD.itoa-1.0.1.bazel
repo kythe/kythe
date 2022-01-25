@@ -31,8 +31,10 @@ licenses([
 
 # Generated Targets
 
-rust_proc_macro(
-    name = "thiserror_impl",
+# Unsupported target "bench" with type "bench" omitted
+
+rust_library(
+    name = "itoa",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
@@ -44,13 +46,13 @@ rust_proc_macro(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=itoa",
         "manual",
     ],
-    version = "1.0.28",
+    version = "1.0.1",
     # buildifier: leave-alone
     deps = [
-        "@raze__proc_macro2__1_0_29//:proc_macro2",
-        "@raze__quote__1_0_9//:quote",
-        "@raze__syn__1_0_75//:syn",
     ],
 )
+
+# Unsupported target "test" with type "test" omitted

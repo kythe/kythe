@@ -33,9 +33,13 @@ licenses([
 
 # Unsupported target "bench1" with type "bench" omitted
 
+# Unsupported target "combinations" with type "bench" omitted
+
 # Unsupported target "combinations_with_replacement" with type "bench" omitted
 
 # Unsupported target "fold_specialization" with type "bench" omitted
+
+# Unsupported target "powerset" with type "bench" omitted
 
 # Unsupported target "tree_fold1" with type "bench" omitted
 
@@ -50,6 +54,7 @@ rust_library(
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "default",
+        "use_alloc",
         "use_std",
     ],
     crate_root = "src/lib.rs",
@@ -60,9 +65,10 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=itertools",
         "manual",
     ],
-    version = "0.9.0",
+    version = "0.10.3",
     # buildifier: leave-alone
     deps = [
         "@raze__either__1_6_1//:either",
@@ -71,7 +77,9 @@ rust_library(
 
 # Unsupported target "adaptors_no_collect" with type "test" omitted
 
-# Unsupported target "fold_specialization" with type "test" omitted
+# Unsupported target "flatten_ok" with type "test" omitted
+
+# Unsupported target "macros_hygiene" with type "test" omitted
 
 # Unsupported target "merge_join" with type "test" omitted
 

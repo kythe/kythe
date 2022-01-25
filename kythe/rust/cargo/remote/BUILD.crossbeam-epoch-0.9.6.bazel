@@ -26,7 +26,7 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # Apache-2.0 from expression "Apache-2.0 OR BSL-1.0"
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
 ])
 
 # Generated Targets
@@ -38,11 +38,14 @@ load(
 )
 
 cargo_build_script(
-    name = "ryu_build_script",
+    name = "crossbeam_epoch_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
+        "alloc",
+        "lazy_static",
+        "std",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
@@ -54,20 +57,27 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.5",
+    version = "0.9.6",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
-# Unsupported target "bench" with type "bench" omitted
+# Unsupported target "defer" with type "bench" omitted
 
-# Unsupported target "upstream_benchmark" with type "example" omitted
+# Unsupported target "flush" with type "bench" omitted
+
+# Unsupported target "pin" with type "bench" omitted
+
+# Unsupported target "sanitize" with type "example" omitted
 
 rust_library(
-    name = "ryu",
+    name = "crossbeam_epoch",
     srcs = glob(["**/*.rs"]),
     crate_features = [
+        "alloc",
+        "lazy_static",
+        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -77,25 +87,19 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=crossbeam-epoch",
         "manual",
     ],
-    version = "1.0.5",
+    version = "0.9.6",
     # buildifier: leave-alone
     deps = [
-        ":ryu_build_script",
+        ":crossbeam_epoch_build_script",
+        "@raze__cfg_if__1_0_0//:cfg_if",
+        "@raze__crossbeam_utils__0_8_6//:crossbeam_utils",
+        "@raze__lazy_static__1_4_0//:lazy_static",
+        "@raze__memoffset__0_6_5//:memoffset",
+        "@raze__scopeguard__1_1_0//:scopeguard",
     ],
 )
 
-# Unsupported target "common_test" with type "test" omitted
-
-# Unsupported target "d2s_table_test" with type "test" omitted
-
-# Unsupported target "d2s_test" with type "test" omitted
-
-# Unsupported target "exhaustive" with type "test" omitted
-
-# Unsupported target "f2s_test" with type "test" omitted
-
-# Unsupported target "s2d_test" with type "test" omitted
-
-# Unsupported target "s2f_test" with type "test" omitted
+# Unsupported target "loom" with type "test" omitted

@@ -38,7 +38,7 @@ load(
 )
 
 cargo_build_script(
-    name = "anyhow_build_script",
+    name = "serde_json_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
@@ -56,14 +56,14 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.43",
+    version = "1.0.78",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
 rust_library(
-    name = "anyhow",
+    name = "serde_json",
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "default",
@@ -77,37 +77,29 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=serde_json",
         "manual",
     ],
-    version = "1.0.43",
+    version = "1.0.78",
     # buildifier: leave-alone
     deps = [
-        ":anyhow_build_script",
+        ":serde_json_build_script",
+        "@raze__itoa__1_0_1//:itoa",
+        "@raze__ryu__1_0_9//:ryu",
+        "@raze__serde__1_0_135//:serde",
     ],
 )
 
 # Unsupported target "compiletest" with type "test" omitted
 
-# Unsupported target "test_autotrait" with type "test" omitted
+# Unsupported target "debug" with type "test" omitted
 
-# Unsupported target "test_backtrace" with type "test" omitted
+# Unsupported target "lexical" with type "test" omitted
 
-# Unsupported target "test_boxed" with type "test" omitted
+# Unsupported target "map" with type "test" omitted
 
-# Unsupported target "test_chain" with type "test" omitted
+# Unsupported target "regression" with type "test" omitted
 
-# Unsupported target "test_context" with type "test" omitted
+# Unsupported target "stream" with type "test" omitted
 
-# Unsupported target "test_convert" with type "test" omitted
-
-# Unsupported target "test_downcast" with type "test" omitted
-
-# Unsupported target "test_ffi" with type "test" omitted
-
-# Unsupported target "test_fmt" with type "test" omitted
-
-# Unsupported target "test_macros" with type "test" omitted
-
-# Unsupported target "test_repr" with type "test" omitted
-
-# Unsupported target "test_source" with type "test" omitted
+# Unsupported target "test" with type "test" omitted

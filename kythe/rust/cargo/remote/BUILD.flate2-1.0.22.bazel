@@ -90,14 +90,15 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=flate2",
         "manual",
     ],
-    version = "1.0.21",
+    version = "1.0.22",
     # buildifier: leave-alone
     deps = [
         "@raze__cfg_if__1_0_0//:cfg_if",
-        "@raze__crc32fast__1_2_1//:crc32fast",
-        "@raze__libc__0_2_101//:libc",
+        "@raze__crc32fast__1_3_1//:crc32fast",
+        "@raze__libc__0_2_114//:libc",
         "@raze__miniz_oxide__0_4_4//:miniz_oxide",
     ],
 )
