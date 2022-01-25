@@ -52,13 +52,13 @@ public class Variables {
       //- @stream ref ResourceVar
       stream.write('\n');
 
-      //- @ioe defines/binding ExceptionParam
+      //- @#2io defines/binding ExceptionParam
       //- ExceptionParam.node/kind variable
       //- ExceptionParam.subkind local/exception
       //- ExceptionParam childof F
-    } catch (IOException ioe) {
-      //- @ioe ref ExceptionParam
-      throw ioe;
+    } catch (java.io.IOException io) {
+      //- @io ref ExceptionParam
+      throw io;
     }
   }
 
