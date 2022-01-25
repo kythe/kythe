@@ -14,15 +14,8 @@
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::CodedOutputStreamWriter};
 
-use analysis_rust_proto::*;
 use anyhow::{Context, Result};
-use std::{
-    env,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
-use tempdir::TempDir;
+use std::{env, fs::File, path::Path};
 
 fn main() -> Result<()> {
     // Accepts kzip path as an argument
@@ -51,55 +44,7 @@ fn main() -> Result<()> {
     let mut indexer = KytheIndexer::new(&mut writer);
 
     for unit in compilation_units {
-        // Create a temporary directory to store required files
-        let temp_dir =
-            TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
-        let temp_path = PathBuf::from(temp_dir.path());
-
-        // Extract the analysis files from the kzip into the temporary directory
-        extract_analysis_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
-
-        // Index the CompilationUnit
-        indexer.index_cu(&unit, &temp_path, &mut kzip_provider)?;
-    }
-    Ok(())
-}
-
-/// Takes analysis files from a kzip loaded into `provider` and extracts them
-/// to `temp_path` using the file names and digests in the CompilationUnit
-pub fn extract_analysis_from_kzip(
-    c_unit: &CompilationUnit,
-    temp_path: &Path,
-    provider: &mut dyn FileProvider,
-) -> Result<()> {
-    for required_input in c_unit.get_required_input() {
-        let input_path = required_input.get_info().get_path();
-        let input_path_buf = PathBuf::from(input_path);
-
-        // save_analysis files are JSON files
-        if let Some(os_str) = input_path_buf.extension() {
-            if let Some("json") = os_str.to_str() {
-                let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(input_path, digest).with_context(|| {
-                    format!(
-                        "Failed to get contents of file \"{}\" with digest \"{}\"",
-                        input_path, digest
-                    )
-                })?;
-
-                let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file =
-                    File::create(&output_path).context("Failed to create file")?;
-                output_file.write_all(&file_contents).with_context(|| {
-                    format!(
-                        "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",
-                        input_path,
-                        digest,
-                        output_path.display()
-                    )
-                })?;
-            }
-        }
+        indexer.index_cu(&unit, &mut kzip_provider)?;
     }
     Ok(())
 }
