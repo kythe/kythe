@@ -1348,6 +1348,12 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
 bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
                                            const clang::TypeSourceInfo* TSI) {
   if (const auto* Callee = E->getConstructor()) {
+    // If this constructor is inherited via a using declaration,
+    // references should point at the original. This mirrors the behavior
+    // for normal member functions.
+    if (const auto Inherited = Callee->getInheritedConstructor()) {
+      Callee = Inherited.getConstructor();
+    }
     // Clang doesn't invoke VisitDeclRefExpr on constructors, so we
     // must do so manually.
     // TODO(zarko): What about static initializers? Do we blame these on the
