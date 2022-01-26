@@ -46,11 +46,12 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=rls-span",
         "manual",
     ],
     version = "0.5.4",
     # buildifier: leave-alone
     deps = [
-        "@raze__serde__1_0_130//:serde",
+        "@raze__serde__1_0_135//:serde",
     ],
 )

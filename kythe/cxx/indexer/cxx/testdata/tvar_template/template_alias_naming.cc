@@ -1,7 +1,6 @@
 // Other flavors of template arguments don't confuse aliasing.
 
-//- @C defines/binding AbsC
-//- ClassC childof AbsC
+//- @C defines/binding ClassC
 //- ClassC.node/kind record
 //- @f defines/binding FnF
 //- FnF childof ClassC

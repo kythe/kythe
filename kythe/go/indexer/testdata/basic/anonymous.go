@@ -28,7 +28,9 @@ func f(planx struct {
 	return planx.T
 }
 
-var v = struct {
+//- @Struct defines/binding Struct
+//- Struct.node/kind variable
+var Struct = struct {
 	//- @V defines/binding V
 	//- V.node/kind variable
 	//- V.subkind field
@@ -39,7 +41,7 @@ var v = struct {
 }
 
 //- @V ref V
-var _ = v.V
+var _ = Struct.V
 
 var w struct {
 	//- @X defines/binding X

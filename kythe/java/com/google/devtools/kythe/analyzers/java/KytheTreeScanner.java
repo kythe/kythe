@@ -711,7 +711,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         entrySets.getNode(
             signatureGenerator, varDef.sym, signature.get(), null, markedSourceChildren);
     boolean documented = visitDocComment(varNode, null, varDef.getModifiers());
-    emitDefinesBindingAnchorEdge(ctx, varDef.name, varDef.getStartPosition(), varNode);
+    emitDefinesBindingAnchorEdge(ctx, varDef.name, varDef.getPreferredPosition(), varNode);
     emitAnchor(ctx, EdgeKind.DEFINES, varNode);
     if (varDef.sym.getKind().isField() && !documented) {
       // emit comments for fields and enumeration constants
@@ -891,7 +891,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(newClass);
 
     if (newClass == null || newClass.constructor == null) {
-      logger.atInfo().log("Unexpected null class or constructor: %s", newClass);
+      logger.atWarning().log("Unexpected null class or constructor: %s", newClass);
       return emitDiagnostic(ctx, "error analyzing class", null, null);
     }
     VName ctorNode = getNode(newClass.constructor);
@@ -1090,6 +1090,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   boolean emitCommentsOnLine(int line, VName node, int defLine) {
+    if (!config.getEmitDocForNonJavadoc()) {
+      return false;
+    }
     List<Comment> lst = comments.get(line);
     if (lst == null || commentClaims.computeIfAbsent(line, l -> defLine) != defLine) {
       return false;

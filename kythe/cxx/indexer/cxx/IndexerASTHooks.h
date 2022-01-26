@@ -195,6 +195,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr* E);
   bool VisitCXXUnresolvedConstructExpr(
       const clang::CXXUnresolvedConstructExpr* E);
+  bool TraverseCXXOperatorCallExpr(clang::CXXOperatorCallExpr* E);
   bool VisitCallExpr(const clang::CallExpr* Expr);
   bool VisitMemberExpr(const clang::MemberExpr* Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -241,6 +242,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
                                         const clang::Type* Resolved);
+  NodeSet RecordTypeSpellingLocation(const clang::Type* Type,
+                                     clang::SourceRange Range);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 

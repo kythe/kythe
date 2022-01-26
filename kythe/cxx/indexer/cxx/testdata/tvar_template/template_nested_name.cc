@@ -1,10 +1,10 @@
 // We emit references to nodes in nested names.
 template <typename T>
-//- @S defines/binding AbsS
+//- @S defines/binding StructS
 struct S {
   static T x;
   template <typename U>
-//- @V defines/binding AbsV
+//- @V defines/binding StructV
   struct V {
     static U y;
   };
@@ -16,9 +16,8 @@ struct S {
 //- @float ref Float
 double z = S<int>::V<float>::y;
 
-// Interestingly, we don't get the definition of V here:
 //- SInt instantiates AppSInt
 //- VFloat instantiates AppVFloat
-//- AppSInt param.0 AbsS
+//- AppSInt param.0 StructS
 //- AppVFloat param.0 NominalV
-//- NominalV.node/kind tnominal
+//- NominalV.node/kind record

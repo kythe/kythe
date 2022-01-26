@@ -4,8 +4,7 @@ bool g() { return false; }
 //- PtCall=@"g()" ref/call FnG
 //- PtCall childof FnF  // We should collapse K in abs(K) into cluster abs(K)
 //- FnF childof CBody
-//- CBody childof AbsC
-//- @C defines/binding AbsC
+//- @C defines/binding CBody
 template <typename T> struct C { bool f(T* t) { return g(); } };
 
 //- @f defines/binding SpecF

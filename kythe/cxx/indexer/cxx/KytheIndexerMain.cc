@@ -58,6 +58,8 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
+ABSL_FLAG(bool, experimental_guess_proto_semantics, false,
+          "Guess proto semantics.");
 ABSL_FLAG(bool, experimental_use_abs_nodes, true, "Use abs nodes.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
@@ -125,7 +127,11 @@ int main(int argc, char* argv[]) {
     options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
-    meta_supports.Add(absl::make_unique<ProtobufMetadataSupport>());
+    auto proto = absl::make_unique<ProtobufMetadataSupport>();
+    if (absl::GetFlag(FLAGS_experimental_guess_proto_semantics)) {
+      proto->GuessSemantics(true);
+    }
+    meta_supports.Add(std::move(proto));
     meta_supports.Add(absl::make_unique<KytheMetadataSupport>());
 
     kythe::LibrarySupports library_supports;

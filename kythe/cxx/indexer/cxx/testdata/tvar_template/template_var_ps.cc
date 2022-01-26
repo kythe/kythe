@@ -5,7 +5,7 @@ template <typename T, typename S> T v;
 template <typename U>
 //- @v defines/binding VarPSU
 U v<U, int>;
-//- VarPSU.node/kind abs
+//- VarPSU.node/kind variable
 //- VarPSU specializes TAppVarV
 //- TAppVarV.node/kind tapp
 //- TAppVarV param.0 VarV

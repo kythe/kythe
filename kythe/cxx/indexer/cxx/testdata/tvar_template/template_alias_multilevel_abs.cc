@@ -1,4 +1,4 @@
-// With aliasing on, we don't record childof edges to abs nodes, even under
+// With aliasing on, we don't record childof edges, even under
 // multiple layers of implicit template expansion.
 template <template <typename T> class Tmpl>
 struct TemplateSel { };
@@ -9,14 +9,12 @@ struct Templates1 {
 };
 
 template <class TestSel>
-//- @T1 defines/binding AbsT1
-//- RecT1 childof AbsT1
+//- @T1 defines/binding RecT1
 //- RecT1.node/kind record
 class T1 {
  public:
 //- @f defines/binding FnF
 //- FnF childof RecT1
-//- !{FnF childof AbsT1}
   static bool f() {
     return true;
   }

@@ -1,11 +1,11 @@
 package pkg;
 
-//- @+3AnnotationComments defines/binding AnnotationComments
+//- @+4AnnotationComments defines/binding AnnotationComments
 
-@Deprecated // TODO(#3459): This should not annotate the class, but does.
+// This isn't documentation.
+@Deprecated // This does not document AnnotationComments
 public class AnnotationComments {
-  //- { _ documents AnnotationComments }
-  // The above test is broken and should be '!{ _ documents ...' instead
+  //- !{ _ documents AnnotationComments }
 
   //- @+3fooString defines/binding FooString
 

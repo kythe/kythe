@@ -29,7 +29,9 @@ def cc_proto_verifier_test(
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
             "--convert_marked_source",
         ],
-        size = "small"):
+        size = "small",
+        experimental_guess_proto_semantics = False,
+        experimental_record_dataflow_edges = False):
     """Verify cross-language references between C++ and Proto.
 
     Args:
@@ -38,6 +40,8 @@ def cc_proto_verifier_test(
       proto_libs: A list of proto_library targets
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
+      experimental_guess_proto_semantics: guess proto semantics?
+      experimental_record_dataflow_edges: record dataflow edges?
 
     Returns:
       The label of the test.
@@ -71,6 +75,13 @@ def cc_proto_verifier_test(
         deps = cc_proto_libs,
     )
 
+    guess_opt = []
+    if experimental_guess_proto_semantics:
+        guess_opt = ["--experimental_guess_proto_semantics"]
+    df_opt = []
+    if experimental_record_dataflow_edges:
+        df_opt = ["--experimental_record_dataflow_edges"]
+
     cc_entries = _invoke(
         cc_index,
         name = name + "_cc_entries",
@@ -83,7 +94,7 @@ def cc_proto_verifier_test(
             "--noindex_template_instantiations",
             "--experimental_drop_instantiation_independent_data",
             "--noemit_anchors_on_builtins",
-        ],
+        ] + guess_opt + df_opt,
     )
 
     return _invoke(

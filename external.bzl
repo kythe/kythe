@@ -40,7 +40,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
-    rust_repositories(version = "nightly", iso_date = "2021-12-20", dev_components = True)
+    rust_repositories(version = "nightly", iso_date = "2022-01-09", dev_components = True)
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
@@ -297,7 +297,7 @@ def _java_dependencies():
             "com.google.code.gson:gson:2.8.6",
             "com.google.common.html.types:types:1.0.8",
             "com.google.errorprone:error_prone_annotations:2.6.0",
-            "com.google.guava:guava:30.1.1-jre",
+            "com.google.guava:guava:31.0.1-jre",
             "com.google.jimfs:jimfs:1.2",
             "com.google.re2j:re2j:1.6",
             "com.google.truth:truth:1.1.2",

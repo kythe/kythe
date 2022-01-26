@@ -418,7 +418,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		Error: func(err error) { pi.Errors = append(pi.Errors, err) },
 	}
 	pi.Package, _ = c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info)
-	pi.PackageVName[pi.Package] = unit.VName
 
 	// Fill in the mapping from packages to vnames.
 	for ip, vname := range imap {
@@ -436,6 +435,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 	pi.VName = proto.Clone(unit.VName).(*spb.VName)
 	pi.VName.Language = govname.Language
 	pi.VName.Signature = "package"
+	pi.PackageVName[pi.Package] = pi.VName
 
 	return pi, nil
 }
@@ -588,7 +588,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 				_, base := pi.newSignature(owner)
 				return tagField, base + "." + t.Name()
 			}
-			return tagField, fmt.Sprintf("[%p].%s", t, t.Name())
+			return tagField, pi.anonSignature(t)
 		} else if owner, ok := pi.owner[t]; ok {
 			_, base := pi.newSignature(owner)
 			return tagParam, base + ":" + t.Name()
@@ -620,7 +620,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 		}
 
 	case *types.Label:
-		return tagLabel, fmt.Sprintf("[%p].%s", t, t.Name())
+		return tagLabel, pi.anonSignature(t)
 
 	default:
 		log.Panicf("Unexpected object kind: %T", obj)
@@ -638,7 +638,17 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 	}
 
 	// Objects in interior (local) scopes, i.e., everything else.
-	return topLevelTag, fmt.Sprintf("[%p].%s", obj, obj.Name())
+	return topLevelTag, pi.anonSignature(obj)
+}
+
+func (pi *PackageInfo) anonSignature(obj types.Object) string {
+	// Use the object's line number and file basename to differentiate the
+	// node while allowing for cross-package references (other parts of the
+	// Position may differ).  This may collide if a source file isn't gofmt'd
+	// and defines multiple anonymous fields with the same name on the same
+	// line, but that's unlikely to happen in practice.
+	pos := pi.FileSet.Position(obj.Pos())
+	return fmt.Sprintf("[%s#%d].%s", filepath.Base(pos.Filename), pos.Line, obj.Name())
 }
 
 // addOwners updates pi.owner from the types in pkg, adding mapping from fields
@@ -772,8 +782,8 @@ func (pi *PackageInfo) addOwners(pkg *types.Package, ownerByPos map[token.Positi
 			// Inspect the fields of a struct.
 			for i := 0; i < t.NumFields(); i++ {
 				f := t.Field(i)
-				if f.Pkg() != pkg {
-					continue // wrong package
+				if f.Pkg() != pkg && named.TypeArgs().Len() == 0 {
+					continue // wrong package (and not an instantiated type)
 				}
 				if _, ok := pi.owner[f]; !ok {
 					pi.owner[f] = obj

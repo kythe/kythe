@@ -19,6 +19,14 @@
 
 : "${TMPDIR:=/tmp}" "${OUTPUT:=/output}" "${KYTHE_KZIP_ENCODING:=JSON}"
 
+if [[ -z "${GOPATH}" ]]; then
+  echo "GOPATH environment variable is required" >&2
+  exit 1
+fi
+if [[ -z "${KYTHE_CORPUS}" ]]; then
+  echo "KYTHE_CORPUS environment variable is required" >&2
+  exit 1
+fi
 
 FLAGS=()
 PACKAGES=()
@@ -32,6 +40,12 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+if [[ ${#PACKAGES[@]} -ne 1 ]]; then
+  echo "Please specify exactly one go package to extract" >&2
+  exit 1
+fi
+PACKAGE="${PACKAGES[0]}"
+
 # golang build tags can optionally be specified with the `KYTHE_GO_BUILD_TAGS`
 # env variable.
 if [ -n "$KYTHE_GO_BUILD_TAGS" ]; then
@@ -42,16 +56,21 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
-echo "Downloading ${PACKAGES[*]}" >&2
-go get -d "${PACKAGES[@]}" || true
+echo "$PACKAGE: go mod vendor" >&2
+pushd "$GOPATH/src/$PACKAGE"
+go mod vendor
+popd
 
-echo "Extracting ${PACKAGES[*]}" >&2
-parallel --will-cite \
+echo "Extracting ${PACKAGE}" >&2
   extract_go --continue -v \
   --goroot="$(go env GOROOT)" \
-  --output="$TMPDIR/out.{#}.kzip" \
+  --output="$TMPDIR/out.kzip" \
+  --use_default_corpus_for_deps \
+  --use_default_corpus_for_stdlib \
+  --corpus="$KYTHE_CORPUS" \
   "${FLAGS[@]}" \
-  {} ::: "${PACKAGES[@]}"
+  "${PACKAGE}/vendor/..." \
+  "${PACKAGE}/..."
 
 mkdir -p "$OUTPUT"
 OUT="$OUTPUT/compilations.kzip"
@@ -61,7 +80,7 @@ fi
 
 # cd into the top-level git directory of our package and query git for the
 # commit timestamp.
-pushd "$(go env GOPATH)/src/$(dirname "${PACKAGES[0]}")"
+pushd "$(go env GOPATH)/src/${PACKAGE}"
 TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
 popd
 
@@ -72,5 +91,5 @@ kzip create_metadata \
   --commit_timestamp "$TIMESTAMP"
 
 echo "Merging compilations into $OUT" >&2
-kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR"/out.*.kzip "$OUTPUT/buildmetadata.kzip"
+kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR/out.kzip" "$OUTPUT/buildmetadata.kzip"
 fix_permissions.sh "$OUTPUT"
