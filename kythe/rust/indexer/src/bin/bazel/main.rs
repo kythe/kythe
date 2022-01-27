@@ -15,22 +15,30 @@ extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::CodedOutputStreamWriter};
 
 use anyhow::{Context, Result};
-use std::{env, fs::File, path::Path};
+use clap::{App, Arg};
+use std::fs::File;
 
 fn main() -> Result<()> {
-    // Accepts kzip path as an argument
-    // Calls indexer on each compilation unit
     // Returns 0 if ok or 1 if error
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Not enough arguments! Usage: rust_indexer <kzip path>");
-        std::process::exit(1);
-    } else if args.len() > 3 {
-        eprintln!("Too many arguments! Usage: rust_indexer <kzip path>")
-    }
+    let matches = App::new("Kythe Rust Bazel Indexer")
+        .arg(
+            Arg::with_name("kzip_path")
+                .required(true)
+                .index(1)
+                .help("The path to the kzip to be indexed"),
+        )
+        .arg(
+            Arg::with_name("no_emit_std_lib")
+                .long("no_emit_std_lib")
+                .required(false)
+                .help("Disables emitting cross references to the standard library"),
+        )
+        .get_matches();
+    let emit_std_lib = !matches.is_present("no_emit_std_lib");
 
     // Get kzip path from argument and use it to create a KzipFileProvider
-    let kzip_path = Path::new(&args[1]);
+    // Unwrap is safe because the parameter is required
+    let kzip_path = matches.value_of("kzip_path").unwrap();
     let kzip_file = File::open(kzip_path).context("Provided path does not exist")?;
     let mut kzip_provider =
         KzipFileProvider::new(kzip_file).context("Failed to open kzip archive")?;
@@ -44,7 +52,7 @@ fn main() -> Result<()> {
     let mut indexer = KytheIndexer::new(&mut writer);
 
     for unit in compilation_units {
-        indexer.index_cu(&unit, &mut kzip_provider)?;
+        indexer.index_cu(&unit, &mut kzip_provider, emit_std_lib)?;
     }
     Ok(())
 }
