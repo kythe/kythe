@@ -16,7 +16,7 @@ use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::CodedOutpu
 
 use anyhow::{Context, Result};
 use clap::{App, Arg};
-use std::{env, fs::File};
+use std::fs::File;
 
 fn main() -> Result<()> {
     // Returns 0 if ok or 1 if error
