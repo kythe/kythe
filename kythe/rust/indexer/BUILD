@@ -36,6 +36,7 @@ rust_binary(
     deps = [
         ":kythe_rust_indexer",
         "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:clap",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
@@ -52,6 +53,7 @@ rust_binary(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:base64",
+        "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:serde_json",
         "@rules_rust//proto/raze:protobuf",
     ],

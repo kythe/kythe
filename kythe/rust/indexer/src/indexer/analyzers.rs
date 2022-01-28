@@ -69,6 +69,8 @@ pub struct CrateAnalyzer<'a, 'b> {
     method_index: HashMap<rls_data::Id, MethodImpl>,
     // A map from type names to their vnames
     type_vnames: HashMap<String, VName>,
+    // Whether do emit references to the standard library
+    emit_std_lib: bool,
 }
 
 /// A data struct to keep track of method implementations. Used in a HashMap to
@@ -174,13 +176,18 @@ impl<'a> UnitAnalyzer<'a> {
     }
 
     /// Indexes the provided crate
-    pub fn index_crate(&mut self, analysis: Analysis) -> Result<(), KytheError> {
+    pub fn index_crate(
+        &mut self,
+        analysis: Analysis,
+        emit_std_lib: bool,
+    ) -> Result<(), KytheError> {
         let mut crate_analyzer = CrateAnalyzer::new(
             &mut self.emitter,
             &self.file_vnames,
             &self.unit_storage_vname,
             analysis,
             &self.offset_index,
+            emit_std_lib,
         );
         crate_analyzer.emit_crate_nodes()?;
         crate_analyzer.emit_tbuiltin_nodes()?;
@@ -201,6 +208,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         unit_vname: &'b VName,
         analysis: Analysis,
         offset_index: &'b OffsetIndex,
+        emit_std_lib: bool,
     ) -> Self {
         // Initialize the type_vnames HashMap with builtin types
         let types = vec![
@@ -254,6 +262,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             offset_index,
             method_index: HashMap::new(),
             type_vnames,
+            emit_std_lib,
         }
     }
 
@@ -734,6 +743,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             let krate_id = krate_id.unwrap();
 
+            if krate_id.name == "std" && !self.emit_std_lib {
+                continue;
+            }
+
             // Create VName for target of reference
             let definition_vname = self.generate_def_vname(krate_id, ref_id.index);
 
@@ -802,6 +815,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 continue;
             }
             let krate_id = krate_id.unwrap();
+
+            if krate_id.name == "std" && !self.emit_std_lib {
+                continue;
+            }
 
             // Create VName for target of reference
             let target_vname = self.generate_def_vname(krate_id, ref_id.index);

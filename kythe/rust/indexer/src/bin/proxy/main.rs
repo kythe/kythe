@@ -16,6 +16,7 @@ use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, proxyrequests, wri
 
 use analysis_rust_proto::*;
 use anyhow::{anyhow, Context, Result};
+use clap::{App, Arg};
 use serde_json::Value;
 use std::io::{self, Write};
 
@@ -24,11 +25,21 @@ fn main() -> Result<()> {
     let mut kythe_writer = ProxyWriter::new();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
 
+    let matches = App::new("Kythe Rust Proxy Indexer")
+        .arg(
+            Arg::with_name("no_emit_std_lib")
+                .long("no_emit_std_lib")
+                .required(false)
+                .help("Disables emitting cross references to the standard library"),
+        )
+        .get_matches();
+    let emit_std_lib = !matches.is_present("no_emit_std_lib");
+
     // Request and process
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res = indexer.index_cu(&unit, &mut file_provider);
+        let index_res = indexer.index_cu(&unit, &mut file_provider, emit_std_lib);
         if index_res.is_ok() {
             send_done(true, String::new())?;
         } else {
