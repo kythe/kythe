@@ -240,7 +240,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         ];
         let mut type_vnames: HashMap<String, VName> = HashMap::new();
         let mut vname_template = VName::new();
-        vname_template.set_corpus("std".to_string());
+        let unit_corpus = unit_vname.get_corpus().to_string();
+        vname_template.set_corpus(unit_corpus);
         vname_template.set_root("".to_string());
         vname_template.set_path("".to_string());
         vname_template.set_language("rust".to_string());
