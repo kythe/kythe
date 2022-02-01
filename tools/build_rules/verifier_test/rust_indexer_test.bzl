@@ -202,6 +202,7 @@ def _rust_indexer(
     )
     return entries
 
+# buildifier: disable=function-docstring-return
 def rust_indexer_test(
         name,
         srcs,
