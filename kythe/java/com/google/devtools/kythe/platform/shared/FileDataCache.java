@@ -41,7 +41,7 @@ public class FileDataCache implements FileDataProvider {
         builder.put(digest, data.getContent().toByteArray());
       }
     }
-    fileContents = builder.build();
+    fileContents = builder.buildOrThrow();
   }
 
   @Override

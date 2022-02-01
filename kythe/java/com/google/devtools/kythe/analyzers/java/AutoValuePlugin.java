@@ -317,7 +317,7 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
     for (Map.Entry<String, GeneratedSymbol> sym : syms.entrySet()) {
       unprefixed.put(propertyName(sym.getKey()), sym.getValue());
     }
-    return unprefixed.build();
+    return unprefixed.buildOrThrow();
   }
 
   private static boolean isPrefixedGetter(String name) {
