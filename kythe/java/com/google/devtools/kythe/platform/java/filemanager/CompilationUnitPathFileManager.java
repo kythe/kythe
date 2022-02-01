@@ -270,7 +270,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     // (or options not present in the details), will remain on the command line and be
     // parsed as normal, relying on getPath() to map into the compilation unit.
     logger.atInfo().log("Compilation missing JavaDetails; falling back to flag parsing");
-    return defaultLocationMapBuilder().build();
+    return defaultLocationMapBuilder().buildOrThrow();
   }
 
   /** Translates the JavaDetails locations into {@code Map<Location, Collection<Path>>} */
