@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
@@ -14,7 +14,6 @@ load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
-load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 load("@rules_rust//rust:repositories.bzl", "rust_repositories")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
@@ -39,7 +38,6 @@ def _rule_dependencies():
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
-    bazel_toolchains_repositories()
     rust_repositories(version = "nightly", iso_date = "2022-01-09", dev_components = True)
     rust_proto_repositories()
     rules_ruby_dependencies()
@@ -1293,3 +1291,14 @@ def kythe_dependencies(sample_ui = True):
     if sample_ui:
         _sample_ui_dependencies()
     _extractor_image_dependencies()
+
+    maybe(
+        http_file,
+        name = "bazel_toolchains_rbe_gen_config_linux_amd64",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+        ],
+        sha256 = "3e3ba75f14eb7c87de8934ae8dfa814f84b5be3b0081dcb8cb95ff42ed1a73b2",
+        executable = True,
+    )
