@@ -226,6 +226,7 @@ public class KytheEntrySets {
     if (fileVName == null) {
       return dn;
     } else {
+      builder.setCorpusPath(CorpusPath.fromVName(fileVName));
       if (d.hasSpan()) {
         Span s =
             new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
