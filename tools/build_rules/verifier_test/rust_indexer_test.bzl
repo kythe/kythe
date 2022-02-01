@@ -41,8 +41,8 @@ def _rust_extract_impl(ctx):
 
     # Rust toolchain
     rust_toolchain = ctx.toolchains["@rules_rust//rust:toolchain"]
-    rustc_lib = rust_toolchain.rustc_lib.files.to_list()
-    rust_lib = rust_toolchain.rust_lib.files.to_list()
+    rustc_lib = rust_toolchain.rustc_lib.to_list()
+    rust_std = rust_toolchain.rust_std.to_list()
 
     # Generate extra_action file to be used by the extractor
     extra_action_file = ctx.actions.declare_file(ctx.label.name + ".xa")
@@ -54,7 +54,7 @@ def _rust_extract_impl(ctx):
             "--output=%s" % extra_action_file.path,
             "--owner=%s" % ctx.label.name,
             "--crate_name=%s" % ctx.attr.crate_name,
-            "--sysroot=%s" % paths.dirname(rust_lib[0].path),
+            "--sysroot=%s" % paths.dirname(rust_std[0].path),
             "--linker=%s" % linker_path,
         ],
         outputs = [extra_action_file],
@@ -70,7 +70,7 @@ def _rust_extract_impl(ctx):
             "--output=%s" % output.path,
             "--vnames_config=%s" % ctx.file._vnames_config_file.path,
         ],
-        inputs = [extra_action_file, ctx.file._vnames_config_file] + rustc_lib + rust_lib + ctx.files.srcs,
+        inputs = [extra_action_file, ctx.file._vnames_config_file] + rustc_lib + rust_std + ctx.files.srcs,
         outputs = [output],
         env = {
             "KYTHE_CORPUS": "test_corpus",
@@ -211,6 +211,20 @@ def rust_indexer_test(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False):
+    """
+    Runs a Rust verifier test on the source files
+
+    Args:
+      name: Rule name
+      srcs: A list of Rust source file to index and verify
+      size: The size to pass to the verifier_test macro
+      tags: The tags to pass to the verifier_test macro
+      log_entries: Enable to make the verifier log all indexer entries
+      has_marked_source: Enable to make the indexer emit Marked Source (unused)
+      emit_anchor_scopes: Enable to make the indexer emit anchor scopes (unused)
+      allow_duplicates: Enable to make the verifier ignore duplicate entries
+    """
+
     # Generate entries using the Rust indexer
     entries = _rust_indexer(
         name = name,
