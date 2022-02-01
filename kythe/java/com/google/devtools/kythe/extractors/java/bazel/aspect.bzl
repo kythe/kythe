@@ -89,6 +89,7 @@ def _extract_java(target, ctx):
         inputs = depset([xa, ctx.file._java_aspect_vnames_config], transitive = deps),
         executable = ctx.executable._java_bazel_extractor,
         arguments = [extract_args],
+        tools = ctx.attr._java_runtime[java_common.JavaRuntimeInfo].files,
     )
 
     return kzip
@@ -116,6 +117,11 @@ extract_java_aspect = aspect(
         "_java_aspect_vnames_config": attr.label(
             default = Label("//external:vnames_config"),
             allow_single_file = True,
+        ),
+        "_java_runtime": attr.label(
+            default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
+            cfg = "host",
+            allow_files = True,
         ),
     },
 )
