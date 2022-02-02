@@ -14,11 +14,11 @@
 
 # This becomes the BUILD file for @local_config_cc// under non-BSD unixes.
 
-package(default_visibility = ["//visibility:public"])
-
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 load(":armeabi_cc_toolchain_config.bzl", "armeabi_cc_toolchain_config")
 load("@rules_cc//cc:defs.bzl", "cc_toolchain", "cc_toolchain_suite")
+
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache 2.0
 
@@ -87,12 +87,13 @@ cc_toolchain_config(
     "/usr/local/lib/clang/12.0.0/share",
     "/usr/include/c++/7.5.0",
     "/usr/include/x86_64-linux-gnu/c++/7.5.0",
-    "/usr/include/c++/7.5.0/backward"],
+    "/usr/include/c++/7.5.0/backward",
+    "/usr/local/include/c++/v1"],
     tool_paths = {"ar": "/usr/bin/ar",
         "ld": "/usr/bin/ld",
         "llvm-cov": "/usr/local/bin/llvm-cov",
         "cpp": "/usr/bin/cpp",
-        "gcc": "/usr/local/bin/clang",
+        "gcc": "/usr/local/bin/clang-12",
         "dwp": "/usr/bin/dwp",
         "gcov": "/dev/null",
         "nm": "/usr/bin/nm",
