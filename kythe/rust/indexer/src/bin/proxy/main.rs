@@ -32,14 +32,22 @@ fn main() -> Result<()> {
                 .required(false)
                 .help("Disables emitting cross references to the standard library"),
         )
+        .arg(
+            Arg::with_name("tbuiltin_std_corpus")
+                .long("tbuiltin_std_corpus")
+                .required(false)
+                .help("Emits built-in types in the \"std\" corpus"),
+        )
         .get_matches();
     let emit_std_lib = !matches.is_present("no_emit_std_lib");
+    let tbuiltin_std_corpus = matches.is_present("tbuiltin_std_corpus");
 
     // Request and process
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res = indexer.index_cu(&unit, &mut file_provider, emit_std_lib);
+        let index_res =
+            indexer.index_cu(&unit, &mut file_provider, emit_std_lib, tbuiltin_std_corpus);
         if index_res.is_ok() {
             send_done(true, String::new())?;
         } else {

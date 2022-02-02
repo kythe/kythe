@@ -42,6 +42,7 @@ impl<'a> KytheIndexer<'a> {
         unit: &CompilationUnit,
         provider: &mut dyn FileProvider,
         emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
     ) -> Result<(), KytheError> {
         let analysis_file = Self::get_analysis_file(unit, provider)?;
         let mut generator = UnitAnalyzer::new(unit, self.writer, provider)?;
@@ -50,7 +51,7 @@ impl<'a> KytheIndexer<'a> {
             // First, create file nodes for all of the source files in the CompilationUnit
             generator.handle_files()?;
             // Then index the crate
-            generator.index_crate(analysis, emit_std_lib)?;
+            generator.index_crate(analysis, emit_std_lib, tbuiltin_std_corpus)?;
         } else {
             return Err(KytheError::IndexerError(
                 "Failed to deserialize save-analysis file".to_string(),
