@@ -33,8 +33,15 @@ fn main() -> Result<()> {
                 .required(false)
                 .help("Disables emitting cross references to the standard library"),
         )
+        .arg(
+            Arg::with_name("tbuiltin_std_corpus")
+                .long("tbuiltin_std_corpus")
+                .required(false)
+                .help("Emits built-in types in the \"std\" corpus"),
+        )
         .get_matches();
     let emit_std_lib = !matches.is_present("no_emit_std_lib");
+    let tbuiltin_std_corpus = matches.is_present("tbuiltin_std_corpus");
 
     // Get kzip path from argument and use it to create a KzipFileProvider
     // Unwrap is safe because the parameter is required
@@ -52,7 +59,7 @@ fn main() -> Result<()> {
     let mut indexer = KytheIndexer::new(&mut writer);
 
     for unit in compilation_units {
-        indexer.index_cu(&unit, &mut kzip_provider, emit_std_lib)?;
+        indexer.index_cu(&unit, &mut kzip_provider, emit_std_lib, tbuiltin_std_corpus)?;
     }
     Ok(())
 }

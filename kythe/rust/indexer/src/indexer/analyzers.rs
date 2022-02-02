@@ -180,6 +180,7 @@ impl<'a> UnitAnalyzer<'a> {
         &mut self,
         analysis: Analysis,
         emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
     ) -> Result<(), KytheError> {
         let mut crate_analyzer = CrateAnalyzer::new(
             &mut self.emitter,
@@ -188,6 +189,7 @@ impl<'a> UnitAnalyzer<'a> {
             analysis,
             &self.offset_index,
             emit_std_lib,
+            tbuiltin_std_corpus,
         );
         crate_analyzer.emit_crate_nodes()?;
         crate_analyzer.emit_tbuiltin_nodes()?;
@@ -209,6 +211,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         analysis: Analysis,
         offset_index: &'b OffsetIndex,
         emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
     ) -> Self {
         // Initialize the type_vnames HashMap with builtin types
         let types = vec![
@@ -240,8 +243,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         ];
         let mut type_vnames: HashMap<String, VName> = HashMap::new();
         let mut vname_template = VName::new();
-        let unit_corpus = unit_vname.get_corpus().to_string();
-        vname_template.set_corpus(unit_corpus);
+        // If true, emit the built-in types in the std corpus. Otherwise,
+        // emit in the same corpus as the compilation unit
+        if tbuiltin_std_corpus {
+            vname_template.set_corpus("std".to_string());
+        } else {
+            let unit_corpus = unit_vname.get_corpus().to_string();
+            vname_template.set_corpus(unit_corpus);
+        }
         vname_template.set_root("".to_string());
         vname_template.set_path("".to_string());
         vname_template.set_language("rust".to_string());
