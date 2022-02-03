@@ -182,6 +182,10 @@ message FileInfo {
   kythe.proto.common.CorpusPath corpus_path = 1;
 
   string revision = 2;
+
+  // Hash of the file contents; the algorithm of the hash may differ between
+  // corpora based on the repository from which they were extracted.
+  kythe.proto.common.Hash hash = 3;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.

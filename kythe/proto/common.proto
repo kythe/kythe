@@ -204,3 +204,22 @@ message Language {
   // Set of analyzer versions used for this language's analysis.
   repeated string analyzer_version = 3;
 }
+
+// A Hash of some data.
+message Hash {
+  // Specifies the hash algorithm, if any.
+  enum HashType {
+    NONE = 0;
+
+    // Use a sha256 hash (git's successor hash --
+    // https://git-scm.com/docs/hash-function-transition/).
+    SHA256 = 1;
+    // Use a sha1 hash (git's legacy blob hash).
+    SHA1 = 2;
+  }
+
+  // The type of hash that was performed.
+  HashType type = 1;
+  // The hash value.
+  bytes value = 2;
+}
