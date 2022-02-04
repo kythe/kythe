@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
@@ -1294,3 +1294,14 @@ def kythe_dependencies(sample_ui = True):
     if sample_ui:
         _sample_ui_dependencies()
     _extractor_image_dependencies()
+
+    maybe(
+        http_file,
+        name = "bazel_toolchains_rbe_gen_config_linux_amd64",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+        ],
+        sha256 = "3e3ba75f14eb7c87de8934ae8dfa814f84b5be3b0081dcb8cb95ff42ed1a73b2",
+        executable = True,
+    )
