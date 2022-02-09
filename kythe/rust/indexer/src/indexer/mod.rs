@@ -15,7 +15,6 @@
 pub mod analyzers;
 pub mod entries;
 pub mod offset;
-pub mod save_analysis;
 
 use crate::error::KytheError;
 use crate::providers::FileProvider;
@@ -23,7 +22,7 @@ use crate::writer::KytheWriter;
 
 use analysis_rust_proto::*;
 use analyzers::UnitAnalyzer;
-use std::path::Path;
+use std::path::PathBuf;
 
 /// A data structure for indexing CompilationUnits
 pub struct KytheIndexer<'a> {
@@ -41,22 +40,49 @@ impl<'a> KytheIndexer<'a> {
     pub fn index_cu(
         &mut self,
         unit: &CompilationUnit,
-        analysis_dir: &Path,
         provider: &mut dyn FileProvider,
+        emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
     ) -> Result<(), KytheError> {
+        let analysis_file = Self::get_analysis_file(unit, provider)?;
         let mut generator = UnitAnalyzer::new(unit, self.writer, provider)?;
 
-        // First, create file nodes for all of the source files in the CompilationUnit
-        generator.handle_files()?;
-
-        // Then, index all of the crates from the save_analysis
-        let analyzed_crates = save_analysis::load_analysis(analysis_dir);
-        for krate in analyzed_crates {
-            generator.index_crate(krate)?;
+        if let Some(analysis) = rls_analysis::deserialize_crate_data(&analysis_file) {
+            // First, create file nodes for all of the source files in the CompilationUnit
+            generator.handle_files()?;
+            // Then index the crate
+            generator.index_crate(analysis, emit_std_lib, tbuiltin_std_corpus)?;
+        } else {
+            return Err(KytheError::IndexerError(
+                "Failed to deserialize save-analysis file".to_string(),
+            ));
         }
 
         // We must flush the writer each time to ensure that all entries get written
         self.writer.flush()?;
         Ok(())
+    }
+
+    fn get_analysis_file(
+        c_unit: &CompilationUnit,
+        provider: &mut dyn FileProvider,
+    ) -> Result<String, KytheError> {
+        for required_input in c_unit.get_required_input() {
+            let input_path = required_input.get_info().get_path();
+            let input_path_buf = PathBuf::from(input_path);
+
+            // save_analysis files are JSON files
+            if let Some(os_str) = input_path_buf.extension() {
+                if let Some("json") = os_str.to_str() {
+                    let hash = required_input.get_info().get_digest();
+                    let file_bytes = provider.contents(input_path, hash)?;
+                    let file_string = String::from_utf8_lossy(&file_bytes);
+                    return Ok(file_string.to_string());
+                }
+            }
+        }
+        Err(KytheError::IndexerError(
+            "The save-analysis file could not be found in the Compilation Unit".to_string(),
+        ))
     }
 }

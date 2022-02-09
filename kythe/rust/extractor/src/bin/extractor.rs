@@ -23,6 +23,7 @@ use extra_actions_base_rust_proto::*;
 use kythe_rust_extractor::vname_util::VNameRule;
 use protobuf::Message;
 use sha2::{Digest, Sha256};
+use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -109,6 +110,9 @@ fn main() -> Result<()> {
         build_output_path,
         required_input,
         unit_vname,
+        env::current_dir()?
+            .to_str()
+            .ok_or_else(|| anyhow!("working directory is invalid UTF-8"))?,
     );
     let mut indexed_compilation_bytes: Vec<u8> = Vec::new();
     indexed_compilation
@@ -156,12 +160,14 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
 /// * `build_output_path` - The output path of the build target
 /// * `required_input` - The generated data for the CompilationUnit
 ///   `required_input` field
+/// * `working_directory` - The working_directory field for the CompilationUnit
 fn create_indexed_compilation(
     source_files: Vec<String>,
     arguments: Vec<String>,
     build_output_path: &str,
     required_input: Vec<CompilationUnit_FileInput>,
     mut unit_vname: VName,
+    working_directory: &str,
 ) -> IndexedCompilation {
     let mut compilation_unit = CompilationUnit::new();
 
@@ -171,6 +177,7 @@ fn create_indexed_compilation(
     compilation_unit.set_argument(protobuf::RepeatedField::from_vec(arguments));
     compilation_unit.set_required_input(protobuf::RepeatedField::from_vec(required_input));
     compilation_unit.set_output_key(build_output_path.to_string());
+    compilation_unit.set_working_directory(working_directory.to_string());
 
     let mut indexed_compilation = IndexedCompilation::new();
     indexed_compilation.set_unit(compilation_unit);
@@ -260,7 +267,7 @@ fn analysis_path_string(build_output_path: &str, temp_dir_path: &Path) -> Result
     // always replace the hyphens with underscores because the save_analysis
     // files for libraries have hyphens in them.
     if !path.exists() {
-        path = temp_dir_path.join("save-analysis").join(analysis_file_str.replace("-", "_"));
+        path = temp_dir_path.join("save-analysis").join(analysis_file_str.replace('-', "_"));
     }
 
     path.to_str()

@@ -11,16 +11,6 @@ load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 # Bazel and our maximum supported version of Bazel.
 check_version(MIN_VERSION, MAX_VERSION)
 
-http_archive(
-    name = "bazel_toolchains",
-    sha256 = "179ec02f809e86abf56356d8898c8bd74069f1bd7c56044050c2cd3d79d0e024",
-    strip_prefix = "bazel-toolchains-4.1.0",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
-    ],
-)
-
 load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
@@ -56,18 +46,9 @@ load("@maven//:compat.bzl", "compat_repositories")
 
 compat_repositories()
 
-# If the configuration here changes, run tools/platforms/configs/rebuild.sh
-load("@bazel_toolchains//rules:environments.bzl", "clang_env")
-load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
-load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC")
+load("@maven//:defs.bzl", "pinned_maven_install")
 
-rbe_autoconfig(
-    name = "rbe_default",
-    env = clang_env(),
-    export_configs = True,
-    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
-    use_legacy_platform_definition = False,
-)
+pinned_maven_install()
 
 load(
     "@bazelruby_rules_ruby//ruby:defs.bzl",

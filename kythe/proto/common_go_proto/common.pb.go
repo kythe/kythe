@@ -146,6 +146,55 @@ func (Language_Support) EnumDescriptor() ([]byte, []int) {
 	return file_kythe_proto_common_proto_rawDescGZIP(), []int{11, 0}
 }
 
+type Hash_HashType int32
+
+const (
+	Hash_NONE   Hash_HashType = 0
+	Hash_SHA256 Hash_HashType = 1
+	Hash_SHA1   Hash_HashType = 2
+)
+
+// Enum value maps for Hash_HashType.
+var (
+	Hash_HashType_name = map[int32]string{
+		0: "NONE",
+		1: "SHA256",
+		2: "SHA1",
+	}
+	Hash_HashType_value = map[string]int32{
+		"NONE":   0,
+		"SHA256": 1,
+		"SHA1":   2,
+	}
+)
+
+func (x Hash_HashType) Enum() *Hash_HashType {
+	p := new(Hash_HashType)
+	*p = x
+	return p
+}
+
+func (x Hash_HashType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Hash_HashType) Descriptor() protoreflect.EnumDescriptor {
+	return file_kythe_proto_common_proto_enumTypes[2].Descriptor()
+}
+
+func (Hash_HashType) Type() protoreflect.EnumType {
+	return &file_kythe_proto_common_proto_enumTypes[2]
+}
+
+func (x Hash_HashType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Hash_HashType.Descriptor instead.
+func (Hash_HashType) EnumDescriptor() ([]byte, []int) {
+	return file_kythe_proto_common_proto_rawDescGZIP(), []int{12, 0}
+}
+
 type Fact struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -910,6 +959,61 @@ func (x *Language) GetAnalyzerVersion() []string {
 	return nil
 }
 
+type Hash struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Type  Hash_HashType `protobuf:"varint,1,opt,name=type,proto3,enum=kythe.proto.common.Hash_HashType" json:"type,omitempty"`
+	Value []byte        `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *Hash) Reset() {
+	*x = Hash{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_kythe_proto_common_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Hash) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Hash) ProtoMessage() {}
+
+func (x *Hash) ProtoReflect() protoreflect.Message {
+	mi := &file_kythe_proto_common_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Hash.ProtoReflect.Descriptor instead.
+func (*Hash) Descriptor() ([]byte, []int) {
+	return file_kythe_proto_common_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *Hash) GetType() Hash_HashType {
+	if x != nil {
+		return x.Type
+	}
+	return Hash_NONE
+}
+
+func (x *Hash) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_kythe_proto_common_proto protoreflect.FileDescriptor
 
 var file_kythe_proto_common_proto_rawDesc = []byte{
@@ -1042,10 +1146,18 @@ var file_kythe_proto_common_proto_rawDesc = []byte{
 	0x6f, 0x72, 0x74, 0x12, 0x0b, 0x0a, 0x07, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00,
 	0x12, 0x10, 0x0a, 0x0c, 0x45, 0x58, 0x50, 0x45, 0x52, 0x49, 0x4d, 0x45, 0x4e, 0x54, 0x41, 0x4c,
 	0x10, 0x01, 0x12, 0x0d, 0x0a, 0x09, 0x53, 0x55, 0x50, 0x50, 0x4f, 0x52, 0x54, 0x45, 0x44, 0x10,
-	0x02, 0x42, 0x34, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
-	0x64, 0x65, 0x76, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x0f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x5f, 0x67,
-	0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x02, 0x22, 0x7f, 0x0a, 0x04, 0x48, 0x61, 0x73, 0x68, 0x12, 0x35, 0x0a, 0x04, 0x74, 0x79, 0x70,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x48, 0x61, 0x73,
+	0x68, 0x2e, 0x48, 0x61, 0x73, 0x68, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x2a, 0x0a, 0x08, 0x48, 0x61, 0x73, 0x68, 0x54, 0x79,
+	0x70, 0x65, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x4f, 0x4e, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06,
+	0x53, 0x48, 0x41, 0x32, 0x35, 0x36, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x53, 0x48, 0x41, 0x31,
+	0x10, 0x02, 0x42, 0x34, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x64, 0x65, 0x76, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x0f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x5f,
+	0x67, 0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1060,43 +1172,46 @@ func file_kythe_proto_common_proto_rawDescGZIP() []byte {
 	return file_kythe_proto_common_proto_rawDescData
 }
 
-var file_kythe_proto_common_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_kythe_proto_common_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_kythe_proto_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_kythe_proto_common_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_kythe_proto_common_proto_goTypes = []interface{}{
 	(MarkedSource_Kind)(0),        // 0: kythe.proto.common.MarkedSource.Kind
 	(Language_Support)(0),         // 1: kythe.proto.common.Language.Support
-	(*Fact)(nil),                  // 2: kythe.proto.common.Fact
-	(*Point)(nil),                 // 3: kythe.proto.common.Point
-	(*Span)(nil),                  // 4: kythe.proto.common.Span
-	(*NodeInfo)(nil),              // 5: kythe.proto.common.NodeInfo
-	(*Diagnostic)(nil),            // 6: kythe.proto.common.Diagnostic
-	(*ResolvedDiagnostic)(nil),    // 7: kythe.proto.common.ResolvedDiagnostic
-	(*CorpusPath)(nil),            // 8: kythe.proto.common.CorpusPath
-	(*Link)(nil),                  // 9: kythe.proto.common.Link
-	(*MarkedSource)(nil),          // 10: kythe.proto.common.MarkedSource
-	(*SymbolInfo)(nil),            // 11: kythe.proto.common.SymbolInfo
-	(*Origin)(nil),                // 12: kythe.proto.common.Origin
-	(*Language)(nil),              // 13: kythe.proto.common.Language
-	nil,                           // 14: kythe.proto.common.NodeInfo.FactsEntry
-	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
+	(Hash_HashType)(0),            // 2: kythe.proto.common.Hash.HashType
+	(*Fact)(nil),                  // 3: kythe.proto.common.Fact
+	(*Point)(nil),                 // 4: kythe.proto.common.Point
+	(*Span)(nil),                  // 5: kythe.proto.common.Span
+	(*NodeInfo)(nil),              // 6: kythe.proto.common.NodeInfo
+	(*Diagnostic)(nil),            // 7: kythe.proto.common.Diagnostic
+	(*ResolvedDiagnostic)(nil),    // 8: kythe.proto.common.ResolvedDiagnostic
+	(*CorpusPath)(nil),            // 9: kythe.proto.common.CorpusPath
+	(*Link)(nil),                  // 10: kythe.proto.common.Link
+	(*MarkedSource)(nil),          // 11: kythe.proto.common.MarkedSource
+	(*SymbolInfo)(nil),            // 12: kythe.proto.common.SymbolInfo
+	(*Origin)(nil),                // 13: kythe.proto.common.Origin
+	(*Language)(nil),              // 14: kythe.proto.common.Language
+	(*Hash)(nil),                  // 15: kythe.proto.common.Hash
+	nil,                           // 16: kythe.proto.common.NodeInfo.FactsEntry
+	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
 }
 var file_kythe_proto_common_proto_depIdxs = []int32{
-	3,  // 0: kythe.proto.common.Span.start:type_name -> kythe.proto.common.Point
-	3,  // 1: kythe.proto.common.Span.end:type_name -> kythe.proto.common.Point
-	14, // 2: kythe.proto.common.NodeInfo.facts:type_name -> kythe.proto.common.NodeInfo.FactsEntry
-	4,  // 3: kythe.proto.common.Diagnostic.span:type_name -> kythe.proto.common.Span
-	8,  // 4: kythe.proto.common.ResolvedDiagnostic.corpus_path:type_name -> kythe.proto.common.CorpusPath
-	6,  // 5: kythe.proto.common.ResolvedDiagnostic.diagnostic:type_name -> kythe.proto.common.Diagnostic
+	4,  // 0: kythe.proto.common.Span.start:type_name -> kythe.proto.common.Point
+	4,  // 1: kythe.proto.common.Span.end:type_name -> kythe.proto.common.Point
+	16, // 2: kythe.proto.common.NodeInfo.facts:type_name -> kythe.proto.common.NodeInfo.FactsEntry
+	5,  // 3: kythe.proto.common.Diagnostic.span:type_name -> kythe.proto.common.Span
+	9,  // 4: kythe.proto.common.ResolvedDiagnostic.corpus_path:type_name -> kythe.proto.common.CorpusPath
+	7,  // 5: kythe.proto.common.ResolvedDiagnostic.diagnostic:type_name -> kythe.proto.common.Diagnostic
 	0,  // 6: kythe.proto.common.MarkedSource.kind:type_name -> kythe.proto.common.MarkedSource.Kind
-	10, // 7: kythe.proto.common.MarkedSource.child:type_name -> kythe.proto.common.MarkedSource
-	9,  // 8: kythe.proto.common.MarkedSource.link:type_name -> kythe.proto.common.Link
-	15, // 9: kythe.proto.common.Origin.commit_timestamp:type_name -> google.protobuf.Timestamp
+	11, // 7: kythe.proto.common.MarkedSource.child:type_name -> kythe.proto.common.MarkedSource
+	10, // 8: kythe.proto.common.MarkedSource.link:type_name -> kythe.proto.common.Link
+	17, // 9: kythe.proto.common.Origin.commit_timestamp:type_name -> google.protobuf.Timestamp
 	1,  // 10: kythe.proto.common.Language.support:type_name -> kythe.proto.common.Language.Support
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	2,  // 11: kythe.proto.common.Hash.type:type_name -> kythe.proto.common.Hash.HashType
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_kythe_proto_common_proto_init() }
@@ -1249,14 +1364,26 @@ func file_kythe_proto_common_proto_init() {
 				return nil
 			}
 		}
+		file_kythe_proto_common_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Hash); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_kythe_proto_common_proto_rawDesc,
-			NumEnums:      2,
-			NumMessages:   13,
+			NumEnums:      3,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

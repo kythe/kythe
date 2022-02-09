@@ -14,30 +14,38 @@
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, writer::CodedOutputStreamWriter};
 
-use analysis_rust_proto::*;
 use anyhow::{Context, Result};
-use std::{
-    env,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
-use tempdir::TempDir;
+use clap::{App, Arg};
+use std::fs::File;
 
 fn main() -> Result<()> {
-    // Accepts kzip path as an argument
-    // Calls indexer on each compilation unit
     // Returns 0 if ok or 1 if error
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Not enough arguments! Usage: rust_indexer <kzip path>");
-        std::process::exit(1);
-    } else if args.len() > 3 {
-        eprintln!("Too many arguments! Usage: rust_indexer <kzip path>")
-    }
+    let matches = App::new("Kythe Rust Bazel Indexer")
+        .arg(
+            Arg::with_name("kzip_path")
+                .required(true)
+                .index(1)
+                .help("The path to the kzip to be indexed"),
+        )
+        .arg(
+            Arg::with_name("no_emit_std_lib")
+                .long("no_emit_std_lib")
+                .required(false)
+                .help("Disables emitting cross references to the standard library"),
+        )
+        .arg(
+            Arg::with_name("tbuiltin_std_corpus")
+                .long("tbuiltin_std_corpus")
+                .required(false)
+                .help("Emits built-in types in the \"std\" corpus"),
+        )
+        .get_matches();
+    let emit_std_lib = !matches.is_present("no_emit_std_lib");
+    let tbuiltin_std_corpus = matches.is_present("tbuiltin_std_corpus");
 
     // Get kzip path from argument and use it to create a KzipFileProvider
-    let kzip_path = Path::new(&args[1]);
+    // Unwrap is safe because the parameter is required
+    let kzip_path = matches.value_of("kzip_path").unwrap();
     let kzip_file = File::open(kzip_path).context("Provided path does not exist")?;
     let mut kzip_provider =
         KzipFileProvider::new(kzip_file).context("Failed to open kzip archive")?;
@@ -51,55 +59,7 @@ fn main() -> Result<()> {
     let mut indexer = KytheIndexer::new(&mut writer);
 
     for unit in compilation_units {
-        // Create a temporary directory to store required files
-        let temp_dir =
-            TempDir::new("rust_indexer").context("Couldn't create temporary directory")?;
-        let temp_path = PathBuf::from(temp_dir.path());
-
-        // Extract the analysis files from the kzip into the temporary directory
-        extract_analysis_from_kzip(&unit, &temp_path, &mut kzip_provider)?;
-
-        // Index the CompilationUnit
-        indexer.index_cu(&unit, &temp_path, &mut kzip_provider)?;
-    }
-    Ok(())
-}
-
-/// Takes analysis files from a kzip loaded into `provider` and extracts them
-/// to `temp_path` using the file names and digests in the CompilationUnit
-pub fn extract_analysis_from_kzip(
-    c_unit: &CompilationUnit,
-    temp_path: &Path,
-    provider: &mut dyn FileProvider,
-) -> Result<()> {
-    for required_input in c_unit.get_required_input() {
-        let input_path = required_input.get_info().get_path();
-        let input_path_buf = PathBuf::from(input_path);
-
-        // save_analysis files are JSON files
-        if let Some(os_str) = input_path_buf.extension() {
-            if let Some("json") = os_str.to_str() {
-                let digest = required_input.get_info().get_digest();
-                let file_contents = provider.contents(input_path, digest).with_context(|| {
-                    format!(
-                        "Failed to get contents of file \"{}\" with digest \"{}\"",
-                        input_path, digest
-                    )
-                })?;
-
-                let output_path = temp_path.join(input_path_buf.file_name().unwrap());
-                let mut output_file =
-                    File::create(&output_path).context("Failed to create file")?;
-                output_file.write_all(&file_contents).with_context(|| {
-                    format!(
-                        "Failed to copy contents of \"{}\" with digest \"{}\" to \"{}\"",
-                        input_path,
-                        digest,
-                        output_path.display()
-                    )
-                })?;
-            }
-        }
+        indexer.index_cu(&unit, &mut kzip_provider, emit_std_lib, tbuiltin_std_corpus)?;
     }
     Ok(())
 }

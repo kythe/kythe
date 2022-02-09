@@ -56,7 +56,6 @@ const clang::FileEntry* LookupFileForIncludePragma(
       filename = mapped;
     }
   }
-  const clang::DirectoryLookup* cur_dir = nullptr;
   llvm::SmallString<1024> normalized_path;
   if (preprocessor->getLangOpts().MSVCCompat) {
     normalized_path = filename.str();
@@ -71,10 +70,10 @@ const clang::FileEntry* LookupFileForIncludePragma(
       filename_token.getLocation(),
       preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
                                              : filename,
-      is_angled, nullptr /* FromDir */, nullptr /* FromFile */, cur_dir,
-      search_path, relative_path, nullptr /* SuggestedModule */,
-      nullptr /* IsMapped */, nullptr /* IsFrameworkFound */,
-      false /* SkipCache */);
+      is_angled, nullptr /* FromDir */, nullptr /* FromFile */,
+      nullptr /* CurDir */, search_path, relative_path,
+      nullptr /* SuggestedModule */, nullptr /* IsMapped */,
+      nullptr /* IsFrameworkFound */, false /* SkipCache */);
   if (!file) {
     absl::FPrintF(stderr, "Missing required file %s.\n", filename.str());
     return nullptr;

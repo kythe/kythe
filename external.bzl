@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
@@ -14,7 +14,6 @@ load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
-load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 load("@rules_rust//rust:repositories.bzl", "rust_repositories")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
@@ -34,13 +33,12 @@ load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.17")
+    go_register_toolchains(version = "1.18beta1")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
-    bazel_toolchains_repositories()
-    rust_repositories(version = "nightly", iso_date = "2021-10-16", dev_components = True)
+    rust_repositories(version = "nightly", iso_date = "2022-01-09", dev_components = True)
     rust_proto_repositories()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
@@ -285,8 +283,8 @@ def _java_dependencies():
     maven_install(
         name = "maven",
         artifacts = [
-            "com.google.flogger:flogger:0.7.2",
-            "com.google.flogger:flogger-system-backend:0.7.2",
+            "com.google.flogger:flogger:0.7.3",
+            "com.google.flogger:flogger-system-backend:0.7.3",
             "com.beust:jcommander:1.81",
             "com.google.auto.service:auto-service:1.0",
             "com.google.auto.service:auto-service-annotations:1.0",
@@ -297,7 +295,7 @@ def _java_dependencies():
             "com.google.code.gson:gson:2.8.6",
             "com.google.common.html.types:types:1.0.8",
             "com.google.errorprone:error_prone_annotations:2.6.0",
-            "com.google.guava:guava:30.1.1-jre",
+            "com.google.guava:guava:31.0.1-jre",
             "com.google.jimfs:jimfs:1.2",
             "com.google.re2j:re2j:1.6",
             "com.google.truth:truth:1.1.2",
@@ -315,6 +313,7 @@ def _java_dependencies():
         fetch_sources = True,
         generate_compat_repositories = True,  # Required by bazel-common's dependencies
         version_conflict_policy = "pinned",
+        maven_install_json = "//:maven_install.json",
     )
 
 def _go_dependencies():
@@ -1153,13 +1152,13 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.7, latest as of 2021-10-06
+        # v0.1.8, latest as of 2021-12-15
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.7.zip",
-            "https://github.com/golang/tools/archive/v0.1.7.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.8.zip",
+            "https://github.com/golang/tools/archive/v0.1.8.zip",
         ],
-        sha256 = "c069fd1d1dcbbfd2e396993307adf0edde5ef5d419c5db92649ab8cfabec255e",
-        strip_prefix = "tools-0.1.7",
+        sha256 = "aec8a9ade0974bafc290bad1c53fa2b4d2b87ac8a90bf5340ded216ff81d1b2a",
+        strip_prefix = "tools-0.1.8",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested
@@ -1168,7 +1167,6 @@ def _go_dependencies():
             "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
             # releaser:patch-cmd gazelle -repo_root . -go_prefix golang.org/x/tools -go_naming_convention import_alias
             "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-public-visibility.patch",
         ],
         patch_args = ["-p1"],
     )
@@ -1293,3 +1291,14 @@ def kythe_dependencies(sample_ui = True):
     if sample_ui:
         _sample_ui_dependencies()
     _extractor_image_dependencies()
+
+    maybe(
+        http_file,
+        name = "bazel_toolchains_rbe_gen_config_linux_amd64",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+        ],
+        sha256 = "3e3ba75f14eb7c87de8934ae8dfa814f84b5be3b0081dcb8cb95ff42ed1a73b2",
+        executable = True,
+    )

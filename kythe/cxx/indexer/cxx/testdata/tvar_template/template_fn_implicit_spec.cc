@@ -7,5 +7,5 @@ int y = id(42);
 //- SpecId specializes TAppAbsInt
 //- TAppAbsInt.node/kind tapp
 //- TAppAbsInt param.0 AbsId
-//- AbsId.node/kind abs
+//- AbsId.node/kind function
 //- TAppAbsInt param.1 vname("int#builtin",_,_,_,_)

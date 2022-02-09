@@ -22,6 +22,7 @@ import (
 	"log"
 	"strings"
 
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/golang/protobuf/proto"
@@ -37,6 +38,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),
+			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj))}}},
 		}},
 	}
 
@@ -87,17 +89,28 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		if recv := sig.Recv(); recv != nil {
 			// Parenthesized receiver type, e.g. (R).
 			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				// TODO(schroederc): use LOOKUP_BY_PARAM
 				Kind:     cpb.MarkedSource_PARAMETER,
 				PreText:  "(",
 				PostText: ") ",
 				Child: []*cpb.MarkedSource{{
 					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(recv.Type()),
+					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
+					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv))}}},
 				}},
 			})
 			firstParam = 1
 		}
 		fn.Child = append(fn.Child, ms)
+
+		if sig.TypeParams().Len() > 0 {
+			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+				PreText:       "[",
+				PostText:      "]",
+				PostChildText: ", ",
+			})
+		}
 
 		// If there are no parameters, the lookup will not produce anything.
 		// Ensure when this happens we still get parentheses for notational
@@ -180,28 +193,47 @@ func typeName(typ types.Type) string {
 	return typ.String()
 }
 
+// typeArgs returns a human readable string for a type's list of type arguments
+// (or "" if the type does not have any).
+func typeArgs(typ types.Type) string {
+	n, ok := deref(typ).(*types.Named)
+	if !ok || n.TypeArgs().Len() == 0 {
+		return ""
+	}
+	args := n.TypeArgs()
+	var ss []string
+	for i := 0; i < args.Len(); i++ {
+		ss = append(ss, typeName(args.At(i)))
+	}
+	return "[" + strings.Join(ss, ", ") + "]"
+}
+
 // typeContext returns the package, type, and function context identifiers that
 // qualify the name of obj, if any are applicable. The result is empty if there
 // are no appropriate qualifiers.
 func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
 	var ms []*cpb.MarkedSource
-	addID := func(s string) {
-		ms = append(ms, &cpb.MarkedSource{
+	addID := func(s string, v *spb.VName) {
+		id := &cpb.MarkedSource{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: s,
-		})
+		}
+		if v != nil {
+			id.Link = []*cpb.Link{{Definition: []string{kytheuri.ToString(v)}}}
+		}
+		ms = append(ms, id)
 	}
 	for cur := pi.owner[obj]; cur != nil; cur = pi.owner[cur] {
 		if t, ok := cur.(interface {
 			Name() string
 		}); ok {
-			addID(t.Name())
+			addID(t.Name(), pi.ObjectVName(cur))
 		} else {
-			addID(typeName(cur.Type()))
+			addID(typeName(cur.Type()), pi.ObjectVName(cur))
 		}
 	}
 	if pkg := obj.Pkg(); pkg != nil {
-		addID(pi.importPath(pkg))
+		addID(pi.importPath(pkg), pi.PackageVName[pkg])
 	}
 	for i, j := 0, len(ms)-1; i < j; {
 		ms[i], ms[j] = ms[j], ms[i]
@@ -333,6 +365,22 @@ var (
 			LookupIndex: 1,
 		}},
 		PreText: "<-chan ",
+	}
+	genericTAppMS = &cpb.MarkedSource{
+		Kind: cpb.MarkedSource_TYPE,
+		Child: []*cpb.MarkedSource{{
+			Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+			LookupIndex: 0,
+		}, {
+			Kind:     cpb.MarkedSource_BOX,
+			PreText:  "[",
+			PostText: "]",
+			Child: []*cpb.MarkedSource{{
+				Kind:        cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+				LookupIndex: 1,
+			}},
+			PostChildText: ", ",
+		}},
 	}
 )
 

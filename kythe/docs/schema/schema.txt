@@ -1587,7 +1587,28 @@ Points toward::
 Ordinals are used::
   always
 
-// TODO(schroederc): Add in Go example once this feature is added
+[kythe,Go,"Generics have ordered tparam edges."]
+--------------------------------------------------------------------------------
+package tparam
+
+//- Func.node/kind function
+//- TVar.node/kind tvar
+//- UVar.node/kind tvar
+
+//- Func tparam.0 TVar
+//- Func tparam.1 UVar
+
+//- @Map defines/binding Func
+//- @#0T defines/binding TVar
+//- @#0U defines/binding UVar
+func Map[T any, U any](l []T, f func(T) U) []U {
+	res := make([]U, len(l))
+	for i, t := range l {
+		res[i] = f(t)
+	}
+	return res
+}
+--------------------------------------------------------------------------------
 
 [[typed]]
 typed
@@ -2488,7 +2509,22 @@ Brief description::
 See also::
   <<tapp>>, <<tparam>>, <<specializes>>
 
-// TODO(schroederc): Add in Go example once this feature is added
+[kythe,Go,"Type parameters are tvars."]
+--------------------------------------------------------------------------------
+package tvar
+
+//- Container.node/kind record
+//- TVar.node/kind tvar
+
+//- Container tparam.0 TVar
+
+//- @Container defines/binding Container
+//- @T defines/binding TVar
+type Container[T any] struct {
+  //- @T ref TVar
+  Element T
+}
+--------------------------------------------------------------------------------
 
 [[variable]]
 variable

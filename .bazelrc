@@ -31,10 +31,10 @@ build --host_copt=-w
 build --experimental_strict_action_env
 
 # By default, compile for Java 8, run on Java 11
-build --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
-build --javabase=@bazel_tools//tools/jdk:remote_jdk11
-build --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
-build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
+build --java_language_version=8
+build --tool_java_language_version=8
+build --java_runtime_version=remotejdk_11
+build --tool_java_runtime_version=remotejdk_11
 
 # Import default javacopts
 import %workspace%/tools/javacopts.bazelrc
@@ -43,13 +43,15 @@ import %workspace%/tools/javacopts.bazelrc
 build:release --stamp -c opt --copt=-gmlt
 
 # Use the RBE instance in the kythe-repo project
-build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
+build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --bes_instance_name=kythe-repo
 
-build:remote --auth_enabled=true
+build:remote --google_default_credentials=true
 build:remote --jobs=50
 build:remote --remote_timeout=3600
 build:remote --remote_cache=grpcs://remotebuildexecution.googleapis.com
 build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
+# Avoid fetchiing unnecessary intermediate files locally.
+build:remote --remote_download_minimal
 
 # TODO(schroederc): add buildeventservice
 # build:remote --bes_backend="buildeventservice.googleapis.com"
@@ -60,18 +62,17 @@ build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
 # # defined. See https://github.com/bazelbuild/bazel/issues/7480
 build:remote --define=EXECUTOR=remote
 
-build:remote --host_javabase=@rbe_default//java:jdk
-build:remote --javabase=@rbe_default//java:jdk
-build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
-build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
+build:remote --java_runtime_version=rbe_jdk
+build:remote --tool_java_runtime_version=rbe_jdk
+build:remote --extra_toolchains=//tools/platforms/configs/rbe_default/java:all
 
 build:remote --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build:remote --crosstool_top=@rbe_default//cc:toolchain
-build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
+build:remote --crosstool_top=//tools/platforms/configs/rbe_default/cc:toolchain
+build:remote --extra_toolchains=//tools/platforms/configs/rbe_default/config:cc-toolchain
 
-build:remote --extra_execution_platforms=@rbe_default//config:platform
-build:remote --host_platform=@rbe_default//config:platform
-build:remote --platforms=@rbe_default//config:platform
+build:remote --extra_execution_platforms=//tools/platforms:rbe
+build:remote --host_platform=//tools/platforms:rbe
+build:remote --platforms=//tools/platforms:rbe
 
 build:remote --repo_env=KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS=1
 build:remote --extra_toolchains=//tools/build_rules/lexyacc:lexyacc_remote_toolchain

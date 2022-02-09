@@ -44,13 +44,14 @@ rust_proc_macro(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=serial_test_derive",
         "manual",
     ],
     version = "0.4.0",
     # buildifier: leave-alone
     deps = [
-        "@raze__proc_macro2__1_0_29//:proc_macro2",
-        "@raze__quote__1_0_9//:quote",
-        "@raze__syn__1_0_75//:syn",
+        "@raze__proc_macro2__1_0_36//:proc_macro2",
+        "@raze__quote__1_0_15//:quote",
+        "@raze__syn__1_0_86//:syn",
     ],
 )

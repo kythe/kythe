@@ -25,8 +25,7 @@ use std::path::PathBuf;
 /// Get the path of the provided runfile
 fn get_runfile(file: &str) -> PathBuf {
     let r = Runfiles::create().unwrap();
-    let location = String::from("io_kythe/kythe/rust/indexer/tests/");
-    r.rlocation(location + file)
+    r.rlocation("io_kythe/kythe/rust/indexer/tests/".to_owned() + file)
 }
 
 #[test]

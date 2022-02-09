@@ -45,6 +45,7 @@ const (
 	OverridesTransitive     = Prefix + "overrides/transitive"
 	Param                   = Prefix + "param"
 	Satisfies               = Prefix + "satisfies"
+	TParam                  = Prefix + "tparam"
 	Typed                   = Prefix + "typed"
 )
 
@@ -67,6 +68,9 @@ const (
 
 // ParamIndex returns an edge label of the form "param.i" for the i given.
 func ParamIndex(i int) string { return Param + "." + strconv.Itoa(i) }
+
+// TParamIndex returns an edge label of the form "tparam.i" for the i given.
+func TParamIndex(i int) string { return TParam + "." + strconv.Itoa(i) }
 
 // revPrefix is used to distinguish reverse kinds from forward ones.
 const revPrefix = "%"

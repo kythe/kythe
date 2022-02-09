@@ -44,6 +44,7 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=remove_dir_all",
         "manual",
     ],
     version = "0.5.3",

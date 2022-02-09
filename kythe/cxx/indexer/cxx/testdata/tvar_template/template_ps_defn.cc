@@ -14,10 +14,9 @@ template <typename T> class C { };
 //- @C completes/uniquely FwdSpec
 template <> class C <int> { };
 
-//- FwdTemplate.node/kind abs
+//- FwdTemplate.node/kind record
 //- FwdSpec.node/kind record
 //- FwdSpec.complete incomplete
-//- Fwd.node/kind abs
 //- Spec.node/kind record
 //- Spec.complete definition
 //- Spec specializes TAppCInt

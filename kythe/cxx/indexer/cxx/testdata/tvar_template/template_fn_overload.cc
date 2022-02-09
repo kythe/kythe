@@ -7,10 +7,8 @@ void f(T t) { }
 template <typename T>
 //- @f defines/binding FPtr
 void f(T* t) { }
-//- FNoPtrFn childof FNoPtr
-//- FPtrFn childof FPtr
-//- FNoPtrFn typed TAppFnT
+//- FNoPtr typed TAppFnT
 //- TAppFnT param.2 FNoPtrT
-//- FPtrFn typed TAppFnTPtr
+//- FPtr typed TAppFnTPtr
 //- TAppFnTPtr param.2 FPtrTTy
 //- FPtrTTy param.1 FPtrT

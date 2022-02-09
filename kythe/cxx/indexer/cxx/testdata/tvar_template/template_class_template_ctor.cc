@@ -8,8 +8,7 @@ class C {
   template <typename T>
   //- FooCall=@"foo()" ref/call FnFoo
   //- FooCall childof CtorC
-  //- @C defines/binding AbsCtorC
-  //- CtorC childof AbsCtorC
+  //- @C defines/binding CtorC
   //- !{ BarCall childof CtorC }
   //- BarCallJ childof CtorC
   C(T) : i(foo()) { }

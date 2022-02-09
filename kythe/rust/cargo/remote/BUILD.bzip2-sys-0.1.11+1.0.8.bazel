@@ -58,8 +58,8 @@ cargo_build_script(
     version = "0.1.11+1.0.8",
     visibility = ["//visibility:private"],
     deps = [
-        "@raze__cc__1_0_70//:cc",
-        "@raze__pkg_config__0_3_19//:pkg_config",
+        "@raze__cc__1_0_72//:cc",
+        "@raze__pkg_config__0_3_24//:pkg_config",
     ],
 )
 
@@ -76,12 +76,13 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
+        "crate-name=bzip2_sys",
         "manual",
     ],
     version = "0.1.11+1.0.8",
     # buildifier: leave-alone
     deps = [
         ":bzip2_sys_build_script",
-        "@raze__libc__0_2_101//:libc",
+        "@raze__libc__0_2_114//:libc",
     ],
 )

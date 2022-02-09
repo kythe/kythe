@@ -35,6 +35,7 @@ const (
 	TApp       = "tapp"
 	TBuiltin   = "tbuiltin"
 	TNominal   = "tnominal"
+	TVar       = "tvar"
 	Variable   = "variable"
 )
 

@@ -15,6 +15,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/kytheuri",
         "//kythe/go/util/metadata",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/schema/edges",
@@ -49,6 +50,37 @@ bzl_library(
     name = "go_indexer_test_bzl",
     srcs = ["testdata/go_indexer_test.bzl"],
     visibility = ["//visibility:private"],
+)
+
+go_indexer_test(
+    name = "genericstruct_test",
+    srcs = ["testdata/generics/genericstruct.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericmethod_test",
+    srcs = ["testdata/generics/genericmethod.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericinterface_test",
+    srcs = ["testdata/generics/genericinterface.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericfunc_test",
+    srcs = ["testdata/generics/genericfunc.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "genericdep_test",
+    srcs = ["testdata/generics/genericdep.go"],
+    has_marked_source = True,
+    deps = [":genericinterface_test"],
 )
 
 go_indexer_test(
@@ -197,6 +229,12 @@ go_indexer_test(
 go_indexer_test(
     name = "anonymous_test",
     srcs = ["testdata/basic/anonymous.go"],
+)
+
+go_indexer_test(
+    name = "anonref_test",
+    srcs = ["testdata/basic/anonref.go"],
+    deps = [":anonymous_test"],
 )
 
 go_indexer_test(

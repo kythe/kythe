@@ -7,8 +7,7 @@ void S(Ts... ts);
 
 //- @Ts defines/binding GTs
 template <typename... Ts>
-//- @g defines/binding AbsG
-//- FnTG childof AbsG
+//- @g defines/binding FnTG
 void g(Ts... ts) {
   //- SCall childof FnTG
   //- SCall ref/call LookupS

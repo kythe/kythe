@@ -193,6 +193,8 @@ fn correct_arguments_succeed(
     let required_inputs = compilation_unit.get_required_input().to_vec();
     let source_input = required_inputs.get(0).expect("Failed to get first required input");
 
+    assert!(!compilation_unit.get_working_directory().is_empty());
+
     let source_file_path = source_input.get_info().get_path();
     assert!(
         source_file_path.contains("kythe/rust/extractor/main.rs"),

@@ -195,6 +195,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr* E);
   bool VisitCXXUnresolvedConstructExpr(
       const clang::CXXUnresolvedConstructExpr* E);
+  bool TraverseCXXOperatorCallExpr(clang::CXXOperatorCallExpr* E);
   bool VisitCallExpr(const clang::CallExpr* Expr);
   bool VisitMemberExpr(const clang::MemberExpr* Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -224,6 +225,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
+  bool VisitUsingTypeLoc(clang::UsingTypeLoc TL);
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
   bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
   bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
@@ -240,6 +242,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
                                         const clang::Type* Resolved);
+  NodeSet RecordTypeSpellingLocation(const clang::Type* Type,
+                                     clang::SourceRange Range);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -380,6 +384,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForDecltype(const clang::DecltypeType& T);
   NodeSet BuildNodeSetForElaborated(const clang::ElaboratedType& T);
   NodeSet BuildNodeSetForTypedef(const clang::TypedefType& T);
+  NodeSet BuildNodeSetForUsing(const clang::UsingType& T);
 
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
       const clang::SubstTemplateTypeParmType& T);

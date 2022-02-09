@@ -35,10 +35,8 @@ rust_binary(
     edition = "2021",
     deps = [
         ":kythe_rust_indexer",
-        "//kythe/proto:analysis_rust_proto",
-        "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:clap",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
@@ -53,12 +51,10 @@ rust_binary(
     deps = [
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:anyhow",
         "//kythe/rust/cargo:base64",
         "//kythe/rust/cargo:clap",
         "//kythe/rust/cargo:serde_json",
-        "//kythe/rust/cargo:tempdir",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
@@ -72,7 +68,6 @@ rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
     data = [
-        "tests/testanalysis.json",
         "tests/testkzip.kzip",
     ],
     deps = [

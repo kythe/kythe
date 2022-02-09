@@ -20,8 +20,7 @@ use super::entries::EntryEmitter;
 use super::offset::OffsetIndex;
 
 use analysis_rust_proto::CompilationUnit;
-use rls_analysis::Crate;
-use rls_data::{Def, DefKind};
+use rls_data::{Analysis, Def, DefKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use storage_rust_proto::*;
@@ -52,8 +51,8 @@ pub struct CrateAnalyzer<'a, 'b> {
     file_vnames: &'b HashMap<String, VName>,
     // The current CompilationUnit's VName
     unit_vname: &'b VName,
-    // The current crate being analyzed
-    krate: Crate,
+    // The save-analysis for the crate
+    analysis: Analysis,
     // A map between a crate's identifier and a string consisting of
     // "<disambiguator1>_<disambiguator2>"
     krate_ids: HashMap<u32, rls_data::GlobalCrateId>,
@@ -70,6 +69,8 @@ pub struct CrateAnalyzer<'a, 'b> {
     method_index: HashMap<rls_data::Id, MethodImpl>,
     // A map from type names to their vnames
     type_vnames: HashMap<String, VName>,
+    // Whether do emit references to the standard library
+    emit_std_lib: bool,
 }
 
 /// A data struct to keep track of method implementations. Used in a HashMap to
@@ -152,18 +153,18 @@ impl<'a> UnitAnalyzer<'a> {
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
-            let file_contents: String;
-            if let Some(file_digest) = self.file_digests.get(&source_file.to_string()) {
-                let file_bytes = self.provider.contents(source_file, file_digest)?;
-                file_contents = String::from_utf8(file_bytes).map_err(|_| {
-                    KytheError::IndexerError(format!(
-                        "Failed to read file {} as UTF8 string",
-                        source_file
-                    ))
-                })?;
-            } else {
-                return Err(KytheError::FileNotFoundError(source_file.to_string()));
-            }
+            let file_contents: String =
+                if let Some(file_digest) = self.file_digests.get(source_file) {
+                    let file_bytes = self.provider.contents(source_file, file_digest)?;
+                    String::from_utf8(file_bytes).map_err(|_| {
+                        KytheError::IndexerError(format!(
+                            "Failed to read file {} as UTF8 string",
+                            source_file
+                        ))
+                    })?
+                } else {
+                    return Err(KytheError::FileNotFoundError(source_file.to_string()));
+                };
 
             // Add the file to the OffsetIndex
             self.offset_index.add_file(source_file, &file_contents);
@@ -175,13 +176,20 @@ impl<'a> UnitAnalyzer<'a> {
     }
 
     /// Indexes the provided crate
-    pub fn index_crate(&mut self, krate: Crate) -> Result<(), KytheError> {
+    pub fn index_crate(
+        &mut self,
+        analysis: Analysis,
+        emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
+    ) -> Result<(), KytheError> {
         let mut crate_analyzer = CrateAnalyzer::new(
             &mut self.emitter,
             &self.file_vnames,
             &self.unit_storage_vname,
-            krate,
+            analysis,
             &self.offset_index,
+            emit_std_lib,
+            tbuiltin_std_corpus,
         );
         crate_analyzer.emit_crate_nodes()?;
         crate_analyzer.emit_tbuiltin_nodes()?;
@@ -200,8 +208,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         emitter: &'b mut EntryEmitter<'a>,
         file_vnames: &'b HashMap<String, VName>,
         unit_vname: &'b VName,
-        krate: Crate,
+        analysis: Analysis,
         offset_index: &'b OffsetIndex,
+        emit_std_lib: bool,
+        tbuiltin_std_corpus: bool,
     ) -> Self {
         // Initialize the type_vnames HashMap with builtin types
         let types = vec![
@@ -233,7 +243,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         ];
         let mut type_vnames: HashMap<String, VName> = HashMap::new();
         let mut vname_template = VName::new();
-        vname_template.set_corpus("std".to_string());
+        // If true, emit the built-in types in the std corpus. Otherwise,
+        // emit in the same corpus as the compilation unit
+        if tbuiltin_std_corpus {
+            vname_template.set_corpus("std".to_string());
+        } else {
+            let unit_corpus = unit_vname.get_corpus().to_string();
+            vname_template.set_corpus(unit_corpus);
+        }
         vname_template.set_root("".to_string());
         vname_template.set_path("".to_string());
         vname_template.set_language("rust".to_string());
@@ -246,7 +263,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         Self {
             emitter,
             file_vnames,
-            krate,
+            analysis,
             unit_vname,
             krate_ids: HashMap::new(),
             krate_vname: VName::new(),
@@ -255,6 +272,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             offset_index,
             method_index: HashMap::new(),
             type_vnames,
+            emit_std_lib,
         }
     }
 
@@ -273,12 +291,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Generates and emits package nodes for the main crate and external crates
     /// NOTE: Must be called first to populate the self.krate_ids HashMap
     pub fn emit_crate_nodes(&mut self) -> Result<(), KytheError> {
-        let krate_analysis = &self.krate.analysis;
-        let krate_prelude = &krate_analysis.prelude.as_ref().ok_or_else(|| {
-            KytheError::IndexerError(format!(
-                "Crate \"{}\" did not have prelude data",
-                &self.krate.id.name
-            ))
+        let krate_prelude = &self.analysis.prelude.as_ref().ok_or_else(|| {
+            KytheError::IndexerError("Crate did not have prelude data".to_string())
         })?;
 
         // First emit the node for our own crate and add it to the hashmap
@@ -316,7 +330,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Create a HashMap mapping the implementation Id to the implementation
         // It might be a safe assumption that the index is the Id, but we can't be too
         // careful
-        let impls = self.krate.analysis.impls.clone();
+        let impls = self.analysis.impls.clone();
         let mut impl_map: HashMap<u32, rls_data::Impl> = HashMap::new();
         for implementation in impls.iter() {
             impl_map.insert(implementation.id, implementation.clone());
@@ -327,7 +341,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Create a HashMap betwen a method definition Id and the struct and trait being
         // implemented on
         let mut method_index: HashMap<rls_data::Id, MethodImpl> = HashMap::new();
-        let relations = &self.krate.analysis.relations;
+        let relations = &self.analysis.relations;
         for relation in relations.iter() {
             // If this is an implementation relation
             if let rls_data::RelationKind::Impl { id: impl_id, .. } = relation.kind {
@@ -400,7 +414,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit Kythe graph information for the definitions in the crate
     pub fn emit_definitions(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let defs = self.krate.analysis.defs.clone();
+        let defs = self.analysis.defs.clone();
 
         for def in &defs {
             let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
@@ -697,7 +711,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit the Kythe edges for cross references for imports in this crate
     pub fn emit_import_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let imports = self.krate.analysis.imports.clone();
+        let imports = self.analysis.imports.clone();
 
         let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
@@ -739,6 +753,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             }
             let krate_id = krate_id.unwrap();
 
+            if krate_id.name == "std" && !self.emit_std_lib {
+                continue;
+            }
+
             // Create VName for target of reference
             let definition_vname = self.generate_def_vname(krate_id, ref_id.index);
 
@@ -777,7 +795,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     /// Emit the Kythe edges for cross references in this crate
     pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
         // We must clone to avoid double borrowing "self"
-        let refs = self.krate.analysis.refs.clone();
+        let refs = self.analysis.refs.clone();
 
         let template_vname = self.krate_vname.clone();
         let krate_signature = template_vname.get_signature();
@@ -807,6 +825,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 continue;
             }
             let krate_id = krate_id.unwrap();
+
+            if krate_id.name == "std" && !self.emit_std_lib {
+                continue;
+            }
 
             // Create VName for target of reference
             let target_vname = self.generate_def_vname(krate_id, ref_id.index);

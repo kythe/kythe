@@ -34,13 +34,10 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        http_archive,
+        github_archive,
+        repo_name = "bazelbuild/rules_go",
+        commit = "d0d326e4a5df51b5103dcd332c9e4df06d0bbbf2",
         name = "io_bazel_rules_go",
-        sha256 = "2b1641428dff9018f9e85c0384f03ec6c10660d935b750e3fa1492a281a53b0f",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.29.0/rules_go-v0.29.0.zip",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.29.0/rules_go-v0.29.0.zip",
-        ],
     )
 
     maybe(
@@ -141,7 +138,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "ae53d02f557cdec5f05a19239f887b06d1a8518d",
+        commit = "347d4d7323c4cf0d89fb14530e27ec5e2b1afeda",
         name = "llvm-project-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],

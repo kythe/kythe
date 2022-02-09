@@ -63,6 +63,11 @@ type PackageVNameOptions struct {
 	// UseDefaultCorpusForStdLib tells the extractor to assign the DefaultCorpus
 	// to go stdlib files rather than the default of 'golang.org'.
 	UseDefaultCorpusForStdLib bool
+
+	// UseDefaultCorpusForDeps tells the extractor to set the vname corpus for
+	// imported modules to DefaultCorpus and to use the module's import path as
+	// the vname's root.
+	UseDefaultCorpusForDeps bool
 }
 
 // ForPackage returns a VName for a Go package.
@@ -144,6 +149,12 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 		} else {
 			v.Corpus = r.Root
 		}
+
+		if opts.UseDefaultCorpusForDeps && v.Corpus != opts.DefaultCorpus {
+			v.Root = v.Corpus
+			v.Corpus = opts.DefaultCorpus
+		}
+
 		return v
 	}
 
