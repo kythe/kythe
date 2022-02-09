@@ -12,6 +12,8 @@ class DefaultCorpus {
   //- ListStringType.node/kind "tapp"
   private List<String> myvar;
 
+  private List<? extends Object> objList;
+
   //- @myMethod defines/binding MyMethod
   //- MyMethod typed MyMethodType=vname(_,"kythe",_,_,"java")
   //- MyMethodType.node/kind "tapp"
