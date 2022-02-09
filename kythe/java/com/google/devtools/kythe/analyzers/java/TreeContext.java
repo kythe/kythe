@@ -23,7 +23,10 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
+import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
+import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCTypeApply;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +106,27 @@ class TreeContext {
       return null;
     }
     return (JCClassDecl) parent.getTree();
+  }
+
+  public JCIdent getNewClassIdentifier() {
+    TreeContext parent = this;
+    while (parent != null && !(parent.getTree() instanceof JCNewClass)) {
+      parent = parent.up();
+    }
+    if (parent == null) {
+      return null;
+    }
+    JCTree ident = ((JCNewClass) parent.getTree()).getIdentifier();
+    if (ident instanceof JCIdent) {
+      return (JCIdent) ident;
+    }
+    if (ident instanceof JCTypeApply) {
+      JCTree type = ((JCTypeApply) ident).getType();
+      if (type instanceof JCIdent) {
+        return (JCIdent) type;
+      }
+    }
+    return null;
   }
 
   public TreeContext getScope() {

@@ -6,7 +6,7 @@ final class DiamondOperations {
     //- GenericStringType.node/kind tapp
     //- GenericStringType param.0 GenericType
     Generic<String> iter =
-        //- @"Generic<>" ref DiamondType
+        //- @"Generic<>" ref/id DiamondType
         //- DiamondType.node/kind tapp
         //- DiamondType param.0 GenericType
         new Generic<>() {
@@ -22,7 +22,7 @@ final class DiamondOperations {
     //- @"Generic<Integer>" ref GenericIntType
     //- GenericIntType.node/kind tapp
     //- GenericIntType param.0 GenericType
-    //- @"Generic<>" ref DiamondIntType
+    //- @"Generic<>" ref/id DiamondIntType
     //- DiamondIntType.node/kind tapp
     //- DiamondIntType param.0 GenericType
     Generic<Integer> n = new Generic<>();
