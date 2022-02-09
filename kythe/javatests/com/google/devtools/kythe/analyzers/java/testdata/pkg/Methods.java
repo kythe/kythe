@@ -30,7 +30,7 @@ public class Methods {
   //- CreateType param.1 Class
   //- CreateType param.2 VoidBuiltin
   public static Methods create() {
-    //- @Methods ref Class
+    //- @Methods ref/id Class
     //- @"Methods" ref Ctor
     return new Methods();
   }
@@ -100,7 +100,7 @@ public class Methods {
 
   //- @IOException ref IOE
   public static void throwsException() throws IOException {
-    //- @IOException ref IOE
+    //- @IOException ref/id IOE
     throw new IOException();
   }
 
