@@ -10,6 +10,10 @@ void fn() {
   msg.set_string_field("value");
   //- @string_field ref CxxGetStringField
   msg.string_field();
+  //- @"msg.release_string_field()" ref/writes StringField
+  msg.release_string_field();
+  //- @"msg.set_allocated_string_field(nullptr)" ref/writes StringField
+  msg.set_allocated_string_field(nullptr);
   //- @"msg.set_int32_field(43)" ref/writes Int32Field
   msg.set_int32_field(43);
   //- @int32_field ref CxxGetInt32Field
@@ -38,4 +42,7 @@ void fn() {
   msg.oneof_field_case();
   //- @"msg.set_oneof_string(\"hello\")" ref/writes OneofString
   msg.set_oneof_string("hello");
+
+  //- @"msg.add_repeated_int32_field(4)" ref/writes RepeatedInt32Field
+  msg.add_repeated_int32_field(4);
 }
