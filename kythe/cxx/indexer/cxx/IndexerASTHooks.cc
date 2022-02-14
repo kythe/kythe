@@ -1347,6 +1347,15 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
       if (options_.DataflowEdges && !Job->InfluenceSets.empty()) {
         Job->InfluenceSets.back().insert(FieldDecl);
       }
+      if (isa<clang::CXXMethodDecl>(FieldDecl)) {
+        if (const auto* semantic = AlternateSemanticForDecl(FieldDecl);
+            semantic != nullptr && semantic->node) {
+          Observer.recordSemanticDeclUseLocation(
+              RCC.value(), *(semantic->node), semantic->use_kind,
+              GraphObserver::Claimability::Unclaimable,
+              this->IsImplicit(RCC.value()));
+        }
+      }
     }
   }
   return true;
@@ -1641,12 +1650,6 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       RecordCallEdges(RCC.value(), CalleeId);
       for (const auto& S : Supports) {
         S->InspectCallExpr(*this, E, RCC.value(), CalleeId);
-      }
-      if (const auto* semantic = AlternateSemanticForDecl(Callee);
-          semantic != nullptr && semantic->node) {
-        Observer.recordSemanticDeclUseLocation(
-            RCC.value(), *(semantic->node), semantic->use_kind,
-            GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
       }
     } else if (const auto* CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
@@ -2403,6 +2406,15 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
             (FoundDecl->getKind() == clang::Decl::Kind::Var ||
              FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
           Job->InfluenceSets.back().insert(FoundDecl);
+        }
+      }
+      if (isa<clang::FunctionDecl>(FoundDecl)) {
+        if (const auto* semantic = AlternateSemanticForDecl(FoundDecl);
+            semantic != nullptr && semantic->node) {
+          Observer.recordSemanticDeclUseLocation(
+              RCC.value(), *(semantic->node), semantic->use_kind,
+              GraphObserver::Claimability::Unclaimable,
+              this->IsImplicit(RCC.value()));
         }
       }
       Observer.recordSemanticDeclUseLocation(
