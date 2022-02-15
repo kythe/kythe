@@ -47,14 +47,13 @@ std::string getMacroExpandedStringInternal(
   }
   std::string Expanded;
   // Walk over the macro Tokens.
-  typedef clang::MacroInfo::tokens_iterator Iter;
-  for (Iter I = MI->tokens_begin(), E = MI->tokens_end(); I != E; ++I) {
-    clang::IdentifierInfo *II = I->getIdentifierInfo();
+  for (const auto& Tok : MI->tokens()) {
+    clang::IdentifierInfo *II = Tok.getIdentifierInfo();
     int ArgNo = (II && Args ? MI->getParameterNum(II) : -1);
     if (ArgNo == -1) {
       // This isn't an argument, just add it.
       if (II == nullptr)
-        Expanded += PP.getSpelling((*I));  // Not an identifier.
+        Expanded += PP.getSpelling(Tok);  // Not an identifier.
       else {
         // Token is for an identifier.
         std::string Name = II->getName().str();
