@@ -3,6 +3,7 @@
 //- @S defines/binding StructS
 struct S {
   void f() const {
+    //- !{ @this ref StructS }
     [*this] {
       //- @g ref MethodG
       //- @m ref FieldM
