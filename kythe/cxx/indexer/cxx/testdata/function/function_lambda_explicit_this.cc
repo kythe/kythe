@@ -1,9 +1,10 @@
-// We index lambdas which capture this by value via `*this`.
+// We index lambdas which explicitly capture `this`.
 
 //- @S defines/binding StructS
 struct S {
   void f() const {
-    [*this] {
+    //- !{ @this ref StructS }
+    [this] {
       //- @g ref MethodG
       //- @m ref FieldM
       //- !{ @g ref StructS }
