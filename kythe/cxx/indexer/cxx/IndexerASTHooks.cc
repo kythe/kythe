@@ -2206,6 +2206,13 @@ bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
 }
 
 bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
+  if (const auto* P = Decl->getParent(); P && P->isLambda()) {
+    // Don't traverse fields in the anonymous class used for lambda captures.
+    // They are implicit and end up ref'ing everything either to the init
+    // capture list (for explicit captures) or to the in-body use which
+    // caused the capture (for implicit captures).
+    return true;
+  }
   if (!options_.DataflowEdges) {
     return Base::TraverseFieldDecl(Decl);
   }
@@ -5847,6 +5854,28 @@ void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
   llvm::raw_string_ostream ss(s);
   Expr->dump(ss, Context);
   LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            const clang::Type* Type) const {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Type->dump(ss, Context);
+  LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            clang::QualType Type) const {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Type.dump(ss, Context);
+  LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            clang::TypeLoc Type) const {
+  // TODO(shahms): Include the location range.
+  LogErrorWithASTDump(msg, Type.getType());
 }
 
 void IndexerASTVisitor::PrepareAlternateSemanticCache() {
