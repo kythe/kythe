@@ -69,6 +69,12 @@ proto_verifier_test(
 )
 
 proto_verifier_test(
+    name = "map_test",
+    srcs = [":basic_map_proto"],
+    tags = ["basic"],
+)
+
+proto_verifier_test(
     name = "proto3",
     srcs = [":proto3_proto"],
     tags = ["basic"],
@@ -193,6 +199,11 @@ proto_library(
 proto_library(
     name = "basic_services_proto",
     srcs = ["basic/services.proto"],
+)
+
+proto_library(
+    name = "basic_map_proto",
+    srcs = ["basic/map.proto"],
 )
 
 proto_library(
