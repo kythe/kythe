@@ -378,6 +378,10 @@ absl::optional<proto::VName> VNameForBuiltinType(FieldDescriptor::Type type) {
 
 absl::optional<proto::VName> FileDescriptorWalker::VNameForFieldType(
     const FieldDescriptor* field_proto) {
+  if (field_proto->is_map()) {
+    // Maps are technically TYPE_MESSAGE, but don't have a useful VName.
+    return absl::nullopt;
+  }
   if (field_proto->type() == FieldDescriptor::TYPE_MESSAGE ||
       field_proto->type() == FieldDescriptor::TYPE_GROUP) {
     return builder_->VNameForDescriptor(field_proto->message_type());
