@@ -3430,8 +3430,9 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           }
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto& ID = BuildNodeIdForRefToDecl(M);
-            Observer.recordDeclUseLocation(
-                RCC.value(), ID, GraphObserver::Claimability::Claimable,
+            Observer.recordSemanticDeclUseLocation(
+                RCC.value(), ID, GraphObserver::UseKind::kWrite,
+                GraphObserver::Claimability::Claimable,
                 this->IsImplicit(RCC.value()));
           }
         }

@@ -5,8 +5,8 @@ class A {
 };
 
 class C {
-  //- @ivar ref IVar
-  //- @avar ref AVar
+  //- @ivar ref/writes IVar
+  //- @avar ref/writes AVar
   C() : ivar(88), avar(A(20)) { }
 
   //- @ivar defines/binding IVar
