@@ -28,7 +28,7 @@ java_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":abstract_javac_wrapper",
-	":java9_compilation_from_unit_args",
+	":javac9_compilation_unit_from_args",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
