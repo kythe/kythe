@@ -2,7 +2,7 @@
 struct Z { };
 struct S {
   //- !{@S ref VarX}
-  //- @y ref VarY
+  //- @y ref/writes VarY
   //- !{@S ref VarZ}
   //- _ ref/call ZCtor
   //- ZCtor childof ZType
