@@ -72,15 +72,20 @@ java_library(
 
 java_binary(
     name = "indexer",
-    srcs = ["JavaIndexer.java"],
+    srcs = [
+        "Extractor.java",
+        "JavaIndexer.java",
+    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",
         ":plugin",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
+        "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_compilation_unit_from_args",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
@@ -90,9 +95,13 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//kythe/proto:buildinfo_java_proto",
+        "//kythe/proto:java_java_proto",
+        "//third_party/bazel:extra_actions_base_java_proto",
         "//third_party/guava",
         "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
+        "@io_bazel//src/java_tools/buildjar/java/com/google/devtools/build/buildjar:javac_options",
         "@maven//:com_beust_jcommander",
     ],
 )

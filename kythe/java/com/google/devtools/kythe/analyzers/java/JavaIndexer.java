@@ -69,11 +69,22 @@ public class JavaIndexer {
 
   public static void main(String[] args) throws AnalysisException, IOException {
     // JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
+    // We get extraActionFile, outputFile, vnames.json
+
+    if (args.length != 3) {
+      System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
+      System.exit(1);
+    }
+
+    String extraActionPath = args[0];
+    String outputPath = args[1];
+    String vNamesConfigPath = args[2];
 
     StandaloneConfig config = new StandaloneConfig();
     // TODO(ron): remove all the @parameter from args.
     // or return all the ones following --?
-    config.parseCommandLine(args);
+    config.parseCommandLine(new String[] {"--out", outputPath, "--extract_in_place", "--compilation", "bogus_in_place"});
+    /*
     for (int i = 0; i< args.length; i++) {
       if (!args[i].equals("--")) {
         continue;
@@ -82,6 +93,7 @@ public class JavaIndexer {
       System.out.println(("NEW args: " + Arrays.asList(args)));
       break;
     }
+     */
 
 
     List<Supplier<Plugin>> plugins = new ArrayList<>();
@@ -138,9 +150,25 @@ public class JavaIndexer {
         } else if (config.getExtractInPlace()) {
           try {
             // CompilationDescription desc = new Javac9CompilationUnitFromArgs().process(args);
+            // TODO(ron):
+            //  JavaExtractor or Java9CompilationUnitFromArgs to create it.
+            // kinda want JavaExtractor without the kzip
+            // The analyzer uses the FileManager from javac, and this prepopulates all the
+            // files rather than read them from disk.
+            // Not sure if this is extra expensive reading 180Meg of jdk ....
+            // feels extra awkward for bazel to pass in via ExtraInfoAction proto  and then translate back to args.
+            // If we use aspects, perhaps it will be clearer ...
+            // But  JavaExtractor would write everything to a .kindex/.kzip file
+
+            // TODO(ron):
+            //  Fixup kzip file -out filename?
+            // fixup kythe_dir (putenv of cvd)
+            analyzeCompilation(config, plugins, statistics,  Extractor.extract(extraActionPath, vNamesConfigPath), emitter);
+            /*
             for (CompilationDescription desc: new Javac9CompilationUnitFromArgs().buildCompilationUnits(args)){
               analyzeCompilation(config, plugins, statistics, desc, emitter);
             }
+             */
           } catch (Exception e) {
 
           }
@@ -281,7 +309,8 @@ public class JavaIndexer {
     }
 
     public final boolean getExtractInPlace() {
-	return extractInPlace;
+      return true;
+      // return extractInPlace;
     }
       
   }
