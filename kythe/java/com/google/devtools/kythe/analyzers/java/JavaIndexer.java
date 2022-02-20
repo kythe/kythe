@@ -52,6 +52,7 @@ import java.net.URLClassLoader;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +71,18 @@ public class JavaIndexer {
     // JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
     StandaloneConfig config = new StandaloneConfig();
+    // TODO(ron): remove all the @parameter from args.
+    // or return all the ones following --?
     config.parseCommandLine(args);
+    for (int i = 0; i< args.length; i++) {
+      if (!args[i].equals("--")) {
+        continue;
+      }
+      args = Arrays.copyOfRange(args, i+1, args.length);
+      System.out.println(("NEW args: " + Arrays.asList(args)));
+      break;
+    }
+
 
     List<Supplier<Plugin>> plugins = new ArrayList<>();
     if (!Strings.isNullOrEmpty(config.getPlugin())) {

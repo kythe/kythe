@@ -20,6 +20,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
+import java.util.Arrays;
+
 /** Common configuration for Kythe indexers. */
 @Parameters(separators = "=")
 public class IndexerConfig {
@@ -54,7 +56,10 @@ public class IndexerConfig {
    * binary's usage message will be printed and the program will exit with non-zero code.
    */
   public final void parseCommandLine(String[] args) {
+    System.out.println("HI args " + Arrays.toString(args));
     jc.parse(args);
+    System.out.println("HI PARSED args " + Arrays.toString(args));
+    System.out.println(" UNKnown" + jc.getUnknownOptions());
     if (getHelp()) {
       showHelpAndExit();
     }
