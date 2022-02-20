@@ -123,8 +123,16 @@ public class JavaIndexer {
             throw new IllegalArgumentException(
                 "given empty .kzip file \"" + compilationPath + "\"; try --ignore_empty_kzip");
           }
-        } else if (config.extractInPlace) {
-	        new Javac9CompilationUnitFromArgs().process(args);
+        } else if (config.getExtractInPlace()) {
+          try {
+            // CompilationDescription desc = new Javac9CompilationUnitFromArgs().process(args);
+            for (CompilationDescription desc: new Javac9CompilationUnitFromArgs().buildCompilationUnits(args)){
+              analyzeCompilation(config, plugins, statistics, desc, emitter);
+            }
+          } catch (Exception e) {
+
+          }
+
 	      } else {
 		
           // java_indexer kindex-file
@@ -201,7 +209,7 @@ public class JavaIndexer {
     @Parameter(
         names = "--print_vnames",
         description = "Print Kythe node VNames associated to each JCTree to stderr")
-    private boolean printVNames;
+    private boolean printVNames = true;
 
     @Parameter(
         names = "--print_statistics",

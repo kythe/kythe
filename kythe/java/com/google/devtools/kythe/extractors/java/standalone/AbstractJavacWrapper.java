@@ -145,7 +145,7 @@ public abstract class AbstractJavacWrapper {
     }
   }
 
-  private static String[] getCleanedUpArguments(String[] args) throws IOException {
+  static String[] getCleanedUpArguments(String[] args) throws IOException {
     // Expand all @file arguments
     List<String> expandedArgs = Lists.newArrayList(CommandLine.parse(args));
 

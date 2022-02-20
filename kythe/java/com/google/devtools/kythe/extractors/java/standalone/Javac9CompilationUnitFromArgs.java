@@ -19,19 +19,24 @@ package com.google.devtools.kythe.extractors.java.standalone;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.Lists;
+import com.google.common.base.Throwables;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.EnvironmentUtils;
+import com.google.devtools.kythe.extractors.shared.FileVNames;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
@@ -138,4 +143,48 @@ public class Javac9CompilationUnitFromArgs extends AbstractJavacWrapper {
   protected void passThrough(String[] args) throws Exception {
     com.sun.tools.javac.Main.main(args);
   }
+
+  public Collection<CompilationDescription> buildCompilationUnits(String[] args) {
+    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
+    try {
+      // ignore -proc:only for now
+      //if (!passThroughIfAnalysisOnly(args)) {
+        Optional<String> vnamesConfig = EnvironmentUtils.tryReadEnvironmentVariable("KYTHE_VNAMES");
+        JavaCompilationUnitExtractor extractor;
+        if (!vnamesConfig.isPresent()) {
+          String corpus = EnvironmentUtils.defaultCorpus();
+          extractor =
+              new JavaCompilationUnitExtractor(
+                  corpus, EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
+        } else {
+          extractor =
+              new JavaCompilationUnitExtractor(
+                  FileVNames.fromFile(vnamesConfig.get()),
+                  EnvironmentUtils.readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
+        }
+
+        Collection<CompilationDescription> indexInfos =
+            processCompilation(getCleanedUpArguments(args), extractor);
+        // outputIndexInfo(indexInfos);
+
+        if (indexInfos.stream().anyMatch(cd -> cd.getCompilationUnit().getHasCompileErrors())) {
+          System.err.println("Errors encountered during compilation");
+          System.exit(1);
+        }
+        return indexInfos;
+      // }
+    } catch (IOException e) {
+      System.err.printf(
+          "Unexpected IO error (probably while writing to index file): %s%n", e.toString());
+      System.err.println(Throwables.getStackTraceAsString(e));
+      System.exit(2);
+    } catch (Exception e) {
+      System.err.printf(
+          "Unexpected error compiling and indexing java compilation: %s%n", e.toString());
+      System.err.println(Throwables.getStackTraceAsString(e));
+      System.exit(2);
+    }
+    return null;
+  }
+
 }
