@@ -1,5 +1,57 @@
 # Release Notes
 
+## [v0.0.58] - 2022-02-22
+
+#### Bug Fixes
+
+* **cxx_indexer:**
+  *  constructer initializers should be writes (#5220) ([9efa5c92](https://github.com/kythe/kythe/commit/9efa5c92014021c99ede023c912465a1cee6845e))
+  *  don't traverse field decls in lambdas (#5215) ([ae62778b](https://github.com/kythe/kythe/commit/ae62778be330a963078c55226f41008c56a01d9b))
+  *  use function names, not exps, for semantics (#5213) ([a11bf38f](https://github.com/kythe/kythe/commit/a11bf38fdb72ae0362b042a1917639f7b5ab8e28))
+  *  treat calls to inherited constructors like other members (#5198) ([3db22d38](https://github.com/kythe/kythe/commit/3db22d38823f1edb6cec1204448f50c7e086e1bf))
+* **go extractor image:**  updates for extracting to a single corpus (#5173) ([8697a6c4](https://github.com/kythe/kythe/commit/8697a6c4b15caf12b59d8e32b9ac0ee4aa9306bc))
+* **go_indexer:**
+  *  fix refs to anonymous members across packages (#5195) ([e40b0a0c](https://github.com/kythe/kythe/commit/e40b0a0c1ffa4e8a67199b5e147b097dd5414aca))
+  *  ensure generic references work across packages (#5166) ([f2701611](https://github.com/kythe/kythe/commit/f27016111e0a19c6f9628e4b106aa3eff9c0e14e))
+* **java:**
+  *  do not emit doc nodes for non-javadoc commits by default (#5191) ([b3b97642](https://github.com/kythe/kythe/commit/b3b976429254d979b739a304f98f0fb5152a180b))
+* **java_indexer:**
+  *  use ref/id edges for class references in new expressions (#5211) ([e151c464](https://github.com/kythe/kythe/commit/e151c46460e7991c32dc0fd8bac24326219a8238))
+  *  set the corpus path of diagnostics (#5203) ([cf72c6e8](https://github.com/kythe/kythe/commit/cf72c6e8595dee132a02291464744b8d49da91e4))
+  *  fix ambiguous variable def position (#5196) ([159055e4](https://github.com/kythe/kythe/commit/159055e43fb1ded7bcf14cb7f3e9fdf098415d70))
+* **proto_indexer:**
+  *  actually elide refs for top-level map types (#5219) ([84181c2a](https://github.com/kythe/kythe/commit/84181c2afb926ee4d168caecab0fea97aa4695a7))
+  *  elide references to builtins and maps (#5212) ([0501c36b](https://github.com/kythe/kythe/commit/0501c36b8f1bbae2391a7df5b56361bd2d9601a4))
+* **rust_common:**
+  *  update Rust toolchain to fix tests on macOS Monterey (#5183) ([86dbcbb8](https://github.com/kythe/kythe/commit/86dbcbb8d765a13476741dc9cfa0479e557f72da))
+  *  clippy fixes for new Rust version (#5161) ([d65a6871](https://github.com/kythe/kythe/commit/d65a6871612136cb190c623f67351ff5466540fa))
+  *  ensure release rust extractor script is executable (#5155) ([64969a85](https://github.com/kythe/kythe/commit/64969a853711c228b4e3cfc3ce91b84b5bb853d7))
+* **rust_extractor:**  set the working_directory (#5200) ([07f4e5e5](https://github.com/kythe/kythe/commit/07f4e5e51239f6c4d3364be8bdc7ce711a9b6879))
+* **rust_indexer:**  emit built-in types in the same corpus as the CU (#5202) ([63bc29e3](https://github.com/kythe/kythe/commit/63bc29e3ba35fee7d1004948c043e4123dd905ac))
+* **serving:**  do not unnecessarily read indirection pages (#5178) ([4b9c4789](https://github.com/kythe/kythe/commit/4b9c4789d596f659c087dd09028ec7541cbccbf4))
+
+#### Features
+
+* **cxx_indexer:**
+  *  handle more proto functions (#5209) ([effb97ae](https://github.com/kythe/kythe/commit/effb97ae9d6ee0f97c36af7ad4c76acac08acb2d))
+  *  guess protobuf semantics (#5188) ([7ddc015f](https://github.com/kythe/kythe/commit/7ddc015f56c6f2f827df864580bce9b69e81835b))
+  *  support r/w and influence for user-defined operators (#5187) ([c3236f7d](https://github.com/kythe/kythe/commit/c3236f7dc0201f5dfb01fa11a8f0d643785ec59e))
+* **go extractor:**  add flag to put deps in default corpus (#5169) ([234f17f6](https://github.com/kythe/kythe/commit/234f17f6fa606f0aa7f8e5e82be71f1ed0cf32fd))
+* **go_indexer:**
+  *  add definition links to MarkedSource (#5194) ([86948564](https://github.com/kythe/kythe/commit/86948564a1002b5531a1e4df91939abae32c07c3))
+  *  correct instantiated member references (#5163) ([fccf5440](https://github.com/kythe/kythe/commit/fccf54400fe1ce438d8388c38464ccd907cd7484))
+  *  add receiver type parameters to MarkedSource (#5160) ([19e1699c](https://github.com/kythe/kythe/commit/19e1699cfd6efa343767b7732128e3bb2e317a6e))
+  *  add MarkedSource for function type parameters (#5159) ([9bad9c81](https://github.com/kythe/kythe/commit/9bad9c81e24fb6c33cd7d89c3b8e1d5dcdce22a6))
+  *  emit tapps for instantiated Named types (#5158) ([dd574ee5](https://github.com/kythe/kythe/commit/dd574ee523b12d5d16a316d3c7939a8680c0b220))
+  *  ensure references are to non-instantiated methods (#5157) ([7dc3b79f](https://github.com/kythe/kythe/commit/7dc3b79fea2a7709b0aac69403157ea60ee294cd))
+  *  support satisfies edges for instance types (#5156) ([eed1ece4](https://github.com/kythe/kythe/commit/eed1ece4eb42eddb97def548ed1592b13249c343))
+* **rust_indexer:**
+  *  add flag to disable emitting xrefs for stdlib (#5197) ([1aa5b943](https://github.com/kythe/kythe/commit/1aa5b9437c1c3f9fbb9d6d5e742eaee2b0c121f3))
+  *  remove need for save-analysis files to be saved to fs (#5193) ([3806d62d](https://github.com/kythe/kythe/commit/3806d62d7cfeab9fa0f06a5c2023dfd356307009))
+* **schema:**  include Go generics examples (#5154) ([4b7ae7b2](https://github.com/kythe/kythe/commit/4b7ae7b2fb2213a5fc04ab029314dc43219cc0b3))
+* **serving:**  add Hash to FileInfo protos (#5207) ([dd53bcde](https://github.com/kythe/kythe/commit/dd53bcdec65fa35591d8d650e801aa4e9e60ef44))
+* **tooling:**  Support filtering of kzips by language. (#5167) ([d3cea029](https://github.com/kythe/kythe/commit/d3cea0294253a6c7e5d6fae7471b09c007a583bf))
+
 ## [v0.0.57] - 2021-12-16
 
 #### Bug Fixes
@@ -1227,7 +1279,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.57...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.58...HEAD
+[v0.0.58] https://github.com/kythe/kythe/compare/v0.0.57...v0.0.58
 [v0.0.57] https://github.com/kythe/kythe/compare/v0.0.56...v0.0.57
 [v0.0.56] https://github.com/kythe/kythe/compare/v0.0.55...v0.0.56
 [v0.0.55] https://github.com/kythe/kythe/compare/v0.0.54...v0.0.55
