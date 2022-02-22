@@ -19,11 +19,6 @@ java_import(
 )
 
 filegroup(
-    name = "javac_jar",
-    srcs = ["javac-9+181-r4173-1.jar"],
-)
-
-filegroup(
     name = "jdk_compiler_jar",
     srcs = ["jdk_compiler.jar"],
 )
