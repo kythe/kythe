@@ -1347,6 +1347,15 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
       if (options_.DataflowEdges && !Job->InfluenceSets.empty()) {
         Job->InfluenceSets.back().insert(FieldDecl);
       }
+      if (isa<clang::CXXMethodDecl>(FieldDecl)) {
+        if (const auto* semantic = AlternateSemanticForDecl(FieldDecl);
+            semantic != nullptr && semantic->node) {
+          Observer.recordSemanticDeclUseLocation(
+              RCC.value(), *(semantic->node), semantic->use_kind,
+              GraphObserver::Claimability::Unclaimable,
+              this->IsImplicit(RCC.value()));
+        }
+      }
     }
   }
   return true;
@@ -1641,12 +1650,6 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       RecordCallEdges(RCC.value(), CalleeId);
       for (const auto& S : Supports) {
         S->InspectCallExpr(*this, E, RCC.value(), CalleeId);
-      }
-      if (const auto* semantic = AlternateSemanticForDecl(Callee);
-          semantic != nullptr && semantic->node) {
-        Observer.recordSemanticDeclUseLocation(
-            RCC.value(), *(semantic->node), semantic->use_kind,
-            GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
       }
     } else if (const auto* CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
@@ -2203,6 +2206,13 @@ bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
 }
 
 bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
+  if (const auto* P = Decl->getParent(); P && P->isLambda()) {
+    // Don't traverse fields in the anonymous class used for lambda captures.
+    // They are implicit and end up ref'ing everything either to the init
+    // capture list (for explicit captures) or to the in-body use which
+    // caused the capture (for implicit captures).
+    return true;
+  }
   if (!options_.DataflowEdges) {
     return Base::TraverseFieldDecl(Decl);
   }
@@ -2403,6 +2413,15 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
             (FoundDecl->getKind() == clang::Decl::Kind::Var ||
              FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
           Job->InfluenceSets.back().insert(FoundDecl);
+        }
+      }
+      if (isa<clang::FunctionDecl>(FoundDecl)) {
+        if (const auto* semantic = AlternateSemanticForDecl(FoundDecl);
+            semantic != nullptr && semantic->node) {
+          Observer.recordSemanticDeclUseLocation(
+              RCC.value(), *(semantic->node), semantic->use_kind,
+              GraphObserver::Claimability::Unclaimable,
+              this->IsImplicit(RCC.value()));
         }
       }
       Observer.recordSemanticDeclUseLocation(
@@ -3411,8 +3430,9 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           }
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto& ID = BuildNodeIdForRefToDecl(M);
-            Observer.recordDeclUseLocation(
-                RCC.value(), ID, GraphObserver::Claimability::Claimable,
+            Observer.recordSemanticDeclUseLocation(
+                RCC.value(), ID, GraphObserver::UseKind::kWrite,
+                GraphObserver::Claimability::Claimable,
                 this->IsImplicit(RCC.value()));
           }
         }
@@ -5835,6 +5855,28 @@ void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
   llvm::raw_string_ostream ss(s);
   Expr->dump(ss, Context);
   LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            const clang::Type* Type) const {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Type->dump(ss, Context);
+  LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            clang::QualType Type) const {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Type.dump(ss, Context);
+  LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+                                            clang::TypeLoc Type) const {
+  // TODO(shahms): Include the location range.
+  LogErrorWithASTDump(msg, Type.getType());
 }
 
 void IndexerASTVisitor::PrepareAlternateSemanticCache() {

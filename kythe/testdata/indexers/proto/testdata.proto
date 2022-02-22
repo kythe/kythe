@@ -31,4 +31,7 @@ message Message {
     string oneof_string = 4;
     bool oneof_bool = 5;
   }
+
+  //- @repeated_int32_field defines/binding RepeatedInt32Field
+  repeated int32 repeated_int32_field = 6;
 }

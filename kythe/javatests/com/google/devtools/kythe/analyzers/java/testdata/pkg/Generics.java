@@ -36,7 +36,7 @@ public class Generics<T> {
     //- GType param.0 Class
     //- GType param.1 _Str
     Generics<String> gs =
-        //- @"Generics<String>" ref GType
+        //- @"Generics<String>" ref/id GType
         new Generics<String>();
 
     //- @"Generics" ref Class
@@ -44,7 +44,7 @@ public class Generics<T> {
     //- NGVar typed NGType
     //- NGType.node/kind record
     Generics nonGeneric =
-        //- @"Generics" ref Class
+        //- @"Generics" ref/id Class
         new Generics();
 
     //- @"Optional<Generics<String>>" ref OType

@@ -291,7 +291,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    JavaNode node = emitSymUsage(ctx, ident.sym);
+    EdgeKind edgeKind = EdgeKind.REF;
+    if (ident.sym instanceof ClassSymbol && ident == owner.getNewClassIdentifier()) {
+      // Use ref/id edges for the primary identifier to disambiguate from the constructor.
+      edgeKind = EdgeKind.REF_ID;
+    }
+    JavaNode node = emitSymUsage(ctx, ident.sym, edgeKind);
     if (node != null && ident.sym instanceof VarSymbol) {
       // Emit typed edges for "this"/"super" on reference since there is no definition location.
       // TODO(schroederc): possibly add implicit definition on class declaration
@@ -773,7 +778,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(typeCtorNode.getVName(), argVNames, MarkedSources.GENERIC_TAPP);
     // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
-    emitAnchor(ctx, EdgeKind.REF, typeNode.getVName());
+    emitAnchor(
+        ctx,
+        (owner.getTree() instanceof JCNewClass) ? EdgeKind.REF_ID : EdgeKind.REF,
+        typeNode.getVName());
 
     return new JavaNode(typeNode, childWildcards.build());
   }
@@ -1225,19 +1233,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge
-  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
+  // Emits a node for the given sym, an anchor encompassing the TreeContext, and the given edge.
+  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym, EdgeKind edgeKind) {
     JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
       // TODO(schroederc): details
       return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
     }
-
     // TODO(schroederc): emit reference to JVM node if `sym.outermostClass()` is not defined in a
     //                   .java source file
-    emitAnchor(ctx, EdgeKind.REF, node.getVName());
+    emitAnchor(ctx, edgeKind, node.getVName());
     statistics.incrementCounter("symbol-usages-emitted");
     return node;
+  }
+
+  // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge.
+  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
+    return emitSymUsage(ctx, sym, EdgeKind.REF);
   }
 
   // Emits a node for the given sym, an anchor encompassing the name, and a REF edge

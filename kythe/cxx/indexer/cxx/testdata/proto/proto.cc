@@ -38,6 +38,9 @@ void fn() {
   msg.oneof_field_case();
   //- @set_oneof_string ref CxxSetOneofStringTapp
   msg.set_oneof_string("hello");
+
+  //- @repeated_int32_field ref CxxRepeatedInt32Field
+  msg.repeated_int32_field(1);
 }
 //- Message generates CxxMessage
 //- CxxSetStringFieldTapp param.0 CxxSetStringFieldAbs
@@ -63,3 +66,4 @@ void fn() {
 //- CxxSetOneofStringAbsBindingAnchor defines/binding CxxSetOneofStringAbs
 //- CxxSetOneofStringAbsBindingAnchor completes/uniquely SetOneofStringAbs
 //- OneofString generates SetOneofStringAbs
+//- RepeatedInt32Field generates CxxRepeatedInt32Field

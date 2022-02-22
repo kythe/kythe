@@ -1098,6 +1098,24 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_lambda_explicit_this",
+    srcs = ["function/function_lambda_explicit_this.cc"],
+    ignore_dups = True,
+    tags = [
+        "function",
+    ],
+)
+
+cc_indexer_test(
+    name = "function_lambda_implicit_this",
+    srcs = ["function/function_lambda_implicit_this.cc"],
+    ignore_dups = True,
+    tags = [
+        "function",
+    ],
+)
+
+cc_indexer_test(
     name = "function_constexpr_lambda",
     srcs = ["function/function_constexpr_lambda.cc"],
     ignore_dups = True,

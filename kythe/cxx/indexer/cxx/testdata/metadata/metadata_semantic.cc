@@ -4,7 +4,7 @@
 void foo();
 
 void bar() {
-  //- @"foo()" ref/writes vname(gsig, gcorp, groot, gpath, glang)
+  //- @foo ref/writes vname(gsig, gcorp, groot, gpath, glang)
   //- @foo ref FnFoo
   //- @"foo()" ref/call FnFoo
   foo();
