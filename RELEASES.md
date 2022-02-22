@@ -4,7 +4,7 @@
 
 #### Deprecation
 
-* **java:** last release with JDK 8 support 
+* **java:** last release with JDK 8 support
 
 #### Bug Fixes
 
