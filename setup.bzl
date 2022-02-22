@@ -106,10 +106,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-        sha256 = "08109dccfa5bbf674ff4dba82b15d40d85b07436b02e62ab27e0b894f45bb4a3",
-        strip_prefix = "rules_rust-d5ab4143245af8b33d1947813d411a6cae838409",
+        sha256 = "a62e60beee6b2f2e9df107ecd89e87296b8ac1df87f9d6186165e3666835fc46",
+        strip_prefix = "rules_rust-3db49e80c14b4c5dc9bd6a7c13a848ef71891c35",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/archive/3db49e80c14b4c5dc9bd6a7c13a848ef71891c35.tar.gz",
         ],
     )
 
