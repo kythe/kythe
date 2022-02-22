@@ -2,6 +2,10 @@
 
 ## [v0.0.58] - 2022-02-22
 
+#### Deprecation
+
+* **java:** last release with JDK 8 support 
+
 #### Bug Fixes
 
 * **cxx_indexer:**
