@@ -988,6 +988,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
                            const clang::Decl* Decl) const;
   void LogErrorWithASTDump(absl::string_view msg,
                            const clang::Expr* Expr) const;
+  void LogErrorWithASTDump(absl::string_view msg,
+                           const clang::Type* Type) const;
+  void LogErrorWithASTDump(absl::string_view msg, clang::TypeLoc Type) const;
+  void LogErrorWithASTDump(absl::string_view msg, clang::QualType Type) const;
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
   /// or a clang::TypeAliasDecl.

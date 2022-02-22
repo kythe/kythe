@@ -73,14 +73,14 @@ public class MemberReferences {
   }
 
   public Supplier<Referent> getIdThunk() {
-    //- @Referent ref ReferentClass
+    //- @Referent ref/id ReferentClass
     //- @func ref IdentityMethod
     //- !{ @new.node/kind anchor }
     return new Referent()::func;
   }
 
   public Function<Referent, Referent> getIdPartialApplication() {
-    //- @Referent ref ReferentClass
+    //- @Referent ref/id ReferentClass
     //- @func ref AlternativeMethod
     //- !{ @new.node/kind anchor }
     return new Referent()::func;

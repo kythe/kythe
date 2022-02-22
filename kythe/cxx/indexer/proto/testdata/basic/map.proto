@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kythe_test_proto;
+
+
+//- @Value defines/binding ValueMsg
+message Value {}
+
+message Message {
+  //- !{ @"map<string, int32>" ref _NativeMap }
+  map<string, int32> builtin_map = 1;
+
+  //- @Value ref ValueMsg
+  //- !{ "@map<string, Value>" ref _MessageMap }
+  map<string, Value> message_map = 2;
+}

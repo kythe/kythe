@@ -95,7 +95,9 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
       // token names something related to a field or a oneof.
       auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
       if (absl::StartsWith(token, "clear_") ||
-          absl::StartsWith(token, "set_")) {
+          absl::StartsWith(token, "set_") ||  // covers set_allocated_
+          absl::StartsWith(token, "add_") ||
+          absl::StartsWith(token, "release_")) {
         rule.semantic = kythe::MetadataFile::Semantic::kWrite;
       } else if (absl::StartsWith(token, "mutable_")) {
         rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;

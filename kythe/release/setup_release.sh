@@ -51,7 +51,13 @@ elif [[ -n "$(git diff --name-only)" ]]; then
 fi
 
 # Make sure https://github.com/clog-tool/clog-cli is installed.
-hash clog || { echo "ERROR: Please install clog"; exit 1; }
+hash clog || { echo "ERROR: Please install clog-cli"; exit 1; }
+
+if ! clog --setversion VERSION </dev/null 2>/dev/null | grep -q VERSION; then
+  echo "ERROR: clog appears to not be functioning" >&2
+  echo "ERROR: you may have 'colorized log filter' on your PATH rather than clog-cli" >&2
+  echo "ERROR: please check https://github.com/clog-tool/clog-cli for installation instructions" >&2
+fi
 
 previous_version=$(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)
 
@@ -102,7 +108,7 @@ if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUIL
 fi
 
 git checkout -b "release-$version"
-git commit -am "release: $version"
+git commit -anm "release: $version"
 
 # Build and test the Kythe release archive.
 bazel --bazelrc=/dev/null test --config=release //kythe/release:release_test

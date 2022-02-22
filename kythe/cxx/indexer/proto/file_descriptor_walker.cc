@@ -21,6 +21,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
@@ -369,17 +370,18 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
 }
 
 namespace {
-proto::VName VNameForBuiltinType(FieldDescriptor::Type type) {
+absl::optional<proto::VName> VNameForBuiltinType(FieldDescriptor::Type type) {
   // TODO(zrlk): Emit builtins.
-  proto::VName builtin_vname;
-  builtin_vname.set_language(kLanguageName);
-  builtin_vname.set_signature(FieldDescriptor::TypeName(type));
-  return builtin_vname;
+  return absl::nullopt;
 }
 }  // anonymous namespace
 
-proto::VName FileDescriptorWalker::VNameForFieldType(
+absl::optional<proto::VName> FileDescriptorWalker::VNameForFieldType(
     const FieldDescriptor* field_proto) {
+  if (field_proto->is_map()) {
+    // Maps are technically TYPE_MESSAGE, but don't have a useful VName.
+    return absl::nullopt;
+  }
   if (field_proto->type() == FieldDescriptor::TYPE_MESSAGE ||
       field_proto->type() == FieldDescriptor::TYPE_GROUP) {
     return builder_->VNameForDescriptor(field_proto->message_type());
@@ -456,22 +458,18 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
       }
     }
   }
-  VName type = VNameForFieldType(field);
-
-  // TODO: add value_type back in at some point.
-  // Add reference for this field's type.  We assume it to be output
-  // processing a dependency, but in the worst case this might introduce
-  // an edge to no VName (presumably in turn introducing a Lost node).
-
-  builder_->AddReference(type, type_location);
-  builder_->AddTyping(v_name, type);
+  if (auto type = VNameForFieldType(field)) {
+    // TODO: add value_type back in at some point.
+    // Add reference for this field's type.  We assume it to be output
+    // processing a dependency, but in the worst case this might introduce
+    // an edge to no VName (presumably in turn introducing a Lost node).
+    builder_->AddReference(*type, type_location);
+    builder_->AddTyping(v_name, *type);
+  }
 
   if (field->is_map()) {
-    // Add references to map type components.
-    VName keyType = VNameForFieldType(field->message_type()->field(0));
-    VName valType = VNameForFieldType(field->message_type()->field(1));
-    // Map key/value types do not have SourceCodeInfo locations; we have to find
-    // them within the outer "map<...>" type location.
+    // Map key/value types do not have SourceCodeInfo locations; we have to
+    // find them within the outer "map<...>" type location.
     absl::string_view content = absl::string_view(content_);
     absl::string_view type_name = content.substr(
         type_location.begin, type_location.end - type_location.begin);
@@ -479,15 +477,20 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
     if (RE2::FullMatch(ToStringPiece(type_name),
                        R"(\s*map\s*<\s*(\S+)\s*,\s*(\S+)\s*>\s*)", &key,
                        &val)) {
-      size_t key_start = key.data() - content.data();
-      size_t val_start = val.data() - content.data();
+      // Add references to map type components.
+      if (auto key_type = VNameForFieldType(field->message_type()->field(0))) {
+        size_t key_start = key.data() - content.data();
+        builder_->AddReference(
+            *key_type, {type_location.file, key_start, key_start + key.size()});
+      }
 
-      builder_->AddReference(
-          keyType, {type_location.file, key_start, key_start + key.size()});
-      builder_->AddReference(
-          valType, {type_location.file, val_start, val_start + val.size()});
+      if (auto val_type = VNameForFieldType(field->message_type()->field(1))) {
+        size_t val_start = val.data() - content.data();
+        builder_->AddReference(
+            *val_type, {type_location.file, val_start, val_start + val.size()});
+      }
+      // TODO(schroederc): emit map type node
     }
-    // TODO(schroederc): emit map type node
   }
 
   if (field->has_default_value()) {

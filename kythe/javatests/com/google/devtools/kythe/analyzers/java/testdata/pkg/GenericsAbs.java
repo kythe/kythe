@@ -40,7 +40,7 @@ public class GenericsAbs<T> {
     //- GType param.0 GAbs
     //- GType param.1 _Str
     GenericsAbs<String> gs =
-        //- @"GenericsAbs<String>" ref GType
+        //- @"GenericsAbs<String>" ref/id GType
         new GenericsAbs<String>();
 
     //- @"GenericsAbs" ref Class
@@ -48,7 +48,7 @@ public class GenericsAbs<T> {
     //- NGVar typed NGType
     //- NGType.node/kind record
     GenericsAbs nonGeneric =
-        //- @"GenericsAbs" ref Class
+        //- @"GenericsAbs" ref/id Class
         new GenericsAbs();
 
     //- @"Optional<GenericsAbs<String>>" ref OType
