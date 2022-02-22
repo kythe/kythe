@@ -36,3 +36,4 @@ tools/node
 
 # Ignore Rust build artifacts
 kythe/rust/**/target
+rust-project.json
