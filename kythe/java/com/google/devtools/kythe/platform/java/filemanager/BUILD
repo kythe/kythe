@@ -5,10 +5,12 @@ package(default_visibility = ["//kythe:default_visibility"])
 java_library(
     name = "forwarding_standard_java_file_manager",
     srcs = ["ForwardingStandardJavaFileManager.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//third_party/guava",
-        "//third_party/javac",
     ],
 )
 
@@ -22,6 +24,9 @@ java_library(
         "JavaFileStore.java",
         "JavaFileStoreBasedFileManager.java",
     ],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+    ],
     deps = [
         ":filetree",
         ":forwarding_standard_java_file_manager",
@@ -30,7 +35,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
-        "//third_party/javac",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_guava_guava",
@@ -41,6 +45,11 @@ java_library(
 java_library(
     name = "path_filemanager",
     srcs = ["CompilationUnitPathFileManager.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         ":forwarding_standard_java_file_manager",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
@@ -49,7 +58,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared/filesystem",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
-        "//third_party/javac",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_guava_guava",
