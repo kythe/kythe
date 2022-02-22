@@ -10,23 +10,12 @@ filegroup(
 )
 
 java_import(
-    name = "javac",
-    jars = [":javac_jar"],
-    neverlink = True,
-)
-
-java_import(
     name = "javac9",
     jars = [
         ":jdk_compiler_jar",
         ":java_compiler_jar",
     ],
     neverlink = True,
-)
-
-filegroup(
-    name = "javac_jar",
-    srcs = ["javac-9+181-r4173-1.jar"],
 )
 
 filegroup(

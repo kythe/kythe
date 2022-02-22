@@ -11,6 +11,13 @@ java_library(
         "UsageAsInputReportingFileManager.java",
         "UsageAsInputReportingJavaFileObject.java",
     ],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
@@ -24,7 +31,6 @@ java_library(
         "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "//third_party/javac",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
@@ -41,7 +47,6 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:forwarding_standard_java_file_manager",
         "//third_party/guava",
-        "//third_party/javac",
     ],
 )
 

@@ -31,5 +31,4 @@ java_binary(
         "testdata/processor/SillyProcessor.java",
     ],
     create_executable = 0,
-    deps = ["//third_party/javac"],
 )
