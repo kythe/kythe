@@ -45,6 +45,7 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/snappy"
 	"golang.org/x/net/trace"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -190,11 +191,11 @@ func (c *combinedTable) documentation(ctx context.Context, ticket string) (*srvp
 
 // NewSplitTable returns a table based on the given serving tables for each API
 // component.
-func NewSplitTable(c *SplitTable) *Table { return &Table{c} }
+func NewSplitTable(c *SplitTable) *Table { return &Table{staticLookupTables: c} }
 
 // NewCombinedTable returns a table for the given combined xrefs lookup table.
 // The table's keys are expected to be constructed using only the *Key functions.
-func NewCombinedTable(t table.Proto) *Table { return &Table{&combinedTable{t}} }
+func NewCombinedTable(t table.Proto) *Table { return &Table{staticLookupTables: &combinedTable{t}} }
 
 // DecorationsKey returns the decorations CombinedTable key for the given source
 // location ticket.
@@ -221,7 +222,39 @@ func DocumentationKey(ticket string) []byte {
 }
 
 // Table implements the xrefs Service interface using static lookup tables.
-type Table struct{ staticLookupTables }
+type Table struct {
+	staticLookupTables
+
+	// MakePatcher returns a patching client that targets a Workspace.
+	MakePatcher func(context.Context, *xpb.Workspace) (MultiFilePatcher, error)
+}
+
+// A MultiFilePatcher provides an interface to patch sets of xref anchors to an
+// underlying baseline, usually a Workspace.
+//
+// After creation, the client is required to call AddFile for each possible file
+// referenced by any anchors that will be patched.  After the files are added, a
+// set of anchors may be passed to PatchAnchors.
+type MultiFilePatcher interface {
+	// AddFile adds a file to current set of files to patch against.
+	AddFile(context.Context, *srvpb.FileInfo) error
+
+	// PatchAnchors updates the set of anchors given to match their referenced
+	// files' state as known by the MultiLinePatcher, usually based on a
+	// Workspace.  If an anchor no longer exists, it will be ellided from the
+	// returned set.  Otherwise, the ordering of the anchors will be retained.
+	PatchAnchors(context.Context, []*xpb.Anchor) ([]*xpb.Anchor, error)
+
+	// PatchRelatedAnchors updates the set of related anchors given to match their
+	// referenced files' state as known by the MultiLinePatcher, usually based on
+	// a Workspace.  If an anchor no longer exists, it will be ellided from the
+	// returned set.  Otherwise, the ordering of the anchors will be retained.
+	PatchRelatedAnchors(context.Context, []*xpb.CrossReferencesReply_RelatedAnchor) ([]*xpb.CrossReferencesReply_RelatedAnchor, error)
+
+	// Close releases any resources used the patcher.  Further calls to the
+	// patcher will become invalid.
+	Close() error
+}
 
 const (
 	defaultPageSize = 2048
@@ -322,6 +355,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 	}
 
+	var patcherFunc patcherFunc
+
 	var patcher *span.Patcher
 	if len(req.DirtyBuffer) > 0 {
 		patcher, err = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
@@ -363,7 +398,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		// All known definition locations (Anchor.Ticket -> Anchor)
 		defs := make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 		for _, def := range decor.TargetDefinitions {
-			defs[def.Ticket] = a2a(def, fileInfos, false).Anchor
+			defs[def.Ticket] = a2a(def, fileInfos, false, patcherFunc).Anchor
 		}
 		if req.TargetDefinitions {
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
@@ -513,6 +548,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 	stats := refStats{
 		max: int(req.PageSize),
+
+		refOptions: refOptions{
+			anchorText: req.AnchorText,
+		},
 	}
 	if stats.max < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid page_size: %d", req.PageSize)
@@ -583,6 +622,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		totalsQuality = xpb.CrossReferencesRequest_TotalsQuality(xpb.CrossReferencesRequest_TotalsQuality_value[strings.ToUpper(*defaultTotalsQuality)])
 	}
 
+	var patcher MultiFilePatcher
+	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
+		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		}
+
+		stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
+			if err := patcher.AddFile(ctx, f); err != nil {
+				// Attempt to continue with the request, just log the error.
+				log.Printf("ERROR: adding file: %v", err)
+			}
+		}
+	}
+
 	// Set of xref page keys to read for further indirection nodes.
 	var indirectionPages []string
 
@@ -647,17 +701,17 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Definition, grp, req.AnchorText)
+					stats.addAnchors(&crs.Definition, grp)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Declaration, grp, req.AnchorText)
+					stats.addAnchors(&crs.Declaration, grp)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				reply.Total.References += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Reference, grp, req.AnchorText)
+					stats.addAnchors(&crs.Reference, grp)
 				}
 			case len(grp.RelatedNode) > 0:
 				// If requested, add related nodes to merge node set.
@@ -695,7 +749,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					stats.addAnchors(&crs.Definition, p.Group, req.AnchorText)
+					stats.addAnchors(&crs.Definition, p.Group)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(idx.Count)
@@ -704,7 +758,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					stats.addAnchors(&crs.Declaration, p.Group, req.AnchorText)
+					stats.addAnchors(&crs.Declaration, p.Group)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
 				reply.Total.References += int64(idx.Count)
@@ -713,7 +767,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
+					stats.addAnchors(&crs.Reference, p.Group)
 				}
 			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
 				var p *srvpb.PagedCrossReferences_Page
@@ -812,6 +866,71 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 	}
 
+	if patcher != nil {
+		// Patch each set of anchors in parallel.  Files were added as they were
+		// seen when populating the xref sets.
+		g, gCtx := errgroup.WithContext(ctx)
+		g.Go(func() error {
+			defs := make([]*xpb.Anchor, 0, len(reply.GetDefinitionLocations()))
+			for _, def := range reply.GetDefinitionLocations() {
+				defs = append(defs, def)
+			}
+			defs, err := patcher.PatchAnchors(gCtx, defs)
+			if err != nil {
+				return err
+			}
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
+			for _, def := range defs {
+				reply.DefinitionLocations[def.GetTicket()] = def
+			}
+			return nil
+		})
+		for _, set := range reply.GetCrossReferences() {
+			g.Go(func() error {
+				as, err := patcher.PatchRelatedAnchors(gCtx, set.GetDefinition())
+				if err != nil {
+					return err
+				}
+				set.Definition = as
+				return nil
+			})
+
+			g.Go(func() error {
+				as, err := patcher.PatchRelatedAnchors(gCtx, set.GetDeclaration())
+				if err != nil {
+					return err
+				}
+				set.Declaration = as
+				return nil
+			})
+
+			g.Go(func() error {
+				as, err := patcher.PatchRelatedAnchors(gCtx, set.GetReference())
+				if err != nil {
+					return err
+				}
+				set.Reference = as
+				return nil
+			})
+
+			g.Go(func() error {
+				as, err := patcher.PatchRelatedAnchors(gCtx, set.GetCaller())
+				if err != nil {
+					return err
+				}
+				set.Caller = as
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+		if err := patcher.Close(); err != nil {
+			// No need to fail the request; just log the error.
+			log.Printf("ERROR: closing patcher: %v", err)
+		}
+	}
+
 	return reply, nil
 }
 
@@ -844,12 +963,19 @@ func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
 	return int(ts.Callers) + int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
 }
 
+type refOptions struct {
+	patcherFunc patcherFunc
+	anchorText  bool
+}
+
 type refStats struct {
 	// number of refs:
 	//   to skip (returned on previous pages)
 	//   max to return (the page size)
 	//   total (count of refs so far read for current page)
 	skip, total, max int
+
+	refOptions
 }
 
 func (s *refStats) done() bool { return s.total == s.max }
@@ -885,13 +1011,13 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 	s.total += len(cs)
 	for _, c := range cs {
 		ra := &xpb.CrossReferencesReply_RelatedAnchor{
-			Anchor: a2a(c.Caller, fileInfos, false).Anchor,
+			Anchor: a2a(c.Caller, fileInfos, false, s.patcherFunc).Anchor,
 			Ticket: c.SemanticCaller,
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
 		ra.MarkedSource = c.MarkedSource
 		for _, site := range c.Callsite {
-			ra.Site = append(ra.Site, a2a(site, fileInfos, false).Anchor)
+			ra.Site = append(ra.Site, a2a(site, fileInfos, false, s.patcherFunc).Anchor)
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
@@ -927,7 +1053,7 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 				nodes[rn.Node.Ticket] = info
 				if defs != nil && rn.Node.DefinitionLocation != nil {
 					nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
-					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, fileInfos, false).Anchor
+					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, fileInfos, false, s.patcherFunc).Anchor
 				}
 			}
 		}
@@ -940,7 +1066,7 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 	return s.total == s.max // return whether we've hit our cap
 }
 
-func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group, anchorText bool) bool {
+func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group) bool {
 	kind := edges.Canonical(grp.Kind)
 	as := grp.Anchor
 	fileInfos := makeFileInfoMap(grp.FileInfo)
@@ -960,14 +1086,16 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 	}
 	s.total += len(as)
 	for _, a := range as {
-		ra := a2a(a, fileInfos, anchorText)
+		ra := a2a(a, fileInfos, s.anchorText, s.patcherFunc)
 		ra.Anchor.Kind = kind
 		*to = append(*to, ra)
 	}
 	return s.total == s.max
 }
 
-func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
+type patcherFunc func(f *srvpb.FileInfo)
+
+func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorText bool, p patcherFunc) *xpb.CrossReferencesReply_RelatedAnchor {
 	var text string
 	if anchorText {
 		text = a.Text
@@ -976,9 +1104,12 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 	if err != nil {
 		log.Printf("Error parsing anchor ticket: %v", err)
 	}
-	revision := a.GetFileInfo().GetRevision()
-	if revision == "" {
-		revision = fileInfos[parent].GetRevision()
+	fileInfo := a.GetFileInfo()
+	if fileInfo == nil {
+		fileInfo = fileInfos[parent]
+	}
+	if p != nil {
+		p(fileInfo)
 	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:      a.Ticket,
@@ -989,11 +1120,11 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
 		BuildConfig: a.BuildConfiguration,
-		Revision:    revision,
+		Revision:    fileInfo.GetRevision(),
 	}}
 }
 
-func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor, fileInfos map[string]*srvpb.FileInfo) *xpb.DocumentationReply_Document {
+func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor, fileInfos map[string]*srvpb.FileInfo, p patcherFunc) *xpb.DocumentationReply_Document {
 	for _, node := range d.Node {
 		if _, ok := nodes[node.Ticket]; ok {
 			continue
@@ -1009,7 +1140,7 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 
 			n.Definition = def.Ticket
 			if _, ok := defs[def.Ticket]; !ok {
-				defs[def.Ticket] = a2a(def, fileInfos, false).Anchor
+				defs[def.Ticket] = a2a(def, fileInfos, false, p).Anchor
 			}
 		}
 
@@ -1076,6 +1207,8 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	}
 	fileInfos := make(map[string]*srvpb.FileInfo)
 
+	var patcherFunc patcherFunc
+
 	for _, ticket := range tickets {
 		d, err := t.lookupDocument(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -1084,7 +1217,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 			return nil, canonicalError(err, "documentation", ticket)
 		}
 
-		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos)
+		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos, patcherFunc)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
 				// TODO(schroederc): store children with root of documentation tree
@@ -1095,7 +1228,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 					return nil, canonicalError(err, "documentation child", ticket)
 				}
 
-				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos))
+				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos, patcherFunc))
 			}
 			tracePrintf(ctx, "Children: %d", len(d.ChildTicket))
 		}

@@ -237,7 +237,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 				TargetDefinition: e.TargetOverride.OverridingDefinition.Ticket,
 			})
 			if req.TargetDefinitions {
-				reply.DefinitionLocations[e.TargetOverride.OverridingDefinition.Ticket] = a2a(e.TargetOverride.OverridingDefinition, nil, false).Anchor
+				reply.DefinitionLocations[e.TargetOverride.OverridingDefinition.Ticket] = a2a(e.TargetOverride.OverridingDefinition, nil, false, nil).Anchor
 			}
 		case *xspb.FileDecorations_TargetNode_:
 			if len(patterns) == 0 {
@@ -273,7 +273,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 			if !defs.Contains(def.Location.Ticket) {
 				continue
 			}
-			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, nil, emitSnippets).Anchor
+			reply.DefinitionLocations[def.Location.Ticket] = a2a(def.Location, nil, emitSnippets, nil).Anchor
 		case *xspb.FileDecorations_Override_:
 			// TODO(schroederc): handle
 		case *xspb.FileDecorations_Diagnostic_:
@@ -410,7 +410,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					anchors = &set.Reference
 				}
 				if anchors != nil {
-					a := a2a(ref.Location, nil, emitSnippets).Anchor
+					a := a2a(ref.Location, nil, emitSnippets, nil).Anchor
 					a.Ticket = ""
 					ra := &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a}
 					*anchors = append(*anchors, ra)
@@ -450,7 +450,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 				if node := reply.Nodes[relatedNode]; node != nil {
 					loc := e.NodeDefinition.Location
 					node.Definition = loc.Ticket
-					a := a2a(loc, nil, emitSnippets).Anchor
+					a := a2a(loc, nil, emitSnippets, nil).Anchor
 					reply.DefinitionLocations[loc.Ticket] = a
 				}
 			case *xspb.CrossReferences_Caller_:
@@ -458,7 +458,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					continue
 				}
 				c := e.Caller
-				a := a2a(c.Location, nil, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets, nil).Anchor
 				a.Ticket = ""
 				callerTicket := kytheuri.ToString(c.Caller)
 				caller := &xpb.CrossReferencesReply_RelatedAnchor{
@@ -479,7 +479,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 					log.Printf("WARNING: missing Caller for callsite: %+v", c)
 					continue
 				}
-				a := a2a(c.Location, nil, emitSnippets).Anchor
+				a := a2a(c.Location, nil, emitSnippets, nil).Anchor
 				a.Ticket = ""
 				// TODO(schroederc): set anchor kind to differentiate kinds?
 				caller.Site = append(caller.Site, a)
