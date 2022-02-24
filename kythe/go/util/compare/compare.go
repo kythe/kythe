@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -298,18 +298,6 @@ func ProtoDiff(x, y interface{}, opts ...cmp.Option) string {
 
 func makeProtoOpts(opts []cmp.Option) []cmp.Option {
 	protoOpts := append([]cmp.Option{}, opts...)
-	protoOpts = append(protoOpts,
-		cmp.Comparer(proto.Equal),
-		ignoreProtoXXXFields,
-	)
+	protoOpts = append(protoOpts, protocmp.Transform())
 	return protoOpts
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

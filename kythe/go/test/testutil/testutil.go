@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/util/compare"
+
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
@@ -48,6 +50,7 @@ func DeepEqual(expected, got interface{}) error {
 			if proto.Equal(epb, gpb) {
 				return nil
 			}
+			return fmt.Errorf("(-expected; +found)\n%s", compare.ProtoDiff(expected, got))
 		}
 	}
 

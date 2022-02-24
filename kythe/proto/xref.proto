@@ -416,6 +416,13 @@ message CrossReferencesRequest {
   // nodes will be returned.
   repeated string build_config = 15;
 
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 17;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 18;
+
   reserved 4;
   reserved 100;
 }
@@ -583,4 +590,12 @@ message DocumentationReply {
 
   // A unique identifier for the underlying dataset serving this reply.
   string build_id = 4;
+}
+
+// A Workspace is a pointer to the root of a user's workspace.  This is
+// typically the root of a source repository.
+message Workspace {
+  // The root of a user workspace encoded as a uri.  The uri format is dependent
+  // on the capabilities of the server.
+  string uri = 1;
 }
