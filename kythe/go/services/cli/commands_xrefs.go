@@ -38,7 +38,7 @@ type xrefsCommand struct {
 	nodeFilters  flagutil.StringList
 	buildConfigs flagutil.StringSet
 
-	workspace string
+	workspaceURI string
 
 	pageToken string
 	pageSize  int
@@ -61,7 +61,7 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 	flag.StringVar(&c.refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
 	flag.StringVar(&c.callerKind, "callers", "direct", "Kind of callers to return (kinds: direct, overrides, or none)")
-	flag.StringVar(&c.workspace, "workspace", "", "Workspace URI to patch cross-references")
+	flag.StringVar(&c.workspaceURI, "workspace_uri", "", "Workspace URI to patch cross-references")
 	flag.BoolVar(&c.relatedNodes, "related_nodes", true, "Whether to request related nodes")
 	flag.Var(&c.nodeFilters, "filters", "CSV list of additional fact filters to use when requesting related nodes")
 	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
@@ -81,8 +81,8 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		AnchorText:      c.anchorText,
 		NodeDefinitions: c.nodeDefinitions,
 	}
-	if c.workspace != "" {
-		req.Workspace = &xpb.Workspace{Uri: c.workspace}
+	if c.workspaceURI != "" {
+		req.Workspace = &xpb.Workspace{Uri: c.workspaceURI}
 		req.PatchAgainstWorkspace = true
 	}
 	if c.relatedNodes {
