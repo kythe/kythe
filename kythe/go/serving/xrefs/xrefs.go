@@ -261,10 +261,14 @@ const (
 	maxPageSize     = 10000
 )
 
-func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *cpb.NodeInfo {
+type nodeConverter struct {
+	factPatterns []*regexp.Regexp
+}
+
+func (c *nodeConverter) ToInfo(n *srvpb.Node) *cpb.NodeInfo {
 	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
-		if xrefs.MatchesAny(f.Name, patterns) {
+		if xrefs.MatchesAny(f.Name, c.factPatterns) {
 			ni.Facts[f.Name] = f.Value
 		}
 	}
@@ -355,8 +359,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 	}
 
-	var patcherFunc patcherFunc
-
 	var patcher *span.Patcher
 	if len(req.DirtyBuffer) > 0 {
 		patcher, err = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
@@ -381,6 +383,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		patterns := xrefs.ConvertFilters(req.Filter)
 		buildConfigs := stringset.New(req.BuildConfig...)
 
+		ac := &anchorConverter{fileInfos: fileInfos}
+		nc := &nodeConverter{patterns}
+
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*cpb.NodeInfo, len(decor.Target))
 
@@ -388,7 +393,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		nodes := make(map[string]*cpb.NodeInfo, len(decor.Target))
 		if len(patterns) > 0 {
 			for _, n := range decor.Target {
-				if info := nodeToInfo(patterns, n); info != nil {
+				if info := nc.ToInfo(n); info != nil {
 					nodes[n.Ticket] = info
 				}
 			}
@@ -398,7 +403,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		// All known definition locations (Anchor.Ticket -> Anchor)
 		defs := make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 		for _, def := range decor.TargetDefinitions {
-			defs[def.Ticket] = a2a(def, fileInfos, false, patcherFunc).Anchor
+			defs[def.Ticket] = ac.Convert(def).Anchor
 		}
 		if req.TargetDefinitions {
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
@@ -595,9 +600,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	if req.NodeDefinitions {
 		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
 	}
+	stats.reply = reply
 
 	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
+	stats.nodeConverter = nodeConverter{patterns}
 
 	nextPageToken := &ipb.PageToken{
 		SubTokens: make(map[string]string),
@@ -669,7 +676,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			// If visiting a non-merge node and facts are requested, add them to the result.
 			if ticket == cr.SourceTicket && len(patterns) > 0 && cr.SourceNode != nil {
 				if _, ok := reply.Nodes[ticket]; !ok {
-					if info := nodeToInfo(patterns, cr.SourceNode); info != nil {
+					if info := stats.ToInfo(cr.SourceNode); info != nil {
 						reply.Nodes[ticket] = info
 					}
 				}
@@ -724,7 +731,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
 					reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
 					if wantMoreCrossRefs {
-						stats.addRelatedNodes(reply, crs, grp, patterns)
+						stats.addRelatedNodes(crs, grp)
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
@@ -779,7 +786,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						if err != nil {
 							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 						}
-						stats.addRelatedNodes(reply, crs, p.Group, patterns)
+						stats.addRelatedNodes(crs, p.Group)
 					}
 				}
 
@@ -975,7 +982,9 @@ type refStats struct {
 	//   total (count of refs so far read for current page)
 	skip, total, max int
 
+	reply *xpb.CrossReferencesReply
 	refOptions
+	nodeConverter
 }
 
 func (s *refStats) done() bool { return s.total == s.max }
@@ -990,7 +999,10 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 
 func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
-	fileInfos := makeFileInfoMap(grp.FileInfo)
+	converter := &anchorConverter{
+		fileInfos:   makeFileInfoMap(grp.FileInfo),
+		patcherFunc: s.patcherFunc,
+	}
 
 	if s.done() {
 		// We've already hit our cap; return true that we're done.
@@ -1011,24 +1023,27 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 	s.total += len(cs)
 	for _, c := range cs {
 		ra := &xpb.CrossReferencesReply_RelatedAnchor{
-			Anchor: a2a(c.Caller, fileInfos, false, s.patcherFunc).Anchor,
+			Anchor: converter.Convert(c.Caller).Anchor,
 			Ticket: c.SemanticCaller,
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
 		ra.MarkedSource = c.MarkedSource
 		for _, site := range c.Callsite {
-			ra.Site = append(ra.Site, a2a(site, fileInfos, false, s.patcherFunc).Anchor)
+			ra.Site = append(ra.Site, converter.Convert(site).Anchor)
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
 	return s.done() // return whether we've hit our cap
 }
 
-func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {
+func (s *refStats) addRelatedNodes(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	ns := grp.RelatedNode
-	nodes := reply.Nodes
-	defs := reply.DefinitionLocations
-	fileInfos := makeFileInfoMap(grp.FileInfo)
+	nodes := s.reply.Nodes
+	defs := s.reply.DefinitionLocations
+	ac := &anchorConverter{
+		fileInfos:   makeFileInfoMap(grp.FileInfo),
+		patcherFunc: s.patcherFunc,
+	}
 
 	if s.total == s.max {
 		// We've already hit our cap; return true that we're done.
@@ -1049,11 +1064,11 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 	s.total += len(ns)
 	for _, rn := range ns {
 		if _, ok := nodes[rn.Node.Ticket]; !ok {
-			if info := nodeToInfo(patterns, rn.Node); info != nil {
+			if info := s.ToInfo(rn.Node); info != nil {
 				nodes[rn.Node.Ticket] = info
 				if defs != nil && rn.Node.DefinitionLocation != nil {
 					nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
-					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, fileInfos, false, s.patcherFunc).Anchor
+					defs[rn.Node.DefinitionLocation.Ticket] = ac.Convert(rn.Node.DefinitionLocation).Anchor
 				}
 			}
 		}
@@ -1085,8 +1100,9 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 		as = as[:(s.max - s.total)]
 	}
 	s.total += len(as)
+	c := &anchorConverter{fileInfos: fileInfos, anchorText: s.anchorText, patcherFunc: s.patcherFunc}
 	for _, a := range as {
-		ra := a2a(a, fileInfos, s.anchorText, s.patcherFunc)
+		ra := c.Convert(a)
 		ra.Anchor.Kind = kind
 		*to = append(*to, ra)
 	}
@@ -1095,9 +1111,15 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 
 type patcherFunc func(f *srvpb.FileInfo)
 
-func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorText bool, p patcherFunc) *xpb.CrossReferencesReply_RelatedAnchor {
+type anchorConverter struct {
+	fileInfos   map[string]*srvpb.FileInfo
+	anchorText  bool
+	patcherFunc patcherFunc
+}
+
+func (c *anchorConverter) Convert(a *srvpb.ExpandedAnchor) *xpb.CrossReferencesReply_RelatedAnchor {
 	var text string
-	if anchorText {
+	if c.anchorText {
 		text = a.Text
 	}
 	parent, err := tickets.AnchorFile(a.Ticket)
@@ -1106,10 +1128,10 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 	}
 	fileInfo := a.GetFileInfo()
 	if fileInfo == nil {
-		fileInfo = fileInfos[parent]
+		fileInfo = c.fileInfos[parent]
 	}
-	if p != nil {
-		p(fileInfo)
+	if c.patcherFunc != nil {
+		c.patcherFunc(fileInfo)
 	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:      a.Ticket,
@@ -1124,13 +1146,21 @@ func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorTe
 	}}
 }
 
-func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor, fileInfos map[string]*srvpb.FileInfo, p patcherFunc) *xpb.DocumentationReply_Document {
+type documentConverter struct {
+	anchorConverter
+	nodeConverter
+
+	nodes map[string]*cpb.NodeInfo
+	defs  map[string]*xpb.Anchor
+}
+
+func (c *documentConverter) Convert(d *srvpb.Document) *xpb.DocumentationReply_Document {
 	for _, node := range d.Node {
-		if _, ok := nodes[node.Ticket]; ok {
+		if _, ok := c.nodes[node.Ticket]; ok {
 			continue
 		}
 
-		n := nodeToInfo(patterns, node)
+		n := c.ToInfo(node)
 		if def := node.DefinitionLocation; def != nil {
 			if n == nil {
 				// Add an empty NodeInfo to attach definition location even if no facts
@@ -1139,13 +1169,13 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 			}
 
 			n.Definition = def.Ticket
-			if _, ok := defs[def.Ticket]; !ok {
-				defs[def.Ticket] = a2a(def, fileInfos, false, p).Anchor
+			if _, ok := c.defs[def.Ticket]; !ok {
+				c.defs[def.Ticket] = c.anchorConverter.Convert(def).Anchor
 			}
 		}
 
 		if n != nil {
-			nodes[node.Ticket] = n
+			c.nodes[node.Ticket] = n
 		}
 	}
 
@@ -1207,7 +1237,12 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	}
 	fileInfos := make(map[string]*srvpb.FileInfo)
 
-	var patcherFunc patcherFunc
+	dc := &documentConverter{
+		anchorConverter: anchorConverter{fileInfos: fileInfos},
+		nodeConverter:   nodeConverter{patterns},
+		nodes:           reply.Nodes,
+		defs:            reply.DefinitionLocations,
+	}
 
 	for _, ticket := range tickets {
 		d, err := t.lookupDocument(ctx, ticket)
@@ -1217,7 +1252,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 			return nil, canonicalError(err, "documentation", ticket)
 		}
 
-		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos, patcherFunc)
+		doc := dc.Convert(d)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
 				// TODO(schroederc): store children with root of documentation tree
@@ -1228,7 +1263,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 					return nil, canonicalError(err, "documentation child", ticket)
 				}
 
-				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations, fileInfos, patcherFunc))
+				doc.Children = append(doc.Children, dc.Convert(cd))
 			}
 			tracePrintf(ctx, "Children: %d", len(d.ChildTicket))
 		}
