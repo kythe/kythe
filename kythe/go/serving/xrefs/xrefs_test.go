@@ -1285,6 +1285,175 @@ func TestCrossReferences(t *testing.T) {
 	}
 }
 
+type mockPatcher struct {
+	files []*srvpb.FileInfo
+}
+
+func (p *mockPatcher) Close() error { return nil }
+func (p *mockPatcher) AddFile(ctx context.Context, f *srvpb.FileInfo) error {
+	if f != nil {
+		p.files = append(p.files, f)
+	}
+	return nil
+}
+func (p *mockPatcher) patchSpan(span *cpb.Span) {
+	// Just move everything over by 1-ish
+	span.Start.ByteOffset++
+	span.Start.LineNumber++
+	span.Start.ColumnOffset++
+	span.End.ByteOffset++
+	span.End.LineNumber++
+	span.End.ColumnOffset++
+}
+func (p *mockPatcher) patchAnchor(a *xpb.Anchor) {
+	p.patchSpan(a.Span)
+	p.patchSpan(a.SnippetSpan)
+}
+
+func (p *mockPatcher) PatchAnchors(ctx context.Context, as []*xpb.Anchor) ([]*xpb.Anchor, error) {
+	for _, a := range as {
+		p.patchAnchor(a)
+	}
+	return as, nil
+}
+func (p *mockPatcher) PatchRelatedAnchors(ctx context.Context, as []*xpb.CrossReferencesReply_RelatedAnchor) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
+	for _, a := range as {
+		p.patchAnchor(a.Anchor)
+		for _, site := range a.Site {
+			p.patchAnchor(site)
+		}
+	}
+	return as, nil
+}
+
+func TestCrossReferencesPatching(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket: "kythe:?path=some/utf16/file#0-4",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe:?path=some/utf16/file",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{ByteOffset: 1, LineNumber: 2, ColumnOffset: 1},
+				End:   &cpb.Point{ByteOffset: 5, LineNumber: 2, ColumnOffset: 5},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   1,
+					LineNumber:   2,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   29,
+					LineNumber:   2,
+					ColumnOffset: 29,
+				},
+			},
+			Snippet: "これはいくつかのテキストです",
+		}}, {Anchor: &xpb.Anchor{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://c?path=/a/path",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   5,
+					ColumnOffset: 16,
+				},
+				End: &cpb.Point{
+					ByteOffset:   56,
+					LineNumber:   6,
+					ColumnOffset: 3,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   37,
+					LineNumber:   5,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   53,
+					LineNumber:   5,
+					ColumnOffset: 17,
+				},
+			},
+			Snippet: "some random text",
+		}}},
+
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+			Kind:        "/kythe/edge/defines/binding",
+			Parent:      "kythe://c?path=/a/path",
+			BuildConfig: "testConfig",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   3,
+					ColumnOffset: 11,
+				},
+				End: &cpb.Point{
+					ByteOffset:   34,
+					LineNumber:   4,
+					ColumnOffset: 6,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   18,
+					LineNumber:   3,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   3,
+					ColumnOffset: 11,
+				},
+			},
+			Snippet: "here and  ",
+		}}},
+	}
+	expectedInfos := []*srvpb.FileInfo{}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
+	}
+	sort.Sort(byOffset(xr.Reference))
+
+	if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
+	}
+	if err := testutil.DeepEqual(expectedInfos, patcher.files); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 	ticket := "kythe://someCorpus?lang=otpl#signature"
 
