@@ -123,6 +123,20 @@ func suffixSize(suffix string) (Size, error) {
 	}
 }
 
+// From highest to lowest excluding Byte.
+var allUnits = []Size{
+	Pebibyte,
+	Petabyte,
+	Tebibyte,
+	Terabyte,
+	Gibibyte,
+	Gigabyte,
+	Mebibyte,
+	Megabyte,
+	Kibibyte,
+	Kilobyte,
+}
+
 // Common decimal data sizes
 const (
 	Kilobyte Size = 1000 * Byte
@@ -141,6 +155,43 @@ const (
 	Tebibyte      = 1024 * Gibibyte
 	Pebibyte      = 1024 * Tebibyte
 )
+
+func unitSuffix(unit Size) string {
+	switch unit {
+	default:
+		return "B"
+	case Petabyte:
+		return "PB"
+	case Pebibyte:
+		return "PiB"
+	case Terabyte:
+		return "TB"
+	case Tebibyte:
+		return "TiB"
+	case Gigabyte:
+		return "GB"
+	case Gibibyte:
+		return "GiB"
+	case Megabyte:
+		return "MB"
+	case Mebibyte:
+		return "MiB"
+	case Kilobyte:
+		return "kB"
+	case Kibibyte:
+		return "KiB"
+	}
+}
+
+// Floor returns a Size nearest to a whole unit less than or equal to itself.
+func (s Size) Floor() Size {
+	for _, unit := range allUnits {
+		if s >= unit {
+			return (s / unit) * unit
+		}
+	}
+	return s
+}
 
 // String implements the Stringer interface.
 func (s Size) String() string {
