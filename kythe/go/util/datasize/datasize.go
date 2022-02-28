@@ -193,6 +193,16 @@ func (s Size) Floor() Size {
 	return s
 }
 
+// Round returns a Size nearest to a whole unit.
+func (s Size) Round() Size {
+	for _, unit := range allUnits {
+		if s >= unit {
+			return Size(math.Round(float64(s)/float64(unit))) * unit
+		}
+	}
+	return s
+}
+
 // String implements the Stringer interface.
 func (s Size) String() string {
 	switch {

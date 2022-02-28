@@ -164,3 +164,35 @@ func TestFloor(t *testing.T) {
 		}
 	}
 }
+
+func TestRound(t *testing.T) {
+	type test struct {
+		sz       Size
+		expected Size
+	}
+	tests := []test{
+		{0, 0},
+		{mustParse("1.02KiB"), Kibibyte},
+		{mustParse("1.9KiB"), 2 * Kibibyte},
+		{mustParse("1.45MiB"), Mebibyte},
+		{mustParse("4.32GiB"), 4 * Gibibyte},
+		{mustParse("4.72GiB"), 5 * Gibibyte},
+		{mustParse("2.62GiB"), 3 * Gibibyte},
+		{mustParse("1.4PiB"), Pebibyte},
+		{mustParse("1.6PiB"), 2 * Pebibyte},
+	}
+
+	for _, unit := range allUnits {
+		tests = append(tests, test{unit, unit})
+	}
+
+	for _, test := range tests {
+		found := test.sz.Round()
+		if found != test.expected {
+			t.Errorf("%d.Round(): expected: %s; found: %s", test.sz, test.expected, found)
+		}
+		if strings.Contains(found.String(), ".") {
+			t.Errorf("%d.Round() == %s: contains decimal", test.sz, found)
+		}
+	}
+}
