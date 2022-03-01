@@ -679,12 +679,14 @@ public class C extends J { }
 --------------------------------------------------------------------------------
 //- @A defines/binding ClassA
 class A { };
+
 //- @B defines/binding ClassB
-class B { };
+//- ClassB extends/public ClassA
+class B : public A { };
+
 //- @C defines/binding ClassC
-//- ClassC extends/public ClassA
-//- ClassC extends/private ClassB
-class C : public A { };
+//- ClassC extends/private ClassA
+class C : private A { };
 --------------------------------------------------------------------------------
 
 
