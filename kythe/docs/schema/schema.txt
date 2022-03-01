@@ -663,16 +663,16 @@ public class E {
 --------------------------------------------------------------------------------
 package pkg;
 //- @I defines/binding IntfI
-public interface I { }
+interface I { }
 
 //- @J defines/binding IntfJ
 //- IntfJ extends IntfI
-public interface J extends I { }
+interface J extends I { }
 
 //- @C defines/binding ClassC
 //- ClassC extends IntfJ
 //- !{ClassC extends IntfI}
-public class C extends J { }
+class C implements J { }
 --------------------------------------------------------------------------------
 
 [kythe,C++,"Classes extend classes."]
