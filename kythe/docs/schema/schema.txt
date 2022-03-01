@@ -631,7 +631,8 @@ extends
 ~~~~~~~
 
 Brief description::
-  A *extends* B if A is a direct nominal subtype of B.
+  A *extends* B if A explicitly derives from B. It neither implies nor excludes
+  any type relationship between A and B.
 Commonly arises from::
   inheritance
 Points from::
@@ -658,13 +659,34 @@ public class E {
 }
 --------------------------------------------------------------------------------
 
+[kythe,Java,"Classes and interfaces extend interfaces."]
+--------------------------------------------------------------------------------
+package pkg;
+//- @I defines/binding IntfI
+interface I { }
+
+//- @J defines/binding IntfJ
+//- IntfJ extends IntfI
+interface J extends I { }
+
+//- @C defines/binding ClassC
+//- ClassC extends IntfJ
+//- !{ClassC extends IntfI}
+class C implements J { }
+--------------------------------------------------------------------------------
+
 [kythe,C++,"Classes extend classes."]
 --------------------------------------------------------------------------------
 //- @A defines/binding ClassA
 class A { };
+
 //- @B defines/binding ClassB
 //- ClassB extends/public ClassA
 class B : public A { };
+
+//- @C defines/binding ClassC
+//- ClassC extends/private ClassA
+class C : private A { };
 --------------------------------------------------------------------------------
 
 
