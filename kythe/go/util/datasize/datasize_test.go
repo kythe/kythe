@@ -49,7 +49,7 @@ func TestParse(t *testing.T) {
 
 	for _, test := range tests {
 		found, err := Parse(test.str)
-		testutil.FatalOnErrT(t, "Unexpected error: %v", err)
+		testutil.Fatalf(t, "Unexpected error: %v", err)
 		if found != test.sz {
 			t.Errorf("Parse(%q): expected: %s; found: %s", test.str, test.sz, found)
 		}

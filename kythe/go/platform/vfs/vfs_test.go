@@ -51,11 +51,11 @@ func populateFiles(t *testing.T) (string, func()) {
 	root := filepath.Join(tempDir(), testDataDir)
 	for _, file := range files {
 		path := filepath.Join(root, filepath.FromSlash(file))
-		testutil.FatalOnErrT(t, "unable to create directory", os.MkdirAll(filepath.Dir(path), 0777))
-		testutil.FatalOnErrT(t, "unable to write file", ioutil.WriteFile(path, nil, 0777))
+		testutil.Fatalf(t, "unable to create directory", os.MkdirAll(filepath.Dir(path), 0777))
+		testutil.Fatalf(t, "unable to write file", ioutil.WriteFile(path, nil, 0777))
 	}
 	return root, func() {
-		testutil.FatalOnErrT(t, "failed to remove test data", os.RemoveAll(root))
+		testutil.Fatalf(t, "failed to remove test data", os.RemoveAll(root))
 	}
 }
 
@@ -67,10 +67,10 @@ func TestGlobWalker(t *testing.T) {
 	if len(byglob) == 0 {
 		t.Fatal("no files found")
 	}
-	testutil.FatalOnErrT(t, "unable to collect files from glob", err)
+	testutil.Fatalf(t, "unable to collect files from glob", err)
 	bylocal, err := collectFiles(LocalFS{}, root)
-	testutil.FatalOnErrT(t, "unable to collect local files", err)
-	testutil.FatalOnErrT(t, "local and glob walks differ", testutil.DeepEqual(bylocal, byglob))
+	testutil.Fatalf(t, "unable to collect local files", err)
+	testutil.Fatalf(t, "local and glob walks differ", testutil.DeepEqual(bylocal, byglob))
 }
 
 func collectFiles(walk Walker, root string) ([]walkResult, error) {
