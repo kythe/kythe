@@ -1232,11 +1232,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return node;
   }
 
-  // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge.
-  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
-    return emitSymUsage(ctx, sym, EdgeKind.REF);
-  }
-
   // Emits a node for the given sym, an anchor encompassing the name, and a REF edge
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name) {
     return emitNameUsage(ctx, sym, name, EdgeKind.REF);
