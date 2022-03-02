@@ -420,7 +420,6 @@ java_verifier_test(
     name = "diamond_operator_test",
     size = "small",
     srcs = ["DiamondOperations.java"],
-    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
     extractor_opts = [
         "-source",
         "9",
@@ -433,7 +432,6 @@ java_verifier_test(
     name = "local_inference_test",
     size = "small",
     srcs = ["LocalInference.java"],
-    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
     extractor_opts = [
         "-source",
         "11",
@@ -448,7 +446,6 @@ java_verifier_test(
     name = "private_interface_methods_test",
     size = "small",
     srcs = ["PrivateInterfaceMethods.java"],
-    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
     extractor_opts = [
         "-source",
         "9",
@@ -464,7 +461,6 @@ java_verifier_test(
         "Classes.java",
         "Definitions.java",
     ],
-    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
 )
 
 # Duplicate a few tests to extract/verifier native Bazel Java compilation targets
