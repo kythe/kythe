@@ -77,6 +77,7 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
+  @SuppressWarnings({"IterablePathParameter"}) // required by interface.
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> paths) {
     return fileManager.getJavaFileObjectsFromPaths(paths);
