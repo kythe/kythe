@@ -45,7 +45,6 @@ java_library(
     name = "system_exploder",
     srcs = ["SystemExploder.java"],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:forwarding_standard_java_file_manager",
         "//third_party/guava",
     ],
 )

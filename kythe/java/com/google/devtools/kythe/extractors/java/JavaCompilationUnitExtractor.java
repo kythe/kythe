@@ -121,7 +121,7 @@ public class JavaCompilationUnitExtractor {
     return String.format("!%s_JAR!", location);
   }
 
-  private static final ClassLoader moduleClassLoader = findModuleClassLoader().orElse(null);
+  private static final ClassLoader moduleClassLoader = findModuleClassLoader();
 
   private static final String JAR_SCHEME = "jar";
   private final String jdkJar;
@@ -1034,21 +1034,11 @@ public class JavaCompilationUnitExtractor {
                     "Could not get system Java compiler; are you missing the JDK?"));
   }
 
-  private static Optional<ClassLoader> findModuleClassLoader() {
-    // TODO(shahms): Use the proper methods when we can rely on JDK 9.
-    try {
-      Object thisModule =
-          Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
-      thisModule
-          .getClass()
-          .getMethod("addUses", Class.class)
-          .invoke(thisModule, JavaCompiler.class);
-      return Optional.ofNullable(
-          (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule));
-    } catch (ReflectiveOperationException e) {
-      logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
-    }
-    return Optional.empty();
+  private static ClassLoader findModuleClassLoader() {
+    return JavaCompilationUnitExtractor.class
+        .getModule()
+        .addUses(JavaCompiler.class)
+        .getClassLoader();
   }
 
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */

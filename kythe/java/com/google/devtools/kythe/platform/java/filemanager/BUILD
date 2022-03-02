@@ -8,10 +8,6 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
     ],
-    deps = [
-        "//kythe/java/com/google/devtools/kythe/common:flogger",
-        "//third_party/guava",
-    ],
 )
 
 java_library(
