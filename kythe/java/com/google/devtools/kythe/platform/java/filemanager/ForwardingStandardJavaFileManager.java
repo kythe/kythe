@@ -50,7 +50,6 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"unchecked"}) // safe by specification.
   public <S> ServiceLoader<S> getServiceLoader(Location location, Class<S> service)
       throws IOException {
     return fileManager.getServiceLoader(location, service);
@@ -62,7 +61,6 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"unchecked"}) // safe by specification.
   public Iterable<Set<Location>> listLocationsForModules(Location location) throws IOException {
     return fileManager.listLocationsForModules(location);
   }
@@ -79,7 +77,6 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "IterablePathParameter"}) // safe by specification.
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> paths) {
     return fileManager.getJavaFileObjectsFromPaths(paths);
@@ -101,7 +98,6 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"unchecked"}) // safe by specification.
   public Iterable<? extends JavaFileObject> getJavaFileObjects(Path... paths) {
     return fileManager.getJavaFileObjects(paths);
   }
@@ -124,7 +120,6 @@ public class ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"unchecked"}) // Safe by specification.
   public Iterable<? extends Path> getLocationAsPaths(Location location) {
     return fileManager.getLocationAsPaths(location);
   }
