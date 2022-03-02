@@ -344,13 +344,13 @@ func TestEdgeSetBuilder(t *testing.T) {
 	var edgeSets, edgePages int
 	for _, test := range tests {
 		if test.src != nil {
-			testutil.FatalOnErrT(t, "Failure to StartEdgeSet: %v",
+			testutil.Fatalf(t, "Failure to StartEdgeSet: %v",
 				tESB.StartEdgeSet(ctx, test.src))
 		} else if test.grp != nil {
-			testutil.FatalOnErrT(t, "Failure to AddGroup: %v",
+			testutil.Fatalf(t, "Failure to AddGroup: %v",
 				tESB.AddGroup(ctx, test.grp))
 		} else {
-			testutil.FatalOnErrT(t, "Failure to Flush: %v",
+			testutil.Fatalf(t, "Failure to Flush: %v",
 				tESB.Flush(ctx))
 		}
 
