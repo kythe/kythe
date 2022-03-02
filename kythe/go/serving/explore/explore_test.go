@@ -147,7 +147,7 @@ func TestChildren_noData(t *testing.T) {
 	reply, err := svc.Children(ctx, &epb.ChildrenRequest{
 		Tickets: []string{dne},
 	})
-	testutil.FatalOnErrT(t, "Children error: %v", err)
+	testutil.Fatalf(t, "Children error: %v", err)
 	if len(reply.InputToChildren) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
@@ -160,7 +160,7 @@ func TestChildren(t *testing.T) {
 	}
 
 	reply, err := svc.Children(ctx, request)
-	testutil.FatalOnErrT(t, "Children error: %v", err)
+	testutil.Fatalf(t, "Children error: %v", err)
 
 	expectedInputToChildren := map[string]*epb.Tickets{
 		p1: {
@@ -198,7 +198,7 @@ func TestParents_noData(t *testing.T) {
 	reply, err := svc.Parents(ctx, &epb.ParentsRequest{
 		Tickets: []string{dne},
 	})
-	testutil.FatalOnErrT(t, "Parents error: %v", err)
+	testutil.Fatalf(t, "Parents error: %v", err)
 	if len(reply.InputToParents) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
@@ -211,7 +211,7 @@ func TestParents(t *testing.T) {
 	}
 
 	reply, err := svc.Parents(ctx, request)
-	testutil.FatalOnErrT(t, "Parents error: %v", err)
+	testutil.Fatalf(t, "Parents error: %v", err)
 
 	expectedInputToParents := map[string]*epb.Tickets{
 		p1c1: {
@@ -250,7 +250,7 @@ func TestCallers_noData(t *testing.T) {
 	reply, err := svc.Callers(ctx, &epb.CallersRequest{
 		Tickets: []string{dne},
 	})
-	testutil.FatalOnErrT(t, "CallersRequest error: %v", err)
+	testutil.Fatalf(t, "CallersRequest error: %v", err)
 	if len(reply.Graph.Nodes) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
@@ -263,7 +263,7 @@ func TestCallers(t *testing.T) {
 	}
 
 	reply, err := svc.Callers(ctx, request)
-	testutil.FatalOnErrT(t, "Callers error: %v", err)
+	testutil.Fatalf(t, "Callers error: %v", err)
 
 	expectedGraph := &epb.Graph{
 		Nodes: map[string]*epb.GraphNode{
@@ -289,7 +289,7 @@ func TestCallers_multipleInputs(t *testing.T) {
 	}
 
 	reply, err := svc.Callers(ctx, request)
-	testutil.FatalOnErrT(t, "Callers error: %v", err)
+	testutil.Fatalf(t, "Callers error: %v", err)
 
 	// The edge f2->fr is not in the reply because we're asking for neither
 	// the callers of fr nor the callees of f2.
@@ -338,7 +338,7 @@ func TestCallees_noData(t *testing.T) {
 	reply, err := svc.Callees(ctx, &epb.CalleesRequest{
 		Tickets: []string{dne},
 	})
-	testutil.FatalOnErrT(t, "CalleesRequest error: %v", err)
+	testutil.Fatalf(t, "CalleesRequest error: %v", err)
 	if len(reply.Graph.Nodes) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
@@ -351,7 +351,7 @@ func TestCallees(t *testing.T) {
 	}
 
 	reply, err := svc.Callees(ctx, request)
-	testutil.FatalOnErrT(t, "Callees error: %v", err)
+	testutil.Fatalf(t, "Callees error: %v", err)
 
 	expectedGraph := &epb.Graph{
 		Nodes: map[string]*epb.GraphNode{
@@ -380,7 +380,7 @@ func TestCallees_multipleInputs(t *testing.T) {
 	}
 
 	reply, err := svc.Callees(ctx, request)
-	testutil.FatalOnErrT(t, "Callees error: %v", err)
+	testutil.Fatalf(t, "Callees error: %v", err)
 
 	// The following edges are present in the stored callgraph
 	// but intentionally not present in the response:

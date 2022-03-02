@@ -662,7 +662,7 @@ func TestDecorationsRefs(t *testing.T) {
 		References: true,
 		Filter:     []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
@@ -694,7 +694,7 @@ func TestDecorationsRefScopes(t *testing.T) {
 		References:     true,
 		SemanticScopes: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration, d.FileInfo)
 	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
@@ -713,7 +713,7 @@ func TestDecorationsExtendsOverrides(t *testing.T) {
 		SemanticScopes:    true,
 		TargetDefinitions: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expectedOverrides := map[string]*xpb.DecorationsReply_Overrides{
 		"kythe://c?lang=otpl?path=/a/path#map": &xpb.DecorationsReply_Overrides{
@@ -777,7 +777,7 @@ func TestDecorationsBuildConfig(t *testing.T) {
 			ExtendsOverrides:  true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		if err := testutil.DeepEqual([]*xpb.DecorationsReply_Reference{}, reply.Reference); err != nil {
 			t.Fatal(err)
@@ -792,7 +792,7 @@ func TestDecorationsBuildConfig(t *testing.T) {
 			ExtendsOverrides:  true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1], d.FileInfo)
 		if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
@@ -849,7 +849,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		References:  true,
 		Filter:      []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
@@ -933,7 +933,7 @@ func TestDecorationsEmpty(t *testing.T) {
 		},
 		References: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.Reference) > 0 {
 		t.Fatalf("Unexpected DecorationsReply: {%v}", reply)
@@ -948,7 +948,7 @@ func TestDecorationsSourceText(t *testing.T) {
 		Location:   &xpb.Location{Ticket: expected.File.Ticket},
 		SourceText: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if !bytes.Equal(reply.SourceText, expected.File.Text) {
 		t.Errorf("Expected source text %q; found %q", string(expected.File.Text), string(reply.SourceText))
@@ -966,7 +966,7 @@ func TestDecorationsGeneratedBy(t *testing.T) {
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := &xpb.DecorationsReply{
 		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
@@ -990,7 +990,7 @@ func TestDecorationsRevisions(t *testing.T) {
 		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1014,7 +1014,7 @@ func TestDecorationsRevisions(t *testing.T) {
 			Location:   &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
 			References: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1071,7 +1071,7 @@ func TestDecorationsRevisions(t *testing.T) {
 			References:        true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1143,7 +1143,7 @@ func TestDecorationsDiagnostics(t *testing.T) {
 		Location:    &xpb.Location{Ticket: d.File.Ticket},
 		Diagnostics: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := tbl.Decorations[1].Diagnostic
 	if err := testutil.DeepEqual(expected, reply.Diagnostic); err != nil {
@@ -1158,7 +1158,7 @@ func TestCrossReferencesNone(t *testing.T) {
 		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	if len(reply.CrossReferences) > 0 || len(reply.Nodes) > 0 {
 		t.Fatalf("Expected empty CrossReferencesReply; found %v", reply)
@@ -1175,7 +1175,7 @@ func TestCrossReferences(t *testing.T) {
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 		Snippets:       xpb.SnippetsKind_DEFAULT,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1343,7 +1343,7 @@ func TestCrossReferencesPatching(t *testing.T) {
 		Workspace:             &xpb.Workspace{Uri: "test:"},
 		PatchAgainstWorkspace: true,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1465,7 +1465,7 @@ func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 		Snippets:       xpb.SnippetsKind_DEFAULT,
 		BuildConfig:    []string{"testConfig"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1529,7 +1529,7 @@ func TestCrossReferencesRelatedNodes(t *testing.T) {
 		Ticket: []string{ticket},
 		Filter: []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1584,7 +1584,7 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 		Ticket: []string{ticket},
 		Filter: []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1633,7 +1633,7 @@ func TestCrossReferencesMerge(t *testing.T) {
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
 		Filter:     []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1701,7 +1701,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1741,7 +1741,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1810,7 +1810,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1879,7 +1879,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1931,7 +1931,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -2009,7 +2009,7 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -2054,7 +2054,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -2122,7 +2122,7 @@ func TestCrossReferencesRevisions(t *testing.T) {
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 		Snippets:       xpb.SnippetsKind_NONE,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply{
 		Total: &xpb.CrossReferencesReply_Total{
@@ -2365,16 +2365,16 @@ type testTable struct {
 func (tbl *testTable) Construct(t *testing.T) *Table {
 	p := make(testProtoTable)
 	for _, d := range tbl.Decorations {
-		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
+		testutil.Fatalf(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
 	}
 	for _, cr := range tbl.RefSets {
-		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesKey(mustFix(t, cr.SourceTicket)), cr))
+		testutil.Fatalf(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesKey(mustFix(t, cr.SourceTicket)), cr))
 	}
 	for _, crp := range tbl.RefPages {
-		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
+		testutil.Fatalf(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
 	}
 	for _, doc := range tbl.Documents {
-		testutil.FatalOnErrT(t, "Error writing documents: %v", p.Put(ctx, DocumentationKey(doc.Ticket), doc))
+		testutil.Fatalf(t, "Error writing documents: %v", p.Put(ctx, DocumentationKey(doc.Ticket), doc))
 	}
 	return NewCombinedTable(p)
 }

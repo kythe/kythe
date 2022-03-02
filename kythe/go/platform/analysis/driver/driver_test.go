@@ -144,7 +144,7 @@ func TestDriverEmpty(t *testing.T) {
 		Analyzer:    m,
 		WriteOutput: m.out(),
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
+	testutil.Fatalf(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != 0 {
 		t.Fatalf("Unexpected AnalysisRequests: %v", m.Requests)
 	}
@@ -179,7 +179,7 @@ func TestDriver(t *testing.T) {
 			},
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
+	testutil.Fatalf(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -230,7 +230,7 @@ func TestDriverErrorHandler(t *testing.T) {
 			},
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
+	testutil.Fatalf(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -269,7 +269,7 @@ func TestDriverSetup(t *testing.T) {
 			},
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
+	testutil.Fatalf(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -295,7 +295,7 @@ func TestDriverTeardown(t *testing.T) {
 			},
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
+	testutil.Fatalf(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}

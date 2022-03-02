@@ -205,27 +205,19 @@ func caller(up int) (file string, line int) {
 	return filepath.Base(file), line
 }
 
-// FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
-func FatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
+// Errorf is equivalent to t.Errorf(msg, err, args...) if err != nil.
+func Errorf(t testing.TB, msg string, err error, args ...interface{}) {
 	if err != nil {
-		file, line := caller(0)
-		b.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
+		t.Helper()
+		t.Errorf(msg, append([]interface{}{err}, args...)...)
 	}
 }
 
-// FatalOnErrT calls t.Fatalf(msg, err, args...) if err != nil
-func FatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
+// Fatalf is equivalent to t.Fatalf(msg, err, args...) if err != nil.
+func Fatalf(t testing.TB, msg string, err error, args ...interface{}) {
 	if err != nil {
-		file, line := caller(0)
-		t.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
-	}
-}
-
-// Errorf calls t.Errorf(msg, err, args...) if err != nil
-func Errorf(t *testing.T, msg string, err error, args ...interface{}) {
-	if err != nil {
-		file, line := caller(0)
-		t.Errorf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
+		t.Helper()
+		t.Fatalf(msg, append([]interface{}{err}, args...)...)
 	}
 }
 
