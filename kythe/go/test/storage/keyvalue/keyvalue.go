@@ -53,23 +53,23 @@ var ctx = context.Background()
 // The number of updates per write is configured with batchSize.
 func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 	db, destroy, err := create()
-	testutil.FatalOnErr(b, "CreateFunc error: %v", err)
+	testutil.Fatalf(b, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErr(b, "db close error: %v", db.Close(ctx))
-		testutil.FatalOnErr(b, "DestroyFunc error: %v", destroy())
+		testutil.Fatalf(b, "db close error: %v", db.Close(ctx))
+		testutil.Fatalf(b, "DestroyFunc error: %v", destroy())
 	}()
 
 	keyBuf := make([]byte, keySize)
 	valBuf := make([]byte, valSize)
 	for i := 0; i < b.N; i++ {
 		wr, err := db.Writer(ctx)
-		testutil.FatalOnErr(b, "writer error: %v", err)
+		testutil.Fatalf(b, "writer error: %v", err)
 		for j := 0; j < batchSize; j++ {
 			testutil.RandBytes(keyBuf)
 			testutil.RandBytes(valBuf)
-			testutil.FatalOnErr(b, "write error: %v", wr.Write(keyBuf, valBuf))
+			testutil.Fatalf(b, "write error: %v", wr.Write(keyBuf, valBuf))
 		}
-		testutil.FatalOnErr(b, "writer close error: %v", wr.Close())
+		testutil.Fatalf(b, "writer close error: %v", wr.Close())
 	}
 }
 
@@ -78,10 +78,10 @@ func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 // batchSize.
 func BatchWriteParallelBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 	db, destroy, err := create()
-	testutil.FatalOnErr(b, "CreateFunc error: %v", err)
+	testutil.Fatalf(b, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErr(b, "db close error: %v", db.Close(ctx))
-		testutil.FatalOnErr(b, "DestroyFunc error: %v", destroy())
+		testutil.Fatalf(b, "db close error: %v", db.Close(ctx))
+		testutil.Fatalf(b, "DestroyFunc error: %v", destroy())
 	}()
 
 	b.RunParallel(func(pb *testing.PB) {
@@ -89,13 +89,13 @@ func BatchWriteParallelBenchmark(b *testing.B, create CreateFunc, batchSize int)
 		valBuf := make([]byte, valSize)
 		for pb.Next() {
 			wr, err := db.Writer(ctx)
-			testutil.FatalOnErr(b, "writer error: %v", err)
+			testutil.Fatalf(b, "writer error: %v", err)
 			for j := 0; j < batchSize; j++ {
 				testutil.RandBytes(keyBuf)
 				testutil.RandBytes(valBuf)
-				testutil.FatalOnErr(b, "write error: %v", wr.Write(keyBuf, valBuf))
+				testutil.Fatalf(b, "write error: %v", wr.Write(keyBuf, valBuf))
 			}
-			testutil.FatalOnErr(b, "writer close error: %v", wr.Close())
+			testutil.Fatalf(b, "writer close error: %v", wr.Close())
 		}
 	})
 }

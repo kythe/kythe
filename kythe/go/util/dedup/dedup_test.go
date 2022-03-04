@@ -33,7 +33,7 @@ func TestNewErrors(t *testing.T) {
 
 func TestIsUnique(t *testing.T) {
 	d, err := New(HashSize * 2)
-	testutil.FatalOnErrT(t, "Error creating Deduper: %v", err)
+	testutil.Fatalf(t, "Error creating Deduper: %v", err)
 
 	tests := []struct {
 		val  string

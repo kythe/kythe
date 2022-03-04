@@ -271,7 +271,7 @@ func TestNodes(t *testing.T) {
 		reply, err := st.Nodes(ctx, &gpb.NodesRequest{
 			Ticket: []string{node.Ticket},
 		})
-		testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
+		testutil.Fatalf(t, "NodesRequest error: %v", err)
 
 		if len(reply.Nodes) != 1 {
 			t.Fatalf("Expected 1 node for %q; found %d: {%v}", node.Ticket, len(reply.Nodes), reply)
@@ -287,7 +287,7 @@ func TestNodes(t *testing.T) {
 		expected[n.Ticket] = nodeInfo(n)
 	}
 	reply, err := st.Nodes(ctx, &gpb.NodesRequest{Ticket: tickets})
-	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
+	testutil.Fatalf(t, "NodesRequest error: %v", err)
 
 	if err := testutil.DeepEqual(expected, reply.Nodes); err != nil {
 		t.Fatal(err)
@@ -299,7 +299,7 @@ func TestNodesMissing(t *testing.T) {
 	reply, err := st.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: []string{"kythe:#someMissingTicket"},
 	})
-	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
+	testutil.Fatalf(t, "NodesRequest error: %v", err)
 
 	if len(reply.Nodes) > 0 {
 		t.Fatalf("Received unexpected reply for missing node: {%v}", reply)
@@ -328,7 +328,7 @@ func TestEdgesSinglePage(t *testing.T) {
 			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
-		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
+		testutil.Fatalf(t, "EdgesRequest error: %v", err)
 
 		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
@@ -371,7 +371,7 @@ func TestEdgesLastPage(t *testing.T) {
 			Ticket: []string{ticket},
 			Kind:   kinds,
 		})
-		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
+		testutil.Fatalf(t, "EdgesRequest error: %v", err)
 
 		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
@@ -410,7 +410,7 @@ func TestEdgesMultiPage(t *testing.T) {
 			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
-		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
+		testutil.Fatalf(t, "EdgesRequest error: %v", err)
 
 		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
@@ -442,7 +442,7 @@ func TestEdgesMissing(t *testing.T) {
 	reply, err := st.Edges(ctx, &gpb.EdgesRequest{
 		Ticket: []string{"kythe:#someMissingTicket"},
 	})
-	testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
+	testutil.Fatalf(t, "EdgesRequest error: %v", err)
 
 	if len(reply.EdgeSets) > 0 || len(reply.Nodes) > 0 || reply.NextPageToken != "" {
 		t.Fatalf("Received unexpected reply for missing edges: {%v}", reply)
@@ -507,17 +507,17 @@ func (tbl *testTable) Construct(t *testing.T) *Table {
 	}
 	for _, es := range tbl.EdgeSets {
 		tickets.Discard(es.Source.Ticket)
-		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
+		testutil.Fatalf(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
 	}
 	// Fill in EdgeSets for zero-degree nodes
 	for ticket := range tickets {
 		es := &srvpb.PagedEdgeSet{
 			Source: getNode(ticket),
 		}
-		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
+		testutil.Fatalf(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
 	}
 	for _, ep := range tbl.EdgePages {
-		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, EdgePageKey(ep.PageKey), ep))
+		testutil.Fatalf(t, "Error writing edge page: %v", p.Put(ctx, EdgePageKey(ep.PageKey), ep))
 	}
 	return NewCombinedTable(p)
 }
