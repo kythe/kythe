@@ -1,4 +1,4 @@
-"""Rule for generating compile_commands.json.in with appropriate inlcude directories."""
+"""Rule for generating compile_commands.json.in with appropriate include directories."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
