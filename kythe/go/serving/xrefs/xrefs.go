@@ -874,6 +874,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	}
 
 	if patcher != nil {
+		tracePrintf(ctx, "Patching anchors")
 		// Patch each set of anchors in parallel.  Files were added as they were
 		// seen when populating the xref sets.
 		g, gCtx := errgroup.WithContext(ctx)
@@ -890,6 +891,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			for _, def := range defs {
 				reply.DefinitionLocations[def.GetTicket()] = def
 			}
+			tracePrintf(ctx, "Patched DefinitionLocations: %d", len(defs))
 			return nil
 		})
 		for _, set := range reply.GetCrossReferences() {
@@ -899,6 +901,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					return err
 				}
 				set.Definition = as
+				tracePrintf(ctx, "Patched Definitions: %d", len(as))
 				return nil
 			})
 
@@ -908,6 +911,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					return err
 				}
 				set.Declaration = as
+				tracePrintf(ctx, "Patched Declarations: %d", len(as))
 				return nil
 			})
 
@@ -917,6 +921,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					return err
 				}
 				set.Reference = as
+				tracePrintf(ctx, "Patched References: %d", len(as))
 				return nil
 			})
 
@@ -926,6 +931,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					return err
 				}
 				set.Caller = as
+				tracePrintf(ctx, "Patched Callers: %d", len(as))
 				return nil
 			})
 		}
