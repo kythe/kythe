@@ -1297,6 +1297,9 @@ func (p *mockPatcher) AddFile(ctx context.Context, f *srvpb.FileInfo) error {
 	return nil
 }
 func (p *mockPatcher) patchSpan(span *cpb.Span) {
+	if span == nil {
+		return
+	}
 	// Just move everything over by 1-ish
 	span.Start.ByteOffset++
 	span.Start.LineNumber++
@@ -1324,6 +1327,85 @@ func (p *mockPatcher) PatchRelatedAnchors(ctx context.Context, as []*xpb.CrossRe
 		}
 	}
 	return as, nil
+}
+
+func TestDecorationsPatching(t *testing.T) {
+	st := tbl.Construct(t)
+
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:          &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		References:        true,
+		TargetDefinitions: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
+
+	expected := &xpb.DecorationsReply{
+		Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		Revision: "overallFileRev",
+		GeneratedByFile: []*xpb.File{{
+			CorpusPath: &cpb.CorpusPath{
+				Corpus: "corpus",
+				Path:   "some/proto.proto",
+			},
+			Revision: "generatedRev",
+		}},
+		Reference: []*xpb.DecorationsReply_Reference{{
+			TargetTicket:   "kythe://corpus?path=another/file",
+			Kind:           "/kythe/edge/includes/ref",
+			TargetRevision: "anotherFileRev",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   0,
+					LineNumber:   1,
+					ColumnOffset: 0,
+				},
+				End: &cpb.Point{
+					ByteOffset:   4,
+					LineNumber:   1,
+					ColumnOffset: 4,
+				},
+			},
+		}, {
+			TargetTicket:     "kythe://corpus?path=def/file#node",
+			TargetDefinition: "kythe://corpus?path=def/file#anchor",
+			Kind:             "/kythe/edge/ref",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		}},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe://corpus?path=def/file#anchor": &xpb.Anchor{
+				Ticket:   "kythe://corpus?path=def/file#anchor",
+				Parent:   "kythe://corpus?path=def/file",
+				Revision: "defFileRev",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 1, LineNumber: 2, ColumnOffset: 1},
+					End:   &cpb.Point{ByteOffset: 5, LineNumber: 2, ColumnOffset: 5},
+				},
+			},
+		},
+	}
+
+	if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
+	}
 }
 
 func TestCrossReferencesPatching(t *testing.T) {

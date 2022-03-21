@@ -291,6 +291,14 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, status.Errorf(codes.InvalidArgument, "invalid ticket %q: %v", req.GetLocation().Ticket, err)
 	}
 
+	var multiPatcher MultiFilePatcher
+	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
+		multiPatcher, err = t.MakePatcher(ctx, req.GetWorkspace())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		}
+	}
+
 	decor, err := t.fileDecorations(ctx, ticket)
 	if err == table.ErrNoSuchKey {
 		return nil, xrefs.ErrDecorationsNotFound
@@ -361,6 +369,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	var patcher *span.Patcher
 	if len(req.DirtyBuffer) > 0 {
+		if multiPatcher != nil {
+			return nil, status.Errorf(codes.Unimplemented, "cannot patch decorations against Workspace with a dirty_buffer")
+		}
 		patcher, err = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "error patching decorations for %s: %v", req.Location.Ticket, err)
@@ -403,7 +414,20 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		// All known definition locations (Anchor.Ticket -> Anchor)
 		defs := make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 		for _, def := range decor.TargetDefinitions {
-			defs[def.Ticket] = ac.Convert(def).Anchor
+			a := ac.Convert(def).Anchor
+			defs[def.Ticket] = a
+			if multiPatcher != nil {
+				fileInfo := def.GetFileInfo()
+				if fileInfo == nil {
+					fileInfo = fileInfos[a.GetParent()]
+				}
+				if fileInfo != nil {
+					if err := multiPatcher.AddFile(ctx, fileInfo); err != nil {
+						// Attempt to continue with the request, just log the error.
+						log.Printf("ERROR: adding file: %v", err)
+					}
+				}
+			}
 		}
 		if req.TargetDefinitions {
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
@@ -521,7 +545,41 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 	}
 
+	if multiPatcher != nil {
+		defs, err := patchDefLocations(ctx, multiPatcher, reply.GetDefinitionLocations())
+		if err != nil {
+			log.Printf("ERROR: patching definition locations: %v", err)
+		} else {
+			reply.DefinitionLocations = defs
+		}
+
+		if err := multiPatcher.Close(); err != nil {
+			// No need to fail the request; just log the error.
+			log.Printf("ERROR: closing patcher: %v", err)
+		}
+	}
+
 	return reply, nil
+}
+
+func patchDefLocations(ctx context.Context, patcher MultiFilePatcher, defLocs map[string]*xpb.Anchor) (map[string]*xpb.Anchor, error) {
+	if len(defLocs) == 0 {
+		return nil, nil
+	}
+	defs := make([]*xpb.Anchor, 0, len(defLocs))
+	for _, def := range defLocs {
+		defs = append(defs, def)
+	}
+	defs, err := patcher.PatchAnchors(ctx, defs)
+	if err != nil {
+		return defLocs, err
+	}
+	res := make(map[string]*xpb.Anchor, len(defs))
+	for _, def := range defs {
+		res[def.GetTicket()] = def
+	}
+	tracePrintf(ctx, "Patched DefinitionLocations: %d", len(defs))
+	return res, nil
 }
 
 func makeFileInfoMap(infos []*srvpb.FileInfo) map[string]*srvpb.FileInfo {
@@ -879,19 +937,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		// seen when populating the xref sets.
 		g, gCtx := errgroup.WithContext(ctx)
 		g.Go(func() error {
-			defs := make([]*xpb.Anchor, 0, len(reply.GetDefinitionLocations()))
-			for _, def := range reply.GetDefinitionLocations() {
-				defs = append(defs, def)
-			}
-			defs, err := patcher.PatchAnchors(gCtx, defs)
+			defs, err := patchDefLocations(gCtx, patcher, reply.GetDefinitionLocations())
 			if err != nil {
 				return err
 			}
-			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
-			for _, def := range defs {
-				reply.DefinitionLocations[def.GetTicket()] = def
-			}
-			tracePrintf(ctx, "Patched DefinitionLocations: %d", len(defs))
+			reply.DefinitionLocations = defs
 			return nil
 		})
 		for _, set := range reply.GetCrossReferences() {
