@@ -163,6 +163,13 @@ message DecorationsRequest {
 
   // Whether to return known semantic scopes per Reference.
   bool semantic_scopes = 12;
+
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 13;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 14;
 }
 
 // File represents a whole file
