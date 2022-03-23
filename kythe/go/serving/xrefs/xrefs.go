@@ -609,6 +609,19 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		return nil, err
 	}
 
+	filter, err := compileCorpusPathFilters(req.GetCorpusPathFilters())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid corpus_path_filters %s: %v", strings.ReplaceAll(req.GetCorpusPathFilters().String(), "\n", " "), err)
+	}
+
+	getFilteredPage := func(ctx context.Context, pageKey string) (*srvpb.PagedCrossReferences_Page, int, error) {
+		p, err := t.crossReferencesPage(ctx, pageKey)
+		if err != nil {
+			return nil, 0, err
+		}
+		return p, filter.FilterGroup(p.GetGroup()), nil
+	}
+
 	stats := refStats{
 		max: int(req.PageSize),
 
@@ -762,6 +775,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				continue
 			}
 
+			filter.FilterGroup(grp)
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(len(grp.Anchor))
@@ -810,28 +824,31 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
+					reply.Total.Definitions -= int64(filtered) // update counts to reflect filtering
 					stats.addAnchors(&crs.Definition, p.Group)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
+					reply.Total.Declarations -= int64(filtered) // update counts to reflect filtering
 					stats.addAnchors(&crs.Declaration, p.Group)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
 				reply.Total.References += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
+					reply.Total.References -= int64(filtered) // update counts to reflect filtering
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
 			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
@@ -840,10 +857,12 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
 					reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
 					if wantMoreCrossRefs && !stats.skipPage(idx) {
-						p, err = t.crossReferencesPage(ctx, idx.PageKey)
+						var filtered int
+						p, filtered, err = getFilteredPage(ctx, idx.PageKey)
 						if err != nil {
 							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 						}
+						reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
 						stats.addRelatedNodes(crs, p.Group)
 					}
 				}
@@ -865,10 +884,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
 				reply.Total.Callers += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
+					reply.Total.Callers -= int64(filtered) // update counts to reflect filtering
 					stats.addCallers(crs, p.Group)
 				}
 			}

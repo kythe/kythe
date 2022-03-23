@@ -56,6 +56,18 @@ func (u *URI) VName() *spb.VName {
 	}
 }
 
+// CorpusPath returns the CorpusPath components of the URI.
+func (u *URI) CorpusPath() *cpb.CorpusPath {
+	if u == nil {
+		return new(cpb.CorpusPath)
+	}
+	return &cpb.CorpusPath{
+		Corpus: u.Corpus,
+		Root:   u.Root,
+		Path:   cleanPath(u.Path),
+	}
+}
+
 // String renders the Kythe URI into the standard URI string format.
 //
 // The resulting string is in canonical ordering, so if the URI was created by
@@ -155,7 +167,7 @@ func FromVName(v *spb.VName) *URI {
 	}
 }
 
-// FromCorpusPath returns a Kythe URI for the given Kythe VName protobuf message.
+// FromCorpusPath returns a Kythe URI for the given Kythe CorpusPath protobuf message.
 func FromCorpusPath(cp *cpb.CorpusPath) *URI {
 	if cp == nil {
 		return &URI{}
@@ -268,6 +280,15 @@ func Parse(s string) (*URI, error) {
 		return nil, err
 	}
 	return decode(&r.URI, make([]byte, len(s)))
+}
+
+// ParseCorpusPath parses a Kythe URI and returns its CorpusPath components.
+func ParseCorpusPath(s string) (*cpb.CorpusPath, error) {
+	u, err := Parse(s)
+	if err != nil {
+		return nil, err
+	}
+	return u.CorpusPath(), nil
 }
 
 // decode decodes u in-place using buf as an intermediate buffer.  The caller

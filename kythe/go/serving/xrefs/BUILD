@@ -7,6 +7,7 @@ go_library(
     srcs = [
         "columnar.go",
         "xrefs.go",
+        "xrefs_filter.go",
     ],
     deps = [
         "//kythe/go/services/xrefs",
@@ -47,6 +48,7 @@ go_test(
     deps = [
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
         "@org_golang_x_text//encoding:go_default_library",
         "@org_golang_x_text//encoding/unicode:go_default_library",
         "@org_golang_x_text//transform:go_default_library",

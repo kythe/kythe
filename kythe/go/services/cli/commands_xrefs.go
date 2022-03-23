@@ -51,6 +51,8 @@ type xrefsCommand struct {
 	relatedNodes    bool
 	nodeDefinitions bool
 	anchorText      bool
+
+	excludeGenerated bool
 }
 
 func (xrefsCommand) Name() string     { return "xrefs" }
@@ -67,6 +69,7 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
+	flag.BoolVar(&c.excludeGenerated, "exclude_generated", false, "Whether to exclude anchors with non-empty roots")
 
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
@@ -80,10 +83,18 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 
 		AnchorText:      c.anchorText,
 		NodeDefinitions: c.nodeDefinitions,
+
+		CorpusPathFilters: &xpb.CorpusPathFilters{},
 	}
 	if c.workspaceURI != "" {
 		req.Workspace = &xpb.Workspace{Uri: c.workspaceURI}
 		req.PatchAgainstWorkspace = true
+	}
+	if c.excludeGenerated {
+		req.CorpusPathFilters.Filter = append(req.CorpusPathFilters.Filter, &xpb.CorpusPathFilter{
+			Type: xpb.CorpusPathFilter_EXCLUDE,
+			Root: ".+",
+		})
 	}
 	if c.relatedNodes {
 		req.Filter = []string{facts.NodeKind, facts.Subkind}
