@@ -689,7 +689,6 @@ class B : public A { };
 class C : private A { };
 --------------------------------------------------------------------------------
 
-
 [[generates]]
 generates
 ~~~~~~~~~
@@ -2088,6 +2087,19 @@ int x;
 //- XAnchor.loc/end 5
 //- SourceFile=vname("",Corpus,Root,Path,"").node/kind file
 --------------------------------------------------------------------------------
+
+[[flag]]
+flag
+~~~~
+
+Brief description::
+  A *flag* is a named parameter usually passed to a program from the command
+  line.
+Notes::
+  Indexers can support various common flag libraries. Flag nodes from different
+  libraries are given different kind labels. For example, the Abseil/Google
+  flag libraries will produce *flag/google* nodes. The name and default value
+  of a flag can be derived from its <<code>> fact.
 
 [[interface]]
 interface
