@@ -113,6 +113,10 @@ func (f *corpusPathFilter) AllowTicket(ticket string) bool {
 }
 
 func (f *corpusPathFilter) FilterGroup(grp *srvpb.PagedCrossReferences_Group) (filtered int) {
+	if f == nil {
+		return 0
+	}
+
 	var n int
 	grp.Anchor, n = f.filterAnchors(grp.GetAnchor())
 	filtered += n
