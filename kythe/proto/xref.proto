@@ -596,6 +596,13 @@ message DocumentationRequest {
   // If set, this DocumentationRequest will return documents for the requested
   // tickets as well as their immediate semantic descendants.
   bool include_children = 3;
+
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 4;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 5;
 }
 
 message DocumentationReply {

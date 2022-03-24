@@ -1320,6 +1320,21 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		defs:            reply.DefinitionLocations,
 	}
 
+	var patcher MultiFilePatcher
+	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
+		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		}
+
+		dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
+			if err := patcher.AddFile(ctx, f); err != nil {
+				// Attempt to continue with the request, just log the error.
+				log.Printf("ERROR: adding file: %v", err)
+			}
+		}
+	}
+
 	for _, ticket := range tickets {
 		d, err := t.lookupDocument(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -1347,6 +1362,20 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		reply.Document = append(reply.Document, doc)
 	}
 	tracePrintf(ctx, "Documents: %d (nodes: %d) (defs: %d", len(reply.Document), len(reply.Nodes), len(reply.DefinitionLocations))
+
+	if patcher != nil {
+		defs, err := patchDefLocations(ctx, patcher, reply.GetDefinitionLocations())
+		if err != nil {
+			log.Printf("ERROR: patching definition locations: %v", err)
+		} else {
+			reply.DefinitionLocations = defs
+		}
+
+		if err := patcher.Close(); err != nil {
+			// No need to fail the request; just log the error.
+			log.Printf("ERROR: closing patcher: %v", err)
+		}
+	}
 
 	return reply, nil
 }
