@@ -430,8 +430,33 @@ message CrossReferencesRequest {
   // Whether to patch spans against the given Workspace.
   bool patch_against_workspace = 18;
 
+  // Set of filters to apply to each xref's parent file.
+  CorpusPathFilters corpus_path_filters = 19;
+
   reserved 4;
   reserved 100;
+}
+
+message CorpusPathFilters {
+  repeated CorpusPathFilter filter = 1;
+}
+
+// A filter for CorpusPaths.  The filter matches if each component pattern
+// matches (an empty pattern implies no filtering on that component).
+message CorpusPathFilter {
+  enum Type {
+    DEFAULT = 0;
+    INCLUDE_ONLY = 1;
+    EXCLUDE = 2;
+  }
+  Type type = 1;
+
+  // Corpus pattern to match against.
+  string corpus = 2;
+  // Root pattern to match against.
+  string root = 3;
+  // Path pattern to match against.
+  string path = 4;
 }
 
 // TODO(schroederc): eliminate duplicate serving.ExpandedAnchor message

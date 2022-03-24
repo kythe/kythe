@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"sort"
+	"strconv"
 	"testing"
 
 	"kythe.io/kythe/go/services/xrefs"
@@ -32,6 +33,7 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -1536,6 +1538,112 @@ func TestCrossReferencesPatching(t *testing.T) {
 	}
 }
 
+func TestCrossReferencesFiltering(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+
+		CorpusPathFilters: mustParseFilters(`
+filter: {
+  type: INCLUDE_ONLY
+	corpus: "^c$"
+}
+		`),
+	})
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://c?path=/a/path",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   51,
+					LineNumber:   4,
+					ColumnOffset: 15,
+				},
+				End: &cpb.Point{
+					ByteOffset:   55,
+					LineNumber:   5,
+					ColumnOffset: 2,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 36,
+					LineNumber: 4,
+				},
+				End: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   4,
+					ColumnOffset: 16,
+				},
+			},
+			Snippet: "some random text",
+		}}},
+
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+			Kind:        "/kythe/edge/defines/binding",
+			Parent:      "kythe://c?path=/a/path",
+			BuildConfig: "testConfig",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+				End: &cpb.Point{
+					ByteOffset:   33,
+					LineNumber:   3,
+					ColumnOffset: 5,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 17,
+					LineNumber: 2,
+				},
+				End: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+			},
+			Snippet: "here and  ",
+		}}},
+	}
+
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Definitions: 1,
+		References:  1,
+	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %s", reply)
+	}
+	sort.Sort(byOffset(xr.Reference))
+
+	if diff := compare.ProtoDiff(expected, xr); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
+	}
+}
+
 func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 	ticket := "kythe://someCorpus?lang=otpl#signature"
 
@@ -2386,6 +2494,61 @@ func TestDocumentationIndirection(t *testing.T) {
 	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
 		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
+}
+
+func TestCorpusPathFilters(t *testing.T) {
+	tests := []struct {
+		filters *xpb.CorpusPathFilters
+
+		includes, excludes []string
+	}{
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" }`),
+			[]string{cps("kythe3", "", ""), cps("kythe3//branch", "", "")},
+			[]string{cps("other", "", ""), cps("other", "kythe3", "kythe3")}},
+		{mustParseFilters(`filter: { type: EXCLUDE root: ".+" }`),
+			[]string{cps("kythe3", "", ""), cps("kythe3//branch", "", ""), cps("oss", "", "any/path")},
+			[]string{cps("kythe3", "genfiles", ""), cps("other", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" root: "genfiles" }`),
+			[]string{cps("kythe3", "genfiles", ""), cps("kythe3//branch", "genfiles", "")},
+			[]string{cps("kythe2", "genfiles", ""), cps("kythe3", "bin", "path"), cps("other", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe" } filter: { type: INCLUDE_ONLY corpus: "2|3" }`),
+			[]string{cps("kythe3", "genfiles", "path"), cps("kythe2", "", "blah")},
+			[]string{cps("kythe4", "", ""), cps("kythe", "kythe2", "kythe3")}},
+		{mustParseFilters(`filter: { type: EXCLUDE root: ".+" } filter: { type: INCLUDE_ONLY corpus: "^kythe3"}`),
+			[]string{cps("kythe3", "", "any/path"), cps("kythe3//branch", "", "some/path")},
+			[]string{cps("kythe3", "genfiles", "any/path"), cps("kythe3//branch", "bin", "some/path")}},
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			f, err := compileCorpusPathFilters(test.filters)
+			testutil.Fatalf(t, "Error: %v", err)
+
+			for _, include := range test.includes {
+				if !f.AllowTicket(include) {
+					t.Errorf("Expected %q to be included but it wasn't", include)
+				}
+			}
+			for _, exclude := range test.excludes {
+				if f.AllowTicket(exclude) {
+					t.Errorf("Expected %q to be excluded but it wasn't", exclude)
+				}
+			}
+		})
+	}
+}
+
+func cps(corpus, root, path string) string {
+	u := &kytheuri.URI{Corpus: corpus, Root: root, Path: path}
+	return u.String()
+}
+
+func mustParseFilters(msg string) *xpb.CorpusPathFilters {
+	var f xpb.CorpusPathFilters
+	if err := prototext.Unmarshal([]byte(msg), &f); err != nil {
+		panic(err)
+	}
+	return &f
 }
 
 // byOffset implements the sort.Interface for *xpb.CrossReferencesReply_RelatedAnchors.
