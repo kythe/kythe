@@ -138,7 +138,21 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
-			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: "kythe:?path=def/location#defDoc"},
+			DefinitionLocation: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			},
 		}, {
 			Ticket: "kythe:#documentedBy",
 			Fact: makeFactList(
@@ -2401,6 +2415,18 @@ func TestDocumentation(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
 			},
 		},
 	}
@@ -2452,6 +2478,90 @@ func TestDocumentationChildren(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			},
+		},
+	}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
+	}
+}
+
+func TestDocumentationPatching(t *testing.T) {
+	st := tbl.Construct(t)
+
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documented"},
+
+		IncludeChildren: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+
+	expected := &xpb.DocumentationReply{
+		Document: []*xpb.DocumentationReply_Document{{
+			Ticket: "kythe:#documented",
+			Text: &xpb.Printable{
+				RawText: "some documentation text",
+			},
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+			Children: []*xpb.DocumentationReply_Document{{
+				Ticket: "kythe:#childDoc",
+				Text: &xpb.Printable{
+					RawText: "child document text",
+				},
+			}, {
+				Ticket: "kythe:#childDocBy",
+				Text: &xpb.Printable{
+					RawText: "second child document text",
+				},
+			}},
+		}},
+		Nodes: nodeInfos(getNodes(
+			"kythe:#childDoc",
+			"kythe:#childDocBy",
+			"kythe:#documented",
+			"kythe:#secondChildDoc",
+		)),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   2,
+						LineNumber:   2,
+						ColumnOffset: 2,
+					},
+					End: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   2,
+						ColumnOffset: 5,
+					},
+				},
 			},
 		},
 	}
@@ -2485,6 +2595,18 @@ func TestDocumentationIndirection(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
 			},
 		},
 	}
