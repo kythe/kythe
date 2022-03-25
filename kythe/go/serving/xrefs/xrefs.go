@@ -27,6 +27,7 @@ package xrefs // import "kythe.io/kythe/go/serving/xrefs"
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -297,6 +298,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
 		}
+		defer func() {
+			if err := multiPatcher.Close(); isNonContextError(err) {
+				// No need to fail the request; just log the error.
+				log.Printf("ERROR: closing patcher: %v", err)
+			}
+		}()
 	}
 
 	decor, err := t.fileDecorations(ctx, ticket)
@@ -552,11 +559,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		} else {
 			reply.DefinitionLocations = defs
 		}
-
-		if err := multiPatcher.Close(); err != nil {
-			// No need to fail the request; just log the error.
-			log.Printf("ERROR: closing patcher: %v", err)
-		}
 	}
 
 	return reply, nil
@@ -706,6 +708,12 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
 		}
+		defer func() {
+			if err := patcher.Close(); isNonContextError(err) {
+				// No need to fail the request; just log the error.
+				log.Printf("ERROR: closing patcher: %v", err)
+			}
+		}()
 
 		stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
 			if err := patcher.AddFile(ctx, f); err != nil {
@@ -1007,10 +1015,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 		if err := g.Wait(); err != nil {
 			return nil, err
-		}
-		if err := patcher.Close(); err != nil {
-			// No need to fail the request; just log the error.
-			log.Printf("ERROR: closing patcher: %v", err)
 		}
 	}
 
@@ -1326,6 +1330,12 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
 		}
+		defer func() {
+			if err := patcher.Close(); isNonContextError(err) {
+				// No need to fail the request; just log the error.
+				log.Printf("ERROR: closing patcher: %v", err)
+			}
+		}()
 
 		dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
 			if err := patcher.AddFile(ctx, f); err != nil {
@@ -1369,11 +1379,6 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 			log.Printf("ERROR: patching definition locations: %v", err)
 		} else {
 			reply.DefinitionLocations = defs
-		}
-
-		if err := patcher.Close(); err != nil {
-			// No need to fail the request; just log the error.
-			log.Printf("ERROR: closing patcher: %v", err)
 		}
 	}
 
@@ -1419,4 +1424,8 @@ func canonicalError(err error, caller string, ticket string) error {
 		}
 		return status.Error(code, st)
 	}
+}
+
+func isNonContextError(err error) bool {
+	return err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
 }
