@@ -261,6 +261,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
       out_name.CopyFrom(VNameFromFileEntry(file_entry));
     } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
       VNameRefFromNodeId(range.Context).Expand(&out_name);
+    } else {
+      out_name.set_corpus(default_token_.vname().corpus());
     }
     size_t begin_offset = SourceManager->getFileOffset(begin);
     size_t end_offset = SourceManager->getFileOffset(end);
