@@ -68,6 +68,12 @@ func main() {
 			log.Fatalf("Error parsing ticket: %q, %v", src.GetTicket(), err)
 		}
 
+		// usr nodes are defined to have an empty corpus, ignore them for the
+		// purposes of this test
+		if r.URI.Language == "usr" {
+			return true
+		}
+
 		allCorpora.Add(r.URI.Corpus)
 
 		if r.URI.Corpus == "" {
