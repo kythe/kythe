@@ -883,6 +883,11 @@ cc_extract_kzip(
     name = "vname_corpus_kzip",
     srcs = ["basic/vname_corpus.cc"],
     corpus = "unit",
+    opts = [
+        "-DMY_MACRO=1",
+        "-UMY_MACRO",
+        "-DMY_MACRO=2",
+    ],
     vnames_config = "basic/vname_corpus.json",
 )
 
