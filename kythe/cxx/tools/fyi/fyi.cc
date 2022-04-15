@@ -280,7 +280,7 @@ class PreprocessorHooks : public clang::PPCallbacks {
                           const clang::Token& include_token,
                           llvm::StringRef file_name, bool is_angled,
                           clang::CharSourceRange file_name_range,
-                          const clang::FileEntry* include_file,
+                          llvm::Optional<clang::FileEntryRef> include_file,
                           llvm::StringRef search_path,
                           llvm::StringRef relative_path,
                           const clang::Module* imported,
@@ -490,8 +490,9 @@ void PreprocessorHooks::InclusionDirective(
     clang::SourceLocation hash_location, const clang::Token& include_token,
     llvm::StringRef file_name, bool is_angled,
     clang::CharSourceRange file_name_range,
-    const clang::FileEntry* include_file, llvm::StringRef search_path,
-    llvm::StringRef relative_path, const clang::Module* imported,
+    llvm::Optional<clang::FileEntryRef> include_file,
+    llvm::StringRef search_path, llvm::StringRef relative_path,
+    const clang::Module* imported,
     clang::SrcMgr::CharacteristicKind FileType) {
   if (!enclosing_pass_ || !enclosing_pass_->tracker()) {
     return;
@@ -501,7 +502,7 @@ void PreprocessorHooks::InclusionDirective(
   auto id_position = source_manager->getDecomposedExpansionLoc(hash_location);
   const auto* source_file =
       source_manager->getFileEntryForID(id_position.first);
-  if (source_file == nullptr || include_file == nullptr) {
+  if (source_file == nullptr || !include_file) {
     return;
   }
   if (tracked_file_ == source_file) {
