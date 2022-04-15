@@ -66,7 +66,7 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
                           const clang::Token& IncludeToken,
                           llvm::StringRef Filename, bool IsAngled,
                           clang::CharSourceRange FilenameRange,
-                          llvm::Optional<clang::FileEntryRef> FileEntry,
+                          llvm::Optional<clang::FileEntryRef> FileRef,
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
                           const clang::Module* Imported,

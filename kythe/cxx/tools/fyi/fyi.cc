@@ -492,7 +492,8 @@ void PreprocessorHooks::InclusionDirective(
     clang::CharSourceRange file_name_range,
     llvm::Optional<clang::FileEntryRef> include_file,
     llvm::StringRef search_path, llvm::StringRef relative_path,
-    const clang::Module* imported, clang::SrcMgr::CharacteristicKind FileType) {
+    const clang::Module* imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   if (!enclosing_pass_ || !enclosing_pass_->tracker()) {
     return;
   }
