@@ -246,7 +246,7 @@ void IndexerPPCallbacks::InclusionDirective(
     clang::SrcMgr::CharacteristicKind FileType) {
   // TODO(zarko) (Modules): Check if `Imported` is non-null; if so, this
   // was transformed to a module import.
-  if (!FileRef) {
+  if (FileRef) {
     Observer.recordIncludesRange(
         RangeInCurrentContext(FilenameRange.getAsRange()),
         &FileRef->getFileEntry());
