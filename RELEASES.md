@@ -1,5 +1,32 @@
 # Release Notes
 
+## [v0.0.59] - 2022-04-18
+
+#### Features
+
+*   add a Round method for datasizes (#5228) ([51c964c0](https://github.com/kythe/kythe/commit/51c964c0f2e309a2f8aaa35584b66929213144d1))
+*   add a Floor method for datasizes (#5225) ([e23b30fd](https://github.com/kythe/kythe/commit/e23b30fde7c556fe17209b2d711a56ea34d50a0e))
+* **api:**
+  *  support patching Documentation definitions (#5244) ([fa5b6aa9](https://github.com/kythe/kythe/commit/fa5b6aa9e0e6adbbd5601acf2ba8121c7c0841b8))
+  *  support filtering xrefs by their enclosing files (#5242) ([bf5b1ac0](https://github.com/kythe/kythe/commit/bf5b1ac037da8d3edca3739ba664f127d5270a57))
+  *  support patching FileDecorations definitions (#5241) ([44cece43](https://github.com/kythe/kythe/commit/44cece4393a4fe1cfd58e0d4786a4f753cb3cbd3))
+  *  allow a Workspace to be passed for xrefs patching (#5224) ([38c43a11](https://github.com/kythe/kythe/commit/38c43a11c439250fb2fae5c8a0e0885b0521fbc3))
+* **go_indexer:**  populate ReleaseTags/ToolTags with defaults (#5237) ([0ad2c8ae](https://github.com/kythe/kythe/commit/0ad2c8aec9eebe61fe7b64662d69071dd789d736))
+* **java:**  bump Java version to 11 (#5223) ([f4af9da3](https://github.com/kythe/kythe/commit/f4af9da356678f80ee453b47c83967afe0638e32))
+* **schema:**  add flag nodes (#5243) ([e72c520a](https://github.com/kythe/kythe/commit/e72c520a107c974a0c5d4d48759f1409c1ee3bf4))
+
+#### Bug Fixes
+
+*   small style issues (#5256) ([d3a8e66a](https://github.com/kythe/kythe/commit/d3a8e66a019088a90467431029eecad6494d3b18))
+* **cxx_indexer:**  remove another source of corpusless nodes (#5247) ([33fb1f0d](https://github.com/kythe/kythe/commit/33fb1f0dc43803ac32915198567330f70dfa198f))
+* **doc:**  update description and examples for extends edge kind (#5229) ([be6d3fd4](https://github.com/kythe/kythe/commit/be6d3fd4a37867837519af6259453e9bacc41edf))
+* **empty_corpus_checker:**  ignore usr nodes (#5246) ([752db452](https://github.com/kythe/kythe/commit/752db452207d933cd214c4785cf4aff4ad06d7e7))
+* **extraction:**  fix javac9 extractor path (#5234) ([e57ba0a6](https://github.com/kythe/kythe/commit/e57ba0a6000d10d23ed6d6ffb16c5b484699eb58))
+* **go_extractor:**  handle top-level source files in modules (#5239) ([888c26d9](https://github.com/kythe/kythe/commit/888c26d9c4d3d98a8c0d4881271437efc5e2ec66))
+* **go_indexer:**  fix satisfies check for 1.18beta2 (#5235) ([60bd2fad](https://github.com/kythe/kythe/commit/60bd2fad0ecd8d6b8eb2f4bbb3b8e3117a74ce0e))
+* **java:**  emit wildcard generics in default corpus (#5210) ([e8886d54](https://github.com/kythe/kythe/commit/e8886d540bd64b42ea4e29f396eaae7e18dbea2b))
+* **serving:**  close MultiFilePatcher when requests exit early (#5245) ([26df4b61](https://github.com/kythe/kythe/commit/26df4b6119d4248b129983a8304a44c0b6250084))
+
 ## [v0.0.58] - 2022-02-22
 
 #### Deprecation
@@ -1283,7 +1310,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.58...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.59...HEAD
+[v0.0.59] https://github.com/kythe/kythe/compare/v0.0.58...v0.0.59
 [v0.0.58] https://github.com/kythe/kythe/compare/v0.0.57...v0.0.58
 [v0.0.57] https://github.com/kythe/kythe/compare/v0.0.56...v0.0.57
 [v0.0.56] https://github.com/kythe/kythe/compare/v0.0.55...v0.0.56
