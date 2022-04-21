@@ -290,6 +290,7 @@ cc_indexer_test(
     name = "builtin_functions",
     srcs = ["basic/builtin_functions.c"],
     check_for_singletons = True,
+    copts = ["-Wno-error=implicit-function-declaration"],
     std = "gnu99",
     tags = ["basic"],
 )
