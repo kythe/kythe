@@ -28,8 +28,8 @@ def _rust_extractor_test_impl(ctx):
 
     # Rust toolchain
     rust_toolchain = ctx.toolchains["@rules_rust//rust:toolchain"]
-    rustc_lib = rust_toolchain.rustc_lib.files.to_list()
-    rust_lib = rust_toolchain.rust_lib.files.to_list()
+    rustc_lib = rust_toolchain.rustc_lib.to_list()
+    rust_std = rust_toolchain.rust_std.to_list()
 
     source_file = ctx.actions.declare_file("main.rs")
 
@@ -45,7 +45,7 @@ def _rust_extractor_test_impl(ctx):
     )
 
     rustc_lib_path = paths.dirname(rustc_lib[0].short_path)
-    rust_lib_path = paths.dirname(rust_lib[0].short_path)
+    rust_lib_path = paths.dirname(rust_std[0].short_path)
     script = "\n".join(
         ["export DYLD_FALLBACK_LIBRARY_PATH=${DYLD_FALLBACK_LIBRARY_PATH:+$DYLD_FALLBACK_LIBRARY_PATH:}%s:%s" % (rustc_lib_path, rust_lib_path)] +
         ["export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}%s:%s" % (rustc_lib_path, rust_lib_path)] +
@@ -61,7 +61,7 @@ def _rust_extractor_test_impl(ctx):
     )
 
     runfiles = ctx.runfiles(
-        files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_lib,
+        files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_std,
     )
     runfiles = runfiles.merge(ctx.attr.src[DefaultInfo].data_runfiles)
 

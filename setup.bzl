@@ -106,10 +106,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-        sha256 = "f8c0132ea3855781d41ac574df0ca44959f17694d368c03c7cbaa5f29ef42d8b",
-        strip_prefix = "rules_rust-5bb12cc451317581452b5441692d57eb4310b839",
+        sha256 = "39458d9bc8f44b23bf963a09c2823b1703b312bcb51d2e8938d640e5b9780180",
+        strip_prefix = "rules_rust-1f2e6231de29d8fad8d21486f0d16403632700bf",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/5bb12cc451317581452b5441692d57eb4310b839.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/archive/1f2e6231de29d8fad8d21486f0d16403632700bf.tar.gz",
         ],
     )
 
@@ -138,7 +138,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "347d4d7323c4cf0d89fb14530e27ec5e2b1afeda",
+        commit = "4c564940a14f55d2315d2676b10fea0660ea814a",
         name = "llvm-project-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],

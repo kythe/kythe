@@ -33,6 +33,7 @@ public class Scopes {
     }
 
     //- @LocalClass childof Method
+    //- @LocalClass ref/id LocalClass
     return new LocalClass();
   }
 }

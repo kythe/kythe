@@ -6,7 +6,7 @@ go_binary(
     data = [
         "//kythe/extractors/openjdk11:vnames.json",
         "//kythe/extractors/openjdk11/java_wrapper",
-        "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor_deploy.jar",
+        "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
     ],
     visibility = ["//visibility:public"],
     deps = [

@@ -71,7 +71,7 @@ func TestAsyncSuccess(t *testing.T) {
 			t.Errorf("Process exited with unknown error: %v (%v)", err, state)
 		},
 	})
-	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+	testutil.Fatalf(t, "Error starting async: %v", err)
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 3; i++ {
@@ -111,7 +111,7 @@ func TestAsyncError(t *testing.T) {
 			done <- struct{}{}
 		},
 	})
-	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+	testutil.Fatalf(t, "Error starting async: %v", err)
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 3; i++ {
@@ -131,21 +131,21 @@ func TestAsyncNilCallbacks(t *testing.T) {
 			done <- struct{}{}
 		},
 	})
-	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+	testutil.Fatalf(t, "Error starting async: %v", err)
 
 	err = StartAsync(exec.Command(find(t, "false")), &Callbacks{
 		OnExit: func(state *os.ProcessState, err error) {
 			done <- struct{}{}
 		},
 	})
-	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+	testutil.Fatalf(t, "Error starting async: %v", err)
 
 	err = StartAsync(exec.Command(find(t, "true")), &Callbacks{
 		OnSuccess: func(state *os.ProcessState) {
 			done <- struct{}{}
 		},
 	})
-	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+	testutil.Fatalf(t, "Error starting async: %v", err)
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 3; i++ {

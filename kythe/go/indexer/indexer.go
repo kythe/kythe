@@ -266,9 +266,11 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 	//
 	// The build context is used to check build tags.
 	bc := &build.Context{
-		GOOS:      details.GetGoos(),
-		GOARCH:    details.GetGoarch(),
-		BuildTags: details.GetBuildTags(),
+		GOOS:        details.GetGoos(),
+		GOARCH:      details.GetGoarch(),
+		BuildTags:   details.GetBuildTags(),
+		ReleaseTags: build.Default.ReleaseTags,
+		ToolTags:    build.Default.ToolTags,
 	}
 	for _, ri := range unit.RequiredInput {
 		if ri.Info == nil {

@@ -36,7 +36,6 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
-import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -291,7 +290,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    JavaNode node = emitSymUsage(ctx, ident.sym);
+    EdgeKind edgeKind = EdgeKind.REF;
+    if (ident.sym instanceof ClassSymbol && ident == owner.getNewClassIdentifier()) {
+      // Use ref/id edges for the primary identifier to disambiguate from the constructor.
+      edgeKind = EdgeKind.REF_ID;
+    }
+    JavaNode node = emitSymUsage(ctx, ident.sym, edgeKind);
     if (node != null && ident.sym instanceof VarSymbol) {
       // Emit typed edges for "this"/"super" on reference since there is no definition location.
       // TODO(schroederc): possibly add implicit definition on class declaration
@@ -668,21 +672,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private static Iterable<Type> getTargets(JCFunctionalExpression node) {
-    try {
-      @SuppressWarnings("unchecked")
-      Iterable<Type> targets =
-          (Iterable<Type>) JCFunctionalExpression.class.getField("targets").get(node);
-      return targets != null ? targets : ImmutableList.of();
-    } catch (ReflectiveOperationException e) {
-      // continue below
-    }
-    try {
-      // Work with the field rename in JDK 11: http://hg.openjdk.java.net/jdk/jdk11/rev/f854b76b6a0c
-      return com.sun.tools.javac.util.List.of(
-          (Type) JCFunctionalExpression.class.getField("target").get(node));
-    } catch (ReflectiveOperationException e) {
-      throw new LinkageError(e.getMessage(), e);
-    }
+    return ImmutableList.of(node.target);
   }
 
   @Override
@@ -773,7 +763,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(typeCtorNode.getVName(), argVNames, MarkedSources.GENERIC_TAPP);
     // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
-    emitAnchor(ctx, EdgeKind.REF, typeNode.getVName());
+    emitAnchor(
+        ctx,
+        (owner.getTree() instanceof JCNewClass) ? EdgeKind.REF_ID : EdgeKind.REF,
+        typeNode.getVName());
 
     return new JavaNode(typeNode, childWildcards.build());
   }
@@ -1225,17 +1218,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge
-  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
+  // Emits a node for the given sym, an anchor encompassing the TreeContext, and the given edge.
+  private JavaNode emitSymUsage(TreeContext ctx, Symbol sym, EdgeKind edgeKind) {
     JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
       // TODO(schroederc): details
       return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
     }
-
     // TODO(schroederc): emit reference to JVM node if `sym.outermostClass()` is not defined in a
     //                   .java source file
-    emitAnchor(ctx, EdgeKind.REF, node.getVName());
+    emitAnchor(ctx, edgeKind, node.getVName());
     statistics.incrementCounter("symbol-usages-emitted");
     return node;
   }
@@ -1674,16 +1666,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Resovles a string as a source-file relative path */
   private String resolveSourcePath(String path) {
     try {
-      // TODO(shahms): Remove this cast/check/fallback when we only support JDK9+.
-      if (fileManager instanceof ForwardingStandardJavaFileManager) {
-        return ((ForwardingStandardJavaFileManager) fileManager)
-            .asPath(filePositions.getSourceFile())
-            .resolveSibling(path)
-            .toString();
-      }
-    } catch (UnsupportedOperationException
-        | IllegalArgumentException
-        | NullPointerException unused) {
+      return fileManager.asPath(filePositions.getSourceFile()).resolveSibling(path).toString();
+    } catch (UnsupportedOperationException unused) {
       // Do nothing; perform fallback below
     }
     // Fallback to URI-based path resolution when asPath is unsupported.

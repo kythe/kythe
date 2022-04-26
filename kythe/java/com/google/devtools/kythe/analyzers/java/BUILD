@@ -17,6 +17,13 @@ java_library(
         "SourceText.java",
         "TreeContext.java",
     ],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         ":plugin",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
@@ -38,7 +45,6 @@ java_library(
         "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "//third_party/javac",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_beust_jcommander",
         "@maven//:com_google_code_findbugs_jsr305",
@@ -49,23 +55,31 @@ java_library(
 java_library(
     name = "source_text",
     srcs = ["SourceText.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/java/com/google/devtools/kythe/util:span",
-        "//third_party/javac",
     ],
 )
 
 java_library(
     name = "plugin",
     srcs = ["Plugin.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//kythe/proto:storage_java_proto",
-        "//third_party/javac",
     ],
 )
 
@@ -101,6 +115,12 @@ java_library(
         "AutoValuePlugin.java",
         "ResolvedAutoValue.java",
     ],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     deps = [
         ":plugin",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
@@ -109,6 +129,5 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "//third_party/javac",
     ],
 )

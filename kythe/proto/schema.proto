@@ -44,6 +44,7 @@ enum NodeKind {
   DIAGNOSTIC = 5 [(metadata).label = "diagnostic"];
   DOC = 6 [(metadata).label = "doc"];
   FILE = 7 [(metadata).label = "file"];
+  GFLAG = 27 [(metadata).label = "google/gflag"];
   INTERFACE = 8 [(metadata).label = "interface"];
   FUNCTION = 9 [(metadata).label = "function"];
   LOOKUP = 10 [(metadata).label = "lookup"];

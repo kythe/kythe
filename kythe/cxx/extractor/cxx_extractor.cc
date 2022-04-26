@@ -451,7 +451,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   void InclusionDirective(
       clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
       llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
-      const clang::FileEntry* File, llvm::StringRef SearchPath,
+      llvm::Optional<clang::FileEntryRef> File, llvm::StringRef SearchPath,
       llvm::StringRef RelativePath, const clang::Module* Imported,
       clang::SrcMgr::CharacteristicKind FileType) override;
 
@@ -840,10 +840,10 @@ std::string IncludeDirGroupToString(const clang::frontend::IncludeDirGroup& G) {
 void ExtractorPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
     llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
-    const clang::FileEntry* File, llvm::StringRef SearchPath,
+    llvm::Optional<clang::FileEntryRef> File, llvm::StringRef SearchPath,
     llvm::StringRef RelativePath, const clang::Module* Imported,
     clang::SrcMgr::CharacteristicKind FileType) {
-  if (File == nullptr) {
+  if (!File) {
     LOG(WARNING) << "Found null file: " << FileName.str();
     LOG(WARNING) << "Search path was " << SearchPath.str();
     LOG(WARNING) << "Relative path was " << RelativePath.str();
@@ -867,7 +867,7 @@ void ExtractorPPCallbacks::InclusionDirective(
     return;
   }
   last_inclusion_directive_path_ =
-      AddFile(File, FileName, SearchPath, RelativePath);
+      AddFile(&File->getFileEntry(), FileName, SearchPath, RelativePath);
   last_inclusion_offset_ = source_manager_->getFileOffset(HashLoc);
 }
 

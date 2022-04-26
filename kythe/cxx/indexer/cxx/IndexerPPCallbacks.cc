@@ -240,14 +240,16 @@ void IndexerPPCallbacks::Ifndef(clang::SourceLocation Location,
 void IndexerPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLocation, const clang::Token& IncludeToken,
     llvm::StringRef Filename, bool IsAngled,
-    clang::CharSourceRange FilenameRange, const clang::FileEntry* FileEntry,
-    llvm::StringRef SearchPath, llvm::StringRef RelativePath,
-    const clang::Module* Imported, clang::SrcMgr::CharacteristicKind FileType) {
+    clang::CharSourceRange FilenameRange,
+    llvm::Optional<clang::FileEntryRef> FileRef, llvm::StringRef SearchPath,
+    llvm::StringRef RelativePath, const clang::Module* Imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   // TODO(zarko) (Modules): Check if `Imported` is non-null; if so, this
   // was transformed to a module import.
-  if (FileEntry != nullptr) {
+  if (FileRef) {
     Observer.recordIncludesRange(
-        RangeInCurrentContext(FilenameRange.getAsRange()), FileEntry);
+        RangeInCurrentContext(FilenameRange.getAsRange()),
+        &FileRef->getFileEntry());
   }
   LastInclusionHash = HashLocation;
 }

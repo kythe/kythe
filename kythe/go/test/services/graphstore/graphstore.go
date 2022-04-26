@@ -54,10 +54,10 @@ var ctx = context.Background()
 func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 	b.StopTimer()
 	gs, destroy, err := create()
-	testutil.FatalOnErr(b, "CreateFunc error: %v", err)
+	testutil.Fatalf(b, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErr(b, "gs close error: %v", gs.Close(ctx))
-		testutil.FatalOnErr(b, "DestroyFunc error: %v", destroy())
+		testutil.Fatalf(b, "gs close error: %v", gs.Close(ctx))
+		testutil.Fatalf(b, "DestroyFunc error: %v", destroy())
 	}()
 
 	updates := make([]spb.WriteRequest_Update, batchSize)
@@ -73,7 +73,7 @@ func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 			req.Update[j] = &updates[j]
 		}
 
-		testutil.FatalOnErr(b, "write error: %v", gs.Write(ctx, req))
+		testutil.Fatalf(b, "write error: %v", gs.Write(ctx, req))
 	}
 }
 
@@ -81,10 +81,10 @@ func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 // CreateFunc created graphstore.Service.
 func OrderTest(t *testing.T, create CreateFunc, batchSize int) {
 	gs, destroy, err := create()
-	testutil.FatalOnErrT(t, "CreateFunc error: %v", err)
+	testutil.Fatalf(t, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErrT(t, "gs close error: %v", gs.Close(ctx))
-		testutil.FatalOnErrT(t, "DestroyFunc error: %v", destroy())
+		testutil.Fatalf(t, "gs close error: %v", gs.Close(ctx))
+		testutil.Fatalf(t, "DestroyFunc error: %v", destroy())
 	}()
 
 	updates := make([]spb.WriteRequest_Update, batchSize)
@@ -100,11 +100,11 @@ func OrderTest(t *testing.T, create CreateFunc, batchSize int) {
 			req.Update[j] = &updates[j]
 		}
 
-		testutil.FatalOnErrT(t, "write error: %v", gs.Write(ctx, req))
+		testutil.Fatalf(t, "write error: %v", gs.Write(ctx, req))
 	}
 
 	var lastEntry *spb.Entry
-	testutil.FatalOnErrT(t, "entryLess error: %v",
+	testutil.Fatalf(t, "entryLess error: %v",
 		gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
 			if compare.Entries(lastEntry, entry) != compare.LT {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)

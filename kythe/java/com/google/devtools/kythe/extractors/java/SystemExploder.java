@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.java;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
-import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,26 +46,17 @@ final class SystemExploder {
     copySystemModules(systemDir, Paths.get(outputDir));
   }
 
-  // In order to work around the lack of the required JDK9 methods in google3, wrap
-  // StandardJavaFileManagers before use (for now).
-  private static ForwardingStandardJavaFileManager wrap(StandardJavaFileManager fileManager) {
-    if (fileManager instanceof ForwardingStandardJavaFileManager) {
-      return (ForwardingStandardJavaFileManager) fileManager;
-    }
-    return new ForwardingStandardJavaFileManager(fileManager) {};
-  }
-
   // Returns a stream of paths from the specified --system directory, beginning with the appropriate
   // modules subdirectory.
   public static ImmutableList<Path> walkSystemModules(String systemDir) throws IOException {
     StandardJavaFileManager fileManager =
         ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null);
     fileManager.handleOption("--system", Iterators.singletonIterator(systemDir));
-    return walkSystemModules(wrap(fileManager));
+    return walkSystemModules(fileManager);
   }
 
-  private static ImmutableList<Path> walkSystemModules(
-      ForwardingStandardJavaFileManager fileManager) throws IOException {
+  private static ImmutableList<Path> walkSystemModules(StandardJavaFileManager fileManager)
+      throws IOException {
     JavaFileManager.Location systemLocation = StandardLocation.valueOf("SYSTEM_MODULES");
     ImmutableList.Builder<Path> modules = new ImmutableList.Builder<>();
     for (Set<JavaFileManager.Location> locs : fileManager.listLocationsForModules(systemLocation)) {
@@ -102,22 +92,20 @@ final class SystemExploder {
     }
   }
 
-  private static void dumpSystemPaths(ForwardingStandardJavaFileManager fileManager)
-      throws IOException {
+  private static void dumpSystemPaths(StandardJavaFileManager fileManager) throws IOException {
     for (Path path : walkSystemModules(fileManager)) {
       System.err.println(path.isAbsolute() ? path.subpath(0, path.getNameCount()) : path);
     }
   }
 
   private static void dumpSystemPaths() throws IOException {
-    dumpSystemPaths(
-        wrap(ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null)));
+    dumpSystemPaths(ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null));
   }
 
   private static void dumpSystemPaths(String systemDir) throws IOException {
     StandardJavaFileManager fileManager =
         ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null);
     fileManager.handleOption("--system", Iterators.singletonIterator(systemDir));
-    dumpSystemPaths(wrap(fileManager));
+    dumpSystemPaths(fileManager);
   }
 }

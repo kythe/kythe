@@ -424,10 +424,11 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			// kythe/go/extractors/govname and is usually the package's
 			// repository root (e.g. github.com/golang/protobuf).
 			vn.Corpus = p.VName.Corpus
-			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
-			vn.Path = strings.TrimPrefix(components[1], p.CorpusRoot+"/")
-			if components[0] != "src" {
-				vn.Root = components[0]
+			if components := strings.SplitN(vn.Path, string(filepath.Separator), 2); len(components) == 2 {
+				vn.Path = strings.TrimPrefix(components[1], p.CorpusRoot+"/")
+				if components[0] != "src" {
+					vn.Root = components[0]
+				}
 			}
 		}
 		cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{

@@ -15,7 +15,6 @@ docker_build(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar",
         "//kythe/java/com/google/devtools/kythe/analyzers/jvm:class_file_indexer_deploy.jar",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
-        "//third_party/javac:javac_jar",
     ],
     image_name = "google/kythe",
     tags = ["manual"],
@@ -23,7 +22,7 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.57"
+release_version = "v0.0.59"
 
 genrule(
     name = "release",
@@ -141,7 +140,6 @@ sh_test(
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kzip",
         "//third_party/guava",
-        "//third_party/javac:javac_jar",
         "@com_github_stedolan_jq//:jq",
     ],
     tags = [
