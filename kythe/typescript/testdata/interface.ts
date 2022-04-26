@@ -53,3 +53,12 @@ function returnPerson(): Person {
   //- @getAge ref GetAge
   return {name: 'Alice', getAge() {}};
 }
+
+// test property shorthands
+{
+  const name = 'Alice';
+  const getAge = () = {};
+  //- @name ref Name
+  //- @getAge ref GetAge
+  const p3: Person = {name, getAge};
+}
