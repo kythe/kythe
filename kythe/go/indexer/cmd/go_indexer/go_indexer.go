@@ -145,7 +145,6 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
 		Info:                          indexer.XRefTypeInfo(),
 		CheckRules:                    checkMetadata,
-		UseCompilationCorpusAsDefault: *useCompilationCorpusAsDefault,
 	})
 	if err != nil {
 		return err

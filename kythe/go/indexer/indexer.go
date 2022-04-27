@@ -215,10 +215,6 @@ type ResolveOptions struct {
 	//    _, err     -- an error attempting to load a ruleset
 	//
 	CheckRules func(ri *apb.CompilationUnit_FileInput, f Fetcher) (*Ruleset, error)
-
-	// Nodes that otherwise wouldn't have a corpus (such as tapps) are given the
-	// corpus of the compilation unit being indexed.
-	UseCompilationCorpusAsDefault bool
 }
 
 func (r *ResolveOptions) info() *types.Info {
