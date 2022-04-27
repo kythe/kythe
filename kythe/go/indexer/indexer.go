@@ -434,11 +434,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		}
 	}
 	if _, ok := pi.Dependencies["unsafe"]; ok {
-		corpus := govname.GolangCorpus
-		if opts.UseCompilationCorpusAsDefault {
-			corpus = unit.VName.Corpus
-		}
-		pi.PackageVName[types.Unsafe] = govname.ForStandardLibrary(corpus, "unsafe")
+		pi.PackageVName[types.Unsafe] = govname.ForStandardLibrary("unsafe")
 	}
 
 	// Set this package's own vname.

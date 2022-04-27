@@ -194,9 +194,9 @@ func ForBuiltin(signature string) *spb.VName {
 
 // ForStandardLibrary returns a VName for a standard library package with the
 // given import path.
-func ForStandardLibrary(corpus, importPath string) *spb.VName {
+func ForStandardLibrary(importPath string) *spb.VName {
 	return &spb.VName{
-		Corpus:    corpus,
+		Corpus:    GolangCorpus,
 		Language:  Language,
 		Path:      importPath,
 		Signature: "package",
