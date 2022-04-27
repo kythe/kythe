@@ -33,12 +33,12 @@ import (
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object, useCompilationCorpusAsDefault bool) *cpb.MarkedSource {
+func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	ms := &cpb.MarkedSource{
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),
-			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj, useCompilationCorpusAsDefault))}}},
+			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj))}}},
 		}},
 	}
 
@@ -63,7 +63,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object, useCompilationCorpusAsDefa
 	//     |           |
 	//    (id) pkg    type
 	//
-	if ctx := pi.typeContext(obj, useCompilationCorpusAsDefault); len(ctx) != 0 {
+	if ctx := pi.typeContext(obj); len(ctx) != 0 {
 		ms.Child = append([]*cpb.MarkedSource{{
 			Kind:              cpb.MarkedSource_CONTEXT,
 			PostChildText:     ".",
@@ -96,7 +96,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object, useCompilationCorpusAsDefa
 				Child: []*cpb.MarkedSource{{
 					Kind:    cpb.MarkedSource_TYPE,
 					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
-					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv, useCompilationCorpusAsDefault))}}},
+					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv))}}},
 				}},
 			})
 			firstParam = 1
@@ -211,7 +211,7 @@ func typeArgs(typ types.Type) string {
 // typeContext returns the package, type, and function context identifiers that
 // qualify the name of obj, if any are applicable. The result is empty if there
 // are no appropriate qualifiers.
-func (pi *PackageInfo) typeContext(obj types.Object, useCompilationCorpusAsDefault bool) []*cpb.MarkedSource {
+func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
 	var ms []*cpb.MarkedSource
 	addID := func(s string, v *spb.VName) {
 		id := &cpb.MarkedSource{
@@ -227,9 +227,9 @@ func (pi *PackageInfo) typeContext(obj types.Object, useCompilationCorpusAsDefau
 		if t, ok := cur.(interface {
 			Name() string
 		}); ok {
-			addID(t.Name(), pi.ObjectVName(cur, useCompilationCorpusAsDefault))
+			addID(t.Name(), pi.ObjectVName(cur))
 		} else {
-			addID(typeName(cur.Type()), pi.ObjectVName(cur, useCompilationCorpusAsDefault))
+			addID(typeName(cur.Type()), pi.ObjectVName(cur))
 		}
 	}
 	if pkg := obj.Pkg(); pkg != nil {
@@ -243,10 +243,32 @@ func (pi *PackageInfo) typeContext(obj types.Object, useCompilationCorpusAsDefau
 	return ms
 }
 
+// rewriteMarkedSourceCorpus finds all tickets in the MarkedSource
+// and its children and rewrites them to use the given corpus.
+func rewriteMarkedSourceCorpus(ms *cpb.MarkedSource, corpus string) {
+	for _, link := range ms.Link {
+		for i, def := range link.Definition {
+			v, err := kytheuri.ToVName(def)
+			if err != nil {
+				log.Printf("Error parsing ticket %q: %v", def, err)
+				continue
+			}
+			v.Corpus = corpus
+			link.Definition[i] = kytheuri.ToString(v)
+		}
+	}
+	for _, child := range ms.Child {
+		rewriteMarkedSourceCorpus(child, corpus)
+	}
+}
+
 // emitCode emits a code fact for the specified marked source message on the
 // target, or logs a diagnostic.
 func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
 	if ms != nil {
+		if e.opts.UseCompilationCorpusAsDefault {
+			rewriteMarkedSourceCorpus(ms, e.pi.VName.Corpus)
+		}
 		bits, err := proto.Marshal(ms)
 		if err != nil {
 			log.Printf("ERROR: Unable to marshal marked source: %v", err)

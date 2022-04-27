@@ -485,7 +485,7 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 }
 
 // ObjectVName returns a VName for obj relative to that of its package.
-func (pi *PackageInfo) ObjectVName(obj types.Object, useCompilationCorpusAsDefault bool) *spb.VName {
+func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	if pkg, ok := obj.(*types.PkgName); ok {
 		return pi.PackageVName[pkg.Imported()]
 	}
@@ -495,11 +495,7 @@ func (pi *PackageInfo) ObjectVName(obj types.Object, useCompilationCorpusAsDefau
 	if base := pi.PackageVName[pkg]; base != nil {
 		vname = proto.Clone(base).(*spb.VName)
 	} else if pkg == nil {
-		corpus := govname.GolangCorpus
-		if useCompilationCorpusAsDefault {
-			corpus = pi.VName.Corpus
-		}
-		return govname.ForBuiltin(corpus, sig)
+		return govname.ForBuiltin(sig)
 	} else {
 		// This is an indirect import, that is, a name imported but not
 		// mentioned explicitly by the package being indexed.

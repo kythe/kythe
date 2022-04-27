@@ -24,44 +24,44 @@ import (
 )
 
 // BasicType returns the VName for a basic builtin Go type.
-func BasicType(corpus string, b *types.Basic) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: b.Name() + "#builtin"}
+func BasicType(b *types.Basic) *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: b.Name() + "#builtin"}
 }
 
 // FunctionConstructorType returns the VName for the builtin Go function type constructor.
-func FunctionConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "fn#builtin"}
+func FunctionConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "fn#builtin"}
 }
 
 // TupleConstructorType returns the VName for the builtin Go tuple type constructor.
-func TupleConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "tuple#builtin"}
+func TupleConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "tuple#builtin"}
 }
 
 // MapConstructorType returns the VName for the builtin Go map type constructor.
-func MapConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "map#builtin"}
+func MapConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "map#builtin"}
 }
 
 // ArrayConstructorType returns the VName for the builtin Go array type
 // constructor of a given length.
-func ArrayConstructorType(corpus string, length int64) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: fmt.Sprintf("array%d#builtin", length)}
+func ArrayConstructorType(length int64) *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: fmt.Sprintf("array%d#builtin", length)}
 }
 
 // SliceConstructorType returns the VName for the builtin Go slice type constructor.
-func SliceConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "slice#builtin"}
+func SliceConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "slice#builtin"}
 }
 
 // PointerConstructorType returns the VName for the builtin Go pointer type constructor.
-func PointerConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "pointer#builtin"}
+func PointerConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "pointer#builtin"}
 }
 
 // ChanConstructorType returns the VName for the builtin Go chan type
 // constructor of the given direction.
-func ChanConstructorType(corpus string, dir types.ChanDir) *spb.VName {
+func ChanConstructorType(dir types.ChanDir) *spb.VName {
 	var chanType string
 	switch dir {
 	case types.SendOnly:
@@ -71,10 +71,10 @@ func ChanConstructorType(corpus string, dir types.ChanDir) *spb.VName {
 	default:
 		chanType = "chan"
 	}
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: chanType + "#builtin"}
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: chanType + "#builtin"}
 }
 
 // VariadicConstructorType returns the VName for the builtin Go variadic type constructor.
-func VariadicConstructorType(corpus string) *spb.VName {
-	return &spb.VName{Corpus: corpus, Language: Language, Signature: "variadic#builtin"}
+func VariadicConstructorType() *spb.VName {
+	return &spb.VName{Corpus: GolangCorpus, Language: Language, Signature: "variadic#builtin"}
 }

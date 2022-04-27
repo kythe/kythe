@@ -147,7 +147,7 @@ func TestForBuiltin(t *testing.T) {
 		Root:      "ref/spec",
 		Signature: signature,
 	}
-	got := ForBuiltin(GolangCorpus, "blah")
+	got := ForBuiltin("blah")
 	if !proto.Equal(got, want) {
 		t.Errorf("ForBuiltin(%q): got %+v, want %+v", signature, got, want)
 	}
