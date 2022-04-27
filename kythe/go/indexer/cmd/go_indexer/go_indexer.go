@@ -143,8 +143,8 @@ func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*index
 // indexGo is a visitFunc that invokes the Kythe Go indexer on unit.
 func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
-		Info:                          indexer.XRefTypeInfo(),
-		CheckRules:                    checkMetadata,
+		Info:       indexer.XRefTypeInfo(),
+		CheckRules: checkMetadata,
 	})
 	if err != nil {
 		return err
