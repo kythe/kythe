@@ -205,7 +205,10 @@ func ForStandardLibrary(corpus, importPath string) *spb.VName {
 
 // IsStandardLibrary reports whether v names part of the Go standard library.
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
-// extension repositories.  If v == nil, the answer is false.
+// extension repositories.  If v == nil, the answer is false. Note that if the
+// --use_compilation_corpus_as_default flag is enabled, go stdlib nodes will be
+// assigned the corpus of the compilation unit being indexed rather than
+// "golang.org", thus this predicate will not work.
 func IsStandardLibrary(v *spb.VName) bool {
 	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == GolangCorpus
 }
