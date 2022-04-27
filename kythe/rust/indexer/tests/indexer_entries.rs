@@ -17,8 +17,8 @@ use crate::array_writer::ArrayWriter;
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::error::KytheError;
 use kythe_rust_indexer::indexer::entries::EntryEmitter;
-use storage_rust_proto::*;
 use sha2::{Digest, Sha256};
+use storage_rust_proto::*;
 
 // This test checks that the emit_fact function works properly
 #[test]
