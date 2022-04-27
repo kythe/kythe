@@ -760,7 +760,7 @@ class Visitor {
   private readonly influencers: Set<VName>[] = [];
 
   /** Cached anchor nodes. Signature is used as key. */
-  private anchors = new Map<string, VName>();
+  private readonly anchors = new Map<string, VName>();
 
   constructor(
       private readonly host: IndexerHost,
