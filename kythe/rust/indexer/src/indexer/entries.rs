@@ -139,6 +139,9 @@ impl<'a> EntryEmitter<'a> {
         let mut diagnostic_vname = VName::new();
         let source_signature = source_vname.get_signature();
         diagnostic_vname.set_signature(format!("{}_{}", source_signature, sha256sum));
+        // Use the corpus and language from the source_vname
+        diagnostic_vname.set_corpus(source_vname.get_corpus().to_string());
+        diagnostic_vname.set_language(source_vname.get_language().to_string());
 
         // Emit diagnostic node
         self.emit_fact(&diagnostic_vname, "/kythe/node/kind", b"diagnostic".to_vec())?;
