@@ -455,7 +455,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			}
 		}
 	case *types.TypeParam:
-		v = e.pi.ObjectVName(typ.Obj())
+		v = e.pi.ObjectVName(typ.Obj(), e.opts.UseCompilationCorpusAsDefault)
 	default:
 		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
 	}
@@ -1094,7 +1094,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
 	if e.opts.emitMarkedSource() {
-		e.emitCode(target, e.pi.MarkedSource(obj))
+		e.emitCode(target, e.pi.MarkedSource(obj, e.opts.UseCompilationCorpusAsDefault))
 	}
 	e.writeEdge(target, e.emitTypeOf(id), edges.Typed)
 	return target

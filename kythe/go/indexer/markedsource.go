@@ -33,12 +33,12 @@ import (
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
+func (pi *PackageInfo) MarkedSource(obj types.Object, useCompilationCorpusAsDefault bool) *cpb.MarkedSource {
 	ms := &cpb.MarkedSource{
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),
-			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj))}}},
+			Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(obj, useCompilationCorpusAsDefault))}}},
 		}},
 	}
 
@@ -63,7 +63,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//     |           |
 	//    (id) pkg    type
 	//
-	if ctx := pi.typeContext(obj); len(ctx) != 0 {
+	if ctx := pi.typeContext(obj, useCompilationCorpusAsDefault); len(ctx) != 0 {
 		ms.Child = append([]*cpb.MarkedSource{{
 			Kind:              cpb.MarkedSource_CONTEXT,
 			PostChildText:     ".",
@@ -96,7 +96,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 				Child: []*cpb.MarkedSource{{
 					Kind:    cpb.MarkedSource_TYPE,
 					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
-					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv))}}},
+					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv, useCompilationCorpusAsDefault))}}},
 				}},
 			})
 			firstParam = 1
@@ -211,7 +211,7 @@ func typeArgs(typ types.Type) string {
 // typeContext returns the package, type, and function context identifiers that
 // qualify the name of obj, if any are applicable. The result is empty if there
 // are no appropriate qualifiers.
-func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
+func (pi *PackageInfo) typeContext(obj types.Object, useCompilationCorpusAsDefault bool) []*cpb.MarkedSource {
 	var ms []*cpb.MarkedSource
 	addID := func(s string, v *spb.VName) {
 		id := &cpb.MarkedSource{
@@ -227,9 +227,9 @@ func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
 		if t, ok := cur.(interface {
 			Name() string
 		}); ok {
-			addID(t.Name(), pi.ObjectVName(cur))
+			addID(t.Name(), pi.ObjectVName(cur, useCompilationCorpusAsDefault))
 		} else {
-			addID(typeName(cur.Type()), pi.ObjectVName(cur))
+			addID(typeName(cur.Type()), pi.ObjectVName(cur, useCompilationCorpusAsDefault))
 		}
 	}
 	if pkg := obj.Pkg(); pkg != nil {
