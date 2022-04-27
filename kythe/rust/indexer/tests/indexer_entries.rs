@@ -17,6 +17,7 @@ use crate::array_writer::ArrayWriter;
 extern crate kythe_rust_indexer;
 use kythe_rust_indexer::error::KytheError;
 use kythe_rust_indexer::indexer::entries::EntryEmitter;
+use sha2::{Digest, Sha256};
 use storage_rust_proto::*;
 
 // This test checks that the emit_fact function works properly
@@ -119,6 +120,76 @@ fn anchors_properly_emitted() -> Result<(), KytheError> {
     assert_eq!(*entry3.get_target(), target_vname);
     assert_eq!(entry3.get_fact_name(), "/");
     assert_eq!(entry3.get_edge_kind(), "/kythe/edge/defines/binding");
+
+    Ok(())
+}
+
+// This test checks that the emit_diagnostic function works properly
+#[test]
+fn diagnostics_properly_emitted() -> Result<(), KytheError> {
+    // Create an emitter that writes to the ArrayWriter. This makes it easier to
+    // look at the emitted Entry protobufs.
+    let mut array_writer = ArrayWriter::new();
+    let mut emitter = EntryEmitter::new(&mut array_writer);
+
+    // Create source_vname for the test
+    let mut source_vname = VName::new();
+    source_vname.set_signature("test_signature".to_string());
+    source_vname.set_corpus("test_corpus".to_string());
+    source_vname.set_language("test_language".to_string());
+
+    emitter.emit_diagnostic(
+        &source_vname,
+        "test diagnostic",
+        Some("test details"),
+        Some("test url"),
+    )?;
+    let verify_diagnostic_vname = |vname: &VName| -> () {
+        assert_eq!(vname.get_corpus(), "test_corpus");
+        assert_eq!(vname.get_language(), "test_language");
+    };
+
+    // There should be 5 Entry protobufs
+    let entries = array_writer.as_ref();
+    assert_eq!(entries.len(), 5);
+
+    // The first entry defines the kind
+    let entry0 = entries.get(0).unwrap();
+    verify_diagnostic_vname(&entry0.get_source());
+    assert_eq!(entry0.get_fact_name(), "/kythe/node/kind");
+    assert_eq!(entry0.get_fact_value(), b"diagnostic".to_vec());
+
+    // The second and third define the start/end of the anchor
+    let entry1 = entries.get(1).unwrap();
+    verify_diagnostic_vname(&entry1.get_source());
+    assert_eq!(entry1.get_fact_name(), "/kythe/message");
+    assert_eq!(entry1.get_fact_value(), b"test diagnostic".to_vec());
+
+    let entry2 = entries.get(2).unwrap();
+    verify_diagnostic_vname(&entry2.get_source());
+    assert_eq!(entry2.get_fact_name(), "/kythe/details");
+    assert_eq!(entry2.get_fact_value(), b"test details".to_vec());
+
+    let entry3 = entries.get(3).unwrap();
+    verify_diagnostic_vname(&entry3.get_source());
+    assert_eq!(entry3.get_fact_name(), "/kythe/context/url");
+    assert_eq!(entry3.get_fact_value(), b"test url".to_vec());
+
+    let entry4 = entries.get(4).unwrap();
+    let mut expected_diagnostic_vname = source_vname.clone();
+
+    // Combine diagnostic message fields and create sha256 sum for signature
+    let combined_description = format!("{}||{}||{}", "test diagnostic", "test details", "test url");
+    let mut sha256 = Sha256::new();
+    sha256.update(combined_description.as_str().as_bytes());
+    let bytes = sha256.finalize();
+    let sha256sum = hex::encode(bytes);
+    expected_diagnostic_vname.set_signature(format!("{}_{}", "test_signature", sha256sum));
+
+    assert_eq!(*entry4.get_source(), source_vname);
+    assert_eq!(*entry4.get_target(), expected_diagnostic_vname);
+    assert_eq!(entry4.get_fact_name(), "/");
+    assert_eq!(entry4.get_edge_kind(), "/kythe/edge/tagged");
 
     Ok(())
 }
