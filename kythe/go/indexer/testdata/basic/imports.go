@@ -9,10 +9,6 @@ import (
 	//- @"\"strconv\"" ref/imports
 	//-   Strconv=vname("package", "golang.org", _, "strconv", "go")
 	"strconv"
-
-	//- @"\"net/http\"" ref/imports
-	//-   _NetHTTP=vname("package", "golang.org", _, "net/http", "go")
-	_ "net/http"
 )
 
 //- @fmt ref Fmt

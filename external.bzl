@@ -34,7 +34,7 @@ load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.18beta2")
+    go_register_toolchains(version = "1.18.1")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
@@ -1155,13 +1155,13 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.8, latest as of 2021-12-15
+        # v0.1.9, latest as of 2022-03-14
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.8.zip",
-            "https://github.com/golang/tools/archive/v0.1.8.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.9.zip",
+            "https://github.com/golang/tools/archive/v0.1.9.zip",
         ],
-        sha256 = "aec8a9ade0974bafc290bad1c53fa2b4d2b87ac8a90bf5340ded216ff81d1b2a",
-        strip_prefix = "tools-0.1.8",
+        sha256 = "1d338afb3cd8013cfb035da6831dea2210efb0386c17b9c99b5e84724e3d733a",
+        strip_prefix = "tools-0.1.9",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested
