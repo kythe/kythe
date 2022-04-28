@@ -985,14 +985,28 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 }
 
 func (e *emitter) writeFact(src *spb.VName, name, value string) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
 
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+		tgt = proto.Clone(tgt).(*spb.VName)
+		tgt.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
@@ -1001,6 +1015,10 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 }
 
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
 

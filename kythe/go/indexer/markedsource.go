@@ -243,10 +243,32 @@ func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
 	return ms
 }
 
+// rewriteMarkedSourceCorpus finds all tickets in the MarkedSource
+// and its children and rewrites them to use the given corpus.
+func rewriteMarkedSourceCorpus(ms *cpb.MarkedSource, corpus string) {
+	for _, link := range ms.Link {
+		for i, def := range link.Definition {
+			v, err := kytheuri.ToVName(def)
+			if err != nil {
+				log.Printf("Error parsing ticket %q: %v", def, err)
+				continue
+			}
+			v.Corpus = corpus
+			link.Definition[i] = kytheuri.ToString(v)
+		}
+	}
+	for _, child := range ms.Child {
+		rewriteMarkedSourceCorpus(child, corpus)
+	}
+}
+
 // emitCode emits a code fact for the specified marked source message on the
 // target, or logs a diagnostic.
 func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
 	if ms != nil {
+		if e.opts.UseCompilationCorpusAsDefault {
+			rewriteMarkedSourceCorpus(ms, e.pi.VName.Corpus)
+		}
 		bits, err := proto.Marshal(ms)
 		if err != nil {
 			log.Printf("ERROR: Unable to marshal marked source: %v", err)
