@@ -183,7 +183,7 @@ class Verifier {
   void ShowAnchors() { show_anchors_ = true; }
 
   /// \brief Elide unlabeled nodes from graph dumps.
-  void ElideUnlabeled() { show_unlabled_ = false; }
+  void ElideUnlabeled() { show_unlabeled_ = false; }
 
   /// \brief Check for singleton EVars.
   /// \return true if there were singletons.
