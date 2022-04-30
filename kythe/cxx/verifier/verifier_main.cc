@@ -95,7 +95,7 @@ Example:
 
   if (absl::GetFlag(FLAGS_minimal_graphviz)) {
     v.SaveEVarAssignments();
-    v.ElideUnlabled();
+    v.ElideUnlabeled();
   }
 
   if (absl::GetFlag(FLAGS_use_file_nodes)) {

@@ -1547,7 +1547,7 @@ void Verifier::DumpAsDot() {
     }
   };
   auto ElideNode = [&](AstNode* node) {
-    if (show_unlabled_) {
+    if (show_unlabeled_) {
       return false;
     }
     return GetLabel(node).empty();
