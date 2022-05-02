@@ -41,6 +41,8 @@ ABSL_FLAG(bool, graphviz, false,
           "Only dump facts as a GraphViz-compatible graph");
 ABSL_FLAG(bool, annotated_graphviz, false,
           "Solve and annotate a GraphViz graph.");
+ABSL_FLAG(bool, minimal_graphviz, false,
+          "Solve and dump a GraphViz graph eliding unused nodes.");
 ABSL_FLAG(std::string, goal_prefix, "//-", "Denote goals with this string.");
 ABSL_FLAG(bool, use_file_nodes, false,
           "Look for assertions in UTF8 file nodes.");
@@ -89,6 +91,11 @@ Example:
 
   if (absl::GetFlag(FLAGS_annotated_graphviz)) {
     v.SaveEVarAssignments();
+  }
+
+  if (absl::GetFlag(FLAGS_minimal_graphviz)) {
+    v.SaveEVarAssignments();
+    v.ElideUnlabeled();
   }
 
   if (absl::GetFlag(FLAGS_use_file_nodes)) {
@@ -176,7 +183,8 @@ Example:
   }
 
   if (absl::GetFlag(FLAGS_graphviz) ||
-      absl::GetFlag(FLAGS_annotated_graphviz)) {
+      absl::GetFlag(FLAGS_annotated_graphviz) ||
+      absl::GetFlag(FLAGS_minimal_graphviz)) {
     v.DumpAsDot();
   }
 

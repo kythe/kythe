@@ -182,6 +182,9 @@ class Verifier {
   /// \brief Show anchor locations in graph dumps (instead of @).
   void ShowAnchors() { show_anchors_ = true; }
 
+  /// \brief Elide unlabeled nodes from graph dumps.
+  void ElideUnlabeled() { show_unlabeled_ = false; }
+
   /// \brief Check for singleton EVars.
   /// \return true if there were singletons.
   bool CheckForSingletonEVars() { return parser_.CheckForSingletonEVars(); }
@@ -335,6 +338,9 @@ class Verifier {
 
   /// If true, show anchor locations in graph dumps (instead of @).
   bool show_anchors_ = false;
+
+  /// If true, show unlabeled nodes in graph dumps.
+  bool show_unlabeled_ = true;
 
   /// Identifier for MarkedSource child edges.
   AstNode* marked_source_child_id_;

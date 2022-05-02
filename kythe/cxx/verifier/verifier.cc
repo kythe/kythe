@@ -1546,6 +1546,12 @@ void Verifier::DumpAsDot() {
       return std::string();
     }
   };
+  auto ElideNode = [&](AstNode* node) {
+    if (show_unlabeled_) {
+      return false;
+    }
+    return GetLabel(node).empty();
+  };
   std::sort(facts_.begin(), facts_.end(), GraphvizSortOrder);
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter quote_printer(printer);
@@ -1555,11 +1561,7 @@ void Verifier::DumpAsDot() {
   for (size_t i = 0; i < facts_.size(); ++i) {
     AstNode* fact = facts_[i];
     Tuple* t = fact->AsApp()->rhs()->AsTuple();
-    printer.Print("\"");
-    t->element(0)->Dump(symbol_table_, &quote_printer);
-    printer.Print("\"");
     if (t->element(1) == empty_string_id()) {
-      std::string label = GetLabel(t->element(0));
       // Node. We sorted these above st all the facts should come subsequent.
       // Figure out if the node is an anchor.
       bool is_anchor_node = false;
@@ -1582,6 +1584,14 @@ void Verifier::DumpAsDot() {
           }
         }
       }
+      if (ElideNode(t->element(0))) {
+        --i;
+        continue;
+      }
+      printer.Print("\"");
+      t->element(0)->Dump(symbol_table_, &quote_printer);
+      printer.Print("\"");
+      std::string label = GetLabel(t->element(0));
       if (is_anchor_node && !show_anchors_) {
         printer.Print(" [ shape=circle, label=\"@");
         printer.Print(label);
@@ -1625,6 +1635,12 @@ void Verifier::DumpAsDot() {
       --i;  // Don't skip the fact following the block.
     } else {
       // Edge.
+      if (ElideNode(t->element(0)) || ElideNode(t->element(2))) {
+        continue;
+      }
+      printer.Print("\"");
+      t->element(0)->Dump(symbol_table_, &quote_printer);
+      printer.Print("\"");
       printer.Print(" -> \"");
       t->element(2)->Dump(symbol_table_, &quote_printer);
       printer.Print("\" [ label=\"");
