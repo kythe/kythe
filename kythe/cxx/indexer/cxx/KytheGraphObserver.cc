@@ -1147,7 +1147,7 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {
       LOG(FATAL) << "Missing builtin " << spelling.str();
     }
-    LOG(ERROR) << "Missing builtin " << spelling.str();
+    VLOG(1) << "Missing builtin " << spelling.str();
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
     sig.set_pre_text(std::string(spelling));
