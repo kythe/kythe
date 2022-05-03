@@ -57,6 +57,11 @@ _VERIFIER_FLAGS = {
     "ignore_dups": False,
 }
 
+_INDEXER_LOGGING_ENV = {
+    "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
+    "GLOG_logtostderr": "1",
+}
+
 _INDEXER_FLAGS = {
     "experimental_alias_template_instantiations": False,
     "experimental_drop_cpp_fwd_decl_docs": False,
@@ -533,10 +538,7 @@ def _cc_index_source(ctx, src):
         outputs = [entries],
         inputs = ctx.files.srcs + ctx.files.deps,
         tools = [ctx.executable.indexer],
-        env = {
-            "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
-            "GLOG_logtostderr": "1",
-        },
+        env = _INDEXER_LOGGING_ENV,
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
@@ -561,10 +563,7 @@ def _cc_index_compilation(ctx, compilation):
         inputs = [compilation],
         tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
-        env = {
-            "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
-            "GLOG_logtostderr": "1",
-        },
+        env = _INDEXER_LOGGING_ENV,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
