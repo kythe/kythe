@@ -533,6 +533,10 @@ def _cc_index_source(ctx, src):
         outputs = [entries],
         inputs = ctx.files.srcs + ctx.files.deps,
         tools = [ctx.executable.indexer],
+        env = {
+            "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
+            "GLOG_logtostderr": "1",
+        },
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
@@ -557,6 +561,10 @@ def _cc_index_compilation(ctx, compilation):
         inputs = [compilation],
         tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
+        env = {
+            "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
+            "GLOG_logtostderr": "1",
+        },
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
