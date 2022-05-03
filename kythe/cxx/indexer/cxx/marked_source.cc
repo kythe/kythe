@@ -437,8 +437,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {
-      VLOG(1) << "Invalid return type range for "
-              << decl->getNameAsString();
+      VLOG(1) << "Invalid return type range for " << decl->getNameAsString();
     }
   }
 
