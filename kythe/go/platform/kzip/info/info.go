@@ -84,10 +84,11 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	}
 
 	var srcCorpora stringset.Set
+	var absPaths stringset.Set
 	srcsWithRI := stringset.New()
 	for _, ri := range u.Proto.RequiredInput {
 		if strings.HasPrefix(ri.GetVName().GetPath(), "/") && !strings.HasPrefix(ri.GetVName().GetPath(), "/kythe_builtins/") {
-			a.KzipInfo.AbsolutePaths = append(a.KzipInfo.AbsolutePaths, ri.GetVName().GetPath())
+			absPaths.Add(ri.GetVName().GetPath())
 		}
 
 		riCorpus := requiredInputCorpus(u, ri)
@@ -118,6 +119,8 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 		// This is a warning for now, but may become an error.
 		log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
 	}
+
+	a.KzipInfo.AbsolutePaths = absPaths.Elements()
 }
 
 // Get returns the final KzipInfo after info from each unit in the kzip has been
@@ -183,7 +186,7 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 		}
 		kzipInfo.CriticalKzipErrors = append(kzipInfo.GetCriticalKzipErrors(), i.GetCriticalKzipErrors()...)
 		kzipInfo.Size += i.Size
-		kzipInfo.AbsolutePaths = append(kzipInfo.AbsolutePaths, i.AbsolutePaths...)
+		kzipInfo.AbsolutePaths = stringset.New(kzipInfo.AbsolutePaths...).Union(stringset.New(i.AbsolutePaths...)).Elements()
 	}
 	return kzipInfo
 }
