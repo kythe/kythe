@@ -101,7 +101,7 @@ let v = {
 //- @AliasArray defines/binding VName("AliasArray#type", _, _, "testdata/schema", "typescript")
 type AliasArray<
     // TypeParameter
-    //- @#0"T" defines/binding VName("AliasArray.T#type", _, _, "testdata/schema", "typescript")
+    //- @#0"T" defines/binding VName("AliasArray.T#mtype", _, _, "testdata/schema", "typescript")
     T> = Array<T>;
 
 //- @arrowFun defines/binding VName("arrowFun", _, _, "testdata/schema", "typescript")

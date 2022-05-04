@@ -875,21 +875,6 @@ class Visitor {
             `type param ${param.getText()} has no symbol`);
         return;
       }
-      const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
-      var superType: VName|undefined;
-      if (kType) {
-        this.emitNode(kType, NodeKind.ABSVAR);
-        this.emitEdge(
-            this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kType);
-        // ...<T extends A>
-        if (param.constraint) {
-          superType = this.visitType(param.constraint);
-          if (superType)
-            this.emitEdge(kType, EdgeKind.BOUNDED_UPPER, superType);
-        }
-        // ...<T = A>
-        if (param.default) this.visitType(param.default);
-      }
       const kTVar = this.host.getSymbolName(sym, TSNamespace.TYPE_MIGRATION);
       if (kTVar && parent) {
         this.emitNode(kTVar, NodeKind.TVAR);
@@ -900,9 +885,12 @@ class Visitor {
         this.emitEdge(parent, makeOrdinalEdge(EdgeKind.TPARAM, ordinal), kTVar);
         // ...<T extends A>
         if (param.constraint) {
+          var superType = this.visitType(param.constraint);
           if (superType)
             this.emitEdge(kTVar, EdgeKind.BOUNDED_UPPER, superType);
         }
+        // ...<T = A>
+        if (param.default) this.visitType(param.default);
       }
     }
   }
