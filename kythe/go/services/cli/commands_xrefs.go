@@ -52,6 +52,8 @@ type xrefsCommand struct {
 	nodeDefinitions bool
 	anchorText      bool
 
+	resolvedPathFilters flagutil.StringList
+
 	excludeGenerated bool
 }
 
@@ -66,6 +68,7 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.workspaceURI, "workspace_uri", "", "Workspace URI to patch cross-references")
 	flag.BoolVar(&c.relatedNodes, "related_nodes", true, "Whether to request related nodes")
 	flag.Var(&c.nodeFilters, "filters", "CSV list of additional fact filters to use when requesting related nodes")
+	flag.Var(&c.resolvedPathFilters, "resolved_path_filters", "CSV list of additional resolved path filters to use")
 	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
@@ -94,6 +97,12 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		req.CorpusPathFilters.Filter = append(req.CorpusPathFilters.Filter, &xpb.CorpusPathFilter{
 			Type: xpb.CorpusPathFilter_EXCLUDE,
 			Root: ".+",
+		})
+	}
+	for _, f := range c.resolvedPathFilters {
+		req.CorpusPathFilters.Filter = append(req.CorpusPathFilters.Filter, &xpb.CorpusPathFilter{
+			Type:         xpb.CorpusPathFilter_INCLUDE_ONLY,
+			ResolvedPath: f,
 		})
 	}
 	if c.relatedNodes {

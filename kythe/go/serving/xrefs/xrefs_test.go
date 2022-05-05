@@ -2639,11 +2639,14 @@ func TestCorpusPathFilters(t *testing.T) {
 		{mustParseFilters(`filter: { type: EXCLUDE root: ".+" } filter: { type: INCLUDE_ONLY corpus: "^kythe3"}`),
 			[]string{cps("kythe3", "", "any/path"), cps("kythe3//branch", "", "some/path")},
 			[]string{cps("kythe3", "genfiles", "any/path"), cps("kythe3//branch", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "^kythe3/branch/genfiles/"}`),
+			[]string{cps("kythe3//branch", "genfiles", "any/path"), cps("kythe3//branch", "genfiles/more", "any/path")},
+			[]string{cps("kythe3", "bin", "any/path"), cps("kythe3", "genfiles", "some/path")}},
 	}
 
 	for i, test := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			f, err := compileCorpusPathFilters(test.filters)
+			f, err := compileCorpusPathFilters(test.filters, nil)
 			testutil.Fatalf(t, "Error: %v", err)
 
 			for _, include := range test.includes {

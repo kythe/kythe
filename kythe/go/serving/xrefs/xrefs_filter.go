@@ -26,13 +26,16 @@ import (
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
-func compileCorpusPathFilters(fs *xpb.CorpusPathFilters) (*corpusPathFilter, error) {
+func compileCorpusPathFilters(fs *xpb.CorpusPathFilters, pr PathResolver) (*corpusPathFilter, error) {
 	if len(fs.GetFilter()) == 0 {
 		return nil, nil
 	}
+	if pr == nil {
+		pr = DefaultResolvePath
+	}
 	f := &corpusPathFilter{}
 	for _, filter := range fs.GetFilter() {
-		p, err := compileCorpusPathFilter(filter)
+		p, err := compileCorpusPathFilter(filter, pr)
 		if err != nil {
 			return nil, err
 		}
@@ -41,8 +44,8 @@ func compileCorpusPathFilters(fs *xpb.CorpusPathFilters) (*corpusPathFilter, err
 	return f, nil
 }
 
-func compileCorpusPathFilter(f *xpb.CorpusPathFilter) (*corpusPathPattern, error) {
-	p := &corpusPathPattern{}
+func compileCorpusPathFilter(f *xpb.CorpusPathFilter, pr PathResolver) (*corpusPathPattern, error) {
+	p := &corpusPathPattern{pathResolver: pr}
 	if f.GetType() == xpb.CorpusPathFilter_EXCLUDE {
 		p.inverse = true
 	}
@@ -65,11 +68,20 @@ func compileCorpusPathFilter(f *xpb.CorpusPathFilter) (*corpusPathPattern, error
 			return nil, err
 		}
 	}
+	if resolvedPath := f.GetResolvedPath(); resolvedPath != "" {
+		p.resolvedPath, err = regexp.Compile(resolvedPath)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return p, nil
 }
 
 type corpusPathPattern struct {
 	corpus, root, path *regexp.Regexp
+
+	pathResolver PathResolver
+	resolvedPath *regexp.Regexp
 
 	inverse bool
 }
@@ -77,7 +89,8 @@ type corpusPathPattern struct {
 func (p *corpusPathPattern) Allow(c *cpb.CorpusPath) bool {
 	return p.inverse != ((p.corpus == nil || p.corpus.MatchString(c.GetCorpus())) &&
 		(p.root == nil || p.root.MatchString(c.GetRoot())) &&
-		(p.path == nil || p.path.MatchString(c.GetPath())))
+		(p.path == nil || p.path.MatchString(c.GetPath())) &&
+		(p.resolvedPath == nil || p.resolvedPath.MatchString(p.pathResolver(c))))
 }
 
 type corpusPathFilter struct {
