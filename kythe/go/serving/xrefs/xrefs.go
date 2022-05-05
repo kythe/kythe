@@ -31,6 +31,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -228,6 +229,19 @@ type Table struct {
 
 	// MakePatcher returns a patching client that targets a Workspace.
 	MakePatcher func(context.Context, *xpb.Workspace) (MultiFilePatcher, error)
+
+	// ResolvePath is used to resolve CorpusPaths for filtering.  If unset,
+	// DefaultResolvePath will be used.
+	ResolvePath PathResolver
+}
+
+// A PathResolver resolves a CorpusPath into a single filepath.
+type PathResolver func(*cpb.CorpusPath) string
+
+// DefaultResolvePath returns the default resolved path for the CorpusPath by
+// joining its corpus, root, and path into a single filepath.
+func DefaultResolvePath(cp *cpb.CorpusPath) string {
+	return filepath.Join(cp.GetCorpus(), cp.GetRoot(), cp.GetPath())
 }
 
 // A MultiFilePatcher provides an interface to patch sets of xref anchors to an
@@ -611,7 +625,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		return nil, err
 	}
 
-	filter, err := compileCorpusPathFilters(req.GetCorpusPathFilters())
+	filter, err := compileCorpusPathFilters(req.GetCorpusPathFilters(), t.ResolvePath)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid corpus_path_filters %s: %v", strings.ReplaceAll(req.GetCorpusPathFilters().String(), "\n", " "), err)
 	}

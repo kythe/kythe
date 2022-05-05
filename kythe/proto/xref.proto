@@ -457,6 +457,10 @@ message CorpusPathFilter {
   string root = 3;
   // Path pattern to match against.
   string path = 4;
+
+  // Fully resolved path pattern to match against.  The resolved path is
+  // determined by the server implementation.
+  string resolved_path = 5;
 }
 
 // TODO(schroederc): eliminate duplicate serving.ExpandedAnchor message
