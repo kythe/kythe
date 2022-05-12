@@ -12,6 +12,13 @@ class DefaultCorpus {
   //- ListStringType.node/kind "tapp"
   private List<String> myvar;
 
+  //- @objList defines/binding ObjListVar
+  //- ObjListVar typed TAppNode
+  //- TAppNode.node/kind tapp
+  //- TAppNode param.1 AbsVarNode=vname(_, "kythe", "", "", "java")
+  //- AbsVarNode.node/kind absvar
+  private List<? extends Object> objList;
+
   //- @myMethod defines/binding MyMethod
   //- MyMethod typed MyMethodType=vname(_,"kythe",_,_,"java")
   //- MyMethodType.node/kind "tapp"

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"sort"
+	"strconv"
 	"testing"
 
 	"kythe.io/kythe/go/services/xrefs"
@@ -32,6 +33,7 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -136,7 +138,21 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
-			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: "kythe:?path=def/location#defDoc"},
+			DefinitionLocation: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			},
 		}, {
 			Ticket: "kythe:#documentedBy",
 			Fact: makeFactList(
@@ -662,7 +678,7 @@ func TestDecorationsRefs(t *testing.T) {
 		References: true,
 		Filter:     []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
@@ -694,7 +710,7 @@ func TestDecorationsRefScopes(t *testing.T) {
 		References:     true,
 		SemanticScopes: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration, d.FileInfo)
 	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
@@ -713,7 +729,7 @@ func TestDecorationsExtendsOverrides(t *testing.T) {
 		SemanticScopes:    true,
 		TargetDefinitions: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expectedOverrides := map[string]*xpb.DecorationsReply_Overrides{
 		"kythe://c?lang=otpl?path=/a/path#map": &xpb.DecorationsReply_Overrides{
@@ -777,7 +793,7 @@ func TestDecorationsBuildConfig(t *testing.T) {
 			ExtendsOverrides:  true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		if err := testutil.DeepEqual([]*xpb.DecorationsReply_Reference{}, reply.Reference); err != nil {
 			t.Fatal(err)
@@ -792,7 +808,7 @@ func TestDecorationsBuildConfig(t *testing.T) {
 			ExtendsOverrides:  true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1], d.FileInfo)
 		if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
@@ -849,7 +865,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		References:  true,
 		Filter:      []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
@@ -933,7 +949,7 @@ func TestDecorationsEmpty(t *testing.T) {
 		},
 		References: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.Reference) > 0 {
 		t.Fatalf("Unexpected DecorationsReply: {%v}", reply)
@@ -948,7 +964,7 @@ func TestDecorationsSourceText(t *testing.T) {
 		Location:   &xpb.Location{Ticket: expected.File.Ticket},
 		SourceText: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	if !bytes.Equal(reply.SourceText, expected.File.Text) {
 		t.Errorf("Expected source text %q; found %q", string(expected.File.Text), string(reply.SourceText))
@@ -966,7 +982,7 @@ func TestDecorationsGeneratedBy(t *testing.T) {
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := &xpb.DecorationsReply{
 		Location: &xpb.Location{Ticket: "kythe://corpus?path=/some/proto.proto?root=generated"},
@@ -990,7 +1006,7 @@ func TestDecorationsRevisions(t *testing.T) {
 		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1014,7 +1030,7 @@ func TestDecorationsRevisions(t *testing.T) {
 			Location:   &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
 			References: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1071,7 +1087,7 @@ func TestDecorationsRevisions(t *testing.T) {
 			References:        true,
 			TargetDefinitions: true,
 		})
-		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+		testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 		expected := &xpb.DecorationsReply{
 			Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
@@ -1143,7 +1159,7 @@ func TestDecorationsDiagnostics(t *testing.T) {
 		Location:    &xpb.Location{Ticket: d.File.Ticket},
 		Diagnostics: true,
 	})
-	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
 	expected := tbl.Decorations[1].Diagnostic
 	if err := testutil.DeepEqual(expected, reply.Diagnostic); err != nil {
@@ -1158,7 +1174,7 @@ func TestCrossReferencesNone(t *testing.T) {
 		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	if len(reply.CrossReferences) > 0 || len(reply.Nodes) > 0 {
 		t.Fatalf("Expected empty CrossReferencesReply; found %v", reply)
@@ -1175,7 +1191,7 @@ func TestCrossReferences(t *testing.T) {
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 		Snippets:       xpb.SnippetsKind_DEFAULT,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1285,6 +1301,363 @@ func TestCrossReferences(t *testing.T) {
 	}
 }
 
+type mockPatcher struct {
+	files []*srvpb.FileInfo
+}
+
+func (p *mockPatcher) Close() error { return nil }
+func (p *mockPatcher) AddFile(ctx context.Context, f *srvpb.FileInfo) error {
+	if f != nil {
+		p.files = append(p.files, f)
+	}
+	return nil
+}
+func (p *mockPatcher) patchSpan(span *cpb.Span) {
+	if span == nil {
+		return
+	}
+	// Just move everything over by 1-ish
+	span.Start.ByteOffset++
+	span.Start.LineNumber++
+	span.Start.ColumnOffset++
+	span.End.ByteOffset++
+	span.End.LineNumber++
+	span.End.ColumnOffset++
+}
+func (p *mockPatcher) patchAnchor(a *xpb.Anchor) {
+	p.patchSpan(a.Span)
+	p.patchSpan(a.SnippetSpan)
+}
+
+func (p *mockPatcher) PatchAnchors(ctx context.Context, as []*xpb.Anchor) ([]*xpb.Anchor, error) {
+	for _, a := range as {
+		p.patchAnchor(a)
+	}
+	return as, nil
+}
+func (p *mockPatcher) PatchRelatedAnchors(ctx context.Context, as []*xpb.CrossReferencesReply_RelatedAnchor) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
+	for _, a := range as {
+		p.patchAnchor(a.Anchor)
+		for _, site := range a.Site {
+			p.patchAnchor(site)
+		}
+	}
+	return as, nil
+}
+
+func TestDecorationsPatching(t *testing.T) {
+	st := tbl.Construct(t)
+
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:          &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		References:        true,
+		TargetDefinitions: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
+
+	expected := &xpb.DecorationsReply{
+		Location: &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		Revision: "overallFileRev",
+		GeneratedByFile: []*xpb.File{{
+			CorpusPath: &cpb.CorpusPath{
+				Corpus: "corpus",
+				Path:   "some/proto.proto",
+			},
+			Revision: "generatedRev",
+		}},
+		Reference: []*xpb.DecorationsReply_Reference{{
+			TargetTicket:   "kythe://corpus?path=another/file",
+			Kind:           "/kythe/edge/includes/ref",
+			TargetRevision: "anotherFileRev",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   0,
+					LineNumber:   1,
+					ColumnOffset: 0,
+				},
+				End: &cpb.Point{
+					ByteOffset:   4,
+					LineNumber:   1,
+					ColumnOffset: 4,
+				},
+			},
+		}, {
+			TargetTicket:     "kythe://corpus?path=def/file#node",
+			TargetDefinition: "kythe://corpus?path=def/file#anchor",
+			Kind:             "/kythe/edge/ref",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		}},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe://corpus?path=def/file#anchor": &xpb.Anchor{
+				Ticket:   "kythe://corpus?path=def/file#anchor",
+				Parent:   "kythe://corpus?path=def/file",
+				Revision: "defFileRev",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 1, LineNumber: 2, ColumnOffset: 1},
+					End:   &cpb.Point{ByteOffset: 5, LineNumber: 2, ColumnOffset: 5},
+				},
+			},
+		},
+	}
+
+	if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("Unexpected diff (- expected; + found):\n%s", diff)
+	}
+}
+
+func TestCrossReferencesPatching(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket: "kythe:?path=some/utf16/file#0-4",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe:?path=some/utf16/file",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{ByteOffset: 1, LineNumber: 2, ColumnOffset: 1},
+				End:   &cpb.Point{ByteOffset: 5, LineNumber: 2, ColumnOffset: 5},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   1,
+					LineNumber:   2,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   29,
+					LineNumber:   2,
+					ColumnOffset: 29,
+				},
+			},
+			Snippet: "これはいくつかのテキストです",
+		}}, {Anchor: &xpb.Anchor{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://c?path=/a/path",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   5,
+					ColumnOffset: 16,
+				},
+				End: &cpb.Point{
+					ByteOffset:   56,
+					LineNumber:   6,
+					ColumnOffset: 3,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   37,
+					LineNumber:   5,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   53,
+					LineNumber:   5,
+					ColumnOffset: 17,
+				},
+			},
+			Snippet: "some random text",
+		}}},
+
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+			Kind:        "/kythe/edge/defines/binding",
+			Parent:      "kythe://c?path=/a/path",
+			BuildConfig: "testConfig",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   3,
+					ColumnOffset: 11,
+				},
+				End: &cpb.Point{
+					ByteOffset:   34,
+					LineNumber:   4,
+					ColumnOffset: 6,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   18,
+					LineNumber:   3,
+					ColumnOffset: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   3,
+					ColumnOffset: 11,
+				},
+			},
+			Snippet: "here and  ",
+		}}},
+	}
+	expectedInfos := []*srvpb.FileInfo{}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
+	}
+	sort.Sort(byOffset(xr.Reference))
+
+	if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
+	}
+	if err := testutil.DeepEqual(expectedInfos, patcher.files); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrossReferencesFiltering(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+
+		CorpusPathFilters: mustParseFilters(`
+filter: {
+  type: INCLUDE_ONLY
+	corpus: "^c$"
+}
+		`),
+	})
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://c?path=/a/path",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   51,
+					LineNumber:   4,
+					ColumnOffset: 15,
+				},
+				End: &cpb.Point{
+					ByteOffset:   55,
+					LineNumber:   5,
+					ColumnOffset: 2,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 36,
+					LineNumber: 4,
+				},
+				End: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   4,
+					ColumnOffset: 16,
+				},
+			},
+			Snippet: "some random text",
+		}}},
+
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+			Kind:        "/kythe/edge/defines/binding",
+			Parent:      "kythe://c?path=/a/path",
+			BuildConfig: "testConfig",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+				End: &cpb.Point{
+					ByteOffset:   33,
+					LineNumber:   3,
+					ColumnOffset: 5,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 17,
+					LineNumber: 2,
+				},
+				End: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+			},
+			Snippet: "here and  ",
+		}}},
+	}
+
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Definitions: 1,
+		References:  1,
+	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %s", reply)
+	}
+	sort.Sort(byOffset(xr.Reference))
+
+	if diff := compare.ProtoDiff(expected, xr); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
+	}
+}
+
 func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 	ticket := "kythe://someCorpus?lang=otpl#signature"
 
@@ -1296,7 +1669,7 @@ func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 		Snippets:       xpb.SnippetsKind_DEFAULT,
 		BuildConfig:    []string{"testConfig"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1360,7 +1733,7 @@ func TestCrossReferencesRelatedNodes(t *testing.T) {
 		Ticket: []string{ticket},
 		Filter: []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1415,7 +1788,7 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 		Ticket: []string{ticket},
 		Filter: []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1464,7 +1837,7 @@ func TestCrossReferencesMerge(t *testing.T) {
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
 		Filter:     []string{"**"},
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1532,7 +1905,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1572,7 +1945,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1641,7 +2014,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1710,7 +2083,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1762,7 +2135,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 			Ticket:        []string{ticket},
 			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
 		})
-		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+		testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
@@ -1840,7 +2213,7 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1885,7 +2258,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
@@ -1953,7 +2326,7 @@ func TestCrossReferencesRevisions(t *testing.T) {
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 		Snippets:       xpb.SnippetsKind_NONE,
 	})
-	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply{
 		Total: &xpb.CrossReferencesReply_Total{
@@ -2042,6 +2415,18 @@ func TestDocumentation(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
 			},
 		},
 	}
@@ -2093,6 +2478,90 @@ func TestDocumentationChildren(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+			},
+		},
+	}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
+	}
+}
+
+func TestDocumentationPatching(t *testing.T) {
+	st := tbl.Construct(t)
+
+	patcher := &mockPatcher{}
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return patcher, nil
+	}
+
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documented"},
+
+		IncludeChildren: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+
+	expected := &xpb.DocumentationReply{
+		Document: []*xpb.DocumentationReply_Document{{
+			Ticket: "kythe:#documented",
+			Text: &xpb.Printable{
+				RawText: "some documentation text",
+			},
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+			Children: []*xpb.DocumentationReply_Document{{
+				Ticket: "kythe:#childDoc",
+				Text: &xpb.Printable{
+					RawText: "child document text",
+				},
+			}, {
+				Ticket: "kythe:#childDocBy",
+				Text: &xpb.Printable{
+					RawText: "second child document text",
+				},
+			}},
+		}},
+		Nodes: nodeInfos(getNodes(
+			"kythe:#childDoc",
+			"kythe:#childDocBy",
+			"kythe:#documented",
+			"kythe:#secondChildDoc",
+		)),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   2,
+						LineNumber:   2,
+						ColumnOffset: 2,
+					},
+					End: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   2,
+						ColumnOffset: 5,
+					},
+				},
 			},
 		},
 	}
@@ -2126,6 +2595,18 @@ func TestDocumentationIndirection(t *testing.T) {
 			"kythe:?path=def/location#defDoc": &xpb.Anchor{
 				Ticket: "kythe:?path=def/location#defDoc",
 				Parent: "kythe:?path=def/location",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   1,
+						LineNumber:   1,
+						ColumnOffset: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
 			},
 		},
 	}
@@ -2135,6 +2616,64 @@ func TestDocumentationIndirection(t *testing.T) {
 	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
 		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
+}
+
+func TestCorpusPathFilters(t *testing.T) {
+	tests := []struct {
+		filters *xpb.CorpusPathFilters
+
+		includes, excludes []string
+	}{
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" }`),
+			[]string{cps("kythe3", "", ""), cps("kythe3//branch", "", "")},
+			[]string{cps("other", "", ""), cps("other", "kythe3", "kythe3")}},
+		{mustParseFilters(`filter: { type: EXCLUDE root: ".+" }`),
+			[]string{cps("kythe3", "", ""), cps("kythe3//branch", "", ""), cps("oss", "", "any/path")},
+			[]string{cps("kythe3", "genfiles", ""), cps("other", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" root: "genfiles" }`),
+			[]string{cps("kythe3", "genfiles", ""), cps("kythe3//branch", "genfiles", "")},
+			[]string{cps("kythe2", "genfiles", ""), cps("kythe3", "bin", "path"), cps("other", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe" } filter: { type: INCLUDE_ONLY corpus: "2|3" }`),
+			[]string{cps("kythe3", "genfiles", "path"), cps("kythe2", "", "blah")},
+			[]string{cps("kythe4", "", ""), cps("kythe", "kythe2", "kythe3")}},
+		{mustParseFilters(`filter: { type: EXCLUDE root: ".+" } filter: { type: INCLUDE_ONLY corpus: "^kythe3"}`),
+			[]string{cps("kythe3", "", "any/path"), cps("kythe3//branch", "", "some/path")},
+			[]string{cps("kythe3", "genfiles", "any/path"), cps("kythe3//branch", "bin", "some/path")}},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "^kythe3/branch/genfiles/"}`),
+			[]string{cps("kythe3//branch", "genfiles", "any/path"), cps("kythe3//branch", "genfiles/more", "any/path")},
+			[]string{cps("kythe3", "bin", "any/path"), cps("kythe3", "genfiles", "some/path")}},
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			f, err := compileCorpusPathFilters(test.filters, nil)
+			testutil.Fatalf(t, "Error: %v", err)
+
+			for _, include := range test.includes {
+				if !f.AllowTicket(include) {
+					t.Errorf("Expected %q to be included but it wasn't", include)
+				}
+			}
+			for _, exclude := range test.excludes {
+				if f.AllowTicket(exclude) {
+					t.Errorf("Expected %q to be excluded but it wasn't", exclude)
+				}
+			}
+		})
+	}
+}
+
+func cps(corpus, root, path string) string {
+	u := &kytheuri.URI{Corpus: corpus, Root: root, Path: path}
+	return u.String()
+}
+
+func mustParseFilters(msg string) *xpb.CorpusPathFilters {
+	var f xpb.CorpusPathFilters
+	if err := prototext.Unmarshal([]byte(msg), &f); err != nil {
+		panic(err)
+	}
+	return &f
 }
 
 // byOffset implements the sort.Interface for *xpb.CrossReferencesReply_RelatedAnchors.
@@ -2196,16 +2735,16 @@ type testTable struct {
 func (tbl *testTable) Construct(t *testing.T) *Table {
 	p := make(testProtoTable)
 	for _, d := range tbl.Decorations {
-		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
+		testutil.Fatalf(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
 	}
 	for _, cr := range tbl.RefSets {
-		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesKey(mustFix(t, cr.SourceTicket)), cr))
+		testutil.Fatalf(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesKey(mustFix(t, cr.SourceTicket)), cr))
 	}
 	for _, crp := range tbl.RefPages {
-		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
+		testutil.Fatalf(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
 	}
 	for _, doc := range tbl.Documents {
-		testutil.FatalOnErrT(t, "Error writing documents: %v", p.Put(ctx, DocumentationKey(doc.Ticket), doc))
+		testutil.Fatalf(t, "Error writing documents: %v", p.Put(ctx, DocumentationKey(doc.Ticket), doc))
 	}
 	return NewCombinedTable(p)
 }

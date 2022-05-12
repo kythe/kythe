@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
-import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitPathFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -32,7 +31,6 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
@@ -77,22 +75,14 @@ public class JavaCompilationDetails implements AutoCloseable {
     List<String> options = optionsFromCompilationUnit(compilationUnit, processors);
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
-    // Create a CompilationUnitBasedJavaFileManager that uses the fileDataProvider and
+    // Create a CompilationUnitPathFileManager that uses the fileDataProvider and
     // compilationUnit
     StandardJavaFileManager fileManager =
-        // The Path-based JavaFileManager is only compatible with JDK9+ and for now,
-        // we have to remain compatible with JDK8.
-        isJdk9OrNewer()
-            ? new CompilationUnitPathFileManager(
-                compilationUnit,
-                fileDataProvider,
-                compiler.getStandardFileManager(diagnosticsCollector, null, null),
-                temporaryDirectory)
-            : new CompilationUnitBasedJavaFileManager(
-                fileDataProvider,
-                compilationUnit,
-                compiler.getStandardFileManager(diagnosticsCollector, null, null),
-                encoding);
+        new CompilationUnitPathFileManager(
+            compilationUnit,
+            fileDataProvider,
+            compiler.getStandardFileManager(diagnosticsCollector, null, null),
+            temporaryDirectory);
 
     Throwable analysisCrash = null;
     JavacTaskImpl javacTask = null;
@@ -225,18 +215,6 @@ public class JavaCompilationDetails implements AutoCloseable {
     }
 
     return arguments.removeUnsupportedOptions().build();
-  }
-
-  /** Returns true if the runtime version is >= JRE 9 */
-  private static boolean isJdk9OrNewer() {
-    try {
-      Method versionMethod = Runtime.class.getMethod("version");
-      Object version = versionMethod.invoke(null);
-      return ((int) version.getClass().getMethod("major").invoke(version) >= 9);
-    } catch (ReflectiveOperationException e) {
-      logger.atInfo().log("Falling back to legacy FileManager on JDK8 or older");
-      return false;
-    }
   }
 
   private static boolean isErrorDiagnostic(Diagnostic<?> diag) {

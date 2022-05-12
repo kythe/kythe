@@ -261,6 +261,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
       out_name.CopyFrom(VNameFromFileEntry(file_entry));
     } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
       VNameRefFromNodeId(range.Context).Expand(&out_name);
+    } else {
+      out_name.set_corpus(default_token_.vname().corpus());
     }
     size_t begin_offset = SourceManager->getFileOffset(begin);
     size_t end_offset = SourceManager->getFileOffset(end);
@@ -1145,7 +1147,7 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {
       LOG(FATAL) << "Missing builtin " << spelling.str();
     }
-    LOG(ERROR) << "Missing builtin " << spelling.str();
+    VLOG(1) << "Missing builtin " << spelling.str();
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
     sig.set_pre_text(std::string(spelling));

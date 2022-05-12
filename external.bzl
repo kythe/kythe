@@ -14,7 +14,8 @@ load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
-load("@rules_rust//rust:repositories.bzl", "rust_repositories")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 load(
@@ -33,13 +34,15 @@ load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.18beta1")
+    go_register_toolchains(version = "1.18.1")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
-    rust_repositories(version = "nightly", iso_date = "2022-01-09", dev_components = True)
+    rules_rust_dependencies()
+    rust_register_toolchains(version = "nightly", iso_date = "2022-01-09", dev_components = True, include_rustc_srcs = True)
     rust_proto_repositories()
+    rust_analyzer_deps()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
     rules_foreign_cc_dependencies(register_built_tools = False)
@@ -285,7 +288,7 @@ def _java_dependencies():
         artifacts = [
             "com.google.flogger:flogger:0.7.3",
             "com.google.flogger:flogger-system-backend:0.7.3",
-            "com.beust:jcommander:1.81",
+            "com.beust:jcommander:1.82",
             "com.google.auto.service:auto-service:1.0",
             "com.google.auto.service:auto-service-annotations:1.0",
             "com.google.auto.value:auto-value:1.8",
@@ -1152,13 +1155,13 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.8, latest as of 2021-12-15
+        # v0.1.9, latest as of 2022-03-14
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.8.zip",
-            "https://github.com/golang/tools/archive/v0.1.8.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.9.zip",
+            "https://github.com/golang/tools/archive/v0.1.9.zip",
         ],
-        sha256 = "aec8a9ade0974bafc290bad1c53fa2b4d2b87ac8a90bf5340ded216ff81d1b2a",
-        strip_prefix = "tools-0.1.8",
+        sha256 = "1d338afb3cd8013cfb035da6831dea2210efb0386c17b9c99b5e84724e3d733a",
+        strip_prefix = "tools-0.1.9",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested

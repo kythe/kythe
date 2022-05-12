@@ -42,6 +42,7 @@ import (
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/serving_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
@@ -514,4 +515,9 @@ func filterNode(patterns []*regexp.Regexp, n *scpb.Node) *cpb.NodeInfo {
 		c.Facts[facts.Subkind] = []byte(subkind)
 	}
 	return c
+}
+
+func a2a(a *srvpb.ExpandedAnchor, fileInfos map[string]*srvpb.FileInfo, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
+	c := &anchorConverter{fileInfos: fileInfos, anchorText: anchorText}
+	return c.Convert(a)
 }

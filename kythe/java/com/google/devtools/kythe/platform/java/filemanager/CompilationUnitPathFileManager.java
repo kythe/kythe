@@ -95,15 +95,13 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     defaultPlatformClassPath =
         ImmutableSet.copyOf(
             Iterables.transform(
-                // TODO(shahms): use getLocationAsPaths on Java 9
-                fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH),
-                f -> f.toPath().normalize().toString()));
+                fileManager.getLocationAsPaths(StandardLocation.PLATFORM_CLASS_PATH),
+                p -> p.normalize().toString()));
 
     readAheadProvider = new ReadAheadDataProvider(fileDataProvider);
     fileSystem = CompilationUnitFileSystem.create(compilationUnit, readAheadProvider);
     memFileSystem = Jimfs.newFileSystem(Configuration.unix());
-    // When compiled for Java 9+ this is ambiguous, so disambiguate to the compatibility shim.
-    setPathFactory((ForwardingStandardJavaFileManager.PathFactory) this::getPath);
+    setPathFactory(this::getPath);
     setLocations(
         findJavaDetails(compilationUnit)
             .map(details -> toLocationMap(details))
@@ -278,8 +276,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     return Maps.filterValues(
         defaultLocationMapBuilder()
             .put(StandardLocation.CLASS_PATH, toPaths(details.getClasspathList()))
-            // TODO(shahms): Use StandardLocation.MODULE_PATH directly on JDK9+
-            .put(StandardLocation.locationFor("MODULE_PATH"), toPaths(details.getClasspathList()))
+            .put(StandardLocation.MODULE_PATH, toPaths(details.getClasspathList()))
             .put(StandardLocation.SOURCE_PATH, toPaths(details.getSourcepathList()))
             .put(
                 StandardLocation.PLATFORM_CLASS_PATH,

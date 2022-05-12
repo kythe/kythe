@@ -30,9 +30,9 @@ build --host_copt=-w
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
 
-# By default, compile for Java 8, run on Java 11
-build --java_language_version=8
-build --tool_java_language_version=8
+# By default, compile for Java 11, run on Java 11
+build --java_language_version=11
+build --tool_java_language_version=11
 build --java_runtime_version=remotejdk_11
 build --tool_java_runtime_version=remotejdk_11
 
@@ -50,8 +50,8 @@ build:remote --jobs=50
 build:remote --remote_timeout=3600
 build:remote --remote_cache=grpcs://remotebuildexecution.googleapis.com
 build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
-# Avoid fetchiing unnecessary intermediate files locally.
-build:remote --remote_download_minimal
+# Avoid fetching unnecessary intermediate files locally.
+build:remote --remote_download_toplevel
 
 # TODO(schroederc): add buildeventservice
 # build:remote --bes_backend="buildeventservice.googleapis.com"

@@ -163,6 +163,13 @@ message DecorationsRequest {
 
   // Whether to return known semantic scopes per Reference.
   bool semantic_scopes = 12;
+
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 13;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 14;
 }
 
 // File represents a whole file
@@ -416,8 +423,44 @@ message CrossReferencesRequest {
   // nodes will be returned.
   repeated string build_config = 15;
 
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 17;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 18;
+
+  // Set of filters to apply to each xref's parent file.
+  CorpusPathFilters corpus_path_filters = 19;
+
   reserved 4;
   reserved 100;
+}
+
+message CorpusPathFilters {
+  repeated CorpusPathFilter filter = 1;
+}
+
+// A filter for CorpusPaths.  The filter matches if each component pattern
+// matches (an empty pattern implies no filtering on that component).
+message CorpusPathFilter {
+  enum Type {
+    DEFAULT = 0;
+    INCLUDE_ONLY = 1;
+    EXCLUDE = 2;
+  }
+  Type type = 1;
+
+  // Corpus pattern to match against.
+  string corpus = 2;
+  // Root pattern to match against.
+  string root = 3;
+  // Path pattern to match against.
+  string path = 4;
+
+  // Fully resolved path pattern to match against.  The resolved path is
+  // determined by the server implementation.
+  string resolved_path = 5;
 }
 
 // TODO(schroederc): eliminate duplicate serving.ExpandedAnchor message
@@ -557,6 +600,13 @@ message DocumentationRequest {
   // If set, this DocumentationRequest will return documents for the requested
   // tickets as well as their immediate semantic descendants.
   bool include_children = 3;
+
+  // The user's Workspace.  May be used as a target for patching spans to match
+  // the current state of the referenced files.
+  Workspace workspace = 4;
+
+  // Whether to patch spans against the given Workspace.
+  bool patch_against_workspace = 5;
 }
 
 message DocumentationReply {
@@ -583,4 +633,12 @@ message DocumentationReply {
 
   // A unique identifier for the underlying dataset serving this reply.
   string build_id = 4;
+}
+
+// A Workspace is a pointer to the root of a user's workspace.  This is
+// typically the root of a source repository.
+message Workspace {
+  // The root of a user workspace encoded as a uri.  The uri format is dependent
+  // on the capabilities of the server.
+  string uri = 1;
 }

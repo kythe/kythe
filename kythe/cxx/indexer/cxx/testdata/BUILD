@@ -290,6 +290,7 @@ cc_indexer_test(
     name = "builtin_functions",
     srcs = ["basic/builtin_functions.c"],
     check_for_singletons = True,
+    copts = ["-Wno-error=implicit-function-declaration"],
     std = "gnu99",
     tags = ["basic"],
 )
@@ -883,6 +884,11 @@ cc_extract_kzip(
     name = "vname_corpus_kzip",
     srcs = ["basic/vname_corpus.cc"],
     corpus = "unit",
+    opts = [
+        "-DMY_MACRO=1",
+        "-UMY_MACRO",
+        "-DMY_MACRO=2",
+    ],
     vnames_config = "basic/vname_corpus.json",
 )
 
@@ -1093,6 +1099,24 @@ cc_indexer_test(
     std = "c++17",
     tags = [
         "c++17",
+        "function",
+    ],
+)
+
+cc_indexer_test(
+    name = "function_lambda_explicit_this",
+    srcs = ["function/function_lambda_explicit_this.cc"],
+    ignore_dups = True,
+    tags = [
+        "function",
+    ],
+)
+
+cc_indexer_test(
+    name = "function_lambda_implicit_this",
+    srcs = ["function/function_lambda_implicit_this.cc"],
+    ignore_dups = True,
+    tags = [
         "function",
     ],
 )

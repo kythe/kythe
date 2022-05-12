@@ -857,6 +857,9 @@ func (e *emitter) emitSatisfactions() {
 		}
 	}
 
+	// Shared Context across all generic assignability checks.
+	tctx := types.NewContext()
+
 	// Cache the method set of each named type in this package.
 	var msets typeutil.MethodSetCache
 	// Cache the overrides we've noticed to avoid duplicate entries.
@@ -893,30 +896,24 @@ func (e *emitter) emitSatisfactions() {
 			case ifx && ify && ymset.Len() > 0:
 				// x and y are both interfaces. Note that extension is handled
 				// elsewhere as part of the type spec for the interface.
-				if types.AssignableTo(x, y) {
+				if assignableTo(tctx, x, y) {
 					e.writeSatisfies(xobj, yobj)
 				}
-				if types.AssignableTo(y, x) {
+				if assignableTo(tctx, y, x) {
 					e.writeSatisfies(yobj, xobj)
 				}
 
 			case ifx:
 				// y is a concrete type
 				pymset := msets.MethodSet(types.NewPointer(y))
-				if types.AssignableTo(y, x) {
-					e.writeSatisfies(yobj, xobj)
-					e.emitOverrides(ymset, pymset, xmset, cache)
-				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
+				if assignableTo(tctx, y, x) {
 					e.writeSatisfies(yobj, xobj)
 					e.emitOverrides(ymset, pymset, xmset, cache)
 				}
 
 			case ify && ymset.Len() > 0:
 				// x is a concrete type
-				if types.AssignableTo(x, y) {
-					e.writeSatisfies(xobj, yobj)
-					e.emitOverrides(xmset, pxmset, ymset, cache)
-				} else if px := types.NewPointer(x); types.AssignableTo(px, y) {
+				if assignableTo(tctx, x, y) {
 					e.writeSatisfies(xobj, yobj)
 					e.emitOverrides(xmset, pxmset, ymset, cache)
 				}
@@ -988,14 +985,28 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 }
 
 func (e *emitter) writeFact(src *spb.VName, name, value string) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
 
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+		tgt = proto.Clone(tgt).(*spb.VName)
+		tgt.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
@@ -1004,6 +1015,10 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 }
 
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
+	if e.opts.UseCompilationCorpusAsDefault {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = e.pi.VName.GetCorpus()
+	}
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
 
@@ -1350,4 +1365,48 @@ func firstNonEmptyComment(cs ...*ast.CommentGroup) *ast.CommentGroup {
 		}
 	}
 	return nil
+}
+
+func canBeAssignableTo(v, t types.Type) bool {
+	return types.AssignableTo(v, t) || types.AssignableTo(types.NewPointer(v), t)
+}
+
+func assignableTo(tctx *types.Context, V, T types.Type) bool {
+	// If V and T are not both named, or do not have matching non-empty type
+	// parameter lists, fall back on types.AssignableTo.
+	VN, Vnamed := V.(*types.Named)
+	TN, Tnamed := T.(*types.Named)
+	if !Vnamed || !Tnamed {
+		return canBeAssignableTo(V, T)
+	}
+
+	vtparams := VN.TypeParams()
+	ttparams := TN.TypeParams()
+	if vtparams.Len() == 0 || vtparams.Len() != ttparams.Len() || VN.TypeArgs().Len() != 0 || TN.TypeArgs().Len() != 0 {
+		return canBeAssignableTo(V, T)
+	}
+
+	// V and T have the same (non-zero) number of type params. Instantiate both
+	// with the type parameters of V. This must always succeed for V, and will
+	// succeed for T if and only if the type set of each type parameter of V is a
+	// subset of the type set of the corresponding type parameter of T, meaning
+	// that every instantiation of V corresponds to a valid instantiation of T.
+
+	targs := make([]types.Type, vtparams.Len())
+	for i := 0; i < vtparams.Len(); i++ {
+		targs[i] = vtparams.At(i)
+	}
+
+	vinst, err := types.Instantiate(tctx, V, targs, true)
+	if err != nil {
+		log.Printf("ERROR: type parameters should satisfy their own constraints: %v", err)
+		return false
+	}
+
+	tinst, err := types.Instantiate(tctx, T, targs, true)
+	if err != nil {
+		return false
+	}
+
+	return canBeAssignableTo(vinst, tinst)
 }

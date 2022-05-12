@@ -2,6 +2,8 @@
 // compilation unit's.
 //- vname("", "file", "", "kythe/cxx/indexer/cxx/testdata/basic/vname_corpus.cc", "").node/kind file
 
+#undef MY_MACRO
+
 // Simple types get the corpus from the file.
 //- @S=vname(_,"file",_,_,_) defines/binding StructDef=vname(_,"file",_,_,_)
 struct S {};

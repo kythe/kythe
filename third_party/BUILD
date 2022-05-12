@@ -17,7 +17,6 @@ filegroup(
         "//third_party/glog:COPYING",
         "//third_party/go:licenses",
         "//third_party/guava:COPYING",
-        "//third_party/javac:license",
         "//third_party/jcommander:license.txt",
         "//third_party/jsr250_api:LICENSE",
         "//third_party/jsr305:LICENSE",

@@ -38,6 +38,8 @@ type xrefsCommand struct {
 	nodeFilters  flagutil.StringList
 	buildConfigs flagutil.StringSet
 
+	workspaceURI string
+
 	pageToken string
 	pageSize  int
 
@@ -49,6 +51,10 @@ type xrefsCommand struct {
 	relatedNodes    bool
 	nodeDefinitions bool
 	anchorText      bool
+
+	resolvedPathFilters flagutil.StringList
+
+	excludeGenerated bool
 }
 
 func (xrefsCommand) Name() string     { return "xrefs" }
@@ -59,11 +65,14 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 	flag.StringVar(&c.refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
 	flag.StringVar(&c.callerKind, "callers", "direct", "Kind of callers to return (kinds: direct, overrides, or none)")
+	flag.StringVar(&c.workspaceURI, "workspace_uri", "", "Workspace URI to patch cross-references")
 	flag.BoolVar(&c.relatedNodes, "related_nodes", true, "Whether to request related nodes")
 	flag.Var(&c.nodeFilters, "filters", "CSV list of additional fact filters to use when requesting related nodes")
+	flag.Var(&c.resolvedPathFilters, "resolved_path_filters", "CSV list of additional resolved path filters to use")
 	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
+	flag.BoolVar(&c.excludeGenerated, "exclude_generated", false, "Whether to exclude anchors with non-empty roots")
 
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
@@ -77,6 +86,24 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 
 		AnchorText:      c.anchorText,
 		NodeDefinitions: c.nodeDefinitions,
+
+		CorpusPathFilters: &xpb.CorpusPathFilters{},
+	}
+	if c.workspaceURI != "" {
+		req.Workspace = &xpb.Workspace{Uri: c.workspaceURI}
+		req.PatchAgainstWorkspace = true
+	}
+	if c.excludeGenerated {
+		req.CorpusPathFilters.Filter = append(req.CorpusPathFilters.Filter, &xpb.CorpusPathFilter{
+			Type: xpb.CorpusPathFilter_EXCLUDE,
+			Root: ".+",
+		})
+	}
+	for _, f := range c.resolvedPathFilters {
+		req.CorpusPathFilters.Filter = append(req.CorpusPathFilters.Filter, &xpb.CorpusPathFilter{
+			Type:         xpb.CorpusPathFilter_INCLUDE_ONLY,
+			ResolvedPath: f,
+		})
 	}
 	if c.relatedNodes {
 		req.Filter = []string{facts.NodeKind, facts.Subkind}

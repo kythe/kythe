@@ -278,7 +278,8 @@ public class JavaEntrySets extends KytheEntrySets {
         config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
             ? NodeKind.TVAR
             : NodeKind.ABS_VAR;
-    return emitAndReturn(newNode(kind).addSignatureSalt(sourcePath + counter));
+    return emitAndReturn(
+        newNode(kind).addSignatureSalt(sourcePath + counter).setCorpusPath(defaultCorpusPath()));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */

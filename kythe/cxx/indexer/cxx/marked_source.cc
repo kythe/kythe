@@ -437,8 +437,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {
-      LOG(WARNING) << "Invalid return type range for "
-                   << decl->getNameAsString();
+      VLOG(1) << "Invalid return type range for " << decl->getNameAsString();
     }
   }
 
@@ -486,7 +485,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       // clogging log output.
       if (annotation.kind != Annotation::QualifiedName &&
           IsValidRange(cache_->source_manager(), original_range)) {
-        LOG(WARNING)
+        VLOG(1)
             << "Invalid annotation range (" << annotation.kind << "): '"
             << original_range.getBegin().printToString(cache_->source_manager())
             << "' to '"
@@ -833,8 +832,8 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     auto formatted_range = Reformat(cache_->lang_options(), range.str(),
                                     &replacements, &incomplete);
     if (incomplete) {
-      LOG(WARNING) << "Incomplete reformatting for " << decl_id.getRawIdentity()
-                   << " (" << decl_->getQualifiedNameAsString() << ")";
+      VLOG(1) << "Incomplete reformatting for " << decl_id.getRawIdentity()
+              << " (" << decl_->getQualifiedNameAsString() << ")";
       return absl::nullopt;
     }
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,

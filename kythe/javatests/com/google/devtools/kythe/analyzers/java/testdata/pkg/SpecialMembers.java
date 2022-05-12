@@ -15,7 +15,7 @@ public final class SpecialMembers {
 
     int[] intArray = new int[]{1, 2, 3};
     //- @clone ref Clone
-    intArray.clone();
+    intArray = intArray.clone();
     //- @length ref Length
     System.err.println(intArray.length);
 

@@ -91,12 +91,12 @@ func TestPager(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	testutil.FatalOnErrT(t, "StartSet error: %v", p.StartSet(ctx, "head key"))
-	testutil.FatalOnErrT(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
+	testutil.Fatalf(t, "StartSet error: %v", p.StartSet(ctx, "head key"))
+	testutil.Fatalf(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
 		Key:  "key1",
 		Vals: []int{11, 12, 13},
 	}))
-	testutil.FatalOnErrT(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
+	testutil.Fatalf(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
 		Key:  "key1",
 		Vals: []int{14, 15, 16},
 	}))
@@ -115,11 +115,11 @@ func TestPager(t *testing.T) {
 		t.Fatalf("error checking Pages: %v", err)
 	}
 
-	testutil.FatalOnErrT(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
+	testutil.Fatalf(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
 		Key:  "key2",
 		Vals: []int{21},
 	}))
-	testutil.FatalOnErrT(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
+	testutil.Fatalf(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
 		Key:  "key2",
 		Vals: []int{22, 23},
 	}))
@@ -138,7 +138,7 @@ func TestPager(t *testing.T) {
 		t.Fatalf("error checking Pages: %v", err)
 	}
 
-	testutil.FatalOnErrT(t, "StartSet error: %v", p.StartSet(ctx, "next set"))
+	testutil.Fatalf(t, "StartSet error: %v", p.StartSet(ctx, "next set"))
 	expectedSets = append(expectedSets, &testSet{
 		Head:  "head key",
 		Total: 9,
@@ -156,7 +156,7 @@ func TestPager(t *testing.T) {
 		t.Fatalf("error checking Pages: %v", err)
 	}
 
-	testutil.FatalOnErrT(t, "StartSet error: %v", p.StartSet(ctx, "final set"))
+	testutil.Fatalf(t, "StartSet error: %v", p.StartSet(ctx, "final set"))
 	expectedSets = append(expectedSets, &testSet{
 		Head: "next set",
 	})
@@ -168,7 +168,7 @@ func TestPager(t *testing.T) {
 		t.Fatalf("error checking Pages: %v", err)
 	}
 
-	testutil.FatalOnErrT(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
+	testutil.Fatalf(t, "AddGroup error: %v", p.AddGroup(ctx, &testGroup{
 		Key:  "key0",
 		Vals: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 	}))
@@ -194,7 +194,7 @@ func TestPager(t *testing.T) {
 		t.Fatalf("error checking Pages: %v", err)
 	}
 
-	testutil.FatalOnErrT(t, "Flush error: %v", p.Flush(ctx))
+	testutil.Fatalf(t, "Flush error: %v", p.Flush(ctx))
 	expectedSets = append(expectedSets, &testSet{
 		Head:  "final set",
 		Total: 12,
