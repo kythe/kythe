@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 /// * `output_dir` - The base directory to output the save_analysis
 pub fn generate_save_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
     let rustc_arguments = generate_arguments(arguments, &output_dir)?;
-    let _input_files = kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
+    kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
         .map_err(|_| anyhow!("Failed to generate save_analysis"))?;
     Ok(())
 }
