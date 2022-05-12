@@ -155,6 +155,12 @@ class Verifier {
   /// \brief The fact kind used to assign a node its kind (eg /kythe/node/kind).
   AstNode* kind_id() { return kind_id_; }
 
+  /// \brief The fact kind used for an anchor.
+  AstNode* anchor_id() { return anchor_id_; }
+
+  /// \brief The fact kind used for a file.
+  AstNode* file_id() { return file_id_; }
+
   /// \brief Object for parsing and storing assertions.
   AssertionParser* parser() { return &parser_; }
 
