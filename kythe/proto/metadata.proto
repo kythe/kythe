@@ -60,7 +60,9 @@ message MappingRule {
   kythe.proto.VName vname = 3;  // The semantic node in the source language
                                 // which generated the text range.
   uint32 begin = 4;  // Beginning of the range to match in the generated text.
-  uint32 end = 5;    // End of the range to match in the generated text.
+  // End of the range to match in the generated text. This should be one past
+  // the last relevant byte (so the length of the text = end - begin).
+  uint32 end = 5;
 
   enum Semantic {
     SEMA_NONE = 0;
