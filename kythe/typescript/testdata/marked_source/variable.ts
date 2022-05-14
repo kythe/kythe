@@ -83,10 +83,11 @@ try {
 } catch (e) {
 }
 
-//- @#0f defines/binding F
+
+//- @f defines/binding F
 //- F code FCode
 //- FCode child.0 FContext
-//- FContext.pre_text "let"
+//- FContext.pre_text "(property)"
 //- FCode child.1 FSpace
 //- FSpace.pre_text " "
 //- FCode child.2 FName
@@ -97,35 +98,21 @@ try {
 //- FEq.pre_text " = "
 //- FCode child.5 FInit
 //- FInit.pre_text "0"
-//- @halias defines/binding H
+//- @h defines/binding H
 //- H code HCode
 //- HCode child.0 HContext
-//- HContext.pre_text "let"
+//- HContext.pre_text "(property)"
 //- HCode child.1 HSpace
 //- HSpace.pre_text " "
 //- HCode child.2 HName
-//- HName.pre_text "halias"
+//- HName.pre_text "h"
 //- HCode child.3 HTy
 //- HTy.post_text "number"
 //- HCode child.4 HEq
 //- HEq.pre_text " = "
 //- HCode child.5 HInit
 //- HInit.pre_text "1"
-//- @#0redcat defines/binding Redcat
-//- Redcat code RedcatCode
-//- RedcatCode child.0 RedcatContext
-//- RedcatContext.pre_text "let"
-//- RedcatCode child.1 RedcatSpace
-//- RedcatSpace.pre_text " "
-//- RedcatCode child.2 RedcatName
-//- RedcatName.pre_text "redcat"
-//- RedcatCode child.3 RedcatTy
-//- RedcatTy.post_text "number"
-//- RedcatCode child.4 RedcatEq
-//- RedcatEq.pre_text " = "
-//- RedcatCode child.5 RedcatInit
-//- RedcatInit.pre_text "2"
-let {f, g: {h: halias}, redcat} = {f: 0, g: {h: 1}, ['redcat']: 2};
+let k= {f: 0, g: {h: 1}};
 
 //- @i defines/binding I
 //- I code ICode
@@ -148,7 +135,7 @@ let [_, [i]] = [2, [3]];
 //- @#0j defines/binding J
 //- J code JCode
 //- JCode child.5 JInit
-//- JInit.pre_text "(() => {\n  return {j: 1};\n})()"
+//- JInit.pre_text "(() => {\n  return {j: 1} as unknown;\n})()"
 let {j} = (() => {
-  return {j: 1};
+  return {j: 1} as unknown;
 })();

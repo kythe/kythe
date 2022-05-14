@@ -231,3 +231,6 @@ export interface JSONEdge {
   edge_kind: EdgeKind|OrdinalEdge;
   fact_name: '/';
 }
+
+/** Type representing output of indexer: all entries emitted during indexing. */
+export type KytheData = Array<JSONFact|JSONEdge>;

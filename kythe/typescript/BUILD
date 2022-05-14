@@ -21,6 +21,7 @@ ts_library(
     srcs = [
         "indexer.ts",
         "utf8.ts",
+        "post_processing.ts",
     ],
     tsconfig = ":tsconfig",
     deps = [

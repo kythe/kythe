@@ -8,7 +8,8 @@ let [a, b] = [1, 2];
 //- @b ref B
 a = b;
 
-//- @#0"c" defines/binding C=vname("c", _, _, _, _)
+//- @#1"c" defines/binding C=vname("anon0.c", _, _, _, _)
+//- @#0"c" ref C
 //- @letD defines/binding D=vname("letD", _, _, _, _)
 let {c, d: letD} = {c: 0, d: 0};
 

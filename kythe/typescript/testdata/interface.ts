@@ -11,13 +11,16 @@ interface Person {
 
 const p: Person = {
   //- @name ref Name
+  //- !{@name defines/binding _}
   name: 'Alice',
   //- @getAge ref GetAge
+  //- !{@getAge defines/binding _}
   getAge() {}
 };
 
 const p2 = {
   //- @name ref Name
+  //- !{@name defines/binding _}
   name: 'Alice',
   //- @getAge ref GetAge
   getAge() {}
@@ -30,9 +33,11 @@ p.name;
 p.getAge();
 
 //- @getAge ref GetAge
+//- !{@getAge defines/binding _}
 const {getAge} = p;
 
 //- @name ref Name
+//- !{@name defines/binding _}
 //- @getAge ref GetAge
 function takesPerson({name, getAge: newGetAge}: Person) {}
 
@@ -45,11 +50,13 @@ class PersonTaker {
 }
 
 //- @name ref Name
+//- !{@name defines/binding _}
 //- @getAge ref GetAge
 new PersonTaker({name: 'Alice', getAge() {}});
 
 function returnPerson(): Person {
   //- @name ref Name
+  //- !{@name defines/binding _}
   //- @getAge ref GetAge
   return {name: 'Alice', getAge() {}};
 }
