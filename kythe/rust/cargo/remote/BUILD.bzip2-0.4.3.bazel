@@ -51,7 +51,7 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__bzip2_sys__0_1_11_1_0_8//:bzip2_sys",
-        "@raze__libc__0_2_114//:libc",
+        "@raze__libc__0_2_126//:libc",
     ],
 )
 

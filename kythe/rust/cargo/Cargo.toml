@@ -40,6 +40,7 @@ tempdir = "0.3"
 zip = "0.5.6"
 lazy_static = "1.4.0"
 rayon = "1.5.0"
+path-clean = "0.1"
 
 [dev-dependencies]
 serial_test = "0.4.0"
@@ -49,15 +50,3 @@ workspace_path = "//kythe/rust/cargo"
 genmode = "Remote"
 targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin"]
 package_aliases_dir = "."
-
-#
-# cargo-raze crate configuration
-# NOTE: If the build starts failing after a dependency is updated, ensure
-# that the version numbers below match the updated dependencies.
-#
-
-[package.metadata.raze.crates.bzip2-sys.'0.1.9+1.0.8']
-gen_buildrs = true
-
-[package.metadata.raze.crates.proc-macro2.'1.0.19']
-gen_buildrs = true

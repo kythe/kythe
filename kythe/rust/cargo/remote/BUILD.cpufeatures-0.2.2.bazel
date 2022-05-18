@@ -30,62 +30,29 @@ licenses([
 ])
 
 # Generated Targets
-# buildifier: disable=out-of-order-load
-# buildifier: disable=load-on-top
-load(
-    "@rules_rust//cargo:cargo_build_script.bzl",
-    "cargo_build_script",
-)
-
-cargo_build_script(
-    name = "crc32fast_build_script",
-    srcs = glob(["**/*.rs"]),
-    build_script_env = {
-    },
-    crate_features = [
-        "default",
-        "std",
-    ],
-    crate_root = "build.rs",
-    data = glob(["**"]),
-    edition = "2015",
-    rustc_flags = [
-        "--cap-lints=allow",
-    ],
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-    version = "1.3.1",
-    visibility = ["//visibility:private"],
-    deps = [
-    ],
-)
-
-# Unsupported target "bench" with type "bench" omitted
 
 rust_library(
-    name = "crc32fast",
+    name = "cpufeatures",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "default",
-        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
     tags = [
         "cargo-raze",
-        "crate-name=crc32fast",
+        "crate-name=cpufeatures",
         "manual",
     ],
-    version = "1.3.1",
+    version = "0.2.2",
     # buildifier: leave-alone
     deps = [
-        ":crc32fast_build_script",
-        "@raze__cfg_if__1_0_0//:cfg_if",
     ],
 )
+
+# Unsupported target "aarch64" with type "test" omitted
+
+# Unsupported target "x86" with type "test" omitted
