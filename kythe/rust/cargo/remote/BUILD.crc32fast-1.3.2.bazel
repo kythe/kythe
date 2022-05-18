@@ -26,23 +26,50 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # Apache-2.0 from expression "Apache-2.0 OR MIT"
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
 ])
 
 # Generated Targets
+# buildifier: disable=out-of-order-load
+# buildifier: disable=load-on-top
+load(
+    "@rules_rust//cargo:cargo_build_script.bzl",
+    "cargo_build_script",
+)
 
-# Unsupported target "integers" with type "example" omitted
+cargo_build_script(
+    name = "crc32fast_build_script",
+    srcs = glob(["**/*.rs"]),
+    build_script_env = {
+    },
+    crate_features = [
+        "default",
+        "std",
+    ],
+    crate_root = "build.rs",
+    data = glob(["**"]),
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+    version = "1.3.2",
+    visibility = ["//visibility:private"],
+    deps = [
+    ],
+)
 
-# Unsupported target "paths" with type "example" omitted
-
-# Unsupported target "traits" with type "example" omitted
-
-# Unsupported target "versions" with type "example" omitted
+# Unsupported target "bench" with type "bench" omitted
 
 rust_library(
-    name = "autocfg",
+    name = "crc32fast",
     srcs = glob(["**/*.rs"]),
     crate_features = [
+        "default",
+        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -52,13 +79,13 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
-        "crate-name=autocfg",
+        "crate-name=crc32fast",
         "manual",
     ],
-    version = "1.0.1",
+    version = "1.3.2",
     # buildifier: leave-alone
     deps = [
+        ":crc32fast_build_script",
+        "@raze__cfg_if__1_0_0//:cfg_if",
     ],
 )
-
-# Unsupported target "rustflags" with type "test" omitted

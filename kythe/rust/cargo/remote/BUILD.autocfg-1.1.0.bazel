@@ -26,13 +26,21 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT OR Apache-2.0"
+    "notice",  # Apache-2.0 from expression "Apache-2.0 OR MIT"
 ])
 
 # Generated Targets
 
+# Unsupported target "integers" with type "example" omitted
+
+# Unsupported target "paths" with type "example" omitted
+
+# Unsupported target "traits" with type "example" omitted
+
+# Unsupported target "versions" with type "example" omitted
+
 rust_library(
-    name = "pkg_config",
+    name = "autocfg",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
@@ -44,13 +52,13 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
-        "crate-name=pkg-config",
+        "crate-name=autocfg",
         "manual",
     ],
-    version = "0.3.24",
+    version = "1.1.0",
     # buildifier: leave-alone
     deps = [
     ],
 )
 
-# Unsupported target "test" with type "test" omitted
+# Unsupported target "rustflags" with type "test" omitted

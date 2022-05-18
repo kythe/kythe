@@ -26,17 +26,19 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT OR Apache-2.0"
+    "notice",  # Apache-2.0 from expression "Apache-2.0 OR BSL-1.0"
 ])
 
 # Generated Targets
 
+# Unsupported target "bench" with type "bench" omitted
+
+# Unsupported target "upstream_benchmark" with type "example" omitted
+
 rust_library(
-    name = "quote",
+    name = "ryu",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "default",
-        "proc-macro",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -46,16 +48,25 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
-        "crate-name=quote",
+        "crate-name=ryu",
         "manual",
     ],
-    version = "1.0.15",
+    version = "1.0.10",
     # buildifier: leave-alone
     deps = [
-        "@raze__proc_macro2__1_0_36//:proc_macro2",
     ],
 )
 
-# Unsupported target "compiletest" with type "test" omitted
+# Unsupported target "common_test" with type "test" omitted
 
-# Unsupported target "test" with type "test" omitted
+# Unsupported target "d2s_table_test" with type "test" omitted
+
+# Unsupported target "d2s_test" with type "test" omitted
+
+# Unsupported target "exhaustive" with type "test" omitted
+
+# Unsupported target "f2s_test" with type "test" omitted
+
+# Unsupported target "s2d_test" with type "test" omitted
+
+# Unsupported target "s2f_test" with type "test" omitted

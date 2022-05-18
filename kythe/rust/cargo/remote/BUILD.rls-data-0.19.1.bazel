@@ -53,6 +53,6 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__rls_span__0_5_4//:rls_span",
-        "@raze__serde__1_0_135//:serde",
+        "@raze__serde__1_0_137//:serde",
     ],
 )

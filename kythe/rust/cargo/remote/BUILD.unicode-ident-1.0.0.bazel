@@ -30,62 +30,31 @@ licenses([
 ])
 
 # Generated Targets
-# buildifier: disable=out-of-order-load
-# buildifier: disable=load-on-top
-load(
-    "@rules_rust//cargo:cargo_build_script.bzl",
-    "cargo_build_script",
-)
 
-cargo_build_script(
-    name = "log_build_script",
-    srcs = glob(["**/*.rs"]),
-    build_script_env = {
-    },
-    crate_features = [
-    ],
-    crate_root = "build.rs",
-    data = glob(["**"]),
-    edition = "2015",
-    rustc_flags = [
-        "--cap-lints=allow",
-    ],
-    tags = [
-        "cargo-raze",
-        "manual",
-    ],
-    version = "0.4.14",
-    visibility = ["//visibility:private"],
-    deps = [
-    ],
-)
-
-# Unsupported target "value" with type "bench" omitted
+# Unsupported target "xid" with type "bench" omitted
 
 rust_library(
-    name = "log",
+    name = "unicode_ident",
     srcs = glob(["**/*.rs"]),
     crate_features = [
     ],
     crate_root = "src/lib.rs",
     data = [],
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
     tags = [
         "cargo-raze",
-        "crate-name=log",
+        "crate-name=unicode-ident",
         "manual",
     ],
-    version = "0.4.14",
+    version = "1.0.0",
     # buildifier: leave-alone
     deps = [
-        ":log_build_script",
-        "@raze__cfg_if__1_0_0//:cfg_if",
     ],
 )
 
-# Unsupported target "filters" with type "test" omitted
+# Unsupported target "compare" with type "test" omitted
 
-# Unsupported target "macros" with type "test" omitted
+# Unsupported target "static_size" with type "test" omitted
