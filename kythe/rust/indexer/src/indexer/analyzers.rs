@@ -20,6 +20,7 @@ use super::entries::EntryEmitter;
 use super::offset::OffsetIndex;
 
 use analysis_rust_proto::CompilationUnit;
+use path_clean::clean;
 use rls_data::{Analysis, Def, DefKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -417,7 +418,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let defs = self.analysis.defs.clone();
 
         for def in &defs {
-            let file_vname = self.file_vnames.get(def.span.file_name.to_str().unwrap());
+            let file_name = clean(def.span.file_name.to_str().unwrap());
+            let file_vname = self.file_vnames.get(&file_name);
             // save_analysis sometimes references files that we don't have as file nodes
             if file_vname.is_none() {
                 continue;
@@ -654,10 +656,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         }
 
         // Calculate the byte_start and byte_end using the OffsetIndex
-        let file_name = def.span.file_name.to_str().unwrap();
+        let file_name = clean(def.span.file_name.to_str().unwrap());
         let byte_start = self
             .offset_index
-            .get_byte_offset(file_name, def.span.line_start.0, def.span.column_start.0)
+            .get_byte_offset(&file_name, def.span.line_start.0, def.span.column_start.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get starting offset for definition {}, {:?}",
@@ -666,7 +668,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             })?;
         let byte_end = self
             .offset_index
-            .get_byte_offset(file_name, def.span.line_end.0, def.span.column_end.0)
+            .get_byte_offset(&file_name, def.span.line_end.0, def.span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for definition {}, {:?}",
@@ -761,8 +763,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let definition_vname = self.generate_def_vname(krate_id, ref_id.index);
 
             // Create VName for the reference node
-            let file_name = span.file_name.to_str().unwrap();
-            let file_vname = self.file_vnames.get(file_name);
+            let file_name = clean(span.file_name.to_str().unwrap());
+            let file_vname = self.file_vnames.get(&file_name);
             if file_vname.is_none() {
                 // Emit a diagostic node to the top level file for the current crate
                 let file_vname = self.file_vnames.values().next().unwrap();
@@ -834,8 +836,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let target_vname = self.generate_def_vname(krate_id, ref_id.index);
 
             // Create VName for the reference node
-            let file_name = span.file_name.to_str().unwrap();
-            let file_vname = self.file_vnames.get(file_name);
+            let file_name = clean(span.file_name.to_str().unwrap());
+            let file_vname = self.file_vnames.get(&file_name);
             if file_vname.is_none() {
                 self.emitter.emit_diagnostic(
                     &target_vname,
@@ -880,10 +882,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         ref_id: &rls_data::Id,
         span: &rls_data::SpanData,
     ) -> Result<Option<ByteSpan>, KytheError> {
-        let file_name = span.file_name.to_str().unwrap();
         // Get byte span
+        let file_name = clean(span.file_name.to_str().unwrap());
         let start_byte =
-            self.offset_index.get_byte_offset(file_name, span.line_start.0, span.column_start.0);
+            self.offset_index.get_byte_offset(&file_name, span.line_start.0, span.column_start.0);
 
         // If the start byte is none, then the save_analysis is giving information about
         // standard library files and we should skip
@@ -894,7 +896,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let start_byte = start_byte.unwrap();
         let end_byte = self
             .offset_index
-            .get_byte_offset(file_name, span.line_end.0, span.column_end.0)
+            .get_byte_offset(&file_name, span.line_end.0, span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
                     "Failed to get ending offset for reference {:?}",

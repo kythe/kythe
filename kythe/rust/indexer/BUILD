@@ -15,6 +15,7 @@ rust_library(
         "//kythe/proto:storage_rust_proto",
         "//kythe/rust/cargo:base64",
         "//kythe/rust/cargo:hex",
+        "//kythe/rust/cargo:path_clean",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:rls_analysis",
         "//kythe/rust/cargo:rls_data",
@@ -149,4 +150,9 @@ rust_indexer_test(
 rust_indexer_test(
     name = "xrefs_test",
     srcs = glob(["testdata/xrefs/*.rs"]),
+)
+
+rust_indexer_test(
+    name = "relative_module_test",
+    srcs = glob(["testdata/relative/**/*.rs"]),
 )
