@@ -272,7 +272,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         filePositions
             .getSourceFile()
             .isNameCompatible(PACKAGE_INFO_NAME, JavaFileObject.Kind.SOURCE);
-    EdgeKind anchorKind = isPkgInfo ? EdgeKind.DEFINES_BINDING : EdgeKind.REF;
+    EdgeKind anchorKind = isPkgInfo ? EdgeKind.DEFINES_BINDING : getRefKind();
     emitAnchor(ctx, anchorKind, pkgNode);
 
     visitDocComment(pkgNode, null, /* modifiers= */ null);
@@ -767,7 +767,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
     emitAnchor(
         ctx,
-        (owner.getTree() instanceof JCNewClass) ? EdgeKind.REF_ID : EdgeKind.REF,
+        (owner.getTree() instanceof JCNewClass) ? EdgeKind.REF_ID : getRefKind(),
         typeNode.getVName());
 
     return new JavaNode(typeNode, childWildcards.build());
@@ -851,7 +851,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           ctx,
           sym,
           field.name.contentEquals("class") ? Keyword.CLASS : field.name,
-          imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
+          imprt != null ? EdgeKind.REF_IMPORTS : getRefKind());
     }
   }
 

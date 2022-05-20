@@ -165,7 +165,7 @@ Ordinals are used::
 
 [kythe,Java,"Classes can be annotated."]
 --------------------------------------------------------------------------------
-//- @Deprecated ref Deprecated
+//- @Deprecated ref/id Deprecated
 //- @E defines/binding Class
 //- Class annotatedby Deprecated
 @Deprecated public class E {}
