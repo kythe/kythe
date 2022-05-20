@@ -11,28 +11,28 @@ public @interface Annotations {
 }
 
 @SuppressWarnings("unused")
-//- @Annotations ref Annotation
+//- @Annotations ref/id Annotation
 @Annotations(
   //- @C ref C
   //- @Annotations ref Annotation
   //- @classes ref ClassesM
   classes = {C.class, Annotations.class}
 )
-//- @Deprecated ref Deprecated
+//- @Deprecated ref/id Deprecated
 @Deprecated
 //- @C defines/binding C
 //- C annotatedby Deprecated
 class C {
 
-  //- @Deprecated ref Deprecated
+  //- @Deprecated ref/id Deprecated
   @Deprecated
   //- @field defines/binding Field
   //- Field annotatedby Deprecated
   //- @String ref StringClass
   private String field;
 
-  //- @Deprecated ref Deprecated
-  //- @Override ref Override
+  //- @Deprecated ref/id Deprecated
+  //- @Override ref/id Override
   @Override @Deprecated
   //- @toString defines/binding Method
   //- Method annotatedby Deprecated

@@ -148,6 +148,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private KytheDocTreeScanner docScanner;
 
+  private boolean inRefIdContext = false;
+
   private KytheTreeScanner(
       JavaEntrySets entrySets,
       StatisticsCollector statistics,
@@ -290,7 +292,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    EdgeKind edgeKind = EdgeKind.REF;
+    EdgeKind edgeKind = getRefKind();
     if (ident.sym instanceof ClassSymbol && ident == owner.getNewClassIdentifier()) {
       // Use ref/id edges for the primary identifier to disambiguate from the constructor.
       edgeKind = EdgeKind.REF_ID;
@@ -939,7 +941,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     String name = Ascii.toLowerCase(primitiveType.typetag.toString());
     EntrySet node = entrySets.newBuiltinAndEmit(name);
-    emitAnchor(ctx, EdgeKind.REF, node.getVName());
+    emitAnchor(ctx, getRefKind(), node.getVName());
     return new JavaNode(node);
   }
 
@@ -961,7 +963,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitAnnotation(JCAnnotation annotation, TreeContext owner) {
     TreeContext ctx = owner.down(annotation);
     scanList(annotation.getArguments(), ctx);
-    return scan(annotation.getAnnotationType(), ctx);
+    boolean savedInRefIdContext = inRefIdContext;
+    inRefIdContext = true;
+    JavaNode node = scan(annotation.getAnnotationType(), ctx);
+    inRefIdContext = savedInRefIdContext;
+    return node;
   }
 
   @Override
@@ -1234,7 +1240,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the name, and a REF edge
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name) {
-    return emitNameUsage(ctx, sym, name, EdgeKind.REF);
+    return emitNameUsage(ctx, sym, name, getRefKind());
   }
 
   // Emits a node for the given sym, an anchor encompassing the name, and a given edge kind
@@ -1759,6 +1765,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             .map(KytheTreeScanner::toJvmType)
             .collect(Collectors.toList()),
         toJvmReturnType(type.getReturnType()));
+  }
+
+  private EdgeKind getRefKind() {
+    return inRefIdContext ? EdgeKind.REF_ID : EdgeKind.REF;
   }
 
   static enum DocKind {

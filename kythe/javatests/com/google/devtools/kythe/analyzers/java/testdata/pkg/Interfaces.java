@@ -112,7 +112,7 @@ public interface Interfaces {
   }
 
   // TODO(mazurak): should @FunctionalInterface classes interact with calleables in some way?
-  //- @FunctionalInterface ref FunctionalAnnotation
+  //- @FunctionalInterface ref/id FunctionalAnnotation
   //- @Reducer defines/binding ReducerInterfaceAbs
   //- ReducerInterface childof ReducerInterfaceAbs
   //- ReducerInterface annotatedby FunctionalAnnotation
