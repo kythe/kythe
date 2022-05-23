@@ -29,7 +29,7 @@ public final class GenericMethod {
   //- VerboseWildcardFn childof VerboseWildcardFnAbs
   //- VerboseWildcardFn.node/kind function
   //- VerboseWildcardFn param.0 VWParam1
-  //- VWParam1 typed _VMParam1Type
+  //- VWParam1 typed VWParam1Type
   //- VWParam1Type.node/kind tapp
   //- VWParam1Type param.0 OptionalClass
   //- VWParam1Type param.1 TVWVar
