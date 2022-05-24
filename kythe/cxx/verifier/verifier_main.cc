@@ -53,6 +53,10 @@ ABSL_FLAG(std::string, goal_regex, "",
 ABSL_FLAG(bool, convert_marked_source, false,
           "Convert MarkedSource-valued facts to subgraphs.");
 ABSL_FLAG(bool, show_anchors, false, "Show anchor locations instead of @s");
+ABSL_FLAG(bool, show_vnames, true,
+          "Show VNames for nodes which also have labels.");
+ABSL_FLAG(bool, show_fact_prefix, true,
+          "Include the /kythe or /kythe/edge prefix on facts and edges.");
 ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
 ABSL_FLAG(bool, use_fast_solver, false,
@@ -110,8 +114,16 @@ Example:
     v.ShowAnchors();
   }
 
+  if (absl::GetFlag(FLAGS_show_vnames)) {
+    v.ShowLabeledVnames();
+  }
+
   if (!absl::GetFlag(FLAGS_file_vnames)) {
     v.IgnoreFileVnames();
+  }
+
+  if (absl::GetFlag(FLAGS_show_fact_prefix)) {
+    v.ShowFactPrefix();
   }
 
   v.UseFastSolver(absl::GetFlag(FLAGS_use_fast_solver));

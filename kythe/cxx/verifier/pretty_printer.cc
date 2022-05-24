@@ -19,14 +19,14 @@
 #include <bitset>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 namespace verifier {
 
 PrettyPrinter::~PrettyPrinter() {}
 
-void StringPrettyPrinter::Print(const std::string& string) { data_ << string; }
-
+void StringPrettyPrinter::Print(absl::string_view string) { data_ << string; }
 void StringPrettyPrinter::Print(const char* string) { data_ << string; }
 
 void StringPrettyPrinter::Print(const void* ptr) {
@@ -37,7 +37,7 @@ void StringPrettyPrinter::Print(const void* ptr) {
   }
 }
 
-void FileHandlePrettyPrinter::Print(const std::string& string) {
+void FileHandlePrettyPrinter::Print(absl::string_view string) {
   absl::FPrintF(file_, "%s", string);
 }
 
@@ -49,48 +49,44 @@ void FileHandlePrettyPrinter::Print(const void* ptr) {
   absl::FPrintF(file_, "0x%016llx", reinterpret_cast<unsigned long long>(ptr));
 }
 
-void QuoteEscapingPrettyPrinter::Print(const std::string& string) {
-  Print(string.c_str());
+void QuoteEscapingPrettyPrinter::Print(absl::string_view string) {
+  for (char ch : string) {
+    if (ch == '\"') {
+      wrapped_.Print("\\\"");
+    } else if (ch == '\n') {
+      wrapped_.Print("\\n");
+    } else if (ch == '\'') {
+      wrapped_.Print("\\\'");
+    } else {
+      wrapped_.Print({&ch, 1});
+    }
+  }
 }
 
 void QuoteEscapingPrettyPrinter::Print(const char* string) {
-  char buf[2];
-  buf[1] = 0;
-  while ((buf[0] = *string++)) {
-    if (buf[0] == '\"') {
-      wrapped_.Print("\\\"");
-    } else if (buf[0] == '\n') {
-      wrapped_.Print("\\n");
-    } else if (buf[0] == '\'') {
-      wrapped_.Print("\\\'");
-    } else {
-      wrapped_.Print(buf);
-    }
-  }
+  Print(absl::string_view(string));
 }
 
 void QuoteEscapingPrettyPrinter::Print(const void* ptr) { wrapped_.Print(ptr); }
 
-void HtmlEscapingPrettyPrinter::Print(const std::string& string) {
-  Print(string.c_str());
+void HtmlEscapingPrettyPrinter::Print(absl::string_view string) {
+  for (char ch : string) {
+    if (ch == '\"') {
+      wrapped_.Print("&quot;");
+    } else if (ch == '&') {
+      wrapped_.Print("&amp;");
+    } else if (ch == '<') {
+      wrapped_.Print("&lt;");
+    } else if (ch == '>') {
+      wrapped_.Print("&gt;");
+    } else {
+      wrapped_.Print({&ch, 1});
+    }
+  }
 }
 
 void HtmlEscapingPrettyPrinter::Print(const char* string) {
-  char buf[2];
-  buf[1] = 0;
-  while ((buf[0] = *string++)) {
-    if (buf[0] == '\"') {
-      wrapped_.Print("&quot;");
-    } else if (buf[0] == '&') {
-      wrapped_.Print("&amp;");
-    } else if (buf[0] == '<') {
-      wrapped_.Print("&lt;");
-    } else if (buf[0] == '>') {
-      wrapped_.Print("&gt;");
-    } else {
-      wrapped_.Print(buf);
-    }
-  }
+  Print(absl::string_view(string));
 }
 
 void HtmlEscapingPrettyPrinter::Print(const void* ptr) { wrapped_.Print(ptr); }
