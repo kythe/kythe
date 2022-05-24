@@ -220,6 +220,7 @@ cc_library(
     srcs = ["pretty_printer.cc"],
     hdrs = ["pretty_printer.h"],
     deps = [
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

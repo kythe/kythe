@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/strip.h"
 #include "assertions.h"
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
@@ -1590,11 +1591,42 @@ void Verifier::DumpAsDot() {
     }
     return GetLabel(node).empty();
   };
+
   std::sort(facts_.begin(), facts_.end(), GraphvizSortOrder);
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter quote_printer(printer);
   HtmlEscapingPrettyPrinter html_printer(printer);
   FileHandlePrettyPrinter dprinter(stderr);
+
+  auto PrintQuotedNodeId = [&](AstNode* node) {
+    printer.Print("\"");
+    if (std::string label = GetLabel(node);
+        show_labeled_vnames_ || label.empty()) {
+      node->Dump(symbol_table_, &quote_printer);
+    } else {
+      quote_printer.Print(label);
+    }
+    printer.Print("\"");
+  };
+
+  auto FactName = [this](AstNode* node) {
+    StringPrettyPrinter printer;
+    node->Dump(symbol_table_, &printer);
+    if (show_fact_prefix_) {
+      return printer.str();
+    }
+    return std::string(absl::StripPrefix(printer.str(), "/kythe/"));
+  };
+
+  auto EdgeName = [this](AstNode* node) {
+    StringPrettyPrinter printer;
+    node->Dump(symbol_table_, &printer);
+    if (show_fact_prefix_) {
+      return printer.str();
+    }
+    return std::string(absl::StripPrefix(printer.str(), "/kythe/edge/"));
+  };
+
   printer.Print("digraph G {\n");
   for (size_t i = 0; i < facts_.size(); ++i) {
     AstNode* fact = facts_[i];
@@ -1611,9 +1643,7 @@ void Verifier::DumpAsDot() {
       if (ElideNode(t->element(0))) {
         continue;
       }
-      printer.Print("\"");
-      t->element(0)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\"");
+      PrintQuotedNodeId(t->element(0));
       std::string label = GetLabel(t->element(0));
       if (info.kind == NodeKind::kAnchor && !show_anchors_) {
         printer.Print(" [ shape=circle, label=\"@");
@@ -1626,17 +1656,21 @@ void Verifier::DumpAsDot() {
         printer.Print(" [ label=<<TABLE>");
         printer.Print("<TR><TD COLSPAN=\"2\">");
         Tuple* nt = info.facts.front()->AsApp()->rhs()->AsTuple();
-        // Since all of our facts are well-formed, we know this is a vname.
-        nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
+        if (label.empty() || show_labeled_vnames_) {
+          // Since all of our facts are well-formed, we know this is a vname.
+          nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
+        }
         if (!label.empty()) {
-          html_printer.Print(" = ");
+          if (show_labeled_vnames_) {
+            html_printer.Print(" = ");
+          }
           html_printer.Print(label);
         }
         printer.Print("</TD></TR>");
         for (AstNode* fact : info.facts) {
           Tuple* nt = fact->AsApp()->rhs()->AsTuple();
           printer.Print("<TR><TD>");
-          nt->element(3)->Dump(symbol_table_, &html_printer);
+          html_printer.Print(FactName(nt->element(3)));
           printer.Print("</TD><TD>");
           if (info.kind == NodeKind::kFile &&
               EncodedIdentEqualTo(nt->element(3), text_id_)) {
@@ -1661,13 +1695,11 @@ void Verifier::DumpAsDot() {
       if (ElideNode(t->element(0)) || ElideNode(t->element(2))) {
         continue;
       }
-      printer.Print("\"");
-      t->element(0)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\"");
-      printer.Print(" -> \"");
-      t->element(2)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\" [ label=\"");
-      t->element(1)->Dump(symbol_table_, &quote_printer);
+      PrintQuotedNodeId(t->element(0));
+      printer.Print(" -> ");
+      PrintQuotedNodeId(t->element(2));
+      printer.Print(" [ label=\"");
+      quote_printer.Print(EdgeName(t->element(1)));
       if (t->element(4) != empty_string_id()) {
         printer.Print(".");
         t->element(4)->Dump(symbol_table_, &quote_printer);

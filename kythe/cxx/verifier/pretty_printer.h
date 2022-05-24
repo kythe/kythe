@@ -18,7 +18,8 @@
 #define KYTHE_CXX_VERIFIER_PRETTY_PRINTER_H_
 
 #include <sstream>
-#include <string>
+
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 namespace verifier {
@@ -27,7 +28,7 @@ namespace verifier {
 class PrettyPrinter {
  public:
   /// \brief Prints `string`.
-  virtual void Print(const std::string& string) = 0;
+  virtual void Print(absl::string_view string) = 0;
 
   /// \brief Prints `string`.
   virtual void Print(const char* string) = 0;
@@ -41,9 +42,9 @@ class PrettyPrinter {
 /// \brief A `PrettyPrinter` using a `string` as its backing store.
 class StringPrettyPrinter : public PrettyPrinter {
  public:
-  /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string& string) override;
-  /// \copydoc PrettyPrinter::Print(const char *)
+  /// \copydoc PrettyPrinter::Print(absl::string_view)
+  void Print(absl::string_view string) override;
+  /// \copydoc PrettyPrinter::Print(const char*)
   void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
   void Print(const void* ptr) override;
@@ -60,9 +61,9 @@ class FileHandlePrettyPrinter : public PrettyPrinter {
  public:
   /// \param file The file handle to print to.
   explicit FileHandlePrettyPrinter(FILE* file) : file_(file) {}
-  /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string& string) override;
-  /// \copydoc PrettyPrinter::Print(const char *)
+  /// \copydoc PrettyPrinter::Print(absl::string_view)
+  void Print(absl::string_view string) override;
+  /// \copydoc PrettyPrinter::Print(const char*)
   void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
   void Print(const void* ptr) override;
@@ -79,9 +80,9 @@ class QuoteEscapingPrettyPrinter : public PrettyPrinter {
   /// sent.
   explicit QuoteEscapingPrettyPrinter(PrettyPrinter& wrapped)
       : wrapped_(wrapped) {}
-  /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string& string) override;
-  /// \copydoc PrettyPrinter::Print(const char *)
+  /// \copydoc PrettyPrinter::Print(absl::string_view)
+  void Print(absl::string_view string) override;
+  /// \copydoc PrettyPrinter::Print(const char*)
   void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
   void Print(const void* ptr) override;
@@ -98,9 +99,9 @@ class HtmlEscapingPrettyPrinter : public PrettyPrinter {
   /// sent.
   explicit HtmlEscapingPrettyPrinter(PrettyPrinter& wrapped)
       : wrapped_(wrapped) {}
-  /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string& string) override;
-  /// \copydoc PrettyPrinter::Print(const char *)
+  /// \copydoc PrettyPrinter::Print(absl::string_view)
+  void Print(absl::string_view string) override;
+  /// \copydoc PrettyPrinter::Print(const char*)
   void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
   void Print(const void* ptr) override;

@@ -188,6 +188,12 @@ class Verifier {
   /// \brief Show anchor locations in graph dumps (instead of @).
   void ShowAnchors() { show_anchors_ = true; }
 
+  /// \brief Show VNames for nodes which also have labels in graph dumps.
+  void ShowLabeledVnames() { show_labeled_vnames_ = true; }
+
+  /// \brief Show the /kythe and /kythe/edge prefixes in graph dumps.
+  void ShowFactPrefix() { show_fact_prefix_ = true; }
+
   /// \brief Elide unlabeled nodes from graph dumps.
   void ElideUnlabeled() { show_unlabeled_ = false; }
 
@@ -347,6 +353,12 @@ class Verifier {
 
   /// If true, show unlabeled nodes in graph dumps.
   bool show_unlabeled_ = true;
+
+  /// If true, show VNames for labeled nodes in graph dumps.
+  bool show_labeled_vnames_ = false;
+
+  /// If true, include the /kythe and /kythe/edge prefix on facts and edges.
+  bool show_fact_prefix_ = false;
 
   /// Identifier for MarkedSource child edges.
   AstNode* marked_source_child_id_;
