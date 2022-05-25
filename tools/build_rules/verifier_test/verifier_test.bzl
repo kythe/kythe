@@ -308,6 +308,7 @@ def _verifier_test_impl(ctx):
     ], collect_data = True)
     return [
         DefaultInfo(runfiles = runfiles),
+        coverage_common.instrumented_files_info(ctx),
     ]
 
 verifier_test = rule(
