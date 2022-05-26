@@ -4,6 +4,8 @@ using ExternalDef = int;
 template <typename T> struct C {
   using X = ExternalDef;
 };
+//- @C defines/binding CInstantiation
+//- @C ref CInstantiation
 template struct C<int>;
 //- ExplicitC.node/kind record
 //- XAnchor childof/context ExplicitC
