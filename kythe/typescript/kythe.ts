@@ -76,6 +76,7 @@ export enum EdgeKind {
   REF_EXPANDS_TRANSITIVE = '/kythe/edge/ref/expands/transitive',
   REF_FILE = '/kythe/edge/ref/file',
   REF_IMPORTS = '/kythe/edge/ref/imports',
+  REF_ID = '/kythe/edge/ref/id',
   REF_INCLUDES = '/kythe/edge/ref/includes',
   REF_INIT = '/kythe/edge/ref/init',
   REF_INIT_IMPLICIT = '/kythe/edge/ref/init/implicit',

@@ -1843,7 +1843,7 @@ class Visitor {
     const vname = this.host.getSymbolName(propertyOnType, TSNamespace.VALUE);
     if (vname == null) return;
     const anchor = this.newAnchor(prop);
-    this.emitEdge(anchor, EdgeKind.REF, vname);
+    this.emitEdge(anchor, EdgeKind.REF_ID, vname);
   }
 
   /**
