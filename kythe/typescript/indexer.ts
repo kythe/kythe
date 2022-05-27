@@ -1664,7 +1664,8 @@ class Visitor {
 
     if (vname) {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
-          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl)) {
+          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
+          ts.isShorthandPropertyAssignment(decl)) {
         this.emitDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
@@ -1683,6 +1684,13 @@ class Visitor {
         this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
+    if (vname &&
+        (decl.kind === ts.SyntaxKind.PropertySignature ||
+         decl.kind === ts.SyntaxKind.PropertyDeclaration ||
+         decl.kind === ts.SyntaxKind.PropertyAssignment ||
+         decl.kind === ts.SyntaxKind.ShorthandPropertyAssignment)) {
+      this.emitSubkind(vname, Subkind.FIELD);
+    }
     return vname;
   }
 
@@ -1696,7 +1704,7 @@ class Visitor {
    */
   emitDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
-      ts.PropertyDeclaration|ts.BindingElement,
+      ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment,
       declVName: VName) {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
@@ -1741,7 +1749,7 @@ class Visitor {
         makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
     codeParts.push(
         makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
-    if (varDecl.initializer) {
+    if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
 
       if (ts.isObjectLiteralExpression(init) ||
