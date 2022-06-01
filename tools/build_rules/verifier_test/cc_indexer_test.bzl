@@ -181,16 +181,6 @@ def _split_flags(kwargs):
         fail("Unrecognized verifier flags: %s" % (kwargs.keys(),))
     return flags
 
-def _transitive_entries(deps):
-    files, compressed = [], []
-    for dep in deps:
-        if KytheEntries in dep:
-            files += dep[KytheEntries].files
-            compressed += dep[KytheEntries].compressed
-    if files or compressed:
-        print(files, compressed)
-    return KytheEntries(compressed = depset(transitive = compressed), files = depset(transitive = files))
-
 def _fix_path_for_generated_file(path):
     virtual_imports = "/_virtual_imports/"
     if virtual_imports in path:
