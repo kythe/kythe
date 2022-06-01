@@ -239,12 +239,12 @@ _cc_kythe_proto_library_aspect = aspect(
         "_protoc": attr.label(
             default = Label("@com_google_protobuf//:protoc"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_plugin": attr.label(
             default = Label("//kythe/cxx/tools:proto_metadata_plugin"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_runtime": attr.label(
             default = Label("@com_google_protobuf//:protobuf"),
@@ -259,7 +259,7 @@ _cc_kythe_proto_library_aspect = aspect(
         "_grep_includes": attr.label(
             allow_single_file = True,
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             default = Label("//tools/cpp:grep-includes"),
         ),
     },
@@ -443,7 +443,7 @@ cc_extract_bundle = rule(
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "opts": attr.string_list(
             doc = "Additional arguments to pass to the extractor.",
@@ -451,7 +451,7 @@ cc_extract_bundle = rule(
         "unbundle": attr.label(
             default = Label("//tools/build_rules/verifier_test:unbundle"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "vnames_config": attr.label(
             default = Label("//kythe/cxx/indexer/cxx/testdata:test_vnames.json"),
@@ -505,10 +505,10 @@ _bazel_extract_kzip = rule(
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor_bazel"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "scripts": attr.label_list(
-            cfg = "host",
+            cfg = "exec",
             allow_files = True,
         ),
         "vnames_config": attr.label(
@@ -529,8 +529,8 @@ def _cc_index_source(ctx, src, test_runners):
         mnemonic = "CcIndexSource",
         outputs = [entries],
         inputs = ctx.files.srcs + ctx.files.deps,
-        tools = [ctx.executable.indexer],
-        executable = ctx.executable.indexer,
+        tools = [ctx.executable._indexer],
+        executable = ctx.executable._indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
             src.path,
@@ -563,8 +563,8 @@ def _cc_index_compilation(ctx, compilation, test_runners):
         mnemonic = "CcIndexCompilation",
         outputs = [entries],
         inputs = [compilation],
-        tools = [ctx.executable.indexer],
-        executable = ctx.executable.indexer,
+        tools = [ctx.executable._indexer],
+        executable = ctx.executable._indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
@@ -595,7 +595,7 @@ def _make_test_runner(ctx, source, env, arguments):
         is_executable = True,
         template = ctx.file._test_template,
         substitutions = {
-            "@INDEXER@": shell.quote(ctx.executable.indexer.short_path),
+            "@INDEXER@": shell.quote(ctx.executable._test_indexer.short_path),
             "@ENV@": "\n".join([
                 shell.quote("{key}={value}".format(key = key, value = value))
                 for key, value in _INDEXER_LOGGING_ENV.items()
@@ -645,7 +645,13 @@ def _cc_index_impl(ctx):
         KytheVerifierSources(files = depset(transitive = sources)),
         KytheEntryProducerInfo(
             executables = test_runners,
-            runfiles = ctx.runfiles(files = test_runners + ctx.files.deps + ctx.files.srcs + additional_kzips + [ctx.executable.indexer]),
+            runfiles = ctx.runfiles(
+                files = (test_runners +
+                         ctx.files.deps +
+                         ctx.files.srcs +
+                         additional_kzips +
+                         [ctx.executable._test_indexer]),
+            ),
         ),
     ]
 
@@ -669,11 +675,6 @@ cc_index = rule(
         "copts": attr.string_list(
             doc = "Options to pass to the compiler while indexing.",
         ),
-        "indexer": attr.label(
-            default = Label("//kythe/cxx/indexer/cxx:indexer"),
-            executable = True,
-            cfg = "host",
-        ),
         "opts": attr.string_list(
             doc = "Options to pass to the indexer.",
         ),
@@ -684,6 +685,16 @@ cc_index = rule(
                 ".h",
                 ".meta",  # Cross language metadata files.
             ],
+        ),
+        "_indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+            cfg = "exec",
+        ),
+        "_test_indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+            cfg = "target",
         ),
         "_test_template": attr.label(
             default = Label("//tools/build_rules/verifier_test:indexer.sh.in"),
@@ -712,7 +723,6 @@ def _indexer_test(
         restricted_to = ["//buildenv:all"],
         bundled = False,
         expect_fail_verify = False,
-        indexer = None,
         **kwargs):
     flags = _split_flags(kwargs)
     goals = srcs
@@ -736,7 +746,6 @@ def _indexer_test(
         testonly = True,
         srcs = srcs,
         copts = copts if not bundled else [],
-        indexer = indexer,
         opts = (["-claim_unknown=false"] if bundled else []) + flags.indexer,
         restricted_to = restricted_to,
         tags = tags,
@@ -766,7 +775,6 @@ def cc_indexer_test(
         std = "c++11",
         bundled = False,
         expect_fail_verify = False,
-        indexer = "//kythe/cxx/indexer/cxx:indexer",
         copts = [],
         **kwargs):
     """C++ indexer test rule.
@@ -805,7 +813,6 @@ def cc_indexer_test(
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,
-        indexer = indexer,
         **kwargs
     )
 
@@ -818,7 +825,6 @@ def objc_indexer_test(
         restricted_to = ["//buildenv:all"],
         bundled = False,
         expect_fail_verify = False,
-        indexer = "//kythe/cxx/indexer/cxx:indexer",
         **kwargs):
     """Objective C indexer test rule.
 
@@ -856,7 +862,6 @@ def objc_indexer_test(
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,
-        indexer = indexer,
         **kwargs
     )
 

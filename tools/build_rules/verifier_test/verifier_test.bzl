@@ -109,22 +109,22 @@ atomize_entries = rule(
         "_atomizer": attr.label(
             default = Label("//kythe/go/test/tools/xrefs_atomizer"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_entrystream": attr.label(
             default = Label("//kythe/go/platform/tools/entrystream"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_postprocessor": attr.label(
             default = Label("//kythe/go/serving/tools/write_tables"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_zcat": attr.label(
             default = Label("//tools:zcatext"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {
@@ -244,11 +244,11 @@ index_compilation = rule(
         "indexer": attr.label(
             mandatory = True,
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "opts": attr.string_list(),
         "tools": attr.label_list(
-            cfg = "host",
+            cfg = "exec",
             allow_files = True,
         ),
         "deps": attr.label_list(
