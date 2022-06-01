@@ -12,7 +12,6 @@ public @interface Annotations {
 
 @SuppressWarnings("unused")
 //- @Annotations ref/id Annotation
-//- !{ @Annotations ref Annotation }
 @Annotations(
   //- @C ref C
   //- @Annotations ref Annotation
