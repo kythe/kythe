@@ -3,7 +3,10 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["verifier_test.sh.in"])
+exports_files([
+    "verifier_test.sh.in",
+    "indexer.sh.in",
+])
 
 py_binary(
     name = "unbundle",

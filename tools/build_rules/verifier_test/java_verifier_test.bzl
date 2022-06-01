@@ -375,8 +375,8 @@ def java_proto_verifier_test(
         name = name,
         size = size,
         srcs = [entries, proto_entries],
+        deps = [entries, proto_entries],
         opts = verifier_opts,
         tags = tags,
         visibility = visibility,
-        deps = [entries],
     )

@@ -21,9 +21,11 @@ load(
 )
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
     ":verifier_test.bzl",
     "KytheEntries",
+    "KytheEntryProducerInfo",
     "KytheVerifierSources",
     "extract",
     "verifier_test",
@@ -185,6 +187,8 @@ def _transitive_entries(deps):
         if KytheEntries in dep:
             files += dep[KytheEntries].files
             compressed += dep[KytheEntries].compressed
+    if files or compressed:
+        print(files, compressed)
     return KytheEntries(compressed = depset(transitive = compressed), files = depset(transitive = files))
 
 def _fix_path_for_generated_file(path):
@@ -336,7 +340,6 @@ def _cc_extract_kzip_impl(ctx):
         DefaultInfo(files = outputs),
         CxxCompilationUnits(files = outputs),
         KytheVerifierSources(files = depset(ctx.files.srcs)),
-        _transitive_entries(ctx.attr.deps),
     ]
 
 cc_extract_kzip = rule(
@@ -372,7 +375,7 @@ cc_extract_kzip = rule(
         "deps": attr.label_list(
             doc = """Files which are required by the extracted sources.
 
-            Additionally, targets providing KytheEntries or CxxCompilationUnits
+            Additionally, targets providing CxxCompilationUnits
             may be used for dependencies which are required for an eventual
             Kythe index, but should not be extracted here.
             """,
@@ -384,7 +387,6 @@ cc_extract_kzip = rule(
             ],
             providers = [
                 [CcInfo],
-                [KytheEntries],
                 [CxxCompilationUnits],
             ],
         ),
@@ -529,7 +531,7 @@ _bazel_extract_kzip = rule(
     implementation = _bazel_extract_kzip_impl,
 )
 
-def _cc_index_source(ctx, src):
+def _cc_index_source(ctx, src, test_runners):
     entries = ctx.actions.declare_file(
         ctx.label.name + "/" + src.basename + ".entries",
     )
@@ -538,7 +540,6 @@ def _cc_index_source(ctx, src):
         outputs = [entries],
         inputs = ctx.files.srcs + ctx.files.deps,
         tools = [ctx.executable.indexer],
-        env = _INDEXER_LOGGING_ENV,
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
@@ -549,9 +550,20 @@ def _cc_index_source(ctx, src):
             "-c",
         ] + [ctx.expand_location(o) for o in ctx.attr.copts],
     )
+    test_runners.append(_make_test_runner(
+        ctx,
+        src,
+        _INDEXER_LOGGING_ENV,
+        arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
+            "-i",
+            src.short_path,
+            "--",
+            "-c",
+        ] + [ctx.expand_location(o) for o in ctx.attr.copts],
+    ))
     return entries
 
-def _cc_index_compilation(ctx, compilation):
+def _cc_index_compilation(ctx, compilation, test_runners):
     if ctx.attr.copts:
         print("Ignoring compiler options:", ctx.attr.copts)
     entries = ctx.actions.declare_file(
@@ -563,60 +575,88 @@ def _cc_index_compilation(ctx, compilation):
         inputs = [compilation],
         tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
-        env = _INDEXER_LOGGING_ENV,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
             compilation.path,
         ],
     )
+    test_runners.append(_make_test_runner(
+        ctx,
+        compilation,
+        _INDEXER_LOGGING_ENV,
+        arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
+            compilation.short_path,
+        ],
+    ))
     return entries
 
-def _cc_index_single_file(ctx, input):
+def _cc_index_single_file(ctx, input, test_runners):
     if input.extension == "kzip":
-        return _cc_index_compilation(ctx, input)
+        return _cc_index_compilation(ctx, input, test_runners)
     elif input.extension in ("c", "cc", "m"):
-        return _cc_index_source(ctx, input)
+        return _cc_index_source(ctx, input, test_runners)
     fail("Cannot index input file: %s" % (input,))
 
+def _make_test_runner(ctx, source, env, arguments):
+    output = ctx.actions.declare_file(ctx.label.name + source.basename.replace(".", "_") + "_test_runner")
+    ctx.actions.expand_template(
+        output = output,
+        is_executable = True,
+        template = ctx.file._test_template,
+        substitutions = {
+            "@INDEXER@": shell.quote(ctx.executable.indexer.short_path),
+            "@ENV@": "\n".join([
+                shell.quote("{key}={value}".format(key = key, value = value))
+                for key, value in _INDEXER_LOGGING_ENV.items()
+            ]),
+            "@ARGS@": "\n".join([
+                shell.quote(a)
+                for a in arguments
+            ]),
+        },
+    )
+    return output
+
 def _cc_index_impl(ctx):
+    test_runners = []
     intermediates = [
-        _cc_index_single_file(ctx, src)
+        _cc_index_single_file(ctx, src, test_runners)
         for src in ctx.files.srcs
         if src.extension in ("m", "c", "cc", "kzip")
     ]
-    intermediates += [
-        _cc_index_compilation(ctx, kzip)
+    additional_kzips = [
+        kzip
         for dep in ctx.attr.deps
         if CxxCompilationUnits in dep
         for kzip in dep[CxxCompilationUnits].files
         if kzip not in ctx.files.deps
     ]
 
-    entries = depset(
-        intermediates,
-        transitive = [
-            dep[KytheEntries].files
-            for dep in ctx.attr.deps
-            if KytheEntries in dep
-        ],
-    )
+    intermediates += [
+        _cc_index_compilation(ctx, kzip, test_runners)
+        for kzip in additional_kzips
+    ]
 
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
-        inputs = entries,
+        inputs = intermediates,
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
         mnemonic = "CompressEntries",
-        arguments = ["cat"] + [i.path for i in entries.to_list()] + [ctx.outputs.entries.path],
+        arguments = ["cat"] + [i.path for i in intermediates] + [ctx.outputs.entries.path],
     )
 
     sources = [depset([src for src in ctx.files.srcs if src.extension != "kzip"])]
     for dep in ctx.attr.srcs:
         if KytheVerifierSources in dep:
             sources.append(dep[KytheVerifierSources].files)
+
     return [
         KytheVerifierSources(files = depset(transitive = sources)),
-        KytheEntries(compressed = depset([ctx.outputs.entries]), files = entries),
+        KytheEntryProducerInfo(
+            executables = test_runners,
+            runfiles = ctx.runfiles(files = test_runners + ctx.files.deps + ctx.files.srcs + additional_kzips + [ctx.executable.indexer]),
+        ),
     ]
 
 # TODO(shahms): Support cc_library deps, along with cc toolchain support.
@@ -648,15 +688,16 @@ cc_index = rule(
             doc = "Options to pass to the indexer.",
         ),
         "deps": attr.label_list(
-            doc = "Files required to index srcs or entries to include in the index.",
-            # .meta files, .h files, .entries{,.gz}, KytheEntries
+            doc = "Files required to index srcs.",
+            # .meta files, .h files
             allow_files = [
                 ".h",
-                ".entries",
-                ".entries.gz",
                 ".meta",  # Cross language metadata files.
             ],
-            providers = [KytheEntries],
+        ),
+        "_test_template": attr.label(
+            default = Label("//tools/build_rules/verifier_test:indexer.sh.in"),
+            allow_single_file = True,
         ),
     },
     doc = """Produces a Kythe index from the C++ source files.
@@ -684,6 +725,7 @@ def _indexer_test(
         indexer = None,
         **kwargs):
     flags = _split_flags(kwargs)
+    goals = srcs
     if bundled:
         if len(srcs) != 1:
             fail("Bundled indexer tests require exactly one src!")
@@ -695,7 +737,10 @@ def _indexer_test(
             restricted_to = restricted_to,
             tags = tags,
         )
+
+        # Verifier sources come from file nodes.
         srcs = [":" + name + "_kzip"]
+        goals = []
     cc_index(
         name = name + "_entries",
         testonly = True,
@@ -710,8 +755,8 @@ def _indexer_test(
     verifier_test(
         name = name,
         size = size,
-        # TODO(shahms): Use sources directly?
-        srcs = [":" + name + "_entries"],
+        srcs = goals,
+        deps = [":" + name + "_entries"],
         expect_success = not expect_fail_verify,
         opts = flags.verifier,
         restricted_to = restricted_to,
@@ -855,7 +900,8 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
     return verifier_test(
         name = name,
         size = size,
-        srcs = [":" + name + "_entries"],
+        srcs = [src],
+        deps = [":" + name + "_entries"],
         opts = ["--ignore_dups"],
         restricted_to = restricted_to,
         tags = tags,
@@ -884,7 +930,8 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
     return verifier_test(
         name = name,
         size = size,
-        srcs = [":" + name + "_entries"],
+        srcs = [src],
+        deps = [":" + name + "_entries"],
         opts = ["--ignore_dups"],
         tags = tags,
     )
@@ -921,9 +968,9 @@ def cc_extractor_test(
     return verifier_test(
         name = name,
         size = size,
-        srcs = [":" + name + "_entries"],
+        srcs = srcs,
         opts = ["--ignore_dups"],
         restricted_to = restricted_to,
         tags = tags,
-        deps = deps,
+        deps = deps + [":" + name + "_entries"],
     )

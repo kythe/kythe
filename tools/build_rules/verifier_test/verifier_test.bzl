@@ -14,6 +14,8 @@
 # limitations under the License.
 """Rules and macros related to Kythe verifier-based tests."""
 
+load("@bazel_skylib//lib:shell.bzl", "shell")
+
 KytheVerifierSources = provider(
     doc = "Input files which the verifier should inspect for assertions.",
     fields = {
@@ -26,6 +28,14 @@ KytheEntries = provider(
     fields = {
         "compressed": "Depset of combined, compressed index entries.",
         "files": "Depset of files which combine to make an index.",
+    },
+)
+
+KytheEntryProducerInfo = provider(
+    doc = "Provider indicating an executable to be called which will produce Kythe entries on stdout.",
+    fields = {
+        "executables": "A list of File objects to run which should produce Kythe entries on stdout.",
+        "runfiles": "Required runfiles.",
     },
 )
 
@@ -260,79 +270,76 @@ def _verifier_test_impl(ctx):
     for src in ctx.attr.srcs:
         if KytheVerifierSources in src:
             sources.append(src[KytheVerifierSources].files)
-            if KytheEntries in src:
-                if src[KytheEntries].files:
-                    entries.append(src[KytheEntries].files)
-                else:
-                    entries_gz.append(src[KytheEntries].compressed)
         else:
             sources.append(src.files)
 
+    indexers = []
+    runfiles = []
     for dep in ctx.attr.deps:
-        # TODO(shahms): Allow specifying .entries files directly.
-        if dep[KytheEntries].files:
-            entries.append(dep[KytheEntries].files)
-        else:
-            entries_gz.append(dep[KytheEntries].compressed)
+        if KytheEntryProducerInfo in dep:
+            indexers.extend(dep[KytheEntryProducerInfo].executables)
+            runfiles.append(dep[KytheEntryProducerInfo].runfiles)
+        if KytheEntries in dep:
+            if dep[KytheEntries].files:
+                entries.append(dep[KytheEntries].files)
+            else:
+                entries_gz.append(dep[KytheEntries].compressed)
 
     # Flatten input lists
     entries = depset(transitive = entries).to_list()
     entries_gz = depset(transitive = entries_gz).to_list()
     sources = depset(transitive = sources).to_list()
 
-    if not (entries or entries_gz):
+    if not (entries or entries_gz or indexers):
         fail("Missing required entry stream input (check your deps!)")
-    args = ctx.attr.opts + [src.short_path for src in sources]
+    args = ctx.attr.opts + [shell.quote(src.short_path) for src in sources]
 
     # If no dependency specifies KytheVerifierSources and
     # we aren't provided explicit sources, assume `--use_file_nodes`.
     if not sources and "--use_file_nodes" not in args:
         args.append("--use_file_nodes")
+    if "--ignore_dups" not in args:
+        args.append("--ignore_dups")
+
     ctx.actions.expand_template(
         template = ctx.file._template,
         output = ctx.outputs.executable,
         is_executable = True,
         substitutions = {
             "@ARGS@": " ".join(args),
-            "@ENTRIES@": " ".join([e.short_path for e in entries]),
-            "@ENTRIES_GZ@": " ".join([e.short_path for e in entries_gz]),
+            "@INDEXERS@": "\n".join([shell.quote(i.short_path) for i in indexers]),
+            "@ENTRIES@": " ".join([shell.quote(e.short_path) for e in entries]),
+            "@ENTRIES_GZ@": " ".join([shell.quote(e.short_path) for e in entries_gz]),
             # If failure is expected, invert the sense of the verifier return.
             "@INVERT@": "!" if not ctx.attr.expect_success else "",
-            "@VERIFIER@": ctx.executable._verifier.short_path,
+            "@VERIFIER@": shell.quote(ctx.executable._verifier.short_path),
             "@WORKSPACE_NAME@": ctx.workspace_name,
         },
     )
-    runfiles = ctx.runfiles(files = list(sources + entries + entries_gz) + [
-        ctx.outputs.executable,
-        ctx.executable._verifier,
-    ], collect_data = True)
     return [
-        DefaultInfo(runfiles = runfiles),
+        DefaultInfo(
+            runfiles = ctx.runfiles(files = sources + entries + entries_gz + [
+                ctx.outputs.executable,
+                ctx.executable._verifier,
+            ]).merge_all(runfiles),
+            executable = ctx.outputs.executable,
+        ),
     ]
 
 verifier_test = rule(
     attrs = {
         "srcs": attr.label_list(
+            doc = "Targets or files containing verifier goals.",
             allow_files = True,
-            providers = [
-                [KytheVerifierSources],
-                [
-                    KytheVerifierSources,
-                    KytheEntries,
-                ],
-            ],
+            providers = [KytheVerifierSources],
         ),
         # Arguably, "expect_failure" is more natural, but that
         # attribute is used by Skylark.
         "expect_success": attr.bool(default = True),
         "opts": attr.string_list(),
         "deps": attr.label_list(
-            # TODO(shahms): Allow directly specifying sources/deps.
-            #allow_files = [
-            #    ".entries",
-            #    ".entries.gz",
-            #],
-            providers = [KytheEntries],
+            doc = "Targets which produce graph entries to verify.",
+            providers = [[KytheEntries], [KytheEntryProducerInfo]],
         ),
         "_template": attr.label(
             default = Label("//tools/build_rules/verifier_test:verifier_test.sh.in"),
