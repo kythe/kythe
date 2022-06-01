@@ -1,5 +1,5 @@
 //- @+5pkg defines/binding Package
-//- @+3ParametersAreNonnullByDefault ref/id Annotation
+//- @+3ParametersAreNonnullByDefault ref Annotation
 
 /** Classes used to verify the Kythe Java indexer and its output. */
 @ParametersAreNonnullByDefault
