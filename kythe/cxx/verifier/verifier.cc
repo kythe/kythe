@@ -1553,22 +1553,18 @@ void Verifier::DumpAsDot() {
     return;
   }
   std::map<std::string, std::string> vname_labels;
-  for (const auto& label_vname : saved_assignments_) {
-    if (!label_vname.second) {
+  for (const auto& [label, vname] : saved_assignments_) {
+    if (!vname) {
       continue;
     }
-    if (App* a = label_vname.second->AsApp()) {
-      if (Tuple* t = a->rhs()->AsTuple()) {
-        StringPrettyPrinter printer;
-        QuoteEscapingPrettyPrinter quote_printer(printer);
-        label_vname.second->Dump(symbol_table_, &printer);
-        auto old_label = vname_labels.find(printer.str());
-        if (old_label == vname_labels.end()) {
-          vname_labels[printer.str()] = label_vname.first;
-        } else {
-          old_label->second += ", " + label_vname.first;
-        }
-      }
+    StringPrettyPrinter printer;
+    QuoteEscapingPrettyPrinter quote_printer(printer);
+    vname->Dump(symbol_table_, &printer);
+    auto old_label = vname_labels.find(printer.str());
+    if (old_label == vname_labels.end()) {
+      vname_labels[printer.str()] = label;
+    } else {
+      old_label->second += ", " + label;
     }
   }
   auto GetLabel = [&](AstNode* node) {
@@ -1646,9 +1642,11 @@ void Verifier::DumpAsDot() {
       PrintQuotedNodeId(t->element(0));
       std::string label = GetLabel(t->element(0));
       if (info.kind == NodeKind::kAnchor && !show_anchors_) {
-        printer.Print(" [ shape=circle, label=\"@");
-        printer.Print(label);
-        if (!label.empty()) {
+        printer.Print(" [ shape=circle, label=\"");
+        if (label.empty()) {
+          printer.Print("@");
+        } else {
+          printer.Print(label);
           printer.Print("\", color=\"blue");
         }
         printer.Print("\" ];\n");
