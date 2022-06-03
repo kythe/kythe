@@ -2762,11 +2762,27 @@ bool IndexerASTVisitor::TraverseClassTemplateDecl(
 // TraverseClassTemplate{Partial}SpecializationDecl will be called).
 bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
     clang::ClassTemplateSpecializationDecl* TD) {
+  // Differentiate between implicit instantiations and explicit instantiations
+  // based on the presence of TypeSourceInfo.
+  // See RecursiveASTVisitor::TraverseClassTemplateSpecializationDecl for more
+  // detail.
+  if (TypeSourceInfo* TSI = TD->getTypeAsWritten()) {
+    if (!TraverseTypeLoc(TSI->getTypeLoc())) {
+      return false;
+    }
+  }
+  if (!TraverseNestedNameSpecifierLoc(TD->getQualifierLoc())) {
+    return false;
+  }
+
   auto Scope = std::make_tuple(
       RestoreStack(Job->RangeContext),
       RestoreValue(Job->UnderneathImplicitTemplateInstantiation));
+
   // If this specialization was spelled out in the file, it has
-  // physical ranges.
+  // physical ranges, but only for children. In all cases, if present
+  // the TypeSourceInfo and NestedNameSpecifierLoc are within the current
+  // RangeContext.
   if (TD->getTemplateSpecializationKind() !=
       clang::TSK_ExplicitSpecialization) {
     Job->RangeContext.push_back(BuildNodeIdForDecl(TD));
@@ -2774,7 +2790,22 @@ bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
   if (!TD->isExplicitInstantiationOrSpecialization()) {
     Job->UnderneathImplicitTemplateInstantiation = true;
   }
-  return Base::TraverseClassTemplateSpecializationDecl(TD);
+  for (auto* Child : TD->decls()) {
+    if (!canIgnoreChildDeclWhileTraversingDeclContext(Child)) {
+      if (!TraverseDecl(Child)) {
+        return false;
+      }
+    }
+  }
+  return WalkUpFromClassTemplateSpecializationDecl(TD);
+}
+
+bool IndexerASTVisitor::TraverseClassTemplatePartialSpecializationDecl(
+    clang::ClassTemplatePartialSpecializationDecl* TD) {
+  // Implicit partial specializations don't happen, so we don't need
+  // to consider changing the Job->RangeContext stack.
+  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
+  return Base::TraverseClassTemplatePartialSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
@@ -2803,14 +2834,6 @@ bool IndexerASTVisitor::ForceTraverseVarTemplateSpecializationDecl(
     Job->UnderneathImplicitTemplateInstantiation = true;
   }
   return Base::TraverseVarTemplateSpecializationDecl(TD);
-}
-
-bool IndexerASTVisitor::TraverseClassTemplatePartialSpecializationDecl(
-    clang::ClassTemplatePartialSpecializationDecl* TD) {
-  // Implicit partial specializations don't happen, so we don't need
-  // to consider changing the Job->RangeContext stack.
-  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
-  return Base::TraverseClassTemplatePartialSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl* TD) {

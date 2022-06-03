@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "absl/strings/str_cat.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "verifier.h"
 
@@ -448,10 +449,9 @@ bool AssertionParser::ResolveLocations(const yy::location& end_of_line,
         break;
       case UnresolvedLocation::Kind::kAnchor:
         if (default_inspect_) {
-          inspections_.emplace_back(token + ":" +
-                                        std::to_string(location.begin.line) +
-                                        "." + std::to_string(col),
-                                    evar, Inspection::Kind::IMPLICIT);
+          inspections_.emplace_back(
+              absl::StrCat("@", token, ":", location.begin.line, ".", col),
+              evar, Inspection::Kind::IMPLICIT);
         }
         AppendGoal(group_id, verifier_.MakePredicate(
                                  location, verifier_.eq_id(),
