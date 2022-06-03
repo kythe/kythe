@@ -298,9 +298,6 @@ def _verifier_test_impl(ctx):
     # we aren't provided explicit sources, assume `--use_file_nodes`.
     if not sources and "--use_file_nodes" not in args:
         args.append("--use_file_nodes")
-    if "--ignore_dups" not in args:
-        args.append("--ignore_dups")
-
     ctx.actions.expand_template(
         template = ctx.file._template,
         output = ctx.outputs.executable,
