@@ -47,7 +47,7 @@ jvm_extract_kzip = rule(
         "extractor": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/extractors/jvm:jar_extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "opts": attr.string_list(),
         "vnames_config": attr.label(

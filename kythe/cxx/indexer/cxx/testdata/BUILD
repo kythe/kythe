@@ -2241,7 +2241,7 @@ cc_indexer_test(
     check_for_singletons = True,
     ignore_dups = True,
     tags = ["template"],
-    template_instance_exclude_path_pattern = ".*exclude.*",
+    template_instance_exclude_path_pattern = ".*/exclude.*",
     deps = [
         "template/exclude_this_file.h",
         "template/include_this_file.h",
@@ -3016,7 +3016,7 @@ cc_indexer_test(
     experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
-    template_instance_exclude_path_pattern = ".*exclude.*",
+    template_instance_exclude_path_pattern = ".*/exclude.*",
     deps = [
         "tvar_template/exclude_this_file.h",
         "tvar_template/include_this_file.h",
