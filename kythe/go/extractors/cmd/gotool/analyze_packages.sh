@@ -65,7 +65,7 @@ if [ -n "$KYTHE_SKIP_MOD_VENDOR" ]; then
   fi
 fi
 
-if ! [ -n "$SKIP_MOD_VENDOR" ]; then
+if [ -z "$SKIP_MOD_VENDOR" ]; then
   echo "$PACKAGE: go mod vendor" >&2
   pushd "$GOPATH/src/$PACKAGE"
   go mod vendor
