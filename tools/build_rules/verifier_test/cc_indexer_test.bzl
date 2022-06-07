@@ -598,7 +598,7 @@ def _make_test_runner(ctx, source, env, arguments):
             "@INDEXER@": shell.quote(ctx.executable._test_indexer.short_path),
             "@ENV@": "\n".join([
                 shell.quote("{key}={value}".format(key = key, value = value))
-                for key, value in _INDEXER_LOGGING_ENV.items()
+                for key, value in env.items()
             ]),
             "@ARGS@": "\n".join([
                 shell.quote(a)
