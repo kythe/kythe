@@ -18,21 +18,31 @@ py_binary(
 bzl_library(
     name = "cc_indexer_test_bzl",
     srcs = ["cc_indexer_test.bzl"],
+    deps = [
+        ":verifier_test_bzl",
+        "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:shell",
+    ],
 )
 
 bzl_library(
     name = "java_verifier_test_bzl",
     srcs = ["java_verifier_test.bzl"],
+    deps = [":verifier_test_bzl"],
 )
 
 bzl_library(
     name = "verifier_test_bzl",
     srcs = ["verifier_test.bzl"],
+    deps = [
+        "@bazel_skylib//lib:shell",
+    ],
 )
 
 bzl_library(
     name = "jvm_verifier_test_bzl",
     srcs = ["jvm_verifier_test.bzl"],
+    deps = [":verifier_test_bzl"],
 )
 
 bzl_library(
@@ -43,4 +53,8 @@ bzl_library(
 bzl_library(
     name = "rust_indexer_test_bzl",
     srcs = ["rust_indexer_test.bzl"],
+    deps = [
+        ":verifier_test_bzl",
+        "@bazel_skylib//lib:paths",
+    ],
 )
