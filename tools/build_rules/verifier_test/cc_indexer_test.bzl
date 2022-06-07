@@ -24,7 +24,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
     ":verifier_test.bzl",
-    "KytheEntries",
     "KytheEntryProducerInfo",
     "KytheVerifierSources",
     "extract",
