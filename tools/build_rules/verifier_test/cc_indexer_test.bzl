@@ -649,9 +649,8 @@ def _cc_index_impl(ctx):
                 files = (test_runners +
                          ctx.files.deps +
                          ctx.files.srcs +
-                         additional_kzips +
-                         [ctx.executable.test_indexer]),
-            ),
+                         additional_kzips),
+            ).merge(ctx.attr.test_indexer[DefaultInfo].default_runfiles),
         ),
     ]
 
