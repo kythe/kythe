@@ -60,7 +60,7 @@ if [ -n "$KYTHE_SKIP_MOD_VENDOR" ]; then
   if [ "$KYTHE_SKIP_MOD_VENDOR" == "1" ] || \
      [ "$KYTHE_SKIP_MOD_VENDOR" == "True" ] || \
      [ "$KYTHE_SKIP_MOD_VENDOR" == "true" ]; then
-    echo "$PACKAGE: Skipping 'go mod vendor' due to KYTHE_SKIP_MOD_VERSION=$KYTHE_SKIP_MOD_VENDOR" >&2
+    echo "$PACKAGE: Skipping 'go mod vendor' due to KYTHE_SKIP_MOD_VENDOR=$KYTHE_SKIP_MOD_VENDOR" >&2
     SKIP_MOD_VENDOR=true
   fi
 fi
