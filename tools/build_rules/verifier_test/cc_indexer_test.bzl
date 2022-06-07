@@ -529,8 +529,8 @@ def _cc_index_source(ctx, src, test_runners):
         mnemonic = "CcIndexSource",
         outputs = [entries],
         inputs = ctx.files.srcs + ctx.files.deps,
-        tools = [ctx.executable._indexer],
-        executable = ctx.executable._indexer,
+        tools = [ctx.executable.indexer],
+        executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
             src.path,
@@ -563,8 +563,8 @@ def _cc_index_compilation(ctx, compilation, test_runners):
         mnemonic = "CcIndexCompilation",
         outputs = [entries],
         inputs = [compilation],
-        tools = [ctx.executable._indexer],
-        executable = ctx.executable._indexer,
+        tools = [ctx.executable.indexer],
+        executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
@@ -595,7 +595,7 @@ def _make_test_runner(ctx, source, env, arguments):
         is_executable = True,
         template = ctx.file._test_template,
         substitutions = {
-            "@INDEXER@": shell.quote(ctx.executable._test_indexer.short_path),
+            "@INDEXER@": shell.quote(ctx.executable.test_indexer.short_path),
             "@ENV@": "\n".join([
                 shell.quote("{key}={value}".format(key = key, value = value))
                 for key, value in env.items()
@@ -650,7 +650,7 @@ def _cc_index_impl(ctx):
                          ctx.files.deps +
                          ctx.files.srcs +
                          additional_kzips +
-                         [ctx.executable._test_indexer]),
+                         [ctx.executable.test_indexer]),
             ),
         ),
     ]
@@ -686,12 +686,12 @@ cc_index = rule(
                 ".meta",  # Cross language metadata files.
             ],
         ),
-        "_indexer": attr.label(
+        "indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
             cfg = "exec",
         ),
-        "_test_indexer": attr.label(
+        "test_indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
             cfg = "target",
@@ -723,6 +723,7 @@ def _indexer_test(
         restricted_to = ["//buildenv:all"],
         bundled = False,
         expect_fail_verify = False,
+        indexer = None,
         **kwargs):
     flags = _split_flags(kwargs)
     goals = srcs
@@ -741,6 +742,15 @@ def _indexer_test(
         # Verifier sources come from file nodes.
         srcs = [":" + name + "_kzip"]
         goals = []
+    indexer_args = {}
+    if indexer != None:
+        # Obnoxiously, we have to duplicate these attributes so that
+        # they both have the proper configuration.
+        indexer_args = {
+            "indexer": indexer,
+            "test_indexer": indexer,
+        }
+
     cc_index(
         name = name + "_entries",
         testonly = True,
@@ -750,6 +760,7 @@ def _indexer_test(
         restricted_to = restricted_to,
         tags = tags,
         deps = deps,
+        **indexer_args
     )
     verifier_test(
         name = name,
@@ -776,6 +787,7 @@ def cc_indexer_test(
         bundled = False,
         expect_fail_verify = False,
         copts = [],
+        indexer = None,
         **kwargs):
     """C++ indexer test rule.
 
@@ -813,6 +825,7 @@ def cc_indexer_test(
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,
+        indexer = indexer,
         **kwargs
     )
 
