@@ -3,13 +3,13 @@ load(":vnames.bzl", "construct_vnames_config")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files([
+exports_files(glob([
     "LICENSE",
     "extractors/*",
     "indexers/*",
     "proto/*",
     "tools/*",
-])
+]))
 
 config_setting(
     name = "assign_external_projects_to_separate_corpora",
