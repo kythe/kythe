@@ -304,10 +304,13 @@ public class JavaCompilationUnitExtractor {
       unit.addSourceFile(sourceFile);
       sourceFileCorpora.add(inputCorpus.getOrDefault(sourceFile, ""));
     }
-    if (sourceFileCorpora.size() == 1) {
-      // Attribute the source files' corpus to the CompilationUnit if it is unambiguous.
-      unit.getVNameBuilder().setCorpus(Iterables.getOnlyElement(sourceFileCorpora));
-    }
+    // Attribute the source files' corpus to the CompilationUnit if it is unambiguous. Otherwise use
+    // the default corpus.
+    String cuCorpus =
+        sourceFileCorpora.size() == 1
+            ? Iterables.getOnlyElement(sourceFileCorpora)
+            : fileVNames.getDefaultCorpus();
+    unit.getVNameBuilder().setCorpus(cuCorpus);
     unit.setOutputKey(outputPath);
     unit.setWorkingDirectory(stableRoot(rootDirectory, options, requiredInputs));
     unit.addDetails(
