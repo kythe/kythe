@@ -171,6 +171,10 @@ public class FileVNames {
         .build();
   }
 
+  public String getDefaultCorpus() {
+    return defaultCorpus.get();
+  }
+
   /** Base {@link VName} to use for files matching {@code pattern}. */
   private static class BaseFileVName {
     public final Pattern pattern;
