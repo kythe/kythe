@@ -107,13 +107,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
               });
     }
     CompilationUnit compilation = details.getCompilationUnit();
+    VName cuVName = compilation.getVName();
+    if (cuVName.getCorpus().isEmpty()) {
+      logger.atWarning().log(
+          "Analyzer received compilation unit vname with empty corpus: %s", cuVName.toString());
+    }
     entrySets =
         new JavaEntrySets(
-            getStatisticsCollector(),
-            emitter,
-            compilation.getVName(),
-            compilation.getRequiredInputList(),
-            config);
+            getStatisticsCollector(), emitter, cuVName, compilation.getRequiredInputList(), config);
     try {
       super.analyzeCompilationUnit(details);
     } finally {
