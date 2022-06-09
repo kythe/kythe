@@ -110,7 +110,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     VName cuVName = compilation.getVName();
     if (cuVName.getCorpus().isEmpty()) {
       logger.atWarning().log(
-          "Analyzer received compilation unit vname with empty corpus: %s", cuVName.toString());
+          "Analyzer received compilation unit vname with empty corpus: %s", cuVName);
     }
     entrySets =
         new JavaEntrySets(
