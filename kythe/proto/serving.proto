@@ -186,6 +186,8 @@ message FileInfo {
   // Hash of the file contents; the algorithm of the hash may differ between
   // corpora based on the repository from which they were extracted.
   kythe.proto.common.Hash hash = 3;
+
+  bool protected = 4;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
