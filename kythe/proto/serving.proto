@@ -187,6 +187,7 @@ message FileInfo {
   // corpora based on the repository from which they were extracted.
   kythe.proto.common.Hash hash = 3;
 
+  // Signifies whether the file is view-protected in some context.
   bool protected = 4;
 }
 
