@@ -187,8 +187,9 @@ message FileInfo {
   // corpora based on the repository from which they were extracted.
   kythe.proto.common.Hash hash = 3;
 
-  // Signifies whether the file is view-protected in some context.
-  bool protected = 4;
+  // Signifies whether there are restrictions for viewing this file in some
+  // context.
+  bool view_restricted = 4;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
