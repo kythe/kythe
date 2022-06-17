@@ -11,6 +11,7 @@ interface IFace {
 
     //- @member defines/binding IFaceMember
     //- IFaceMember.node/kind variable
+    //- IFaceMember.subkind field
     member: number;
 }
 
@@ -33,6 +34,7 @@ class Class implements IFace {
     //- @member defines/binding Member
     //- Member.node/kind variable
     //- !{ Member.tag/static _ }
+    //- Member.subkind field
     member: number;
 
     //- @member defines/binding StaticMember
