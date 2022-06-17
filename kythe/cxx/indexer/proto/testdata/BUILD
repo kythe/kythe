@@ -209,6 +209,7 @@ proto_library(
 proto_library(
     name = "corner_cases_import_syntax_proto",
     srcs = ["corner_cases/import_syntax.proto"],
+    exports = [":basic_oneof_proto"],
     deps = [
         ":basic_nested_message_proto",
         ":basic_oneof_proto",

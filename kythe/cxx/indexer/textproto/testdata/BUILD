@@ -47,6 +47,15 @@ textproto_verifier_test(
 )
 
 textproto_verifier_test(
+    name = "imports_generated_test",
+    protos = [
+        ":generated_proto",
+        ":imports_generated_proto",
+    ],
+    textprotos = ["generated_imports.pbtxt"],
+)
+
+textproto_verifier_test(
     name = "extensions_test",
     protos = [":extensions_proto"],
     textprotos = ["extensions.pbtxt"],
@@ -107,4 +116,22 @@ proto_library(
 proto_library(
     name = "repeated_extension_proto",
     srcs = ["repeated_extension.proto"],
+)
+
+genrule(
+    name = "generate_proto",
+    srcs = ["example.proto"],
+    outs = ["generated.proto"],
+    cmd = "cp $< $@",
+)
+
+proto_library(
+    name = "generated_proto",
+    srcs = [":generated.proto"],
+)
+
+proto_library(
+    name = "imports_generated_proto",
+    srcs = ["imports_generated.proto"],
+    deps = [":generated_proto"],
 )

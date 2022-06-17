@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package example2;
+
+import "kythe/cxx/indexer/textproto/testdata/generated.proto";
+
+message OuterMessage {
+  //- @inner_msg defines/binding OuterMessageInnerMsg
+  optional example.Message2 inner_msg = 1;
+};

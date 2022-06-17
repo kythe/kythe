@@ -120,7 +120,8 @@ public class JavaExtractorTest extends TestCase {
         java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertThat(unit.getVName().getCorpus()).isEmpty(); // source files are from different corpora
+    // source files are from different corpora, so unit is assigned default corpus of "kythe"
+    assertThat(unit.getVName().getCorpus()).isEqualTo("kythe");
     assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);

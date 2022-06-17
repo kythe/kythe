@@ -40,7 +40,17 @@ def get_proto_files_and_proto_paths(protolibs):
         for src in info.direct_sources:
             toplevel_srcs.append(src)
     all_srcs = depset([], transitive = [lib[ProtoInfo].transitive_sources for lib in protolibs])
-    proto_paths = depset(transitive = [lib[ProtoInfo].transitive_proto_path for lib in protolibs])
+    proto_paths = depset(
+        transitive = [lib[ProtoInfo].transitive_proto_path for lib in protolibs] +
+                     # Workaround for https://github.com/bazelbuild/bazel/issues/7964.
+                     # Since we can't rely on ProtoInfo to provide accurate roots, generate them here.
+                     [depset([
+                         src.root.path
+                         for src in depset(toplevel_srcs, transitive = [all_srcs], order = "postorder").to_list()
+                         if src.root.path
+                     ])],
+        order = "postorder",
+    )
     return toplevel_srcs, all_srcs, proto_paths
 
 def _proto_extract_kzip_impl(ctx):

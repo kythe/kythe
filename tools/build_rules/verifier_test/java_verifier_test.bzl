@@ -111,7 +111,7 @@ java_extract_kzip = rule(
         "extractor": attr.label(
             default = Label("@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "opts": attr.string_list(),
         "vnames_config": attr.label(
@@ -284,12 +284,12 @@ _generate_java_proto = rule(
         "_protoc": attr.label(
             default = Label("@com_google_protobuf//:protoc"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_singlejar": attr.label(
             default = Label("@bazel_tools//tools/jdk:singlejar"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     implementation = _generate_java_proto_impl,
@@ -375,8 +375,8 @@ def java_proto_verifier_test(
         name = name,
         size = size,
         srcs = [entries, proto_entries],
+        deps = [entries, proto_entries],
         opts = verifier_opts,
         tags = tags,
         visibility = visibility,
-        deps = [entries],
     )

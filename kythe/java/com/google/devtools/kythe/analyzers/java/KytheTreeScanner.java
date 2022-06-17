@@ -660,10 +660,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
     for (Type target : getTargets(lambda)) {
-      if (target != null) {
-        VName targetNode = getNode(target.asElement());
-        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
-      }
+      VName targetNode = getNode(target.asElement());
+      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
     }
 
     scan(lambda.body, ctx);
@@ -672,6 +670,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private static Iterable<Type> getTargets(JCFunctionalExpression node) {
+    if (node == null || node.target == null) {
+      return ImmutableList.of();
+    }
     return ImmutableList.of(node.target);
   }
 
