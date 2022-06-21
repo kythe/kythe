@@ -15,7 +15,7 @@
 #
 """C++ Verifier toolchain support rules and macros."""
 
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
 CxxExtractorToolchainInfo = provider(
     doc = "Provides required information for C++/ObjectiveC extractors.",
@@ -64,7 +64,7 @@ cxx_extractor_toolchain = rule(
         CxxExtractorToolchainInfo,
         platform_common.ToolchainInfo,
     ],
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = use_cpp_toolchain(),
     implementation = _cxx_extractor_toolchain_impl,
 )
 
