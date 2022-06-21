@@ -20,7 +20,7 @@ through the verifier
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheEntries",
@@ -118,9 +118,8 @@ rust_extract = rule(
     },
     outputs = {"kzip": "%{name}.kzip"},
     fragments = ["cpp"],
-    toolchains = [
+    toolchains = use_cpp_toolchain() + [
         "@rules_rust//rust:toolchain",
-        "@bazel_tools//tools/cpp:toolchain_type",
     ],
 )
 
