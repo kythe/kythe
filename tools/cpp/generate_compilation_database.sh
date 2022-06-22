@@ -1,18 +1,16 @@
 #!/bin/bash
 
 # Generates a compile_commands.json file at $(bazel info execution_root) for
-# the given file path.
+# your Clang tooling needs.
 
 set -e
 
-FILENAME=${1:?Missing required source path}
 bazel build \
   --experimental_action_listener=//kythe/cxx/tools/generate_compile_commands:extract_json \
   --noshow_progress \
   --noshow_loading_progress \
   --output_groups=compilation_outputs \
-  --compile_one_dependency \
-  "$FILENAME" > /dev/null
+  $(bazel query 'kind(cc_.*, //...) - attr(tags, manual, //...)') > /dev/null
 
 BAZEL_ROOT="$(bazel info execution_root)"
 pushd "$BAZEL_ROOT" > /dev/null
