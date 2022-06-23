@@ -5,12 +5,13 @@
 
 set -e
 
+TARGETS=($(bazel query 'kind(cc_.*, //...) - attr(tags, manual, //...)'))
 bazel build \
   --experimental_action_listener=//kythe/cxx/tools/generate_compile_commands:extract_json \
   --noshow_progress \
   --noshow_loading_progress \
   --output_groups=compilation_outputs \
-  $(bazel query 'kind(cc_.*, //...) - attr(tags, manual, //...)') > /dev/null
+  "${TARGETS[@]}" > /dev/null
 
 BAZEL_ROOT="$(bazel info execution_root)"
 pushd "$BAZEL_ROOT" > /dev/null
