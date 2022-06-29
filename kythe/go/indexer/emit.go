@@ -331,7 +331,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 	}
 	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
 	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
-		v.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		v.Corpus = e.rewrittenCorpusForVName(v)
 	}
 	if e.pi.typeEmitted.Add(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
@@ -1002,7 +1002,7 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 func (e *emitter) writeFact(src *spb.VName, name, value string) {
 	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		src.Corpus = e.rewrittenCorpusForVName(src)
 	}
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
@@ -1010,9 +1010,9 @@ func (e *emitter) writeFact(src *spb.VName, name, value string) {
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		src.Corpus = e.rewrittenCorpusForVName(src)
 		tgt = proto.Clone(tgt).(*spb.VName)
-		tgt.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		tgt.Corpus = e.rewrittenCorpusForVName(tgt)
 	}
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
@@ -1020,7 +1020,7 @@ func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		src.Corpus = e.rewrittenCorpusForVName(src)
 	}
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
@@ -1032,7 +1032,7 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
 	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(e.pi.VName)
+		src.Corpus = e.rewrittenCorpusForVName(src)
 	}
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
