@@ -52,6 +52,7 @@ var (
 	verbose                        = flag.Bool("verbose", false, "Emit verbose log information")
 	contOnErr                      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 	useCompilationCorpusAsDefault  = flag.Bool("use_compilation_corpus_as_default", false, "Nodes that otherwise wouldn't have a corpus (such as tapps) are given the corpus of the compilation unit being indexed.")
+	overrideStdlibCorpus           = flag.String("override_stdlib_corpus", "", "If set, all stdlib nodes are assigned this corpus")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -160,6 +161,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		DocBase:                        docURL,
 		OnlyEmitDocURIsForStandardLibs: *onlyEmitDocURIsForStandardLibs,
 		UseCompilationCorpusAsDefault:  *useCompilationCorpusAsDefault,
+		OverrideStdlibCorpus:           *overrideStdlibCorpus,
 	})
 }
 

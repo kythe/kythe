@@ -142,7 +142,7 @@ func TestNotStandardLib(t *testing.T) {
 func TestForBuiltin(t *testing.T) {
 	const signature = "blah"
 	want := &spb.VName{
-		Corpus:    golangCorpus,
+		Corpus:    GolangCorpus,
 		Language:  Language,
 		Root:      "ref/spec",
 		Signature: signature,

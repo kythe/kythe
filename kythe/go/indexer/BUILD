@@ -296,6 +296,16 @@ empty_corpus_test(
     entries = ":stdlibimport_test_entries.entries.gz",
 )
 
+go_indexer_test(
+    name = "stdliboverride_test",
+    srcs = ["testdata/basic/stdliboverride.go"],
+    extra_extractor_args = [
+        "--corpus=kythe",
+    ],
+    override_stdlib_corpus = "STDLIB_OVERRIDE",
+    use_compilation_corpus_as_default = True,
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(

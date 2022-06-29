@@ -172,6 +172,9 @@ def _go_entries(ctx):
     if ctx.attr.use_compilation_corpus_as_default:
         iargs.append("-use_compilation_corpus_as_default")
 
+    if ctx.attr.override_stdlib_corpus:
+        iargs.append("-override_stdlib_corpus=%s" % ctx.attr.override_stdlib_corpus)
+
     # If the test wants linkage metadata, enable support for it in the indexer.
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
@@ -207,6 +210,7 @@ go_entries = rule(
         # The suffix used to recognize linkage metadata files, if non-empty.
         "metadata_suffix": attr.string(default = ""),
         "use_compilation_corpus_as_default": attr.bool(default = False),
+        "override_stdlib_corpus": attr.string(default = ""),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -255,6 +259,7 @@ def _go_indexer(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_as_default = False,
+        override_stdlib_corpus= "",
         metadata_suffix = "",
         extra_extractor_args = []):
     if importpath == None:
@@ -279,6 +284,7 @@ def _go_indexer(
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
         use_compilation_corpus_as_default = use_compilation_corpus_as_default,
+        override_stdlib_corpus = override_stdlib_corpus,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -299,6 +305,7 @@ def go_indexer_test(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_as_default = False,
+        override_stdlib_corpus= "",
         metadata_suffix = "",
         extra_extractor_args = []):
     entries = _go_indexer(
@@ -308,6 +315,7 @@ def go_indexer_test(
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
         use_compilation_corpus_as_default = use_compilation_corpus_as_default,
+        override_stdlib_corpus=override_stdlib_corpus,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,
