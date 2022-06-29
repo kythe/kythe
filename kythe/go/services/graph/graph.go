@@ -147,12 +147,12 @@ func WebClient(addr string) Service {
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // graph Service.  The following methods with be exposed:
 //
-//   GET /nodes
-//     Request: JSON encoded graph.NodesRequest
-//     Response: JSON encoded graph.NodesReply
-//   GET /edges
-//     Request: JSON encoded graph.EdgesRequest
-//     Response: JSON encoded graph.EdgesReply
+//	GET /nodes
+//	  Request: JSON encoded graph.NodesRequest
+//	  Response: JSON encoded graph.NodesReply
+//	GET /edges
+//	  Request: JSON encoded graph.EdgesRequest
+//	  Response: JSON encoded graph.EdgesReply
 //
 // Note: /nodes, and /edges will return their responses as serialized protobufs
 // if the "proto" query parameter is set.

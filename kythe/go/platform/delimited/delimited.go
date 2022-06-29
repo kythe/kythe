@@ -34,17 +34,17 @@ import (
 // Reader consumes length-delimited records from a byte source.
 //
 // Usage:
-//   rd := delimited.NewReader(r)
-//   for {
-//     rec, err := rd.Next()
-//     if err == io.EOF {
-//       break
-//     } else if err != nil {
-//       log.Fatal(err)
-//     }
-//     doStuffWith(rec)
-//   }
 //
+//	rd := delimited.NewReader(r)
+//	for {
+//	  rec, err := rd.Next()
+//	  if err == io.EOF {
+//	    break
+//	  } else if err != nil {
+//	    log.Fatal(err)
+//	  }
+//	  doStuffWith(rec)
+//	}
 type Reader struct {
 	buf  *bufio.Reader
 	data []byte
@@ -90,13 +90,13 @@ func NewReader(r io.Reader) *Reader { return &Reader{buf: bufio.NewReader(r)} }
 // A Writer outputs delimited records to an io.Writer.
 //
 // Basic usage:
-//   wr := delimited.NewWriter(w)
-//   for record := range records {
-//      if err := wr.Put(record); err != nil {
-//        log.Fatal(err)
-//      }
-//   }
 //
+//	wr := delimited.NewWriter(w)
+//	for record := range records {
+//	   if err := wr.Put(record); err != nil {
+//	     log.Fatal(err)
+//	   }
+//	}
 type Writer struct {
 	w io.Writer
 }

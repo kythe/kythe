@@ -19,20 +19,20 @@
 //
 // Call New to construct an empty set, and use the Add method to add entries:
 //
-//   set := entryset.New(nil)
-//   for entry := range readEntries() {
-//      if err := set.Add(entry); err != nil {
-//         log.Exitf("Invalid entry: %v", err)
-//      }
-//   }
+//	set := entryset.New(nil)
+//	for entry := range readEntries() {
+//	   if err := set.Add(entry); err != nil {
+//	      log.Exitf("Invalid entry: %v", err)
+//	   }
+//	}
 //
 // Entries are automatically deduplicated. You can traverse the contents of an
 // entry set with the Visit method, which takes a callback:
 //
-//   set.Visit(func(e *storagepb.Entry) bool {
-//      process(e)
-//      return wantMore
-//   })
+//	set.Visit(func(e *storagepb.Entry) bool {
+//	   process(e)
+//	   return wantMore
+//	})
 //
 // An entry set may or may not be "canonical": A canonical entry set has the
 // property that calling its Visit method will deliver all the entries in the
@@ -40,19 +40,19 @@
 // newly-created entry set is canonical; a call to Add may invalidate this
 // status. Call the Canonicalize method to canonicalize an entryset.
 //
-//    set := entryset.New(nil) // set is canonical
-//    set.Add(e)               // set is no longer canonical
-//    set.Canonicalize()       // set is (once again) canonical
+//	set := entryset.New(nil) // set is canonical
+//	set.Add(e)               // set is no longer canonical
+//	set.Canonicalize()       // set is (once again) canonical
 //
 // An entryset can be converted into a kythe.storage.EntrySet protobuf message
 // using the Encode method. This message is defined in entryset.proto. You can
 // construct a Set from an EntrySet message using Decode:
 //
-//    pb := old.Encode()
-//    new, err := entryset.Decode(pb)
-//    if err != nil {
-//      log.Exitf("Invalid entryset message: %v", err)
-//    }
+//	pb := old.Encode()
+//	new, err := entryset.Decode(pb)
+//	if err != nil {
+//	  log.Exitf("Invalid entryset message: %v", err)
+//	}
 //
 // When rendered in wire format, the protobuf encoding is considerably more
 // compact than a naive entry stream.

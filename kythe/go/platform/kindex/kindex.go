@@ -18,14 +18,16 @@
 // standalone CompilationUnits with all of their required inputs.
 //
 // Example: Reading an index file.
-//   c, err := kindex.Open("path/to/unit.kindex")
-//   if err != nil {
-//     log.Fatal(err)
-//   }
+//
+//	c, err := kindex.Open("path/to/unit.kindex")
+//	if err != nil {
+//	  log.Fatal(err)
+//	}
 //
 // Example: Writing an index file.
-//   var buf bytes.Buffer
-//   c.WriteTo(&buf)
+//
+//	var buf bytes.Buffer
+//	c.WriteTo(&buf)
 //
 // On disk, a kindex file is a GZip compressed stream of varint-prefixed data
 // blocks containing wire-format protobuf messages.  The first message is a

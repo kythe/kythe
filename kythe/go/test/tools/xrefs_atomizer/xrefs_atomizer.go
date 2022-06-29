@@ -26,7 +26,8 @@
 // See kythe.io/kythe/go/test/xrefs package for details.
 //
 // Example:
-//   xrefs_atomizer --api http://localhost:8080 kythe://kythe?path=kythe/go/util/kytheuri/uri.go
+//
+//	xrefs_atomizer --api http://localhost:8080 kythe://kythe?path=kythe/go/util/kytheuri/uri.go
 package main
 
 import (

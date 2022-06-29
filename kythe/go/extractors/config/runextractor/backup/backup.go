@@ -19,13 +19,13 @@
 //
 // Example usage:
 //
-//    tmp, err := backup.Save(someFile)
-//    if err != nil {
-//       return fmt.Errorf("backing up %q: %v", somePath, err)
-//    }
-//    defer tmp.Release()
-//    // ... do real work ...
-//    tmp.Restore()
+//	tmp, err := backup.Save(someFile)
+//	if err != nil {
+//	   return fmt.Errorf("backing up %q: %v", somePath, err)
+//	}
+//	defer tmp.Release()
+//	// ... do real work ...
+//	tmp.Restore()
 package backup // import "kythe.io/kythe/go/extractors/config/runextractor/backup"
 
 import (

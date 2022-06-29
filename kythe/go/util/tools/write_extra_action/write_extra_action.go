@@ -18,7 +18,8 @@
 // and writes it to another file.
 //
 // Usage:
-//   write_extra_action <text_proto_file> <output_path>
+//
+//	write_extra_action <text_proto_file> <output_path>
 package main
 
 import (

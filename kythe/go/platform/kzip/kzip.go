@@ -22,43 +22,42 @@
 //
 // Reading an Archive:
 //
-//   r, err := kzip.NewReader(file, size)
-//   ...
+//	r, err := kzip.NewReader(file, size)
+//	...
 //
-//   // Look up a compilation record by its digest.
-//   unit, err := r.Lookup(unitDigest)
-//   ...
+//	// Look up a compilation record by its digest.
+//	unit, err := r.Lookup(unitDigest)
+//	...
 //
-//   // Scan all the compilation records stored.
-//   err := r.Scan(func(unit *kzip.Unit) error {
-//      if hasInterestingProperty(unit) {
-//         doStuffWith(unit)
-//      }
-//      return nil
-//   })
+//	// Scan all the compilation records stored.
+//	err := r.Scan(func(unit *kzip.Unit) error {
+//	   if hasInterestingProperty(unit) {
+//	      doStuffWith(unit)
+//	   }
+//	   return nil
+//	})
 //
-//   // Open a reader for a stored file.
-//   rc, err := r.Open(fileDigest)
-//   ...
-//   defer rc.Close()
+//	// Open a reader for a stored file.
+//	rc, err := r.Open(fileDigest)
+//	...
+//	defer rc.Close()
 //
-//   // Read the complete contents of a stored file.
-//   bits, err := r.ReadAll(fileDigest)
-//   ...
+//	// Read the complete contents of a stored file.
+//	bits, err := r.ReadAll(fileDigest)
+//	...
 //
 // Writing an Archive:
 //
-//   w, err := kzip.NewWriter(file)
-//   ...
+//	w, err := kzip.NewWriter(file)
+//	...
 //
-//   // Add a compilation record and (optional) index data.
-//   udigest, err := w.AddUnit(unit, nil)
-//   ...
+//	// Add a compilation record and (optional) index data.
+//	udigest, err := w.AddUnit(unit, nil)
+//	...
 //
-//   // Add file contents.
-//   fdigest, err := w.AddFile(file)
-//   ...
-//
+//	// Add file contents.
+//	fdigest, err := w.AddFile(file)
+//	...
 package kzip // import "kythe.io/kythe/go/platform/kzip"
 
 import (

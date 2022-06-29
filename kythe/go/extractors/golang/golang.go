@@ -19,19 +19,19 @@
 // results are available to the caller.
 //
 // Usage:
-//   var c golang.Extractor
-//   if _, err := c.Locate("fmt"); err != nil {
-//     log.Fatalf(`Unable to locate package "fmt": %v`, err)
-//   }
-//   c.Extract()
-//   for _, pkg := range c.Packages {
-//     if pkg.Err != nil {
-//       log.Printf("Error extracting %q: %v", pkg.Path, pkg.Err)
-//     } else {
-//       writeOutput(pkg)
-//     }
-//   }
 //
+//	var c golang.Extractor
+//	if _, err := c.Locate("fmt"); err != nil {
+//	  log.Fatalf(`Unable to locate package "fmt": %v`, err)
+//	}
+//	c.Extract()
+//	for _, pkg := range c.Packages {
+//	  if pkg.Err != nil {
+//	    log.Printf("Error extracting %q: %v", pkg.Path, pkg.Err)
+//	  } else {
+//	    writeOutput(pkg)
+//	  }
+//	}
 package golang // import "kythe.io/kythe/go/extractors/golang"
 
 import (

@@ -18,10 +18,11 @@
 // xrefs.Service.
 //
 // Table format:
-//   decor:<ticket>         -> srvpb.FileDecorations
-//   docs:<ticket>          -> srvpb.Document
-//   xrefs:<ticket>         -> srvpb.PagedCrossReferences
-//   xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
+//
+//	decor:<ticket>         -> srvpb.FileDecorations
+//	docs:<ticket>          -> srvpb.Document
+//	xrefs:<ticket>         -> srvpb.PagedCrossReferences
+//	xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
 package xrefs // import "kythe.io/kythe/go/serving/xrefs"
 
 import (

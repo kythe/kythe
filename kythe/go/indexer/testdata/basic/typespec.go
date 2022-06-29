@@ -15,7 +15,7 @@ type Int int
 //- Ptr.subkind type
 type Ptr *bool
 
-type under struct { z int }
+type under struct{ z int }
 
 //- @Over defines/binding Over
 //- Over.node/kind record

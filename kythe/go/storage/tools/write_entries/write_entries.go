@@ -18,16 +18,19 @@
 // writes each to a graphstore server.
 //
 // Usage:
-//   entry_emitter ... | write_entries --graphstore addr
+//
+//	entry_emitter ... | write_entries --graphstore addr
 //
 // Example:
-//   java_indexer_server --port 8181 &
-//   graphstore --port 9999 &
-//   analysis_driver --analyzer localhost:8181 /tmp/compilation.kindex | \
-//     write_entries --workers 10 --graphstore localhost:9999
+//
+//	java_indexer_server --port 8181 &
+//	graphstore --port 9999 &
+//	analysis_driver --analyzer localhost:8181 /tmp/compilation.kindex | \
+//	  write_entries --workers 10 --graphstore localhost:9999
 //
 // Example:
-//   zcat entries.gz | write_entries --graphstore gs/leveldb
+//
+//	zcat entries.gz | write_entries --graphstore gs/leveldb
 package main
 
 import (

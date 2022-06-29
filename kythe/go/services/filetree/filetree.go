@@ -196,11 +196,11 @@ func WebClient(addr string) Service { return &webClient{addr} }
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // filetree Service.  The following methods with be exposed:
 //
-//   GET /corpusRoots
-//     Response: JSON encoded filetree.CorpusRootsReply
-//   GET /dir
-//     Request: JSON encoded filetree.DirectoryRequest
-//     Response: JSON encoded filetree.DirectoryReply
+//	GET /corpusRoots
+//	  Response: JSON encoded filetree.CorpusRootsReply
+//	GET /dir
+//	  Request: JSON encoded filetree.DirectoryRequest
+//	  Response: JSON encoded filetree.DirectoryReply
 //
 // Note: /corpusRoots and /dir will return their responses as serialized
 // protobufs if the "proto" query parameter is set.

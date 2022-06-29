@@ -217,11 +217,12 @@ func copyNode(n *html.Node) *html.Node {
 
 // Zip returns the Node at the end of the specified path where path contains
 // only the following characters:
-//   'u' Parent
-//   'f' FirstChild
-//   'l' LastChild
-//   'n' NextSibling
-//   'p' PrevSibling
+//
+//	'u' Parent
+//	'f' FirstChild
+//	'l' LastChild
+//	'n' NextSibling
+//	'p' PrevSibling
 func Zip(n *html.Node, path string) (*html.Node, error) {
 	for i, step := range path {
 		if n == nil {
