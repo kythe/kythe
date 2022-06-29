@@ -30,9 +30,9 @@ import (
 // In addition to the types supported by the orderedcode library, the following
 // Kythe types can be handled:
 //
-//  - *spb.VName
-//  - int32/int
-//  - bool
+//   - *spb.VName
+//   - int32/int
+//   - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Append
 func Append(key []byte, items ...interface{}) ([]byte, error) {
@@ -70,9 +70,9 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 // In addition to the types supported by the orderedcode library, the following
 // Kythe types can be handled:
 //
-//  - *spb.VName
-//  - int32/int
-//  - bool
+//   - *spb.VName
+//   - int32/int
+//   - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Parse
 func Parse(key string, items ...interface{}) (remaining string, err error) {

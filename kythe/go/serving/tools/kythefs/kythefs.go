@@ -18,13 +18,12 @@
 //
 // Example usage:
 //
-//     bazel build kythe/go/serving/tools/kythefs
-//     # Blocks until unmounted:
-//     ./bazel-bin/kythe/go/serving/tools/kythefs/kythefs --mountpoint vfs_dir
+//	bazel build kythe/go/serving/tools/kythefs
+//	# Blocks until unmounted:
+//	./bazel-bin/kythe/go/serving/tools/kythefs/kythefs --mountpoint vfs_dir
 //
-//     # To unmount:
-//     fusermount -u vfs_dir
-//
+//	# To unmount:
+//	fusermount -u vfs_dir
 package main
 
 import (
@@ -117,11 +116,10 @@ func hasDirComponent(rs []FilepathResolution) bool {
 // ResolveFilepath returns alternative resolutions of a given vfs path.
 // The multiple resolutions are due to ambiguity, which occurs due to:
 //
-//     a) The queried path pointing into a prefix of some corpus+root vfs path.
+//	a) The queried path pointing into a prefix of some corpus+root vfs path.
 //
-//     b) Overlapping corpus+root+path vfs paths. If happens, you likely need to
-//        adjust the extractor's vname mapping config.
-//
+//	b) Overlapping corpus+root+path vfs paths. If happens, you likely need to
+//	   adjust the extractor's vname mapping config.
 func (me *kytheFS) ResolveFilepath(path string) ([]FilepathResolution, error) {
 	var req ftpb.CorpusRootsRequest
 	cr, err := me.API.CorpusRoots(me.Context, &req)

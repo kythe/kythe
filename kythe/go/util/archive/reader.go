@@ -59,10 +59,10 @@ type ScanFunc func(filename string, err error, r io.Reader) error
 //
 // The supported archive formats are:
 //
-//    .zip     -- ZIP archive (also .ZIP, .jar)
-//    .tar     -- uncompressed tar
-//    .tar.gz  -- gzip-compressed tar (also .tgz)
-//    .tar.bz2 -- bzip2-compressed tar
+//	.zip     -- ZIP archive (also .ZIP, .jar)
+//	.tar     -- uncompressed tar
+//	.tar.gz  -- gzip-compressed tar (also .tgz)
+//	.tar.bz2 -- bzip2-compressed tar
 //
 // Scan only invokes f for file entries; directories are not included.
 func Scan(file File, path string, f ScanFunc) error {

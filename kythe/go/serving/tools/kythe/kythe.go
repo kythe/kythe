@@ -18,29 +18,30 @@
 // services backed by a combined serving table.
 //
 // Examples:
-//   # Show complete command listing
-//   kythe
 //
-//   # List all corpus root uris
-//   kythe --api /path/to/table ls --uris
+//	# Show complete command listing
+//	kythe
 //
-//   # List root directory contents for corpus named 'somecorpus'
-//   kythe --api /path/to/table ls kythe://somecorpus
+//	# List all corpus root uris
+//	kythe --api /path/to/table ls --uris
 //
-//   # List Kythe's kythe/cxx/common directory (as URIs)
-//   kythe --api /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
+//	# List root directory contents for corpus named 'somecorpus'
+//	kythe --api /path/to/table ls kythe://somecorpus
 //
-//   # Display all file anchor decorations for kythe/cxx/common/CommandLineUtils.cc
-//   kythe --api /path/to/table decor kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
+//	# List Kythe's kythe/cxx/common directory (as URIs)
+//	kythe --api /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
 //
-//   # Show all outward edges for a particular node
-//   kythe --api /path/to/table edges kythe:?lang=java#java.util.List
+//	# Display all file anchor decorations for kythe/cxx/common/CommandLineUtils.cc
+//	kythe --api /path/to/table decor kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
 //
-//   # Show reverse /kythe/edge/defines edges for a node
-//   kythe --api /path/to/table edges --kinds '%/kythe/edge/defines' kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#1887f665ee4c77287d1022c151000a489e17147215309818cf4150c601442cc5
+//	# Show all outward edges for a particular node
+//	kythe --api /path/to/table edges kythe:?lang=java#java.util.List
 //
-//   # Show all facts (except /kythe/text) for a node
-//   kythe --api /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
+//	# Show reverse /kythe/edge/defines edges for a node
+//	kythe --api /path/to/table edges --kinds '%/kythe/edge/defines' kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#1887f665ee4c77287d1022c151000a489e17147215309818cf4150c601442cc5
+//
+//	# Show all facts (except /kythe/text) for a node
+//	kythe --api /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
 package main
 
 import (

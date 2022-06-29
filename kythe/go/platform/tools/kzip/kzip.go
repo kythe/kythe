@@ -17,8 +17,9 @@
 // Binary kzip provides tools to work with kzip archives.
 //
 // Examples:
-//   # Merge 5 kzip archives into a single file.
-//   kzip merge --output output.kzip in{0,1,2,3,4}.kzip
+//
+//	# Merge 5 kzip archives into a single file.
+//	kzip merge --output output.kzip in{0,1,2,3,4}.kzip
 package main
 
 import (

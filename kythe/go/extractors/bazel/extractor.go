@@ -52,7 +52,7 @@ import (
 // various stages of the extraction process. Schematically, the extractor does
 // the following steps:
 //
-//    CheckAction .. CheckInputs/Env .. Fetch .. Fixup
+//	CheckAction .. CheckInputs/Env .. Fetch .. Fixup
 //
 // The "CheckAction" stage gives the caller an opportunity to preprocess the
 // action and decide whether to continue. The caller may modify the ActionInfo

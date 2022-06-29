@@ -19,8 +19,8 @@
 // stdout.
 //
 // Usage:
-//    extractschema -schema kythe/docs/schema/schema.txt
 //
+//	extractschema -schema kythe/docs/schema/schema.txt
 package main
 
 import (

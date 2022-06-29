@@ -18,19 +18,18 @@
 //
 // Usage example: Indexing a Kythe CompilationUnit message.
 //
-//   // Obtain a compilation from some source, e.g., an kzip.
-//   var unit *apb.CompilationUnit = ...
+//	// Obtain a compilation from some source, e.g., an kzip.
+//	var unit *apb.CompilationUnit = ...
 //
-//   // Parse the sources and resolve types.
-//   pi, err := indexer.Resolve(unit, pack, &indexer.ResolveOptions{
-//     Info: indexer.AllTypeInfo(),
-//   })
-//   if err != nil {
-//     log.Fatal("Resolving failed: %v", err)
-//   }
-//   // Type information from http://godoc.org/go/types is now available
-//   // from pi.Info, which is a *types.Info record.
-//
+//	// Parse the sources and resolve types.
+//	pi, err := indexer.Resolve(unit, pack, &indexer.ResolveOptions{
+//	  Info: indexer.AllTypeInfo(),
+//	})
+//	if err != nil {
+//	  log.Fatal("Resolving failed: %v", err)
+//	}
+//	// Type information from http://godoc.org/go/types is now available
+//	// from pi.Info, which is a *types.Info record.
 package indexer // import "kythe.io/kythe/go/indexer"
 
 import (
@@ -672,16 +671,16 @@ func (pi *PackageInfo) anonSignature(obj types.Object) string {
 // to types T and U, even though according the syntax, it belongs primarily to
 // T in the first example and U in the second:
 //
-//      type T struct {X int}
-//      type U T
+//	type T struct {X int}
+//	type U T
 //
-//      type T U
-//      type U struct {X int}
+//	type T U
+//	type U struct {X int}
 //
 // Similarly:
 //
-//      type U struct {X int}
-//      type V struct {U}
+//	type U struct {X int}
+//	type V struct {U}
 //
 // TODO(adonovan): sameer@ points out a useful heuristic: in a case of struct
 // or interface embedding, if one struct/interface has fewer fields/methods,
@@ -691,17 +690,17 @@ func (pi *PackageInfo) anonSignature(obj types.Object) string {
 // from outside the package but for which we can't easily come up with good
 // names.  Here are some examples:
 //
-//      // package p
-//      var V1, V2 struct {X int} = ...
-//      func F() struct{X int} {...}
-//      type T struct {
-//              Y struct { X int }
-//      }
+//	// package p
+//	var V1, V2 struct {X int} = ...
+//	func F() struct{X int} {...}
+//	type T struct {
+//	        Y struct { X int }
+//	}
 //
-//      // main
-//      p.V2.X = 1
-//      print(p.F().X)
-//      new(p.T).Y[0].X
+//	// main
+//	p.V2.X = 1
+//	print(p.F().X)
+//	new(p.T).Y[0].X
 //
 // Also note that there may be arbitrary pointer, struct, chan, map, array, and
 // slice type constructors between the type of the exported package member (V2,

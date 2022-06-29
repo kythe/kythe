@@ -17,8 +17,9 @@
 // Package languageserver provides an implementation of the Language Server
 // Protocol v3.0 (https://github.com/Microsoft/language-server-protocol)
 // This server implements the following capabilities:
-// 		textDocumentSync (full)
-//		referenceProvider
+//
+//	textDocumentSync (full)
+//	referenceProvider
 package languageserver // import "kythe.io/kythe/go/languageserver"
 
 import (

@@ -19,7 +19,8 @@
 // $PATH during execution.
 //
 // Usage:
-//   extractrepo -remote <repo-url> -output <output-file-path> -config [config-file-path]
+//
+//	extractrepo -remote <repo-url> -output <output-file-path> -config [config-file-path]
 package main
 
 import (

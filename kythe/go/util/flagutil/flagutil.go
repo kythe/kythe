@@ -35,13 +35,13 @@ import (
 // SimpleUsage returns a basic flag.Usage function that prints the given
 // description and list of arguments in the following format:
 //
-//  Usage: binary <arg0> <arg1> ... <argN>
-//  <description>
+//	Usage: binary <arg0> <arg1> ... <argN>
+//	<description>
 //
-//  <build.VersionLine()>
+//	<build.VersionLine()>
 //
-//  Flags:
-//  <flag.PrintDefaults()>
+//	Flags:
+//	<flag.PrintDefaults()>
 func SimpleUsage(description string, args ...string) func() {
 	return func() {
 		prefix := fmt.Sprintf("Usage: %s ", filepath.Base(os.Args[0]))

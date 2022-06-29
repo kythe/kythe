@@ -30,8 +30,8 @@ import (
 // ExtractAndWrite extracts a spawn action through c and writes the results to
 // the specified output file. The output format is based on the file extension:
 //
-//   .kzip     -- writes a kzip file
-//   otherwise -- reports an error
+//	.kzip     -- writes a kzip file
+//	otherwise -- reports an error
 //
 // Deprecated: use bazel.ExtractToKzip
 func ExtractAndWrite(ctx context.Context, c *bazel.Config, ai *bazel.ActionInfo, outputPath string) error {

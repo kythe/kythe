@@ -62,7 +62,8 @@ func (By) isOption() {}
 // Compare returns the Order between two arbitrary values of the same type.
 //
 // Only the following types are currently supported:
-//     {string, int, int32, []byte, bool}.
+//
+//	{string, int, int32, []byte, bool}.
 //
 // Options may be provided to change the semantics of the comparison.  Other
 // types may be compared if an appropriate By Option transforms the values into
@@ -121,9 +122,10 @@ func Compare(a, b interface{}, opts ...Option) (o Order) {
 // determined and returned.  AndThen can be used to chain comparisons.
 //
 // Examples:
-//   Compare(a, b, By(someField)).AndThen(a, b, By(someOtherField))
 //
-//   Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue)
+//	Compare(a, b, By(someField)).AndThen(a, b, By(someOtherField))
+//
+//	Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue)
 func (o Order) AndThen(a, b interface{}, opts ...Option) Order {
 	if o != EQ {
 		return o

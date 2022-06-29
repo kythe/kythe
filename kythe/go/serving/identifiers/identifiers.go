@@ -17,7 +17,8 @@
 // Package identifiers provides a high-performance table-based implementation of the
 // identifiers.Service.
 // The table is structured as:
-// 		qualifed_name -> IdentifierMatch
+//
+//	qualifed_name -> IdentifierMatch
 package identifiers // import "kythe.io/kythe/go/serving/identifiers"
 
 import (
@@ -108,9 +109,9 @@ func contains(haystack []string, needle string) bool {
 // RegisterHTTPHandlers registers a JSON HTTP handler with mux using the given
 // identifiers Service.  The following method with be exposed:
 //
-//   GET /find_identifier
-//     Request: JSON encoded identifier.FindRequest
-//     Response: JSON encoded identifier.FindReply
+//	GET /find_identifier
+//	  Request: JSON encoded identifier.FindRequest
+//	  Response: JSON encoded identifier.FindReply
 //
 // Note: /find_identifier will return its response as a serialized protobuf if
 // the "proto" query parameter is set.

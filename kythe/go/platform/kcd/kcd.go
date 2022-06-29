@@ -18,7 +18,6 @@
 // implementation of a Kythe compilation database.
 //
 // Design documentation: kythe/docs/kythe-compilation-database.txt
-//
 package kcd // import "kythe.io/kythe/go/platform/kcd"
 
 import (

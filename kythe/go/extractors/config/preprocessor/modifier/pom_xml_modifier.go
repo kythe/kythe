@@ -98,12 +98,14 @@ func hasCompilerPlugin(doc *etree.Document) (bool, error) {
 // wellformedCompilerPlugin checks to see if the plugin fits the minimum
 // supported versions we've tested:
 // <plugin>
-//   <artifactId>maven-compiler-plugin</artifactId>
-//   <version>3.7.0</version>
-//   <configuration>
-//     <source>1.8</source>
-//     <target>1.8</target>
-//   </configuration>
+//
+//	<artifactId>maven-compiler-plugin</artifactId>
+//	<version>3.7.0</version>
+//	<configuration>
+//	  <source>1.8</source>
+//	  <target>1.8</target>
+//	</configuration>
+//
 // </plugin>
 // TODO(danielmoy): see if we can relax some of these restrictions.
 func wellformedCompilerPlugin(el *etree.Element) error {

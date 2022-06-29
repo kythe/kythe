@@ -3,7 +3,6 @@
 // Parameters and variables can be declared with anonymous types that are
 // specified as part of their declaration. In the body of functions and of
 // initializers, those fields may have references that we'd like to capture.
-//
 package anon
 
 //- @planx defines/binding Planx

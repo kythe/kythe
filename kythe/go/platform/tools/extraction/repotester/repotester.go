@@ -22,8 +22,9 @@
 // format follows kythe.proto.ExtractionConfiguration.
 //
 // Usage:
-//   repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>]
-//   repotester -repo_list_file <file> [-config <config_file_path>]
+//
+//	repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>]
+//	repotester -repo_list_file <file> [-config <config_file_path>]
 package main
 
 import (

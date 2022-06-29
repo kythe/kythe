@@ -28,53 +28,53 @@
 //
 // The protocol between indexer (X) and proxy (P) is:
 //
-//   X → P: {"req":"analysis"}<LF>
-//   P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"analysis"}<LF>
+//	P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"analysis_wire"}<LF>
-//   P → X: {"rsp":"ok","args":{"unit":<unit_wire>,"rev":<revision>,"fds":<addr>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"analysis_wire"}<LF>
+//	P → X: {"rsp":"ok","args":{"unit":<unit_wire>,"rev":<revision>,"fds":<addr>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"output","args":[<entry>...]}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"output","args":[<entry>...]}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"output_wire","args":[<entry_wire>...]}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"output_wire","args":[<entry_wire>...]}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"done","args":{"ok":true,"msg":<error>}}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"done","args":{"ok":true,"msg":<error>}}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"file","args":{"path":<path>,"digest":<digest>}}<LF>
-//   P → X: {"rsp":"ok","args":{"path":<path>,"digest":<digest>,"content":<bytes>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"file","args":{"path":<path>,"digest":<digest>}}<LF>
+//	P → X: {"rsp":"ok","args":{"path":<path>,"digest":<digest>,"content":<bytes>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
 // Where:
 //
-//    <addr>       -- service address
-//    <bytes>      -- BASE-64 encoded bytes (string)
-//    <digest>     -- file content digest (string)
-//    <entry>      -- JSON encoded kythe.proto.Entry message
-//    <entry_wire> -- BASE-64 encoded kythe.proto.Entry message in wire format (string)
-//    <error>      -- error diagnostic (string)
-//    <path>       -- file path (string)
-//    <revision>   -- revision marker (string)
-//    <unit>       -- JSON encoded kythe.proto.CompilationUnit message
-//    <unit_wire>  -- BASE-64 encoded kythe.proto.CompilationUnit message in wire format (string)
-//    <LF>         -- line feed character (decimal code 10)
+//	<addr>       -- service address
+//	<bytes>      -- BASE-64 encoded bytes (string)
+//	<digest>     -- file content digest (string)
+//	<entry>      -- JSON encoded kythe.proto.Entry message
+//	<entry_wire> -- BASE-64 encoded kythe.proto.Entry message in wire format (string)
+//	<error>      -- error diagnostic (string)
+//	<path>       -- file path (string)
+//	<revision>   -- revision marker (string)
+//	<unit>       -- JSON encoded kythe.proto.CompilationUnit message
+//	<unit_wire>  -- BASE-64 encoded kythe.proto.CompilationUnit message in wire format (string)
+//	<LF>         -- line feed character (decimal code 10)
 //
 // When rsp="error" in a reply, the args are an error string. The ordinary flow
 // for the indexer is:
 //
-//     {"req":"analysis"}   -- to start a new analysis task
-//     {"req":"output",...} -- to send outputs for the task
-//     {"req":"file",...}   -- to fetch required input files.
-//         ... (as many times as needed) ...
-//     {"req":"done",...}   -- to mark the analysis as complete
-//                             and to report success/failure
+//	{"req":"analysis"}   -- to start a new analysis task
+//	{"req":"output",...} -- to send outputs for the task
+//	{"req":"file",...}   -- to fetch required input files.
+//	    ... (as many times as needed) ...
+//	{"req":"done",...}   -- to mark the analysis as complete
+//	                        and to report success/failure
 //
 // In case of an indexing error, the indexer is free to terminate the analysis
 // early and report {"req":"done","args":{"ok":false}} to the driver.
@@ -84,7 +84,6 @@
 // as if the indexer had called "done". Subsequent calls to "output" or "done"
 // will behave as if no analysis is in progress. The indexer is free at that
 // point to start a new analysis.
-//
 package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 
 import (

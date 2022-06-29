@@ -220,16 +220,16 @@ func ParseRules(data []byte) (Rules, error) { return ReadRules(bytes.NewReader(d
 
 // ReadRules parses Rules from JSON-encoded data in the following format:
 //
-//   [
-//     {
-//       "pattern": "re2_regex_pattern",
-//       "vname": {
-//         "corpus": "corpus_template",
-//         "root": "root_template",
-//         "path": "path_template"
-//       }
-//     }, ...
-//   ]
+//	[
+//	  {
+//	    "pattern": "re2_regex_pattern",
+//	    "vname": {
+//	      "corpus": "corpus_template",
+//	      "root": "root_template",
+//	      "path": "path_template"
+//	    }
+//	  }, ...
+//	]
 //
 // Each pattern is an RE2 regexp pattern.  Patterns are implicitly anchored at
 // both ends.  The template strings may contain markers of the form @n@, that

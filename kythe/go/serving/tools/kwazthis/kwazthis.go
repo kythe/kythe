@@ -26,9 +26,10 @@
 // behavior.
 //
 // Usage:
-//   kwazthis --path kythe/cxx/tools/kindex_tool_main.cc --offset 2660
-//   kwazthis --path kythe/cxx/common/CommandLineUtils.cc --line 81 --column 27
-//   kwazthis --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java --offset 2815
+//
+//	kwazthis --path kythe/cxx/tools/kindex_tool_main.cc --offset 2660
+//	kwazthis --path kythe/cxx/common/CommandLineUtils.cc --line 81 --column 27
+//	kwazthis --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java --offset 2815
 package main
 
 import (
