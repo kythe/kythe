@@ -34,6 +34,7 @@ import (
 const (
 	pathTail     = `(?:/(?P<path>.+))?$`
 	packageSig   = "package"
+	// GolangCorpus is the corpus used for the go std library
 	GolangCorpus = "golang.org"
 )
 
