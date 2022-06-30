@@ -1,5 +1,5 @@
 // Package fun tests basic function call references.
-//- @fun defines/binding Pkg
+// - @fun defines/binding Pkg
 package fun
 
 //- @"\"os/exec\"" ref/imports OSExec
@@ -9,20 +9,20 @@ import "os/exec"
 //- Init childof Pkg
 //- Init.node/kind function
 
-//- @F defines/binding Fun = vname("func F", "test", _, "fun", "go")
+// - @F defines/binding Fun = vname("func F", "test", _, "fun", "go")
 func F() int { return 0 }
 
 type T struct{}
 
-//- @M defines/binding Meth=vname("method T.M", "test", _, "fun", "go")
+// - @M defines/binding Meth=vname("method T.M", "test", _, "fun", "go")
 func (p *T) M() {}
 
-//- @F ref Fun
-//- TCall=@"F()" ref/call Fun
-//- TCall childof Init
+// - @F ref Fun
+// - TCall=@"F()" ref/call Fun
+// - TCall childof Init
 var _ = F()
 
-//- @init defines/binding InitFunc = vname("func init#1", "test", _, "fun", "go")
+// - @init defines/binding InitFunc = vname("func init#1", "test", _, "fun", "go")
 func init() {
 	//- @F ref Fun
 	//- FCall=@"F()" ref/call Fun

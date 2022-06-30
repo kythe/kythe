@@ -8,8 +8,8 @@ func main() {
 	c.Put("yup")
 }
 
-//- @Container defines/binding Container
-//- @T defines/binding TVar
+// - @Container defines/binding Container
+// - @T defines/binding TVar
 type Container[T any] struct {
 	//- @T ref TVar
 	Element T
@@ -17,12 +17,12 @@ type Container[T any] struct {
 
 // Methods introduce unique tvars
 // TODO(schroederc): relate these to the struct tvar
-//- @Get defines/binding Get
-//- @#0T defines/binding GetTVar
-//- GetTVar.node/kind tvar
-//- @#1T ref GetTVar
-//- !{@#0T ref TVar}
-//- !{@#1T ref TVar}
+// - @Get defines/binding Get
+// - @#0T defines/binding GetTVar
+// - GetTVar.node/kind tvar
+// - @#1T ref GetTVar
+// - !{@#0T ref TVar}
+// - !{@#1T ref TVar}
 func (c *Container[T]) Get() T {
 	//- @T ref GetTVar
 	//- !{@T ref TVar}
@@ -39,14 +39,14 @@ func (c *Container[T]) Get() T {
 //- RecvType.pre_text "*Container[T]"
 
 // And can technically be renamed
-//- @Put defines/binding Put
-//- @#0A defines/binding PutTVar
-//- PutTVar.node/kind tvar
-//- @#1A ref PutTVar
-//- @#2A ref PutTVar
-//- !{@#0A ref GetTVar}
-//- !{@#1A ref GetTVar}
-//- !{@#2A ref GetTVar}
+// - @Put defines/binding Put
+// - @#0A defines/binding PutTVar
+// - PutTVar.node/kind tvar
+// - @#1A ref PutTVar
+// - @#2A ref PutTVar
+// - !{@#0A ref GetTVar}
+// - !{@#1A ref GetTVar}
+// - !{@#2A ref GetTVar}
 func (c *Container[A]) Put(t A) A {
 	//- @A ref PutTVar
 	//- !{@A ref GetTVar}
@@ -55,7 +55,7 @@ func (c *Container[A]) Put(t A) A {
 	return temp
 }
 
-//- @Interface defines/binding Interface
+// - @Interface defines/binding Interface
 type Interface interface {
 	//- @Get defines/binding GetI
 	Get() string

@@ -11,25 +11,25 @@ import (
 
 // Construct a struct value from another package.
 //
-//- @cmd defines/binding Cmd
-//- Cmd.node/kind variable
-//- @exec ref Exec
-//- @"exec.Command(\"blah\")" ref/call ExecCommand
-//- @Command ref ExecCommand
+// - @cmd defines/binding Cmd
+// - Cmd.node/kind variable
+// - @exec ref Exec
+// - @"exec.Command(\"blah\")" ref/call ExecCommand
+// - @Command ref ExecCommand
 var cmd = exec.Command("blah")
 
 // Verify that references to the struct's fields work.
 //
-//- @ofp defines/binding Out
-//- Out.node/kind variable
-//- @cmd ref Cmd
-//- StdoutRef=@Stdout ref CmdStdout
-//-   = vname("field Cmd.Stdout","golang.org","","os/exec","go")
-//- ! {StdoutRef childof _}
+// - @ofp defines/binding Out
+// - Out.node/kind variable
+// - @cmd ref Cmd
+// - StdoutRef=@Stdout ref CmdStdout
+// -   = vname("field Cmd.Stdout","golang.org","","os/exec","go")
+// - ! {StdoutRef childof _}
 var ofp = cmd.Stdout
 
-//- @init defines/binding Init
-//- Init.node/kind function
+// - @init defines/binding Init
+// - Init.node/kind function
 func init() {
 	//- @cmd ref Cmd
 	//- @Stdout ref CmdStdout

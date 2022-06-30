@@ -5,8 +5,8 @@
 // initializers, those fields may have references that we'd like to capture.
 package anon
 
-//- @planx defines/binding Planx
-//- Planx.node/kind variable
+// - @planx defines/binding Planx
+// - Planx.node/kind variable
 func f(planx struct {
 	//- T.node/kind variable
 	//- T.subkind field
@@ -27,8 +27,8 @@ func f(planx struct {
 	return planx.T
 }
 
-//- @Struct defines/binding Struct
-//- Struct.node/kind variable
+// - @Struct defines/binding Struct
+// - Struct.node/kind variable
 var Struct = struct {
 	//- @V defines/binding V
 	//- V.node/kind variable
@@ -39,7 +39,7 @@ var Struct = struct {
 	V: 25,
 }
 
-//- @V ref V
+// - @V ref V
 var _ = Struct.V
 
 var w struct {
@@ -49,7 +49,7 @@ var w struct {
 	X uint32
 }
 
-//- @X ref X
+// - @X ref X
 var _ = w.X
 
 var y struct {
@@ -68,11 +68,11 @@ var y struct {
 	Y: 25,
 }
 
-//- @Y ref Y
+// - @Y ref Y
 var _ = y.Y
 
-//- @elt defines/binding Elt
-//- Elt.node/kind variable
+// - @elt defines/binding Elt
+// - Elt.node/kind variable
 var g = func(elt struct {
 	//- @P defines/binding P
 	//- P.node/kind variable
@@ -84,8 +84,8 @@ var g = func(elt struct {
 	return len(elt.P)
 }
 
-//- @em defines/binding Em
-//- Em.node/kind record
+// - @em defines/binding Em
+// - Em.node/kind record
 type em struct {
 	v struct {
 		//- @X defines/binding EmX
@@ -95,8 +95,8 @@ type em struct {
 	}
 }
 
-//- @api defines/binding API
-//- API.node/kind variable
+// - @api defines/binding API
+// - API.node/kind variable
 func h(api interface {
 	//- @M defines/binding M
 	//- M.node/kind function

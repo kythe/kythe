@@ -1,17 +1,17 @@
 // Package structtype tests code facts for a named struct type.
 package structtype
 
-//- @T defines/binding Type
-//- Type code TName
-//-
-//- TName child.0 TContext
-//- TName child.1 TIdent
-//-
-//- TContext.kind "CONTEXT"
-//- TContext child.0 TPkg
-//- TPkg.pre_text "structtype"
-//- TIdent.kind "IDENTIFIER"
-//- TIdent.pre_text "T"
+// - @T defines/binding Type
+// - Type code TName
+// -
+// - TName child.0 TContext
+// - TName child.1 TIdent
+// -
+// - TContext.kind "CONTEXT"
+// - TContext child.0 TPkg
+// - TPkg.pre_text "structtype"
+// - TIdent.kind "IDENTIFIER"
+// - TIdent.pre_text "T"
 type T struct {
 	//- @F defines/binding Field
 	//- Field code FieldCode

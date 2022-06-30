@@ -5,7 +5,7 @@ import "fmt"
 // Verify that duplicate anchors are not generated for function calls occurring
 // in the initializer of a struct field.
 
-//- @silly defines/binding Silly
+// - @silly defines/binding Silly
 type silly struct {
 	//- @Q defines/binding SField
 	//- SField childof Silly
