@@ -1,8 +1,8 @@
 package structinit
 
-//- @Inky defines/binding Inky
-//- Inky.node/kind record
-//- Inky.subkind struct
+// - @Inky defines/binding Inky
+// - Inky.node/kind record
+// - Inky.subkind struct
 type Inky struct {
 	//- @Pinky defines/binding Pinky
 	//- Pinky.node/kind variable

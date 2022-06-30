@@ -8,7 +8,7 @@ import (
 	"bytes"
 )
 
-//- @myFunc=vname(_,"kythe",_,_,"go") defines/binding _MY_FUNC
+// - @myFunc=vname(_,"kythe",_,_,"go") defines/binding _MY_FUNC
 func myFunc() {
 	//- @bytes ref BYTES
 	//- @NewBuffer ref vname(_,"STDLIB_OVERRIDE",_,_,"go")

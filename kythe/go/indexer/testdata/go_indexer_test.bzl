@@ -231,7 +231,7 @@ def go_verifier_test(
         log_entries = False,
         has_marked_source = False,
         allow_duplicates = False):
-    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons"]
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:

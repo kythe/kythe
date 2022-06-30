@@ -1,7 +1,7 @@
 // Package locals tests bindings in local scopes.
 package locals
 
-//- @foo defines/binding Foo
+// - @foo defines/binding Foo
 func foo() {
 	//- @alpha defines/binding Alpha1
 	//- Alpha1.node/kind variable
