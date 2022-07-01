@@ -18,6 +18,9 @@ package com.google.devtools.kythe.extractors.jvm;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -38,8 +41,10 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -151,6 +156,23 @@ public class JvmExtractor {
               totalFileSize, options.maxTotalFileSize),
           false);
     }
+
+    // Attribute the source files' corpus to the CompilationUnit if it is unambiguous. Otherwise use
+    // the default corpus.
+    ImmutableMap<String, String> inputCorpus =
+        Streams.stream(compilation.getRequiredInputList())
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    f -> f.getInfo().getPath(), f -> f.getVName().getCorpus()));
+    Set<String> sourceFileCorpora = new HashSet<>();
+    for (String sourceFile : compilation.getSourceFileList()) {
+      sourceFileCorpora.add(inputCorpus.getOrDefault(sourceFile, ""));
+    }
+    String cuCorpus =
+        sourceFileCorpora.size() == 1
+            ? Iterables.getOnlyElement(sourceFileCorpora)
+            : fileVNames.getDefaultCorpus();
+    compilation.getVNameBuilder().setCorpus(cuCorpus);
 
     return new CompilationDescription(compilation.build(), fileContents);
   }
