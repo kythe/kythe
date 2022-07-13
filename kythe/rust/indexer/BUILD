@@ -71,6 +71,7 @@ rust_test(
     data = [
         "tests/testkzip.kzip",
     ],
+    edition = "2021",
     deps = [
         ":inline_tests",
         ":kythe_rust_indexer",
