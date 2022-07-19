@@ -59,7 +59,7 @@ std::string GraphObserver::CompressString(absl::string_view InString,
 GraphObserver::~GraphObserver() {
   if (record_hashes_file_.empty()) return;
   FILE* f = ::fopen(record_hashes_file_.c_str(), "w");
-  if (!f) perror("what");
+  if (f == nullptr) ::perror("Error in fopen");
   CHECK(f != nullptr) << "Couldn't open file " << record_hashes_file_
                       << " for hash recording.";
   for (const auto& hash : hashes_) {
