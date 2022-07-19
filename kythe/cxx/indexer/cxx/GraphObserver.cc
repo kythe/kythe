@@ -25,7 +25,17 @@ namespace kythe {
 // base64 has a 4:3 overhead and SHA256_DIGEST_LENGTH is 32. 32*4/3 = 42.66666
 constexpr size_t kSha256DigestBase64MaxEncodingLength = 43;
 
-std::string CompressString(absl::string_view InString, bool Force) {
+namespace {
+struct MintedVNameHeader {
+  size_t path_offset;
+  size_t root_offset;
+  size_t corpus_offset;
+  size_t language_offset;
+};
+}  // anonymous namespace
+
+std::string GraphObserver::CompressString(absl::string_view InString,
+                                          bool Force, bool DontRecord) {
   if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
     return std::string(InString);
   }
@@ -35,6 +45,9 @@ std::string CompressString(absl::string_view InString, bool Force) {
                   InString.size());
   std::string Hash(SHA256_DIGEST_LENGTH, '\0');
   ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
+  if (!record_hashes_file_.empty() && !DontRecord) {
+    hashes_[Hash] = InString;
+  }
   std::string Result;
   // Use web-safe escaping because vnames are frequently URI-encoded. This
   // doesn't include padding ('=') or the characters + or /, all of which will
@@ -43,14 +56,19 @@ std::string CompressString(absl::string_view InString, bool Force) {
   return Result;
 }
 
-namespace {
-struct MintedVNameHeader {
-  size_t path_offset;
-  size_t root_offset;
-  size_t corpus_offset;
-  size_t language_offset;
-};
-}  // anonymous namespace
+GraphObserver::~GraphObserver() {
+  if (record_hashes_file_.empty()) return;
+  FILE* f = ::fopen(record_hashes_file_.c_str(), "w");
+  if (!f) perror("what");
+  CHECK(f != nullptr) << "Couldn't open file " << record_hashes_file_
+                      << " for hash recording.";
+  for (const auto& hash : hashes_) {
+    std::string encoding;
+    absl::WebSafeBase64Escape(hash.first, &encoding);
+    ::fprintf(f, "%s\t%s\n", encoding.c_str(), hash.second.c_str());
+  }
+  CHECK(::fclose(f) == 0) << "Couldn't close file for hash recording.";
+}
 
 GraphObserver::NodeId GraphObserver::MintNodeIdForVName(
     const proto::VName& vname) {

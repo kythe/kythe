@@ -143,6 +143,8 @@ struct IndexerOptions {
       CreateWorklist = [](IndexerASTVisitor* indexer) {
         return IndexerWorklist::CreateDefaultWorklist(indexer);
       };
+  /// \brief If nonempty, record hashes to this file.
+  std::string RecordHashesFile = "";
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

@@ -326,8 +326,8 @@ GraphObserver::NodeId IndexerPPCallbacks::BuildNodeIdForMacro(
     // cases should contain canonical source file information).
     Ostream << "@" << SM.getFileOffset(Loc);
   }
-  return GraphObserver::NodeId(Observer.getClaimTokenForLocation(Loc),
-                               Ostream.str());
+  return Observer.MakeNodeId(Observer.getClaimTokenForLocation(Loc),
+                             Ostream.str());
 }
 
 void IndexerPPCallbacks::HandleKytheMetadataPragma(

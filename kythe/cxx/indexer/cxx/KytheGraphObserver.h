@@ -137,6 +137,8 @@ struct KytheGraphObserverOptions {
   // The default corpus to use for nodes which would otherwise have an empty
   // corpus.
   std::string default_corpus = "";
+  // If nonempty, dump hashes to this file.
+  std::string record_hashes_file = "";
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -163,6 +165,7 @@ class KytheGraphObserver : public GraphObserver {
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
+    record_hashes_file_ = options.record_hashes_file;
   }
 
   NodeId getNodeIdForBuiltinType(
@@ -185,18 +188,18 @@ class KytheGraphObserver : public GraphObserver {
   void Undelimit() override { recorder_->PopEntryGroup(); }
 
   NodeId nodeIdForTappNode(const NodeId& tycon_id,
-                           absl::Span<const NodeId> params) const override;
+                           absl::Span<const NodeId> params) override;
 
   NodeId recordTappNode(const NodeId& tapp_id, const NodeId& tycon_id,
                         absl::Span<const NodeId> params,
                         unsigned first_default_param) override;
 
-  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> params) const override;
+  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> params) override;
   NodeId recordTsigmaNode(const NodeId& tsigma_id,
                           absl::Span<const NodeId> params) override;
 
   NodeId nodeIdForTypeAliasNode(const NameId& alias_name,
-                                const NodeId& aliased_type) const override;
+                                const NodeId& aliased_type) override;
 
   NodeId recordTypeAliasNode(
       const NodeId& type_id, const NodeId& aliased_type,
@@ -248,7 +251,7 @@ class KytheGraphObserver : public GraphObserver {
   void recordIntegerConstantNode(const NodeId& node,
                                  const llvm::APSInt& value) override;
 
-  NodeId nodeIdForNominalTypeNode(const NameId& name_id) const override;
+  NodeId nodeIdForNominalTypeNode(const NameId& name_id) override;
 
   NodeId recordNominalTypeNode(
       const NodeId& name_id, const absl::optional<MarkedSource>& marked_source,
@@ -449,7 +452,7 @@ class KytheGraphObserver : public GraphObserver {
   bool claimBatch(std::vector<std::pair<std::string, bool>>* pairs) override;
 
   void iterateOverClaimedFiles(
-      std::function<bool(clang::FileID, const NodeId&)> iter) const override;
+      std::function<bool(clang::FileID, const NodeId&)> iter) override;
 
   absl::string_view getBuildConfig() const override { return build_config_; }
 

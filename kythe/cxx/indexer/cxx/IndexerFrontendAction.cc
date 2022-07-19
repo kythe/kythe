@@ -216,6 +216,7 @@ std::string IndexCompilationUnit(
   options.build_config = ExtractBuildConfig(Unit);
   options.default_corpus =
       Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
+  options.record_hashes_file = Options.RecordHashesFile;
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent, options);
   if (Cache != nullptr) {
