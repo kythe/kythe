@@ -17,6 +17,7 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
 load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 load(
     "@bazelruby_rules_ruby//ruby:deps.bzl",
@@ -27,10 +28,6 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
-
-# The raze macros automatically check for duplicated dependencies so we can
-# simply load each macro here.
-load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -43,6 +40,7 @@ def _rule_dependencies():
     rust_register_toolchains(version = "nightly", iso_date = "2022-01-09", dev_components = True, include_rustc_srcs = True)
     rust_proto_repositories()
     rust_analyzer_deps()
+    crate_universe_dependencies()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
     rules_foreign_cc_dependencies(register_built_tools = False)
@@ -1181,9 +1179,6 @@ def _go_dependencies():
         version = "v0.0.0-20200804184101-5ec99f83aff1",
     )
 
-def _rust_dependencies():
-    raze_fetch_remote_crates()
-
 def _js_dependencies():
     npm_install(
         name = "npm",
@@ -1271,7 +1266,6 @@ def kythe_dependencies(sample_ui = True):
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-    _rust_dependencies()
     _js_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
