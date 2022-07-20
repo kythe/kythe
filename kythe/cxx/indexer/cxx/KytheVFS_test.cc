@@ -134,5 +134,14 @@ TEST(KytheVFSTest, DetectStyleFromAbsoluteWorkingDirectoryDoes) {
               Optional(llvm::sys::path::Style::windows));
 }
 
+TEST(KytheVFSTest, DirBeginReportsErrorForMissingEntry) {
+  auto files = FileDataFromPaths({});
+  IndexVFS vfs("/working_directory", files, {}, llvm::sys::path::Style::posix);
+  std::error_code err;
+  EXPECT_THAT(vfs.dir_begin("/no/such/file", err),
+              llvm::vfs::directory_iterator());
+  EXPECT_THAT(err, std::make_error_code(std::errc::no_such_file_or_directory));
+}
+
 }  // namespace
 }  // namespace kythe

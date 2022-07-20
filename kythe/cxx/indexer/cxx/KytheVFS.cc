@@ -125,6 +125,7 @@ llvm::vfs::directory_iterator IndexVFS::dir_begin(const llvm::Twine& dir,
     return llvm::vfs::directory_iterator(
         std::make_shared<DirectoryIteratorImpl>(std::move(path), record));
   }
+  error_code = std::make_error_code(std::errc::no_such_file_or_directory);
   return llvm::vfs::directory_iterator();
 }
 
