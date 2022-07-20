@@ -13,10 +13,10 @@ rust_library(
     edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:regex",
-        "//kythe/rust/cargo:serde",
-        "//kythe/rust/cargo:serde_json",
+        "@crate_index//:anyhow",
+        "@crate_index//:regex",
+        "@crate_index//:serde",
+        "@crate_index//:serde_json",
     ],
 )
 
@@ -27,14 +27,14 @@ rust_binary(
     deps = [
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:clap",
-        "//kythe/rust/cargo:hex",
-        "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:sha2",
-        "//kythe/rust/cargo:tempdir",
-        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:hex",
+        "@crate_index//:rls-data",
+        "@crate_index//:sha2",
+        "@crate_index//:tempdir",
+        "@crate_index//:zip",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
@@ -69,8 +69,8 @@ rust_binary(
     deps = [
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:regex",
-        "//kythe/rust/cargo:tempdir",
+        "@crate_index//:regex",
+        "@crate_index//:tempdir",
     ],
 )
 
@@ -86,11 +86,11 @@ rust_binary(
     edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:tempdir",
-        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//tools/rust/runfiles",
+        "@crate_index//:anyhow",
+        "@crate_index//:tempdir",
+        "@crate_index//:zip",
         "@rules_rust//proto/raze:protobuf",
     ],
 )
