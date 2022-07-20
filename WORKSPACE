@@ -44,3 +44,76 @@ ruby_bundle(
     gemfile = "//kythe/web/site:Gemfile",
     gemfile_lock = "//kythe/web/site:Gemfile.lock",
 )
+
+load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "render_config")
+
+# Run `CARGO_BAZEL_REPIN=1 bazel sync --only=crate_index` after updating
+crates_repository(
+    name = "crate_index",
+    cargo_lockfile = "//:Cargo.Bazel.lock",
+    lockfile = "//:cargo-bazel-lock.json",
+    packages = {
+        "anyhow": crate.spec(
+            version = "1.0.58",
+        ),
+        "base64": crate.spec(
+            version = "0.13.0",
+        ),
+        "clap": crate.spec(
+            version = "2.34.0",
+        ),
+        "colored": crate.spec(
+            version = "2.0.0",
+        ),
+        "hex": crate.spec(
+            version = "0.4.3",
+        ),
+        "lazy_static": crate.spec(
+            version = "1.4.0",
+        ),
+        "quick-error": crate.spec(
+            version = "2.0.1",
+        ),
+        "path-clean": crate.spec(
+            version = "0.1.0",
+        ),
+        "rayon": crate.spec(
+            version = "1.5.3",
+        ),
+        "regex": crate.spec(
+            version = "1.5.6",
+        ),
+        "rls-analysis": crate.spec(
+            version = "0.18.3",
+        ),
+        "rls-data": crate.spec(
+            version = "0.19.1",
+        ),
+        "serde": crate.spec(
+            version = "1.0.137",
+        ),
+        "serde_json": crate.spec(
+            version = "1.0.64",
+        ),
+        "sha2": crate.spec(
+            version = "0.10.2",
+        ),
+        "tempdir": crate.spec(
+            version = "0.3.7",
+        ),
+        "zip": crate.spec(
+            version = "0.5.11",
+        ),
+        # Dev dependency for fuchsia extractor
+        "serial_test": crate.spec(
+            version = "0.6.0",
+        ),
+    },
+    render_config = render_config(
+        default_package_name = "",
+    ),
+)
+
+load("@crate_index//:defs.bzl", "crate_repositories")
+
+crate_repositories()
