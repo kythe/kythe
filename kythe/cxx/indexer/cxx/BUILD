@@ -412,12 +412,28 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_test(
+    name = "vfs_test",
+    srcs = ["KytheVFS_test.cc"],
+    deps = [
+        ":vfs",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
         "@llvm-project//llvm:Support",
     ],
 )
