@@ -143,8 +143,8 @@ struct IndexerOptions {
       CreateWorklist = [](IndexerASTVisitor* indexer) {
         return IndexerWorklist::CreateDefaultWorklist(indexer);
       };
-  /// \brief If nonempty, record hashes to this file.
-  std::string RecordHashesFile = "";
+  /// \brief Notified each time a semantic signature is hashed.
+  std::unique_ptr<HashRecorder> HashRecorder;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

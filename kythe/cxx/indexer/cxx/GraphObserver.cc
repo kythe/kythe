@@ -19,6 +19,7 @@
 #include <openssl/sha.h>  // for SHA256
 
 #include "absl/strings/escaping.h"
+#include "absl/strings/str_format.h"
 
 namespace kythe {
 
@@ -34,8 +35,26 @@ struct MintedVNameHeader {
 };
 }  // anonymous namespace
 
+FileHashRecorder::FileHashRecorder(const std::string& path)
+    : out_file_(::fopen(path.c_str(), "w")) {
+  if (out_file_ == nullptr) ::perror("Error in fopen");
+  CHECK(out_file_ != nullptr)
+      << "Couldn't open file " << path << " for hash recording.";
+}
+
+void FileHashRecorder::RecordHash(const std::string& hash,
+                                  absl::string_view web64hash,
+                                  absl::string_view original) {
+  auto result = hashes_.insert(hash);
+  if (!result.second) return;
+  absl::FPrintF(out_file_, "%s\t%s\n", web64hash, original);
+}
+FileHashRecorder::~FileHashRecorder() {
+  CHECK(::fclose(out_file_) == 0) << "Couldn't close file for hash recording.";
+}
+
 std::string GraphObserver::CompressString(absl::string_view InString,
-                                          bool Force, bool DontRecord) {
+                                          bool Force, bool DontRecord) const {
   if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
     return std::string(InString);
   }
@@ -45,29 +64,15 @@ std::string GraphObserver::CompressString(absl::string_view InString,
                   InString.size());
   std::string Hash(SHA256_DIGEST_LENGTH, '\0');
   ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
-  if (!record_hashes_file_.empty() && !DontRecord) {
-    hashes_[Hash] = InString;
-  }
   std::string Result;
   // Use web-safe escaping because vnames are frequently URI-encoded. This
   // doesn't include padding ('=') or the characters + or /, all of which will
   // expand to three-byte sequences in such an encoding.
   absl::WebSafeBase64Escape(Hash, &Result);
-  return Result;
-}
-
-GraphObserver::~GraphObserver() {
-  if (record_hashes_file_.empty()) return;
-  FILE* f = ::fopen(record_hashes_file_.c_str(), "w");
-  if (f == nullptr) ::perror("Error in fopen");
-  CHECK(f != nullptr) << "Couldn't open file " << record_hashes_file_
-                      << " for hash recording.";
-  for (const auto& hash : hashes_) {
-    std::string encoding;
-    absl::WebSafeBase64Escape(hash.first, &encoding);
-    ::fprintf(f, "%s\t%s\n", encoding.c_str(), hash.second.c_str());
+  if (!DontRecord && hash_recorder_ != nullptr) {
+    hash_recorder_->RecordHash(Hash, Result, InString);
   }
-  CHECK(::fclose(f) == 0) << "Couldn't close file for hash recording.";
+  return Result;
 }
 
 GraphObserver::NodeId GraphObserver::MintNodeIdForVName(

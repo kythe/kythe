@@ -22,7 +22,7 @@
 
 #include <string>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
@@ -70,6 +70,25 @@ class ProfileBlock {
   const char* SectionName;
 };
 
+class HashRecorder {
+ public:
+  virtual void RecordHash(const std::string& hash, absl::string_view web64hash,
+                          absl::string_view original) {}
+  virtual ~HashRecorder() {}
+};
+
+class FileHashRecorder : public HashRecorder {
+ public:
+  FileHashRecorder(const std::string& path);
+  void RecordHash(const std::string& hash, absl::string_view web64hash,
+                  absl::string_view original) override;
+  ~FileHashRecorder();
+
+ private:
+  FILE* out_file_ = nullptr;
+  absl::flat_hash_set<std::string> hashes_;
+};
+
 /// \brief An interface for processing elements discovered as part of a
 /// compilation unit.
 ///
@@ -113,7 +132,7 @@ class GraphObserver {
   /// \brief Uses a one-way function to compress `InString` if it's longer than
   /// the result of using that function would be.
   std::string CompressString(absl::string_view InString, bool Force = false,
-                             bool DontRecord = false);
+                             bool DontRecord = false) const;
 
   /// \brief Push another group onto the group stack, assigning
   /// any observations that follow to it.
@@ -173,7 +192,8 @@ class GraphObserver {
     std::string Identity;
   };
 
-  NodeId MakeNodeId(const ClaimToken* Token, const std::string& Identity) {
+  NodeId MakeNodeId(const ClaimToken* Token,
+                    const std::string& Identity) const {
     return NodeId(Token, CompressString(Identity));
   }
 
@@ -352,7 +372,7 @@ class GraphObserver {
   /// \param AliasedType a `NodeId` corresponding to the aliased type.
   /// \return the `NodeId` for the type node corresponding to the alias.
   virtual NodeId nodeIdForTypeAliasNode(const NameId& AliasName,
-                                        const NodeId& AliasedType) = 0;
+                                        const NodeId& AliasedType) const = 0;
 
   /// \brief Records a type alias node (eg, from a `typedef` or
   /// `using Alias = ty` instance).
@@ -386,7 +406,7 @@ class GraphObserver {
   /// typedef or enum).
   /// \param TypeName a `NameId` corresponding to a nominal type.
   /// \return the `NodeId` for the type node corresponding to `TypeName`.
-  virtual NodeId nodeIdForNominalTypeNode(const NameId& TypeName) = 0;
+  virtual NodeId nodeIdForNominalTypeNode(const NameId& TypeName) const = 0;
 
   /// \brief Records a type node for some nominal type (such as a struct,
   /// typedef or enum), returning its ID.
@@ -419,7 +439,7 @@ class GraphObserver {
   /// abstraction.
   /// \return The application's result's ID.
   virtual NodeId nodeIdForTappNode(const NodeId& TyconId,
-                                   absl::Span<const NodeId> Params) = 0;
+                                   absl::Span<const NodeId> Params) const = 0;
 
   /// \brief Records a type application node, returning its ID.
   /// \note This is the elimination form for the `abs` node.
@@ -467,7 +487,7 @@ class GraphObserver {
   /// substitution).
   /// \param Params The `NodeId`s of the types to include.
   /// \return The result's ID.
-  virtual NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) = 0;
+  virtual NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) const = 0;
 
   /// \brief Records a sigma node, returning its ID.
   /// \param TsigmaId The `NodeId` to record.
@@ -1103,7 +1123,7 @@ class GraphObserver {
     return {};
   }
 
-  virtual ~GraphObserver() = 0;
+  virtual ~GraphObserver() {}
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
 
@@ -1119,7 +1139,7 @@ class GraphObserver {
   ///
   /// If `iter` returns false, terminates iteration.
   virtual void iterateOverClaimedFiles(
-      std::function<bool(clang::FileID, const NodeId&)> iter) {}
+      std::function<bool(clang::FileID, const NodeId&)> iter) const {}
 
   /// Name of the platform or build configuration to emit on anchors.
   virtual absl::string_view getBuildConfig() const { return ""; }
@@ -1129,8 +1149,7 @@ class GraphObserver {
   clang::LangOptions* LangOptions = nullptr;
   clang::Preprocessor* Preprocessor = nullptr;
   ProfilingCallback ReportProfileEvent = [](const char*, ProfilingEvent) {};
-  absl::flat_hash_map<std::string, std::string> hashes_;
-  std::string record_hashes_file_ = "";
+  std::unique_ptr<HashRecorder> hash_recorder_;
 };
 
 /// \brief A GraphObserver that does nothing.
@@ -1160,7 +1179,7 @@ class NullGraphObserver : public GraphObserver {
   }
 
   NodeId nodeIdForTypeAliasNode(const NameId& AliasName,
-                                const NodeId& AliasedType) override {
+                                const NodeId& AliasedType) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
@@ -1171,7 +1190,7 @@ class NullGraphObserver : public GraphObserver {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
-  NodeId nodeIdForNominalTypeNode(const NameId& type_name) override {
+  NodeId nodeIdForNominalTypeNode(const NameId& type_name) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
@@ -1181,7 +1200,7 @@ class NullGraphObserver : public GraphObserver {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
-  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) override {
+  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
@@ -1191,7 +1210,7 @@ class NullGraphObserver : public GraphObserver {
   }
 
   NodeId nodeIdForTappNode(const NodeId& TyconId,
-                           absl::Span<const NodeId> Params) override {
+                           absl::Span<const NodeId> Params) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 

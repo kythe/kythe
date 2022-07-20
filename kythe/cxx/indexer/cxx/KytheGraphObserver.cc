@@ -724,7 +724,7 @@ void KytheGraphObserver::recordOverridesRootEdge(const NodeId& overrider,
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
-    const NameId& alias_name, const NodeId& aliased_type) {
+    const NameId& alias_name, const NodeId& aliased_type) const {
   return MakeNodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
                                       aliased_type.ToClaimedString() + ")");
 }
@@ -818,7 +818,7 @@ void KytheGraphObserver::recordCompletionRange(
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
-    const NameId& name_id) {
+    const NameId& name_id) const {
   // Appending #t to a name produces the VName signature of the nominal
   // type node referring to that name. For example, the VName for a
   // forward-declared class type will look like "C#c#t".
@@ -842,7 +842,7 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTsigmaNode(
-    absl::Span<const NodeId> params) {
+    absl::Span<const NodeId> params) const {
   return MakeNodeId(
       &type_token_,
       absl::StrCat("#sigma(",
@@ -864,7 +864,7 @@ GraphObserver::NodeId KytheGraphObserver::recordTsigmaNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
-    const NodeId& tycon_id, absl::Span<const NodeId> params) {
+    const NodeId& tycon_id, absl::Span<const NodeId> params) const {
   // We can't just use juxtaposition here because it leads to ambiguity
   // as we can't assume that we have kind information, eg
   //   foo bar baz
@@ -1363,7 +1363,7 @@ void KytheGraphObserver::popFile() {
 }
 
 void KytheGraphObserver::iterateOverClaimedFiles(
-    std::function<bool(clang::FileID, const NodeId&)> iter) {
+    std::function<bool(clang::FileID, const NodeId&)> iter) const {
   for (const auto& file : claimed_file_specific_tokens_) {
     if (!iter(file.first, MakeNodeId(&file.second, ""))) {
       return;
