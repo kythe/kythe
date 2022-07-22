@@ -72,17 +72,17 @@ class ProfileBlock {
 
 class HashRecorder {
  public:
-  virtual void RecordHash(const std::string& hash, absl::string_view web64hash,
+  virtual void RecordHash(absl::string_view hash, absl::string_view web64hash,
                           absl::string_view original) {}
-  virtual ~HashRecorder() {}
+  virtual ~HashRecorder() = default;
 };
 
 class FileHashRecorder : public HashRecorder {
  public:
-  FileHashRecorder(const std::string& path);
-  void RecordHash(const std::string& hash, absl::string_view web64hash,
+  explicit FileHashRecorder(absl::string_view path);
+  void RecordHash(absl::string_view hash, absl::string_view web64hash,
                   absl::string_view original) override;
-  ~FileHashRecorder();
+  ~FileHashRecorder() override;
 
  private:
   FILE* out_file_ = nullptr;
@@ -129,10 +129,18 @@ class GraphObserver {
     GraphObserver& S;
   };
 
+  /// \brief Uses a one-way function to encode `InString`. Guaranteed to return
+  /// only websafe base64 characters.
+  std::string ForceEncodeString(absl::string_view InString) const;
+
   /// \brief Uses a one-way function to compress `InString` if it's longer than
   /// the result of using that function would be.
-  std::string CompressString(absl::string_view InString, bool Force = false,
-                             bool DontRecord = false) const;
+  std::string CompressString(absl::string_view InString) const;
+
+  /// \brief Uses a one-way function to compress the anchor signature
+  /// `InSignature` if it's longer than the result of using that function would
+  /// be.
+  std::string CompressAnchorSignature(absl::string_view InSignature) const;
 
   /// \brief Push another group onto the group stack, assigning
   /// any observations that follow to it.
@@ -185,7 +193,7 @@ class GraphObserver {
 
    private:
     friend class GraphObserver;
-    NodeId(const ClaimToken* Token, const std::string& Identity)
+    explicit NodeId(const ClaimToken* Token, const std::string& Identity)
         : Token(Token), Identity(Identity) {}
 
     const ClaimToken* Token = nullptr;
@@ -1123,7 +1131,7 @@ class GraphObserver {
     return {};
   }
 
-  virtual ~GraphObserver() {}
+  virtual ~GraphObserver() = default;
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
 
@@ -1149,7 +1157,7 @@ class GraphObserver {
   clang::LangOptions* LangOptions = nullptr;
   clang::Preprocessor* Preprocessor = nullptr;
   ProfilingCallback ReportProfileEvent = [](const char*, ProfilingEvent) {};
-  std::unique_ptr<HashRecorder> hash_recorder_;
+  HashRecorder* hash_recorder_ = nullptr;
 };
 
 /// \brief A GraphObserver that does nothing.

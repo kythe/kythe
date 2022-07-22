@@ -144,7 +144,7 @@ struct IndexerOptions {
         return IndexerWorklist::CreateDefaultWorklist(indexer);
       };
   /// \brief Notified each time a semantic signature is hashed.
-  std::unique_ptr<HashRecorder> HashRecorder;
+  HashRecorder* HashRecorder = nullptr;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

@@ -281,7 +281,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
   if (!build_config_.empty()) {
     absl::StrAppend(out_name.mutable_signature(), "%", build_config_);
   }
-  out_name.set_signature(CompressString(out_name.signature(), false, true));
+  out_name.set_signature(CompressAnchorSignature(out_name.signature()));
   return out_name;
 }
 
@@ -760,7 +760,7 @@ void KytheGraphObserver::recordDocumentationText(
   }
   // Force hashing because the serving backend gets upset if certain
   // characters appear in VName fields.
-  NodeId doc_id = MakeNodeId(node.getToken(), CompressString(signature, true));
+  NodeId doc_id = MakeNodeId(node.getToken(), ForceEncodeString(signature));
   VNameRef doc_vname(VNameRefFromNodeId(doc_id));
   if (written_docs_.insert(doc_id.ToClaimedString()).second) {
     recorder_->AddProperty(doc_vname, NodeKindID::kDoc);

@@ -138,7 +138,7 @@ struct KytheGraphObserverOptions {
   // corpus.
   std::string default_corpus = "";
   // Associates a hash to its semantic signature.
-  std::unique_ptr<HashRecorder> hash_recorder;
+  HashRecorder* hash_recorder;
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -165,7 +165,7 @@ class KytheGraphObserver : public GraphObserver {
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
-    hash_recorder_ = std::move(options.hash_recorder);
+    hash_recorder_ = options.hash_recorder;
   }
 
   NodeId getNodeIdForBuiltinType(
