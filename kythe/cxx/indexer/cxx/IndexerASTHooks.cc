@@ -456,7 +456,7 @@ class PruneCheck {
         }
       }
     }
-    cleanup_id_ = CompressString(cleanup_id_);
+    cleanup_id_ = visitor_->Observer.CompressString(cleanup_id_);
   }
   Prunability can_prune_ = Prunability::kNone;
   std::string cleanup_id_;
@@ -2481,8 +2481,10 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
@@ -3021,7 +3023,8 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     Observer.recordAbsNode(DeclNode);
   }
   for (const auto* ND : *Decl->getTemplateParameters()) {
-    GraphObserver::NodeId ParamId(Observer.getDefaultClaimToken(), "");
+    GraphObserver::NodeId ParamId =
+        Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
     unsigned ParamIndex = 0;
     auto Marks = MarkedSources.Generate(ND);
     if (const auto* TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
@@ -3086,8 +3089,10 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
 
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* CTPSD =
           dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
@@ -3221,8 +3226,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   // definition is not, and a later use site uses the definition.
   (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
-  GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId InnerNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId OuterNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
   const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
@@ -3480,8 +3487,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 // node that needs extra care.
                 auto InitIdent = LookupId.value().getRawIdentity() +
                                  std::to_string(InitNumber);
-                auto InitId = GraphObserver::NodeId(LookupId.value().getToken(),
-                                                    InitIdent);
+                auto InitId =
+                    Observer.MakeNodeId(LookupId.value().getToken(), InitIdent);
                 RecordCallEdges(GraphObserver::Range(InitId), LookupId.value());
               }
             }
@@ -3867,7 +3874,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     const clang::Decl* Decl, unsigned Index) {
   GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  return GraphObserver::NodeId(
+  return Observer.MakeNodeId(
       BaseId.getToken(), BaseId.getRawIdentity() + "." + std::to_string(Index));
 }
 
@@ -3888,7 +3895,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt* Stmt) {
         Ostream << node << ".";
       }
     }
-    return GraphObserver::NodeId(DeclId.getToken(), NewIdent);
+    return Observer.MakeNodeId(DeclId.getToken(), NewIdent);
   }
   return absl::nullopt;
 }
@@ -3953,8 +3960,8 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
         }
       }
       Ostream << "#builtin";
-      GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
-                               Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(
+          Observer.getClaimTokenForBuiltin(), Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
@@ -3962,7 +3969,8 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
 
   if (const auto* BTD = dyn_cast<BuiltinTemplateDecl>(Decl)) {
     Ostream << "#builtin";
-    GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(), Ostream.str());
+    GraphObserver::NodeId Id =
+        Observer.MakeNodeId(Observer.getClaimTokenForBuiltin(), Ostream.str());
     DeclToNodeId.insert({Decl, Id});
     return Id;
   }
@@ -3979,7 +3987,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   } else if (const auto* NS = dyn_cast<NamespaceDecl>(Decl)) {
     // Namespaces are named according to their NameIDs.
     Ostream << "#namespace";
-    GraphObserver::NodeId Id(
+    GraphObserver::NodeId Id = Observer.MakeNodeId(
         NS->isAnonymousNamespace()
             ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
             : Observer.getNamespaceClaimToken(NS->getLocation()),
@@ -4060,14 +4068,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   if (const auto* Rec = dyn_cast<clang::RecordDecl>(Decl)) {
     if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
       Ostream << "#" << HashToString(Hash(Rec));
-      GraphObserver::NodeId Id(Token, Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(Hash(Enum));
-      GraphObserver::NodeId Id(Token, Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
@@ -4075,7 +4083,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     if (const auto* E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(Hash(E));
-        GraphObserver::NodeId Id(Token, Ostream.str());
+        GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
         DeclToNodeId.insert({Decl, Id});
         return Id;
       }
@@ -4117,7 +4125,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   } else {
     Ostream << "invalid";
   }
-  GraphObserver::NodeId Id(Token, Ostream.str());
+  GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
   DeclToNodeId.insert({Decl, Id});
   return Id;
 }
@@ -4265,7 +4273,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentName(
   } else {
     Ostream << "(invalid)";
   }
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  return Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4380,7 +4388,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);
   Ostream << Id << "#sta";
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  return Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4420,7 +4428,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     IsBindingSite = true;
   }
   auto ResultId =
-      GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
   if (ER == EmitRanges::Yes && RCC) {
     if (IsBindingSite) {
       Observer.recordDefinitionBindingRange(RCC.value(), ResultId);
@@ -5376,8 +5384,10 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
 
   // If we have type arguments, treat this as a generic type and indirect
   // through an abs node.

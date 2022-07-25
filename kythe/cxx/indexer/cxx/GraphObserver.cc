@@ -19,29 +19,12 @@
 #include <openssl/sha.h>  // for SHA256
 
 #include "absl/strings/escaping.h"
+#include "absl/strings/str_format.h"
 
 namespace kythe {
 
 // base64 has a 4:3 overhead and SHA256_DIGEST_LENGTH is 32. 32*4/3 = 42.66666
 constexpr size_t kSha256DigestBase64MaxEncodingLength = 43;
-
-std::string CompressString(absl::string_view InString, bool Force) {
-  if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
-    return std::string(InString);
-  }
-  ::SHA256_CTX Sha;
-  ::SHA256_Init(&Sha);
-  ::SHA256_Update(&Sha, reinterpret_cast<const unsigned char*>(InString.data()),
-                  InString.size());
-  std::string Hash(SHA256_DIGEST_LENGTH, '\0');
-  ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
-  std::string Result;
-  // Use web-safe escaping because vnames are frequently URI-encoded. This
-  // doesn't include padding ('=') or the characters + or /, all of which will
-  // expand to three-byte sequences in such an encoding.
-  absl::WebSafeBase64Escape(Hash, &Result);
-  return Result;
-}
 
 namespace {
 struct MintedVNameHeader {
@@ -51,6 +34,68 @@ struct MintedVNameHeader {
   size_t language_offset;
 };
 }  // anonymous namespace
+
+FileHashRecorder::FileHashRecorder(absl::string_view path)
+    : out_file_(::fopen(std::string(path).c_str(), "w")) {
+  if (out_file_ == nullptr) ::perror("Error in fopen");
+  CHECK(out_file_ != nullptr)
+      << "Couldn't open file " << path << " for hash recording.";
+}
+
+void FileHashRecorder::RecordHash(absl::string_view hash,
+                                  absl::string_view web64hash,
+                                  absl::string_view original) {
+  auto result = hashes_.insert(std::string(hash));
+  if (!result.second) return;
+  absl::FPrintF(out_file_, "%s\t%s\n", web64hash, original);
+}
+FileHashRecorder::~FileHashRecorder() {
+  CHECK(::fclose(out_file_) == 0) << "Couldn't close file for hash recording.";
+}
+
+namespace {
+std::string Sha256(absl::string_view in_string) {
+  ::SHA256_CTX sha;
+  ::SHA256_Init(&sha);
+  ::SHA256_Update(&sha,
+                  reinterpret_cast<const unsigned char*>(in_string.data()),
+                  in_string.size());
+  std::string hash(SHA256_DIGEST_LENGTH, '\0');
+  ::SHA256_Final(reinterpret_cast<unsigned char*>(&hash[0]), &sha);
+  return hash;
+}
+}  // anonymous namespace
+
+std::string GraphObserver::ForceEncodeString(absl::string_view InString) const {
+  auto hash = Sha256(InString);
+  std::string result;
+  // Use web-safe escaping because vnames are frequently URI-encoded. This
+  // doesn't include padding ('=') or the characters + or /, all of which will
+  // expand to three-byte sequences in such an encoding.
+  absl::WebSafeBase64Escape(hash, &result);
+  if (hash_recorder_ != nullptr) {
+    hash_recorder_->RecordHash(hash, result, InString);
+  }
+  return result;
+}
+
+std::string GraphObserver::CompressAnchorSignature(
+    absl::string_view InSignature) const {
+  if (InSignature.size() <= kSha256DigestBase64MaxEncodingLength) {
+    return std::string(InSignature);
+  }
+  auto hash = Sha256(InSignature);
+  std::string result;
+  absl::WebSafeBase64Escape(hash, &result);
+  return result;
+}
+
+std::string GraphObserver::CompressString(absl::string_view InString) const {
+  if (InString.size() <= kSha256DigestBase64MaxEncodingLength) {
+    return std::string(InString);
+  }
+  return ForceEncodeString(InString);
+}
 
 GraphObserver::NodeId GraphObserver::MintNodeIdForVName(
     const proto::VName& vname) {

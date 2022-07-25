@@ -137,6 +137,8 @@ struct KytheGraphObserverOptions {
   // The default corpus to use for nodes which would otherwise have an empty
   // corpus.
   std::string default_corpus = "";
+  // Associates a hash to its semantic signature.
+  HashRecorder* hash_recorder;
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -150,7 +152,7 @@ class KytheGraphObserver : public GraphObserver {
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              const Options& options = {})
+                              Options& options)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
@@ -163,6 +165,7 @@ class KytheGraphObserver : public GraphObserver {
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
+    hash_recorder_ = options.hash_recorder;
   }
 
   NodeId getNodeIdForBuiltinType(
