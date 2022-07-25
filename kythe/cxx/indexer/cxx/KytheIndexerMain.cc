@@ -120,11 +120,10 @@ int main(int argc, char* argv[]) {
   options.CreateWorklist = [](IndexerASTVisitor* indexer) {
     return IndexerWorklist::CreateDefaultWorklist(indexer);
   };
-  std::unique_ptr<FileHashRecorder> recorder;
+  std::optional<FileHashRecorder> recorder;
   if (!absl::GetFlag(FLAGS_record_hashes_file).empty()) {
-    recorder = std::make_unique<FileHashRecorder>(
-        absl::GetFlag(FLAGS_record_hashes_file));
-    options.HashRecorder = recorder.get();
+    recorder.emplace(absl::GetFlag(FLAGS_record_hashes_file));
+    options.HashRecorder = &*recorder;
   }
 
   bool had_errors = false;
