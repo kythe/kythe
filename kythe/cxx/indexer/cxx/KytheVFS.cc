@@ -16,9 +16,12 @@
 
 #include "KytheVFS.h"
 
+#include <system_error>
+
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "glog/logging.h"
 #include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
@@ -54,18 +57,19 @@ std::string FixupPath(llvm::StringRef path, llvm::sys::path::Style style) {
 }
 }  // anonymous namespace
 
-IndexVFS::IndexVFS(const std::string& working_directory,
+IndexVFS::IndexVFS(absl::string_view working_directory,
                    const std::vector<proto::FileData>& virtual_files,
                    const std::vector<llvm::StringRef>& virtual_dirs,
                    llvm::sys::path::Style style)
-    : virtual_files_(virtual_files),
-      working_directory_(FixupPath(working_directory, style)) {
+    : working_directory_(FixupPath(
+          llvm::StringRef(working_directory.data(), working_directory.size()),
+          style)) {
   if (!llvm::sys::path::is_absolute(working_directory_,
                                     llvm::sys::path::Style::posix)) {
     absl::FPrintF(stderr, "warning: working directory %s is not absolute\n",
                   working_directory_);
   }
-  for (const auto& data : virtual_files_) {
+  for (const auto& data : virtual_files) {
     std::string path = FixupPath(ToStringRef(data.info().path()), style);
     if (auto* record = FileRecordForPath(path, BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
@@ -79,12 +83,6 @@ IndexVFS::IndexVFS(const std::string& working_directory,
   }
   // Clang always expects to be able to find a directory at .
   FileRecordForPath(".", BehaviorOnMissing::kCreateDirectory, 0);
-}
-
-IndexVFS::~IndexVFS() {
-  for (auto& entry : uid_to_record_map_) {
-    delete entry.second;
-  }
 }
 
 llvm::ErrorOr<llvm::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
@@ -121,6 +119,13 @@ llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> IndexVFS::openFileForRead(
 
 llvm::vfs::directory_iterator IndexVFS::dir_begin(const llvm::Twine& dir,
                                                   std::error_code& error_code) {
+  std::string path = dir.str();
+  if (auto* record =
+          FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
+    return llvm::vfs::directory_iterator(
+        std::make_shared<DirectoryIteratorImpl>(std::move(path), record));
+  }
+  error_code = std::make_error_code(std::errc::no_such_file_or_directory);
   return llvm::vfs::directory_iterator();
 }
 
@@ -193,15 +198,21 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
   } else if (!create_if_missing) {
     return nullptr;
   } else {
-    name_record = new FileRecord(
-        {llvm::vfs::Status(root_name, llvm::vfs::getNextVirtualUniqueID(),
-                           llvm::sys::TimePoint<>(), 0, 0, 0,
-                           llvm::sys::fs::file_type::directory_file,
-                           llvm::sys::fs::all_read),
-         false, std::string(root_name)});
-    root_name_to_root_map_[std::string(root_name)] = name_record;
-    uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
-        name_record;
+    FileRecord record = {
+        .status = llvm::vfs::Status(
+            root_name, llvm::vfs::getNextVirtualUniqueID(),
+            llvm::sys::TimePoint<>(), 0, 0, 0,
+            llvm::sys::fs::file_type::directory_file, llvm::sys::fs::all_read),
+        .has_vname = false,
+        .label = std::string(root_name),
+    };
+    auto [iter, inserted] = uid_to_record_map_.insert_or_assign(
+        PairFromUid(record.status.getUniqueID()),
+        std::make_unique<FileRecord>(record));
+    CHECK(inserted) << "Duplicated entries detected!";
+    root_name_to_root_map_.insert_or_assign(std::string(root_name),
+                                            iter->second.get());
+    name_record = iter->second.get();
   }
   return AllocOrReturnFileRecord(name_record, create_if_missing, root_dir,
                                  llvm::sys::fs::file_type::directory_file, 0);
@@ -306,15 +317,28 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
   }
   llvm::SmallString<1024> out_path(llvm::StringRef(parent->status.getName()));
   llvm::sys::path::append(out_path, llvm::sys::path::Style::posix, label);
-  FileRecord* new_record = new FileRecord{
-      llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
-                        llvm::sys::TimePoint<>(), 0, 0, size, type,
-                        llvm::sys::fs::all_read),
-      false, std::string(label)};
-  parent->children.push_back(new_record);
-  uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =
-      new_record;
-  return new_record;
+  FileRecord record = {
+      .status = llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
+                                  llvm::sys::TimePoint<>(), 0, 0, size, type,
+                                  llvm::sys::fs::all_read),
+      .has_vname = false,
+      .label = std::string(label),
+  };
+  auto [iter, inserted] = uid_to_record_map_.insert_or_assign(
+      PairFromUid(record.status.getUniqueID()),
+      std::make_unique<FileRecord>(record));
+  CHECK(inserted) << "Duplicate entries detected!";
+  parent->children.push_back(iter->second.get());
+  return iter->second.get();
+}
+
+llvm::vfs::directory_entry IndexVFS::DirectoryIteratorImpl::GetEntry() const {
+  if (curr_ == end_) {
+    return {};
+  }
+  llvm::SmallString<1024> path = llvm::StringRef(path_);
+  llvm::sys::path::append(path, llvm::sys::path::Style::posix, (*curr_)->label);
+  return {std::string(path), (*curr_)->status.getType()};
 }
 
 }  // namespace kythe
