@@ -30,6 +30,7 @@ rust_binary(
         "//third_party/bazel:extra_actions_base_rust_proto",
         "@crate_index//:anyhow",
         "@crate_index//:clap",
+        "@crate_index//:glob",
         "@crate_index//:hex",
         "@crate_index//:rls-data",
         "@crate_index//:sha2",

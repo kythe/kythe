@@ -1,5 +1,5 @@
 {
-  "checksum": "160a6f3e85a9fb3c906be701024833d53c94de2d636cef5f8a6e95fdbeb5ae9a",
+  "checksum": "b8bd5da8b1dc4f8263cedad5a617557c4e0edb64cdce5064f7c36fc5797f3160",
   "crates": {
     "adler 1.0.2": {
       "name": "adler",
@@ -1353,6 +1353,10 @@
               "target": "colored"
             },
             {
+              "id": "glob 0.3.0",
+              "target": "glob"
+            },
+            {
               "id": "hex 0.4.3",
               "target": "hex"
             },
@@ -1385,7 +1389,7 @@
               "target": "rls_data"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
@@ -1672,6 +1676,39 @@
         }
       },
       "license": "MIT"
+    },
+    "glob 0.3.0": {
+      "name": "glob",
+      "version": "0.3.0",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/glob/0.3.0/download",
+          "sha256": "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "glob",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "glob",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2015",
+        "version": "0.3.0"
+      },
+      "license": "MIT/Apache-2.0"
     },
     "hermit-abi 0.1.19": {
       "name": "hermit-abi",
@@ -3558,7 +3595,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
@@ -3621,7 +3658,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             }
           ],
@@ -3667,7 +3704,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             }
           ],
@@ -3803,13 +3840,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "serde 1.0.139": {
+    "serde 1.0.140": {
       "name": "serde",
-      "version": "1.0.139",
+      "version": "1.0.140",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde/1.0.139/download",
-          "sha256": "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
+          "url": "https://crates.io/api/v1/crates/serde/1.0.140/download",
+          "sha256": "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
         }
       },
       "targets": [
@@ -3852,7 +3889,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "build_script_build"
             }
           ],
@@ -3862,13 +3899,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "serde_derive 1.0.139",
+              "id": "serde_derive 1.0.140",
               "target": "serde_derive"
             }
           ],
           "selects": {}
         },
-        "version": "1.0.139"
+        "version": "1.0.140"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3877,13 +3914,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "serde_derive 1.0.139": {
+    "serde_derive 1.0.140": {
       "name": "serde_derive",
-      "version": "1.0.139",
+      "version": "1.0.140",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.139/download",
-          "sha256": "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
+          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.140/download",
+          "sha256": "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
         }
       },
       "targets": [
@@ -3931,7 +3968,7 @@
               "target": "quote"
             },
             {
-              "id": "serde_derive 1.0.139",
+              "id": "serde_derive 1.0.140",
               "target": "build_script_build"
             },
             {
@@ -3942,7 +3979,7 @@
           "selects": {}
         },
         "edition": "2015",
-        "version": "1.0.139"
+        "version": "1.0.140"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4006,7 +4043,7 @@
               "target": "ryu"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
