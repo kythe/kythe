@@ -207,7 +207,7 @@ class StdinAdjustSingleFrontendActionFactory
 std::string IndexCompilationUnit(
     const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
     KytheClaimClient& ClaimClient, HashCache* Cache, KytheCachingOutput& Output,
-    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
     const MetadataSupports* MetaSupports,
     const LibrarySupports* LibrarySupports);
 

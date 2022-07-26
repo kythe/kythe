@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
@@ -41,9 +42,6 @@
 namespace kythe {
 
 // TODO(zarko): Most of the documentation for this interface belongs here.
-
-/// \brief A one-way hash for `InString`.
-std::string CompressString(absl::string_view InString, bool Force = false);
 
 enum class ProfilingEvent {
   Enter,  ///< A profiling section was entered.
@@ -70,6 +68,25 @@ class ProfileBlock {
  private:
   const ProfilingCallback& Callback;
   const char* SectionName;
+};
+
+class HashRecorder {
+ public:
+  virtual void RecordHash(absl::string_view hash, absl::string_view web64hash,
+                          absl::string_view original) {}
+  virtual ~HashRecorder() = default;
+};
+
+class FileHashRecorder : public HashRecorder {
+ public:
+  explicit FileHashRecorder(absl::string_view path);
+  void RecordHash(absl::string_view hash, absl::string_view web64hash,
+                  absl::string_view original) override;
+  ~FileHashRecorder() override;
+
+ private:
+  FILE* out_file_ = nullptr;
+  absl::flat_hash_set<std::string> hashes_;
 };
 
 /// \brief An interface for processing elements discovered as part of a
@@ -112,6 +129,19 @@ class GraphObserver {
     GraphObserver& S;
   };
 
+  /// \brief Uses a one-way function to encode `InString`. Guaranteed to return
+  /// only websafe base64 characters.
+  std::string ForceEncodeString(absl::string_view InString) const;
+
+  /// \brief Uses a one-way function to compress `InString` if it's longer than
+  /// the result of using that function would be.
+  std::string CompressString(absl::string_view InString) const;
+
+  /// \brief Uses a one-way function to compress the anchor signature
+  /// `InSignature` if it's longer than the result of using that function would
+  /// be.
+  std::string CompressAnchorSignature(absl::string_view InSignature) const;
+
   /// \brief Push another group onto the group stack, assigning
   /// any observations that follow to it.
   virtual void Delimit() {}
@@ -126,8 +156,7 @@ class GraphObserver {
   /// determined by the `IndexerASTHooks` and `GraphObserver` override.
   class NodeId {
    public:
-    NodeId(const ClaimToken* Token, const std::string& Identity)
-        : Token(Token), Identity(CompressString(Identity)) {}
+    NodeId() {}
     NodeId(const NodeId& C) { *this = C; }
     NodeId& operator=(const NodeId* C) {
       Token = C->Token;
@@ -163,9 +192,18 @@ class GraphObserver {
     const ClaimToken* getToken() const { return Token; }
 
    private:
-    const ClaimToken* Token;
+    friend class GraphObserver;
+    explicit NodeId(const ClaimToken* Token, const std::string& Identity)
+        : Token(Token), Identity(Identity) {}
+
+    const ClaimToken* Token = nullptr;
     std::string Identity;
   };
+
+  NodeId MakeNodeId(const ClaimToken* Token,
+                    const std::string& Identity) const {
+    return NodeId(Token, CompressString(Identity));
+  }
 
   /// \brief A range of source text, potentially associated with a node.
   ///
@@ -1093,7 +1131,7 @@ class GraphObserver {
     return {};
   }
 
-  virtual ~GraphObserver() = 0;
+  virtual ~GraphObserver() = default;
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
 
@@ -1119,9 +1157,8 @@ class GraphObserver {
   clang::LangOptions* LangOptions = nullptr;
   clang::Preprocessor* Preprocessor = nullptr;
   ProfilingCallback ReportProfileEvent = [](const char*, ProfilingEvent) {};
+  HashRecorder* hash_recorder_ = nullptr;
 };
-
-inline GraphObserver::~GraphObserver() {}
 
 /// \brief A GraphObserver that does nothing.
 class NullGraphObserver : public GraphObserver {
@@ -1146,33 +1183,33 @@ class NullGraphObserver : public GraphObserver {
 
   NodeId getNodeIdForBuiltinType(
       const llvm::StringRef& Spelling) const override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForTypeAliasNode(const NameId& AliasName,
                                 const NodeId& AliasedType) const override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId recordTypeAliasNode(
       const NodeId& AliasId, const NodeId& AliasedType,
       const absl::optional<NodeId>& RootAliasedType,
       const absl::optional<MarkedSource>& MarkedSource) override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForNominalTypeNode(const NameId& type_name) const override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId recordNominalTypeNode(const NodeId& TypeNode,
                                const absl::optional<MarkedSource>& MarkedSource,
                                const absl::optional<NodeId>& Parent) override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) const override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId recordTsigmaNode(const NodeId& TsigmaId,
@@ -1182,13 +1219,13 @@ class NullGraphObserver : public GraphObserver {
 
   NodeId nodeIdForTappNode(const NodeId& TyconId,
                            absl::Span<const NodeId> Params) const override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   NodeId recordTappNode(const NodeId& TappId, const NodeId& TyconId,
                         absl::Span<const NodeId> Params,
                         unsigned FirstDefaultParam) override {
-    return NodeId(getDefaultClaimToken(), "");
+    return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
   const ClaimToken* getDefaultClaimToken() const override {

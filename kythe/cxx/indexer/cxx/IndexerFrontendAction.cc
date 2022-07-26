@@ -180,7 +180,7 @@ class TextErrorBuffer : public clang::DiagnosticConsumer {
 std::string IndexCompilationUnit(
     const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
     KytheClaimClient& Client, HashCache* Cache, KytheCachingOutput& Output,
-    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
     const MetadataSupports* MetaSupports,
     const LibrarySupports* LibrarySupports) {
   llvm::sys::path::Style Style =
@@ -216,6 +216,7 @@ std::string IndexCompilationUnit(
   options.build_config = ExtractBuildConfig(Unit);
   options.default_corpus =
       Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
+  options.hash_recorder = Options.HashRecorder;
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent, options);
   if (Cache != nullptr) {

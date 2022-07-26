@@ -30,7 +30,7 @@ namespace kythe {
 
 /// \brief An indexer task and its related state.
 struct IndexJob {
-  explicit IndexJob(clang::Decl* Decl) : Decl(Decl), FileNode(nullptr, "") {}
+  explicit IndexJob(clang::Decl* Decl) : Decl(Decl) {}
   /// \brief Build an IndexJob to visit a file's top-level comment.
   IndexJob(clang::Decl* Decl, clang::FileID Id,
            const GraphObserver::NodeId& FileNode)
@@ -38,7 +38,6 @@ struct IndexJob {
   IndexJob(const IndexJob& ParentJob, clang::Decl* Decl,
            bool SetPruneIncompleteFunctions, std::string ClaimId)
       : Decl(Decl),
-        FileNode(nullptr, ""),
         UnderneathImplicitTemplateInstantiation(
             ParentJob.UnderneathImplicitTemplateInstantiation),
         SetPruneIncompleteFunctions(SetPruneIncompleteFunctions),
