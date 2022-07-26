@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@rules_rust//proto:toolchain.bzl", "rust_proto_toolchain")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -48,4 +49,18 @@ bzl_library(
 bzl_library(
     name = "setup_bzl",
     srcs = ["setup.bzl"],
+)
+
+# Create Rust protobuf toolchain with protobuf version 2.27.1
+rust_proto_toolchain(
+    name = "rust_proto_toolchain_impl",
+    edition = "2021",
+    proto_compile_deps = ["@crate_index//:protobuf"],
+    proto_plugin = "@crate_index//:protobuf-codegen__protoc-gen-rust",
+)
+
+toolchain(
+    name = "rust_proto_toolchain",
+    toolchain = ":rust_proto_toolchain_impl",
+    toolchain_type = "@rules_rust//proto:toolchain",
 )

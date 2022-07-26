@@ -1,5 +1,5 @@
 {
-  "checksum": "160a6f3e85a9fb3c906be701024833d53c94de2d636cef5f8a6e95fdbeb5ae9a",
+  "checksum": "3eb90f2039a7a7f71f481c179c3650c9975a7adb587ef652201d17554a5a1026",
   "crates": {
     "adler 1.0.2": {
       "name": "adler",
@@ -427,6 +427,43 @@
         "version": "1.4.3"
       },
       "license": "Unlicense OR MIT"
+    },
+    "bytes 1.2.0": {
+      "name": "bytes",
+      "version": "1.2.0",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/bytes/1.2.0/download",
+          "sha256": "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "bytes",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "bytes",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": [
+          "default",
+          "std"
+        ],
+        "edition": "2018",
+        "version": "1.2.0"
+      },
+      "license": "MIT"
     },
     "bzip2 0.4.3": {
       "name": "bzip2",
@@ -883,13 +920,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-channel 0.5.5": {
+    "crossbeam-channel 0.5.6": {
       "name": "crossbeam-channel",
-      "version": "0.5.5",
+      "version": "0.5.6",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-channel/0.5.5/download",
-          "sha256": "4c02a4d71819009c192cf4872265391563fd6a84c81ff2c0f2a7026ca4c1d85c"
+          "url": "https://crates.io/api/v1/crates/crossbeam-channel/0.5.6/download",
+          "sha256": "c2dd04ddaf88237dc3b8d8f9a3c1004b506b54b3313403944054d23c0870c521"
         }
       },
       "targets": [
@@ -923,24 +960,24 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.5.5"
+        "version": "0.5.6"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-deque 0.8.1": {
+    "crossbeam-deque 0.8.2": {
       "name": "crossbeam-deque",
-      "version": "0.8.1",
+      "version": "0.8.2",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-deque/0.8.1/download",
-          "sha256": "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
+          "url": "https://crates.io/api/v1/crates/crossbeam-deque/0.8.2/download",
+          "sha256": "715e8152b692bba2d374b53d4875445368fdf21a94751410af607a5ac677d1fc"
         }
       },
       "targets": [
@@ -975,28 +1012,28 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-epoch 0.9.9",
+              "id": "crossbeam-epoch 0.9.10",
               "target": "crossbeam_epoch"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.8.1"
+        "version": "0.8.2"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-epoch 0.9.9": {
+    "crossbeam-epoch 0.9.10": {
       "name": "crossbeam-epoch",
-      "version": "0.9.9",
+      "version": "0.9.10",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.9/download",
-          "sha256": "07db9d94cbd326813772c968ccd25999e5f8ae22f4f8d1b11effa37ef6ce281d"
+          "url": "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.10/download",
+          "sha256": "045ebe27666471bb549370b4b0b3e51b07f56325befa4284db65fc89c02511b1"
         }
       },
       "targets": [
@@ -1042,11 +1079,11 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-epoch 0.9.9",
+              "id": "crossbeam-epoch 0.9.10",
               "target": "build_script_build"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             },
             {
@@ -1065,7 +1102,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.9.9"
+        "version": "0.9.10"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1083,13 +1120,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-utils 0.8.10": {
+    "crossbeam-utils 0.8.11": {
       "name": "crossbeam-utils",
-      "version": "0.8.10",
+      "version": "0.8.11",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.10/download",
-          "sha256": "7d82ee10ce34d7bc12c2122495e7593a9c41347ecdd64185af4ecf72cb1a7f83"
+          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.11/download",
+          "sha256": "51887d4adc7b564537b15adcfb307936f8075dfcd5f00dde9a9f1d29383682bc"
         }
       },
       "targets": [
@@ -1135,7 +1172,7 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "build_script_build"
             },
             {
@@ -1146,7 +1183,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.8.10"
+        "version": "0.8.11"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1239,7 +1276,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -1365,6 +1402,14 @@
               "target": "path_clean"
             },
             {
+              "id": "protobuf 2.27.1",
+              "target": "protobuf"
+            },
+            {
+              "id": "protobuf-codegen 2.27.1",
+              "target": "protobuf_codegen"
+            },
+            {
               "id": "quick-error 2.0.1",
               "target": "quick_error"
             },
@@ -1385,7 +1430,7 @@
               "target": "rls_data"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
@@ -2522,7 +2567,7 @@
           "selects": {
             "cfg(target_os = \"redox\")": [
               {
-                "id": "redox_syscall 0.2.13",
+                "id": "redox_syscall 0.2.15",
                 "target": "syscall"
               }
             ],
@@ -2668,7 +2713,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -2757,7 +2802,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -2786,13 +2831,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "proc-macro2 1.0.40": {
+    "proc-macro2 1.0.42": {
       "name": "proc-macro2",
-      "version": "1.0.40",
+      "version": "1.0.42",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.40/download",
-          "sha256": "dd96a1e8ed2596c337f8eae5f24924ec83f5ad5ab21ea8e455d3566c69fbcaf7"
+          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.42/download",
+          "sha256": "c278e965f1d8cf32d6e0e96de3d3e79712178ae67986d9cf9151f51e95aac89b"
         }
       },
       "targets": [
@@ -2833,7 +2878,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "build_script_build"
             },
             {
@@ -2844,7 +2889,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.40"
+        "version": "1.0.42"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -2852,6 +2897,139 @@
         ]
       },
       "license": "MIT OR Apache-2.0"
+    },
+    "protobuf 2.27.1": {
+      "name": "protobuf",
+      "version": "2.27.1",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/protobuf/2.27.1/download",
+          "sha256": "cf7e6d18738ecd0902d30d1ad232c9125985a3422929b16c65517b38adc14f96"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "protobuf",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "protobuf",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": [
+          "bytes",
+          "with-bytes"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "bytes 1.2.0",
+              "target": "bytes"
+            },
+            {
+              "id": "protobuf 2.27.1",
+              "target": "build_script_build"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "2.27.1"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ]
+      },
+      "license": "MIT"
+    },
+    "protobuf-codegen 2.27.1": {
+      "name": "protobuf-codegen",
+      "version": "2.27.1",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/protobuf-codegen/2.27.1/download",
+          "sha256": "aec1632b7c8f2e620343439a7dfd1f3c47b18906c4be58982079911482b5d707"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "protobuf_codegen",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        },
+        {
+          "Binary": {
+            "crate_name": "protoc-gen-rust",
+            "crate_root": "src/bin/protoc-gen-rust.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        },
+        {
+          "Binary": {
+            "crate_name": "protobuf-bin-gen-rust-do-not-use",
+            "crate_root": "src/bin/protobuf-bin-gen-rust-do-not-use.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "protobuf_codegen",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "protobuf 2.27.1",
+              "target": "protobuf"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2015",
+        "version": "2.27.1"
+      },
+      "license": "MIT"
     },
     "quick-error 2.0.1": {
       "name": "quick-error",
@@ -2933,7 +3111,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -3142,7 +3320,7 @@
         "deps": {
           "common": [
             {
-              "id": "crossbeam-deque 0.8.1",
+              "id": "crossbeam-deque 0.8.2",
               "target": "crossbeam_deque"
             },
             {
@@ -3222,15 +3400,15 @@
         "deps": {
           "common": [
             {
-              "id": "crossbeam-channel 0.5.5",
+              "id": "crossbeam-channel 0.5.6",
               "target": "crossbeam_channel"
             },
             {
-              "id": "crossbeam-deque 0.8.1",
+              "id": "crossbeam-deque 0.8.2",
               "target": "crossbeam_deque"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             },
             {
@@ -3301,13 +3479,13 @@
       },
       "license": "ISC"
     },
-    "redox_syscall 0.2.13": {
+    "redox_syscall 0.2.15": {
       "name": "redox_syscall",
-      "version": "0.2.13",
+      "version": "0.2.15",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/redox_syscall/0.2.13/download",
-          "sha256": "62f25bc4c7e55e0b0b7a1d43fb893f4fa1361d0abe38b9ce4f323c2adfe6ef42"
+          "url": "https://crates.io/api/v1/crates/redox_syscall/0.2.15/download",
+          "sha256": "534cfe58d6a18cc17120fbf4635d53d14691c1fe4d951064df9bd326178d7d5a"
         }
       },
       "targets": [
@@ -3339,7 +3517,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.2.13"
+        "version": "0.2.15"
       },
       "license": "MIT"
     },
@@ -3558,7 +3736,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
@@ -3621,7 +3799,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             }
           ],
@@ -3667,7 +3845,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             }
           ],
@@ -3803,13 +3981,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "serde 1.0.139": {
+    "serde 1.0.140": {
       "name": "serde",
-      "version": "1.0.139",
+      "version": "1.0.140",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde/1.0.139/download",
-          "sha256": "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
+          "url": "https://crates.io/api/v1/crates/serde/1.0.140/download",
+          "sha256": "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
         }
       },
       "targets": [
@@ -3852,7 +4030,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "build_script_build"
             }
           ],
@@ -3862,13 +4040,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "serde_derive 1.0.139",
+              "id": "serde_derive 1.0.140",
               "target": "serde_derive"
             }
           ],
           "selects": {}
         },
-        "version": "1.0.139"
+        "version": "1.0.140"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3877,13 +4055,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "serde_derive 1.0.139": {
+    "serde_derive 1.0.140": {
       "name": "serde_derive",
-      "version": "1.0.139",
+      "version": "1.0.140",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.139/download",
-          "sha256": "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
+          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.140/download",
+          "sha256": "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
         }
       },
       "targets": [
@@ -3923,7 +4101,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -3931,7 +4109,7 @@
               "target": "quote"
             },
             {
-              "id": "serde_derive 1.0.139",
+              "id": "serde_derive 1.0.140",
               "target": "build_script_build"
             },
             {
@@ -3942,7 +4120,7 @@
           "selects": {}
         },
         "edition": "2015",
-        "version": "1.0.139"
+        "version": "1.0.140"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4006,7 +4184,7 @@
               "target": "ryu"
             },
             {
-              "id": "serde 1.0.139",
+              "id": "serde 1.0.140",
               "target": "serde"
             },
             {
@@ -4119,7 +4297,7 @@
               "target": "proc_macro_error"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -4323,7 +4501,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -4512,7 +4690,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -5097,7 +5275,8 @@
     }
   },
   "binary_crates": [
-    "cc 1.0.73"
+    "cc 1.0.73",
+    "protobuf-codegen 2.27.1"
   ],
   "workspace_members": {
     "direct-cargo-bazel-deps 0.0.1": ""
