@@ -105,7 +105,7 @@ fn main() -> Result<()> {
     let mut out_dir_rust_source_files = Vec::new();
     for path in out_dir_inputs {
         // We strip the current working directory so we can generate the proper VName,
-        // as the resulting path will usually start with "blaze-out/".
+        // as the resulting path will usually start with "bazel-out/".
         let relative_path = path.replace(&format!("{}/", pwd.to_str().unwrap()), "");
         let file_vname: VName = create_vname(&mut vname_rules, &relative_path, &default_corpus);
         // We path the absolute path when adding the file as a required input because
