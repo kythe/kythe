@@ -44,12 +44,6 @@ def _rust_extractor_test_impl(ctx):
         content = source_content,
     )
 
-    # Create an directory for OUT_DIR and add a file
-    # out_dir = ctx.actions.declare_directory("out_dir")
-    # ctx.actions.run_shell(
-    #     command = "mkdir %s" % out_dir.path,
-    #     outputs = [out_dir],
-    # )
     out_dir_input = ctx.actions.declare_file("out_dir/input.rs")
 
     # sha256 digest = 75d66361585a3ca351b88047de1e1ddbbd3f85b070be2faf8f53f5e886447cf7
