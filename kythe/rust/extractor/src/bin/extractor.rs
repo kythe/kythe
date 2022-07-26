@@ -62,9 +62,7 @@ fn main() -> Result<()> {
     if let Some(out_dir) = out_dir_var {
         let absolute_out_dir = out_dir.replace("${pwd}", pwd.to_str().unwrap());
         let glob_pattern = format!("{}/**/*", absolute_out_dir);
-        println!("Glob pattern: {}", &glob_pattern);
         for path in glob(&glob_pattern).unwrap().flatten() {
-            println!("Found file: {:?}", path.display());
             out_dir_inputs.push(path.display().to_string());
         }
     }
