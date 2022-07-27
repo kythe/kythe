@@ -16,6 +16,7 @@ rust_library(
         "@crate_index//:base64",
         "@crate_index//:hex",
         "@crate_index//:path-clean",
+        "@crate_index//:protobuf",
         "@crate_index//:quick-error",
         "@crate_index//:rls-analysis",
         "@crate_index//:rls-data",
@@ -23,7 +24,6 @@ rust_library(
         "@crate_index//:serde_json",
         "@crate_index//:sha2",
         "@crate_index//:zip",
-        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -38,7 +38,7 @@ rust_binary(
         ":kythe_rust_indexer",
         "@crate_index//:anyhow",
         "@crate_index//:clap",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:protobuf",
     ],
 )
 
@@ -55,8 +55,8 @@ rust_binary(
         "@crate_index//:anyhow",
         "@crate_index//:base64",
         "@crate_index//:clap",
+        "@crate_index//:protobuf",
         "@crate_index//:serde_json",
-        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -78,8 +78,8 @@ rust_test(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "@crate_index//:hex",
+        "@crate_index//:protobuf",
         "@crate_index//:sha2",
-        "@rules_rust//proto/raze:protobuf",
         "@rules_rust//tools/runfiles",
     ],
 )

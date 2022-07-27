@@ -111,6 +111,14 @@ crates_repository(
         "serial_test": crate.spec(
             version = "0.6.0",
         ),
+        # Dependencies for our Rust protobuf toolchain
+        "protobuf": crate.spec(
+            features = ["with-bytes"],
+            version = "=2.8.2",
+        ),
+        "protobuf-codegen": crate.spec(
+            version = "=2.8.2",
+        ),
     },
     render_config = render_config(
         default_package_name = "",
@@ -120,3 +128,8 @@ crates_repository(
 load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
+
+# Register our Rust protobuf toolchain from the BUILD file
+register_toolchains(
+    ":rust_proto_toolchain",
+)
