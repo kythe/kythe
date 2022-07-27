@@ -678,6 +678,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
+        anchor_vname.set_root(file_vname.get_root().to_string());
         anchor_vname.set_path(file_vname.get_path().to_string());
 
         // Module definitions need special logic if they are implicit
