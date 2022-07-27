@@ -16,10 +16,10 @@
 RUNFILES_DIR="$0.runfiles"
 
 # We have to call find ourselves because rlocation doesn't support wildcards
-PATTERN="$RUNFILES_DIR/rust_*_x86_64/lib/rustlib*lib/librustc_driver-*.*"
+PATTERN="$RUNFILES_DIR/rust_*_x86_64*_tools/lib/rustlib*lib/librustc_driver-*.*"
 # Find the Rust directory first so that our next find doesn't search the
 # entire runfiles directory
-RUST_RUNFILES_LOCATION="$(find "$RUNFILES_DIR" -type d -wholename "$RUNFILES_DIR/rust_*_x86_64")"
+RUST_RUNFILES_LOCATION="$(find "$RUNFILES_DIR" -type d -wholename "$RUNFILES_DIR/rust_*_x86_64*_tools")"
 LOCATION="$(find "$RUST_RUNFILES_LOCATION" -wholename "$PATTERN")"
 LIB_DIRNAME="$(dirname "$LOCATION")"
 

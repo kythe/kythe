@@ -46,8 +46,8 @@ sh_binary(
     data = [
         ":extractor",
     ] + select({
-        "@platforms//os:linux": ["@rust_linux_x86_64//:rustc_lib"],
-        "@platforms//os:osx": ["@rust_darwin_x86_64//:rustc_lib"],
+        "@platforms//os:linux": ["@rust_linux_x86_64__x86_64-unknown-linux-gnu_tools//:rustc_lib"],
+        "@platforms//os:osx": ["@rust_darwin_x86_64__x86_64-apple-darwin_tools//:rustc_lib"],
     }),
 )
 
