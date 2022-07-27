@@ -157,3 +157,9 @@ rust_indexer_test(
     name = "relative_module_test",
     srcs = glob(["testdata/relative/**/*.rs"]),
 )
+
+rust_indexer_test(
+    name = "out_dir_test",
+    srcs = ["testdata/out_dir/main.rs"],
+    out_dir_files = ["testdata/out_dir/generated.rs"],
+)

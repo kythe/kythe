@@ -59,6 +59,15 @@ fn main() -> Result<()> {
     let output_files: Vec<String> = vec![output_key.clone()];
     spawn_info.set_output_file(protobuf::RepeatedField::from_vec(output_files));
 
+    // If $CARGO_OUT_DIR is set, set the value as $OUT_DIR in the spawn info
+    if let Ok(out_dir) = std::env::var("CARGO_OUT_DIR") {
+        let mut env_var = EnvironmentVariable::new();
+        env_var.set_name("OUT_DIR".to_string());
+        env_var.set_value(out_dir);
+        let vars = vec![env_var];
+        spawn_info.set_variable(protobuf::RepeatedField::from_vec(vars));
+    }
+
     // Write SpawnInfo bytes to a vector
     let spawn_info_bytes: Vec<u8> = spawn_info
         .write_to_bytes()
@@ -155,9 +164,11 @@ fn correct_arguments_succeed(
     let kzip_file = File::open(kzip_path).expect("Couldn't open resulting kzip file");
     let mut kzip = zip::ZipArchive::new(kzip_file).expect("Couldn't read kzip archive");
 
-    // Ensure the source file from the test macro is in the kzip
+    // Ensure the source file and OUT_DIR input from the test macro are in the kzip
     kzip.by_name("root/files/7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03")
-        .unwrap();
+        .expect("main.rs is missing from the generated kzip");
+    kzip.by_name("root/files/75d66361585a3ca351b88047de1e1ddbbd3f85b070be2faf8f53f5e886447cf7")
+        .expect("$OUT_DIR/input.rs is missing from the generated kzip");
 
     // Ensure protobuf is in the kzip
     let mut cu_path_str = String::from("");
@@ -178,12 +189,22 @@ fn correct_arguments_succeed(
     // Ensure the CompilationUnit is correct
     let compilation_unit = indexed_compilation.get_unit();
 
+    assert!(
+        !compilation_unit.get_working_directory().is_empty(),
+        "CompilationUnit working directory is not empty"
+    );
+
     let source_files: Vec<String> = compilation_unit.get_source_file().to_vec();
-    assert_eq!(source_files.len(), 1);
+    assert_eq!(source_files.len(), 2);
     assert!(
         source_files.get(0).unwrap().contains("kythe/rust/extractor/main.rs"),
-        "source_file field doesn't contain \"kythe/rust/extractor/main.rs\": {}",
+        "The first source file's path doesn't contain \"kythe/rust/extractor/main.rs\": {}",
         source_files.get(0).unwrap()
+    );
+    assert!(
+        source_files.get(1).unwrap().contains("out_dir/input.rs"),
+        "The second source file's path doesn't contain \"out_dir/input.rs\": {}",
+        source_files.get(1).unwrap()
     );
 
     let output_key = compilation_unit.get_output_key();
@@ -197,23 +218,45 @@ fn correct_arguments_succeed(
     assert_eq!(arguments, expected_arguments, "Argument field doesn't match");
 
     let required_inputs = compilation_unit.get_required_input().to_vec();
-    let source_input = required_inputs.get(0).expect("Failed to get first required input");
+    assert_eq!(
+        required_inputs.len(),
+        3,
+        "Unexpected number of required inputs: {}",
+        required_inputs.len()
+    );
 
-    assert!(!compilation_unit.get_working_directory().is_empty());
-
+    // Test attributes of the required input for main.rs
+    let source_input = required_inputs.get(0).expect("Failed to get the first required input");
     let source_file_path = source_input.get_info().get_path();
     assert!(
         source_file_path.contains("kythe/rust/extractor/main.rs"),
-        "source_file path doesn't contain \"kythe/rust/extractor/main.rs\": {}",
+        "Path for the first required input doesn't contain \"kythe/rust/extractor/main.rs\": {}",
         source_file_path
     );
-
     assert_eq!(
         source_input.get_info().get_digest(),
-        "7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03"
+        "7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03",
+        "Incorrect digest for main.rs: {}",
+        source_input.get_info().get_digest()
     );
 
-    let analysis_input = required_inputs.get(1).expect("Failed to get second required input");
+    // Test attributes of the required input for $OUT_DIR/input.rs
+    let out_dir_input = required_inputs.get(1).expect("Failed to get the second required input");
+    let out_dir_input_path = out_dir_input.get_info().get_path();
+    assert!(
+        out_dir_input_path.contains("out_dir/input.rs"),
+        "Path for the second required input doesn't contain \"out_dir/input.rs\": {}",
+        out_dir_input_path
+    );
+    assert_eq!(
+        out_dir_input.get_info().get_digest(),
+        "75d66361585a3ca351b88047de1e1ddbbd3f85b070be2faf8f53f5e886447cf7",
+        "Incorrect digest for $OUT_DIR/input.rs: {}",
+        out_dir_input.get_info().get_digest()
+    );
+
+    // Test attributes of the required_input for the save analysis
+    let analysis_input = required_inputs.get(2).expect("Failed to get the third required input");
     let analysis_path = analysis_input.get_info().get_path();
     assert!(
         analysis_path.contains("save-analysis/test_crate.json"),

@@ -65,6 +65,9 @@ crates_repository(
         "colored": crate.spec(
             version = "2.0.0",
         ),
+        "glob": crate.spec(
+            version = "0.3.0",
+        ),
         "hex": crate.spec(
             version = "0.4.3",
         ),
