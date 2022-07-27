@@ -1,5 +1,5 @@
 {
-  "checksum": "b8bd5da8b1dc4f8263cedad5a617557c4e0edb64cdce5064f7c36fc5797f3160",
+  "checksum": "e648ab4a6092efa4423a7d5bbbadfd78b7f87914a8f97508f3ebcc990a7f20d8",
   "crates": {
     "adler 1.0.2": {
       "name": "adler",
@@ -883,13 +883,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-channel 0.5.5": {
+    "crossbeam-channel 0.5.6": {
       "name": "crossbeam-channel",
-      "version": "0.5.5",
+      "version": "0.5.6",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-channel/0.5.5/download",
-          "sha256": "4c02a4d71819009c192cf4872265391563fd6a84c81ff2c0f2a7026ca4c1d85c"
+          "url": "https://crates.io/api/v1/crates/crossbeam-channel/0.5.6/download",
+          "sha256": "c2dd04ddaf88237dc3b8d8f9a3c1004b506b54b3313403944054d23c0870c521"
         }
       },
       "targets": [
@@ -923,24 +923,24 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.5.5"
+        "version": "0.5.6"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-deque 0.8.1": {
+    "crossbeam-deque 0.8.2": {
       "name": "crossbeam-deque",
-      "version": "0.8.1",
+      "version": "0.8.2",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-deque/0.8.1/download",
-          "sha256": "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
+          "url": "https://crates.io/api/v1/crates/crossbeam-deque/0.8.2/download",
+          "sha256": "715e8152b692bba2d374b53d4875445368fdf21a94751410af607a5ac677d1fc"
         }
       },
       "targets": [
@@ -975,28 +975,28 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-epoch 0.9.9",
+              "id": "crossbeam-epoch 0.9.10",
               "target": "crossbeam_epoch"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.8.1"
+        "version": "0.8.2"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-epoch 0.9.9": {
+    "crossbeam-epoch 0.9.10": {
       "name": "crossbeam-epoch",
-      "version": "0.9.9",
+      "version": "0.9.10",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.9/download",
-          "sha256": "07db9d94cbd326813772c968ccd25999e5f8ae22f4f8d1b11effa37ef6ce281d"
+          "url": "https://crates.io/api/v1/crates/crossbeam-epoch/0.9.10/download",
+          "sha256": "045ebe27666471bb549370b4b0b3e51b07f56325befa4284db65fc89c02511b1"
         }
       },
       "targets": [
@@ -1042,11 +1042,11 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-epoch 0.9.9",
+              "id": "crossbeam-epoch 0.9.10",
               "target": "build_script_build"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             },
             {
@@ -1065,7 +1065,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.9.9"
+        "version": "0.9.10"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1083,13 +1083,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "crossbeam-utils 0.8.10": {
+    "crossbeam-utils 0.8.11": {
       "name": "crossbeam-utils",
-      "version": "0.8.10",
+      "version": "0.8.11",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.10/download",
-          "sha256": "7d82ee10ce34d7bc12c2122495e7593a9c41347ecdd64185af4ecf72cb1a7f83"
+          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.11/download",
+          "sha256": "51887d4adc7b564537b15adcfb307936f8075dfcd5f00dde9a9f1d29383682bc"
         }
       },
       "targets": [
@@ -1135,7 +1135,7 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "build_script_build"
             },
             {
@@ -1146,7 +1146,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.8.10"
+        "version": "0.8.11"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1239,7 +1239,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -2559,7 +2559,7 @@
           "selects": {
             "cfg(target_os = \"redox\")": [
               {
-                "id": "redox_syscall 0.2.13",
+                "id": "redox_syscall 0.2.16",
                 "target": "syscall"
               }
             ],
@@ -2705,7 +2705,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -2794,7 +2794,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -2823,13 +2823,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "proc-macro2 1.0.40": {
+    "proc-macro2 1.0.42": {
       "name": "proc-macro2",
-      "version": "1.0.40",
+      "version": "1.0.42",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.40/download",
-          "sha256": "dd96a1e8ed2596c337f8eae5f24924ec83f5ad5ab21ea8e455d3566c69fbcaf7"
+          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.42/download",
+          "sha256": "c278e965f1d8cf32d6e0e96de3d3e79712178ae67986d9cf9151f51e95aac89b"
         }
       },
       "targets": [
@@ -2870,7 +2870,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "build_script_build"
             },
             {
@@ -2881,7 +2881,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.40"
+        "version": "1.0.42"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -2970,7 +2970,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -3179,7 +3179,7 @@
         "deps": {
           "common": [
             {
-              "id": "crossbeam-deque 0.8.1",
+              "id": "crossbeam-deque 0.8.2",
               "target": "crossbeam_deque"
             },
             {
@@ -3259,15 +3259,15 @@
         "deps": {
           "common": [
             {
-              "id": "crossbeam-channel 0.5.5",
+              "id": "crossbeam-channel 0.5.6",
               "target": "crossbeam_channel"
             },
             {
-              "id": "crossbeam-deque 0.8.1",
+              "id": "crossbeam-deque 0.8.2",
               "target": "crossbeam_deque"
             },
             {
-              "id": "crossbeam-utils 0.8.10",
+              "id": "crossbeam-utils 0.8.11",
               "target": "crossbeam_utils"
             },
             {
@@ -3338,13 +3338,13 @@
       },
       "license": "ISC"
     },
-    "redox_syscall 0.2.13": {
+    "redox_syscall 0.2.16": {
       "name": "redox_syscall",
-      "version": "0.2.13",
+      "version": "0.2.16",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/redox_syscall/0.2.13/download",
-          "sha256": "62f25bc4c7e55e0b0b7a1d43fb893f4fa1361d0abe38b9ce4f323c2adfe6ef42"
+          "url": "https://crates.io/api/v1/crates/redox_syscall/0.2.16/download",
+          "sha256": "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
         }
       },
       "targets": [
@@ -3376,7 +3376,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.2.13"
+        "version": "0.2.16"
       },
       "license": "MIT"
     },
@@ -3960,7 +3960,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -4156,7 +4156,7 @@
               "target": "proc_macro_error"
             },
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -4360,7 +4360,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
@@ -4549,7 +4549,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.40",
+              "id": "proc-macro2 1.0.42",
               "target": "proc_macro2"
             },
             {
