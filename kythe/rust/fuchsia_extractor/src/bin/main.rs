@@ -930,7 +930,8 @@ mod testing {
             }
             let mut buf: Vec<u8> = vec![];
             file.read_to_end(&mut buf).unwrap();
-            let result: analysis::IndexedCompilation = protobuf::parse_from_bytes(&buf).unwrap();
+            let result: analysis::IndexedCompilation =
+                protobuf::Message::parse_from_bytes(&buf).unwrap();
             return result;
         }
         panic!("pbunits file not found in existing zip file: zip_path: {:?}", &zip_path.as_ref(),);
