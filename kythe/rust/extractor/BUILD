@@ -32,11 +32,11 @@ rust_binary(
         "@crate_index//:clap",
         "@crate_index//:glob",
         "@crate_index//:hex",
+        "@crate_index//:protobuf",
         "@crate_index//:rls-data",
         "@crate_index//:sha2",
         "@crate_index//:tempdir",
         "@crate_index//:zip",
-        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
@@ -90,9 +90,9 @@ rust_binary(
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//tools/rust/runfiles",
         "@crate_index//:anyhow",
+        "@crate_index//:protobuf",
         "@crate_index//:tempdir",
         "@crate_index//:zip",
-        "@rules_rust//proto/raze:protobuf",
     ],
 )
 

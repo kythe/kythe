@@ -10,7 +10,7 @@ rust_binary(
         "//third_party/bazel:extra_actions_base_rust_proto",
         "@crate_index//:anyhow",
         "@crate_index//:clap",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:protobuf",
     ],
 )
 

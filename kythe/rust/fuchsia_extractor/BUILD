@@ -14,7 +14,7 @@ rust_library(
         "//kythe/proto:analysis_rust_proto",
         "@com_google_absl//absl/status",
         "@crate_index//:anyhow",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:protobuf",
     ],
 )
 
@@ -53,13 +53,13 @@ rust_binary(
         "@crate_index//:clap",
         "@crate_index//:hex",
         "@crate_index//:lazy_static",
+        "@crate_index//:protobuf",
         "@crate_index//:rayon",
         "@crate_index//:regex",
         "@crate_index//:rls-data",
         "@crate_index//:serde_json",
         "@crate_index//:sha2",
         "@crate_index//:tempdir",
-        "@rules_rust//proto/raze:protobuf",
     ],
 )
 
