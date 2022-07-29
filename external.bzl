@@ -37,7 +37,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()
-    rust_register_toolchains(version = "nightly", iso_date = "2022-01-09", dev_components = True, include_rustc_srcs = True)
+    rust_register_toolchains(version = "nightly", iso_date = "2022-07-27", dev_components = True, include_rustc_srcs = True)
     rust_proto_repositories()
     rust_analyzer_deps()
     crate_universe_dependencies()
