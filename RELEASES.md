@@ -4,24 +4,21 @@
 
 #### Bug Fixes
 
-*   address clippy lint in newer Rust version (#5276) ([8ef4d2fb](https://github.com/kythe/kythe/commit/8ef4d2fb4dc14af8e4a52743fcd0a7e3425bff61))
 * **build:**  remove use of managed_directories (issue #5287) (#5288) ([8ad0e685](https://github.com/kythe/kythe/commit/8ad0e685616462dbf85472984c99aa5d2ea6de3f))
-* **chore:**  switch to toplevel for rbe downloads (#5264) ([b04a9e97](https://github.com/kythe/kythe/commit/b04a9e97f9548226cb0f3ccfbcef97b8f2ff3102))
-* **cxx:**  turn logging down for things that are rarely cared about (#5270) ([fb30aab0](https://github.com/kythe/kythe/commit/fb30aab0d1f0dd11483b61a201c0aabc8a2b30da))
 * **cxx_indexer:**  emit non-implicit refs to explicit template specializations (#5290) ([9f0a3379](https://github.com/kythe/kythe/commit/9f0a33793c624043529cf5c8510c79587423d93f))
 * **java:**  rollback recent annotation ref/id changes (#5294) ([77a9a8e6](https://github.com/kythe/kythe/commit/77a9a8e6d3db4d24be19d31632651e44cd49908a))
 * **java_indexer:**
   *  guard against NPE in ImmutableList (#5310) ([74dc8410](https://github.com/kythe/kythe/commit/74dc8410d24586bccb1f7853a8f37019fcba6e46))
   *  assert that annotation invocations aren't refs (#5284) ([4b3e0f44](https://github.com/kythe/kythe/commit/4b3e0f44ac11b908e3299dd24c34ff5dfc00c373))
-* **proto:**  fix problematic field name (#5309) ([d753a463](https://github.com/kythe/kythe/commit/d753a4633a2f29581a9ae642bd8fb2a7043fc304))
 * **rust_extractor:**  find the analysis file based on crate name (#5306) ([48b4edf3](https://github.com/kythe/kythe/commit/48b4edf36193ffe9f1b8d5263c54e6e2d058f6e4))
 * **rust_indexer:**
   *  set the VName root on emitted Rust anchors (#5329) ([d282719f](https://github.com/kythe/kythe/commit/d282719f5fe1d97ff260964335f59145ed927a3e))
   *  clean relative paths in indexer to match vname paths (#5279) ([0cd64758](https://github.com/kythe/kythe/commit/0cd64758cd54ff567bbe9babf74d4364a02c6859))
   *  set corpus+lang on diagnostic (#5263) ([7274df4c](https://github.com/kythe/kythe/commit/7274df4cc8c09d5cbf0f2c6123cbcd8fa836d5c1))
 * **textproto:**  workaround upstream proto path bug (#5307) ([e770a7b0](https://github.com/kythe/kythe/commit/e770a7b03fb44ed5e2a3889aae10c2fbda77f734))
-* **typescript:**  don't emit absvar nodes (#5273) ([1e4467b1](https://github.com/kythe/kythe/commit/1e4467b1051820340b90b510a14d68d079b2d64f))
-* **typescript_indexer:**  fix lint issue (#5265) ([56a3e50d](https://github.com/kythe/kythe/commit/56a3e50de0bdaab5892d614f0ba2cd66178b3d59))
+* **typescript_indexer:**
+  * fix lint issue (#5265) ([56a3e50d](https://github.com/kythe/kythe/commit/56a3e50de0bdaab5892d614f0ba2cd66178b3d59))
+  * don't emit absvar nodes (#5273) ([1e4467b1](https://github.com/kythe/kythe/commit/1e4467b1051820340b90b510a14d68d079b2d64f))
 * **verifier:**  include @ in anchor labels and support EVars (#5291) ([992a3e94](https://github.com/kythe/kythe/commit/992a3e946df73948afaba06e384b1d164e27a86f))
 
 #### Features
@@ -33,14 +30,14 @@
 * **go_indexer:**
   *  add --override_stdlib_corpus flag (#5314) ([5617eb8f](https://github.com/kythe/kythe/commit/5617eb8f211b0ee7f421f299f6c3b041e39c54e8))
   *  optionally put builtins and stdlib items in main corpus (#5124) ([f83f9321](https://github.com/kythe/kythe/commit/f83f9321570d81a95039751278d41c5c198cf918))
-* **java analyzer:**  log error when CU VName has empty corpus (#5303) ([c22d736b](https://github.com/kythe/kythe/commit/c22d736be1693aa43c9e85040fa1bc0d3934b585))
-* **java extractor:**  use default value if corpus is ambiguous (#5305) ([40808f97](https://github.com/kythe/kythe/commit/40808f97d474b2e6a609b585974311c4b8d32892))
-* **java_indexer:**  use ref/id in annotation utterance contexts (#5281) ([584f65e7](https://github.com/kythe/kythe/commit/584f65e74a2bb016add70f609b310c027c78876c))
-* **jvm_extractor:**  assign a corpus to compilation units (#5320) ([aa76256b](https://github.com/kythe/kythe/commit/aa76256b6fc2818301074f8225e646481669608c))
+* **java extractor:**
+  * use default value if corpus is ambiguous (#5305) ([40808f97](https://github.com/kythe/kythe/commit/40808f97d474b2e6a609b585974311c4b8d32892))
+  * assign a corpus to compilation units (#5320) ([aa76256b](https://github.com/kythe/kythe/commit/aa76256b6fc2818301074f8225e646481669608c))
+* **java_indexer:**  
+  * use ref/id in annotation utterance contexts (#5281) ([584f65e7](https://github.com/kythe/kythe/commit/584f65e74a2bb016add70f609b310c027c78876c))
+  * log error when CU VName has empty corpus (#5303) ([c22d736b](https://github.com/kythe/kythe/commit/c22d736be1693aa43c9e85040fa1bc0d3934b585))
 * **proto:**  add a proto field to signify whether a file is protected (#5308) ([d08fbe6b](https://github.com/kythe/kythe/commit/d08fbe6b8af92efcb8639421362c71447e262c68))
-* **rust_common:**  migrate to crate_universe from cargo-raze (#5324) ([b5271386](https://github.com/kythe/kythe/commit/b527138606ea28760d9f0cc5ab9e0296441a82d0))
 * **rust_indexer:**  emit proper xrefs to files generated by dependencies (#5326) ([82a61189](https://github.com/kythe/kythe/commit/82a61189a1af2558a3cec703f3a9a9e003ee7557))
-* **tests:**  switch c++ verifier tests to index at test time (#5295) ([8f76d1e7](https://github.com/kythe/kythe/commit/8f76d1e795b813c9640b8a6405a3a0d65aa6ef75))
 * **tooling:**
   *  add --workspace_uri to kythe decor cmd (#5313) ([18f24c21](https://github.com/kythe/kythe/commit/18f24c21fb787dfb5de60d94f5934b1cbd26d287))
   *  treat absolute kzips as a set (#5271) ([b5e81531](https://github.com/kythe/kythe/commit/b5e8153151dbe3a2c8a352f10c4a9081f03c375e))
