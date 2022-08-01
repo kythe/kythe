@@ -28,6 +28,7 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
+load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -1284,6 +1285,7 @@ def kythe_dependencies(sample_ui = True):
 
     _bindings()
     _rule_dependencies()
+    hedron_compile_commands_setup()
 
     if sample_ui:
         _sample_ui_dependencies()
