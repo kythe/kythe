@@ -1,5 +1,5 @@
 // Package stdliboverride tests that corpus labels are assigned correctly when
-// the --override_stdlib_corpus and --use_compilation_corpus_as_default flags
+// the --override_stdlib_corpus and --use_compilation_corpus_for_all flags
 // are enabled.
 package stdliboverride
 

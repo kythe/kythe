@@ -266,7 +266,7 @@ func rewriteMarkedSourceCorpus(ms *cpb.MarkedSource, corpus string) {
 // target, or logs a diagnostic.
 func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
 	if ms != nil {
-		if e.opts.UseCompilationCorpusAsDefault {
+		if e.opts.UseCompilationCorpusForAll {
 			rewriteMarkedSourceCorpus(ms, e.pi.VName.Corpus)
 		}
 		bits, err := proto.Marshal(ms)
