@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Add the Rust compiler shared library path
-LIBRARY_DIR="external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+LIBRARY_DIR="external/rust_linux_x86_64__x86_64-unknown-linux-gnu_tools/lib/rustlib/x86_64-unknown-linux-gnu/lib"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$LIBRARY_DIR"
 
 exec external/kythe_release/extractors/bazel_rust_extractor "$@"
