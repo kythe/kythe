@@ -87,10 +87,6 @@ public class KytheEntrySets {
     return useCompilationCorpusAsDefault;
   }
 
-  public final VName getCompilationVName() {
-    return compilationVName;
-  }
-
   /** Returns the {@link FactEmitter} used to emit generated {@link EntrySet}s. */
   public final FactEmitter getEmitter() {
     return emitter;
@@ -206,11 +202,7 @@ public class KytheEntrySets {
 
   /** Emits and returns a DIAGNOSTIC node attached to no file. */
   public EntrySet emitDiagnostic(Diagnostic d) {
-    VName fileVName =
-        useCompilationCorpusAsDefault
-            ? VName.newBuilder().setCorpus(compilationVName.getCorpus()).build()
-            : null;
-    return emitDiagnostic(fileVName, d);
+    return emitDiagnostic(null, d);
   }
 
   /**
@@ -232,6 +224,9 @@ public class KytheEntrySets {
     }
     EntrySet dn = emitAndReturn(builder);
     if (fileVName == null) {
+      if (getUseCompilationCorpusAsDefault()) {
+        builder.setCorpusPath(defaultCorpusPath());
+      }
       return dn;
     } else {
       builder.setCorpusPath(CorpusPath.fromVName(fileVName));
