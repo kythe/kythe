@@ -1,5 +1,15 @@
 # Release Notes
 
+## [v0.0.61] - 2022-08-02
+
+#### Bug Fixes
+
+* **rust_common:**  fix rustc_lib location in release (#5339) ([5036c159](https://github.com/kythe/kythe/commit/5036c159387d25eb2c0e3b564b19ebde39b873c7))
+
+#### Features
+
+* **go_indexer:**  rework --use_compilation_corpus_as_default (#5338) ([9a4050a3](https://github.com/kythe/kythe/commit/9a4050a346f68533310be4b9466829c894ee4cca))
+
 ## [v0.0.60] - 2022-08-01
 
 #### Bug Fixes
@@ -1355,7 +1365,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.60...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.61...HEAD
+[v0.0.61] https://github.com/kythe/kythe/compare/v0.0.60...v0.0.61
 [v0.0.60] https://github.com/kythe/kythe/compare/v0.0.59...v0.0.60
 [v0.0.59] https://github.com/kythe/kythe/compare/v0.0.58...v0.0.59
 [v0.0.58] https://github.com/kythe/kythe/compare/v0.0.57...v0.0.58
