@@ -73,5 +73,5 @@ refresh_compile_commands(
     # If clangd is complaining about missing headers (and all that goes along with it),
     # and you're using remote builds, rebuild with --remote_download_outputs=all
     # With layering_check enabled, clangd warns about missing dependencies on standard library headers.
-    targets = {"//kythe/cxx/...": "--features=-layering_check"},
+    targets = {"//kythe/cxx/...": "--config=clang-tidy"},
 )
