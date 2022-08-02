@@ -87,6 +87,10 @@ public class KytheEntrySets {
     return useCompilationCorpusAsDefault;
   }
 
+  public final VName getCompilationVName() {
+    return compilationVName;
+  }
+
   /** Returns the {@link FactEmitter} used to emit generated {@link EntrySet}s. */
   public final FactEmitter getEmitter() {
     return emitter;

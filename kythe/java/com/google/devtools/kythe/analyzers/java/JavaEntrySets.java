@@ -159,8 +159,12 @@ public class JavaEntrySets extends KytheEntrySets {
       if (config.getVerboseLogging()) {
         logger.atWarning().log("%s", msg);
       }
-      Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
-      return emitDiagnostic(d.build()).getVName();
+      Diagnostic d = Diagnostic.newBuilder().setMessage(msg).build();
+      VName dVName =
+          getUseCompilationCorpusAsDefault()
+              ? VName.newBuilder().setCorpus(getCompilationVName().getCorpus()).build()
+              : null;
+      return emitDiagnostic(dVName, d).getVName();
     } else {
       if (config.getIgnoreVNamePaths()) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
