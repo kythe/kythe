@@ -269,7 +269,7 @@ go_indexer_test(
 go_indexer_test(
     name = "tappcorpus_test",
     srcs = ["testdata/basic/tappcorpus.go"],
-    use_compilation_corpus_as_default = True,
+    use_compilation_corpus_for_all = True,
 )
 
 empty_corpus_test(
@@ -284,7 +284,7 @@ go_indexer_test(
         "--use_default_corpus_for_stdlib",
         "--corpus=kythe",
     ],
-    use_compilation_corpus_as_default = True,
+    use_compilation_corpus_for_all = True,
 )
 
 # Test that extracting and indexing a go package that imports standard libraries
@@ -303,7 +303,7 @@ go_indexer_test(
         "--corpus=kythe",
     ],
     override_stdlib_corpus = "STDLIB_OVERRIDE",
-    use_compilation_corpus_as_default = True,
+    use_compilation_corpus_for_all = True,
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
