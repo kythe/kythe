@@ -65,11 +65,12 @@ type EmitOptions struct {
 	// If true, the doc/uri fact is only emitted for go std library packages.
 	OnlyEmitDocURIsForStandardLibs bool
 
-	// Nodes that otherwise wouldn't have a corpus (such as tapps) are given the
-	// corpus of the compilation unit being indexed.
-	UseCompilationCorpusAsDefault bool
+	// If enabled, all VNames emitted by the indexer are assigned the
+	// compilation unit's corpus.
+	UseCompilationCorpusForAll bool
 
-	// If set, all stdlib nodes are assigned this corpus.
+	// If set, all stdlib nodes are assigned this corpus. This takes precedence
+	// over UseCompilationCorpusForAll for stdlib nodes.
 	OverrideStdlibCorpus string
 }
 
@@ -304,12 +305,16 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 }
 
 // rewrittenCorpusForVName returns the new corpus that should be assigned to the
-// given vname based on the OverrideStdlibCorpus and UseCompilationCorpusAsDefault options
+// given vname based on the OverrideStdlibCorpus and UseCompilationCorpusForAll options
 func (e *emitter) rewrittenCorpusForVName(v *spb.VName) string {
 	if e.opts.OverrideStdlibCorpus != "" && v.GetCorpus() == govname.GolangCorpus {
 		return e.opts.OverrideStdlibCorpus
 	}
-	if e.opts.UseCompilationCorpusAsDefault {
+	if e.opts.UseCompilationCorpusForAll {
+		return e.pi.VName.GetCorpus()
+	}
+	if v.GetCorpus() == "" {
+		// If the VName doesn't specify a corpus, use the compilation unit's corpus
 		return e.pi.VName.GetCorpus()
 	}
 	return v.GetCorpus()
@@ -330,9 +335,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 		components = append(components, p)
 	}
 	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
-	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
-		v.Corpus = e.rewrittenCorpusForVName(v)
-	}
+	v.Corpus = e.rewrittenCorpusForVName(v)
 	if e.pi.typeEmitted.Add(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
 		e.writeEdge(v, ctor, edges.ParamIndex(0))
@@ -1000,27 +1003,29 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 }
 
 func (e *emitter) writeFact(src *spb.VName, name, value string) {
-	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(src)
+		src.Corpus = corpus
 	}
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
 
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
-	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(src)
+		src.Corpus = corpus
+	}
+	if corpus := e.rewrittenCorpusForVName(tgt); corpus != tgt.GetCorpus() {
 		tgt = proto.Clone(tgt).(*spb.VName)
-		tgt.Corpus = e.rewrittenCorpusForVName(tgt)
+		tgt.Corpus = corpus
 	}
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
-	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(src)
+		src.Corpus = corpus
 	}
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
@@ -1030,9 +1035,9 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 }
 
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
-	if e.opts.UseCompilationCorpusAsDefault || e.opts.OverrideStdlibCorpus != "" {
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
 		src = proto.Clone(src).(*spb.VName)
-		src.Corpus = e.rewrittenCorpusForVName(src)
+		src.Corpus = corpus
 	}
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
