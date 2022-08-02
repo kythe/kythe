@@ -1003,22 +1003,30 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 }
 
 func (e *emitter) writeFact(src *spb.VName, name, value string) {
-	src = proto.Clone(src).(*spb.VName)
-	src.Corpus = e.rewrittenCorpusForVName(src)
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = corpus
+	}
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
 
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
-	src = proto.Clone(src).(*spb.VName)
-	src.Corpus = e.rewrittenCorpusForVName(src)
-	tgt = proto.Clone(tgt).(*spb.VName)
-	tgt.Corpus = e.rewrittenCorpusForVName(tgt)
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = corpus
+	}
+	if corpus := e.rewrittenCorpusForVName(tgt); corpus != tgt.GetCorpus() {
+		tgt = proto.Clone(tgt).(*spb.VName)
+		tgt.Corpus = corpus
+	}
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
-	src = proto.Clone(src).(*spb.VName)
-	src.Corpus = e.rewrittenCorpusForVName(src)
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = corpus
+	}
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
@@ -1027,8 +1035,10 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 }
 
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
-	src = proto.Clone(src).(*spb.VName)
-	src.Corpus = e.rewrittenCorpusForVName(src)
+	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
+		src = proto.Clone(src).(*spb.VName)
+		src.Corpus = corpus
+	}
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
 
