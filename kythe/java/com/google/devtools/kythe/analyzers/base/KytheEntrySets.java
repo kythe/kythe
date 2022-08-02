@@ -202,7 +202,11 @@ public class KytheEntrySets {
 
   /** Emits and returns a DIAGNOSTIC node attached to no file. */
   public EntrySet emitDiagnostic(Diagnostic d) {
-    return emitDiagnostic(null, d);
+    VName fileVName =
+        useCompilationCorpusAsDefault
+            ? VName.newBuilder().setCorpus(compilationVName.getCorpus()).build()
+            : null;
+    return emitDiagnostic(fileVName, d);
   }
 
   /**
