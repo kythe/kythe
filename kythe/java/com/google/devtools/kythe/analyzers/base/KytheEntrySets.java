@@ -222,11 +222,17 @@ public class KytheEntrySets {
     if (!d.getContextUrl().isEmpty()) {
       builder.setProperty("context/url", d.getContextUrl());
     }
+    if (fileVName == null) {
+      if (getUseCompilationCorpusAsDefault()) {
+        builder.setCorpusPath(defaultCorpusPath());
+      }
+    } else {
+      builder.setCorpusPath(CorpusPath.fromVName(fileVName));
+    }
     EntrySet dn = emitAndReturn(builder);
     if (fileVName == null) {
       return dn;
     } else {
-      builder.setCorpusPath(CorpusPath.fromVName(fileVName));
       if (d.hasSpan()) {
         Span s =
             new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
