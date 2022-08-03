@@ -198,15 +198,14 @@ bool IndexerContext::HasIndexArguments() {
     auto path = llvm::StringRef(arg);
     if (path.endswith(".kzip")) {
       CHECK_EQ("-", absl::GetFlag(FLAGS_i))
-          << "No other input is allowed when reading from an index file or an "
-          << "index pack.";
+          << "No other input is allowed when reading from a kzip file.";
       return true;
     }
   }
   return false;
 }
 
-void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
+void IndexerContext::LoadDataFromKZip(const std::string& file_or_cu,
                                        const CompilationVisitCallback& visit) {
   std::string name(strip_silent_input_prefix(file_or_cu));
   const bool silent = !name.empty();
@@ -351,7 +350,7 @@ void IndexerContext::EnumerateCompilations(
     LoadDataFromUnpackedFile(default_filename_, visit);
   } else {
     for (size_t arg = 1; arg < args_.size(); ++arg) {
-      LoadDataFromIndex(args_[arg], visit);
+      LoadDataFromKZip(args_[arg], visit);
     }
   }
 }

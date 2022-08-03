@@ -21,7 +21,7 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 /opt/kythe/extractors/javac-wrapper.sh Foo.java Bar.java
 ```
 
-kindex file will be generated in `/tmp/kythe` folder.
+kzip file will be generated in `/tmp/kythe` folder.
 
 #### Development
 
@@ -49,4 +49,4 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 $KYTHE_PROJECT/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh Foo.java Bar.java
 ```
 
-kindex file will be generated in `/tmp/kythe` folder.
+kzip file will be generated in `/tmp/kythe` folder.

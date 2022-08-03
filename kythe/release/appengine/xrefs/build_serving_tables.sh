@@ -71,7 +71,7 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
     mkdir -p "$COMPILATIONS"
   fi
 
-  if [[ -z "$(find "$COMPILATIONS" -name '*.kindex' -print -quit)" ]]; then
+  if [[ -z "$(find "$COMPILATIONS" -name '*.kzip' -print -quit)" ]]; then
     echo "Extracting Kythe compilations to $COMPILATIONS" >&2
     time ./kythe/extractors/bazel/extract.sh "$PWD" "$COMPILATIONS"
   fi
