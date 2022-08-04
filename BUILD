@@ -2,6 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@rules_rust//proto:toolchain.bzl", "rust_proto_toolchain")
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -63,4 +64,14 @@ toolchain(
     name = "rust_proto_toolchain",
     toolchain = ":rust_proto_toolchain_impl",
     toolchain_type = "@rules_rust//proto:toolchain",
+)
+
+refresh_compile_commands(
+    name = "refresh_compile_commands",
+    # Gathering header compile commands fails due to mismatched clang versions with RBE.
+    exclude_headers = "all",
+    # If clangd is complaining about missing headers (and all that goes along with it),
+    # and you're using remote builds, rebuild with --remote_download_outputs=all
+    # With layering_check enabled, clangd warns about missing dependencies on standard library headers.
+    targets = {"//kythe/cxx/...": "--config=clang-tidy"},
 )

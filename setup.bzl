@@ -147,3 +147,10 @@ def kythe_rule_repositories():
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
     )
+
+    maybe(
+        github_archive,
+        repo_name = "hedronvision/bazel-compile-commands-extractor",
+        name = "hedron_compile_commands",
+        commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
+    )

@@ -28,6 +28,7 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
+load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -37,7 +38,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()
-    rust_register_toolchains(version = "nightly", iso_date = "2022-01-09", dev_components = True, include_rustc_srcs = True)
+    rust_register_toolchains(version = "nightly", iso_date = "2022-07-27", dev_components = True, include_rustc_srcs = True)
     rust_proto_repositories(register_default_toolchain = False)
     rust_analyzer_deps()
     crate_universe_dependencies()
@@ -1284,6 +1285,7 @@ def kythe_dependencies(sample_ui = True):
 
     _bindings()
     _rule_dependencies()
+    hedron_compile_commands_setup()
 
     if sample_ui:
         _sample_ui_dependencies()
