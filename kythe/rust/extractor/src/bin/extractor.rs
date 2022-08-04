@@ -203,7 +203,7 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
     let mut file_contents_bytes = Vec::new();
     file.read_to_end(&mut file_contents_bytes).context("Failed to read extra action file")?;
 
-    let extra_action = protobuf::parse_from_bytes::<ExtraActionInfo>(&file_contents_bytes)
+    let extra_action: ExtraActionInfo = protobuf::Message::parse_from_bytes(&file_contents_bytes)
         .context("Failed to parse extra action protobuf")?;
 
     SPAWN_INFO.get(&extra_action).ok_or_else(|| anyhow!("SpawnInfo extension missing"))

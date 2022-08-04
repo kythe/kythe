@@ -169,7 +169,7 @@ mod tests {
 
         // Parse the other bytes into an Entry and check equality with original
         let entry_bytes = bytes.get(1..bytes.len()).unwrap();
-        let parsed_entry = protobuf::parse_from_bytes::<Entry>(entry_bytes).unwrap();
+        let parsed_entry: Entry = protobuf::Message::parse_from_bytes(entry_bytes).unwrap();
         assert_eq!(entry, parsed_entry);
     }
 }

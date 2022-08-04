@@ -183,8 +183,9 @@ fn correct_arguments_succeed(
     // Read it into an IndexedCompilation
     let cu_file = kzip.by_name(&cu_path_str).unwrap();
     let mut cu_reader = BufReader::new(cu_file);
-    let indexed_compilation = protobuf::parse_from_reader::<IndexedCompilation>(&mut cu_reader)
-        .expect("Failed to parse protobuf as IndexedCompilation");
+    let indexed_compilation: IndexedCompilation =
+        protobuf::Message::parse_from_reader(&mut cu_reader)
+            .expect("Failed to parse protobuf as IndexedCompilation");
 
     // Ensure the CompilationUnit is correct
     let compilation_unit = indexed_compilation.get_unit();

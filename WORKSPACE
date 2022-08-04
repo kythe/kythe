@@ -114,10 +114,10 @@ crates_repository(
         # Dependencies for our Rust protobuf toolchain
         "protobuf": crate.spec(
             features = ["with-bytes"],
-            version = "=2.8.2",
+            version = "=2.27.1",
         ),
         "protobuf-codegen": crate.spec(
-            version = "=2.8.2",
+            version = "=2.27.1",
         ),
     },
     render_config = render_config(
