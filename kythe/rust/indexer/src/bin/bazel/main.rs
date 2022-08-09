@@ -29,11 +29,11 @@ struct Args {
     kzip_path: PathBuf,
 
     /// Disables emitting cross references to the standard library
-    #[clap(long, default_value_t = false)]
+    #[clap(long, action)]
     no_emit_std_lib: bool,
 
     /// Emits built-in types in the "std" corpus
-    #[clap(long, default_value_t = false)]
+    #[clap(long, action)]
     tbuiltin_std_corpus: bool,
 }
 
