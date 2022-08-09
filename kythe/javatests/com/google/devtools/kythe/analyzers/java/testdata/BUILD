@@ -3,7 +3,7 @@ load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_
 load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 
 exports_files(
-    ["corner_case.kindex"],
+    ["corner_case.kzip"],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java:__subpackages__"],
 )
 
