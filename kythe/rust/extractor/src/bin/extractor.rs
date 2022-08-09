@@ -11,14 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#[macro_use]
-extern crate anyhow;
 
-mod cli;
 mod save_analysis;
 
 use analysis_rust_proto::*;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use clap::Parser;
 use extra_actions_base_rust_proto::*;
 use glob::glob;
 use kythe_rust_extractor::vname_util::VNameRule;
@@ -31,14 +29,32 @@ use std::{env, fs};
 use tempdir::TempDir;
 use zip::{write::FileOptions, ZipWriter};
 
+#[derive(Parser)]
+#[clap(author = "The Kythe Authors")]
+#[clap(about = "Kythe Rust Extractor", long_about = None)]
+#[clap(rename_all = "snake_case")]
+struct Args {
+    /// Path to the extra action file
+    #[clap(long, value_parser, value_name = "FILE")]
+    extra_action: PathBuf,
+
+    /// Desired output path for the kzip
+    #[clap(long, value_parser, value_name = "DIR")]
+    output: PathBuf,
+
+    /// Location of the vnames configuration file
+    #[clap(long, value_parser, value_name = "FILE")]
+    vnames_config: PathBuf,
+}
+
 fn main() -> Result<()> {
-    let config = cli::parse_arguments();
+    let config = Args::parse();
 
     // Parse the VName configuration rules
-    let mut vname_rules = VNameRule::parse_vname_rules(config.vnames_config_path.as_path())?;
+    let mut vname_rules = VNameRule::parse_vname_rules(&config.vnames_config)?;
 
     // Retrieve the SpawnInfo from the extra action file
-    let spawn_info = get_spawn_info(&config.extra_action_path)?;
+    let spawn_info = get_spawn_info(&config.extra_action)?;
 
     // Grab the environment variables from spawn info and set them in our current
     // environment
@@ -77,8 +93,8 @@ fn main() -> Result<()> {
     )?;
 
     // Create the output kzip
-    let kzip_file = File::create(&config.output_path)
-        .with_context(|| format!("Failed to create kzip file at path {:?}", config.output_path))?;
+    let kzip_file = File::create(&config.output)
+        .with_context(|| format!("Failed to create kzip file at path {:?}", &config.output))?;
     let mut kzip = ZipWriter::new(kzip_file);
     kzip.add_directory("root/", FileOptions::default())?;
 

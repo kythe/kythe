@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
