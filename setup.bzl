@@ -109,10 +109,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-        sha256 = "39458d9bc8f44b23bf963a09c2823b1703b312bcb51d2e8938d640e5b9780180",
-        strip_prefix = "rules_rust-1f2e6231de29d8fad8d21486f0d16403632700bf",
+        sha256 = "05e15e536cc1e5fd7b395d044fc2dabf73d2b27622fbc10504b7e48219bb09bc",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/1f2e6231de29d8fad8d21486f0d16403632700bf.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_rust/releases/download/0.8.1/rules_rust-v0.8.1.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/releases/download/0.8.1/rules_rust-v0.8.1.tar.gz",
         ],
     )
 
@@ -146,4 +146,11 @@ def kythe_rule_repositories():
         build_file_content = "#empty",
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
+    )
+
+    maybe(
+        github_archive,
+        repo_name = "hedronvision/bazel-compile-commands-extractor",
+        name = "hedron_compile_commands",
+        commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
     )

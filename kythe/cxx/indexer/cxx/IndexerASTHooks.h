@@ -143,6 +143,8 @@ struct IndexerOptions {
       CreateWorklist = [](IndexerASTVisitor* indexer) {
         return IndexerWorklist::CreateDefaultWorklist(indexer);
       };
+  /// \brief Notified each time a semantic signature is hashed.
+  HashRecorder* HashRecorder = nullptr;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

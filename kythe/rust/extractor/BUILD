@@ -13,10 +13,10 @@ rust_library(
     edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:regex",
-        "//kythe/rust/cargo:serde",
-        "//kythe/rust/cargo:serde_json",
+        "@crate_index//:anyhow",
+        "@crate_index//:regex",
+        "@crate_index//:serde",
+        "@crate_index//:serde_json",
     ],
 )
 
@@ -27,15 +27,16 @@ rust_binary(
     deps = [
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:clap",
-        "//kythe/rust/cargo:hex",
-        "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:sha2",
-        "//kythe/rust/cargo:tempdir",
-        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:glob",
+        "@crate_index//:hex",
+        "@crate_index//:protobuf",
+        "@crate_index//:rls-data",
+        "@crate_index//:sha2",
+        "@crate_index//:tempdir",
+        "@crate_index//:zip",
     ],
 )
 
@@ -45,8 +46,8 @@ sh_binary(
     data = [
         ":extractor",
     ] + select({
-        "@platforms//os:linux": ["@rust_linux_x86_64//:rustc_lib"],
-        "@platforms//os:osx": ["@rust_darwin_x86_64//:rustc_lib"],
+        "@platforms//os:linux": ["@rust_linux_x86_64__x86_64-unknown-linux-gnu_tools//:rustc_lib"],
+        "@platforms//os:osx": ["@rust_darwin_x86_64__x86_64-apple-darwin_tools//:rustc_lib"],
     }),
 )
 
@@ -69,8 +70,8 @@ rust_binary(
     deps = [
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:regex",
-        "//kythe/rust/cargo:tempdir",
+        "@crate_index//:regex",
+        "@crate_index//:tempdir",
     ],
 )
 
@@ -86,12 +87,12 @@ rust_binary(
     edition = "2021",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:tempdir",
-        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//tools/rust/runfiles",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:protobuf",
+        "@crate_index//:tempdir",
+        "@crate_index//:zip",
     ],
 )
 

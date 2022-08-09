@@ -20,6 +20,7 @@ mod save_analysis;
 use analysis_rust_proto::*;
 use anyhow::{Context, Result};
 use extra_actions_base_rust_proto::*;
+use glob::glob;
 use kythe_rust_extractor::vname_util::VNameRule;
 use protobuf::Message;
 use sha2::{Digest, Sha256};
@@ -39,12 +40,31 @@ fn main() -> Result<()> {
     // Retrieve the SpawnInfo from the extra action file
     let spawn_info = get_spawn_info(&config.extra_action_path)?;
 
-    // Set environment variables from spawn info
-    let environment_variables = spawn_info.get_variable().to_vec();
+    // Grab the environment variables from spawn info and set them in our current
+    // environment
+    let environment_variables: Vec<_> = spawn_info.get_variable().to_vec();
     let pwd = std::env::current_dir().context("Couldn't determine pwd")?;
+    let mut out_dir_var: Option<String> = None;
     for variable in environment_variables {
-        let value = variable.get_value().replace("${pwd}", pwd.to_str().unwrap());
-        std::env::set_var(variable.get_name(), value);
+        let original_value = variable.get_value();
+        let value = original_value.replace("${pwd}", pwd.to_str().unwrap());
+        let name = variable.get_name();
+        std::env::set_var(name, value);
+        if name == "OUT_DIR" {
+            // We want the original value so that we can easily get file paths
+            // relative to OUT_DIR later
+            out_dir_var = Some(original_value.to_string());
+        }
+    }
+
+    // Get paths for files present in $OUT_DIR
+    let mut out_dir_inputs: Vec<String> = Vec::new();
+    if let Some(out_dir) = out_dir_var {
+        let absolute_out_dir = out_dir.replace("${pwd}", pwd.to_str().unwrap());
+        let glob_pattern = format!("{}/**/*", absolute_out_dir);
+        for path in glob(&glob_pattern).unwrap().flatten() {
+            out_dir_inputs.push(path.display().to_string());
+        }
     }
 
     // Create temporary directory and run the analysis
@@ -74,11 +94,28 @@ fn main() -> Result<()> {
         .filter(|file| file.ends_with(".rs"))
         .map(String::from) // Map the &String to a new String
         .collect();
-    let mut required_input: Vec<CompilationUnit_FileInput> = Vec::new();
+    let mut required_inputs: Vec<CompilationUnit_FileInput> = Vec::new();
     for file_path in &rust_source_files {
         // Generate the file vname based on the vname rules
         let file_vname: VName = create_vname(&mut vname_rules, file_path, &default_corpus);
-        kzip_add_required_input(file_path, file_vname, &mut kzip, &mut required_input)?;
+        kzip_add_required_input(file_path, file_vname, &mut kzip, &mut required_inputs)?;
+    }
+
+    // Add files that were present in $OUT_DIR during compilation as required inputs
+    let mut out_dir_rust_source_files = Vec::new();
+    for path in out_dir_inputs {
+        // We strip the current working directory so we can generate the proper VName,
+        // as the resulting path will usually start with "bazel-out/".
+        let relative_path = path.replace(&format!("{}/", pwd.to_str().unwrap()), "");
+        let file_vname: VName = create_vname(&mut vname_rules, &relative_path, &default_corpus);
+        // We path the absolute path when adding the file as a required input because
+        // that is the path will show up in the save_analysis. We want it set as the
+        // FileInfo path so it can be properly matched to its VName during indexing.
+        kzip_add_required_input(&path, file_vname, &mut kzip, &mut required_inputs)?;
+        // If this is a Rust file, add it to the vec
+        if path.ends_with(".rs") {
+            out_dir_rust_source_files.push(path);
+        }
     }
 
     // Grab the build target's output path
@@ -112,7 +149,7 @@ fn main() -> Result<()> {
         &save_analysis_path,
         save_analysis_vname,
         &mut kzip,
-        &mut required_input,
+        &mut required_inputs,
     )?;
 
     // Create the IndexedCompilation and add it to the kzip
@@ -121,11 +158,14 @@ fn main() -> Result<()> {
     if !default_corpus.is_empty() {
         unit_vname.set_corpus(default_corpus);
     }
+    let mut all_source_files = Vec::new();
+    all_source_files.extend(rust_source_files);
+    all_source_files.extend(out_dir_rust_source_files);
     let indexed_compilation = create_indexed_compilation(
-        rust_source_files,
+        all_source_files,
         build_target_arguments,
         build_output_path,
-        required_input,
+        required_inputs,
         unit_vname,
         env::current_dir()?
             .to_str()
@@ -163,7 +203,7 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
     let mut file_contents_bytes = Vec::new();
     file.read_to_end(&mut file_contents_bytes).context("Failed to read extra action file")?;
 
-    let extra_action = protobuf::parse_from_bytes::<ExtraActionInfo>(&file_contents_bytes)
+    let extra_action: ExtraActionInfo = protobuf::Message::parse_from_bytes(&file_contents_bytes)
         .context("Failed to parse extra action protobuf")?;
 
     SPAWN_INFO.get(&extra_action).ok_or_else(|| anyhow!("SpawnInfo extension missing"))

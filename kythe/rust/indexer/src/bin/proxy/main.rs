@@ -72,8 +72,8 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
         let unit_base64 = args["unit"].as_str().unwrap();
         let unit_bytes = base64::decode(unit_base64)
             .context("Failed to decode CompilationUnit sent by proxy")?;
-        let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
-            .context("Failed to parse protobuf")?;
+        let unit: CompilationUnit =
+            protobuf::Message::parse_from_bytes(&unit_bytes).context("Failed to parse protobuf")?;
         Ok(unit)
     } else {
         Err(anyhow!("Failed to get a CompilationUnit from the proxy"))

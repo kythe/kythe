@@ -12,9 +12,9 @@ rust_library(
     deps = [
         "//kythe/cxx/common:kzip_writer_c_api",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
         "@com_google_absl//absl/status",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:protobuf",
     ],
 )
 
@@ -34,7 +34,7 @@ rust_test(
         "//conditions:default": [],
     }),
     deps = [
-        "//kythe/rust/cargo:tempdir",
+        "@crate_index//:tempdir",
     ],
 )
 
@@ -49,17 +49,17 @@ rust_binary(
     deps = [
         ":fuchsia_extractor_lib",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:clap",
-        "//kythe/rust/cargo:hex",
-        "//kythe/rust/cargo:lazy_static",
-        "//kythe/rust/cargo:rayon",
-        "//kythe/rust/cargo:regex",
-        "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:serde_json",
-        "//kythe/rust/cargo:sha2",
-        "//kythe/rust/cargo:tempdir",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:hex",
+        "@crate_index//:lazy_static",
+        "@crate_index//:protobuf",
+        "@crate_index//:rayon",
+        "@crate_index//:regex",
+        "@crate_index//:rls-data",
+        "@crate_index//:serde_json",
+        "@crate_index//:sha2",
+        "@crate_index//:tempdir",
     ],
 )
 
@@ -83,8 +83,8 @@ rust_test(
         "//conditions:default": [],
     }),
     deps = [
-        "//kythe/rust/cargo:serial_test",
-        "//kythe/rust/cargo:zip",
+        "@crate_index//:serial_test",
+        "@crate_index//:zip",
     ],
 )
 

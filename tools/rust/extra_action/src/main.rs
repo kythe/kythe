@@ -21,7 +21,7 @@ use std::io::Write;
 use std::path::Path;
 
 fn main() -> Result<()> {
-    let matches = App::new("Kythe Rust Extractor")
+    let matches = App::new("Rust Extra Action Generator")
         .arg(
             Arg::with_name("src_files")
                 .long("src_files")
@@ -64,6 +64,13 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .help("The linker path"),
         )
+        .arg(
+            Arg::with_name("out_dir_env")
+                .long("out_dir_env")
+                .required(false)
+                .takes_value(true)
+                .help("The path that $OUT_DIR will be set to"),
+        )
         .get_matches();
 
     let mut extra_action = ExtraActionInfo::new();
@@ -96,6 +103,14 @@ fn main() -> Result<()> {
     spawn_info.set_argument(protobuf::RepeatedField::from_vec(arguments));
     spawn_info.set_input_file(protobuf::RepeatedField::from_vec(source_files));
     spawn_info.set_output_file(protobuf::RepeatedField::from_vec(vec![crate_name.to_string()]));
+
+    // If out_dir_env was set, set $OUT_DIR in the spawn info
+    if let Some(out_dir) = matches.value_of("out_dir_env") {
+        let mut env_var = EnvironmentVariable::new();
+        env_var.set_name("OUT_DIR".to_string());
+        env_var.set_value(out_dir.to_string());
+        spawn_info.set_variable(protobuf::RepeatedField::from_vec(vec![env_var]));
+    }
 
     // Add SpawnInfo extension to the ExtraActionInfo
     let action_unknown_fields = extra_action.mut_unknown_fields();

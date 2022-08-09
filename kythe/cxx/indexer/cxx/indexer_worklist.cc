@@ -23,7 +23,8 @@ namespace kythe {
 namespace {
 class IndexerWorklistImpl : public IndexerWorklist {
  public:
-  IndexerWorklistImpl(IndexerASTVisitor* indexer) : indexer_(indexer) {}
+  explicit IndexerWorklistImpl(IndexerASTVisitor* indexer)
+      : indexer_(indexer) {}
 
   void EnqueueJobForImplicitDecl(clang::Decl* decl,
                                  bool set_prune_incomplete_functions,

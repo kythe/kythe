@@ -29,18 +29,13 @@
 #include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
-#include "clang/AST/DeclFriend.h"
 #include "clang/AST/DeclObjC.h"
-#include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtCXX.h"
-#include "clang/AST/StmtObjC.h"
-#include "clang/AST/StmtOpenMP.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/Type.h"
@@ -55,7 +50,6 @@
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
-#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
 ABSL_FLAG(bool, experimental_alias_template_instantiations, false,
@@ -67,7 +61,12 @@ ABSL_FLAG(bool, emit_anchors_on_builtins, true,
 
 namespace kythe {
 
-using namespace clang;
+using ::clang::dyn_cast;
+using ::clang::dyn_cast_or_null;
+using ::clang::FileID;
+using ::clang::isa;
+using ::clang::SourceLocation;
+using ::clang::SourceRange;
 
 using Claimability = GraphObserver::Claimability;
 using NodeId = GraphObserver::NodeId;
@@ -79,9 +78,9 @@ namespace {
 bool TokenQuotesIdentifier(const clang::SourceManager& SM,
                            const clang::Token& Tok) {
   switch (Tok.getKind()) {
-    case tok::TokenKind::pipe:
+    case clang::tok::TokenKind::pipe:
       return true;
-    case tok::TokenKind::unknown: {
+    case clang::tok::TokenKind::unknown: {
       bool Invalid = false;
       if (const char* TokChar =
               SM.getCharacterData(Tok.getLocation(), &Invalid)) {
@@ -151,7 +150,7 @@ void MapOverrideRoots(const clang::ObjCMethodDecl* M, const F& Fn) {
   if (!M->isOverriding()) {
     Fn(M);
   } else {
-    SmallVector<const ObjCMethodDecl*, 4> overrides;
+    llvm::SmallVector<const clang::ObjCMethodDecl*, 4> overrides;
     M->getOverriddenMethods(overrides);
     for (const auto& PM : overrides) {
       MapOverrideRoots(PM, Fn);
@@ -168,18 +167,19 @@ clang::QualType FollowAliasChain(const clang::TypedefNameDecl* TND) {
     // (or even aliases underneath pointers, etc).
     QT = TND->getUnderlyingType();
     Qs.addQualifiers(QT.getQualifiers());
-    if (auto* TTD = dyn_cast<TypedefType>(QT.getTypePtr())) {
+    if (auto* TTD = dyn_cast<clang::TypedefType>(QT.getTypePtr())) {
       TND = TTD->getDecl();
-    } else if (auto* ET = dyn_cast<ElaboratedType>(QT.getTypePtr())) {
-      if (auto* TDT = dyn_cast<TypedefType>(ET->getNamedType().getTypePtr())) {
+    } else if (auto* ET = dyn_cast<clang::ElaboratedType>(QT.getTypePtr())) {
+      if (auto* TDT =
+              dyn_cast<clang::TypedefType>(ET->getNamedType().getTypePtr())) {
         TND = TDT->getDecl();
         Qs.addQualifiers(ET->getNamedType().getQualifiers());
       } else {
-        return QualType(QT.getTypePtr(), Qs.getFastQualifiers());
+        return clang::QualType(QT.getTypePtr(), Qs.getFastQualifiers());
       }
     } else {
       // We lose fidelity with getFastQualifiers.
-      return QualType(QT.getTypePtr(), Qs.getFastQualifiers());
+      return clang::QualType(QT.getTypePtr(), Qs.getFastQualifiers());
     }
   }
 }
@@ -193,20 +193,20 @@ clang::TemplateParameterList* GetTypeParameters(const clang::DeclContext* DC) {
   if (const auto* TemplateContext = dyn_cast<clang::TemplateDecl>(DC)) {
     return TemplateContext->getTemplateParameters();
   } else if (const auto* CTPSD =
-                 dyn_cast<ClassTemplatePartialSpecializationDecl>(DC)) {
+                 dyn_cast<clang::ClassTemplatePartialSpecializationDecl>(DC)) {
     return CTPSD->getTemplateParameters();
-  } else if (const auto* RD = dyn_cast<CXXRecordDecl>(DC)) {
+  } else if (const auto* RD = dyn_cast<clang::CXXRecordDecl>(DC)) {
     if (const auto* TD = RD->getDescribedClassTemplate()) {
       return TD->getTemplateParameters();
     }
   } else if (const auto* VTPSD =
-                 dyn_cast<VarTemplatePartialSpecializationDecl>(DC)) {
+                 dyn_cast<clang::VarTemplatePartialSpecializationDecl>(DC)) {
     return VTPSD->getTemplateParameters();
-  } else if (const auto* VD = dyn_cast<VarDecl>(DC)) {
+  } else if (const auto* VD = dyn_cast<clang::VarDecl>(DC)) {
     if (const auto* TD = VD->getDescribedVarTemplate()) {
       return TD->getTemplateParameters();
     }
-  } else if (const auto* AD = dyn_cast<TypeAliasDecl>(DC)) {
+  } else if (const auto* AD = dyn_cast<clang::TypeAliasDecl>(DC)) {
     if (const auto* TD = AD->getDescribedAliasTemplate()) {
       return TD->getTemplateParameters();
     }
@@ -228,7 +228,7 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
                                      const clang::FieldDecl* Field) {
   const clang::FunctionDecl* CtorDefn = nullptr;
   if (Ctor->isDefined(CtorDefn) &&
-      (Ctor = dyn_cast_or_null<CXXConstructorDecl>(CtorDefn))) {
+      (Ctor = dyn_cast_or_null<clang::CXXConstructorDecl>(CtorDefn))) {
     for (const auto* Init : Ctor->inits()) {
       if (Init->getMember() == Field && !Init->isInClassMemberInitializer()) {
         return true;
@@ -254,9 +254,9 @@ const clang::Decl* FindImplicitDeclForStmt(
     llvm::SmallVector<unsigned, 16>* StmtPath) {
   for (const auto& Current : RootTraversal(AllParents, Stmt)) {
     if (Current.decl && Current.decl->isImplicit() &&
-        !isa<VarDecl>(Current.decl) &&
-        !(isa<CXXRecordDecl>(Current.decl) &&
-          dyn_cast<CXXRecordDecl>(Current.decl)->isLambda())) {
+        !isa<clang::VarDecl>(Current.decl) &&
+        !(isa<clang::CXXRecordDecl>(Current.decl) &&
+          dyn_cast<clang::CXXRecordDecl>(Current.decl)->isLambda())) {
       // If this is an implicit variable declaration, we assume that it is one
       // of the implicit declarations attached to a range for loop. We ignore
       // its implicitness, which lets us associate a source location with the
@@ -291,7 +291,7 @@ bool IsCompleteAggregateType(clang::QualType Type) {
 llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
     const clang::InitListExpr* ILE) {
   CHECK(ILE->isSemanticForm());
-  QualType Type = ILE->getType();
+  clang::QualType Type = ILE->getType();
   // Ignore non-aggregate and copy initialization.
   if (!IsCompleteAggregateType(Type) || ILE->isTransparent()) {
     return {};
@@ -439,24 +439,27 @@ class PruneCheck {
         if (!(Current.decl && Current.indexed_parent)) continue;
 
         if (const auto* czdecl =
-                dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
+                dyn_cast<clang::ClassTemplateSpecializationDecl>(
+                    Current.decl)) {
           ostream << "#"
                   << HashToString(visitor_->Hash(
                          &czdecl->getTemplateInstantiationArgs()));
-        } else if (const auto* fdecl = dyn_cast<FunctionDecl>(Current.decl)) {
+        } else if (const auto* fdecl =
+                       dyn_cast<clang::FunctionDecl>(Current.decl)) {
           if (const auto* template_args =
                   fdecl->getTemplateSpecializationArgs()) {
             ostream << "#" << HashToString(visitor_->Hash(template_args));
           }
         } else if (const auto* vdecl =
-                       dyn_cast<VarTemplateSpecializationDecl>(Current.decl)) {
+                       dyn_cast<clang::VarTemplateSpecializationDecl>(
+                           Current.decl)) {
           ostream << "#"
                   << HashToString(visitor_->Hash(
                          &vdecl->getTemplateInstantiationArgs()));
         }
       }
     }
-    cleanup_id_ = CompressString(cleanup_id_);
+    cleanup_id_ = visitor_->Observer.CompressString(cleanup_id_);
   }
   Prunability can_prune_ = Prunability::kNone;
   std::string cleanup_id_;
@@ -476,7 +479,7 @@ const IndexedParentMap* IndexerASTVisitor::getAllParents() {
 }
 
 const IndexedParent* IndexerASTVisitor::getIndexedParent(
-    const DynTypedNode& Node) {
+    const clang::DynTypedNode& Node) {
   return getAllParents()->GetIndexedParent(Node);
 }
 
@@ -485,21 +488,21 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {
-  if (const auto* PVD = dyn_cast<ParmVarDecl>(VD)) {
+  if (const auto* PVD = dyn_cast<clang::ParmVarDecl>(VD)) {
     // For parameters, we want to report them as definitions iff they're
     // part of a function definition.  Current (2013-02-14) Clang appears
     // to report all function parameter declarations as definitions.
-    if (const auto* FD = dyn_cast<FunctionDecl>(PVD->getDeclContext())) {
+    if (const auto* FD = dyn_cast<clang::FunctionDecl>(PVD->getDeclContext())) {
       return IsDefinition(FD);
     }
   }
   // This one's a little quirky.  It would actually work to just return
   // implicit_cast<bool>(VD->isThisDeclarationADefinition()), because
   // VarDecl::DeclarationOnly is zero, but this is more explicit.
-  return VD->isThisDeclarationADefinition() != VarDecl::DeclarationOnly;
+  return VD->isThisDeclarationADefinition() != clang::VarDecl::DeclarationOnly;
 }
 
-clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
+SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
     const clang::NamedDecl* Decl) const {
   return ClangRangeFinder(Observer.getSourceManager(),
                           Observer.getLangOptions())
@@ -630,9 +633,9 @@ class PossibleLookups {
   /// Start a new lookup from `DeclName`.
   LookupResult StartLookups(const clang::DeclarationNameInfo& DeclName) {
     CHECK(Lookups.empty());
-    const clang::DeclContext* Context =
-        ForceTUContext ? TUContext : RootContext;
-    do {
+    for (const clang::DeclContext* Context = ForceTUContext ? TUContext
+                                                            : RootContext;
+         Context != nullptr; Context = Context->getParent()) {
       clang::LookupResult FirstLookup(
           Sema, DeclName, clang::Sema::LookupNameKind::LookupAnyName);
       FirstLookup.suppressDiagnostics();
@@ -667,8 +670,7 @@ class PossibleLookups {
           }
         }
       }
-      Context = Context->getParent();
-    } while (Context != nullptr);
+    }
     return Lookups.empty() ? LookupResult::Done : LookupResult::Updated;
   }
   /// Continue each in-flight lookup using `DeclName`.
@@ -758,19 +760,19 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 }
 
 void IndexerASTVisitor::HandleFileLevelComments(
-    clang::FileID Id, const GraphObserver::NodeId& FileNode) {
+    FileID Id, const GraphObserver::NodeId& FileNode) {
   const auto& RCL = Context.Comments;
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
-  const std::map<unsigned, RawComment*>* FileComments =
+  const std::map<unsigned, clang::RawComment*>* FileComments =
       RCL.getCommentsInFile(Id);
   if (FileComments == nullptr || FileComments->empty()) {
     return;
   }
   // Find the first RawComment whose start location is greater or equal to
   // the start of the file whose FileID is Id.
-  RawComment* C = FileComments->begin()->second;
+  clang::RawComment* C = FileComments->begin()->second;
   // Walk through the comments in Id starting with the one at the top. If we
   // ever leave Id, then we're done. (The first time around the loop, if C isn't
   // already in Id, this check will immediately break;.)
@@ -790,7 +792,7 @@ void IndexerASTVisitor::VisitComment(
   const auto& SM = *Observer.getSourceManager();
   std::string Text = Comment->getRawText(SM).str();
   std::string StrippedRawText;
-  std::map<clang::SourceLocation, size_t> OffsetsInStrippedRawText;
+  std::map<SourceLocation, size_t> OffsetsInStrippedRawText;
 
   std::vector<MiniAnchor> StrippedRawTextAnchors;
   clang::comments::Lexer Lexer(Context.getAllocator(), Context.getDiagnostics(),
@@ -800,7 +802,7 @@ void IndexerASTVisitor::VisitComment(
   clang::comments::Token Tok;
   std::vector<clang::Token> IdentifierTokens;
   PossibleLookups Lookups(Context, Sema, DC, Context.getTranslationUnitDecl());
-  auto RecordDocDeclUse = [&](const clang::SourceRange& Range,
+  auto RecordDocDeclUse = [&](const SourceRange& Range,
                               const GraphObserver::NodeId& ResultId) {
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       Observer.recordDeclUseLocationInDocumentation(RCC.value(), ResultId);
@@ -826,10 +828,9 @@ void IndexerASTVisitor::VisitComment(
       for (auto Result : Results.Result) {
         auto ResultId = BuildNodeIdForRefToDecl(Result);
         for (int Token = FirstToken; Token <= LastToken; ++Token) {
-          RecordDocDeclUse(
-              clang::SourceRange(IdentifierTokens[Token].getLocation(),
-                                 IdentifierTokens[Token].getEndLoc()),
-              ResultId);
+          RecordDocDeclUse(SourceRange(IdentifierTokens[Token].getLocation(),
+                                       IdentifierTokens[Token].getEndLoc()),
+                           ResultId);
         }
       }
     }
@@ -941,8 +942,8 @@ void IndexerASTVisitor::VisitAttributes(
 }
 
 bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
-  if ((Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) &&
-      !Decl->hasAttrs()) {
+  if (Decl == nullptr ||
+      (Job->UnderneathImplicitTemplateInstantiation && !Decl->hasAttrs())) {
     // Template instantiation can't add any documentation text.
     return true;
   }
@@ -952,7 +953,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
     // bail.
     return true;
   }
-  const auto* DCxt = dyn_cast<DeclContext>(Decl);
+  const auto* DCxt = dyn_cast<clang::DeclContext>(Decl);
   if (!DCxt) {
     DCxt = Decl->getDeclContext();
     if (!DCxt) {
@@ -960,15 +961,16 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
     }
   }
 
-  if (const auto* DC = dyn_cast_or_null<DeclContext>(Decl)) {
+  if (const auto* DC = dyn_cast_or_null<clang::DeclContext>(Decl)) {
     if (auto DCID = BuildNodeIdForDeclContext(DC)) {
       VisitAttributes(Decl, DCID.value());
       if (CommentOrNull == nullptr) {
         return true;
       }
-      if (const auto* IFaceDecl = dyn_cast_or_null<ObjCInterfaceDecl>(DC)) {
+      if (const auto* IFaceDecl =
+              dyn_cast_or_null<clang::ObjCInterfaceDecl>(DC)) {
         VisitObjCInterfaceDeclComment(IFaceDecl, CommentOrNull, DCxt, DCID);
-      } else if (const auto* R = dyn_cast_or_null<RecordDecl>(DC)) {
+      } else if (const auto* R = dyn_cast_or_null<clang::RecordDecl>(DC)) {
         VisitRecordDeclComment(R, CommentOrNull, DCxt, DCID);
       } else {
         VisitComment(CommentOrNull, DCxt, DCID.value());
@@ -976,12 +978,13 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
     }
     if (options_.AbsNodes) {
       if (const auto* CTPSD =
-              dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
+              dyn_cast_or_null<clang::ClassTemplatePartialSpecializationDecl>(
+                  Decl)) {
         auto NodeId = BuildNodeIdForDecl(CTPSD);
         VisitAttributes(Decl, NodeId);
         if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
-      if (const auto* FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
+      if (const auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
         if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
           auto NodeId = BuildNodeIdForDecl(FTD);
           VisitAttributes(Decl, NodeId);
@@ -992,14 +995,15 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
     }
   } else {
     if (options_.AbsNodes) {
-      if (const auto* VD = dyn_cast_or_null<VarDecl>(Decl)) {
+      if (const auto* VD = dyn_cast_or_null<clang::VarDecl>(Decl)) {
         if (const auto* VTD = VD->getDescribedVarTemplate()) {
           auto NodeId = BuildNodeIdForDecl(VTD);
           VisitAttributes(VTD, NodeId);
           if (CommentOrNull != nullptr)
             VisitComment(CommentOrNull, DCxt, NodeId);
         }
-      } else if (const auto* AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+      } else if (const auto* AD =
+                     dyn_cast_or_null<clang::TypeAliasDecl>(Decl)) {
         if (const auto* TATD = AD->getDescribedAliasTemplate()) {
           auto NodeId = BuildNodeIdForDecl(TATD);
           VisitAttributes(TATD, NodeId);
@@ -1016,8 +1020,9 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
 }
 
 void IndexerASTVisitor::VisitObjCInterfaceDeclComment(
-    const ObjCInterfaceDecl* Decl, const RawComment* Comment,
-    const DeclContext* DCxt, absl::optional<GraphObserver::NodeId> DCID) {
+    const clang::ObjCInterfaceDecl* Decl, const clang::RawComment* Comment,
+    const clang::DeclContext* DCxt,
+    absl::optional<GraphObserver::NodeId> DCID) {
   // Don't record comments for ObjC class forward declarations because
   // their comments generally aren't useful documentation about the class,
   // they are more likely to be about why a forward declaration was used
@@ -1029,7 +1034,8 @@ void IndexerASTVisitor::VisitObjCInterfaceDeclComment(
 }
 
 void IndexerASTVisitor::VisitRecordDeclComment(
-    const RecordDecl* Decl, const RawComment* Comment, const DeclContext* DCxt,
+    const clang::RecordDecl* Decl, const clang::RawComment* Comment,
+    const clang::DeclContext* DCxt,
     absl::optional<GraphObserver::NodeId> DCID) {
   // Don't record comments for forward declarations because their comments
   // generally aren't useful documentation about the class, they are more likely
@@ -1049,7 +1055,8 @@ bool IndexerASTVisitor::TraverseCXXConstructorDecl(
     // but does for destructors and conversion operators.  As such, work
     // around this here. Implicit constructors do not get TypeSourceInfo.
     DNI.setNamedTypeInfo(Context.getTrivialTypeSourceInfo(
-        QualType(CD->getParent()->getTypeForDecl(), 0), CD->getLocation()));
+        clang::QualType(CD->getParent()->getTypeForDecl(), 0),
+        CD->getLocation()));
   }
   return RecursiveASTVisitor::TraverseCXXConstructorDecl(CD) &&
          TraverseDeclarationNameInfo(DNI);
@@ -1059,8 +1066,7 @@ namespace {
 
 /// \return the location of the template `Decl` implicitly instantiates,
 /// or an invalid location of `Decl` does not implicitly instantiate a template.
-clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
-    const clang::Decl* Decl) {
+SourceLocation GetImplicitlyInstantiatedTemplateLoc(const clang::Decl* Decl) {
   if (const auto* fun = llvm::dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
     if (auto* msi = fun->getMemberSpecializationInfo();
         msi != nullptr && !msi->isExplicitSpecialization()) {
@@ -1070,17 +1076,17 @@ clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
                !ftsi->isExplicitInstantiationOrSpecialization()) {
       return ftsi->getTemplate()->getBeginLoc();
     } else {
-      return clang::SourceLocation{};
+      return SourceLocation{};
     }
   } else if (const auto* rec =
                  llvm::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(
                      Decl)) {
     if (rec->isExplicitInstantiationOrSpecialization()) {
-      return clang::SourceLocation{};
+      return SourceLocation{};
     }
     auto from = rec->getInstantiatedFrom();
     if (from.isNull()) {
-      return clang::SourceLocation{};
+      return SourceLocation{};
     }
     if (const auto* partial =
             from.dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
@@ -1093,11 +1099,11 @@ clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
                  llvm::dyn_cast_or_null<clang::VarTemplateSpecializationDecl>(
                      Decl)) {
     if (var->isExplicitInstantiationOrSpecialization()) {
-      return clang::SourceLocation{};
+      return SourceLocation{};
     }
     auto from = var->getInstantiatedFrom();
     if (from.isNull()) {
-      return clang::SourceLocation{};
+      return SourceLocation{};
     }
     if (const auto* partial =
             from.dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
@@ -1107,7 +1113,7 @@ clang::SourceLocation GetImplicitlyInstantiatedTemplateLoc(
       return primary->getBeginLoc();
     }
   } else {
-    return clang::SourceLocation{};
+    return SourceLocation{};
   }
 }
 
@@ -1237,17 +1243,19 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
           };
           for (const auto* SubDecl : CR->decls()) {
             if (const auto* Ctor =
-                    dyn_cast_or_null<CXXConstructorDecl>(SubDecl)) {
+                    dyn_cast_or_null<clang::CXXConstructorDecl>(SubDecl)) {
               TryCtor(Ctor);
             } else if (const auto* Templ =
-                           dyn_cast_or_null<FunctionTemplateDecl>(SubDecl)) {
-              if (const auto* Ctor = dyn_cast_or_null<CXXConstructorDecl>(
-                      Templ->getTemplatedDecl())) {
+                           dyn_cast_or_null<clang::FunctionTemplateDecl>(
+                               SubDecl)) {
+              if (const auto* Ctor =
+                      dyn_cast_or_null<clang::CXXConstructorDecl>(
+                          Templ->getTemplatedDecl())) {
                 TryCtor(Ctor);
               }
               for (const auto* Spec : Templ->specializations()) {
                 if (const auto* Ctor =
-                        dyn_cast_or_null<CXXConstructorDecl>(Spec)) {
+                        dyn_cast_or_null<clang::CXXConstructorDecl>(Spec)) {
                   TryCtor(Ctor);
                 }
               }
@@ -1286,11 +1294,11 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
   absl::optional<GraphObserver::NodeId> Root = absl::nullopt;
   auto BaseType = E->getBaseType();
   if (BaseType.getTypePtrOrNull()) {
-    auto* Builtin = dyn_cast<BuiltinType>(BaseType.getTypePtr());
+    auto* Builtin = dyn_cast<clang::BuiltinType>(BaseType.getTypePtr());
     // The "Dependent" builtin type is not useful, so we'll keep this lookup
     // rootless. We could alternately invent a singleton type for the range of
     // the lhs expression.
-    if (!Builtin || Builtin->getKind() != BuiltinType::Dependent) {
+    if (!Builtin || Builtin->getKind() != clang::BuiltinType::Dependent) {
       Root = BuildNodeIdForType(BaseType);
     }
   }
@@ -1374,8 +1382,8 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
     // must do so manually.
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
-    clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
-    clang::SourceLocation RefLoc = E->getBeginLoc();
+    SourceLocation RPL = E->getParenOrBraceRange().getEnd();
+    SourceLocation RefLoc = E->getBeginLoc();
     if (TSI != nullptr) {
       if (const auto ETL =
               TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
@@ -1390,7 +1398,7 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
     bool IsImplicit = !RPL.isValid() && E->getNumArgs() > 0;
     VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
 
-    clang::SourceRange SR = E->getSourceRange();
+    SourceRange SR = E->getSourceRange();
     // If there are not arguments and no braces or parens, getEndLoc()
     // is the same as getLocation(), rather than the type.
     // TODO(shahms): Upstream this into CXXConstructExpr::getEndLoc.
@@ -1481,12 +1489,12 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E) {
       return true;
     }
     auto DtorName = Context.DeclarationNames.getCXXDestructorName(
-        CanQualType::CreateUnsafe(QTCan));
+        clang::CanQualType::CreateUnsafe(QTCan));
     DDId = RecordEdgesForDependentName(clang::NestedNameSpecifierLoc(),
                                        DtorName, E->getBeginLoc(), TyId);
   }
   if (DDId) {
-    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
+    SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1530,11 +1538,11 @@ bool IndexerASTVisitor::TraverseCXXTemporaryObjectExpr(
 
 bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr* E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
-  if (FunctionDecl* New = E->getOperatorNew()) {
+  if (clang::FunctionDecl* New = E->getOperatorNew()) {
     auto NewId = BuildNodeIdForRefToDecl(New);
-    clang::SourceLocation NewLoc = E->getBeginLoc();
+    SourceLocation NewLoc = E->getBeginLoc();
     if (NewLoc.isFileID()) {
-      clang::SourceRange NewRange = NormalizeRange(NewLoc);
+      SourceRange NewRange = NormalizeRange(NewLoc);
       if (auto RCC = RangeInCurrentContext(StmtId, NewRange)) {
         Observer.recordDeclUseLocation(RCC.value(), NewId,
                                        GraphObserver::Claimability::Unclaimable,
@@ -1562,7 +1570,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
     NNSLoc = E->getQualifierLoc();
   }
   auto DtorName = Context.DeclarationNames.getCXXDestructorName(
-      CanQualType::CreateUnsafe(DTCan));
+      clang::CanQualType::CreateUnsafe(DTCan));
   if (auto DDId = RecordEdgesForDependentName(NNSLoc, DtorName,
                                               E->getTildeLoc(), TyId)) {
     if (auto RCC =
@@ -1571,7 +1579,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
     }
-    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
+    SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1592,10 +1600,10 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     return true;
   }
   auto CtorName = Context.DeclarationNames.getCXXConstructorName(
-      CanQualType::CreateUnsafe(QTCan));
+      clang::CanQualType::CreateUnsafe(QTCan));
   if (auto LookupId = RecordEdgesForDependentName(
           clang::NestedNameSpecifierLoc(), CtorName, E->getBeginLoc(), TyId)) {
-    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
+    SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), LookupId.value());
@@ -1642,7 +1650,7 @@ bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
-  clang::SourceRange SR = NormalizeRange(E->getSourceRange());
+  SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto* Callee = E->getCalleeDecl()) {
@@ -1735,7 +1743,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     return Observer.recordTappNode(
         BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
   }
-  std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
+  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
   if (auto* FTSI = FD->getTemplateSpecializationInfo()) {
     if (FTSI->isExplicitSpecialization()) {
       // Refer to explicit specializations directly.
@@ -1747,7 +1755,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
     }
     Args = FTSI->TemplateArguments;
-    TNs.emplace_back(TemplateName(FTSI->getTemplate()),
+    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
                      FTSI->getPointOfInstantiation());
   } else if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
     ArgsAsWritten = DFTSI->getTemplateArgs();
@@ -1819,11 +1827,11 @@ IndexerASTVisitor::BuildNodeIdForRefToDeclContext(
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
   if (auto* DCDecl = llvm::dyn_cast<const clang::Decl>(DC)) {
-    if (llvm::isa<TranslationUnitDecl>(DCDecl)) {
+    if (llvm::isa<clang::TranslationUnitDecl>(DCDecl)) {
       return absl::nullopt;
     }
     if (options_.AbsNodes) {
-      if (llvm::isa<ClassTemplatePartialSpecializationDecl>(DCDecl)) {
+      if (llvm::isa<clang::ClassTemplatePartialSpecializationDecl>(DCDecl)) {
         return BuildNodeIdForDecl(DCDecl, 0);
       } else if (auto* CRD = dyn_cast<const clang::CXXRecordDecl>(DCDecl)) {
         if (const auto* CTD = CRD->getDescribedClassTemplate()) {
@@ -1842,7 +1850,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
     const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
-  if (const DeclContext* DC = Decl->getDeclContext()) {
+  if (const clang::DeclContext* DC = Decl->getDeclContext()) {
     if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {
         if (auto ContextId = BuildNodeIdForRefToDeclContext(DC)) {
@@ -2103,7 +2111,7 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   }
 
   // SourceRange covering the *syntactic* initializers.
-  clang::SourceRange ListRange =
+  SourceRange ListRange =
       NormalizeRange({(*SynILE->inits().begin())->getBeginLoc(),
                       (*SynILE->inits().rbegin())->getEndLoc()});
   if (!ListRange.isValid()) {
@@ -2118,7 +2126,7 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
     }
     // On rare occasions, the init Expr we get from clang is null.
     if (const clang::Expr* Init = *II++) {
-      clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
+      SourceRange InitRange = NormalizeRange(Init->getSourceRange());
       if (!(InitRange.isValid() && ListRange.fullyContains(InitRange))) {
         // When visiting the semantic form initializers which aren't explicitly
         // specified either have an invalid location (for uninitialized fields)
@@ -2343,8 +2351,8 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(
   return RecordTypeSpellingLocation(Resolved, Written.getSourceRange());
 }
 
-NodeSet IndexerASTVisitor::RecordTypeSpellingLocation(
-    const clang::Type* Type, clang::SourceRange Range) {
+NodeSet IndexerASTVisitor::RecordTypeSpellingLocation(const clang::Type* Type,
+                                                      SourceRange Range) {
   if (auto RCC = ExpandedRangeInCurrentContext(Range)) {
     if (auto Nodes = BuildNodeSetForType(Type)) {
       Observer.recordTypeSpellingLocation(
@@ -2358,12 +2366,12 @@ NodeSet IndexerASTVisitor::RecordTypeSpellingLocation(
 bool IndexerASTVisitor::TraverseDeclarationNameInfo(
     clang::DeclarationNameInfo NameInfo) {
   switch (NameInfo.getName().getNameKind()) {
-    case DeclarationName::CXXConversionFunctionName:
+    case clang::DeclarationName::CXXConversionFunctionName:
       // For ConversionFunctions this leads to duplicate edges as the return
       // value is visited both here and via TraverseFunctionProtoTypeLoc.
       return true;
-    case DeclarationName::CXXConstructorName:
-    case DeclarationName::CXXDestructorName:
+    case clang::DeclarationName::CXXConstructorName:
+    case clang::DeclarationName::CXXDestructorName:
       if (clang::TypeSourceInfo* TSI = NameInfo.getNamedTypeInfo()) {
         if (auto RCC = ExpandedRangeInCurrentContext(
                 TSI->getTypeLoc().getSourceRange())) {
@@ -2385,7 +2393,7 @@ bool IndexerASTVisitor::TraverseDeclarationNameInfo(
 // Use FoundDecl to get to template defs; use getDecl to get to template
 // instantiations.
 bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
-    const clang::Expr* Expr, const NamedDecl* const FoundDecl,
+    const clang::Expr* Expr, const clang::NamedDecl* const FoundDecl,
     SourceLocation SL, bool IsImplicit) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
@@ -2436,7 +2444,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
 }
 
 absl::optional<std::vector<GraphObserver::NodeId>>
-IndexerASTVisitor::BuildTemplateArgumentList(ArrayRef<TemplateArgument> Args) {
+IndexerASTVisitor::BuildTemplateArgumentList(
+    llvm::ArrayRef<clang::TemplateArgument> Args) {
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& Arg : Args) {
@@ -2451,7 +2460,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(ArrayRef<TemplateArgument> Args) {
 
 absl::optional<std::vector<GraphObserver::NodeId>>
 IndexerASTVisitor::BuildTemplateArgumentList(
-    ArrayRef<TemplateArgumentLoc> Args) {
+    llvm::ArrayRef<clang::TemplateArgumentLoc> Args) {
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& ArgLoc : Args) {
@@ -2468,7 +2477,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   if (SkipAliasedDecl(Decl)) {
     return true;
   }
-  if (isa<ParmVarDecl>(Decl)) {
+  if (isa<clang::ParmVarDecl>(Decl)) {
     // Ignore parameter types, those are added to the graph after processing
     // the parent function or member.
     return true;
@@ -2479,10 +2488,11 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
     return true;
   }
   auto Marks = MarkedSources.Generate(Decl);
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
@@ -2670,7 +2680,6 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
   // We first build the NameId and NodeId for the enumerator.
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
@@ -2688,7 +2697,6 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   if (Decl->isThisDeclarationADefinition() && Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
@@ -2766,7 +2774,7 @@ bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
   // based on the presence of TypeSourceInfo.
   // See RecursiveASTVisitor::TraverseClassTemplateSpecializationDecl for more
   // detail.
-  if (TypeSourceInfo* TSI = TD->getTypeAsWritten()) {
+  if (clang::TypeSourceInfo* TSI = TD->getTypeAsWritten()) {
     if (!TraverseTypeLoc(TSI->getTypeLoc())) {
       return false;
     }
@@ -2810,8 +2818,8 @@ bool IndexerASTVisitor::TraverseClassTemplatePartialSpecializationDecl(
 
 bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
     clang::VarTemplateSpecializationDecl* TD) {
-  if (TD->getTemplateSpecializationKind() == TSK_Undeclared ||
-      TD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation) {
+  if (TD->getTemplateSpecializationKind() == clang::TSK_Undeclared ||
+      TD->getTemplateSpecializationKind() == clang::TSK_ImplicitInstantiation) {
     // We should have hit implicit decls in the primary template.
     return true;
   } else {
@@ -2844,11 +2852,11 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl* TD) {
   if (TD == TD->getCanonicalDecl()) {
     for (auto* SD : TD->specializations()) {
       for (auto* RD : SD->redecls()) {
-        auto* VD = cast<VarTemplateSpecializationDecl>(RD);
+        auto* VD = clang::cast<clang::VarTemplateSpecializationDecl>(RD);
         switch (VD->getSpecializationKind()) {
           // Visit the implicit instantiations with the requested pattern.
-          case TSK_Undeclared:
-          case TSK_ImplicitInstantiation:
+          case clang::TSK_Undeclared:
+          case clang::TSK_ImplicitInstantiation:
             if (!ForceTraverseVarTemplateSpecializationDecl(VD)) {
               return false;
             }
@@ -2857,9 +2865,9 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl* TD) {
           // We don't need to do anything on an explicit instantiation
           // or explicit specialization because there will be an explicit
           // node for it elsewhere.
-          case TSK_ExplicitInstantiationDeclaration:
-          case TSK_ExplicitInstantiationDefinition:
-          case TSK_ExplicitSpecialization:
+          case clang::TSK_ExplicitInstantiationDeclaration:
+          case clang::TSK_ExplicitInstantiationDefinition:
+          case clang::TSK_ExplicitSpecialization:
             break;
         }
       }
@@ -2943,7 +2951,7 @@ bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
 }
 
 absl::optional<GraphObserver::Range>
-IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
+IndexerASTVisitor::ExplicitRangeInCurrentContext(const SourceRange& SR) {
   if (!SR.getBegin().isValid()) {
     return absl::nullopt;
   }
@@ -2956,23 +2964,21 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
 }
 
 absl::optional<GraphObserver::Range>
-IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
+IndexerASTVisitor::ExpandedRangeInCurrentContext(SourceRange SR) {
   if (!SR.isValid()) {
     return absl::nullopt;
   }
   return ExplicitRangeInCurrentContext(NormalizeRange(SR));
 }
 
-clang::SourceRange IndexerASTVisitor::NormalizeRange(
-    clang::SourceRange SR) const {
+SourceRange IndexerASTVisitor::NormalizeRange(SourceRange SR) const {
   return ClangRangeFinder(Observer.getSourceManager(),
                           Observer.getLangOptions())
       .NormalizeRange(SR);
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
-    const absl::optional<GraphObserver::NodeId>& Id,
-    const clang::SourceRange& SR) {
+    const absl::optional<GraphObserver::NodeId>& Id, const SourceRange& SR) {
   if (Id) {
     return GraphObserver::Range::Implicit(Id.value(), SR);
   }
@@ -2980,14 +2986,13 @@ absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
-    bool implicit, const GraphObserver::NodeId& Id,
-    const clang::SourceRange& SR) {
+    bool implicit, const GraphObserver::NodeId& Id, const SourceRange& SR) {
   return implicit ? GraphObserver::Range(Id)
                   : ExplicitRangeInCurrentContext(SR);
 }
 
 GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
-    const ObjCInterfaceDecl* IDecl, const ObjCTypeParamList* TPL,
+    const clang::ObjCInterfaceDecl* IDecl, const clang::ObjCTypeParamList* TPL,
     const GraphObserver::NodeId& BodyId) {
   GraphObserver::NodeId AbsId = BodyId;
   if (options_.AbsNodes) {
@@ -2996,7 +3001,7 @@ GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     Observer.recordChildOfEdge(BodyId, AbsId);
   }
 
-  for (const ObjCTypeParamDecl* TP : *TPL) {
+  for (const clang::ObjCTypeParamDecl* TP : *TPL) {
     GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(TP);
     // We record the range, name, absvar identity, and variance when we visit
     // the type param decl. Here, we only want to record the information that is
@@ -3021,7 +3026,8 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     Observer.recordAbsNode(DeclNode);
   }
   for (const auto* ND : *Decl->getTemplateParameters()) {
-    GraphObserver::NodeId ParamId(Observer.getDefaultClaimToken(), "");
+    GraphObserver::NodeId ParamId =
+        Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
     unsigned ParamIndex = 0;
     auto Marks = MarkedSources.Generate(ND);
     if (const auto* TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
@@ -3086,8 +3092,10 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
 
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* CTPSD =
           dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
@@ -3221,14 +3229,16 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   // definition is not, and a later use site uses the definition.
   (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
-  GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId InnerNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId OuterNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
   const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
   unsigned NumArgsAsWritten = 0;
   const clang::TemplateArgumentList* Args = nullptr;
-  std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
+  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
   bool TNsAreSpeculative = false;
   bool IsImplicit = false;
   SourceLocation TemplateKeywordLoc;
@@ -3262,7 +3272,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
     }
     Args = FTSI->TemplateArguments;
-    TNs.emplace_back(TemplateName(FTSI->getTemplate()),
+    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
                      FTSI->getPointOfInstantiation());
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
@@ -3360,7 +3370,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   Marks.set_name_range(NameRange);
   auto NameRangeInContext =
       RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange);
-  if (const auto* MF = dyn_cast<CXXMethodDecl>(Decl)) {
+  if (const auto* MF = dyn_cast<clang::CXXMethodDecl>(Decl)) {
     // Use the record name token as the definition site for implicit member
     // functions, including implicit constructors and destructors.
     if (MF->isImplicit()) {
@@ -3405,7 +3415,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     Observer.recordTypeEdge(InnerNode, FunctionType.value());
   }
 
-  if (const auto* MF = dyn_cast<CXXMethodDecl>(Decl)) {
+  if (const auto* MF = dyn_cast<clang::CXXMethodDecl>(Decl)) {
     // OO_Call, OO_Subscript, and OO_Equal must be member functions.
     // The dyn_cast to CXXMethodDecl above is therefore not dropping
     // (impossible) free function incarnations of these operators from
@@ -3420,7 +3430,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 ? BuildNodeIdForRefToDecl(*O)
                 : BuildNodeIdForDecl(*O));
       }
-      MapOverrideRoots(MF, [&](const CXXMethodDecl* R) {
+      MapOverrideRoots(MF, [&](const clang::CXXMethodDecl* R) {
         Observer.recordOverridesRootEdge(
             InnerNode,
             absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
@@ -3432,7 +3442,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
 
   AddChildOfEdgeToDeclContext(Decl, OuterNode);
   GraphObserver::FunctionSubkind Subkind = GraphObserver::FunctionSubkind::None;
-  if (const auto* CC = dyn_cast<CXXConstructorDecl>(Decl)) {
+  if (const auto* CC = dyn_cast<clang::CXXConstructorDecl>(Decl)) {
     Subkind = GraphObserver::FunctionSubkind::Constructor;
     size_t InitNumber = 0;
     for (const auto* Init : CC->inits()) {
@@ -3466,11 +3476,11 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         if (QT.getTypePtr()->isDependentType()) {
           if (auto TyId = BuildNodeIdForType(InitTy->getTypeLoc())) {
             auto DepName = Context.DeclarationNames.getCXXConstructorName(
-                CanQualType::CreateUnsafe(QT));
+                clang::CanQualType::CreateUnsafe(QT));
             if (auto LookupId = RecordEdgesForDependentName(
                     clang::NestedNameSpecifierLoc(), DepName,
                     Init->getSourceLocation(), TyId)) {
-              clang::SourceRange SR = NormalizeRange(Init->getSourceRange());
+              SourceRange SR = NormalizeRange(Init->getSourceRange());
               if (Init->isWritten()) {
                 if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
                   RecordCallEdges(RCC.value(), LookupId.value());
@@ -3480,8 +3490,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 // node that needs extra care.
                 auto InitIdent = LookupId.value().getRawIdentity() +
                                  std::to_string(InitNumber);
-                auto InitId = GraphObserver::NodeId(LookupId.value().getToken(),
-                                                    InitIdent);
+                auto InitId =
+                    Observer.MakeNodeId(LookupId.value().getToken(), InitIdent);
                 RecordCallEdges(GraphObserver::Range(InitId), LookupId.value());
               }
             }
@@ -3489,7 +3499,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         }
       }
     }
-  } else if (const auto* CD = dyn_cast<CXXDestructorDecl>(Decl)) {
+  } else if (const auto* CD = dyn_cast<clang::CXXDestructorDecl>(Decl)) {
     Subkind = GraphObserver::FunctionSubkind::Destructor;
   }
   if (!IsFunctionDefinition && Decl->getBuiltinID() == 0) {
@@ -3621,14 +3631,15 @@ bool IndexerASTVisitor::VisitTypeAliasDecl(const clang::TypeAliasDecl* Decl) {
 
 bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl* Decl) {
   if (Decl == Context.getBuiltinVaListDecl() ||
-      Decl == Context.getInt128Decl() || Decl == Context.getUInt128Decl()) {
+      Decl == Context.getInt128Decl() || Decl == Context.getUInt128Decl() ||
+      Decl == nullptr) {
     // Don't index __uint128_t, __builtin_va_list, __int128_t
     return true;
   }
   if (auto InnerNodeId = BuildNodeIdForTypedefNameDecl(Decl)) {
     GraphObserver::NodeId OuterNodeId = InnerNodeId.value();
     // If this is a template, we need to emit an abs node for it.
-    if (auto* TA = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+    if (auto* TA = dyn_cast_or_null<clang::TypeAliasDecl>(Decl)) {
       if (auto* TATD = TA->getDescribedAliasTemplate()) {
         OuterNodeId = RecordTemplate(TATD, InnerNodeId.value());
       }
@@ -3711,7 +3722,7 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream& Ostream,
   if (II && !II->getName().empty()) {
     Ostream << II->getName();
   } else {
-    if (isa<NamespaceDecl>(ND)) {
+    if (isa<clang::NamespaceDecl>(ND)) {
       // This is an anonymous namespace. We have two cases:
       // If there is any file that is not a textual include (.inc,
       //     or explicitly marked as such in a module) between the declaration
@@ -3723,10 +3734,10 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream& Ostream,
         Observer.AppendMainSourceFileIdentifierToStream(Ostream);
       }
       Ostream << "@#anon";
-    } else if (Name.getCXXOverloadedOperator() != OO_None) {
+    } else if (Name.getCXXOverloadedOperator() != clang::OO_None) {
       switch (Name.getCXXOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
-  case OO_##Name:                                                             \
+  case clang::OO_##Name:                                                      \
     Ostream << "OO#" << #Name;                                                \
     break;
 #include "clang/Basic/OperatorKinds.def"
@@ -3800,9 +3811,10 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     if (IP == nullptr) {
       // Make sure that we don't miss out on implicit nodes.
       if (Current.decl && Current.decl->isImplicit()) {
-        if (const NamedDecl* ND = dyn_cast<NamedDecl>(Current.decl)) {
+        if (const clang::NamedDecl* ND =
+                dyn_cast<clang::NamedDecl>(Current.decl)) {
           if (!AddNameToStream(Ostream, ND)) {
-            if (const DeclContext* DC = ND->getDeclContext()) {
+            if (const clang::DeclContext* DC = ND->getDeclContext()) {
               if (DC->isFunctionOrMethod()) {
                 // Heroically try to come up with a disambiguating identifier,
                 // even when the IndexedParentVector is empty. This can happen
@@ -3831,10 +3843,11 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
     if (MissingSeparator && Current.decl &&
-        isa<ClassTemplateDecl>(Current.decl)) {
+        isa<clang::ClassTemplateDecl>(Current.decl)) {
       continue;
     }
-    if (MissingSeparator && !dyn_cast_or_null<LinkageSpecDecl>(Current.decl)) {
+    if (MissingSeparator &&
+        !dyn_cast_or_null<clang::LinkageSpecDecl>(Current.decl)) {
       Ostream << ":";
     } else {
       MissingSeparator = true;
@@ -3843,11 +3856,13 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
       // TODO(zarko): check for other specializations and emit accordingly
       // Alternately, maybe it would be better to just always emit the hash?
       // At any rate, a hash cache might be a good idea.
-      if (const NamedDecl* ND = dyn_cast<NamedDecl>(Current.decl)) {
+      if (const clang::NamedDecl* ND =
+              dyn_cast<clang::NamedDecl>(Current.decl)) {
         if (!AddNameToStream(Ostream, ND)) {
           Ostream << IP->index;
         }
-      } else if (const auto* LSD = dyn_cast<LinkageSpecDecl>(Current.decl)) {
+      } else if (const auto* LSD =
+                     dyn_cast<clang::LinkageSpecDecl>(Current.decl)) {
         // Doing anything here breaks C headers that wrap extern "C" in
         // #ifdef __cplusplus.
       } else {
@@ -3867,7 +3882,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     const clang::Decl* Decl, unsigned Index) {
   GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  return GraphObserver::NodeId(
+  return Observer.MakeNodeId(
       BaseId.getToken(), BaseId.getRawIdentity() + "." + std::to_string(Index));
 }
 
@@ -3888,7 +3903,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt* Stmt) {
         Ostream << node << ".";
       }
     }
-    return GraphObserver::NodeId(DeclId.getToken(), NewIdent);
+    return Observer.MakeNodeId(DeclId.getToken(), NewIdent);
   }
   return absl::nullopt;
 }
@@ -3925,7 +3940,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
 
   // First, check to see if this thing is a builtin Decl. These things can
   // pick up weird declaration locations that aren't stable enough for us.
-  if (const auto* FD = dyn_cast<FunctionDecl>(Decl)) {
+  if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
       // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
       // additional definitions (like fread in bits/stdio2.h). These
@@ -3953,33 +3968,34 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
         }
       }
       Ostream << "#builtin";
-      GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
-                               Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(
+          Observer.getClaimTokenForBuiltin(), Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   }
 
-  if (const auto* BTD = dyn_cast<BuiltinTemplateDecl>(Decl)) {
+  if (const auto* BTD = dyn_cast<clang::BuiltinTemplateDecl>(Decl)) {
     Ostream << "#builtin";
-    GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(), Ostream.str());
+    GraphObserver::NodeId Id =
+        Observer.MakeNodeId(Observer.getClaimTokenForBuiltin(), Ostream.str());
     DeclToNodeId.insert({Decl, Id});
     return Id;
   }
 
-  const TypedefNameDecl* TND;
-  if ((TND = dyn_cast<TypedefNameDecl>(Decl)) &&
-      !isa<ObjCTypeParamDecl>(Decl)) {
+  const clang::TypedefNameDecl* TND;
+  if ((TND = dyn_cast<clang::TypedefNameDecl>(Decl)) &&
+      !isa<clang::ObjCTypeParamDecl>(Decl)) {
     // There's a special way to name type aliases but we want to handle type
     // parameters for Objective-C as "normal" named decls.
     if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
       DeclToNodeId.insert({Decl, TypedefNameId.value()});
       return TypedefNameId.value();
     }
-  } else if (const auto* NS = dyn_cast<NamespaceDecl>(Decl)) {
+  } else if (const auto* NS = dyn_cast<clang::NamespaceDecl>(Decl)) {
     // Namespaces are named according to their NameIDs.
     Ostream << "#namespace";
-    GraphObserver::NodeId Id(
+    GraphObserver::NodeId Id = Observer.MakeNodeId(
         NS->isAnonymousNamespace()
             ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
             : Observer.getNamespaceClaimToken(NS->getLocation()),
@@ -3991,7 +4007,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // Disambiguate nodes underneath template instances.
   for (const auto& Current : RootTraversal(getAllParents(), Decl)) {
     if (!Current.decl) continue;
-    if (const auto* TD = dyn_cast<TemplateDecl>(Current.decl)) {
+    if (const auto* TD = dyn_cast<clang::TemplateDecl>(Current.decl)) {
       // Disambiguate type abstraction IDs from abstracted type IDs.
       if (Current.decl != Decl) {
         Ostream << "#";
@@ -3999,7 +4015,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     }
     if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (const auto* CTSD =
-              dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
+              dyn_cast<clang::ClassTemplateSpecializationDecl>(Current.decl)) {
         // Inductively, we can break after the first implicit instantiation*
         // (since its NodeId will contain its parent's first implicit
         // instantiation and so on). We still want to include hashes of
@@ -4015,9 +4031,10 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
           Ostream << "#"
                   << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
         }
-      } else if (const auto* FD = dyn_cast<FunctionDecl>(Current.decl)) {
+      } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Current.decl)) {
         Ostream << "#"
-                << HashToString(Hash(QualType(FD->getFunctionType(), 0)));
+                << HashToString(
+                       Hash(clang::QualType(FD->getFunctionType(), 0)));
         if (const auto* TemplateArgs = FD->getTemplateSpecializationArgs()) {
           if (Current.decl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(FD);
@@ -4027,13 +4044,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
           }
         } else if (const auto* MSI = FD->getMemberSpecializationInfo()) {
           if (const auto* DC =
-                  dyn_cast<const class Decl>(FD->getDeclContext())) {
+                  dyn_cast<const clang::Decl>(FD->getDeclContext())) {
             Ostream << "#" << BuildNodeIdForDecl(DC);
             break;
           }
         }
       } else if (const auto* VD =
-                     dyn_cast<VarTemplateSpecializationDecl>(Current.decl)) {
+                     dyn_cast<clang::VarTemplateSpecializationDecl>(
+                         Current.decl)) {
         if (VD->isImplicit()) {
           if (Current.decl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(VD);
@@ -4043,10 +4061,10 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
                     << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
           }
         }
-      } else if (const auto* VD = dyn_cast<VarDecl>(Current.decl)) {
+      } else if (const auto* VD = dyn_cast<clang::VarDecl>(Current.decl)) {
         if (const auto* MSI = VD->getMemberSpecializationInfo()) {
           if (const auto* DC =
-                  dyn_cast<const class Decl>(VD->getDeclContext())) {
+                  dyn_cast<const clang::Decl>(VD->getDeclContext())) {
             Ostream << "#" << BuildNodeIdForDecl(DC);
             break;
           }
@@ -4060,14 +4078,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   if (const auto* Rec = dyn_cast<clang::RecordDecl>(Decl)) {
     if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
       Ostream << "#" << HashToString(Hash(Rec));
-      GraphObserver::NodeId Id(Token, Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(Hash(Enum));
-      GraphObserver::NodeId Id(Token, Ostream.str());
+      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
       DeclToNodeId.insert({Decl, Id});
       return Id;
     }
@@ -4075,7 +4093,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     if (const auto* E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(Hash(E));
-        GraphObserver::NodeId Id(Token, Ostream.str());
+        GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
         DeclToNodeId.insert({Decl, Id});
         return Id;
       }
@@ -4102,12 +4120,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       Ostream << "#D";
     }
   }
-  clang::SourceRange DeclRange;
-  if (const auto* named_decl = dyn_cast<NamedDecl>(Decl)) {
+  SourceRange DeclRange;
+  if (const auto* named_decl = dyn_cast<clang::NamedDecl>(Decl)) {
     DeclRange = RangeForNameOfDeclaration(named_decl);
   }
   if (!DeclRange.isValid()) {
-    DeclRange = clang::SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
+    DeclRange = SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
   }
   Ostream << "@";
   if (DeclRange.getBegin().isValid()) {
@@ -4117,12 +4135,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   } else {
     Ostream << "invalid";
   }
-  GraphObserver::NodeId Id(Token, Ostream.str());
+  GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
   DeclToNodeId.insert({Decl, Id});
   return Id;
 }
 
-bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
+bool IndexerASTVisitor::IsDefinition(const clang::FunctionDecl* FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
 }
 
@@ -4134,15 +4152,17 @@ GraphObserver::NodeId IndexerASTVisitor::ApplyBuiltinTypeConstructor(
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
+  using ::clang::TemplateName;
   // TODO(zarko): Do we need to canonicalize `Name`?
   // Maybe with Context.getCanonicalTemplateName()?
   switch (Name.getKind()) {
     case TemplateName::Template: {
-      const TemplateDecl* TD = Name.getAsTemplateDecl();
-      if (const auto* TTPD = dyn_cast<TemplateTemplateParmDecl>(TD)) {
+      const clang::TemplateDecl* TD = Name.getAsTemplateDecl();
+      if (const auto* TTPD = dyn_cast<clang::TemplateTemplateParmDecl>(TD)) {
         return BuildNodeIdForDecl(TTPD);
-      } else if (const NamedDecl* UnderlyingDecl = TD->getTemplatedDecl()) {
-        if (const auto* TD = dyn_cast<TypeDecl>(UnderlyingDecl)) {
+      } else if (const clang::NamedDecl* UnderlyingDecl =
+                     TD->getTemplatedDecl()) {
+        if (const auto* TD = dyn_cast<clang::TypeDecl>(UnderlyingDecl)) {
           // TODO(zarko): Under which circumstances is this nullptr?
           // Should we treat this as a type here or as a decl?
           // We've already made the decision elsewhere to link to class
@@ -4150,8 +4170,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
           // BuildNodeIdForDecl() all the time makes sense. We aren't even
           // emitting ranges.
           if (const auto* TDType = TD->getTypeForDecl()) {
-            return BuildNodeIdForType(QualType(TDType, 0));
-          } else if (const auto* TAlias = dyn_cast<TypeAliasDecl>(TD)) {
+            return BuildNodeIdForType(clang::QualType(TDType, 0));
+          } else if (const auto* TAlias = dyn_cast<clang::TypeAliasDecl>(TD)) {
             // The names for type alias types are the same for type alias nodes.
             return BuildNodeIdForTypedefNameDecl(TAlias);
           } else {
@@ -4159,13 +4179,14 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
                 << "Unknown case in BuildNodeIdForTemplateName";
             return absl::nullopt;
           }
-        } else if (const auto* FD = dyn_cast<FunctionDecl>(UnderlyingDecl)) {
+        } else if (const auto* FD =
+                       dyn_cast<clang::FunctionDecl>(UnderlyingDecl)) {
           // Direct references to function templates to the outer function
           // template shell.
           const clang::NamedDecl* decl = FD;
           if (options_.AbsNodes) decl = Name.getAsTemplateDecl();
           return BuildNodeIdForDecl(decl);
-        } else if (const auto* VD = dyn_cast<VarDecl>(UnderlyingDecl)) {
+        } else if (const auto* VD = dyn_cast<clang::VarDecl>(UnderlyingDecl)) {
           // Direct references to variable templates to the appropriate
           // template decl (may be a partial specialization or the
           // primary template).
@@ -4175,7 +4196,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
         } else {
           LOG(FATAL) << "Unexpected UnderlyingDecl";
         }
-      } else if (const auto* BTD = dyn_cast<BuiltinTemplateDecl>(TD)) {
+      } else if (const auto* BTD = dyn_cast<clang::BuiltinTemplateDecl>(TD)) {
         return BuildNodeIdForDecl(BTD);
       } else {
         LOG(FATAL) << "BuildNodeIdForTemplateName can't identify TemplateDecl";
@@ -4217,9 +4238,9 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
     return Base::TraverseNestedNameSpecifierLoc(NNS);
   }
   switch (NNS.getNestedNameSpecifier()->getKind()) {
-    case NestedNameSpecifier::TypeSpec:
+    case clang::NestedNameSpecifier::TypeSpec:
       break;  // This is handled by VisitDependentNameTypeLoc.
-    case NestedNameSpecifier::Identifier: {
+    case clang::NestedNameSpecifier::Identifier: {
       auto DId = BuildNodeIdForDependentIdentifier(
           NNS.getPrefix().getNestedNameSpecifier(),
           NNS.getNestedNameSpecifier()->getAsIdentifier());
@@ -4265,7 +4286,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentName(
   } else {
     Ostream << "(invalid)";
   }
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  return Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4279,7 +4300,7 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
   for (; NNSLoc; NNSLoc = NNSLoc.getPrefix()) {
     const clang::NestedNameSpecifier* NNS = NNSLoc.getNestedNameSpecifier();
     switch (NNS->getKind()) {
-      case NestedNameSpecifier::Identifier:
+      case clang::NestedNameSpecifier::Identifier:
         // Hashcons the identifiers.
         if (auto Subtree = RecordParamEdgesForDependentName(
                 BuildNodeIdForDependentIdentifier(NNS->getPrefix(),
@@ -4293,7 +4314,7 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
         }
         CHECK(options_.IgnoreUnimplemented) << "NNS::Identifier";
         return absl::nullopt;
-      case NestedNameSpecifier::Namespace:
+      case clang::NestedNameSpecifier::Namespace:
         // TODO(zarko): Emit some representation to back this node ID.
       default:
         if (auto SubId = BuildNodeIdForNestedNameSpecifierLoc(NNSLoc)) {
@@ -4328,6 +4349,8 @@ IndexerASTVisitor::BuildNodeIdForNestedNameSpecifierLoc(
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForNestedNameSpecifier(
     const clang::NestedNameSpecifier* NNS) {
+  using ::clang::NestedNameSpecifier;
+
   if (!NNS) {
     return absl::nullopt;
   }
@@ -4362,7 +4385,7 @@ IndexerASTVisitor::BuildNodeIdForNestedNameSpecifier(
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::RecordEdgesForDependentName(
     const clang::NestedNameSpecifierLoc& NNSLoc,
-    const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
+    const clang::DeclarationName& Id, const SourceLocation IdLoc,
     const absl::optional<GraphObserver::NodeId>& Root) {
   if (!options_.Verbosity) {
     return absl::nullopt;
@@ -4380,7 +4403,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);
   Ostream << Id << "#sta";
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  return Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4420,7 +4443,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     IsBindingSite = true;
   }
   auto ResultId =
-      GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
   if (ER == EmitRanges::Yes && RCC) {
     if (IsBindingSite) {
       Observer.recordDefinitionBindingRange(RCC.value(), ResultId);
@@ -4439,6 +4462,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     const clang::TemplateArgument& Arg) {
   // TODO(zarko): Do we need to canonicalize `Arg`?
   // Maybe with Context.getCanonicalTemplateArgument()?
+  using ::clang::TemplateArgument;
   switch (Arg.getKind()) {
     case TemplateArgument::Null:
       return BuildNodeIdForSpecialTemplateArgument("null");
@@ -4501,8 +4525,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForBuiltin(
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForEnum(const clang::EnumType& T) {
-  EnumDecl* Decl = T.getDecl();
-  if (EnumDecl* Defn = Decl->getDefinition()) {
+  clang::EnumDecl* Decl = T.getDecl();
+  if (clang::EnumDecl* Defn = Decl->getDefinition()) {
     return {BuildNodeIdForDecl(Defn), GraphObserver::Claimability::Unclaimable};
   }
   // If there is no visible definition, Id will be a tnominal node
@@ -4513,8 +4537,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(const clang::EnumType& T) {
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
-  RecordDecl* Decl = CHECK_NOTNULL(T.getDecl());
-  if (const auto* Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
+  clang::RecordDecl* Decl = CHECK_NOTNULL(T.getDecl());
+  if (const auto* Spec =
+          dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Simplify building template argument lists.
     const auto& TAL = Spec->getTemplateArgs();
     std::vector<GraphObserver::NodeId> TemplateArgs;
@@ -4788,7 +4813,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
 NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
     const clang::ObjCObjectType& T) {
   if (auto BaseId = BuildNodeIdForObjCProtocols(T)) {
-    if (T.getTypeArgsAsWritten().size() == 0) {
+    if (T.getTypeArgsAsWritten().empty()) {
       return *std::move(BaseId);
     }
     std::vector<NodeId> GenericArgIds;
@@ -4852,9 +4877,9 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
     const clang::RecordDecl* Decl) {
-  if (const RecordDecl* Defn = Decl->getDefinition()) {
+  if (const clang::RecordDecl* Defn = Decl->getDefinition()) {
     // Special-case linking to a defn instead of using a tnominal.
-    if (const auto* RD = dyn_cast<CXXRecordDecl>(Defn)) {
+    if (const auto* RD = dyn_cast<clang::CXXRecordDecl>(Defn)) {
       if (const auto* CTD = RD->getDescribedClassTemplate()) {
         // Link to the template binder, not the internal class.
         return {BuildNodeIdForDecl(CTD), Claimability::Unclaimable};
@@ -4892,7 +4917,7 @@ IndexerASTVisitor::FindTemplateTypeParmTypeDecl(
              "TypeContext";
   if (T.getDepth() < Job->TypeContext.size() &&
       T.getIndex() < Job->TypeContext[T.getDepth()]->size()) {
-    return cast<clang::TemplateTypeParmDecl>(
+    return clang::cast<clang::TemplateTypeParmDecl>(
         Job->TypeContext[T.getDepth()]->getParam(T.getIndex()));
   }
   VLOG(1) << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
@@ -4974,7 +4999,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
 
 #define DELEGATE_TYPE(t) \
   case clang::Type::t:   \
-    return BuildNodeSetFor##t(clang::cast<t##Type>(T));
+    return BuildNodeSetFor##t(clang::cast<clang::t##Type>(T));
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
   switch (T.getTypeClass()) {
@@ -5083,14 +5108,15 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
 // Base case where we don't have a separate BaseType to contend with
 // (BaseType is just an `id` node).
 std::vector<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdsForObjCProtocols(const ObjCObjectType& T) {
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(
+    const clang::ObjCObjectType& T) {
   // Use a multimap since it is sorted by key and we want our nodes sorted by
   // their (uncompressed) name. We want the items sorted by the original class
   // name because the user should be able to write down a union type
   // for the verifier and they can only do that if they know the order in
   // which the types will be passed as parameters.
   std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  for (ObjCProtocolDecl* P : T.getProtocols()) {
+  for (clang::ObjCProtocolDecl* P : T.getProtocols()) {
     ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
   }
   std::vector<GraphObserver::NodeId> ProtocolIds;
@@ -5102,8 +5128,8 @@ IndexerASTVisitor::BuildNodeIdsForObjCProtocols(const ObjCObjectType& T) {
 }
 
 std::vector<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdsForObjCProtocols(GraphObserver::NodeId BaseType,
-                                                const ObjCObjectType& T) {
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(
+    GraphObserver::NodeId BaseType, const clang::ObjCObjectType& T) {
   auto ProtocolIds = BuildNodeIdsForObjCProtocols(T);
   ProtocolIds.insert(ProtocolIds.begin(), BaseType);
   return ProtocolIds;
@@ -5153,8 +5179,8 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   if (const auto OrigClass = clang::Lexer::findNextToken(
           AliasRange.getEnd(), *Observer.getSourceManager(),
           *Observer.getLangOptions())) {
-    if (const auto& ERCC = ExplicitRangeInCurrentContext(clang::SourceRange(
-            OrigClass->getLocation(), OrigClass->getEndLoc()))) {
+    if (const auto& ERCC = ExplicitRangeInCurrentContext(
+            SourceRange(OrigClass->getLocation(), OrigClass->getEndLoc()))) {
       const auto& ID = BuildNodeIdForDecl(Decl->getClassInterface());
       Observer.recordDeclUseLocation(ERCC.value(), ID,
                                      GraphObserver::Claimability::Claimable,
@@ -5376,8 +5402,10 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId BodyDeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode =
+      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
 
   // If we have type arguments, treat this as a generic type and indirect
   // through an abs node.
@@ -5455,13 +5483,14 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
 // This method is not inlined because it is important that we do the same
 // thing for category declarations and category implementations.
 void IndexerASTVisitor::ConnectCategoryToBaseClass(
-    const GraphObserver::NodeId& DeclNode, const ObjCInterfaceDecl* IFace) {
+    const GraphObserver::NodeId& DeclNode,
+    const clang::ObjCInterfaceDecl* IFace) {
   auto ClassTypeId = BuildNodeIdForDecl(IFace);
   Observer.recordCategoryExtendsEdge(DeclNode, ClassTypeId);
 }
 
 void IndexerASTVisitor::RecordCompletesForRedecls(
-    const Decl* Decl, const SourceRange& NameRange,
+    const clang::Decl* Decl, const SourceRange& NameRange,
     const GraphObserver::NodeId& DeclNode) {
   // Don't draw completion edges if this is a forward declared class in
   // Objective-C because forward declarations don't complete anything.
@@ -5537,7 +5566,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   }
 
   // Record overrides edges
-  SmallVector<const ObjCMethodDecl*, 4> overrides;
+  llvm::SmallVector<const clang::ObjCMethodDecl*, 4> overrides;
   Decl->getOverriddenMethods(overrides);
   for (const auto& O : overrides) {
     Observer.recordOverridesEdge(
@@ -5546,7 +5575,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
                   : BuildNodeIdForDecl(O));
   }
   if (!overrides.empty()) {
-    MapOverrideRoots(Decl, [&](const ObjCMethodDecl* R) {
+    MapOverrideRoots(Decl, [&](const clang::ObjCMethodDecl* R) {
       Observer.recordOverridesRootEdge(
           Node, absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
                     ? BuildNodeIdForRefToDecl(R)
@@ -5581,11 +5610,11 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
     //    definition is a child of ObjCImplementationDecl. This occurs in an
     //    extension.
     if (auto CategoryDecl =
-            dyn_cast<ObjCCategoryDecl>(Decl->getDeclContext())) {
+            dyn_cast<clang::ObjCCategoryDecl>(Decl->getDeclContext())) {
       if (CategoryDecl->IsClassExtension() &&
           CategoryDecl->getClassInterface() != nullptr &&
           CategoryDecl->getClassInterface()->getImplementation() != nullptr) {
-        ObjCImplementationDecl* ClassImpl =
+        clang::ObjCImplementationDecl* ClassImpl =
             CategoryDecl->getClassInterface()->getImplementation();
         if (auto MethodImpl = ClassImpl->getMethod(Decl->getSelector(),
                                                    Decl->isInstanceMethod())) {
@@ -5661,11 +5690,11 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
 }
 
 // TODO(salguarnieri) Do we need to record a use for the parameter type?
-void IndexerASTVisitor::ConnectParam(const Decl* Decl,
+void IndexerASTVisitor::ConnectParam(const clang::Decl* Decl,
                                      const GraphObserver::NodeId& FuncNode,
                                      bool IsFunctionDefinition,
                                      const unsigned int ParamNumber,
-                                     const ParmVarDecl* Param,
+                                     const clang::ParmVarDecl* Param,
                                      bool DeclIsImplicit) {
   auto Marks = MarkedSources.Generate(Param);
   GraphObserver::NodeId VarNodeId(BuildNodeIdForDecl(Param));
@@ -5747,7 +5776,7 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
                                        GraphObserver::Claimability::Unclaimable,
                                        IsImplicit(RCC.value()));
       } else {
-        // TODO Record multiple ranges, one for each selector.
+        // TODO(salguarnieri): Record multiple ranges, one for each selector.
         // For now, just record the range for the first selector. This should
         // make it easier for frontends to make use of this data.
         const SourceLocation& Loc = Expr->getSelectorLoc(0);
@@ -5765,14 +5794,14 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
   return true;
 }
 
-const ObjCMethodDecl* IndexerASTVisitor::FindMethodDefn(
-    const ObjCMethodDecl* MD, const ObjCInterfaceDecl* I) {
+const clang::ObjCMethodDecl* IndexerASTVisitor::FindMethodDefn(
+    const clang::ObjCMethodDecl* MD, const clang::ObjCInterfaceDecl* I) {
   if (MD == nullptr || I == nullptr || MD->isThisDeclarationADefinition()) {
     return MD;
   }
   // If we can, look in the implementation, otherwise we look in the
   // interface.
-  const ObjCContainerDecl* CD = I->getImplementation();
+  const clang::ObjCContainerDecl* CD = I->getImplementation();
   if (CD == nullptr) {
     CD = I;
   }
@@ -5786,8 +5815,8 @@ const ObjCMethodDecl* IndexerASTVisitor::FindMethodDefn(
 bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
     const clang::ObjCPropertyRefExpr* Expr) {
   // Both implicit and explicit properties will provide a backing method decl.
-  ObjCMethodDecl* MD = nullptr;
-  ObjCPropertyDecl* PD = nullptr;
+  clang::ObjCMethodDecl* MD = nullptr;
+  clang::ObjCPropertyDecl* PD = nullptr;
   if (Expr->isImplicitProperty()) {
     // TODO(salguarnieri) Create test cases for implicit properties.
     MD = Expr->isMessagingGetter() ? Expr->getImplicitPropertyGetter()

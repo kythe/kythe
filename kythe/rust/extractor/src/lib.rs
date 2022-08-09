@@ -65,7 +65,7 @@ impl CallbackShim {
 impl Callbacks for CallbackShim {
     // Always enable save_analysis generation
     fn config(&mut self, config: &mut interface::Config) {
-        config.opts.debugging_opts.save_analysis = true;
+        config.opts.unstable_opts.save_analysis = true;
     }
 
     fn after_analysis<'tcx>(

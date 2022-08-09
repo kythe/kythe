@@ -281,7 +281,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
   if (!build_config_.empty()) {
     absl::StrAppend(out_name.mutable_signature(), "%", build_config_);
   }
-  out_name.set_signature(CompressString(out_name.signature()));
+  out_name.set_signature(CompressAnchorSignature(out_name.signature()));
   return out_name;
 }
 
@@ -589,7 +589,7 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
   SourceLocation file_start =
       SourceManager->getLocForStartOfFile(SourceManager->getFileID(begin));
   const auto* token = getClaimTokenForLocation(file_start);
-  NodeId file_id(token, "#init");
+  NodeId file_id = MakeNodeId(token, "#init");
   if (recorded_inits_.insert(token).second) {
     MarkedSource file_source;
     file_source.set_pre_text(token->vname().path());
@@ -725,8 +725,8 @@ void KytheGraphObserver::recordOverridesRootEdge(const NodeId& overrider,
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
     const NameId& alias_name, const NodeId& aliased_type) const {
-  return NodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
-                                  aliased_type.ToClaimedString() + ")");
+  return MakeNodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
+                                      aliased_type.ToClaimedString() + ")");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
@@ -760,7 +760,7 @@ void KytheGraphObserver::recordDocumentationText(
   }
   // Force hashing because the serving backend gets upset if certain
   // characters appear in VName fields.
-  NodeId doc_id(node.getToken(), CompressString(signature, true));
+  NodeId doc_id = MakeNodeId(node.getToken(), ForceEncodeString(signature));
   VNameRef doc_vname(VNameRefFromNodeId(doc_id));
   if (written_docs_.insert(doc_id.ToClaimedString()).second) {
     recorder_->AddProperty(doc_vname, NodeKindID::kDoc);
@@ -822,7 +822,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
   // Appending #t to a name produces the VName signature of the nominal
   // type node referring to that name. For example, the VName for a
   // forward-declared class type will look like "C#c#t".
-  return NodeId(&type_token_, name_id.ToString() + "#t");
+  return MakeNodeId(&type_token_, name_id.ToString() + "#t");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
@@ -843,7 +843,7 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTsigmaNode(
     absl::Span<const NodeId> params) const {
-  return GraphObserver::NodeId(
+  return MakeNodeId(
       &type_token_,
       absl::StrCat("#sigma(",
                    absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
@@ -872,7 +872,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
   //   foo (bar baz)
   // We'll turn it into a C-style function application:
   //   foo(bar,baz) || foo(bar(baz))
-  return GraphObserver::NodeId(
+  return MakeNodeId(
       &type_token_,
       absl::StrCat(tycon_id.ToClaimedString(), "(",
                    absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
@@ -1365,7 +1365,7 @@ void KytheGraphObserver::popFile() {
 void KytheGraphObserver::iterateOverClaimedFiles(
     std::function<bool(clang::FileID, const NodeId&)> iter) const {
   for (const auto& file : claimed_file_specific_tokens_) {
-    if (!iter(file.first, NodeId(&file.second, ""))) {
+    if (!iter(file.first, MakeNodeId(&file.second, ""))) {
       return;
     }
   }

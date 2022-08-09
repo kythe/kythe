@@ -7,10 +7,10 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     edition = "2021",
     deps = [
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:clap",
         "//third_party/bazel:extra_actions_base_rust_proto",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:protobuf",
     ],
 )
 
