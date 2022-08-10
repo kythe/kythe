@@ -40,7 +40,6 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.util.JsonUtil;
 import java.io.BufferedOutputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -53,12 +52,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Binary to run Kythe's Java indexer over one of more .kzip files, emitting entries to a
- * file or STDOUT.
+ * Binary to run Kythe's Java indexer over one of more .kzip files, emitting entries to a file or
+ * STDOUT.
  */
 public class JavaIndexer {
   private JavaIndexer() {}

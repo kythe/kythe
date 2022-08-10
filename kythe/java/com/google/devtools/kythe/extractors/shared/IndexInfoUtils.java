@@ -16,10 +16,7 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
@@ -32,13 +29,8 @@ import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -46,8 +38,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /** Utilities to read and write compilation index information in .kzip files. */
 public class IndexInfoUtils {
