@@ -72,7 +72,7 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file. Parameters to the extraction logic are passed by environment variables (see
+   * a .kzip file. Parameters to the extraction logic are passed by environment variables (see
    * class comment).
    */
   public void process(String[] args) {

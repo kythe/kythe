@@ -49,39 +49,11 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-/** Utilities to read and write compilation index information in .kindex files. */
+/** Utilities to read and write compilation index information in .kzip files. */
 public class IndexInfoUtils {
   private IndexInfoUtils() {}
 
-  public static final String KINDEX_FILE_EXT = ".kindex";
   public static final String KZIP_FILE_EXT = ".kzip";
-
-  public static CompilationDescription readKindexInfoFromFile(String indexInfoFilename)
-      throws IOException {
-    checkArgument(!Strings.isNullOrEmpty(indexInfoFilename), "indexInfoFilename");
-
-    try (InputStream indexInfoInputStream =
-        new GZIPInputStream(new FileInputStream(indexInfoFilename))) {
-      return readKindexInfoFromStream(indexInfoInputStream);
-    }
-  }
-
-  public static CompilationDescription readKindexInfoFromStream(InputStream inputStream)
-      throws IOException {
-    checkNotNull(inputStream, "inputStream");
-
-    // We do not use parseDelimitedFrom but use CodedInputStream manually,
-    // as it allows us to control the size limit on each individual protobuf message read.
-    CodedInputStream codedStream = CodedInputStream.newInstance(inputStream);
-    codedStream.setSizeLimit(Integer.MAX_VALUE);
-
-    CompilationUnit compilationUnit = CompilationUnit.parseFrom(codedStream.readBytes());
-    List<FileData> fileContents = new ArrayList<>();
-    while (!codedStream.isAtEnd()) {
-      fileContents.add(FileData.parseFrom(codedStream.readBytes()));
-    }
-    return new CompilationDescription(compilationUnit, fileContents);
-  }
 
   public static Collection<CompilationDescription> readKZip(String path)
       throws IOException, KZipException {
@@ -111,22 +83,6 @@ public class IndexInfoUtils {
     }
 
     return new CompilationDescription(unit, fileContents);
-  }
-
-  public static void writeKindexInfoToStream(
-      CompilationDescription description, OutputStream stream) throws IOException {
-    try (OutputStream indexOutputStream = new GZIPOutputStream(stream)) {
-      description.getCompilationUnit().writeDelimitedTo(indexOutputStream);
-      for (FileData fileContent : description.getFileContents()) {
-        fileContent.writeDelimitedTo(indexOutputStream);
-      }
-    }
-  }
-
-  public static void writeKindexToFile(CompilationDescription description, String path)
-      throws IOException {
-    Paths.get(path).getParent().toFile().mkdirs();
-    writeKindexInfoToStream(description, new FileOutputStream(path));
   }
 
   public static void writeKzipToFile(CompilationDescription description, String path)

@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Binary to run Kythe's Java indexer over one of more .kzip/.kindex files, emitting entries to a
+ * Binary to run Kythe's Java indexer over one of more .kzip files, emitting entries to a
  * file or STDOUT.
  */
 public class JavaIndexer {
@@ -103,41 +103,26 @@ public class JavaIndexer {
 
       // java_indexer compilation-file+
       for (String compilationPath : config.getCompilation()) {
-        if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
-          // java_indexer kzip-file
-          boolean foundCompilation = false;
-          try {
-            KZip.Reader reader = new KZipReader(new File(compilationPath));
-            for (IndexedCompilation indexedCompilation : reader.scan()) {
-              foundCompilation = true;
-              CompilationDescription desc =
-                  IndexInfoUtils.indexedCompilationToCompilationDescription(
-                      indexedCompilation, reader);
-              analyzeCompilation(config, plugins, statistics, desc, emitter);
-            }
-          } catch (KZipException e) {
-            throw new IllegalArgumentException("Unable to read kzip", e);
-          }
-          if (!config.getIgnoreEmptyKZip() && !foundCompilation) {
-            throw new IllegalArgumentException(
-                "given empty .kzip file \"" + compilationPath + "\"; try --ignore_empty_kzip");
-          }
-        } else {
-          // java_indexer kindex-file
-          logger.atWarning().atMostEvery(1, TimeUnit.DAYS).log(
-              ".kindex files are deprecated; "
-                  + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
-          try {
-            CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
+        if (!compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+          throw new IllegalArgumentException("Expected file to have .kzip extension");
+        }
+        // java_indexer kzip-file
+        boolean foundCompilation = false;
+        try {
+          KZip.Reader reader = new KZipReader(new File(compilationPath));
+          for (IndexedCompilation indexedCompilation : reader.scan()) {
+            foundCompilation = true;
+            CompilationDescription desc =
+                IndexInfoUtils.indexedCompilationToCompilationDescription(
+                    indexedCompilation, reader);
             analyzeCompilation(config, plugins, statistics, desc, emitter);
-          } catch (EOFException e) {
-            if (config.getIgnoreEmptyKIndex()) {
-              return;
-            }
-            throw new IllegalArgumentException(
-                "given empty .kindex file \"" + compilationPath + "\"; try --ignore_empty_kindex",
-                e);
           }
+        } catch (KZipException e) {
+          throw new IllegalArgumentException("Unable to read kzip", e);
+        }
+        if (!config.getIgnoreEmptyKZip() && !foundCompilation) {
+          throw new IllegalArgumentException(
+              "given empty .kzip file \"" + compilationPath + "\"; try --ignore_empty_kzip");
         }
       }
     }
@@ -205,11 +190,6 @@ public class JavaIndexer {
     private boolean printStatistics;
 
     @Parameter(
-        names = "--ignore_empty_kindex",
-        description = "Ignore empty .kindex files; exit successfully with no output")
-    private boolean ignoreEmptyKIndex;
-
-    @Parameter(
         names = "--ignore_empty_kzip",
         description = "Ignore empty .kzip files; exit successfully with no output")
     private boolean ignoreEmptyKZip;
@@ -233,10 +213,6 @@ public class JavaIndexer {
 
     public final boolean getPrintStatistics() {
       return printStatistics;
-    }
-
-    public final boolean getIgnoreEmptyKIndex() {
-      return ignoreEmptyKIndex;
     }
 
     public final boolean getIgnoreEmptyKZip() {
