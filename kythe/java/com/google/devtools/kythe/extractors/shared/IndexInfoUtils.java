@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
