@@ -98,10 +98,9 @@ public class BazelJvmExtractor {
       return;
     }
 
-    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
-      IndexInfoUtils.writeKzipToFile(indexInfo, outputPath);
-    } else {
-      IndexInfoUtils.writeKindexToFile(indexInfo, outputPath);
+    if (!outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      throw new IllegalArgumentException("Expected output file to have .kzip extension");
     }
+    IndexInfoUtils.writeKzipToFile(indexInfo, outputPath);
   }
 }
