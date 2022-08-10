@@ -65,13 +65,6 @@ public class JvmGraph {
   }
 
   /** Returns the {@link VName} corresponding to the given method type. */
-  @Deprecated
-  public static VName getMethodVName(
-      Type.ReferenceType parentClass, String name, Type.MethodType methodType) {
-    return getMethodVName(CorpusPath.EMPTY, parentClass, name, methodType);
-  }
-
-  /** Returns the {@link VName} corresponding to the given method type. */
   public static VName getMethodVName(
       CorpusPath corpusPath,
       Type.ReferenceType parentClass,
