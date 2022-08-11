@@ -206,7 +206,7 @@ bool IndexerContext::HasIndexArguments() {
 }
 
 void IndexerContext::LoadDataFromKZip(const std::string& file_or_cu,
-                                       const CompilationVisitCallback& visit) {
+                                      const CompilationVisitCallback& visit) {
   std::string name(strip_silent_input_prefix(file_or_cu));
   const bool silent = !name.empty();
   if (name.empty()) {

@@ -97,7 +97,7 @@ class IndexerContext {
   /// compilation unit hash.
   /// \param visit A callback to call for each compilation unit.
   void LoadDataFromKZip(const std::string& file_or_cu,
-                         const CompilationVisitCallback& visit);
+                        const CompilationVisitCallback& visit);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
   /// \param visit A callback to call for each compilation unit.
