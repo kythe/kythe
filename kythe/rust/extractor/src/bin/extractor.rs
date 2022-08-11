@@ -35,15 +35,15 @@ use zip::{write::FileOptions, ZipWriter};
 #[clap(rename_all = "snake_case")]
 struct Args {
     /// Path to the extra action file
-    #[clap(long, value_parser, value_name = "FILE")]
+    #[clap(long, value_parser)]
     extra_action: PathBuf,
 
     /// Desired output path for the kzip
-    #[clap(long, value_parser, value_name = "DIR")]
+    #[clap(long, value_parser, value_name = "dir")]
     output: PathBuf,
 
     /// Location of the vnames configuration file
-    #[clap(long, value_parser, value_name = "FILE")]
+    #[clap(long, value_parser)]
     vnames_config: PathBuf,
 }
 

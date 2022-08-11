@@ -25,7 +25,7 @@ use std::path::PathBuf;
 #[clap(rename_all = "snake_case")]
 struct Args {
     /// The path to the kzip to be indexed
-    #[clap(value_parser, value_name = "FILE")]
+    #[clap(value_parser)]
     kzip_path: PathBuf,
 
     /// Disables emitting cross references to the standard library
