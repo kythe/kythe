@@ -651,3 +651,23 @@ type File interface {
 	io.ReaderAt
 	io.Seeker
 }
+
+// FileData creates a file data protobuf message by fully reading the contents
+// of r, having the designated path.
+func FileData(path string, r io.Reader) (*apb.FileData, error) {
+	var buf bytes.Buffer
+	hash := sha256.New()
+
+	w := io.MultiWriter(&buf, hash)
+	if _, err := io.Copy(w, r); err != nil {
+		return nil, err
+	}
+	digest := hex.EncodeToString(hash.Sum(nil))
+	return &apb.FileData{
+		Content: buf.Bytes(),
+		Info: &apb.FileInfo{
+			Path:   path,
+			Digest: digest,
+		},
+	}, nil
+}
