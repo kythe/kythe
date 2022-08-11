@@ -1,5 +1,5 @@
 v_name {
-  signature: "test_kindex"
+  signature: "test_kzip"
   corpus: "kythe"
   language: "c++"
 }

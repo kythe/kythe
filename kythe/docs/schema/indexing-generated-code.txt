@@ -397,7 +397,7 @@ digraph G {
 size="7,7!";
 usersrc [label="proto_user.cc", shape=note, color=blue];
 ccextractor [label="C++ extractor", shape=rectangle, color=blue];
-kindex [label="proto_user.kindex", shape=note, color=blue];
+kzip [label="proto_user.kzip", shape=note, color=blue];
 protosrc [label=".proto", shape=note];
 frontend [label="protoc", shape=rectangle];
 descriptor [label="descriptor", shape=note];
@@ -418,8 +418,8 @@ indexer -> entries;
 usersrc -> ccextractor [color=blue];
 ccsrc -> ccextractor [color=blue];
 usersrc -> ccsrc [color=blue];
-ccextractor -> kindex [color=blue];
-kindex -> ccindexer [color=blue];
+ccextractor -> kzip [color=blue];
+kzip -> ccindexer [color=blue];
 ccindexer -> entries [color=blue];
 }
 --------------------------------------------------------------------------------
@@ -520,7 +520,7 @@ depends on `example.pb.h.meta` using a pragma and a preprocessor symbol:
 
 The Kythe $$C++$$ extractor and indexer both understand what to do with this
 pragma (and both define `KYTHE_IS_RUNNING`). The extractor will add the `.meta`
-file to the `kindex` it produces; the indexer will load the `.meta` file,
+file to the `kzip` it produces; the indexer will load the `.meta` file,
 translate it from `protoc` annotations to generic Kythe metadata, and use it
 to append `generates` edges for `defines/binding` edges emitted from
 `example.pb.h`.
@@ -531,7 +531,7 @@ digraph G {
 size="7,7!";
 usersrc [label="proto_user.cc", shape=note];
 ccextractor [label="C++ extractor", shape=rectangle];
-kindex [label="proto_user.kindex", shape=note];
+kzip [label="proto_user.kzip", shape=note];
 protosrc [label=".proto", shape=note];
 frontend [label="protoc", shape=rectangle];
 descriptor [label="descriptor", shape=note];
@@ -556,8 +556,8 @@ usersrc -> ccsrc;
 usersrc -> ccextractor;
 ccsrc -> ccextractor;
 ccmeta -> ccextractor [color=blue];
-ccextractor -> kindex;
-kindex -> ccindexer;
+ccextractor -> kzip;
+kzip -> ccindexer;
 ccindexer -> entries;
 }
 --------------------------------------------------------------------------------

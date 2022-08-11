@@ -15,7 +15,7 @@
 FROM google/kythe-base
 # TODO(schroederc): reuse //kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker
 
-# Output location for .kindex files
+# Output location for .kzip files
 VOLUME /idx
 
 RUN apt-get update && \

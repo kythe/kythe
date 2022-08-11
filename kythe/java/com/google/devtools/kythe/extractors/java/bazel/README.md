@@ -1,7 +1,7 @@
 ## Bazel Java extractor
 
 An extractor that builds index files from a Bazel-based project. Extractor
-builds a kindex file for each `java_library` and `java_binary` in the project.
+builds a kzip file for each `java_library` and `java_binary` in the project.
 This extractor based on Bazel
 [action_listener](https://docs.bazel.build/versions/master/be/extra-actions.html)
 rule.
@@ -21,9 +21,9 @@ extra_action(
     name = "extractor",
     cmd = ("java -Xbootclasspath/p:third_party/javac/javac*.jar " +
            "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor " +
-           "$(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location :vnames.json)"),
+           "$(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kzip) $(location :vnames.json)"),
     data = [":vnames.json"],
-    out_templates = ["$(ACTION_ID).java.kindex"],
+    out_templates = ["$(ACTION_ID).java.kzip"],
 )
 
 action_listener(
@@ -60,12 +60,12 @@ bazel test --experimental_action_listener=:extract_java  //...
 bazel test --experimental_action_listener=:extract_java  //java/some/folder:foo
 ```
 
-Extracted kindex files will be in
-`bazel-out/local-fastbuild/extra_actions/extractor` folder. One kindex file per
+Extracted kzip files will be in
+`bazel-out/local-fastbuild/extra_actions/extractor` folder. One kzip file per
 target.
 
 ```shell
-find -L bazel-out -name '*java.kindex'
+find -L bazel-out -name '*java.kzip'
 ```
 
 #### Development

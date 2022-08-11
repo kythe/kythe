@@ -1,5 +1,4 @@
 # Kythe artifacts
-*.kindex
 *.ldb
 *.log
 CURRENT

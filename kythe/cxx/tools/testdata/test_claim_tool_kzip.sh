@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script checks that the claiming tool works on kindex files.
+# This script checks that the claiming tool works on kzip files.
 set -e
 BASE_DIR="$PWD/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"

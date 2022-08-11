@@ -135,7 +135,7 @@ in order for successful extraction.
 
 /out::
 This volume will contain the output artifacts of the Kythe extraction process in
-the form of http://kythe.io/docs/kythe-index-pack.html[kindex] files, (note: this
+the form of http://kythe.io/docs/kythe-kzip.html[kzip] files, (note: this
 format may change in the future). Any diagnostic output from extractors will
 also be written here. This directory should have read and write privileges.
 
