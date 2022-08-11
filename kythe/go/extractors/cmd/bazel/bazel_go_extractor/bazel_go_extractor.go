@@ -49,7 +49,7 @@ Extract a Kythe compilation record for Go from a Bazel extra action.
 
 Arguments:
  <extra-action> is a file containing a wire format ExtraActionInfo protobuf.
- <output-file>  is the path where the output kindex file is written.
+ <output-file>  is the path where the output kzip file is written.
  <vname-config> is the path of a VName configuration JSON file.
 
 Flags:
