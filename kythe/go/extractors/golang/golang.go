@@ -45,9 +45,9 @@ import (
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/analysis"
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
-	 "kythe.io/kythe/go/platform/kzip"
 
 	"bitbucket.org/creachadair/stringset"
 
