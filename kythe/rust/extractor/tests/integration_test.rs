@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     let input_files: Vec<String> = vec![rust_test_source];
     spawn_info.set_input_file(protobuf::RepeatedField::from_vec(input_files));
 
-    let output_key = format!("{}/test_crate", temp_dir_str);
+    let output_key = format!("{}/libtest_crate-1234", temp_dir_str);
     let output_files: Vec<String> = vec![output_key.clone()];
     spawn_info.set_output_file(protobuf::RepeatedField::from_vec(output_files));
 
@@ -260,7 +260,7 @@ fn correct_arguments_succeed(
     let analysis_input = required_inputs.get(2).expect("Failed to get the third required input");
     let analysis_path = analysis_input.get_info().get_path();
     assert!(
-        analysis_path.contains("save-analysis/test_crate.json"),
+        analysis_path.contains("save-analysis/libtest_crate-1234.json"),
         "Unexpected file path for save_analysis file: {}",
         analysis_path
     );
