@@ -112,6 +112,12 @@ const (
 	prefixProto = "pbunits"
 )
 
+// Compilation is a CompilationUnit with the contents for all of its required inputs.
+type Compilation struct {
+	Proto *apb.CompilationUnit `json:"compilation"`
+	Files []*apb.FileData      `json:"files"`
+}
+
 var (
 	// Use a constant file modification time in the kzip so file diffs only compare the contents,
 	// not when the kzips were created.
@@ -670,4 +676,68 @@ func FileData(path string, r io.Reader) (*apb.FileData, error) {
 			Digest: digest,
 		},
 	}, nil
+}
+
+// Fetch implements the analysis.Fetcher interface for files attached to c.
+// If digest == "", files are matched by path only.
+func (c *Compilation) Fetch(path, digest string) ([]byte, error) {
+	for _, f := range c.Files {
+		info := f.GetInfo()
+		fp := info.Path
+		fd := info.Digest
+		if path == fp && (digest == "" || digest == fd) {
+			return f.Content, nil
+		}
+		if digest != "" && digest == fd {
+			return f.Content, nil
+		}
+	}
+	return nil, os.ErrNotExist
+}
+
+// Unit returns the CompilationUnit associated with c, creating a new empty one
+// if necessary.
+func (c *Compilation) Unit() *apb.CompilationUnit {
+	if c.Proto == nil {
+		c.Proto = new(apb.CompilationUnit)
+	}
+	return c.Proto
+}
+
+// AddFile adds an input file to the compilation by fully reading r.  The file
+// is added to the required inputs, attributed to the designated path, and also
+// to the file data slice.  If v != nil it is used as the vname of the input
+// added.
+func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName, details ...proto.Message) error {
+	var anys []*ptypes.Any
+	for _, d := range details {
+		any, err := ptypes.MarshalAny(d)
+		if err != nil {
+			return fmt.Errorf("unable to marshal %T to Any: %v", d, err)
+		}
+		anys = append(anys, any)
+	}
+	fd, err := FileData(path, r)
+	if err != nil {
+		return err
+	}
+	c.Files = append(c.Files, fd)
+	unit := c.Unit()
+	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName:   v,
+		Info:    fd.Info,
+		Details: anys,
+	})
+	return nil
+}
+
+// AddDetails adds the specified details message to the compilation.
+func (c *Compilation) AddDetails(msg proto.Message) error {
+	details, err := ptypes.MarshalAny(msg)
+	if err != nil {
+		return err
+	}
+	unit := c.Unit()
+	unit.Details = append(unit.Details, details)
+	return nil
 }
