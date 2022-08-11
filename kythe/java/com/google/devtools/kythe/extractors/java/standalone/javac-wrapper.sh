@@ -18,7 +18,7 @@
 # requires the same environment variables as the javac extractor (see
 # AbstractJavacWrapper.java).  In particular, it needs KYTHE_ROOT_DIRECTORY and
 # KYTHE_OUTPUT_DIRECTORY set to understand where the root of the compiled source
-# repository is and where to put the resulting .kindex files, respectively.
+# repository is and where to put the resulting .kzip files, respectively.
 #
 # This script assumes a usable java binary is on $PATH or in $JAVA_HOME.
 # Runtime options (e.g -Xbootclasspath/p:)can be passed to `java` with the

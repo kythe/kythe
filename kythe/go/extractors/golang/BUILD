@@ -11,7 +11,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/analysis",
-        "//kythe/go/platform/kindex",
+        "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",

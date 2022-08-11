@@ -73,7 +73,7 @@ java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
 # Ensure the Java indexer works on a curated test compilation
 java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}"  \
   -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" > entries
-# TODO(zarko): add C++ test kindex entries
+# TODO(zarko): add C++ test kzip entries
 
 # Ensure basic Kythe pipeline toolset works
 tools/dedup_stream < entries | \

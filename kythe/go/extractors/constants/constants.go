@@ -92,7 +92,7 @@ var (
 		// -Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
 		"KYTHE_JAVA_RUNTIME_OPTIONS",
 		// If set to a file ending in '.kzip', this will cause the extractor to
-		// output a .kzip file instead of multiple .kindex files.
+		// output a .kzip file.
 		// Note this does not obviate the need to set KYTHE_OUTPUT_DIRECTORY.
 		"KYTHE_OUTPUT_FILE",
 	)

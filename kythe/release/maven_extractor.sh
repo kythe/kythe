@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# kindex compilation extractor for Maven builds. For exclusive use within the
+# kzip compilation extractor for Maven builds. For exclusive use within the
 # google/kythe Docker container. The assumed repository root is /repo and
-# /compilations/java will be used as the .kindex file output directory.
+# /compilations/java will be used as the .kzip file output directory.
 #
 # usage: maven_extractor.sh
 

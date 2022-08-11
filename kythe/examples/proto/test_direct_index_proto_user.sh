@@ -44,33 +44,33 @@ bazel build //kythe/examples/proto:proto_indexer \
 ./bazel-bin/kythe/cxx/verifier/verifier kythe/examples/proto/example.proto \
     < "${D}/proto.entries"
 
-# Generate the kindex for the proto-using CU.
+# Generate the kzip for the proto-using CU.
 # This will include the .meta file (because of the kythe_metadata pragma).
 BAZELOUT="$(bazel info workspace)/bazel-out"
 
-# Remove any old kindexes.
+# Remove any old kzips.
 pushd "$BAZELOUT"
 find . \
-  -path "*/extra_actions/kythe/cxx/extractor/extra_action/kythe/examples/proto/*.kindex" \
+  -path "*/extra_actions/kythe/cxx/extractor/extra_action/kythe/examples/proto/*.kzip" \
   -delete
 popd
 
 bazel build \
-  --experimental_action_listener=//kythe/cxx/extractor:extract_kindex \
+  --experimental_action_listener=//kythe/cxx/extractor:extract_cxx \
   --experimental_extra_action_top_level_only \
   --experimental_proto_extra_actions \
   //kythe/examples/proto:proto_user
 
 pushd "$BAZELOUT"
 find . \
-  -path "*/extra_actions/kythe/cxx/extractor/extra_action/kythe/examples/proto/*.kindex" \
-  -exec cp {} "${D}/proto_user.kindex" \; \
+  -path "*/extra_actions/kythe/cxx/extractor/extra_action/kythe/examples/proto/*.kzip" \
+  -exec cp {} "${D}/proto_user.kzip" \; \
   && \
-  chmod 644 "${D}/proto_user.kindex"
+  chmod 644 "${D}/proto_user.kzip"
 popd
 
-echo "Running indexer and verifier using ${D}/proto_user.kindex"
-./bazel-bin/kythe/cxx/indexer/cxx/indexer "${D}/proto_user.kindex" \
+echo "Running indexer and verifier using ${D}/proto_user.kzip"
+./bazel-bin/kythe/cxx/indexer/cxx/indexer "${D}/proto_user.kzip" \
     > "${D}/proto_user.entries"
 cat "${D}/proto_user.entries" "${D}/proto.entries" |
     ./bazel-bin/kythe/cxx/verifier/verifier --ignore_dups \

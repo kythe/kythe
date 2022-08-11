@@ -34,7 +34,7 @@ if ! command -v parallel &>/dev/null; then
   exit 1
 fi
 
-drive_indexer_kindex() {
+drive_indexer_kzip() {
   local -r lang="$(basename "$(dirname "$1")")"
   case "$lang" in
     java)
@@ -59,8 +59,8 @@ drive_indexer_kindex() {
   echo "Indexing $*" >&2
   analyzer "$@"
 }
-export -f drive_indexer_kindex
+export -f drive_indexer_kzip
 export SHELL=bash
 
-find "$COMPILATIONS" -name '*.kindex' | sort -R | \
-    { parallel --gnu -L1 drive_indexer_kindex || echo "$? analysis failures" >&2; }
+find "$COMPILATIONS" -name '*.kzip' | sort -R | \
+    { parallel --gnu -L1 drive_indexer_kzip || echo "$? analysis failures" >&2; }
