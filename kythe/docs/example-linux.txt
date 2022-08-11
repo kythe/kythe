@@ -120,7 +120,6 @@ extractor output:
 
 [source,bash]
 ----
-export KYTHE_INDEX_PACK=1
 export KYTHE_OUTPUT_DIRECTORY="${KERNEL_SOURCES}/kernel-pack"
 export KYTHE_VNAMES="${KERNEL_SOURCES}/vnames.json"
 ----

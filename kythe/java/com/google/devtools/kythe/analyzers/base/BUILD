@@ -73,7 +73,7 @@ java_library(
     ],
 )
 
-# //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex is derived
+# //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kzip is derived
 # based on the sources in //kythe/java/com/google/devtools/kythe/analyzers/java:analyzer which
 # depend on this class.
 filegroup(

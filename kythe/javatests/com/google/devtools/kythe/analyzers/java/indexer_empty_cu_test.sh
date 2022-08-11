@@ -18,7 +18,7 @@ set -eo pipefail
 
 : "${indexer?:missing indexer}"
 : "${entrystream?:missing entrystream}"
-test_kindex="$PWD/kythe/testdata/java_empty.kindex"
+test_kzip="$PWD/kythe/testdata/java_empty.kzip"
 
-# Test indexing a .kindex file
-"$indexer" "$test_kindex" | "$entrystream" >/dev/null
+# Test indexing a .kzip file
+"$indexer" "$test_kzip" | "$entrystream" >/dev/null

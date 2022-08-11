@@ -150,11 +150,10 @@ public class JavaExtractor {
                 javacOpts,
                 jInfo.getOutputjar());
 
-    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
-      IndexInfoUtils.writeKzipToFile(description, outputPath);
-    } else {
-      IndexInfoUtils.writeKindexToFile(description, outputPath);
+    if (!outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      throw new IllegalArgumentException("Expected output file path to have .kzip extension.");
     }
+    IndexInfoUtils.writeKzipToFile(description, outputPath);
   }
 
   /** Extracts a source jar and adds all java files in it to the list of sources. */

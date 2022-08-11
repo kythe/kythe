@@ -225,7 +225,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(String corpus) throws ExtractionException {
@@ -233,7 +233,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(String corpus, String rootDirectory)
@@ -242,7 +242,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(FileVNames fileVNames) throws ExtractionException {

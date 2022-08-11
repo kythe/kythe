@@ -1308,6 +1308,9 @@ cc_indexer_test(
 cc_indexer_test(
     name = "metadata_self",
     srcs = ["metadata/metadata_self.cc"],
+    # This test attempts to read itself as a metadata file via __FILE__.
+    # This is inherently unreliable, but can be improved by this include path.
+    copts = ["-I."],
     tags = ["metadata"],
     deps = ["metadata/metadata_self.h"],
 )
