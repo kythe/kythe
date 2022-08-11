@@ -80,13 +80,15 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd/kythe"
+	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	// These are common detail messages used by Kythe compilations, and
 	// required for JSON (un)marshaling to work.
