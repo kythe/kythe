@@ -86,5 +86,5 @@ def go_kythe_proto(proto = None, deps = [], importpath = None, visibility = None
         file1 = ":%s_src" % name,
         file2 = ":%s/%s" % (name, filename),
         message = ("The checked in proto for '%s' is out of sync;" +
-                   " please run kythe/proto/generate_go_protobufs.py") % name,
+                   " please run kythe/proto/generate_protobufs.py") % name,
     )
