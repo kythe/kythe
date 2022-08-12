@@ -24,10 +24,10 @@ use glob::glob;
 use kythe_rust_extractor::vname_util::VNameRule;
 use protobuf::Message;
 use sha2::{Digest, Sha256};
+use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::{env, fs};
 use tempdir::TempDir;
 use zip::{write::FileOptions, ZipWriter};
 
@@ -298,27 +298,17 @@ fn kzip_add_file(
 /// Find the path of the save_analysis file using the build target's
 /// output file name and the temporary base directory
 fn analysis_path_string(output_file_name: &str, temp_dir_path: &Path) -> Result<String> {
-    let entries = fs::read_dir(temp_dir_path.join("save-analysis")).with_context(|| {
-        format!("Failed to read the save_analysis temporary directory: {:?}", temp_dir_path)
-    })?;
-
-    for entry in entries {
-        let entry = entry.with_context(|| "Failed to get information about directory entry")?;
-        let metadata = entry.metadata().with_context(|| "Failed to get entry metadata")?;
-        let path = entry.path();
-        let path_string = path
+    // The path should always be {tmp_dir}/save-analysis/{output_file_name}.json
+    let expected_path =
+        temp_dir_path.join("save-analysis").join(output_file_name).with_extension("json");
+    if expected_path.exists() {
+        expected_path
             .to_str()
             .ok_or_else(|| anyhow!("save_analysis file path is not valid UTF-8"))
-            .map(|path_str| path_str.to_string())?;
-        if metadata.is_file()
-            && path_string.contains(output_file_name)
-            && path_string.ends_with(".json")
-        {
-            return Ok(path_string);
-        }
+            .map(String::from)
+    } else {
+        Err(anyhow!("Failed to find save-analysis file in {:?}", temp_dir_path))
     }
-
-    Err(anyhow!("Failed to find save-analysis file in {:?}", temp_dir_path))
 }
 
 fn create_vname(rules: &mut [VNameRule], path: &str, default_corpus: &str) -> VName {
