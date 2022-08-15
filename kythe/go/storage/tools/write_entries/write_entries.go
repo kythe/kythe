@@ -25,7 +25,7 @@
 //
 //	java_indexer_server --port 8181 &
 //	graphstore --port 9999 &
-//	analysis_driver --analyzer localhost:8181 /tmp/compilation.kindex | \
+//	analysis_driver --analyzer localhost:8181 /tmp/compilation.kzip | \
 //	  write_entries --workers 10 --graphstore localhost:9999
 //
 // Example:

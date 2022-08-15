@@ -30,7 +30,6 @@ import (
 	"strings"
 	"testing"
 
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/ptypes"
 
@@ -284,7 +283,7 @@ func TestFetchInputs(t *testing.T) {
 		filepath.Join(tmp, "bad.h"), // does not exist
 	}
 	err = cfg.fetchInputs(context.Background(), paths, func(i int, r io.Reader) error {
-		fd, err := kindex.FileData(paths[i], r)
+		fd, err := kzip.FileData(paths[i], r)
 		if err == nil {
 			fds = append(fds, fd)
 		}
