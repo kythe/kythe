@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     let output_file_name = PathBuf::from(build_output_path)
         .with_extension("")
         .file_name()
-        .unwrap()
+        .ok_or_else(|| anyhow!("Failed to extract file name from build output path"))?
         .to_str()
         .ok_or_else(|| anyhow!("Failed to convert build output path file name to string"))?
         .to_string();
