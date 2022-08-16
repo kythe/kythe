@@ -21,9 +21,13 @@ use std::path::{Path, PathBuf};
 ///
 /// * `arguments` - The Bazel arguments extracted from the extra action protobuf
 /// * `output_dir` - The base directory to output the save_analysis
-pub fn generate_save_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
+pub fn generate_save_analysis(
+    arguments: Vec<String>,
+    output_dir: PathBuf,
+    output_file_name: &str,
+) -> Result<()> {
     let rustc_arguments = generate_arguments(arguments, &output_dir)?;
-    kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
+    kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir, output_file_name)
         .map_err(|_| anyhow!("Failed to generate save_analysis"))?;
     Ok(())
 }

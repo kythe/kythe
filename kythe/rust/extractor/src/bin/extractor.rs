@@ -22,10 +22,10 @@ use glob::glob;
 use kythe_rust_extractor::vname_util::VNameRule;
 use protobuf::Message;
 use sha2::{Digest, Sha256};
+use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::{env, fs};
 use tempdir::TempDir;
 use zip::{write::FileOptions, ZipWriter};
 
@@ -83,6 +83,21 @@ fn main() -> Result<()> {
         }
     }
 
+    // Grab the build target's output path
+    let build_output_path = spawn_info
+        .get_output_file()
+        .get(0)
+        .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
+
+    // Get the name of the output file (without extension)
+    let output_file_name = PathBuf::from(build_output_path)
+        .with_extension("")
+        .file_name()
+        .ok_or_else(|| anyhow!("Failed to extract file name from build output path"))?
+        .to_str()
+        .ok_or_else(|| anyhow!("Failed to convert build output path file name to string"))?
+        .to_string();
+
     // Create temporary directory and run the analysis
     let tmp_dir = TempDir::new("rust_extractor")
         .with_context(|| "Failed to make temporary directory".to_string())?;
@@ -90,6 +105,7 @@ fn main() -> Result<()> {
     save_analysis::generate_save_analysis(
         build_target_arguments.clone(),
         PathBuf::from(tmp_dir.path()),
+        &output_file_name,
     )?;
 
     // Create the output kzip
@@ -134,33 +150,9 @@ fn main() -> Result<()> {
         }
     }
 
-    // Grab the build target's output path
-    let build_output_path = spawn_info
-        .get_output_file()
-        .get(0)
-        .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
-
-    // Infer the crate name from the compiler args, falling back to the output file
-    // name if necessary
-    let crate_name = {
-        let crate_name_matches: Vec<_> =
-            build_target_arguments.iter().filter(|arg| arg.starts_with("--crate-name=")).collect();
-        if !crate_name_matches.is_empty() {
-            crate_name_matches.get(0).unwrap().replace("--crate-name=", "")
-        } else {
-            PathBuf::from(build_output_path)
-                .file_name()
-                .unwrap()
-                .to_str()
-                .ok_or_else(|| anyhow!("Failed to convert build output path file name to string"))?
-                .to_string()
-        }
-    };
-
     // Add save analysis to kzip
-    let save_analysis_path: String = analysis_path_string(&crate_name, tmp_dir.path())?;
-    let save_analysis_vname: VName =
-        create_vname(&mut vname_rules, &save_analysis_path, &default_corpus);
+    let save_analysis_path = analysis_path_string(&output_file_name, tmp_dir.path())?;
+    let save_analysis_vname = create_vname(&mut vname_rules, &save_analysis_path, &default_corpus);
     kzip_add_required_input(
         &save_analysis_path,
         save_analysis_vname,
@@ -320,27 +312,19 @@ fn kzip_add_file(
 }
 
 /// Find the path of the save_analysis file using the build target's
-/// crate name and the temporary base directory
-fn analysis_path_string(crate_name: &str, temp_dir_path: &Path) -> Result<String> {
-    let entries = fs::read_dir(temp_dir_path.join("save-analysis")).with_context(|| {
-        format!("Failed to read the save_analysis temporary directory: {:?}", temp_dir_path)
-    })?;
-
-    for entry in entries {
-        let entry = entry.with_context(|| "Failed to get information about directory entry")?;
-        let metadata = entry.metadata().with_context(|| "Failed to get entry metadata")?;
-        let path = entry.path();
-        let path_string = path
+/// output file name and the temporary base directory
+fn analysis_path_string(output_file_name: &str, temp_dir_path: &Path) -> Result<String> {
+    // The path should always be {tmp_dir}/save-analysis/{output_file_name}.json
+    let expected_path =
+        temp_dir_path.join("save-analysis").join(output_file_name).with_extension("json");
+    if expected_path.exists() {
+        expected_path
             .to_str()
             .ok_or_else(|| anyhow!("save_analysis file path is not valid UTF-8"))
-            .map(|path_str| path_str.to_string())?;
-        if metadata.is_file() && path_string.contains(crate_name) && path_string.ends_with(".json")
-        {
-            return Ok(path_string);
-        }
+            .map(String::from)
+    } else {
+        Err(anyhow!("Failed to find save-analysis file in {:?}", temp_dir_path))
     }
-
-    Err(anyhow!("Failed to find save-analysis file in {:?}", temp_dir_path))
 }
 
 fn create_vname(rules: &mut [VNameRule], path: &str, default_corpus: &str) -> VName {

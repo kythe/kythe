@@ -16,7 +16,7 @@
 # This test checks that the extractor will emit kzip files.
 # It should be run from the Kythe root.
 set -e
-TEST_NAME="test_index_pack"
+TEST_NAME="test_kzip"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 rm -rf -- "${OUT_DIR}"

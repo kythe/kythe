@@ -21,12 +21,8 @@
 //
 // We read environment variables KYTHE_CORPUS (to set the default corpus),
 // KYTHE_ROOT_DIRECTORY (to set the default root directory and to configure
-// Clang's header search), KYTHE_OUTPUT_DIRECTORY (to control where kindex
+// Clang's header search), KYTHE_OUTPUT_DIRECTORY (to control where kzip
 // files are deposited), and KYTHE_VNAMES (to control vname generation).
-//
-// If KYTHE_INDEX_PACK is set to "1", the extractor will treat
-// KYTHE_OUTPUT_DIRECTORY as an index pack. Instead of emitting kindex files,
-// it will instead follow the index pack protocol.
 //
 // If the first two arguments are --with_executable /foo/bar, the extractor
 // will consider /foo/bar to be the executable it was called as for purposes

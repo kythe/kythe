@@ -68,6 +68,9 @@ def _rust_extract_impl(ctx):
         "--linker=%s" % linker_path,
     ]
 
+    if ctx.attr.is_test_lib:
+        args.append("--test_lib")
+
     # If there were out_dir_files, set --out_dir_env
     if len(all_out_dir_files) != 0:
         args.append("--out_dir_env=${pwd}/%s" % paths.dirname(all_out_dir_files[0].path))
@@ -115,6 +118,9 @@ rust_extract = rule(
         "out_dir_files": attr.label_list(
             mandatory = True,
             allow_files = [".rs"],
+        ),
+        "is_test_lib": attr.bool(
+            mandatory = True,
         ),
         "crate_name": attr.string(
             default = "test_crate",
@@ -206,6 +212,7 @@ def _rust_indexer(
         name,
         srcs,
         out_dir_files = [],
+        is_test_lib = False,
         has_marked_source = False,
         emit_anchor_scopes = False):
     kzip = name + "_units"
@@ -213,6 +220,7 @@ def _rust_indexer(
         name = kzip,
         srcs = srcs,
         out_dir_files = out_dir_files,
+        is_test_lib = is_test_lib,
     )
     entries = name + "_entries"
     rust_entries(
@@ -228,6 +236,7 @@ def rust_indexer_test(
         name,
         srcs,
         out_dir_files = [],
+        is_test_lib = False,
         size = None,
         tags = None,
         log_entries = False,
@@ -241,6 +250,7 @@ def rust_indexer_test(
       name: Rule name
       srcs: A list of Rust source files to index and verify
       out_dir_files: A list of files to include in $OUT_DIR
+      is_test_lib: Whether to compile the srcs as a Rust test
       size: The size to pass to the verifier_test macro
       tags: The tags to pass to the verifier_test macro
       log_entries: Enable to make the verifier log all indexer entries
@@ -254,6 +264,7 @@ def rust_indexer_test(
         name = name,
         srcs = srcs,
         out_dir_files = out_dir_files,
+        is_test_lib = is_test_lib,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
     )

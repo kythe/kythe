@@ -10,12 +10,9 @@ def _go_proto_src_impl(ctx):
     """Copy the generated source of a go_proto_library."""
     lib = ctx.attr.library
     for src in lib.actions[0].outputs.to_list():
-        out = ctx.outputs.generated
-        ctx.actions.run_shell(
-            outputs = [out],
-            inputs = [src],
-            arguments = [src.path, out.path],
-            command = "cp $1 $2",
+        ctx.actions.symlink(
+            output = ctx.outputs.generated,
+            target_file = src,
         )
         break
 
@@ -89,5 +86,5 @@ def go_kythe_proto(proto = None, deps = [], importpath = None, visibility = None
         file1 = ":%s_src" % name,
         file2 = ":%s/%s" % (name, filename),
         message = ("The checked in proto for '%s' is out of sync;" +
-                   " please run kythe/proto/generate_go_protobufs.py") % name,
+                   " please run kythe/proto/generate_protobufs.py") % name,
     )

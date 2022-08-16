@@ -89,15 +89,15 @@ class IndexerContext {
                                   const std::string& program_name);
 
  private:
-  /// \brief Checks to see if a .kindex or index pack was specified.
-  /// \return true if there are index/kindex arguments; false otherwise.
+  /// \brief Checks to see if a kzip was specified.
+  /// \return true if there are kzip arguments; false otherwise.
   bool HasIndexArguments();
-  /// \brief Loads from an index pack or .kindex.
-  /// \param file_or_cu The name of the .kzip or .kindex (with extension) or the
+  /// \brief Loads from a kzip file
+  /// \param file_or_cu The name of the .kzip (with extension) or the
   /// compilation unit hash.
   /// \param visit A callback to call for each compilation unit.
-  void LoadDataFromIndex(const std::string& file_or_cu,
-                         const CompilationVisitCallback& visit);
+  void LoadDataFromKZip(const std::string& file_or_cu,
+                        const CompilationVisitCallback& visit);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
   /// \param visit A callback to call for each compilation unit.

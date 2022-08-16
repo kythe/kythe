@@ -163,3 +163,9 @@ rust_indexer_test(
     srcs = ["testdata/out_dir/main.rs"],
     out_dir_files = ["testdata/out_dir/generated.rs"],
 )
+
+rust_indexer_test(
+    name = "test_lib_test",
+    srcs = ["testdata/test_lib.rs"],
+    is_test_lib = True,
+)

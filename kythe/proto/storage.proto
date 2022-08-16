@@ -47,7 +47,7 @@ message VName {
 
   // A corpus-specific root label, designating a subordinate collection within
   // the corpus.  If a corpus stores files in unrelated directory structures,
-  // for example, the root can be used to distinguish them.  Or, of a corpus
+  // for example, the root can be used to distinguish them.  Or, if a corpus
   // incorporates subprojects, the root can be a project ID that it governs.
   // This may also be used to distinguish virtual subgroups of a corpus such as
   // generated files.

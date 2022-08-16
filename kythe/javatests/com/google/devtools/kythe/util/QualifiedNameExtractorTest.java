@@ -198,7 +198,7 @@ public class QualifiedNameExtractorTest {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
         "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER"
-            + " pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\""
+            + " pre_text: \"kythe/go/platform/kzip\" } post_child_text: \".\""
             + " add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } }"
             + " child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\""
             + " }",
@@ -211,7 +211,7 @@ public class QualifiedNameExtractorTest {
         .isEqualTo(
             SymbolInfo.newBuilder()
                 .setBaseName("Settings")
-                .setQualifiedName("kythe/go/platform/kindex.Settings")
+                .setQualifiedName("kythe/go/platform/kzip.Settings")
                 .build());
   }
 

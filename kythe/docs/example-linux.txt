@@ -120,12 +120,11 @@ extractor output:
 
 [source,bash]
 ----
-export KYTHE_INDEX_PACK=1
 export KYTHE_OUTPUT_DIRECTORY="${KERNEL_SOURCES}/kernel-pack"
 export KYTHE_VNAMES="${KERNEL_SOURCES}/vnames.json"
 ----
 
-Build the kernel, pulling the code into a Kythe index pack:
+Build the kernel, pulling the code into a Kythe kzip:
 [source,bash]
 ----
 make CC="${KERNEL_SOURCES}/extract_compile.sh" \

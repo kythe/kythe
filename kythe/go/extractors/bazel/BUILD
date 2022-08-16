@@ -14,7 +14,6 @@ go_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/go/extractors/bazel/treeset",
-        "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
