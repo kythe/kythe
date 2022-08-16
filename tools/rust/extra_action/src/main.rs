@@ -97,7 +97,7 @@ fn main() -> Result<()> {
     if let Some(out_dir) = args.out_dir_env {
         let mut env_var = EnvironmentVariable::new();
         env_var.set_name("OUT_DIR".to_string());
-        env_var.set_value(out_dir.to_string());
+        env_var.set_value(out_dir);
         spawn_info.set_variable(protobuf::RepeatedField::from_vec(vec![env_var]));
     }
 
