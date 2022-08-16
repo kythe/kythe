@@ -13,80 +13,60 @@
 // limitations under the License.
 
 use anyhow::{Context, Result};
-use clap::{App, Arg};
+use clap::Parser;
 use extra_actions_base_rust_proto::*;
 use protobuf::Message;
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[clap(author = "The Kythe Authors")]
+#[clap(about = "Rust Extra Action Generator", long_about = None)]
+#[clap(rename_all = "snake_case")]
+struct Args {
+    /// Comma delimited source file paths
+    #[clap(long, value_parser, value_name = "file,...")]
+    src_files: String,
+
+    /// Desired output path for the ExtraAction
+    #[clap(long, value_parser)]
+    output: PathBuf,
+
+    /// The name for the crate
+    #[clap(long, value_parser)]
+    crate_name: String,
+
+    /// The action owner
+    #[clap(long, value_parser)]
+    owner: String,
+
+    /// The path to the Rust sysroot
+    #[clap(long, value_parser)]
+    sysroot: String,
+
+    /// The path to the linker
+    #[clap(long, value_parser)]
+    linker: String,
+
+    /// The path that $OUT_DIR will be set to
+    #[clap(long, value_parser)]
+    out_dir_env: Option<String>,
+
+    /// Add \"--test\" to the compiler arguments
+    #[clap(long, action)]
+    test_lib: bool,
+}
 
 fn main() -> Result<()> {
-    let matches = App::new("Rust Extra Action Generator")
-        .arg(
-            Arg::with_name("src_files")
-                .long("src_files")
-                .required(true)
-                .takes_value(true)
-                .help("Comma delimited source file paths"),
-        )
-        .arg(
-            Arg::with_name("output")
-                .long("output")
-                .required(true)
-                .takes_value(true)
-                .help("Desired output path for the ExtraAction"),
-        )
-        .arg(
-            Arg::with_name("crate_name")
-                .long("crate_name")
-                .required(true)
-                .takes_value(true)
-                .help("The name for the crate"),
-        )
-        .arg(
-            Arg::with_name("owner")
-                .long("owner")
-                .required(true)
-                .takes_value(true)
-                .help("The action owner"),
-        )
-        .arg(
-            Arg::with_name("sysroot")
-                .long("sysroot")
-                .required(true)
-                .takes_value(true)
-                .help("The Rust sysroot"),
-        )
-        .arg(
-            Arg::with_name("linker")
-                .long("linker")
-                .required(true)
-                .takes_value(true)
-                .help("The linker path"),
-        )
-        .arg(
-            Arg::with_name("out_dir_env")
-                .long("out_dir_env")
-                .required(false)
-                .takes_value(true)
-                .help("The path that $OUT_DIR will be set to"),
-        )
-        .arg(
-            Arg::with_name("test_lib")
-                .long("test_lib")
-                .required(false)
-                .help("Add \"--test\" to the compiler arguments"),
-        )
-        .get_matches();
+    let args = Args::parse();
 
     let mut extra_action = ExtraActionInfo::new();
-    extra_action.set_owner(matches.value_of("owner").unwrap().to_string());
+    extra_action.set_owner(args.owner);
 
     // Populate SpawnInfo
     let mut spawn_info = SpawnInfo::new();
-    let source_files: Vec<String> =
-        matches.value_of("src_files").unwrap().split(',').map(String::from).collect();
-    let crate_name = matches.value_of("crate_name").unwrap();
+    let source_files: Vec<String> = args.src_files.split(',').map(String::from).collect();
     let main_source_file = if source_files.len() == 1 {
         &source_files[0]
     } else {
@@ -100,24 +80,24 @@ fn main() -> Result<()> {
         "rustc".to_string(),
         // Only the main source file gets passed to the compiler
         main_source_file.to_string(),
-        format!("-L{}", matches.value_of("sysroot").unwrap()),
-        format!("--codegen=linker={}", matches.value_of("linker").unwrap()),
-        format!("--crate-name={}", crate_name),
+        format!("-L{}", args.sysroot),
+        format!("--codegen=linker={}", args.linker),
+        format!("--crate-name={}", &args.crate_name),
         // This path gets replaced by the extractor so it doesn't matter
         "--out-dir=/tmp".to_string(),
     ];
-    if matches.is_present("test_lib") {
+    if args.test_lib {
         arguments.push("--test".to_string());
     }
     spawn_info.set_argument(protobuf::RepeatedField::from_vec(arguments));
     spawn_info.set_input_file(protobuf::RepeatedField::from_vec(source_files));
-    spawn_info.set_output_file(protobuf::RepeatedField::from_vec(vec![crate_name.to_string()]));
+    spawn_info.set_output_file(protobuf::RepeatedField::from_vec(vec![args.crate_name.clone()]));
 
     // If out_dir_env was set, set $OUT_DIR in the spawn info
-    if let Some(out_dir) = matches.value_of("out_dir_env") {
+    if let Some(out_dir) = args.out_dir_env {
         let mut env_var = EnvironmentVariable::new();
         env_var.set_name("OUT_DIR".to_string());
-        env_var.set_value(out_dir.to_string());
+        env_var.set_value(out_dir);
         spawn_info.set_variable(protobuf::RepeatedField::from_vec(vec![env_var]));
     }
 
@@ -135,8 +115,7 @@ fn main() -> Result<()> {
     let extra_action_info_bytes: Vec<u8> = extra_action
         .write_to_bytes()
         .with_context(|| "Failed to convert ExtraActionInfo to bytes".to_string())?;
-    let extra_action_path = Path::new(matches.value_of("output").unwrap());
-    let mut extra_action_file = File::create(&extra_action_path)
+    let mut extra_action_file = File::create(args.output)
         .with_context(|| "Failed to create ExtraActionInfo file".to_string())?;
     extra_action_file
         .write_all(&extra_action_info_bytes)

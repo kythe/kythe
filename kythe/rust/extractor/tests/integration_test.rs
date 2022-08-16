@@ -104,21 +104,21 @@ fn main() -> Result<()> {
 fn missing_arguments_fail() {
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let mut output = Command::new(&extractor_path).arg("--output=/tmp/wherever").output().unwrap();
-    assert_eq!(output.status.code().unwrap(), 1);
+    assert_eq!(output.status.code().unwrap(), 2);
     assert!(
         String::from_utf8_lossy(&output.stderr)
             .starts_with("error: The following required arguments were not provided:")
     );
 
     output = Command::new(&extractor_path).arg("--extra_action=/tmp/wherever").output().unwrap();
-    assert_eq!(output.status.code().unwrap(), 1);
+    assert_eq!(output.status.code().unwrap(), 2);
     assert!(
         String::from_utf8_lossy(&output.stderr)
             .starts_with("error: The following required arguments were not provided:")
     );
 
     output = Command::new(&extractor_path).output().unwrap();
-    assert_eq!(output.status.code().unwrap(), 1);
+    assert_eq!(output.status.code().unwrap(), 2);
     assert!(
         String::from_utf8_lossy(&output.stderr)
             .starts_with("error: The following required arguments were not provided:")

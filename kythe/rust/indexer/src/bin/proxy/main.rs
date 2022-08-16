@@ -16,38 +16,38 @@ use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, proxyrequests, wri
 
 use analysis_rust_proto::*;
 use anyhow::{anyhow, Context, Result};
-use clap::{App, Arg};
+use clap::Parser;
 use serde_json::Value;
 use std::io::{self, Write};
+
+#[derive(Parser)]
+#[clap(author = "The Kythe Authors")]
+#[clap(about = "Kythe Rust Proxy Indexer", long_about = None)]
+#[clap(rename_all = "snake_case")]
+struct Args {
+    /// Disables emitting cross references to the standard library
+    #[clap(long, action)]
+    no_emit_std_lib: bool,
+
+    /// Emits built-in types in the "std" corpus
+    #[clap(long, action)]
+    tbuiltin_std_corpus: bool,
+}
 
 fn main() -> Result<()> {
     let mut file_provider = ProxyFileProvider::new();
     let mut kythe_writer = ProxyWriter::new();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
 
-    let matches = App::new("Kythe Rust Proxy Indexer")
-        .arg(
-            Arg::with_name("no_emit_std_lib")
-                .long("no_emit_std_lib")
-                .required(false)
-                .help("Disables emitting cross references to the standard library"),
-        )
-        .arg(
-            Arg::with_name("tbuiltin_std_corpus")
-                .long("tbuiltin_std_corpus")
-                .required(false)
-                .help("Emits built-in types in the \"std\" corpus"),
-        )
-        .get_matches();
-    let emit_std_lib = !matches.is_present("no_emit_std_lib");
-    let tbuiltin_std_corpus = matches.is_present("tbuiltin_std_corpus");
+    let args = Args::parse();
+    let emit_std_lib = !args.no_emit_std_lib;
 
     // Request and process
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
         let index_res =
-            indexer.index_cu(&unit, &mut file_provider, emit_std_lib, tbuiltin_std_corpus);
+            indexer.index_cu(&unit, &mut file_provider, emit_std_lib, args.tbuiltin_std_corpus);
         if index_res.is_ok() {
             send_done(true, String::new())?;
         } else {

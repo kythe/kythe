@@ -60,7 +60,8 @@ crates_repository(
             version = "0.13.0",
         ),
         "clap": crate.spec(
-            version = "2.34.0",
+            features = ["derive"],
+            version = "3.1.6",
         ),
         "colored": crate.spec(
             version = "2.0.0",

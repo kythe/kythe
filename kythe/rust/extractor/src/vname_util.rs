@@ -18,7 +18,7 @@ use regex::Regex;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::Path;
+use std::path::PathBuf;
 
 /// The String forms of the vname field patterns
 #[derive(Deserialize)]
@@ -66,7 +66,7 @@ pub struct VNameRule {
 
 impl VNameRule {
     /// Processed vname rules defined in files
-    pub fn parse_vname_rules(config_path: &Path) -> Result<Vec<Self>> {
+    pub fn parse_vname_rules(config_path: &PathBuf) -> Result<Vec<Self>> {
         let mut processed_rules = Vec::new();
         let file = File::open(&config_path)
             .with_context(|| format!("Failed to open file: {}", config_path.to_string_lossy()))?;
