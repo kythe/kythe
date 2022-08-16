@@ -98,3 +98,8 @@ build:clang-tidy --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc
     .
+
+# Enable rustfmt tests on all Rust targets
+build --@rules_rust//:rustfmt.toml=//tools/rust:rustfmt.toml
+build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
+build --output_groups=+rustfmt_checks
