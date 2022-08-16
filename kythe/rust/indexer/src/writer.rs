@@ -25,7 +25,7 @@ pub trait KytheWriter {
     ///
     /// Given an Kythe storage proto Entry, write that entry to the output of
     /// the KytheWriter. If the operation is successful, the function will
-    /// return Ok with a void value.KytheError
+    /// return Ok.
     ///
     /// # Errors
     ///
@@ -33,7 +33,7 @@ pub trait KytheWriter {
     /// [WriterError][KytheError::WriterError] will be returned.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError>;
 
-    /// Flushes the CodedOutputStream buffer to output
+    /// Flushes the writer's underlying buffer.
     ///
     /// # Errors
     ///
@@ -52,7 +52,9 @@ impl<'a> CodedOutputStreamWriter<'a> {
     ///
     /// Takes a writer that implements the `Write` trait as the only argument.
     pub fn new(writer: &'a mut dyn Write) -> CodedOutputStreamWriter<'a> {
-        Self { output_stream: CodedOutputStream::new(writer) }
+        Self {
+            output_stream: CodedOutputStream::new(writer),
+        }
     }
 }
 
@@ -66,8 +68,12 @@ impl<'a> KytheWriter for CodedOutputStreamWriter<'a> {
     /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let entry_size_bytes = entry.compute_size();
-        self.output_stream.write_raw_varint32(entry_size_bytes).map_err(KytheError::WriterError)?;
-        entry.write_to_with_cached_sizes(&mut self.output_stream).map_err(KytheError::WriterError)
+        self.output_stream
+            .write_raw_varint32(entry_size_bytes)
+            .map_err(KytheError::WriterError)?;
+        entry
+            .write_to_with_cached_sizes(&mut self.output_stream)
+            .map_err(KytheError::WriterError)
     }
 
     fn flush(&mut self) -> Result<(), KytheError> {
@@ -78,26 +84,28 @@ impl<'a> KytheWriter for CodedOutputStreamWriter<'a> {
 /// A [KytheWriter] that communicates with the analysis driver proxy
 pub struct ProxyWriter {
     buffer: Vec<String>,
+    max_size: usize,
 }
 
 impl ProxyWriter {
     /// Create a new instance of ProxyWriter
-    ///
-    /// Takes a writer that implements the `Write` trait as the only argument.
-    pub fn new() -> ProxyWriter {
-        Self { buffer: Vec::new() }
+    pub fn new(max_buffer_size: usize) -> ProxyWriter {
+        Self {
+            buffer: Vec::new(),
+            max_size: max_buffer_size,
+        }
     }
 }
 
 impl Default for ProxyWriter {
     fn default() -> Self {
-        Self::new()
+        Self::new(1000)
     }
 }
 
 impl KytheWriter for ProxyWriter {
-    /// Given an [Entry], writes the entry to the buffer.
-    /// If the buffer reaches size 1000, automatically flush to the proxy.
+    /// Given an [Entry], writes the entry to the buffer, possibly flushing if
+    /// it has reached its maximum size.
     ///
     /// # Errors
     ///
@@ -105,7 +113,7 @@ impl KytheWriter for ProxyWriter {
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let bytes = entry.write_to_bytes().map_err(KytheError::WriterError)?;
         self.buffer.push(base64::encode(&bytes));
-        if self.buffer.len() >= 1000 {
+        if self.buffer.len() >= self.max_size {
             self.flush()?;
         }
         Ok(())

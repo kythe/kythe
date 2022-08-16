@@ -22,7 +22,9 @@ pub struct OffsetIndex {
 impl OffsetIndex {
     /// Initialize an empty OffsetIndex
     pub fn new() -> Self {
-        Self { files: HashMap::new() }
+        Self {
+            files: HashMap::new(),
+        }
     }
 
     /// Adds a new file using the provided string content
@@ -109,7 +111,12 @@ impl LineIndex {
         num_columns: u32,
         column_indices: Vec<u32>,
     ) -> Self {
-        Self { all_single_byte, offset, num_columns, column_indices }
+        Self {
+            all_single_byte,
+            offset,
+            num_columns,
+            column_indices,
+        }
     }
 
     /// Get the byte offset of the character on this line at the provided

@@ -56,7 +56,12 @@ fn main() -> Result<()> {
     let mut indexer = KytheIndexer::new(&mut writer);
 
     for unit in compilation_units {
-        indexer.index_cu(&unit, &mut kzip_provider, emit_std_lib, args.tbuiltin_std_corpus)?;
+        indexer.index_cu(
+            &unit,
+            &mut kzip_provider,
+            emit_std_lib,
+            args.tbuiltin_std_corpus,
+        )?;
     }
     Ok(())
 }
