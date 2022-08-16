@@ -52,6 +52,10 @@ struct Args {
     /// The path that $OUT_DIR will be set to
     #[clap(long, value_parser)]
     out_dir_env: Option<String>,
+
+    /// Add \"--test\" to the compiler arguments
+    #[clap(long, action)]
+    test_lib: bool,
 }
 
 fn main() -> Result<()> {
@@ -82,7 +86,7 @@ fn main() -> Result<()> {
         // This path gets replaced by the extractor so it doesn't matter
         "--out-dir=/tmp".to_string(),
     ];
-    if matches.is_present("test_lib") {
+    if args.test_lib {
         arguments.push("--test".to_string());
     }
     spawn_info.set_argument(protobuf::RepeatedField::from_vec(arguments));
