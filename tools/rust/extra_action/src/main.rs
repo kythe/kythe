@@ -26,7 +26,7 @@ use std::path::PathBuf;
 #[clap(rename_all = "snake_case")]
 struct Args {
     /// Comma delimited source file paths
-    #[clap(long, value_parser, value_name = "file,file")]
+    #[clap(long, value_parser, value_name = "file,...")]
     src_files: String,
 
     /// Desired output path for the ExtraAction
