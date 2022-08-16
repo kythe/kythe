@@ -46,12 +46,7 @@ fn main() -> Result<()> {
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
-        match indexer.index_cu(
-            &unit,
-            &mut file_provider,
-            emit_std_lib,
-            args.tbuiltin_std_corpus,
-        ) {
+        match indexer.index_cu(&unit, &mut file_provider, emit_std_lib, args.tbuiltin_std_corpus) {
             Ok(_) => send_done(true, String::new())?,
             Err(e) => send_done(false, e.to_string())?,
         }
@@ -64,9 +59,7 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 
     // Read the response from the proxy
     let mut response_string = String::new();
-    io::stdin()
-        .read_line(&mut response_string)
-        .context("Failed to read response from proxy")?;
+    io::stdin().read_line(&mut response_string).context("Failed to read response from proxy")?;
 
     // Convert to json and extract information
     let response: Value =
@@ -93,8 +86,6 @@ fn send_done(ok: bool, msg: String) -> Result<()> {
 
     // Grab the response, but we don't care what it is so just throw it away
     let mut response_string = String::new();
-    io::stdin()
-        .read_line(&mut response_string)
-        .context("Failed to read response from proxy")?;
+    io::stdin().read_line(&mut response_string).context("Failed to read response from proxy")?;
     Ok(())
 }

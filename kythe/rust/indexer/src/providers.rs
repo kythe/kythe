@@ -85,10 +85,7 @@ impl KzipFileProvider {
             path.to_str().unwrap().to_owned().replace('/', "")
         };
 
-        Ok(Self {
-            zip_archive,
-            root_name,
-        })
+        Ok(Self { zip_archive, root_name })
     }
 
     /// Retrieve the Compilation Units from the kzip.
@@ -140,10 +137,8 @@ impl FileProvider for KzipFileProvider {
     fn contents(&mut self, _path: &str, digest: &str) -> Result<Vec<u8>, KytheError> {
         // Ensure the file exists in the kzip
         let name = self.file_path(_path, digest);
-        let file = self
-            .zip_archive
-            .by_name(&name)
-            .map_err(|_| KytheError::FileNotFoundError(name))?;
+        let file =
+            self.zip_archive.by_name(&name).map_err(|_| KytheError::FileNotFoundError(name))?;
         let mut reader = BufReader::new(file);
         let mut file_contents: Vec<u8> = Vec::new();
         reader.read_to_end(&mut file_contents)?;

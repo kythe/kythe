@@ -85,11 +85,7 @@ impl<'a> EntryEmitter<'a> {
             "/kythe/loc/start",
             byte_start.to_string().into_bytes().to_vec(),
         )?;
-        self.emit_fact(
-            anchor_vname,
-            "/kythe/loc/end",
-            byte_end.to_string().into_bytes().to_vec(),
-        )?;
+        self.emit_fact(anchor_vname, "/kythe/loc/end", byte_end.to_string().into_bytes().to_vec())?;
         self.emit_edge(anchor_vname, target_vname, "/kythe/edge/defines/binding")
     }
 
@@ -132,12 +128,8 @@ impl<'a> EntryEmitter<'a> {
         url: Option<&str>,
     ) -> Result<(), KytheError> {
         // Combine diagnostic message fields and create sha256 sum
-        let combined_description = format!(
-            "{}||{}||{}",
-            message,
-            details.unwrap_or_default(),
-            url.unwrap_or_default()
-        );
+        let combined_description =
+            format!("{}||{}||{}", message, details.unwrap_or_default(), url.unwrap_or_default());
         let mut sha256 = Sha256::new();
         sha256.update(combined_description.as_str().as_bytes());
         let bytes = sha256.finalize();
@@ -148,16 +140,8 @@ impl<'a> EntryEmitter<'a> {
         diagnostic_vname.set_signature(format!("{}_{}", source_vname.get_signature(), sha256sum));
 
         // Emit diagnostic node
-        self.emit_fact(
-            &diagnostic_vname,
-            "/kythe/node/kind",
-            b"diagnostic".to_vec(),
-        )?;
-        self.emit_fact(
-            &diagnostic_vname,
-            "/kythe/message",
-            message.as_bytes().to_vec(),
-        )?;
+        self.emit_fact(&diagnostic_vname, "/kythe/node/kind", b"diagnostic".to_vec())?;
+        self.emit_fact(&diagnostic_vname, "/kythe/message", message.as_bytes().to_vec())?;
         if details.is_some() {
             self.emit_fact(
                 &diagnostic_vname,

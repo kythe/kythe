@@ -47,28 +47,21 @@ struct ProxyOutputRequest {
 
 /// Create a proxystub command for requesting file information
 pub fn file(path: String, digest: String) -> Result<String> {
-    let request = ProxyFileRequest {
-        req: String::from("file"),
-        args: ProxyFileRequestArgs { path, digest },
-    };
+    let request =
+        ProxyFileRequest { req: String::from("file"), args: ProxyFileRequestArgs { path, digest } };
     serde_json::to_string(&request)
 }
 
 /// Create a proxystub command indicating we are done indexing a compilation
 /// unit
 pub fn done(ok: bool, msg: String) -> Result<String> {
-    let request = ProxyDoneRequest {
-        req: String::from("done"),
-        args: ProxyDoneRequestArgs { ok, msg },
-    };
+    let request =
+        ProxyDoneRequest { req: String::from("done"), args: ProxyDoneRequestArgs { ok, msg } };
     serde_json::to_string(&request)
 }
 
 /// Create a proxystub command outputting entries
 pub fn output(args: Vec<String>) -> Result<String> {
-    let request = ProxyOutputRequest {
-        req: String::from("output_wire"),
-        args,
-    };
+    let request = ProxyOutputRequest { req: String::from("output_wire"), args };
     serde_json::to_string(&request)
 }
