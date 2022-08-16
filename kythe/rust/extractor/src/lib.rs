@@ -31,14 +31,18 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
+pub fn generate_analysis(
+    rustc_arguments: Vec<String>,
+    output_dir: PathBuf,
+    output_file_name: &str,
+) -> Result<(), String> {
     let first_arg =
         rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
     if first_arg != &"".to_string() {
         return Err("The first argument must be an empty string".into());
     }
 
-    let mut callback_shim = CallbackShim::new(output_dir);
+    let mut callback_shim = CallbackShim::new(output_dir, output_file_name.to_string());
 
     rustc_driver::catch_fatal_errors(|| {
         RunCompiler::new(&rustc_arguments, &mut callback_shim).run()
@@ -53,12 +57,13 @@ pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> R
 #[derive(Default)]
 struct CallbackShim {
     output_dir: PathBuf,
+    output_file_name: String,
 }
 
 impl CallbackShim {
     /// Create a new CallbackShim that dumps save_analysis files to `output_dir`
-    pub fn new(output_dir: PathBuf) -> Self {
-        Self { output_dir }
+    pub fn new(output_dir: PathBuf, output_file_name: String) -> Self {
+        Self { output_dir, output_file_name }
     }
 }
 
@@ -96,7 +101,7 @@ impl Callbacks for CallbackShim {
                 &crate_name,
                 input,
                 None,
-                DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
+                DumpHandler::new(Some(self.output_dir.as_path()), &self.output_file_name),
             )
         });
 

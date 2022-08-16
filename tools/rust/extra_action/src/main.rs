@@ -71,6 +71,12 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .help("The path that $OUT_DIR will be set to"),
         )
+        .arg(
+            Arg::with_name("test_lib")
+                .long("test_lib")
+                .required(false)
+                .help("Add \"--test\" to the compiler arguments"),
+        )
         .get_matches();
 
     let mut extra_action = ExtraActionInfo::new();
@@ -89,7 +95,7 @@ fn main() -> Result<()> {
             .position(|file_path| file_path.contains(&"main.rs") || file_path.contains(&"lib.rs"))
             .unwrap()]
     };
-    let arguments: Vec<String> = vec![
+    let mut arguments: Vec<String> = vec![
         "--".to_string(),
         "rustc".to_string(),
         // Only the main source file gets passed to the compiler
@@ -100,6 +106,9 @@ fn main() -> Result<()> {
         // This path gets replaced by the extractor so it doesn't matter
         "--out-dir=/tmp".to_string(),
     ];
+    if matches.is_present("test_lib") {
+        arguments.push("--test".to_string());
+    }
     spawn_info.set_argument(protobuf::RepeatedField::from_vec(arguments));
     spawn_info.set_input_file(protobuf::RepeatedField::from_vec(source_files));
     spawn_info.set_output_file(protobuf::RepeatedField::from_vec(vec![crate_name.to_string()]));

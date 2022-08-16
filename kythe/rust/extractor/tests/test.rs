@@ -24,7 +24,7 @@ fn empty_args_fails() {
     let args: Vec<String> = Vec::new();
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
     let analysis_directory = PathBuf::from(temp_dir.path());
-    let result = generate_analysis(args, analysis_directory);
+    let result = generate_analysis(args, analysis_directory, "lib");
     assert_eq!(result.unwrap_err(), "Arguments vector should not be empty".to_string());
 }
 
@@ -33,7 +33,7 @@ fn nonempty_string_first_fails() {
     let args: Vec<String> = vec!["nonempty".to_string()];
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
     let analysis_directory = PathBuf::from(temp_dir.path());
-    let result = generate_analysis(args, analysis_directory);
+    let result = generate_analysis(args, analysis_directory, "lib");
     assert_eq!(result.unwrap_err(), "The first argument must be an empty string".to_string());
 }
 
@@ -55,11 +55,11 @@ fn correct_arguments_succeed() {
         format!("--out-dir={}", temp_dir.path().to_str().unwrap()),
     ];
     let analysis_directory = PathBuf::from(temp_dir.path());
-    let result = generate_analysis(args, analysis_directory);
+    let result = generate_analysis(args, analysis_directory, "lib");
     assert_eq!(result.unwrap(), (), "generate_analysis result wasn't void");
 
     // Ensure the save_analysis file exists
-    let _ = File::open(Path::new(temp_dir.path()).join("save-analysis/test_crate.json"))
+    let _ = File::open(Path::new(temp_dir.path()).join("save-analysis/lib.json"))
         .expect("save_analysis did not exist in the expected path");
 }
 
