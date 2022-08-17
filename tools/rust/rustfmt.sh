@@ -14,9 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Find the rustfmt binary that was distributed with rules_rust so that we
-# don't have to rely on the system binary, which may be out of date.
-RUSTFMT=$(find -L bazel-kythe/external -not \( -path "bazel-kythe/external/io_kythe" -prune \) -wholename "bazel-kythe/external/rust_*_x86_64*_tools/bin/rustfmt")
+# Find the rustfmt binary that was distributed with rules_rust so that we don't
+# have to rely on the system binary, which may be out of date. If rules_rust
+# is not present (which usually occurs if we are running in Cloud Build), we
+# use the version of rustfmt installed on the system.
+if [[ -d "bazel-kythe/external/rules_rust" ]]; then
+    RUSTFMT=$(find -L bazel-kythe/external -not \( -path "bazel-kythe/external/io_kythe" -prune \) -wholename "bazel-kythe/external/rust_*_x86_64*_tools/bin/rustfmt")
+else
+    RUSTFMT="rustfmt"
+fi
 
 # If no arguments are provided, format all Rust files. Otherwise, format the
 # specified file.
