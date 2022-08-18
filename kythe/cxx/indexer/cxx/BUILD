@@ -201,6 +201,7 @@ cc_library(
         ":node_set",
         ":recursive_type_visitor",
         ":semantic_hash",
+        ":stream_adapter",
         ":type_map",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:scope_guard",
@@ -607,6 +608,17 @@ cc_test(
         "@llvm-project//clang:frontend",
         "@llvm-project//clang:lex",
         "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_library(
+    name = "stream_adapter",
+    srcs = ["stream_adapter.cc"],
+    hdrs = ["stream_adapter.h"],
+    deps = [
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//llvm:Support",
     ],
 )
