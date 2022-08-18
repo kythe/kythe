@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/pre-commit .
-FROM ubuntu:focal
+FROM ubuntu:22.04
 
 RUN apt-get update \
         && apt-get upgrade -y \
@@ -22,7 +22,7 @@ RUN apt-get update \
                 # pre-commit dependencies
                 python3 python3-dev python3-pip \
                 # Linter dependencies
-                golang-go shellcheck clang-format-11 openjdk-11-jre-headless git \
+                golang-1.18-go shellcheck clang-format-11 openjdk-11-jre-headless git \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
@@ -30,14 +30,18 @@ RUN apt-get update \
 RUN update-alternatives \
       --install /usr/bin/clang-format clang-format /usr/bin/clang-format-11    100
 
+# Make go-1.18 the default
+RUN update-alternatives \
+      --install /usr/bin/go go /usr/lib/go-1.18/bin/go  100
+
 # Install pip-packages
 RUN pip3 install --upgrade pip \
  && pip3 install pre-commit
 
 # Install extra linters
-RUN go get github.com/bazelbuild/buildtools/buildifier \
- && go get golang.org/x/lint/golint \
- && go get honnef.co/go/tools/cmd/staticcheck
+RUN go install github.com/bazelbuild/buildtools/buildifier@latest \
+ && go install golang.org/x/lint/golint@latest \
+ && go install honnef.co/go/tools/cmd/staticcheck@latest
 
 # Fetch the latest version of google-java-format from GitHub
 RUN curl -s https://api.github.com/repos/google/google-java-format/releases/latest \
@@ -53,7 +57,7 @@ RUN curl -s https://api.github.com/repos/google/google-java-format/releases/late
 ENV RUSTUP_HOME=/root/.rustup
 ENV CARGO_HOME=/root/.cargo
 RUN curl -o /tmp/rustup.sh --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
-        /bin/bash /tmp/rustup.sh --default-toolchain nightly --profile default -y && \
+        /bin/bash /tmp/rustup.sh --default-toolchain nightly-2022-07-27 --profile default -y && \
         rm /tmp/rustup.sh
 
 # Install go wrapper script
