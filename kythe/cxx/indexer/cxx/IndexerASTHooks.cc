@@ -50,6 +50,7 @@
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
+#include "kythe/cxx/indexer/cxx/stream_adapter.h"
 #include "llvm/Support/raw_ostream.h"
 
 ABSL_FLAG(bool, experimental_alias_template_instantiations, false,
@@ -270,14 +271,6 @@ const clang::Decl* FindImplicitDeclForStmt(
     }
   }
   return nullptr;
-}
-
-template <typename T, typename... Tail>
-std::string DumpString(const T& val, Tail&&... tail) {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  val.dump(ss, std::forward<Tail>(tail)...);
-  return s;
 }
 
 bool IsCompleteAggregateType(clang::QualType Type) {
@@ -5899,40 +5892,32 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
 
 void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Decl* Decl) const {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  Decl->dump(ss);
-  LOG(ERROR) << msg << " :" << std::endl << s;
+  LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Decl);
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Expr* Expr) const {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  Expr->dump(ss, Context);
-  LOG(ERROR) << msg << " :" << std::endl << s;
+  LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Expr, Context);
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Type* Type) const {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  Type->dump(ss, Context);
-  LOG(ERROR) << msg << " :" << std::endl << s;
+  LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Type, Context);
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             clang::QualType Type) const {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  Type.dump(ss, Context);
-  LOG(ERROR) << msg << " :" << std::endl << s;
+  LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(Type, Context);
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             clang::TypeLoc Type) const {
-  // TODO(shahms): Include the location range.
-  LogErrorWithASTDump(msg, Type.getType());
+  LOG(ERROR) << msg << " :" << std::endl
+             << "@"
+             << StreamAdapter::Print(Type.getSourceRange(),
+                                     *Observer.getSourceManager())
+             << "\n"
+             << StreamAdapter::Dump(Type.getType(), Context);
 }
 
 void IndexerASTVisitor::PrepareAlternateSemanticCache() {
