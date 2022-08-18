@@ -36,7 +36,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let mut file_provider = ProxyFileProvider::new();
-    let mut kythe_writer = ProxyWriter::new();
+    let mut kythe_writer = ProxyWriter::default();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
 
     let args = Args::parse();
@@ -46,12 +46,9 @@ fn main() -> Result<()> {
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res =
-            indexer.index_cu(&unit, &mut file_provider, emit_std_lib, args.tbuiltin_std_corpus);
-        if index_res.is_ok() {
-            send_done(true, String::new())?;
-        } else {
-            send_done(false, index_res.err().unwrap().to_string())?;
+        match indexer.index_cu(&unit, &mut file_provider, emit_std_lib, args.tbuiltin_std_corpus) {
+            Ok(_) => send_done(true, String::new())?,
+            Err(e) => send_done(false, e.to_string())?,
         }
     }
 }
@@ -67,8 +64,8 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
     // Convert to json and extract information
     let response: Value =
         serde_json::from_str(&response_string).context("Failed to parse response as JSON")?;
-    if response["rsp"].as_str().unwrap() == "ok" {
-        let args = response["args"].clone();
+    if response["rsp"].as_str().unwrap_or_default() == "ok" {
+        let args = &response["args"];
         let unit_base64 = args["unit"].as_str().unwrap();
         let unit_bytes = base64::decode(unit_base64)
             .context("Failed to decode CompilationUnit sent by proxy")?;

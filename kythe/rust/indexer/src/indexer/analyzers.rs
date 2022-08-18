@@ -296,7 +296,10 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             KytheError::IndexerError("Crate did not have prelude data".to_string())
         })?;
 
-        // First emit the node for our own crate and add it to the hashmap
+        assert!(self.krate_ids.is_empty());
+        self.krate_ids.reserve(1 + krate_prelude.external_crates.len());
+
+        // First emit the node for our own crate and add it to the HashMap
         let krate_id = &krate_prelude.crate_id;
         let krate_vname = self.generate_crate_vname(krate_id);
         self.krate_vname = krate_vname.clone();
@@ -331,13 +334,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         // Create a HashMap mapping the implementation Id to the implementation
         // It might be a safe assumption that the index is the Id, but we can't be too
         // careful
-        let impls = self.analysis.impls.clone();
-        let mut impl_map: HashMap<u32, rls_data::Impl> = HashMap::new();
+        let impls = &self.analysis.impls;
+        let mut impl_map: HashMap<u32, rls_data::Impl> = HashMap::with_capacity(impls.len());
         for implementation in impls.iter() {
             impl_map.insert(implementation.id, implementation.clone());
         }
-        // Drop the cloned vector to save memory
-        drop(impls);
 
         // Create a HashMap betwen a method definition Id and the struct and trait being
         // implemented on
@@ -359,9 +360,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                     // The optional trait being implemented on
                     // The save_analysis file will have the krate and index be maxint if the
                     // implementation is not on a trait.
-                    let max_int = 4294967295;
+                    const MAX_INT: u32 = 4294967295;
                     let trait_target =
-                        if relation.to.krate != max_int { Some(relation.to) } else { None };
+                        if relation.to.krate != MAX_INT { Some(relation.to) } else { None };
                     method_index.insert(*child, MethodImpl { struct_target, trait_target });
                 }
             }
@@ -414,26 +415,28 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Emit Kythe graph information for the definitions in the crate
     pub fn emit_definitions(&mut self) -> Result<(), KytheError> {
+        assert!(!self.krate_ids.is_empty());
+
         // We must clone to avoid double borrowing "self"
         let defs = self.analysis.defs.clone();
 
         for def in &defs {
             let file_name = clean(def.span.file_name.to_str().unwrap());
-            let file_vname = self.file_vnames.get(&file_name);
-            // save_analysis sometimes references files that we don't have as file nodes
-            if file_vname.is_none() {
-                continue;
-            }
+            let file_vname = match self.file_vnames.get(&file_name) {
+                Some(v) => v,
+                // save_analysis sometimes references files that we don't have as file nodes
+                _ => continue,
+            };
 
             if let Some(krate_id) = self.krate_ids.get(&def.id.krate) {
                 // Generate node based on definition type
                 let def_vname = self.generate_def_vname(krate_id, def.id.index);
-                self.emit_definition_node(&def_vname, def, file_vname.unwrap())?;
+                self.emit_definition_node(&def_vname, def, file_vname)?;
             } else {
                 // Generate a diagnostic node indicating that we couldn't find the refernced
                 // crate
                 self.emitter.emit_diagnostic(
-                    file_vname.unwrap(),
+                    file_vname,
                     "Cross reference could not be generated",
                     Some(&format!("Failed to generate cross reference for \"{}\" because the referenced crate could not be found", def.qualname)),
                     None
@@ -713,6 +716,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
     /// Emit the Kythe edges for cross references for imports in this crate
     pub fn emit_import_xrefs(&mut self) -> Result<(), KytheError> {
+        assert!(!self.krate_ids.is_empty());
+
         // We must clone to avoid double borrowing "self"
         let imports = self.analysis.imports.clone();
 
@@ -797,6 +802,8 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     // different types being looped through
     /// Emit the Kythe edges for cross references in this crate
     pub fn emit_xrefs(&mut self) -> Result<(), KytheError> {
+        assert!(!self.krate_ids.is_empty());
+
         // We must clone to avoid double borrowing "self"
         let refs = self.analysis.refs.clone();
 
