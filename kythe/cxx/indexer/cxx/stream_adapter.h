@@ -23,8 +23,18 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
+
+/// \brief StreamAdapter adapts llvm::raw_ostream-compatible types so that they
+/// can be streamed to standard streams.
 class StreamAdapter {
  public:
+  /// \brief Adapts an object with a dump(llvm::raw_ostream&, ...) member
+  /// function to stream the output on an OS stream, e.g.
+  ///
+  /// std::cerr << StreamAdapter::Dump(*Decl) << std::endl;
+  ///
+  /// Would call the equivalent of Decl->dump(std::cerr). Additional arguments
+  /// are forwarded after the output stream.
   template <typename T, typename... Tail>
   static StreamAdapter Dump(T&& value ABSL_ATTRIBUTE_LIFETIME_BOUND,
                             Tail&&... tail ABSL_ATTRIBUTE_LIFETIME_BOUND) {
@@ -33,6 +43,13 @@ class StreamAdapter {
     });
   }
 
+  /// \brief Adapts an object with a print(llvm::raw_ostream&, ...) member
+  /// function to stream the output on an OS stream, e.g.
+  ///
+  /// std::cerr << StreamAdapter::Print(*Decl) << std::endl;
+  ///
+  /// Would call the equivalent of Decl->print(std::cerr). Additional arguments
+  /// are forwarded after the output stream.
   template <typename T, typename... Tail>
   static StreamAdapter Print(T&& value ABSL_ATTRIBUTE_LIFETIME_BOUND,
                              Tail&&... tail ABSL_ATTRIBUTE_LIFETIME_BOUND) {
@@ -41,6 +58,9 @@ class StreamAdapter {
     });
   }
 
+  /// \brief Adapts an object via an underlying operator<<, e.g.
+  ///
+  /// std::cerr << StreamAdapter::Stream(*Decl) << std::endl;
   template <typename T>
   static StreamAdapter Stream(T&& value ABSL_ATTRIBUTE_LIFETIME_BOUND) {
     return StreamAdapter(
