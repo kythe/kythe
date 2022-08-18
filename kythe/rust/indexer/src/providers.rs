@@ -194,7 +194,8 @@ impl FileProvider for ProxyFileProvider {
     /// Given a file path and digest, returns whether the proxy can find the
     /// file.
     fn exists(&mut self, path: &str, digest: &str) -> Result<bool, KytheError> {
-        // There is no API to check for a file's existence so we must request its contents.
+        // There is no API to check for a file's existence so we must request its
+        // contents.
         match self.file_request(path, digest) {
             Ok(_) => Ok(true),
             Err(KytheError::FileNotFoundError(_)) => Ok(false),
