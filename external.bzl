@@ -165,14 +165,6 @@ def _cc_dependencies():
     )
 
     maybe(
-        github_archive,
-        name = "com_google_googletest",
-        repo_name = "google/googletest",
-        commit = "3005672db1d05f2378f642b61faa96f85498befe",
-        sha256 = "d87849e281d376a1c955f867cf10be0d672ff41dbe7fd600bcc2faa9bcb6e23f",
-    )
-
-    maybe(
         http_archive,
         name = "com_google_googletest",
         sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
@@ -181,6 +173,18 @@ def _cc_dependencies():
             "https://mirror.bazel.build/github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz",
             "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz",
         ],
+    )
+
+    maybe(
+        github_archive,
+        name = "com_github_google_glog",
+        repo_name = "google/glog",
+        commit = "d4e8ebab7e295f20f86cae9557da0d5087a02f73",
+        sha256 = "b38713b8189bc621185c1d558f0dbeef6ce821688e0990b8c6d72c703769779c",
+        build_file_content = "\n".join([
+            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
+            "glog_library(with_gflags=0)",
+        ]),
     )
 
     maybe(
