@@ -3625,28 +3625,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   return true;
 }
 
-absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
-    const clang::TypedefNameDecl* Decl) {
-  const auto Cached = DeclToNodeId.find(Decl);
-  if (Cached != DeclToNodeId.end()) {
-    return Cached->second;
-  }
-  clang::TypeSourceInfo* TSI = Decl->getTypeSourceInfo();
-  if (auto AliasedTypeId = BuildNodeIdForType(TSI->getTypeLoc())) {
-    auto Marks = MarkedSources.Generate(Decl);
-    Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
-    GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
-    AssignUSR(AliasNameId, AliasedTypeId.value(), Decl);
-    return Observer.recordTypeAliasNode(
-        AliasNameId, AliasedTypeId.value(),
-        BuildNodeIdForType(FollowAliasChain(Decl)),
-        Marks.GenerateMarkedSource(Observer.nodeIdForTypeAliasNode(
-            AliasNameId, AliasedTypeId.value())));
-  }
-  return absl::nullopt;
-}
-
 bool IndexerASTVisitor::VisitObjCTypeParamDecl(
     const clang::ObjCTypeParamDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
@@ -3705,12 +3683,16 @@ bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl* Decl) {
     // Don't index __uint128_t, __builtin_va_list, __int128_t
     return true;
   }
-  if (auto InnerNodeId = BuildNodeIdForTypedefNameDecl(Decl)) {
-    GraphObserver::NodeId OuterNodeId = InnerNodeId.value();
+
+  if (const auto AliasedTypeId =
+          BuildNodeIdForType(Decl->getTypeSourceInfo()->getTypeLoc())) {
+    GraphObserver::NodeId InnerNodeId = BuildNodeIdForDecl(Decl);
+    GraphObserver::NodeId OuterNodeId = InnerNodeId;
+
     // If this is a template, we need to emit an abs node for it.
     if (auto* TA = dyn_cast_or_null<clang::TypeAliasDecl>(Decl)) {
       if (auto* TATD = TA->getDescribedAliasTemplate()) {
-        OuterNodeId = RecordTemplate(TATD, InnerNodeId.value());
+        OuterNodeId = RecordTemplate(TATD, InnerNodeId);
       }
     }
     SourceRange Range = RangeForNameOfDeclaration(Decl);
@@ -3719,6 +3701,13 @@ bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl* Decl) {
         OuterNodeId, absl::nullopt);
     AddChildOfEdgeToDeclContext(Decl, OuterNodeId);
     AssignUSR(OuterNodeId, Decl);
+
+    auto Marks = MarkedSources.Generate(Decl);
+    Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
+    AssignUSR(InnerNodeId, Decl);
+    Observer.recordTypeAliasNode(InnerNodeId, *AliasedTypeId,
+                                 BuildNodeIdForType(FollowAliasChain(Decl)),
+                                 Marks.GenerateMarkedSource(InnerNodeId));
   }
   return true;
 }
@@ -4029,9 +4018,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       !isa<clang::ObjCTypeParamDecl>(Decl)) {
     // There's a special way to name type aliases but we want to handle type
     // parameters for Objective-C as "normal" named decls.
-    if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
-      DeclToNodeId.insert({Decl, TypedefNameId.value()});
-      return TypedefNameId.value();
+    if (auto AliasedTypeId =
+            BuildNodeIdForType(TND->getTypeSourceInfo()->getTypeLoc())) {
+      GraphObserver::NodeId Id = Observer.nodeIdForTypeAliasNode(
+          BuildNameIdForDecl(TND), *AliasedTypeId);
+      DeclToNodeId.insert({Decl, Id});
+      return Id;
     }
   } else if (const auto* NS = dyn_cast<clang::NamespaceDecl>(Decl)) {
     // Namespaces are named according to their NameIDs.
@@ -4214,7 +4206,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
             return BuildNodeIdForType(clang::QualType(TDType, 0));
           } else if (const auto* TAlias = dyn_cast<clang::TypeAliasDecl>(TD)) {
             // The names for type alias types are the same for type alias nodes.
-            return BuildNodeIdForTypedefNameDecl(TAlias);
+            return BuildNodeIdForDecl(TAlias);
           } else {
             CHECK(options_.IgnoreUnimplemented)
                 << "Unknown case in BuildNodeIdForTemplateName";

@@ -504,12 +504,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return absl::nullopt;
   }
 
-  /// \brief Builds a stable node ID for `TND`.
-  ///
-  /// \param Decl The declaration that is being identified.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl* Decl);
-
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// There is not a one-to-one correspondence between `Decl`s and nodes.
