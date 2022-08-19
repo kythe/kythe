@@ -29,15 +29,11 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
-#include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Index/USRGeneration.h"
 #include "clang/Sema/SemaConsumer.h"
-#include "clang/Sema/Template.h"
 #include "glog/logging.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
@@ -317,13 +313,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   //   bool VisitBlockDecl(const clang::BlockDecl *Decl);
   //   bool VisitBlockExpr(const clang::BlockExpr *Expr);
 
-  /// \brief For functions that support it, controls the emission of range
-  /// information.
-  enum class EmitRanges {
-    No,  ///< Don't emit range information.
-    Yes  ///< Emit range information when it's available.
-  };
-
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
   absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
@@ -331,10 +320,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
-  /// \param ER Whether to notify the `GraphObserver` about source text
-  /// ranges for expressions.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForExpr(
-      const clang::Expr* Expr, EmitRanges ER);
+      const clang::Expr* Expr);
 
   /// \brief Builds a stable node ID for a special template argument.
   /// \param Id A string representing the special argument.
@@ -531,11 +518,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \return A stable node ID for `Decl`'s `Index`th subnode.
   GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl,
                                            unsigned Index);
-
-  /// \brief Categorizes the name of `Decl` according to the equivalence classes
-  /// defined by `GraphObserver::NameId::NameEqClass`.
-  GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
-      const clang::Decl* Decl) const;
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
@@ -805,7 +787,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
   bool AddNameToStream(llvm::raw_string_ostream& Ostream,
-                       const clang::NamedDecl* ND);
+                       const clang::NamedDecl* ND) const;
 
   /// \brief Assign `ND` (whose node ID is `TargetNode`) a USR if USRs are
   /// enabled.
@@ -868,8 +850,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// A subtree is prunable if it's "the same" in all possible indexer runs.
   /// This excludes, for example, certain template instantiations.
   bool declDominatesPrunableSubtree(const clang::Decl* Decl);
-
-  const IndexedParent* getIndexedParent(const clang::DynTypedNode& Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
   const IndexedParentMap* getAllParents();
