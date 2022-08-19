@@ -31,6 +31,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DeclVisitor.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
@@ -321,6 +322,73 @@ clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
 const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
   return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
+
+class NameEqClassDeclVisitor
+    : public clang::ConstDeclVisitor<NameEqClassDeclVisitor,
+                                     GraphObserver::NameId::NameEqClass> {
+  using NameEqClass = GraphObserver::NameId::NameEqClass;
+
+ public:
+  NameEqClassDeclVisitor() = default;
+
+  NameEqClass Visit(const clang::Decl* decl) {
+    CHECK(decl != nullptr);
+    return ConstDeclVisitor::Visit(decl);
+  }
+
+  NameEqClass VisitTagDecl(const clang::TagDecl* decl) {
+    switch (decl->getTagKind()) {
+      case clang::TTK_Struct:
+        return NameEqClass::Class;
+      case clang::TTK_Class:
+        return NameEqClass::Class;
+      case clang::TTK_Union:
+        return NameEqClass::Union;
+      default:
+        // TODO(zarko): Add classes for other tag kinds, like enums.
+        return NameEqClass::None;
+    }
+  }
+
+  NameEqClass VisitClassTemplateDecl(const clang::ClassTemplateDecl* decl) {
+    // Eqclasses should see through templates.
+    return Visit(decl->getTemplatedDecl());
+  }
+
+  NameEqClass VisitObjCContainerDecl(const clang::ObjCContainerDecl* decl) {
+    // In the future we might want to do something different for each of the
+    // important subclasses: clang::ObjCInterfaceDecl,
+    // clang::ObjCImplementationDecl, clang::ObjCProtocolDecl,
+    // clang::ObjCCategoryDecl, and clang::ObjCCategoryImplDecl.
+    return NameEqClass::Class;
+  }
+
+  NameEqClass VisitDecl(const clang::Decl* decl) { return NameEqClass::None; }
+};
+
+/// \brief Categorizes the name of `Decl` according to the equivalence classes
+/// defined by `GraphObserver::NameId::NameEqClass`.
+GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
+    const clang::Decl* decl) {
+  return NameEqClassDeclVisitor().Visit(decl);
+}
+
+bool IsBindingExpr(const clang::ASTContext& Context, const clang::Expr* Expr) {
+  clang::Expr::EvalResult Unused;
+  if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Unused, Context)) {
+    return false;
+  }
+  return true;
+}
+
+std::string ExpressionString(const clang::Expr* Expr,
+                             const clang::PrintingPolicy& Policy) {
+  std::string Text;
+  llvm::raw_string_ostream Out(Text);
+  Expr->printPretty(Out, nullptr, Policy);
+  return Text;
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -469,11 +537,6 @@ const IndexedParentMap* IndexerASTVisitor::getAllParents() {
         IndexedParentMap::Build(Context.getTranslationUnitDecl()));
   }
   return AllParents.get();
-}
-
-const IndexedParent* IndexerASTVisitor::getIndexedParent(
-    const clang::DynTypedNode& Node) {
-  return getAllParents()->GetIndexedParent(Node);
 }
 
 bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
@@ -1653,8 +1716,21 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
         S->InspectCallExpr(*this, E, RCC.value(), CalleeId);
       }
     } else if (const auto* CE = E->getCallee()) {
-      if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
-        RecordCallEdges(RCC.value(), CalleeId.value());
+      if (auto CalleeId = BuildNodeIdForExpr(CE)) {
+        RecordCallEdges(*RCC, *CalleeId);
+        if (auto CalleeRange =
+                RangeInCurrentContext(BuildNodeIdForImplicitStmt(CE),
+                                      NormalizeRange(CE->getExprLoc()))) {
+          if (IsBindingExpr(Context, CE)) {
+            Observer.recordDefinitionBindingRange(*CalleeRange, *CalleeId);
+            Observer.recordLookupNode(
+                *CalleeId, ExpressionString(CE, *Observer.getLangOptions()));
+          } else {
+            Observer.recordDeclUseLocation(
+                *CalleeRange, *CalleeId, GraphObserver::Claimability::Claimable,
+                IsImplicit(*CalleeRange));
+          }
+        }
       }
     }
   }
@@ -3658,34 +3734,6 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
   return true;
 }
 
-GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
-    const clang::Decl* D) const {
-  CHECK(D != nullptr);
-  if (const auto* T = dyn_cast<clang::TagDecl>(D)) {
-    switch (T->getTagKind()) {
-      case clang::TTK_Struct:
-        return GraphObserver::NameId::NameEqClass::Class;
-      case clang::TTK_Class:
-        return GraphObserver::NameId::NameEqClass::Class;
-      case clang::TTK_Union:
-        return GraphObserver::NameId::NameEqClass::Union;
-      default:
-        // TODO(zarko): Add classes for other tag kinds, like enums.
-        return GraphObserver::NameId::NameEqClass::None;
-    }
-  } else if (const auto* T = dyn_cast<clang::ClassTemplateDecl>(D)) {
-    // Eqclasses should see through templates.
-    return BuildNameEqClassForDecl(T->getTemplatedDecl());
-  } else if (isa<clang::ObjCContainerDecl>(D)) {
-    // In the future we might want to do something different for each of the
-    // important subclasses: clang::ObjCInterfaceDecl,
-    // clang::ObjCImplementationDecl, clang::ObjCProtocolDecl,
-    // clang::ObjCCategoryDecl, and clang::ObjCCategoryImplDecl.
-    return GraphObserver::NameId::NameEqClass::Class;
-  }
-  return GraphObserver::NameId::NameEqClass::None;
-}
-
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
     const clang::Decl* Decl) {
   for (const auto& Node : RootTraversal(getAllParents(), Decl)) {
@@ -3708,7 +3756,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
 /// \brief Attempts to add some representation of `ND` to `Ostream`.
 /// \return true on success; false on failure.
 bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream& Ostream,
-                                        const clang::NamedDecl* ND) {
+                                        const clang::NamedDecl* ND) const {
   // NamedDecls without names exist--e.g., unnamed namespaces.
   auto Name = ND->getDeclName();
   auto II = Name.getAsIdentifierInfo();
@@ -4405,49 +4453,31 @@ IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
 }
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
-    const clang::Expr* Expr, EmitRanges ER) {
+    const clang::Expr* Expr) {
   if (!options_.Verbosity || Expr == nullptr) {
     return absl::nullopt;
   }
   clang::Expr::EvalResult Result;
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);
-  std::string Text;
-  llvm::raw_string_ostream TOstream(Text);
-  bool IsBindingSite = false;
-  auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Expr),
-                                   NormalizeRange(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
     // graph; link ranges to them. Right now we don't emit any node data for
     // #const signatures.
-    TOstream << Result.Val.getAsString(Context, Expr->getType());
-    Ostream << TOstream.str() << "#const";
+    Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
   } else {
     // This includes expressions like UnresolvedLookupExpr, which can appear
     // in primary templates.
+    auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Expr),
+                                     NormalizeRange(Expr->getExprLoc()));
     if (!RCC) {
       return absl::nullopt;
     }
-    Observer.AppendRangeToStream(Ostream, RCC.value());
-    Expr->printPretty(TOstream, nullptr,
-                      clang::PrintingPolicy(*Observer.getLangOptions()));
-    Ostream << TOstream.str();
-    IsBindingSite = true;
+
+    Observer.AppendRangeToStream(Ostream, *RCC);
+    Expr->printPretty(Ostream, nullptr, *Observer.getLangOptions());
   }
-  auto ResultId =
-      Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
-  if (ER == EmitRanges::Yes && RCC) {
-    if (IsBindingSite) {
-      Observer.recordDefinitionBindingRange(RCC.value(), ResultId);
-      Observer.recordLookupNode(ResultId, TOstream.str());
-    } else {
-      Observer.recordDeclUseLocation(RCC.value(), ResultId,
-                                     GraphObserver::Claimability::Claimable,
-                                     IsImplicit(RCC.value()));
-    }
-  }
-  return ResultId;
+  return Observer.MakeNodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4476,7 +4506,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
           Arg.getAsTemplateOrTemplatePattern());
     case TemplateArgument::Expression:
       CHECK(Arg.getAsExpr() != nullptr);
-      return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
+      return BuildNodeIdForExpr(Arg.getAsExpr());
     case TemplateArgument::Pack: {
       std::vector<GraphObserver::NodeId> Nodes;
       Nodes.reserve(Arg.pack_size());
@@ -4663,7 +4693,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForIncompleteArray(
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
     const clang::DependentSizedArrayType& T) {
   if (auto ElemID = BuildNodeIdForType(T.getElementType())) {
-    if (auto ExprID = BuildNodeIdForExpr(T.getSizeExpr(), EmitRanges::No)) {
+    if (auto ExprID = BuildNodeIdForExpr(T.getSizeExpr())) {
       return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
                                      {*ElemID, *ExprID});
     } else {
@@ -4680,7 +4710,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForBitInt(const clang::BitIntType& T) {
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentBitInt(
     const clang::DependentBitIntType& T) {
-  if (auto ExprID = BuildNodeIdForExpr(T.getNumBitsExpr(), EmitRanges::No)) {
+  if (auto ExprID = BuildNodeIdForExpr(T.getNumBitsExpr())) {
     return ApplyBuiltinTypeConstructor(
         T.isUnsigned() ? "unsigned _BitInt" : "_BitInt", *ExprID);
   }
@@ -4862,6 +4892,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
     const clang::NamedDecl* Decl) {
+  // TODO(shahms): Separate building the node id from emitting it.
   auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
   return Observer.recordNominalTypeNode(
       NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
