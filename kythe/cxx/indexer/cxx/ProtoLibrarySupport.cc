@@ -126,9 +126,11 @@ class ParseTextProtoHandler {
 const clang::CXXMethodDecl* FindAccessorDeclWithName(
     const clang::CXXRecordDecl& MsgDecl, llvm::StringRef Name) {
   for (const clang::CXXMethodDecl* Method : MsgDecl.methods()) {
-    // Accessors are user-provided, skip any compiler-generated operator/ctor.
-    if (Method->isUserProvided()) {
-      const auto MethodName = Method->getName();
+    // Accessors are user-provided, skip any compiler-generated or
+    // non-identifier operator/ctor.
+    if (const auto* II = Method->getIdentifier();
+        II && Method->isUserProvided()) {
+      const auto MethodName = II->getName();
       // Field accessors will either be the same as the field name or, if they
       // conflict with a language keyword, the field name with a trailing
       // underscore.
