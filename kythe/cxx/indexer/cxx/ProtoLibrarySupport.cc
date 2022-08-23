@@ -195,7 +195,7 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
             FindAccessorDeclWithName(MsgDecl, ToStringRef(Token.text));
         if (!AccessorDecl) {
           LOG(ERROR) << "Cannot find field " << Token.text << " for message "
-                     << MsgDecl.getName().str();
+                     << MsgDecl.getDeclName().getAsString();
           return false;
         }
         if (Token.line < 0) {
