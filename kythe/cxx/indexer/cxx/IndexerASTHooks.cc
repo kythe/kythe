@@ -26,6 +26,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
+#include "clang/AST/AttrVisitor.h"
 #include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -322,6 +323,31 @@ clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
 const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
   return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
+
+class KytheAttributeVisitor
+    : public clang::ConstAttrVisitor<KytheAttributeVisitor> {
+ public:
+  explicit KytheAttributeVisitor(
+      GraphObserver& Observer ABSL_ATTRIBUTE_LIFETIME_BOUND,
+      const GraphObserver::NodeId& TargetNode ABSL_ATTRIBUTE_LIFETIME_BOUND)
+      : Observer(Observer), TargetNode(TargetNode) {}
+  KytheAttributeVisitor(const KytheAttributeVisitor&) = delete;
+  KytheAttributeVisitor& operator=(const KytheAttributeVisitor&) = delete;
+
+  void VisitDeprecatedAttr(const clang::DeprecatedAttr* Attr) {
+    Observer.recordDeprecated(TargetNode, Attr->getMessage());
+  }
+
+  void VisitAvailabilityAttr(const clang::AvailabilityAttr* Attr) {
+    if (auto Version = Attr->getDeprecated(); !Version.empty()) {
+      Observer.recordDeprecated(TargetNode, Version.getAsString());
+    }
+  }
+
+ private:
+  GraphObserver& Observer;
+  const GraphObserver::NodeId& TargetNode;
+};
 
 class NameEqClassDeclVisitor
     : public clang::ConstDeclVisitor<NameEqClassDeclVisitor,
@@ -990,10 +1016,9 @@ void IndexerASTVisitor::VisitComment(
 
 void IndexerASTVisitor::VisitAttributes(
     const clang::Decl* Decl, const GraphObserver::NodeId& TargetNode) {
-  for (const auto& Attr : Decl->attrs()) {
-    if (const auto* DepAttr = clang::dyn_cast<clang::DeprecatedAttr>(Attr)) {
-      Observer.recordDeprecated(TargetNode, DepAttr->getMessage());
-    }
+  KytheAttributeVisitor Visitor(Observer, TargetNode);
+  for (const auto* Attr : Decl->attrs()) {
+    Visitor.Visit(Attr);
   }
 }
 

@@ -234,6 +234,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "attribute_availability",
+    srcs = ["basic/attribute_availability.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "auto",
     srcs = ["basic/auto.cc"],
     check_for_singletons = True,
