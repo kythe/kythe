@@ -139,6 +139,7 @@ public class JavaExtractor {
     // TODO(salguarnieri) Read -system module directory from the javac arguments.
     CompilationDescription description =
         new JavaCompilationUnitExtractor(FileVNames.fromFile(vNamesConfigPath), USER_DIR.value())
+            .setAllowServiceProcessors(false) // Bazel provides any necessary processors
             .extract(
                 info.getOwner(),
                 sources,

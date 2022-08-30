@@ -128,6 +128,15 @@ public class JavaCompilationUnitExtractor {
   private final String rootDirectory;
   private final FileVNames fileVNames;
   private String systemDir;
+  private boolean allowServiceProcessors = true;
+
+  /**
+   * Set whether to allow service processors to be ran during extraction. Defaults to {@code true}.
+   */
+  public JavaCompilationUnitExtractor setAllowServiceProcessors(boolean allowServiceProcessors) {
+    this.allowServiceProcessors = allowServiceProcessors;
+    return this;
+  }
 
   /**
    * ExtractionTask represents a single invocation of the java compiler in order to determine the
@@ -145,9 +154,11 @@ public class JavaCompilationUnitExtractor {
     private final CompilationUnitCollector compilationCollector = new CompilationUnitCollector();
     private final UsageAsInputReportingFileManager fileManager =
         JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
+    private final boolean allowServiceProcessors;
 
-    ExtractionTask() throws ExtractionException {
+    ExtractionTask(boolean allowServiceProcessors) throws ExtractionException {
       this.tempDir = new TemporaryDirectory();
+      this.allowServiceProcessors = allowServiceProcessors;
     }
 
     public UsageAsInputReportingFileManager getFileManager() {
@@ -210,7 +221,7 @@ public class JavaCompilationUnitExtractor {
       return compileResolved(
           options,
           fileManager.getJavaFileObjectsFromStrings(sourcePaths),
-          loadProcessors(processingClassLoader(fileManager), processors));
+          loadProcessors(processingClassLoader(fileManager), processors, allowServiceProcessors));
     }
 
     @Override
@@ -849,7 +860,7 @@ public class JavaCompilationUnitExtractor {
     AnalysisResults results = new AnalysisResults();
 
     // Generate class files in a temporary directory
-    try (ExtractionTask task = new ExtractionTask()) {
+    try (ExtractionTask task = new ExtractionTask(allowServiceProcessors)) {
       for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
         setLocation(task.getFileManager(), entry.getKey(), entry.getValue());
       }
@@ -1062,9 +1073,10 @@ public class JavaCompilationUnitExtractor {
     return sourceBaseNames;
   }
 
-  private static Iterable<Processor> loadProcessors(ClassLoader loader, Iterable<String> names)
+  private static Iterable<Processor> loadProcessors(
+      ClassLoader loader, Iterable<String> names, boolean allowServiceProcessors)
       throws ExtractionException {
-    return Iterables.isEmpty(names)
+    return Iterables.isEmpty(names) && allowServiceProcessors
         // If no --processors were passed, add any processors registered in the META-INF/services
         // configuration.
         ? loadServiceProcessors(loader)
