@@ -44,6 +44,7 @@ import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Any;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
@@ -98,6 +99,7 @@ import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Extracts all required information (set of source files, class paths, and compiler options) from a
@@ -131,6 +133,7 @@ public class JavaCompilationUnitExtractor {
   private boolean allowServiceProcessors = true;
 
   /** Set whether to allow service processors to run during extraction. Defaults to {@code true}. */
+  @CanIgnoreReturnValue
   public JavaCompilationUnitExtractor setAllowServiceProcessors(boolean allowServiceProcessors) {
     this.allowServiceProcessors = allowServiceProcessors;
     return this;
@@ -770,6 +773,7 @@ public class JavaCompilationUnitExtractor {
    * Returns the location and binary name of a class file, or {@code null} if the file object is not
    * a class.
    */
+  @Nullable
   private static String getBinaryNameForClass(
       UsageAsInputReportingFileManager fileManager, JavaFileObject fileObject)
       throws ExtractionException {
