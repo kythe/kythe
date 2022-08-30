@@ -130,9 +130,7 @@ public class JavaCompilationUnitExtractor {
   private String systemDir;
   private boolean allowServiceProcessors = true;
 
-  /**
-   * Set whether to allow service processors to be ran during extraction. Defaults to {@code true}.
-   */
+  /** Set whether to allow service processors to run during extraction. Defaults to {@code true}. */
   public JavaCompilationUnitExtractor setAllowServiceProcessors(boolean allowServiceProcessors) {
     this.allowServiceProcessors = allowServiceProcessors;
     return this;
