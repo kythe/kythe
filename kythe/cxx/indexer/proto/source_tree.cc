@@ -17,6 +17,7 @@
 #include "kythe/cxx/indexer/proto/source_tree.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
@@ -59,9 +60,9 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
   if (cached_path != nullptr) {
     std::string* stored_contents = FindOrNull(file_map_, *cached_path);
     if (stored_contents == nullptr) {
-      last_error_ = "Proto file Open(" + filename +
-                    ") failed:" + " cached mapping to " + *cached_path +
-                    "no longer valid.";
+      last_error_ = absl::StrCat("Proto file Open(", filename,
+                                 ") failed:", " cached mapping to ",
+                                 *cached_path, "no longer valid.");
       LOG(ERROR) << last_error_;
       return nullptr;
     }
@@ -83,7 +84,9 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
     if (stored_contents != nullptr) {
       VLOG(1) << "Proto file Open(" << filename << ") under ["
               << substitution.first << "->" << substitution.second << "]";
-      if (!InsertIfNotPresent(file_mapping_cache_, filename, found_path)) {
+      if (auto [unused, inserted] =
+              file_mapping_cache_->emplace(filename, found_path);
+          !inserted) {
         LOG(ERROR) << "Redundant/contradictory data in index or internal bug."
                    << "  \"" << filename << "\" is mapped twice, first to \""
                    << FindOrDie(*file_mapping_cache_, filename)
@@ -100,8 +103,8 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
     return new google::protobuf::io::ArrayInputStream(stored_contents->data(),
                                                       stored_contents->size());
   }
-  last_error_ = "Proto file Open(" + filename + ") failed because '" +
-                filename + "' not recognized by indexer";
+  last_error_ = absl::StrCat("Proto file Open(", filename, ") failed because '",
+                             filename, "' not recognized by indexer");
   LOG(WARNING) << last_error_;
   return nullptr;
 }
@@ -109,7 +112,7 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
 bool PreloadedProtoFileTree::Read(absl::string_view file_path,
                                   std::string* out) {
   std::unique_ptr<google::protobuf::io::ZeroCopyInputStream> in_stream(
-      Open(std::string(file_path)));
+      Open({file_path.data(), file_path.size()}));
   if (!in_stream) {
     return false;
   }
