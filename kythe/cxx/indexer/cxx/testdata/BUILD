@@ -2008,6 +2008,16 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_alias_tvar",
+    srcs = ["template/template_alias_tvar.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    experimental_use_abs_nodes = False,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_arg_multiple_typename",
     srcs = ["template/template_arg_multiple_typename.cc"],
     tags = ["template"],
