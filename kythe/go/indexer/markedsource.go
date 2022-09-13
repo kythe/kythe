@@ -298,7 +298,7 @@ func (e *emitter) emitPackageMarkedSource(pi *PackageInfo) {
 				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: ipath[:p],
 			}},
-			PostChildText: "/",
+			PostText: "/",
 		}}, ms.Child...)
 	}
 	e.emitCode(pi.VName, ms)
