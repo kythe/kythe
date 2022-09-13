@@ -33,6 +33,8 @@ RUN update-alternatives \
 # Make go-1.18 the default
 RUN update-alternatives \
       --install /usr/bin/go go /usr/lib/go-1.18/bin/go  100
+RUN update-alternatives \
+      --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt  100
 
 # Install pip-packages
 RUN pip3 install --upgrade pip \
