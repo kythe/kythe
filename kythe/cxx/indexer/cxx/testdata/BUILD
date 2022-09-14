@@ -965,6 +965,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_call_directness",
+    srcs = ["function/function_call_directness.cc"],
+    record_call_directness = True,
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_ctor",
     srcs = ["function/function_ctor.cc"],
     tags = ["function"],

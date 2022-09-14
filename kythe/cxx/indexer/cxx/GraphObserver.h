@@ -738,6 +738,14 @@ class GraphObserver {
     Yes
   };
 
+  /// \brief Determines whether a feature is direct or admits indirection.
+  enum class Directness {
+    /// This feature is indirect (e.g., performs dynamic dispatch).
+    Indirect,
+    /// This feature is direct (e.g., makes a direct call).
+    Direct
+  };
+
   /// \brief Records a use site for a decl inside some documentation.
   virtual void recordDeclUseLocationInDocumentation(const Range& SourceRange,
                                                     const NodeId& DeclId) {}
@@ -844,8 +852,10 @@ class GraphObserver {
   /// for example, a function.
   /// \param CalleeId The node being called.
   /// \param I Whether this call is implicit.
+  /// \param D Whether this call is direct.
   virtual void recordCallEdge(const Range& SourceRange, const NodeId& CallerId,
-                              const NodeId& CalleeId, Implicit I) {}
+                              const NodeId& CalleeId, Implicit I,
+                              Directness D = Directness::Indirect) {}
 
   /// \brief Creates a node to represent a file-level initialization routine
   /// that can be blamed for a call at `CallSite`.
