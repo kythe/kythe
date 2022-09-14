@@ -4251,10 +4251,10 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
             // templates.
             if (const auto* FTD = dyn_cast<clang::FunctionTemplateDecl>(
                     Name.getAsTemplateDecl())) {
-              for (const auto* ID = FTD;
-                   (ID = ID->getInstantiatedFromMemberTemplate()); FTD = ID)
+              while ((FTD = FTD->getInstantiatedFromMemberTemplate())) {
                 if (FTD->getTemplatedDecl() != nullptr)
                   decl = FTD->getTemplatedDecl();
+              }
             }
           }
           return BuildNodeIdForDecl(decl);
