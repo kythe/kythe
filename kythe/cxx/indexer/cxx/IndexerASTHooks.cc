@@ -620,8 +620,7 @@ GraphObserver::Implicit IndexerASTVisitor::IsImplicit(
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range& Range,
                                         const GraphObserver::NodeId& Callee,
                                         GraphObserver::CallDispatch D) {
-  if (!options_.RecordCallDirectness)
-    D = GraphObserver::CallDispatch::kDefault;
+  if (!options_.RecordCallDirectness) D = GraphObserver::CallDispatch::kDefault;
   if (Job->BlameStack.empty()) {
     if (auto FileId = Observer.recordFileInitializer(Range)) {
       Observer.recordCallEdge(Range, FileId.value(), Callee, IsImplicit(Range),
