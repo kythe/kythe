@@ -619,8 +619,9 @@ GraphObserver::Implicit IndexerASTVisitor::IsImplicit(
 
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range& Range,
                                         const GraphObserver::NodeId& Callee,
-                                        GraphObserver::Directness D) {
-  if (!options_.RecordCallDirectness) D = GraphObserver::Directness::Indirect;
+                                        GraphObserver::CallDispatch D) {
+  if (!options_.RecordCallDirectness)
+    D = GraphObserver::CallDispatch::kDefault;
   if (Job->BlameStack.empty()) {
     if (auto FileId = Observer.recordFileInitializer(Range)) {
       Observer.recordCallEdge(Range, FileId.value(), Callee, IsImplicit(Range),
@@ -1734,26 +1735,26 @@ bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
 }
 
 namespace {
-GraphObserver::Directness GetCallDirectness(const clang::CallExpr* E) {
+GraphObserver::CallDispatch GetCallCallDispatch(const clang::CallExpr* E) {
   if (const auto* CCE = clang::dyn_cast<clang::CXXMemberCallExpr>(E)) {
     if (const auto* O = CCE->getImplicitObjectArgument()) {
       if (const auto* ICE = clang::dyn_cast<clang::ImplicitCastExpr>(O)) {
         if (ICE->getCastKind() == clang::CastKind::CK_UncheckedDerivedToBase &&
             ICE->getSubExpr() != nullptr &&
             clang::isa<clang::CXXThisExpr>(ICE->getSubExpr())) {
-          return GraphObserver::Directness::Direct;
+          return GraphObserver::CallDispatch::kDirect;
         }
       }
     }
   }
-  return GraphObserver::Directness::Indirect;
+  return GraphObserver::CallDispatch::kDefault;
 }
 }  // anonymous namespace
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
   SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
-  GraphObserver::Directness D = GetCallDirectness(E);
+  GraphObserver::CallDispatch D = GetCallCallDispatch(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto* Callee = E->getCalleeDecl()) {
       auto CalleeId = BuildNodeIdForRefToDecl(Callee);

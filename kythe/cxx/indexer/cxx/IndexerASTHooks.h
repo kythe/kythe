@@ -731,7 +731,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// `BlameStack` (or does nothing if there's nobody to blame).
   void RecordCallEdges(
       const GraphObserver::Range& Range, const GraphObserver::NodeId& Callee,
-      GraphObserver::Directness D = GraphObserver::Directness::Indirect);
+      GraphObserver::CallDispatch D = GraphObserver::CallDispatch::kDefault);
 
   // Blames the use of a `Decl` at a particular `Range` on everything at the
   // top of `BlameStack`. If there is nothing at the top of `BlameStack`,

@@ -564,16 +564,16 @@ void KytheGraphObserver::RecordAnchor(
 
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range& source_range, const NodeId& caller_id,
-    const NodeId& callee_id, Implicit i, Directness d) {
+    const NodeId& callee_id, Implicit i, CallDispatch d) {
   RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf,
                Claimability::Claimable);
   EdgeKindID kind;
   if (i == Implicit::Yes) {
-    kind = d == Directness::Direct ? EdgeKindID::kRefCallDirectImplicit
-                                   : EdgeKindID::kRefCallImplicit;
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirectImplicit
+                                      : EdgeKindID::kRefCallImplicit;
   } else {
-    kind = d == Directness::Direct ? EdgeKindID::kRefCallDirect
-                                   : EdgeKindID::kRefCall;
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirect
+                                      : EdgeKindID::kRefCall;
   }
   RecordAnchor(source_range, callee_id, kind, Claimability::Unclaimable);
 }
