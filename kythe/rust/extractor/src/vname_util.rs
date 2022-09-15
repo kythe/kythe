@@ -68,7 +68,7 @@ impl VNameRule {
     /// Processed vname rules defined in files
     pub fn parse_vname_rules(config_path: &PathBuf) -> Result<Vec<Self>> {
         let mut processed_rules = Vec::new();
-        let file = File::open(&config_path)
+        let file = File::open(config_path)
             .with_context(|| format!("Failed to open file: {}", config_path.to_string_lossy()))?;
         let reader = BufReader::new(file);
         let rules: Vec<RawRule> = serde_json::from_reader(reader)
