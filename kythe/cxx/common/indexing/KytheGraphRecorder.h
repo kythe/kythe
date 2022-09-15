@@ -129,7 +129,9 @@ enum class EdgeKindID {
   kInfluences,
   kRefFile,
   kTParam,
-  kCompletedby
+  kCompletedby,
+  kRefCallDirect,
+  kRefCallDirectImplicit
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

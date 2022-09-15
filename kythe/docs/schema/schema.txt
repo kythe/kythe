@@ -1190,6 +1190,28 @@ void A() { }
 void B() { A(); }
 --------------------------------------------------------------------------------
 
+[[refcalldirect]]
+ref/call/direct
+~~~~~~~~~~~~~~~
+
+Brief description::
+  A *ref/call/direct* F if A is an anchor that calls F and ignores indirect
+  dispatch.
+Points from::
+  anchors
+Points toward::
+  <<function,functions>>
+Ordinals are used::
+  never
+
+[kythe,C++,"A direct call to a base struct's function."]
+--------------------------------------------------------------------------------
+//- @f defines/binding FnF
+struct A { virtual void f() {} };
+//- @"A::f()" ref/call/direct FnF
+struct B : public A { void f() override { A::f(); }};
+--------------------------------------------------------------------------------
+
 [[refcallimplicit]]
 ref/call/implicit
 ~~~~~~~~~~~~~~~~~

@@ -141,6 +141,8 @@ struct IndexerOptions {
       };
   /// \brief Notified each time a semantic signature is hashed.
   HashRecorder* HashRecorder = nullptr;
+  /// \brief If true, record directness of calls.
+  bool RecordCallDirectness = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and
@@ -727,8 +729,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// Blames a call to `Callee` at `Range` on everything at the top of
   /// `BlameStack` (or does nothing if there's nobody to blame).
-  void RecordCallEdges(const GraphObserver::Range& Range,
-                       const GraphObserver::NodeId& Callee);
+  void RecordCallEdges(
+      const GraphObserver::Range& Range, const GraphObserver::NodeId& Callee,
+      GraphObserver::CallDispatch D = GraphObserver::CallDispatch::kDefault);
 
   // Blames the use of a `Decl` at a particular `Range` on everything at the
   // top of `BlameStack`. If there is nothing at the top of `BlameStack`,

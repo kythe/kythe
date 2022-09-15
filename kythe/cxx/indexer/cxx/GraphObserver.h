@@ -738,6 +738,14 @@ class GraphObserver {
     Yes
   };
 
+  /// \brief Determines whether a call will perform dynamic dispatch.
+  enum class CallDispatch {
+    /// This call may perform dynamic dispatch.
+    kDefault,
+    /// This call will not perform dynamic dispatch.
+    kDirect
+  };
+
   /// \brief Records a use site for a decl inside some documentation.
   virtual void recordDeclUseLocationInDocumentation(const Range& SourceRange,
                                                     const NodeId& DeclId) {}
@@ -844,8 +852,10 @@ class GraphObserver {
   /// for example, a function.
   /// \param CalleeId The node being called.
   /// \param I Whether this call is implicit.
+  /// \param D Whether this call is direct.
   virtual void recordCallEdge(const Range& SourceRange, const NodeId& CallerId,
-                              const NodeId& CalleeId, Implicit I) {}
+                              const NodeId& CalleeId, Implicit I,
+                              CallDispatch D = CallDispatch::kDefault) {}
 
   /// \brief Creates a node to represent a file-level initialization routine
   /// that can be blamed for a call at `CallSite`.
