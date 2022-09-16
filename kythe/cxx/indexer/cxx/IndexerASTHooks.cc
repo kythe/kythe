@@ -243,9 +243,9 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
 
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
-bool SkipAliasedDecl(const clang::Decl* D) {
+bool SkipAliasedDecl(const clang::Decl* D, bool absnodes) {
   return absl::GetFlag(FLAGS_experimental_alias_template_instantiations) &&
-         (FindSpecializedTemplate(D) != D);
+         (FindSpecializedTemplate(D, !absnodes) != D);
 }
 
 bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl* decl) {
@@ -2589,7 +2589,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(
 }
 
 bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   if (isa<clang::ParmVarDecl>(Decl)) {
@@ -3192,7 +3192,7 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
 }
 
 bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   if (Decl->isInjectedClassName()) {
@@ -3337,7 +3337,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
 }
 
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   // Add the decl to the cache. This helps if a declaration is annotated, its
@@ -3994,7 +3994,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // the IDs given to class definitions (in part because of the language rules).
 
   if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
-    Decl = FindSpecializedTemplate(Decl);
+    Decl = FindSpecializedTemplate(Decl, !options_.AbsNodes);
   }
 
   if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(Decl)) {
@@ -4265,18 +4265,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
             // Direct references to function templates to the outer function
             // template shell.
             decl = Name.getAsTemplateDecl();
-          } else if (absl::GetFlag(
-                         FLAGS_experimental_alias_template_instantiations)) {
-            // Point to the original member function template.
-            // This solves problems with aliasing when dealing with nested
-            // templates.
-            if (const auto* FTD = dyn_cast<clang::FunctionTemplateDecl>(
-                    Name.getAsTemplateDecl())) {
-              while ((FTD = FTD->getInstantiatedFromMemberTemplate())) {
-                if (FTD->getTemplatedDecl() != nullptr)
-                  decl = FTD->getTemplatedDecl();
-              }
-            }
           }
           return BuildNodeIdForDecl(decl);
         } else if (const auto* VD = dyn_cast<clang::VarDecl>(UnderlyingDecl)) {

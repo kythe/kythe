@@ -17,6 +17,7 @@
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DeclVisitor.h"
 #include "clang/Basic/CharInfo.h"
 #include "clang/Lex/Lexer.h"
 #include "glog/logging.h"
@@ -45,12 +46,74 @@ clang::SourceLocation GetLocForEndOfToken(
                                            source_manager, lang_options);
 }
 
-// TODO(zarko): Update this to handle member specializations.
-const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
+namespace {
+class DereferenceMemberTemplatesDeclVisitor
+    : public clang::ConstDeclVisitor<DereferenceMemberTemplatesDeclVisitor,
+                                     void> {
+ public:
+  DereferenceMemberTemplatesDeclVisitor() = default;
+
+  const clang::Decl* Visit(const clang::Decl* decl) {
+    decl_ = decl;
+    ConstDeclVisitor::Visit(decl);
+    return decl_;
+  }
+
+  void VisitFunctionTemplateDecl(const clang::FunctionTemplateDecl* ft) {
+    while ((ft = ft->getInstantiatedFromMemberTemplate())) {
+      if (ft->getTemplatedDecl() != nullptr) decl_ = ft->getTemplatedDecl();
+    }
+  }
+
+  void VisitClassTemplateDecl(const clang::ClassTemplateDecl* ct) {
+    while ((ct = ct->getInstantiatedFromMemberTemplate())) {
+      if (ct->getTemplatedDecl() != nullptr) decl_ = ct->getTemplatedDecl();
+    }
+  }
+
+  void VisitClassTemplatePartialSpecializationDecl(
+      const clang::ClassTemplatePartialSpecializationDecl* ctp) {
+    while ((ctp = ctp->getInstantiatedFromMemberTemplate())) {
+      decl_ = ctp;
+    }
+  }
+
+  void VisitVarTemplatePartialSpecializationDecl(
+      const clang::VarTemplatePartialSpecializationDecl* vtp) {
+    while ((vtp = vtp->getInstantiatedFromMember())) {
+      decl_ = vtp;
+    }
+  }
+
+  void VisitVarTemplateDecl(const clang::VarTemplateDecl* vt) {
+    while ((vt = vt->getInstantiatedFromMemberTemplate())) {
+      if (vt->getTemplatedDecl() != nullptr) decl_ = vt->getTemplatedDecl();
+    }
+  }
+
+  void VisitTypeAliasTemplateDecl(const clang::TypeAliasTemplateDecl* at) {
+    while ((at = at->getInstantiatedFromMemberTemplate())) {
+      if (at->getTemplatedDecl() != nullptr) decl_ = at->getTemplatedDecl();
+    }
+  }
+
+ private:
+  const clang::Decl* decl_;
+};
+
+}  // anonymous namespace
+
+const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
+                                              bool use_mts) {
+  return use_mts ? DereferenceMemberTemplatesDeclVisitor().Visit(decl) : decl;
+}
+
+const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl,
+                                           bool use_mts) {
   if (const auto* FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
     if (auto* ftsi = FD->getTemplateSpecializationInfo()) {
       if (!ftsi->isExplicitInstantiationOrSpecialization()) {
-        return ftsi->getTemplate();
+        return DereferenceMemberTemplates(ftsi->getTemplate(), use_mts);
       }
     }
   } else if (const auto* ctsd =
@@ -61,10 +124,10 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
       if (const auto* partial =
               primary_or_partial
                   .dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
-        return partial;
+        return DereferenceMemberTemplates(partial, use_mts);
       } else if (const auto* primary =
                      primary_or_partial.dyn_cast<clang::ClassTemplateDecl*>()) {
-        return primary;
+        return DereferenceMemberTemplates(primary, use_mts);
       }
     }
   } else if (const auto* vtsd =
@@ -75,14 +138,14 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
       if (const auto* partial =
               primary_or_partial
                   .dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
-        return partial;
+        return DereferenceMemberTemplates(partial, use_mts);
       } else if (const auto* primary =
                      primary_or_partial.dyn_cast<clang::VarTemplateDecl*>()) {
-        return primary;
+        return DereferenceMemberTemplates(primary, use_mts);
       }
     }
   }
-  return decl;
+  return DereferenceMemberTemplates(decl, use_mts);
 }
 
 bool ShouldHaveBlameContext(const clang::Decl* decl) {
