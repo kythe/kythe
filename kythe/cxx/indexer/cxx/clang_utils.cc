@@ -17,6 +17,7 @@
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DeclVisitor.h"
 #include "clang/Basic/CharInfo.h"
 #include "clang/Lex/Lexer.h"
 #include "glog/logging.h"
@@ -45,40 +46,66 @@ clang::SourceLocation GetLocForEndOfToken(
                                            source_manager, lang_options);
 }
 
-const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
-                                              bool use_mts) {
-  if (!use_mts) return decl;
-  if (const auto* ft = clang::dyn_cast<clang::FunctionTemplateDecl>(decl)) {
+namespace {
+class DereferenceMemberTemplatesDeclVisitor
+    : public clang::ConstDeclVisitor<DereferenceMemberTemplatesDeclVisitor,
+                                     void> {
+ public:
+  DereferenceMemberTemplatesDeclVisitor() = default;
+
+  const clang::Decl* Visit(const clang::Decl* decl) {
+    decl_ = decl;
+    ConstDeclVisitor::Visit(decl);
+    return decl_;
+  }
+
+  void VisitFunctionTemplateDecl(const clang::FunctionTemplateDecl* ft) {
     while ((ft = ft->getInstantiatedFromMemberTemplate())) {
-      if (ft->getTemplatedDecl() != nullptr) decl = ft->getTemplatedDecl();
-    }
-  } else if (const auto* ct = clang::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-    while ((ct = ct->getInstantiatedFromMemberTemplate())) {
-      if (ct->getTemplatedDecl() != nullptr) decl = ct->getTemplatedDecl();
-    }
-  } else if (const auto* ctp =
-                 clang::dyn_cast<clang::ClassTemplatePartialSpecializationDecl>(
-                     decl)) {
-    while ((ctp = ctp->getInstantiatedFromMemberTemplate())) {
-      decl = ctp;
-    }
-  } else if (const auto* vtp =
-                 clang::dyn_cast<clang::VarTemplatePartialSpecializationDecl>(
-                     decl)) {
-    while ((vtp = vtp->getInstantiatedFromMember())) {
-      decl = vtp;
-    }
-  } else if (const auto* vt = clang::dyn_cast<clang::VarTemplateDecl>(decl)) {
-    while ((vt = vt->getInstantiatedFromMemberTemplate())) {
-      if (vt->getTemplatedDecl() != nullptr) decl = vt->getTemplatedDecl();
-    }
-  } else if (const auto* at =
-                 clang::dyn_cast<clang::TypeAliasTemplateDecl>(decl)) {
-    while ((at = at->getInstantiatedFromMemberTemplate())) {
-      if (at->getTemplatedDecl() != nullptr) decl = at->getTemplatedDecl();
+      if (ft->getTemplatedDecl() != nullptr) decl_ = ft->getTemplatedDecl();
     }
   }
-  return decl;
+
+  void VisitClassTemplateDecl(const clang::ClassTemplateDecl* ct) {
+    while ((ct = ct->getInstantiatedFromMemberTemplate())) {
+      if (ct->getTemplatedDecl() != nullptr) decl_ = ct->getTemplatedDecl();
+    }
+  }
+
+  void VisitClassTemplatePartialSpecializationDecl(
+      const clang::ClassTemplatePartialSpecializationDecl* ctp) {
+    while ((ctp = ctp->getInstantiatedFromMemberTemplate())) {
+      decl_ = ctp;
+    }
+  }
+
+  void VisitVarTemplatePartialSpecializationDecl(
+      const clang::VarTemplatePartialSpecializationDecl* vtp) {
+    while ((vtp = vtp->getInstantiatedFromMember())) {
+      decl_ = vtp;
+    }
+  }
+
+  void VisitVarTemplateDecl(const clang::VarTemplateDecl* vt) {
+    while ((vt = vt->getInstantiatedFromMemberTemplate())) {
+      if (vt->getTemplatedDecl() != nullptr) decl_ = vt->getTemplatedDecl();
+    }
+  }
+
+  void VisitTypeAliasTemplateDecl(const clang::TypeAliasTemplateDecl* at) {
+    while ((at = at->getInstantiatedFromMemberTemplate())) {
+      if (at->getTemplatedDecl() != nullptr) decl_ = at->getTemplatedDecl();
+    }
+  }
+
+ private:
+  const clang::Decl* decl_;
+};
+
+}  // anonymous namespace
+
+const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
+                                              bool use_mts) {
+  return use_mts ? DereferenceMemberTemplatesDeclVisitor().Visit(decl) : decl;
 }
 
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl,
