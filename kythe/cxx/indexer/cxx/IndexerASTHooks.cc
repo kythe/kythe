@@ -243,9 +243,9 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
 
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
-bool SkipAliasedDecl(const clang::Decl* D) {
+bool SkipAliasedDecl(const clang::Decl* D, bool absnodes) {
   return absl::GetFlag(FLAGS_experimental_alias_template_instantiations) &&
-         (FindSpecializedTemplate(D) != D);
+         (FindSpecializedTemplate(D, !absnodes) != D);
 }
 
 bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl* decl) {
@@ -618,14 +618,17 @@ GraphObserver::Implicit IndexerASTVisitor::IsImplicit(
 }
 
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range& Range,
-                                        const GraphObserver::NodeId& Callee) {
+                                        const GraphObserver::NodeId& Callee,
+                                        GraphObserver::CallDispatch D) {
+  if (!options_.RecordCallDirectness) D = GraphObserver::CallDispatch::kDefault;
   if (Job->BlameStack.empty()) {
     if (auto FileId = Observer.recordFileInitializer(Range)) {
-      Observer.recordCallEdge(Range, FileId.value(), Callee, IsImplicit(Range));
+      Observer.recordCallEdge(Range, FileId.value(), Callee, IsImplicit(Range),
+                              D);
     }
   } else {
     for (const auto& Caller : Job->BlameStack.back()) {
-      Observer.recordCallEdge(Range, Caller, Callee, IsImplicit(Range));
+      Observer.recordCallEdge(Range, Caller, Callee, IsImplicit(Range), D);
     }
   }
 }
@@ -1730,19 +1733,37 @@ bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
   return Base::TraverseCXXOperatorCallExpr(E);
 }
 
+namespace {
+GraphObserver::CallDispatch GetCallCallDispatch(const clang::CallExpr* E) {
+  if (const auto* CCE = clang::dyn_cast<clang::CXXMemberCallExpr>(E)) {
+    if (const auto* O = CCE->getImplicitObjectArgument()) {
+      if (const auto* ICE = clang::dyn_cast<clang::ImplicitCastExpr>(O)) {
+        if (ICE->getCastKind() == clang::CastKind::CK_UncheckedDerivedToBase &&
+            ICE->getSubExpr() != nullptr &&
+            clang::isa<clang::CXXThisExpr>(ICE->getSubExpr())) {
+          return GraphObserver::CallDispatch::kDirect;
+        }
+      }
+    }
+  }
+  return GraphObserver::CallDispatch::kDefault;
+}
+}  // anonymous namespace
+
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
   SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
+  GraphObserver::CallDispatch D = GetCallCallDispatch(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto* Callee = E->getCalleeDecl()) {
       auto CalleeId = BuildNodeIdForRefToDecl(Callee);
-      RecordCallEdges(RCC.value(), CalleeId);
+      RecordCallEdges(RCC.value(), CalleeId, D);
       for (const auto& S : Supports) {
         S->InspectCallExpr(*this, E, RCC.value(), CalleeId);
       }
     } else if (const auto* CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE)) {
-        RecordCallEdges(*RCC, *CalleeId);
+        RecordCallEdges(*RCC, *CalleeId, D);
         if (auto CalleeRange =
                 RangeInCurrentContext(BuildNodeIdForImplicitStmt(CE),
                                       NormalizeRange(CE->getExprLoc()))) {
@@ -2568,7 +2589,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(
 }
 
 bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   if (isa<clang::ParmVarDecl>(Decl)) {
@@ -3171,7 +3192,7 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
 }
 
 bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   if (Decl->isInjectedClassName()) {
@@ -3316,7 +3337,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
 }
 
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
-  if (SkipAliasedDecl(Decl)) {
+  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
     return true;
   }
   // Add the decl to the cache. This helps if a declaration is annotated, its
@@ -3973,7 +3994,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // the IDs given to class definitions (in part because of the language rules).
 
   if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
-    Decl = FindSpecializedTemplate(Decl);
+    Decl = FindSpecializedTemplate(Decl, !options_.AbsNodes);
   }
 
   if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(Decl)) {
@@ -4239,10 +4260,12 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
           }
         } else if (const auto* FD =
                        dyn_cast<clang::FunctionDecl>(UnderlyingDecl)) {
-          // Direct references to function templates to the outer function
-          // template shell.
           const clang::NamedDecl* decl = FD;
-          if (options_.AbsNodes) decl = Name.getAsTemplateDecl();
+          if (options_.AbsNodes) {
+            // Direct references to function templates to the outer function
+            // template shell.
+            decl = Name.getAsTemplateDecl();
+          }
           return BuildNodeIdForDecl(decl);
         } else if (const auto* VD = dyn_cast<clang::VarDecl>(UnderlyingDecl)) {
           // Direct references to variable templates to the appropriate

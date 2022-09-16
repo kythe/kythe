@@ -78,6 +78,7 @@ _INDEXER_FLAGS = {
     "index_template_instantiations": True,
     "ibuild_config": "",
     "use_compilation_corpus_as_default": False,
+    "record_call_directness": False,
 }
 
 def _compiler_options(ctx, extractor_toolchain, copts, cc_info):

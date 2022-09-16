@@ -353,7 +353,8 @@ class KytheGraphObserver : public GraphObserver {
                                const NodeId& root_object) override;
 
   void recordCallEdge(const Range& source_range, const NodeId& caller_id,
-                      const NodeId& callee_id, Implicit i) override;
+                      const NodeId& callee_id, Implicit i,
+                      CallDispatch d) override;
 
   absl::optional<NodeId> recordFileInitializer(const Range& range) override;
 

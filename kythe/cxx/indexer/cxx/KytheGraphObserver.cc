@@ -564,13 +564,18 @@ void KytheGraphObserver::RecordAnchor(
 
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range& source_range, const NodeId& caller_id,
-    const NodeId& callee_id, Implicit i) {
+    const NodeId& callee_id, Implicit i, CallDispatch d) {
   RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf,
                Claimability::Claimable);
-  RecordAnchor(
-      source_range, callee_id,
-      i == Implicit::Yes ? EdgeKindID::kRefCallImplicit : EdgeKindID::kRefCall,
-      Claimability::Unclaimable);
+  EdgeKindID kind;
+  if (i == Implicit::Yes) {
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirectImplicit
+                                      : EdgeKindID::kRefCallImplicit;
+  } else {
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirect
+                                      : EdgeKindID::kRefCall;
+  }
+  RecordAnchor(source_range, callee_id, kind, Claimability::Unclaimable);
 }
 
 absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(

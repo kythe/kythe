@@ -965,6 +965,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_call_directness",
+    srcs = ["function/function_call_directness.cc"],
+    record_call_directness = True,
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_ctor",
     srcs = ["function/function_ctor.cc"],
     tags = ["function"],
@@ -2004,6 +2011,36 @@ cc_indexer_test(
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
     ignore_unimplemented = True,  # hash of SubstTemplateTemplateParm
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_alias_tvar",
+    srcs = ["template/template_alias_tvar.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    experimental_use_abs_nodes = False,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_alias_tvar_class",
+    srcs = ["template/template_alias_tvar_class.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    experimental_use_abs_nodes = False,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_alias_tvar_alias",
+    srcs = ["template/template_alias_tvar_alias.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    experimental_use_abs_nodes = False,
+    ignore_dups = True,
     tags = ["template"],
 )
 

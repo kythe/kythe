@@ -66,6 +66,8 @@ ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           "If nonempty, a regex that matches files to be excluded from "
           "template instance indexing.");
 ABSL_FLAG(std::string, record_hashes_file, "", "Record hashes to this file.");
+ABSL_FLAG(bool, record_call_directness, false,
+          "Record directness of function calls.");
 
 namespace kythe {
 
@@ -117,6 +119,7 @@ int main(int argc, char* argv[]) {
                     event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
+  options.RecordCallDirectness = absl::GetFlag(FLAGS_record_call_directness);
   options.CreateWorklist = [](IndexerASTVisitor* indexer) {
     return IndexerWorklist::CreateDefaultWorklist(indexer);
   };
