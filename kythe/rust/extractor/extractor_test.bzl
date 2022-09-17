@@ -72,6 +72,7 @@ def _rust_extractor_test_impl(ctx):
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = script,
+        is_executable = True,
     )
 
     runfiles = ctx.runfiles(
