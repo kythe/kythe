@@ -4265,6 +4265,18 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
             // Direct references to function templates to the outer function
             // template shell.
             decl = Name.getAsTemplateDecl();
+          } else if (absl::GetFlag(
+                         FLAGS_experimental_alias_template_instantiations)) {
+            // Point to the original member function template.
+            // This solves problems with aliasing when dealing with nested
+            // templates.
+            if (const auto* FTD = dyn_cast<clang::FunctionTemplateDecl>(
+                    Name.getAsTemplateDecl())) {
+              while ((FTD = FTD->getInstantiatedFromMemberTemplate())) {
+                if (FTD->getTemplatedDecl() != nullptr)
+                  decl = FTD->getTemplatedDecl();
+              }
+            }
           }
           return BuildNodeIdForDecl(decl);
         } else if (const auto* VD = dyn_cast<clang::VarDecl>(UnderlyingDecl)) {
