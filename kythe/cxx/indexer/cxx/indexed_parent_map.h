@@ -16,6 +16,10 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_INDEXED_PARENT_MAP_H_
 #define KYTHE_CXX_INDEXER_CXX_INDEXED_PARENT_MAP_H_
 
+#include <variant>
+
+#include "absl/base/call_once.h"
+#include "absl/functional/any_invocable.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "llvm/ADT/DenseMap.h"
@@ -101,6 +105,41 @@ class IndexedParentMap {
       : parents_(std::move(parents)) {}
 
   MappingType parents_;
+};
+
+// A wrapper around a lazily-initialized IndexedParentMap.
+class LazyIndexedParentMap {
+ public:
+  using Factory = absl::AnyInvocable<IndexedParentMap() &&>;
+
+  explicit LazyIndexedParentMap(clang::TranslationUnitDecl* unit)
+      : value_([unit] { return IndexedParentMap::Build(unit); }) {}
+  explicit LazyIndexedParentMap(Factory factory) : value_(std::move(factory)) {}
+
+  // LazyIndexedParentMap is not copyable or movable.
+  LazyIndexedParentMap(const LazyIndexedParentMap&) = delete;
+  LazyIndexedParentMap& operator=(const LazyIndexedParentMap&) = delete;
+
+  const IndexedParentMap& operator*() const { return get(); }
+  IndexedParentMap& operator*() { return get(); }
+  const IndexedParentMap* operator->() const { return &get(); }
+  IndexedParentMap* operator->() { return &get(); }
+
+  const IndexedParentMap& get() const {
+    absl::call_once(initialized_, &LazyIndexedParentMap::Initialize, this);
+    return std::get<IndexedParentMap>(value_);
+  }
+
+  IndexedParentMap& get() {
+    absl::call_once(initialized_, &LazyIndexedParentMap::Initialize, this);
+    return std::get<IndexedParentMap>(value_);
+  }
+
+ private:
+  void Initialize() const { value_ = std::move(std::get<Factory>(value_))(); }
+
+  mutable absl::once_flag initialized_;
+  mutable std::variant<Factory, IndexedParentMap> value_;
 };
 
 }  // namespace kythe

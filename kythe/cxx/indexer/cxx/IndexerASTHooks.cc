@@ -414,7 +414,6 @@ std::string ExpressionString(const clang::Expr* Expr,
   Expr->printPretty(Out, nullptr, Policy);
   return Text;
 }
-
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -553,16 +552,16 @@ class PruneCheck {
   IndexerASTVisitor* visitor_;
 };
 
-const IndexedParentMap* IndexerASTVisitor::getAllParents() {
-  if (!AllParents) {
-    // We always need to run over the whole translation unit, as
-    // hasAncestor can escape any subtree.
-    // TODO(zarko): Is this relavant for naming?
-    ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
-    AllParents = absl::make_unique<IndexedParentMap>(
-        IndexedParentMap::Build(Context.getTranslationUnitDecl()));
-  }
-  return AllParents.get();
+IndexedParentMap IndexerASTVisitor::BuildIndexedParentMap() const {
+  // We always need to run over the whole translation unit, as
+  // hasAncestor can escape any subtree.
+  // TODO(zarko): Is this relavant for naming?
+  ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
+  return IndexedParentMap::Build(Context.getTranslationUnitDecl());
+}
+
+const IndexedParentMap* IndexerASTVisitor::getAllParents() const {
+  return &AllParents.get();
 }
 
 bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
@@ -3773,7 +3772,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
     const clang::Decl* Decl) {
   for (const auto& Node : RootTraversal(getAllParents(), Decl)) {
     if (Node.indexed_parent == nullptr) break;
-
     // We would rather name 'template <etc> class C' as C, not C::C, but
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
