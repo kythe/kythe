@@ -230,6 +230,8 @@ cc_library(
     deps = [
         "//kythe/cxx/common:scope_guard",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//clang:ast",
         "@llvm-project//llvm:Support",
     ],

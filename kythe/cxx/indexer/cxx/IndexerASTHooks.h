@@ -818,8 +818,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
 
-  /// \brief Returns the parent of the given node, along with the index
-  /// at which the node appears underneath each parent.
+  /// \return true if `Decl` and all of the nodes underneath it are prunable.
+  ///
+  /// A subtree is prunable if it's "the same" in all possible indexer runs.
+  /// This excludes, for example, certain template instantiations.
+  bool declDominatesPrunableSubtree(const clang::Decl* Decl);
+
+  /// Initializes AllParents, if necessary, and then returns a pointer to it.
   ///
   /// Note that this will lazily compute the parents of all nodes
   /// and store them for later retrieval. Thus, the first call is O(n)
@@ -843,24 +848,14 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT>
-  const IndexedParent* getIndexedParent(const NodeT& Node) {
-    return getIndexedParent(clang::DynTypedNode::create(Node));
-  }
+  const IndexedParentMap* getAllParents() const;
 
-  /// \return true if `Decl` and all of the nodes underneath it are prunable.
-  ///
-  /// A subtree is prunable if it's "the same" in all possible indexer runs.
-  /// This excludes, for example, certain template instantiations.
-  bool declDominatesPrunableSubtree(const clang::Decl* Decl);
-
-  /// Initializes AllParents, if necessary, and then returns a pointer to it.
-  const IndexedParentMap* getAllParents();
-
+  // Used for building the indexed parent map and recording the time it took.
+  IndexedParentMap BuildIndexedParentMap() const;
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
   /// Filled on the first call to `getIndexedParents`.
-  std::unique_ptr<IndexedParentMap> AllParents;
+  LazyIndexedParentMap AllParents{[this] { return BuildIndexedParentMap(); }};
 
   /// Records information about the template `Template` wrapping the node
   /// `BodyId`, including the edge linking the template and its body. Returns
