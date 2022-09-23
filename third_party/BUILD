@@ -20,7 +20,6 @@ filegroup(
         "//third_party/jcommander:license.txt",
         "//third_party/jsr250_api:LICENSE",
         "//third_party/jsr305:LICENSE",
-        "//third_party/leiningen:license",
         "//third_party/libmemcached:COPYING",
         "//third_party/libuuid:COPYING",
         "//third_party/llvm:license",

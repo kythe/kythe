@@ -82,7 +82,6 @@ export JAVA_HOME=/usr/local/opt/openjdk
 # DO NOT use brew install docker (or if you did: brew uninstall docker).
 
 # Optional installs:
-brew install leiningen
 brew install ninja
 {% endhighlight %}
 

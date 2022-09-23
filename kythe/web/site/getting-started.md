@@ -37,7 +37,6 @@ Kythe relies on the following external dependencies:
 * go >= 1.7
 * graphviz
 * jdk >= 8
-* [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
 * node.js
 * parallel
 * source-highlight
@@ -134,7 +133,7 @@ incompatible version of Bazel, look for `jdk7` in the build label that
 is printed by `bazel version`.
 
 Also note that not all targets build with `//...` - some targets are
-purposefully omitted.  This includes `//kythe/web/ui`, `//kythe/release`, and
+purposefully omitted.  This includes `//kythe/release`, and
 many of the docker images we push.
 
 ### Build a release of Kythe using Bazel and unpack it in /opt/kythe

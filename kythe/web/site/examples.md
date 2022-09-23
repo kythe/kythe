@@ -376,7 +376,6 @@ Note: Version v0.0.30 is the latest version that includes the web UI. If you wan
 # --listen localhost:8080 allows access from only this machine; change to
 # --listen :8080 to allow access from any machine
 /opt/kythe/tools/http_server \
-  --public_resources /opt/kythe/web/ui \
   --listen localhost:8080 \
   --serving_table .kythe_serving
 {% endhighlight %}

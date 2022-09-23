@@ -35,7 +35,6 @@ This is a complicated topic, but in a nutshell:
 GS=/tmp/kgs
 TAB=/tmp/ktab
 ENTRIES=/tmp/entries
-UI=/opt/kythe-v0.0.29/web/ui
 
 rm -rf $GS $TAB bazel-out/k8-fastbuild/extra_actions
 
@@ -51,7 +50,7 @@ bazel-bin/kythe/go/indexer/cmd/go_indexer/go_indexer -code $(find bazel-out/k8-f
 bazel-bin/kythe/go/serving/tools/write_tables/write_tables --entries $ENTRIES --experimental_beam_pipeline --out $TAB
 
 # Serve.  ("--listen :8080" allows access from other machines)
-bazel-bin/kythe/go/serving/tools/http_server/http_server --serving_table $TAB --listen localhost:8080 --public_resources $UI
+bazel-bin/kythe/go/serving/tools/http_server/http_server --serving_table $TAB --listen localhost:8080
 ```
 
 ## Augment the local-to-vname mapping
