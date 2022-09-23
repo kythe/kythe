@@ -25,7 +25,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 
 namespace kythe {
 namespace lang_textproto {

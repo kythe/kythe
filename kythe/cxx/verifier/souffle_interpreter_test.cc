@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 namespace kythe::verifier {

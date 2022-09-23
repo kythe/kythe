@@ -23,10 +23,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 #include "re2/re2.h"

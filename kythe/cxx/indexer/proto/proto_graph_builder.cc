@@ -16,8 +16,8 @@
 
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/cxx/indexer/proto/comments.h"
 
@@ -44,8 +44,8 @@ std::string StringifyKind(EdgeKindID kind) {
 
 void ProtoGraphBuilder::SetText(const VName& node_name,
                                 const std::string& content) {
-  VLOG(1) << "Setting text (length = " << content.length()
-          << ") for: " << StringifyNode(node_name);
+  DLOG(LEVEL(-1)) << "Setting text (length = " << content.length()
+                  << ") for: " << StringifyNode(node_name);
   recorder_->AddProperty(VNameRef(node_name), kythe::PropertyID::kText,
                          content);
   current_file_contents_ = content;
@@ -92,16 +92,16 @@ void ProtoGraphBuilder::MaybeAddMetadataFileRules(const VName& file) {
 }
 
 void ProtoGraphBuilder::AddNode(const VName& node_name, NodeKindID node_kind) {
-  VLOG(1) << "Writing node: " << StringifyNode(node_name) << "["
-          << StringifyKind(node_kind) << "]";
+  DLOG(LEVEL(-1)) << "Writing node: " << StringifyNode(node_name) << "["
+                  << StringifyKind(node_kind) << "]";
   recorder_->AddProperty(VNameRef(node_name), node_kind);
 }
 
 void ProtoGraphBuilder::AddEdge(const VName& start, const VName& end,
                                 EdgeKindID start_to_end_kind) {
-  VLOG(1) << "Writing edge: " << StringifyNode(start) << " >-->--["
-          << StringifyKind(start_to_end_kind) << "]-->--> "
-          << StringifyNode(end);
+  DLOG(LEVEL(-1)) << "Writing edge: " << StringifyNode(start) << " >-->--["
+                  << StringifyKind(start_to_end_kind) << "]-->--> "
+                  << StringifyNode(end);
   recorder_->AddEdge(VNameRef(start), start_to_end_kind, VNameRef(end));
 }
 
@@ -260,7 +260,7 @@ void ProtoGraphBuilder::AddCodeFact(const VName& element,
 }
 
 void ProtoGraphBuilder::SetDeprecated(const VName& node_name) {
-  VLOG(1) << "Adding deprecation tag for " << StringifyNode(node_name);
+  DLOG(LEVEL(-1)) << "Adding deprecation tag for " << StringifyNode(node_name);
   recorder_->AddProperty(VNameRef(node_name), kythe::PropertyID::kTagDeprecated,
                          "");
 }

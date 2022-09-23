@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
 
+#include "absl/log/check.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
 #include "kythe/cxx/common/sha256_hasher.h"

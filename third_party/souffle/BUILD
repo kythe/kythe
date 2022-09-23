@@ -19,7 +19,7 @@ cc_library(
         "parse_transform.h",
     ],
     deps = [
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
         "@souffle",
     ],
 )

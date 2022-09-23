@@ -24,8 +24,9 @@
 
 #include "GraphObserver.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/language.h"
@@ -157,9 +158,9 @@ class KytheGraphObserver : public GraphObserver {
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
                               Options& options)
-      : recorder_(CHECK_NOTNULL(recorder)),
-        client_(CHECK_NOTNULL(client)),
-        meta_supports_(CHECK_NOTNULL(meta_supports)),
+      : recorder_(ABSL_DIE_IF_NULL(recorder)),
+        client_(ABSL_DIE_IF_NULL(client)),
+        meta_supports_(ABSL_DIE_IF_NULL(meta_supports)),
         vfs_(vfs),
         build_config_(options.build_config),
         usr_default_corpus_(options.usr_default_corpus) {

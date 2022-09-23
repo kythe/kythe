@@ -21,7 +21,10 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/graph.pb.h"
@@ -53,7 +56,7 @@ void TestNodeRequest() {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   absl::ParseCommandLine(argc, argv);
   kythe::JsonClient::InitNetwork();
   TestNodeRequest();

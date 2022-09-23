@@ -20,7 +20,8 @@
 
 #include "absl/debugging/failure_signal_handler.h"
 #include "absl/debugging/symbolize.h"
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
 
 namespace kythe {
 
@@ -54,7 +55,7 @@ void __assert_perror_fail(int errnum, const char* file, unsigned int line,
 #endif
 
 void InitializeProgram(const char* argv0) {
-  google::InitGoogleLogging(argv0);
+  absl::InitializeLog();
   absl::InitializeSymbolizer(argv0);
   absl::InstallFailureSignalHandler({});
 }

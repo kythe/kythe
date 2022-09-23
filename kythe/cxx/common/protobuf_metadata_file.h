@@ -18,8 +18,9 @@
 #define KYTHE_CXX_COMMON_PROTOBUF_METADATA_FILE_H_
 
 #include <memory>
+#include <sstream>
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"

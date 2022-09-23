@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
@@ -24,7 +26,6 @@
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Lexer.h"
-#include "glog/logging.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
 #include "llvm/Support/raw_ostream.h"
 

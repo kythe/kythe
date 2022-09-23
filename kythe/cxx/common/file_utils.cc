@@ -16,7 +16,7 @@
 
 #include "file_utils.h"
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
 
 namespace kythe {
 

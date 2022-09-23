@@ -22,8 +22,9 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
@@ -240,7 +241,7 @@ class FileOutputStream : public KytheCachingOutput {
     EnqueueEntry(edge_entry_);
   }
   void UseHashCache(HashCache* cache) override {
-    cache_ = CHECK_NOTNULL(cache);
+    cache_ = ABSL_DIE_IF_NULL(cache);
     min_size_ = cache_->min_size();
     max_size_ = cache_->max_size();
   }

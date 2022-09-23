@@ -19,9 +19,12 @@
 #include <map>
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
@@ -365,7 +368,7 @@ TEST_F(CxxExtractorTest, DoesNotBreakForMissingIncludes) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

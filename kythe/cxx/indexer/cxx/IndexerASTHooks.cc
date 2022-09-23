@@ -21,6 +21,9 @@
 
 #include "GraphObserver.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -298,7 +301,7 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
   if (const auto* Decl = Type->getAsCXXRecordDecl();
       Decl && (Decl = Decl->getDefinition())) {
     for (const auto& Base : Decl->bases()) {
-      result.push_back(CHECK_NOTNULL(Base.getType()->getAsTagDecl()));
+      result.push_back(ABSL_DIE_IF_NULL(Base.getType()->getAsTagDecl()));
     }
   }
   if (const auto* Decl = Type->getAsRecordDecl();
@@ -4511,7 +4514,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(const clang::EnumType& T) {
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
-  clang::RecordDecl* Decl = CHECK_NOTNULL(T.getDecl());
+  clang::RecordDecl* Decl = ABSL_DIE_IF_NULL(T.getDecl());
   if (const auto* Spec =
           dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Simplify building template argument lists.
@@ -4810,7 +4813,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
     const clang::ObjCInterfaceType& T) {
-  const auto* IFace = CHECK_NOTNULL(T.getDecl());
+  const auto* IFace = ABSL_DIE_IF_NULL(T.getDecl());
   // Link to the implementation if we have one, otherwise link to the
   // interface. If we just have a forward declaration, link to the nominal
   // type node.
@@ -4884,14 +4887,16 @@ IndexerASTVisitor::FindTemplateTypeParmTypeDecl(
   if (auto* Decl = T.getDecl()) {
     return Decl;
   }
-  VLOG(2) << "Immediate TemplateTypeParmDecl not found, falling back to "
-             "TypeContext";
+  DLOG(LEVEL(-2))
+      << "Immediate TemplateTypeParmDecl not found, falling back to "
+         "TypeContext";
   if (T.getDepth() < Job->TypeContext.size() &&
       T.getIndex() < Job->TypeContext[T.getDepth()]->size()) {
     return clang::cast<clang::TemplateTypeParmDecl>(
         Job->TypeContext[T.getDepth()]->getParam(T.getIndex()));
   }
-  VLOG(1) << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
+  DLOG(LEVEL(-1))
+      << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
   return nullptr;
 }
 

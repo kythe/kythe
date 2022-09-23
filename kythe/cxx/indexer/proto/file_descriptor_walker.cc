@@ -16,13 +16,14 @@
 
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"

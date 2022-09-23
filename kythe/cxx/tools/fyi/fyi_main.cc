@@ -17,9 +17,10 @@
 #include <memory>
 
 #include "absl/flags/usage.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/tools/fyi/fyi.h"

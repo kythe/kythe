@@ -22,9 +22,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
 #include "absl/types/variant.h"
-#include "glog/logging.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 #include "kythe/cxx/extractor/bazel_event_reader.h"
@@ -49,7 +49,7 @@ class BazelArtifactReader {
   explicit BazelArtifactReader(
       BazelEventReaderInterface* event_reader,
       std::vector<AnyArtifactSelector> selectors = DefaultSelectors())
-      : event_reader_(CHECK_NOTNULL(event_reader)),
+      : event_reader_(ABSL_DIE_IF_NULL(event_reader)),
         selectors_(std::move(selectors)) {
     Select();
   }

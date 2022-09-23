@@ -23,12 +23,13 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/libzip/error.h"

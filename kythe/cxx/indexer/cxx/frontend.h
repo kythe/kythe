@@ -20,7 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/indexer/cxx/KytheClaimClient.h"

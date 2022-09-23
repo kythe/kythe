@@ -21,6 +21,8 @@
 
 #include "IndexerASTHooks.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -1261,7 +1263,7 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {
       LOG(FATAL) << "Missing builtin " << spelling.str();
     }
-    VLOG(1) << "Missing builtin " << spelling.str();
+    DLOG(LEVEL(-1)) << "Missing builtin " << spelling.str();
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
     sig.set_pre_text(std::string(spelling));

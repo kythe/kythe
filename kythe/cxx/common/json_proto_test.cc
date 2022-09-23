@@ -16,7 +16,7 @@
 
 #include "json_proto.h"
 
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
 #include "gtest/gtest.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -89,7 +89,7 @@ TEST(JsonProto, Deserialize) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

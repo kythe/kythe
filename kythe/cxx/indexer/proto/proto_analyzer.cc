@@ -17,8 +17,8 @@
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
 namespace kythe {
@@ -95,7 +95,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
 
 bool ProtoAnalyzer::Parse(const std::string& proto_file,
                           const std::string& content) {
-  VLOG(1) << "FILE : " << proto_file << std::endl;
+  DLOG(LEVEL(-1)) << "FILE : " << proto_file << std::endl;
   return AnalyzeFile(proto_file, VNameFromFullPath(proto_file), content);
 }
 

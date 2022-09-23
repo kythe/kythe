@@ -209,18 +209,6 @@ def _cc_dependencies():
     )
 
     maybe(
-        github_archive,
-        name = "com_github_google_glog",
-        repo_name = "google/glog",
-        commit = "d4e8ebab7e295f20f86cae9557da0d5087a02f73",
-        sha256 = "b38713b8189bc621185c1d558f0dbeef6ce821688e0990b8c6d72c703769779c",
-        build_file_content = "\n".join([
-            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
-            "glog_library(with_gflags=0)",
-        ]),
-    )
-
-    maybe(
         http_archive,
         name = "org_brotli",
         sha256 = "f9e8d81d0405ba66d181529af42a3354f838c939095ff99930da6aa9cdf6fe46",

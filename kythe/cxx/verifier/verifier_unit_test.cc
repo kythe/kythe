@@ -16,7 +16,7 @@
 
 #include <regex>
 
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
 #include "gtest/gtest.h"
@@ -2865,7 +2865,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  ::google::InitGoogleLogging(argv[0]);
+  ::absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

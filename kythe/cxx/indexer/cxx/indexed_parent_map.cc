@@ -15,8 +15,9 @@
  */
 #include "indexed_parent_map.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/scope_guard.h"
 
 namespace kythe {

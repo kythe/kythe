@@ -8,7 +8,7 @@
 
 // This code was originally in <souffle root>/src/main.cpp.
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "third_party/souffle/parse_transform.h"
 
 #include "Global.h"

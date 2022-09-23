@@ -29,6 +29,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -44,7 +47,6 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
@@ -683,8 +685,8 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                      buffer.getBufferEnd());
     iter->second.vname =
         index_writer_->VNameForPath(FixStdinPath(file, iter->first));
-    VLOG(1) << "added content for " << iter->first << ": mapped to "
-            << iter->second.vname.DebugString() << "\n";
+    DLOG(LEVEL(-1)) << "added content for " << iter->first << ": mapped to "
+                    << iter->second.vname.DebugString() << "\n";
   }
   return iter->first;
 }

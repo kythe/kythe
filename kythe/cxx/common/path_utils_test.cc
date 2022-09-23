@@ -22,9 +22,9 @@
 #include <string>
 #include <system_error>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace kythe {

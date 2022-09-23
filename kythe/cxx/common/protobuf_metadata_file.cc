@@ -18,8 +18,8 @@
 
 #include <sstream>
 
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
-#include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
