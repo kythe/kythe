@@ -444,7 +444,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					fileInfo = fileInfos[a.GetParent()]
 				}
 				if fileInfo != nil {
-					if err := multiPatcher.AddFile(ctx, fileInfo); err != nil {
+					if err := multiPatcher.AddFile(ctx, fileInfo); isNonContextError(err) {
 						// Attempt to continue with the request, just log the error.
 						log.Printf("ERROR: adding file: %v", err)
 					}
@@ -731,7 +731,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}()
 
 		stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); err != nil {
+			if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 				// Attempt to continue with the request, just log the error.
 				log.Printf("ERROR: adding file: %v", err)
 			}
@@ -1353,7 +1353,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		}()
 
 		dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); err != nil {
+			if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 				// Attempt to continue with the request, just log the error.
 				log.Printf("ERROR: adding file: %v", err)
 			}
