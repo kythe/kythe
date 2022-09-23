@@ -9,6 +9,7 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
+load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
@@ -280,10 +281,16 @@ def _cc_dependencies():
 
 def _java_dependencies():
     maybe(
-        git_repository,
+        bazel_repository_files,
         name = "io_bazel",
         commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
-        remote = "https://github.com/bazelbuild/bazel",
+        files = [
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/JavacOptions.java",
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/WerrorCustomOption.java",
+        ],
+        overlay = {
+            "@io_kythe//third_party/bazel:javac_options.BUILD": "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/BUILD",
+        },
     )
     maven_install(
         name = "maven",
