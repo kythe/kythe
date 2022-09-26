@@ -13,7 +13,6 @@ ruby_binary(
 site_docs(
     name = "_docs",
     srcs = [
-        "//kythe/docs:exploring-kythe-sample-web-ui",
         "//kythe/docs:kythe-compatible-compilers",
         "//kythe/docs:kythe-compilation-database",
         "//kythe/docs:kythe-configurable-extraction",
