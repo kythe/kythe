@@ -27,5 +27,4 @@ mkdir -p graphstore tables
 "$KYTHE/tools/write_tables" -graphstore graphstore -out=tables
 # Host the browser UI.
 "$KYTHE/tools/http_server" -serving_table tables \
-  -public_resources="$KYTHE/web/ui" \
   -listen=":${BROWSE_PORT}"

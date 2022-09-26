@@ -10,7 +10,6 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
-load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
@@ -1259,15 +1258,7 @@ def _extractor_image_dependencies():
         tag = "v1.1.0",
     )
 
-def _sample_ui_dependencies():
-    """Defines external repositories necessary for building the sample UI."""
-    lein_repository(
-        name = "org_leiningen",
-        sha256 = "a0a1f093677045c4e1e40219ccc989acd61433f61c50e098a2185faf4f03553c",
-        version = "2.5.3",
-    )
-
-def kythe_dependencies(sample_ui = True):
+def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
@@ -1297,8 +1288,6 @@ def kythe_dependencies(sample_ui = True):
     _rule_dependencies()
     hedron_compile_commands_setup()
 
-    if sample_ui:
-        _sample_ui_dependencies()
     _extractor_image_dependencies()
 
     maybe(
