@@ -588,7 +588,7 @@ bool ActionFactory::runInvocation(
   clang::ASTUnit* ast_unit = nullptr;
   // We only consider one full parse on one input file for now, so we only ever
   // need one Action.
-  auto action = absl::make_unique<Action>(*this);
+  llvm::IntrusiveRefCntPtr<Action> action(new Action(*this));
   do {
     BeginNextIteration();
     if (!ast_unit) {

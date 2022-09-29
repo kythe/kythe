@@ -27,10 +27,10 @@ def kythe_rule_repositories():
         http_archive,
         name = "bazel_skylib",
         urls = [
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
         ],
-        sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+        sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
     )
 
     maybe(
@@ -141,8 +141,8 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "6c66b089bcd7f6dcdb8e2a3a14428a29c4c3da2b",
-        sha256 = "3c76a8c7cb82b90a19db6e3f8721c42897455ae0b44518226e91b85ec86a28ca",
+        commit = "346de23ec9db3d144647d0c587cf82eacd21382d",
+        sha256 = "ac6a21ed47c007381b3db46dcf647c769ee37afcab526a5d303162318d0e4d92",
         name = "llvm-project-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
@@ -154,4 +154,5 @@ def kythe_rule_repositories():
         repo_name = "hedronvision/bazel-compile-commands-extractor",
         name = "hedron_compile_commands",
         commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
+        sha256 = "0dfe793b5779855cf73b3ee9f430e00225f51f38c70555936d4dd6f1b3c65e66",
     )
