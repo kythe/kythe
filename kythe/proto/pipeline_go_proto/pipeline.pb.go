@@ -32,6 +32,7 @@ type Reference struct {
 
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are assignable to Kind:
+	//
 	//	*Reference_KytheKind
 	//	*Reference_GenericKind
 	Kind   isReference_Kind                 `protobuf_oneof:"kind"`
@@ -136,6 +137,7 @@ type DecorationPiece struct {
 
 	FileVName *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file_v_name,json=fileVName,proto3" json:"file_v_name,omitempty"`
 	// Types that are assignable to Piece:
+	//
 	//	*DecorationPiece_File
 	//	*DecorationPiece_Reference
 	//	*DecorationPiece_Node

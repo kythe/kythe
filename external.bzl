@@ -32,7 +32,7 @@ load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.18.1")
+    go_register_toolchains(version = "1.19.2")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
@@ -1163,13 +1163,13 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.9, latest as of 2022-03-14
+        # v0.1.12, latest as of 2022-09-10
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.9.zip",
-            "https://github.com/golang/tools/archive/v0.1.9.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
+            "https://github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
         ],
-        sha256 = "1d338afb3cd8013cfb035da6831dea2210efb0386c17b9c99b5e84724e3d733a",
-        strip_prefix = "tools-0.1.9",
+        sha256 = "4e3d94e7bf8dde5dad681c5ddddda6e634f8c8c500683fdf3d2f77a9c086702d",
+        strip_prefix = "tools-0.1.12",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested

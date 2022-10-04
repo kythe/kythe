@@ -29,6 +29,7 @@ type Edges struct {
 
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are assignable to Entry:
+	//
 	//	*Edges_Index_
 	//	*Edges_Edge_
 	//	*Edges_Target_
@@ -177,6 +178,7 @@ type Edges_Edge struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
+	//
 	//	*Edges_Edge_KytheKind
 	//	*Edges_Edge_GenericKind
 	Kind    isEdges_Edge_Kind       `protobuf_oneof:"kind"`

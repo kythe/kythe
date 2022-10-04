@@ -589,10 +589,12 @@ type Node struct {
 	Fact   []*Fact                 `protobuf:"bytes,2,rep,name=fact,proto3" json:"fact,omitempty"`
 	Edge   []*Edge                 `protobuf:"bytes,3,rep,name=edge,proto3" json:"edge,omitempty"`
 	// Types that are assignable to Kind:
+	//
 	//	*Node_KytheKind
 	//	*Node_GenericKind
 	Kind isNode_Kind `protobuf_oneof:"kind"`
 	// Types that are assignable to Subkind:
+	//
 	//	*Node_KytheSubkind
 	//	*Node_GenericSubkind
 	Subkind isNode_Subkind `protobuf_oneof:"subkind"`
@@ -732,6 +734,7 @@ type Fact struct {
 
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are assignable to Name:
+	//
 	//	*Fact_KytheName
 	//	*Fact_GenericName
 	Name  isFact_Name `protobuf_oneof:"name"`
@@ -829,6 +832,7 @@ type Edge struct {
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	Target *storage_go_proto.VName `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	// Types that are assignable to Kind:
+	//
 	//	*Edge_KytheKind
 	//	*Edge_GenericKind
 	Kind       isEdge_Kind `protobuf_oneof:"kind"`
@@ -947,6 +951,7 @@ type Entry struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Entry:
+	//
 	//	*Entry_Fact
 	//	*Entry_Edge
 	Entry isEntry_Entry `protobuf_oneof:"entry"`
