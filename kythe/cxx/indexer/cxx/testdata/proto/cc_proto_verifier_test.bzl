@@ -31,7 +31,8 @@ def cc_proto_verifier_test(
         ],
         size = "small",
         experimental_guess_proto_semantics = False,
-        experimental_record_dataflow_edges = False):
+        experimental_record_dataflow_edges = False,
+        minimal_claiming = True):
     """Verify cross-language references between C++ and Proto.
 
     Args:
@@ -42,6 +43,7 @@ def cc_proto_verifier_test(
       size: Size of the test.
       experimental_guess_proto_semantics: guess proto semantics?
       experimental_record_dataflow_edges: record dataflow edges?
+      minimal_claiming: If true, only index the `srcs` and protobuf header files.
 
     Returns:
       The label of the test.
@@ -75,6 +77,33 @@ def cc_proto_verifier_test(
         deps = cc_proto_libs,
     )
 
+    claim_file = None
+    if minimal_claiming:
+        claim_file = name + ".claim"
+        native.genrule(
+            name = name + "_static_claim",
+            outs = [claim_file],
+            srcs = [cc_kzip],
+            exec_tools = ["//kythe/cxx/tools:static_claim"],
+            cmd = " ".join([
+                "echo \"$<\" |",
+                "$(location //kythe/cxx/tools:static_claim)",
+                # Only claim protocol buffer headers and direct sources.
+                # This won't work for things which aren't direct, immediate source files.
+                "--include_files='.*/({}|[^/]+.(pb|proto).h)$$'".format("|".join(srcs)),
+                "> \"$@\"",
+            ]),
+        )
+
+    claim_opt = []
+    claim_deps = []
+    if minimal_claiming:
+        claim_opt = [
+            "--static_claim=$(execpath {})".format(claim_file),
+            "--claim_unknown=false",
+        ]
+        claim_deps = [claim_file]
+
     guess_opt = []
     if experimental_guess_proto_semantics:
         guess_opt = ["--experimental_guess_proto_semantics"]
@@ -86,6 +115,7 @@ def cc_proto_verifier_test(
         cc_index,
         name = name + "_cc_entries",
         srcs = [cc_kzip],
+        deps = claim_deps,
         opts = [
             # Avoid emitting some nodes with conflicting facts.
             "--experimental_index_lite",
@@ -94,7 +124,7 @@ def cc_proto_verifier_test(
             "--noindex_template_instantiations",
             "--experimental_drop_instantiation_independent_data",
             "--noemit_anchors_on_builtins",
-        ] + guess_opt + df_opt,
+        ] + guess_opt + df_opt + claim_opt,
     )
 
     return _invoke(

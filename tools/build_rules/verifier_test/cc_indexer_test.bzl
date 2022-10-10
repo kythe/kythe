@@ -689,6 +689,7 @@ cc_index = rule(
             allow_files = [
                 ".h",
                 ".meta",  # Cross language metadata files.
+                ".claim",  # Static claim files.
             ],
         ),
         "indexer": attr.label(
