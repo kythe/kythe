@@ -38,6 +38,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_reader.h"
+#include "kythe/cxx/common/re2_flag.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
@@ -49,6 +50,8 @@ using kythe::proto::VName;
 
 ABSL_FLAG(bool, text, false, "Dump output as text instead of protobuf.");
 ABSL_FLAG(bool, show_stats, false, "Show some statistics.");
+ABSL_FLAG(kythe::RE2Flag, include_files, {},
+          "If set, a RE2 pattern of file VName paths to claim.");
 
 struct Claimable;
 
@@ -215,21 +218,13 @@ class ClaimTool {
           // the file included at h with context c (otherwise the index file
           // isn't well-formed). We therefore only need to claim each unique
           // row.
-          ++total_include_count_;
           VName cxt_vname = input_vname;
           cxt_vname.set_signature(row.source_context() +
                                   input_vname.signature());
-          auto input_insert_result =
-              claimables_.emplace(cxt_vname, Claimable{cxt_vname, nullptr});
-          input_insert_result.first->second.claimants.insert(
-              &insert_result.first->second);
+          Claim(cxt_vname, &insert_result.first->second);
         }
       } else {
-        ++total_include_count_;
-        auto input_insert_result = claimables_.emplace(
-            input.v_name(), Claimable{input.v_name(), nullptr});
-        input_insert_result.first->second.claimants.insert(
-            &insert_result.first->second);
+        Claim(input.v_name(), &insert_result.first->second);
       }
     }
   }
@@ -238,8 +233,22 @@ class ClaimTool {
   const ClaimableMap& claimables() const { return claimables_; }
   size_t total_include_count() const { return total_include_count_; }
   size_t total_input_count() const { return total_input_count_; }
+  size_t skipped_input_count() const { return skipped_input_count_; }
 
  private:
+  void Claim(const VName& vname, Claimant* claimant) {
+    ++total_include_count_;
+    if (auto accept = absl::GetFlag(FLAGS_include_files);
+        accept.value != nullptr &&
+        !RE2::FullMatch(vname.path(), *accept.value)) {
+      ++skipped_input_count_;
+      return;
+    }
+
+    auto input_insert_result =
+        claimables_.emplace(vname, Claimable{vname, nullptr});
+    input_insert_result.first->second.claimants.insert(claimant);
+  }
   /// Objects that may claim resources.
   ClaimantMap claimants_;
   /// Resources that may be claimed.
@@ -248,6 +257,8 @@ class ClaimTool {
   size_t total_include_count_ = 0;
   /// Number of #includes.
   size_t total_input_count_ = 0;
+  /// Number of required inputs skipped due for failure to match.
+  size_t skipped_input_count_ = 0;
 };
 
 int main(int argc, char* argv[]) {
@@ -261,7 +272,7 @@ int main(int argc, char* argv[]) {
     if (next_index_file.empty()) {
       continue;
     }
-    for (CompilationUnit unit : ReadCompilationUnits(next_index_file)) {
+    for (const auto& unit : ReadCompilationUnits(next_index_file)) {
       tool.HandleCompilationUnit(unit);
     }
   }
@@ -276,6 +287,7 @@ int main(int argc, char* argv[]) {
     absl::PrintF(" Number of claimants: %lu\n", tool.claimants().size());
     absl::PrintF("   Total input count: %lu\n", tool.total_input_count());
     absl::PrintF(" Total include count: %lu\n", tool.total_include_count());
+    absl::PrintF(" Skipped input count: %lu\n", tool.skipped_input_count());
     absl::PrintF("%%claimables/includes: %f\n",
                  tool.claimables().size() * 100.0 / tool.total_include_count());
   }
