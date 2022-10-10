@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package pkg.proto;
+
+option java_package = "pkg.proto";
+
+//- @Wrapper defines/binding WrapperMessageProto
+message Wrapper {
+  //- @EnumerationType defines/binding EnumerationTypeProto
+  enum EnumerationType {
+    //- @ENUMERATOR defines/binding EnumeratorProto
+    ENUMERATOR = 0;
+  }
+  //- @EnumerationType ref EnumerationTypeProto
+  EnumerationType field = 1;
+}

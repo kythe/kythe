@@ -60,6 +60,15 @@ cc_proto_verifier_test(
     ],
 )
 
+cc_proto_verifier_test(
+    name = "enum_test",
+    size = "medium",
+    srcs = ["enum.cc"],
+    proto_libs = [
+        "//kythe/testdata/indexers/proto:enum_proto",
+    ],
+)
+
 bzl_library(
     name = "cc_proto_verifier_test_bzl",
     srcs = ["cc_proto_verifier_test.bzl"],
