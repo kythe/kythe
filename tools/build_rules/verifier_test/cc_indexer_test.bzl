@@ -521,6 +521,12 @@ _bazel_extract_kzip = rule(
     implementation = _bazel_extract_kzip_impl,
 )
 
+def _expand_as_rootpath(ctx, option):
+    # Replace $(location X) and $(execpath X) with $(rootpath X).
+    return ctx.expand_location(
+        option.replace("$(location ", "$(rootpath ").replace("$(execpath ", "$(rootpath "),
+    )
+
 def _cc_index_source(ctx, src, test_runners):
     entries = ctx.actions.declare_file(
         ctx.label.name + "/" + src.basename + ".entries",
@@ -544,12 +550,12 @@ def _cc_index_source(ctx, src, test_runners):
         ctx,
         src,
         _INDEXER_LOGGING_ENV,
-        arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
+        arguments = [_expand_as_rootpath(ctx, o) for o in ctx.attr.opts] + [
             "-i",
             src.short_path,
             "--",
             "-c",
-        ] + [ctx.expand_location(o) for o in ctx.attr.copts],
+        ] + [_expand_as_rootpath(ctx, o) for o in ctx.attr.copts],
     ))
     return entries
 
@@ -562,7 +568,7 @@ def _cc_index_compilation(ctx, compilation, test_runners):
     ctx.actions.run(
         mnemonic = "CcIndexCompilation",
         outputs = [entries],
-        inputs = [compilation],
+        inputs = [compilation] + ctx.files.deps,
         tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
@@ -575,7 +581,7 @@ def _cc_index_compilation(ctx, compilation, test_runners):
         ctx,
         compilation,
         _INDEXER_LOGGING_ENV,
-        arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
+        arguments = [_expand_as_rootpath(ctx, o) for o in ctx.attr.opts] + [
             compilation.short_path,
         ],
     ))
@@ -683,6 +689,7 @@ cc_index = rule(
             allow_files = [
                 ".h",
                 ".meta",  # Cross language metadata files.
+                ".claim",  # Static claim files.
             ],
         ),
         "indexer": attr.label(
