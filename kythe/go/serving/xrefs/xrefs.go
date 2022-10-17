@@ -310,8 +310,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	var multiPatcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		multiPatcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
 		defer func() {
 			if err := multiPatcher.Close(); isNonContextError(err) {
@@ -720,8 +720,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var patcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
 		defer func() {
 			if err := patcher.Close(); isNonContextError(err) {
@@ -1342,8 +1342,8 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	var patcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
 		defer func() {
 			if err := patcher.Close(); isNonContextError(err) {
