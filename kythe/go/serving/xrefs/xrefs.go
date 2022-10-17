@@ -313,12 +313,15 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		if isNonContextError(err) {
 			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := multiPatcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
+
+		if multiPatcher != nil {
+			defer func() {
+				if err := multiPatcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+		}
 	}
 
 	decor, err := t.fileDecorations(ctx, ticket)
@@ -723,17 +726,20 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		if isNonContextError(err) {
 			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := patcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
 
-		stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); isNonContextError(err) {
-				// Attempt to continue with the request, just log the error.
-				log.Printf("ERROR: adding file: %v", err)
+		if patcher != nil {
+			defer func() {
+				if err := patcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+
+			stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
+				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
+					// Attempt to continue with the request, just log the error.
+					log.Printf("ERROR: adding file: %v", err)
+				}
 			}
 		}
 	}
@@ -1345,17 +1351,20 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		if isNonContextError(err) {
 			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := patcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
 
-		dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); isNonContextError(err) {
-				// Attempt to continue with the request, just log the error.
-				log.Printf("ERROR: adding file: %v", err)
+		if patcher != nil {
+			defer func() {
+				if err := patcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+
+			dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
+				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
+					// Attempt to continue with the request, just log the error.
+					log.Printf("ERROR: adding file: %v", err)
+				}
 			}
 		}
 	}
