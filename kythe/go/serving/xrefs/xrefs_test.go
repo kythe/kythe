@@ -1424,6 +1424,46 @@ func TestDecorationsPatching(t *testing.T) {
 	}
 }
 
+func TestPatchingError(t *testing.T) {
+	st := tbl.Construct(t)
+
+	// An error when creating a patcher should not result in an overall error.
+	st.MakePatcher = func(ctx context.Context, ws *xpb.Workspace) (MultiFilePatcher, error) {
+		return nil, context.Canceled
+	}
+
+	_, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:          &xpb.Location{Ticket: "kythe://corpus?path=file/infos"},
+		References:        true,
+		TargetDefinitions: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
+
+	_, err = st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{"kythe://someCorpus?lang=otpl#signature"},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
+
+	_, err = st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documented"},
+
+		IncludeChildren: true,
+
+		Workspace:             &xpb.Workspace{Uri: "test:"},
+		PatchAgainstWorkspace: true,
+	})
+	testutil.Fatalf(t, "DocumentationRequest error: %v", err)
+}
+
 func TestCrossReferencesPatching(t *testing.T) {
 	ticket := "kythe://someCorpus?lang=otpl#signature"
 
