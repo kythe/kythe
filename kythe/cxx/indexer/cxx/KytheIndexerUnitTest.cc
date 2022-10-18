@@ -26,7 +26,6 @@
 #include <utility>
 
 #include "IndexerFrontendAction.h"
-#include "absl/memory/memory.h"
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -382,8 +381,8 @@ TEST(KytheIndexerUnitTest, TrivialHappyCase) {
   LibrarySupports no_supports;
   IndexerOptions options{};
   std::unique_ptr<clang::FrontendAction> Action =
-      absl::make_unique<IndexerFrontendAction>(&observer, nullptr, &no_supports,
-                                               options);
+      std::make_unique<IndexerFrontendAction>(&observer, nullptr, &no_supports,
+                                              options);
   ASSERT_TRUE(
       RunToolOnCode(std::move(Action), "int main() {}", "valid_main.cc"));
 }
@@ -441,8 +440,8 @@ TEST(KytheIndexerUnitTest, PushFilePopFileTracking) {
   LibrarySupports no_supports;
   IndexerOptions options{};
   std::unique_ptr<clang::FrontendAction> Action =
-      absl::make_unique<IndexerFrontendAction>(&Observer, nullptr, &no_supports,
-                                               options);
+      std::make_unique<IndexerFrontendAction>(&Observer, nullptr, &no_supports,
+                                              options);
   ASSERT_TRUE(RunToolOnCode(std::move(Action), "int i;", "main.cc"));
   ASSERT_FALSE(Observer.hadUnderrun());
   ASSERT_EQ(0, Observer.getFileNameStackSize());

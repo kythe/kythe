@@ -21,10 +21,10 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -269,7 +269,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
 
 void IndexerContext::InitializeClaimClient() {
   if (!absl::GetFlag(FLAGS_experimental_dynamic_claim_cache).empty()) {
-    auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
+    auto dynamic_claims = std::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
         absl::GetFlag(FLAGS_experimental_dynamic_overclaim));
     CHECK(dynamic_claims->OpenMemcache(
@@ -277,7 +277,7 @@ void IndexerContext::InitializeClaimClient() {
         << "Can't open memcached";
     claim_client_ = std::move(dynamic_claims);
   } else {
-    auto static_claims = absl::make_unique<kythe::StaticClaimClient>();
+    auto static_claims = std::make_unique<kythe::StaticClaimClient>();
     if (!absl::GetFlag(FLAGS_static_claim).empty()) {
       DecodeStaticClaimTable(absl::GetFlag(FLAGS_static_claim),
                              static_claims.get());
@@ -300,8 +300,8 @@ void IndexerContext::OpenOutputStreams() {
     }
   }
   raw_output_ =
-      absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
-  kythe_output_ = absl::make_unique<kythe::FileOutputStream>(raw_output_.get());
+      std::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
+  kythe_output_ = std::make_unique<kythe::FileOutputStream>(raw_output_.get());
   kythe_output_->set_show_stats(absl::GetFlag(FLAGS_cache_stats));
   kythe_output_->set_flush_after_each_entry(
       absl::GetFlag(FLAGS_flush_after_each_entry));
@@ -320,7 +320,7 @@ void IndexerContext::CloseOutputStreams() {
 
 void IndexerContext::OpenHashCache() {
   if (!absl::GetFlag(FLAGS_cache).empty()) {
-    auto memcache_hash_cache = absl::make_unique<MemcachedHashCache>();
+    auto memcache_hash_cache = std::make_unique<MemcachedHashCache>();
     CHECK(memcache_hash_cache->OpenMemcache(absl::GetFlag(FLAGS_cache)));
     memcache_hash_cache->SetSizeLimits(absl::GetFlag(FLAGS_min_size),
                                        absl::GetFlag(FLAGS_max_size));

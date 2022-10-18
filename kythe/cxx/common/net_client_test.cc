@@ -16,11 +16,11 @@
 
 #include "kythe/cxx/common/net_client.h"
 
+#include <memory>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "absl/memory/memory.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/common.pb.h"
@@ -31,7 +31,7 @@ ABSL_FLAG(std::string, xrefs, "http://localhost:8080",
 
 namespace {
 void TestNodeRequest() {
-  kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
+  kythe::XrefsJsonClient client(std::make_unique<kythe::JsonClient>(),
                                 absl::GetFlag(FLAGS_xrefs));
   kythe::proto::NodesRequest request;
   kythe::proto::NodesReply response;

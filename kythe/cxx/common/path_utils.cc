@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <memory>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"

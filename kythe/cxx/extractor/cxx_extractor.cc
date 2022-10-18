@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -28,7 +29,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -958,7 +958,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     main_source_file_ = std::string(inputs[0].getFile());
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
     preprocessor->addPPCallbacks(
-        absl::make_unique<ExtractorPPCallbacks>(ExtractorState{
+        std::make_unique<ExtractorPPCallbacks>(ExtractorState{
             index_writer_, &getCompilerInstance().getSourceManager(),
             preprocessor, &main_source_file_, &main_source_file_transcript_,
             &source_files_, &main_source_file_stdin_alternate_}));
@@ -1311,7 +1311,7 @@ void CompilationWriter::WriteIndex(
 
 std::unique_ptr<clang::FrontendAction> NewExtractor(
     CompilationWriter* index_writer, ExtractorCallback callback) {
-  return absl::make_unique<ExtractorAction>(index_writer, std::move(callback));
+  return std::make_unique<ExtractorAction>(index_writer, std::move(callback));
 }
 
 llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> MapCompilerResources(
@@ -1517,10 +1517,10 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   if (!output_file_.empty()) {
     CHECK(absl::EndsWith(output_file_, ".kzip"))
         << "Output file must have '.kzip' extension";
-    sink = absl::make_unique<KzipWriterSink>(
+    sink = std::make_unique<KzipWriterSink>(
         output_file_, KzipWriterSink::OutputPathType::SingleFile);
   } else {
-    sink = absl::make_unique<KzipWriterSink>(
+    sink = std::make_unique<KzipWriterSink>(
         output_directory_, KzipWriterSink::OutputPathType::Directory);
   }
 

@@ -16,7 +16,8 @@
 
 #include "kythe/cxx/tools/fyi/fyi.h"
 
-#include "absl/memory/memory.h"
+#include <memory>
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "clang/Frontend/ASTUnit.h"
@@ -321,9 +322,9 @@ class Action : public clang::ASTFrontendAction,
     if (tracker_->state() == FileTracker::State::kBusy) {
       tracker_->BeginPass();
       compiler.getPreprocessor().addPPCallbacks(
-          absl::make_unique<PreprocessorHooks>(this));
+          std::make_unique<PreprocessorHooks>(this));
     }
-    return absl::make_unique<clang::ASTConsumer>();
+    return std::make_unique<clang::ASTConsumer>();
   }
 
   /// \copydoc ASTFrontendAction::ExecuteAction
