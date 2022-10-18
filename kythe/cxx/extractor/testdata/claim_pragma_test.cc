@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "absl/memory/memory.h"
+#include <memory> 
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
@@ -260,7 +260,7 @@ TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
   int call_count = 0;
   EXPECT_TRUE(extractor.Extract(
       supported_language::Language::kCpp,
-      absl::make_unique<FakeCompilationWriterSink>(&call_count)));
+      std::make_unique<FakeCompilationWriterSink>(&call_count)));
   EXPECT_EQ(call_count, 1);
 }
 

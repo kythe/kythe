@@ -21,7 +21,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "absl/memory/memory.h"
+#include <memory>
+
 #include "absl/strings/strip.h"
 #include "assertions.h"
 #include "glog/logging.h"
@@ -695,7 +696,7 @@ void Verifier::SetGoalCommentPrefix(const std::string& it) {
 
 bool Verifier::SetGoalCommentRegex(const std::string& regex,
                                    std::string* error) {
-  auto re2 = absl::make_unique<RE2>(regex);
+  auto re2 = std::make_unique<RE2>(regex);
   if (re2->error_code() != RE2::NoError) {
     if (error) {
       *error = re2->error();

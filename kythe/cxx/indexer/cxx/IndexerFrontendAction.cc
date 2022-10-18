@@ -22,7 +22,6 @@
 
 #include "KytheGraphObserver.h"
 #include "KytheVFS.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -254,7 +253,7 @@ std::string IndexCompilationUnit(
         });
   }
   std::unique_ptr<IndexerFrontendAction> Action =
-      absl::make_unique<IndexerFrontendAction>(
+      std::make_unique<IndexerFrontendAction>(
           &Observer, HSIValid ? &HSI : nullptr, LibrarySupports, Options);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
@@ -266,7 +265,7 @@ std::string IndexCompilationUnit(
 
   // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
   std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool =
-      absl::make_unique<StdinAdjustSingleFrontendActionFactory>(
+      std::make_unique<StdinAdjustSingleFrontendActionFactory>(
           std::move(Action));
   // ToolInvocation doesn't take ownership of ToolActions.
   clang::tooling::ToolInvocation Invocation(

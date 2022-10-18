@@ -28,7 +28,6 @@
 #include "IndexerLibrarySupport.h"
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -711,13 +710,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
-    Worklist->EnqueueJob(absl::make_unique<IndexJob>(InitialDecl));
+    Worklist->EnqueueJob(std::make_unique<IndexJob>(InitialDecl));
     while (!options_.ShouldStopIndexing() && Worklist->DoWork())
       ;
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
-          RunJob(absl::make_unique<IndexJob>(InitialDecl, Id, FileNode));
+          RunJob(std::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !options_.ShouldStopIndexing();
         });
     Worklist.reset();

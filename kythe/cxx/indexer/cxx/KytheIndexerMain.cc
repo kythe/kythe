@@ -23,10 +23,11 @@
 //       indexer -i foo.cc | verifier foo.cc
 //       indexer some/index.kzip
 
+#include <memory>
+
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/init.h"
@@ -136,17 +137,17 @@ int main(int argc, char* argv[]) {
     options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
-    auto proto = absl::make_unique<ProtobufMetadataSupport>();
+    auto proto = std::make_unique<ProtobufMetadataSupport>();
     if (absl::GetFlag(FLAGS_experimental_guess_proto_semantics)) {
       proto->GuessSemantics(true);
     }
     meta_supports.Add(std::move(proto));
-    meta_supports.Add(absl::make_unique<KytheMetadataSupport>());
+    meta_supports.Add(std::make_unique<KytheMetadataSupport>());
 
     kythe::LibrarySupports library_supports;
-    library_supports.push_back(absl::make_unique<GoogleFlagsLibrarySupport>());
-    library_supports.push_back(absl::make_unique<GoogleProtoLibrarySupport>());
-    library_supports.push_back(absl::make_unique<ImputedConstructorSupport>());
+    library_supports.push_back(std::make_unique<GoogleFlagsLibrarySupport>());
+    library_supports.push_back(std::make_unique<GoogleProtoLibrarySupport>());
+    library_supports.push_back(std::make_unique<ImputedConstructorSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),

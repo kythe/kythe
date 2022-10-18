@@ -16,9 +16,9 @@
 
 #include "KytheVFS.h"
 
+#include <memory>
 #include <system_error>
 
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "glog/logging.h"
@@ -111,7 +111,7 @@ llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> IndexVFS::openFileForRead(
   if (FileRecord* record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file) {
-      return absl::make_unique<File>(record);
+      return std::make_unique<File>(record);
     }
   }
   return make_error_code(llvm::errc::no_such_file_or_directory);
