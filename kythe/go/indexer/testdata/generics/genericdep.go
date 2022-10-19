@@ -8,7 +8,7 @@ func main() {
 	c := &genericinterface.Container[string]{"element"}
 	//- @Accept ref ContainerAccept
 	c.Accept("yup")
-	//- @Element ref Element
+	//- @Element ref/writes Element
 	c.Element = ""
 }
 

@@ -32,7 +32,7 @@ var ofp = cmd.Stdout
 // - Init.node/kind function
 func init() {
 	//- @cmd ref Cmd
-	//- @Stdout ref CmdStdout
+	//- @Stdout ref/writes CmdStdout
 	//- @os ref OS
 	//- @Stderr ref _OSStderr
 	//-   = vname("var Stderr","golang.org","","os","go")

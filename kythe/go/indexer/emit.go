@@ -213,6 +213,26 @@ const (
 	readWriteRef
 )
 
+func exprRefKind(tgt ast.Expr, stack stackFunc, depth int) refKind {
+	switch parent := stack(depth + 1).(type) {
+	case *ast.AssignStmt:
+		// Check if identifier is being assigned; we assume this is not a definition
+		// and checked by the caller.
+		for _, lhs := range parent.Lhs {
+			if lhs == tgt {
+				return writeRef
+			}
+		}
+	case *ast.IncDecStmt:
+		return readWriteRef
+	case *ast.SelectorExpr:
+		if id, ok := tgt.(*ast.Ident); ok && id == parent.Sel {
+			return exprRefKind(parent, stack, depth+1)
+		}
+	}
+	return readRef
+}
+
 // visitIdent handles referring identifiers. Declaring identifiers are handled
 // as part of their parent syntax.
 func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
@@ -258,21 +278,8 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
-	refKind := readRef
-	switch parent := stack(1).(type) {
-	case *ast.AssignStmt:
-		// Check if identifier is being assigned
-		for _, lhs := range parent.Lhs {
-			if lhs == id {
-				refKind = writeRef
-				break
-			}
-		}
-	case *ast.IncDecStmt:
-		refKind = readWriteRef
-	}
-
 	var refs []*spb.VName
+	refKind := exprRefKind(id, stack, 0)
 	if refKind == readRef || refKind == readWriteRef {
 		refs = append(refs, e.writeRef(id, target, edges.Ref))
 	}
