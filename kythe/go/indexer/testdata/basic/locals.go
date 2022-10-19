@@ -13,7 +13,7 @@ func foo() {
 	//
 	//- @bravo defines/binding Bravo
 	//- Bravo.node/kind variable
-	//- @alpha ref Alpha1
+	//- @alpha ref/writes Alpha1
 	//- !{@alpha defines/binding Alpha1}
 	alpha, bravo := 1, 2
 
@@ -44,7 +44,7 @@ func foo() {
 	//- @#2alpha ref Alpha3
 	//- @bravo ref Bravo
 	if alpha := alpha + 3; alpha < bravo {
-		//- @bravo ref Bravo
+		//- @bravo ref/writes Bravo
 		//- @alpha ref Alpha3
 		bravo = alpha
 	}

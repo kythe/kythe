@@ -205,6 +205,14 @@ type emitter struct {
 	cmap     ast.CommentMap // current file's CommentMap
 }
 
+type refKind int
+
+const (
+	readRef refKind = iota
+	writeRef
+	readWriteRef
+)
+
 // visitIdent handles referring identifiers. Declaring identifiers are handled
 // as part of their parent syntax.
 func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
@@ -249,9 +257,34 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		})
 		return
 	}
-	ref := e.writeRef(id, target, edges.Ref)
+
+	refKind := readRef
+	switch parent := stack(1).(type) {
+	case *ast.AssignStmt:
+		// Check if identifier is being assigned
+		for _, lhs := range parent.Lhs {
+			if lhs == id {
+				refKind = writeRef
+				break
+			}
+		}
+	case *ast.IncDecStmt:
+		refKind = readWriteRef
+	}
+
+	var refs []*spb.VName
+	if refKind == readRef || refKind == readWriteRef {
+		refs = append(refs, e.writeRef(id, target, edges.Ref))
+	}
+	if refKind == writeRef || refKind == readWriteRef {
+		refs = append(refs, e.writeRef(id, target, edges.RefWrites))
+	}
+
 	if e.opts.emitAnchorScopes() {
-		e.writeEdge(ref, e.callContext(stack).vname, edges.ChildOf)
+		parent := e.callContext(stack).vname
+		for _, ref := range refs {
+			e.writeEdge(ref, parent, edges.ChildOf)
+		}
 	}
 	if call, ok := isCall(id, obj, stack); ok {
 		callAnchor := e.writeRef(call, target, edges.RefCall)
