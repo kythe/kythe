@@ -3,6 +3,14 @@ package writes
 
 import "fmt"
 
+type S struct {
+	//- @F defines/binding F
+	F int
+
+	//- @Nested defines/binding Nested
+	Nested *S
+}
+
 func f() {
 	//- @x defines/binding X
 	var x int
@@ -21,6 +29,16 @@ func f() {
 	//- @#3i ref I
 	for i := 0; i < 10; i = i + 1 {
 	}
+
+	//- @z defines/binding Z
+	z := S{Nested: &S{}}
+	//- @z ref Z
+	//- @F ref/writes F
+	z.F = 42
+	//- @z ref Z
+	//- @Nested ref Nested
+	//- @F ref/writes F
+	z.Nested.F = 52
 
 	//- @x ref X
 	//- @y ref Y
