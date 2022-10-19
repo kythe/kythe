@@ -138,6 +138,11 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "writes_test",
+    srcs = ["testdata/basic/writes.go"],
+)
+
+go_indexer_test(
     name = "imports_test",
     srcs = ["testdata/basic/imports.go"],
 )

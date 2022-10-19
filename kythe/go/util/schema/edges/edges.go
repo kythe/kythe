@@ -63,6 +63,7 @@ const (
 	RefImports        = Prefix + "ref/imports"
 	RefInit           = Prefix + "ref/init"
 	RefInitImplicit   = Prefix + "ref/init/implicit"
+	RefWrites         = Prefix + "ref/writes"
 	Tagged            = Prefix + "tagged"
 )
 
