@@ -180,7 +180,7 @@ public class KytheEntrySets {
    * Returns (and emits) a new anchor node at the given location in the file with an optional
    * snippet span.
    */
-  public EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
+  public @Nullable EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
     if (loc == null || !loc.isValid()) {
       // TODO(schroederc): reduce number of invalid anchors
       return null;
@@ -249,7 +249,7 @@ public class KytheEntrySets {
    * Returns the {@link VName} of the {@link NodeKind#FILE} node with the given contents digest. If
    * none is found, returns {@code null}.
    */
-  public VName getFileVName(String digest) {
+  public @Nullable VName getFileVName(String digest) {
     VName name = lookupVName(digest);
     if (name == null) {
       return null;
@@ -374,7 +374,7 @@ public class KytheEntrySets {
    * Returns the {@link FileInput}'s {@link VName} with the given digest. If none is found, return
    * {@code null}.
    */
-  protected VName lookupVName(String digest) {
+  protected @Nullable VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);
     return inputVName == null ? null : EntrySet.extendVName(compilationVName, inputVName);
   }

@@ -39,7 +39,7 @@ abstract class ResolvedAutoValue {
     }
 
     Stream<GeneratedSymbol> stream() {
-      return Streams.concat(Stream.of(getter()), Streams.stream(setter()));
+      return Streams.concat(Stream.of(getter()), setter().stream());
     }
 
     @AutoValue.Builder
@@ -63,7 +63,7 @@ abstract class ResolvedAutoValue {
   Stream<GeneratedSymbol> stream() {
     return Streams.concat(
         Stream.of(symbol()),
-        Streams.stream(builderSymbol()),
+        builderSymbol().stream(),
         properties().stream().flatMap(Property::stream));
   }
 

@@ -34,6 +34,7 @@ import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import java.util.HashMap;
 import java.util.Map;
 import javax.lang.model.element.Element;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class is responsible for generating signatures for blocks and anonymous classes. The maps
@@ -145,7 +146,7 @@ public class BlockAnonymousSignatureGenerator
 
   // Returns the anonymous signature of the corresponding element. Element is supposed to be an
   // anonymous class definition.
-  String getAnonymousSignature(Element e) {
+  @Nullable String getAnonymousSignature(Element e) {
     TreePath tp = signatureGenerator.getPath(e);
     if (tp == null) {
       return null;

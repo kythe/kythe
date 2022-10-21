@@ -53,7 +53,7 @@ public enum NodeKind {
   VARIABLE_RESOURCE("variable", "local/resource");
 
   private final String kind;
-  @Nullable private final String subkind;
+  private final @Nullable String subkind;
 
   NodeKind(String kind) {
     this(kind, null);

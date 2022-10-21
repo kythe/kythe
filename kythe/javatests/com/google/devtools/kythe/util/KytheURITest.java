@@ -183,7 +183,7 @@ public class KytheURITest extends TestCase {
       try {
         KytheURI.parse(test);
         fail();
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         // pass test
       }
     }

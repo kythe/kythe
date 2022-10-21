@@ -22,5 +22,6 @@ java_library(
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_common_html_types_types",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )

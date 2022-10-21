@@ -19,7 +19,6 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -60,8 +59,6 @@ import java.util.function.Supplier;
  */
 public class JavaIndexer {
   private JavaIndexer() {}
-
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException, IOException {
     JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);

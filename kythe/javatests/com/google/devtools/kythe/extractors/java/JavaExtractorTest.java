@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import junit.framework.TestCase;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Tests for {@link JavaCompilationExtractor}. */
 // TODO(schroederc): replace asserts with Truth#assertThat
@@ -732,7 +733,8 @@ public class JavaExtractorTest extends TestCase {
     }
   }
 
-  private JavaDetails getJavaDetails(CompilationUnit unit) throws InvalidProtocolBufferException {
+  private @Nullable JavaDetails getJavaDetails(CompilationUnit unit)
+      throws InvalidProtocolBufferException {
     for (Any any : unit.getDetailsList()) {
       if (any.getTypeUrl().equals(JavaCompilationUnitExtractor.JAVA_DETAILS_URL)) {
         return JavaDetails.parseFrom(any.getValue());

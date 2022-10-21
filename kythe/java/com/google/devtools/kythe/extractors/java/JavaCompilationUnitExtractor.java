@@ -773,8 +773,7 @@ public class JavaCompilationUnitExtractor {
    * Returns the location and binary name of a class file, or {@code null} if the file object is not
    * a class.
    */
-  @Nullable
-  private static String getBinaryNameForClass(
+  private static @Nullable String getBinaryNameForClass(
       UsageAsInputReportingFileManager fileManager, JavaFileObject fileObject)
       throws ExtractionException {
     if (fileObject.getKind() != Kind.CLASS) {

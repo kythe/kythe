@@ -26,6 +26,7 @@ import com.google.devtools.kythe.proto.Link;
 import com.google.devtools.kythe.proto.MarkedSource;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Renders MarkedSource messages into user-printable {@link SafeHtml}. */
 public class MarkedSourceRenderer {
@@ -257,7 +258,7 @@ public class MarkedSourceRenderer {
       return false;
     }
 
-    private SafeUrl makeLinkForSource(MarkedSource node) {
+    private @Nullable SafeUrl makeLinkForSource(MarkedSource node) {
       if (makeLink == null) {
         return null;
       }

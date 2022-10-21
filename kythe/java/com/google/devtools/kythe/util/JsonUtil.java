@@ -39,6 +39,7 @@ import com.google.protobuf.ProtocolMessageEnum;
 import com.google.protobuf.util.JsonFormat;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
@@ -164,7 +165,8 @@ public class JsonUtil {
     }
 
     @Override
-    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx) {
+    public @Nullable LazyStringList deserialize(
+        JsonElement json, Type t, JsonDeserializationContext ctx) {
       if (json.isJsonNull()) {
         return null;
       }

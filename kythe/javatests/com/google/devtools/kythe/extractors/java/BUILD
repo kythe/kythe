@@ -21,6 +21,7 @@ java_test(
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:junit_junit",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 

@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.shared;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Tries to use a series of MetadataLoader instances to load files. The first non-null result is
@@ -36,7 +37,7 @@ public class MetadataLoaders implements MetadataLoader {
   }
 
   @Override
-  public Metadata parseFile(String fileName, byte[] data) {
+  public @Nullable Metadata parseFile(String fileName, byte[] data) {
     Metadata metadata;
     for (MetadataLoader loader : loaders) {
       metadata = loader.parseFile(fileName, data);
