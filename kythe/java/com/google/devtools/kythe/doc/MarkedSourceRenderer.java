@@ -51,6 +51,20 @@ public class MarkedSourceRenderer {
   }
 
   /**
+   * Render {@code signature} a full signature as plaintext.
+   *
+   * @param signature the {@link MarkedSource} to render.
+   */
+  public static String renderSignatureText(MarkedSource signature) {
+    return new RenderSimpleIdentifierState(null)
+        .renderText(
+            signature,
+            Sets.immutableEnumSet(
+                MarkedSource.Kind.IDENTIFIER, MarkedSource.Kind.TYPE, MarkedSource.Kind.PARAMETER),
+            0);
+  }
+
+  /**
    * Extract and render a plaintext initializer from {@code signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
