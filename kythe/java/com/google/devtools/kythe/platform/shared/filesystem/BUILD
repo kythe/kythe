@@ -17,6 +17,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 

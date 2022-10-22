@@ -29,6 +29,7 @@ import com.sun.source.tree.TreeVisitor;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SimpleTreeVisitor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Java {@link TreeVisitor} to return a tree's simple name (class/method/field name). */
 public class NameVisitor extends SimpleTreeVisitor<String, Void> {
@@ -38,7 +39,7 @@ public class NameVisitor extends SimpleTreeVisitor<String, Void> {
   }
 
   @Override
-  public final String visitCompilationUnit(CompilationUnitTree tree, Void v) {
+  public final @Nullable String visitCompilationUnit(CompilationUnitTree tree, Void v) {
     if (tree.getSourceFile() != null) {
       return "" + tree.getSourceFile().getName();
     }

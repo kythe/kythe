@@ -20,7 +20,6 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Streams;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -160,7 +159,7 @@ public class JvmExtractor {
     // Attribute the source files' corpus to the CompilationUnit if it is unambiguous. Otherwise use
     // the default corpus.
     ImmutableMap<String, String> inputCorpus =
-        Streams.stream(compilation.getRequiredInputList())
+        compilation.getRequiredInputList().stream()
             .collect(
                 ImmutableMap.toImmutableMap(
                     f -> f.getInfo().getPath(), f -> f.getVName().getCorpus()));

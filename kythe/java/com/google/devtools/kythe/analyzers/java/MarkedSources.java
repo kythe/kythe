@@ -200,8 +200,7 @@ public final class MarkedSources {
    * method). If there is no appropriate type for sym, returns {@code null}. Generates links with
    * {@code signatureGenerator}.
    */
-  @Nullable
-  private static MarkedSource markType(
+  private static @Nullable MarkedSource markType(
       SignatureGenerator signatureGenerator,
       Symbol sym,
       Function<Symbol, Optional<VName>> symNames) {
@@ -328,8 +327,7 @@ public final class MarkedSources {
    * to anonymous classes.) This reflects the nesting structure from the Java side, not the JVM
    * side.
    */
-  @Nullable
-  private static Symbol getQualifiedNameParent(Symbol sym) {
+  private static @Nullable Symbol getQualifiedNameParent(Symbol sym) {
     sym = sym.owner;
     while (sym != null) {
       switch (sym.kind) {

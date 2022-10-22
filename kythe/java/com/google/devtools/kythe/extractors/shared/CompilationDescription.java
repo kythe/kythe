@@ -25,6 +25,7 @@ import java.util.Objects;
  * Contains all data to completely describe a compilation. Includes compilation metadata and all
  * required input files.
  */
+@SuppressWarnings("HashCodeToString")
 public class CompilationDescription {
   private final CompilationUnit compilationUnit;
   private final Iterable<FileData> fileContents;

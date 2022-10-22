@@ -46,6 +46,7 @@ java_library(
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_beust_jcommander",
+        "@maven//:org_checkerframework_checker_qual",
         "@maven//:org_ow2_asm_asm",
     ],
 )

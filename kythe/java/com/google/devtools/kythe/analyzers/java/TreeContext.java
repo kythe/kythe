@@ -30,6 +30,7 @@ import com.sun.tools.javac.tree.JCTree.JCTypeApply;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import java.util.ArrayList;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Kythe context within a {@link JCTree}. */
 class TreeContext {
@@ -97,7 +98,7 @@ class TreeContext {
     return parent;
   }
 
-  public JCClassDecl getClassParentDecl() {
+  public @Nullable JCClassDecl getClassParentDecl() {
     TreeContext parent = up();
     while (parent != null && !(parent.getTree() instanceof JCClassDecl)) {
       parent = parent.up();
@@ -108,7 +109,7 @@ class TreeContext {
     return (JCClassDecl) parent.getTree();
   }
 
-  public JCIdent getNewClassIdentifier() {
+  public @Nullable JCIdent getNewClassIdentifier() {
     TreeContext parent = this;
     while (parent != null && !(parent.getTree() instanceof JCNewClass)) {
       parent = parent.up();
