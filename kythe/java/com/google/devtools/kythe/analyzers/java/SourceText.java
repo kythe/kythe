@@ -39,6 +39,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class SourceText {
   private final Positions positions;
@@ -191,7 +192,7 @@ public final class SourceText {
      * identifier, starting at or after the specified starting offset. Returns {@code null} if no
      * occurrences are found.
      */
-    public Span findIdentifier(Name name, int startOffset) {
+    public @Nullable Span findIdentifier(Name name, int startOffset) {
       List<Span> spans = identTable.get(name);
       if (spans != null) {
         startOffset = charToByteOffset(startOffset);
@@ -205,7 +206,7 @@ public final class SourceText {
     }
 
     @SuppressWarnings("JdkObsolete")
-    public Span findBracketGroup(int startCharOffset) {
+    public @Nullable Span findBracketGroup(int startCharOffset) {
       int startOffset = charToByteOffset(startCharOffset);
       SortedSet<Span> grps = bracketGroups.tailSet(new Span(startOffset, startOffset));
       return grps.isEmpty() ? null : grps.first();

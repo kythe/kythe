@@ -773,7 +773,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   @Override
-  public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
+  public @Nullable JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
     TreeContext ctx = owner.down(field);
 
     JCImport imprt = null;
@@ -1107,7 +1107,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   /** Create an abs node if we have type variables or if we have wildcards. */
-  private VName defineTypeParameters(
+  private @Nullable VName defineTypeParameters(
       TreeContext ownerContext,
       VName owner,
       List<JCTypeParameter> params,
@@ -1180,7 +1180,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return node;
   }
 
-  private VName getJvmNode(Symbol sym) {
+  private @Nullable VName getJvmNode(Symbol sym) {
     if (isErroneous(sym)) {
       return null;
     }
@@ -1313,7 +1313,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Returns the reference node for the given symbol.
-  private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
+  private @Nullable JavaNode getRefNode(TreeContext ctx, Symbol sym) {
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
@@ -1422,7 +1422,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
-  private EntrySet emitAnchor(
+  private @Nullable EntrySet emitAnchor(
       Name name, int startOffset, EdgeKind kind, VName node, Span snippet, List<VName> scope) {
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, name, startOffset, snippet);
     if (anchor == null) {
@@ -1432,7 +1432,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return emitAnchor(anchor, kind, node, scope);
   }
   // Creates/emits an anchor and an associated edge
-  private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {
+  private @Nullable EntrySet emitAnchor(
+      EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {
     Preconditions.checkArgument(
         kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: %s", kind);
     if (anchor == null) {

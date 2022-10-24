@@ -28,6 +28,7 @@ import com.sun.tools.javac.util.Pair;
 import java.util.HashMap;
 import java.util.Map;
 import javax.lang.model.element.Element;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class memoizes the TreePath(s) in a compilation unit tree. Each node in the tree has one
@@ -44,7 +45,9 @@ public class MemoizedTreePathScanner extends TreeScanner<Void, TreePath> {
   private final Map<Tree, TreePath> paths = new HashMap<>();
   private final JavacElements elements;
 
-  /** @param unit the compilation unit for which we want to memoize the tree paths */
+  /**
+   * @param unit the compilation unit for which we want to memoize the tree paths
+   */
   public MemoizedTreePathScanner(CompilationUnitTree unit, Context context) {
     elements = JavacElements.instance(context);
     // Constructing the tree path for compilation unit.
@@ -74,7 +77,7 @@ public class MemoizedTreePathScanner extends TreeScanner<Void, TreePath> {
   }
 
   /** Returns the memoized path to the {@code element} */
-  public TreePath getPath(Element element) {
+  public @Nullable TreePath getPath(Element element) {
     Pair<JCTree, JCCompilationUnit> p = elements.getTreeAndTopLevel(element, null, null);
     if (p != null) {
       return getPath(p.fst);

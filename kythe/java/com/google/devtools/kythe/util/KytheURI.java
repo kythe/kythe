@@ -32,6 +32,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * /{@link String} realization of a {@link VName}.
@@ -233,7 +234,7 @@ public class KytheURI implements Serializable {
     return parse(ticket).toVName();
   }
 
-  private static String decode(String str) {
+  private static @Nullable String decode(String str) {
     if (isNullOrEmpty(str)) {
       return null;
     }

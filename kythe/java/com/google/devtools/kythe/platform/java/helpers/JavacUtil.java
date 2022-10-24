@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Utility methods for javac-based analyses. */
 public class JavacUtil {
@@ -88,7 +89,7 @@ public class JavacUtil {
   }
 
   /** Searches in the symbol table to find a class with a particular name. */
-  public static ClassSymbol getClassSymbol(Context context, String name) {
+  public static @Nullable ClassSymbol getClassSymbol(Context context, String name) {
     Symtab symtab = Symtab.instance(context);
     Names names = Names.instance(context);
 

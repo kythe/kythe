@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class JavacAnalysisDriver {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
-  @Nullable private final Path temporaryDirectory;
+  private final @Nullable Path temporaryDirectory;
 
   public JavacAnalysisDriver(List<Processor> processors, @Nullable Path temporaryDirectory) {
     this.processors = processors;

@@ -64,6 +64,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/java/com/google/devtools/kythe/util:span",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -129,5 +130,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )

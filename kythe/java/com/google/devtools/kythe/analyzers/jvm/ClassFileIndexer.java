@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Kythe analyzer for JVM class files (possibly within a jar or kzip file).
@@ -177,7 +178,7 @@ public class ClassFileIndexer {
         .collect(ImmutableList.toImmutableList());
   }
 
-  private static VName getEnclosingJar(
+  private static @Nullable VName getEnclosingJar(
       ImmutableList<VName> enclosingJars, CompilationUnit.FileInput file) {
     JarEntryDetails jarEntryDetails = null;
     for (Any details : file.getDetailsList()) {

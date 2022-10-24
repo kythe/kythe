@@ -37,6 +37,7 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardLocation;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class is used to visit all the annotation used in Java files and record the usage of these
@@ -129,7 +130,7 @@ public class ProcessAnnotation extends AbstractProcessor {
     }
   }
 
-  private static String getGeneratedComments(
+  private static @Nullable String getGeneratedComments(
       Element annotatedElement, TypeElement generatedElement) {
     AnnotationMirror mirror = getAnnotationMirror(annotatedElement, generatedElement);
     if (mirror == null) {
@@ -142,7 +143,8 @@ public class ProcessAnnotation extends AbstractProcessor {
     return null;
   }
 
-  private static AnnotationMirror getAnnotationMirror(Element element, TypeElement annotationType) {
+  private static @Nullable AnnotationMirror getAnnotationMirror(
+      Element element, TypeElement annotationType) {
     for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
       TypeElement annotationTypeElement = asType(annotationMirror.getAnnotationType().asElement());
       if (annotationTypeElement.equals(annotationType)) {

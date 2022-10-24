@@ -23,6 +23,7 @@ import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type;
 import junit.framework.TestCase;
 
 /** Tests for the {@link JvmGraph} class. */
+@SuppressWarnings("BadImport")
 public final class JvmGraphTest extends TestCase {
   public void testTypeDescriptors() {
     Type.ReferenceType objectType = Type.referenceType("java.lang.Object");

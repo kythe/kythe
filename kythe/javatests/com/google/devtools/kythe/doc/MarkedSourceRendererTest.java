@@ -81,6 +81,8 @@ public class MarkedSourceRendererTest extends TestCase {
         .isEqualTo(
             "<span>void H(<a href=\"a\">String </a>message, <a href=\"b\">Throwable"
                 + " </a>cause)</span>");
+    assertThat(MarkedSourceRenderer.renderSignatureText(markedSource))
+        .isEqualTo("void H(String message, Throwable cause)");
   }
 
   public void testRenderingLists() throws IOException {
