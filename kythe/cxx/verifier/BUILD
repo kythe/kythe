@@ -3,7 +3,9 @@ load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 package(
     default_visibility = ["//kythe:default_visibility"],
-    features = ["layering_check"],
+    features = [
+        "layering_check",
+    ],
 )
 
 genyacc(

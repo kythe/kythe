@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":proto_extractor_test.bzl", "extractor_golden_test")
 
+package(features = ["layering_check"])
+
 extractor_golden_test(
     name = "relative_imports",
     srcs = ["relative_imports.proto"],

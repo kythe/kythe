@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":cc_proto_verifier_test.bzl", "cc_proto_verifier_test")
 
+package(features = ["layering_check"])
+
 cc_proto_verifier_test(
     name = "proto_test",
     size = "medium",

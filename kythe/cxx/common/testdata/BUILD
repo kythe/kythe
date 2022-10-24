@@ -1,6 +1,9 @@
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 filegroup(
     name = "start_http_service",

@@ -2,6 +2,8 @@ load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":proto_verifier_test.bzl", "proto_verifier_test")
 
+package(features = ["layering_check"])
+
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])

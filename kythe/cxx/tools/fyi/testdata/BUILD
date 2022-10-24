@@ -2,7 +2,10 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 load(":compile_commands.bzl", "compile_commands")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 compile_commands(
     name = "compile_commands",

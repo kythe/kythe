@@ -15,7 +15,6 @@
  */
 
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "gtest/gtest.h"

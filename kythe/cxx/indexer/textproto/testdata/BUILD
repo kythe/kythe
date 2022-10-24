@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_verifier_test.bzl", "textproto_verifier_test")
 
+package(features = ["layering_check"])
+
 textproto_verifier_test(
     name = "basics_test",
     protos = [":example_proto"],
