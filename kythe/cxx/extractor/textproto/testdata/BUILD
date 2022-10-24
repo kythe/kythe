@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_extractor_test.bzl", "textproto_extractor_golden_test")
 
+package(features = ["layering_check"])
+
 textproto_extractor_golden_test(
     name = "simple",
     srcs = ["simple.pbtxt"],
