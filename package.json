@@ -2,7 +2,7 @@
   "devDependencies": {
     "@bazel/bazelisk": "^1.7.5",
     "@bazel/ibazel": "^0.13.2",
-    "@bazel/jasmine": "^3.2.3",
+    "@bazel/jasmine": "^5.7.0",
     "@bazel/labs": "^3.2.3",
     "@bazel/typescript": "^3.2.3",
     "@commitlint/cli": "^9.1.2",
