@@ -1059,20 +1059,6 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
         VisitComment(CommentOrNull, DCxt, DCID.value());
       }
     }
-    if (const auto* CTPSD =
-            dyn_cast_or_null<clang::ClassTemplatePartialSpecializationDecl>(
-                Decl)) {
-      auto NodeId = BuildNodeIdForDecl(CTPSD);
-      VisitAttributes(Decl, NodeId);
-      if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
-    }
-    if (const auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
-      if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
-        auto NodeId = BuildNodeIdForDecl(FTD);
-        VisitAttributes(Decl, NodeId);
-        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
-      }
-    }
   } else {
     auto NodeId = BuildNodeIdForDecl(Decl);
     VisitAttributes(Decl, NodeId);
