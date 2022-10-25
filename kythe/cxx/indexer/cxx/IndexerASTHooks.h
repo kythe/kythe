@@ -81,12 +81,6 @@ enum EmitDataflowEdges : bool {
   Yes = true   ///< Emit dataflow edges.
 };
 
-/// \brief Specifies whether to use abs nodes.
-enum UseAbsNodes : bool {
-  Abs = true,    ///< Use abs nodes.
-  NoAbs = false  ///< Don't use abs nodes.
-};
-
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -127,8 +121,6 @@ struct IndexerOptions {
   int UsrByteSize = 0;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
-  /// \brief Controls whether abs nodes are emitted.
-  UseAbsNodes AbsNodes = UseAbsNodes::Abs;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
