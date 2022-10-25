@@ -1059,21 +1059,20 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
         VisitComment(CommentOrNull, DCxt, DCID.value());
       }
     }
-      if (const auto* CTPSD =
-              dyn_cast_or_null<clang::ClassTemplatePartialSpecializationDecl>(
-                  Decl)) {
-        auto NodeId = BuildNodeIdForDecl(CTPSD);
+    if (const auto* CTPSD =
+            dyn_cast_or_null<clang::ClassTemplatePartialSpecializationDecl>(
+                Decl)) {
+      auto NodeId = BuildNodeIdForDecl(CTPSD);
+      VisitAttributes(Decl, NodeId);
+      if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
+    }
+    if (const auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
+      if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
+        auto NodeId = BuildNodeIdForDecl(FTD);
         VisitAttributes(Decl, NodeId);
         if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
-      if (const auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
-        if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(FTD);
-          VisitAttributes(Decl, NodeId);
-          if (CommentOrNull != nullptr)
-            VisitComment(CommentOrNull, DCxt, NodeId);
-        }
-      }
+    }
   } else {
     auto NodeId = BuildNodeIdForDecl(Decl);
     VisitAttributes(Decl, NodeId);
@@ -3606,8 +3605,7 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
     const clang::ObjCTypeParamDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(Decl);
-  Observer.recordTVarNode(TypeParamId,
-                          Marks.GenerateMarkedSource(TypeParamId));
+  Observer.recordTVarNode(TypeParamId, Marks.GenerateMarkedSource(TypeParamId));
   SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), TypeParamId, TypeSR),
@@ -4187,8 +4185,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
         } else if (const auto* FD =
                        dyn_cast<clang::FunctionDecl>(UnderlyingDecl)) {
           const clang::NamedDecl* decl = FD;
-          if  (absl::GetFlag(
-                   FLAGS_experimental_alias_template_instantiations)) {
+          if  (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
             // Point to the original member function template.
             // This solves problems with aliasing when dealing with nested
             // templates.
