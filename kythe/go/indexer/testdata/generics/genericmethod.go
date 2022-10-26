@@ -23,6 +23,10 @@ type Container[T any] struct {
 // - @#1T ref GetTVar
 // - !{@#0T ref TVar}
 // - !{@#1T ref TVar}
+// - @"Container[T]" ref TApp
+// - TApp.node/kind tapp
+// - TApp param.0 Container
+// - TApp param.1 GetTVar
 func (c *Container[T]) Get() T {
 	//- @T ref GetTVar
 	//- !{@T ref TVar}
