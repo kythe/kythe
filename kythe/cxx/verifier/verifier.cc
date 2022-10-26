@@ -797,6 +797,8 @@ bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
 
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
 
+void Verifier::IgnoreCodeConflicts() { ignore_code_conflicts_ = true; }
+
 void Verifier::SaveEVarAssignments() {
   saving_assignments_ = true;
   parser_.InspectAllEVars();
@@ -1267,29 +1269,31 @@ bool Verifier::PrepareDatabase() {
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
       if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
-        // TODO(#1553): (closed?) Add documentation for these new edges.
-        printer.Print(
-            "Two /kythe/code facts about a node differed in value:\n  ");
-        ta->element(0)->Dump(symbol_table_, &printer);
-        printer.Print("\n  ");
-        printer.Print("\nThe decoded values were:\n");
-        auto print_decoded = [&](AstNode* value) {
-          if (auto* ident = value->AsIdentifier()) {
-            proto::common::MarkedSource marked_source;
-            if (!marked_source.ParseFromString(
-                    symbol_table_.text(ident->symbol()))) {
-              printer.Print("(failed to decode)\n");
+        if (!ignore_code_conflicts_) {
+          // TODO(#1553): (closed?) Add documentation for these new edges.
+          printer.Print(
+              "Two /kythe/code facts about a node differed in value:\n  ");
+          ta->element(0)->Dump(symbol_table_, &printer);
+          printer.Print("\n  ");
+          printer.Print("\nThe decoded values were:\n");
+          auto print_decoded = [&](AstNode* value) {
+            if (auto* ident = value->AsIdentifier()) {
+              proto::common::MarkedSource marked_source;
+              if (!marked_source.ParseFromString(
+                      symbol_table_.text(ident->symbol()))) {
+                printer.Print("(failed to decode)\n");
+              } else {
+                printer.Print(marked_source.DebugString());
+                printer.Print("\n");
+              }
             } else {
-              printer.Print(marked_source.DebugString());
-              printer.Print("\n");
+              printer.Print("(not an identifier)\n");
             }
-          } else {
-            printer.Print("(not an identifier)\n");
-          }
-        };
-        print_decoded(ta->element(4));
-        printer.Print("\n -----------------  versus  ----------------- \n\n");
-        print_decoded(tb->element(4));
+          };
+          print_decoded(ta->element(4));
+          printer.Print("\n -----------------  versus  ----------------- \n\n");
+          print_decoded(tb->element(4));
+        }
       } else {
         printer.Print("Two facts about a node differed in value:\n  ");
         fa->Dump(symbol_table_, &printer);

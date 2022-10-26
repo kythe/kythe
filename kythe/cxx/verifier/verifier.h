@@ -63,6 +63,9 @@ class Verifier {
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();
 
+  /// \brief During verification, ignore conflicting /kythe/code facts.
+  void IgnoreCodeConflicts();
+
   /// \brief Save results of verification keyed by inspection label.
   void SaveEVarAssignments();
 
@@ -268,6 +271,9 @@ class Verifier {
 
   /// Ignore duplicate facts during verification?
   bool ignore_dups_ = false;
+
+  /// Ignore conflicting /kythe/code facts during verification?
+  bool ignore_code_conflicts_ = false;
 
   /// Filename to use for builtin constants.
   std::string builtin_location_name_;
