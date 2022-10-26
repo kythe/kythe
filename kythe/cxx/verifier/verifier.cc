@@ -1293,6 +1293,7 @@ bool Verifier::PrepareDatabase() {
           print_decoded(ta->element(4));
           printer.Print("\n -----------------  versus  ----------------- \n\n");
           print_decoded(tb->element(4));
+          is_ok = false;
         }
       } else {
         printer.Print("Two facts about a node differed in value:\n  ");
@@ -1300,8 +1301,8 @@ bool Verifier::PrepareDatabase() {
         printer.Print("\n  ");
         fb->Dump(symbol_table_, &printer);
         printer.Print("\n");
+        is_ok = false;
       }
-      is_ok = false;
     }
   }
   if (is_ok) {
