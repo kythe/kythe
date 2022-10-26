@@ -4849,7 +4849,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
   // specializations appear as different types.
   if (auto TemplateName = BuildNodeIdForTemplateName(T.getTemplateName())) {
     std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(T.getNumArgs());
+    TemplateArgs.reserve(T.template_arguments().size());
     for (const auto& arg : T.template_arguments()) {
       if (auto ArgId = BuildNodeIdForTemplateArgument(arg)) {
         TemplateArgs.push_back(*ArgId);
