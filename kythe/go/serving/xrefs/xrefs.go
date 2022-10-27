@@ -28,7 +28,6 @@ package xrefs // import "kythe.io/kythe/go/serving/xrefs"
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -1434,6 +1433,8 @@ func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
 // http://google.github.io/google-api-cpp-client/latest/doxygen/namespacegoogleapis_1_1util_1_1error.html
 func canonicalError(err error, caller string, ticket string) error {
 	switch code := status.Code(err); code {
+	case codes.OK:
+		return nil
 	case codes.Canceled:
 		return xrefs.ErrCanceled
 	case codes.DeadlineExceeded:
@@ -1451,5 +1452,6 @@ func canonicalError(err error, caller string, ticket string) error {
 }
 
 func isNonContextError(err error) bool {
-	return err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+	err = canonicalError(err, "", "")
+	return err != nil && err != xrefs.ErrCanceled && err != xrefs.ErrDeadlineExceeded
 }
