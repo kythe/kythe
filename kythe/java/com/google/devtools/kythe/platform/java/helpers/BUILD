@@ -20,6 +20,8 @@ java_library(
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
     ],
     deps = [
+        ":jdk9_compatibility_shims",
+        ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/guava",
@@ -28,3 +30,41 @@ java_library(
         "@maven//:org_checkerframework_checker_qual",
     ],
 )
+
+java_library(
+    name = "jdk_compatibility_shims",
+    srcs = ["JdkCompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+java_library(
+    name = "jdk9_compatibility_shims",
+    srcs = ["Jdk9CompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//third_party/guava",
+    ],
+)
+
+#java_library(
+#    name = "jdk15_compatibility_shims",
+#    srcs = ["Jdk15CompatibilityShims.java"],
+#    javacopts = [
+#        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+#    ],
+#    visibility = ["//visibility:private"],
+#    deps = [
+#        ":jdk_compatibility_shims",
+#        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+#    ],
+#)

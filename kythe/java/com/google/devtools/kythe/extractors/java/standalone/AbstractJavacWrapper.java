@@ -20,7 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.hash.Hashing;
@@ -32,7 +32,6 @@ import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
-import com.sun.tools.javac.main.CommandLine;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
 
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.
@@ -63,6 +63,8 @@ import java.util.Optional;
  */
 public abstract class AbstractJavacWrapper {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  protected static final JdkCompatibilityShims shims =
+      Iterables.find(ServiceLoader.load(JdkCompatibilityShims.class), s -> s != null);
 
   protected abstract Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
@@ -147,7 +149,7 @@ public abstract class AbstractJavacWrapper {
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
     // Expand all @file arguments
-    List<String> expandedArgs = Lists.newArrayList(CommandLine.parse(args));
+    List<String> expandedArgs = shims.parseCompilerArguments(args);
 
     // We skip some arguments that would normally be passed to javac:
     // -J, these are flags to the java environment running javac.
