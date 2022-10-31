@@ -723,7 +723,7 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
 
     // Add ref edge to file.
     proto::VName v = VNameForRelPath(file);
-    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(v));
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRefFile, VNameRef(v));
   }
 
   return absl::OkStatus();
