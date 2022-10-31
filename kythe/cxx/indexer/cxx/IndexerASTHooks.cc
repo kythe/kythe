@@ -4171,7 +4171,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
         } else if (const auto* FD =
                        dyn_cast<clang::FunctionDecl>(UnderlyingDecl)) {
           const clang::NamedDecl* decl = FD;
-          if  (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
+          if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
             // Point to the original member function template.
             // This solves problems with aliasing when dealing with nested
             // templates.
