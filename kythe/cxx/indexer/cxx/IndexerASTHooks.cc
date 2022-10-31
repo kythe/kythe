@@ -4534,6 +4534,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     const clang::NamedDecl* SpecFocus = SpecDecl;
     if (SpecDecl->getTemplatedDecl()->getDefinition())
       SpecFocus = SpecDecl->getTemplatedDecl()->getDefinition();
+    else
+      SpecFocus = SpecDecl->getTemplatedDecl();
     NodeId DeclId =
         Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {

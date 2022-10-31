@@ -955,20 +955,9 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
   recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
 }
 
-void KytheGraphObserver::recordAbsNode(const NodeId& node_id) {
-  recorder_->AddProperty(VNameRefFromNodeId(node_id), NodeKindID::kAbs);
-}
-
 void KytheGraphObserver::recordMarkedSource(
     const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
-  AddMarkedSource(node_vname, marked_source);
-}
-
-void KytheGraphObserver::recordAbsVarNode(
-    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
-  auto node_vname = VNameRefFromNodeId(node_id);
-  recorder_->AddProperty(node_vname, NodeKindID::kAbsVar);
   AddMarkedSource(node_vname, marked_source);
 }
 

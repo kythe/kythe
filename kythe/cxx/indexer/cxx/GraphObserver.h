@@ -586,36 +586,8 @@ class GraphObserver {
     Unscoped  ///< This enum is unscoped (a plain `enum`).
   };
 
-  /// \brief Records a node representing a dependent type abstraction, like
-  /// a template.
-  ///
-  /// Abstraction nodes are used to represent the binding sites of compile-time
-  /// variables. Consider the following class template definition:
-  ///
-  /// ~~~
-  /// template <typename T> class C { T m; };
-  /// ~~~
-  ///
-  /// Here, the `GraphObserver` will be notified of a single abstraction
-  /// node. This node will have a single parameter, recorded with
-  /// `recordAbsVarNode`. The abstraction node will have a child record
-  /// node, which in turn will have a field `m` with a type that depends on
-  /// the abstraction variable parameter.
-  ///
-  /// \param Node The NodeId of the abstraction.
-  /// \sa recordAbsVarNode
-  virtual void recordAbsNode(const NodeId& Node) {}
-
   /// \brief Explicitly record marked source for some `Node`.
   virtual void recordMarkedSource(
-      const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
-
-  /// \brief Records a node representing a variable in a dependent type
-  /// abstraction.
-  /// \param Node The `NodeId` of the variable.
-  /// \param MarkedSource marked source for this variable.
-  /// \sa recordAbsNode
-  virtual void recordAbsVarNode(
       const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Records a node representing a variable in a dependent type
