@@ -982,7 +982,7 @@ def cc_extractor_test(
         name = name,
         size = size,
         srcs = srcs,
-        opts = ["--ignore_dups"],
+        opts = ["--ignore_dups", "--ignore_code_conflicts"],
         restricted_to = restricted_to,
         tags = tags,
         deps = deps + [":" + name + "_entries"],
