@@ -42,7 +42,7 @@ fi
 readarray -t TESTS < <(bazel query \
   --keep_going \
   --noshow_progress \
-  "tests(rdeps(//..., set($*))) except attr('tags', '$TAG_RE', //...)")
+  "let expr = tests(set(${TARGETS[*]})) in \$expr except attr('tags', '$TAG_RE', \$expr)")
 
 if [[ "${#TESTS[@]}" -gt 0 ]]; then
   echo "Running tests"

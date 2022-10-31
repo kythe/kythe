@@ -2934,6 +2934,69 @@ TEST(VerifierUnitTest, ConvertMarkedSourceDuplicateFactsWellFormed) {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, ConflictingCodeFactsNotWellFormed) {
+  Verifier v;
+  MarkedSource source;
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+
+  MarkedSource source_conflict;
+  source_conflict.set_pre_text("pre_text");
+  google::protobuf::string source_conflict_string;
+  ASSERT_TRUE(source_conflict.SerializeToString(&source_conflict_string));
+  google::protobuf::string enc_source_conflict =
+      printer.PrintBytes(source_conflict_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source_conflict +
+                                    R"(
+  }
+  )"));
+  ASSERT_FALSE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
+  Verifier v;
+  v.IgnoreCodeConflicts();
+  MarkedSource source;
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+
+  MarkedSource source_conflict;
+  source_conflict.set_pre_text("pre_text");
+  google::protobuf::string source_conflict_string;
+  ASSERT_TRUE(source_conflict.SerializeToString(&source_conflict_string));
+  google::protobuf::string enc_source_conflict =
+      printer.PrintBytes(source_conflict_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source_conflict +
+                                    R"(
+  }
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 }  // anonymous namespace
 }  // namespace verifier
 }  // namespace kythe
