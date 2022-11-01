@@ -110,7 +110,6 @@ export function makeOrdinalEdge(edge: EdgeKind, ordinal: number): OrdinalEdge {
  *   https://github.com/kythe/kythe/tree/master/kythe/data/schema_index.textproto#L64
  */
 export enum NodeKind {
-  ABSVAR = 'absvar',
   ANCHOR = 'anchor',
   CONSTANT = 'constant',
   DIAGNOSTIC = 'diagnostic',

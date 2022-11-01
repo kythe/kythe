@@ -1,13 +1,13 @@
 // Checks the behavior of implicit class template instantiations.
 using ExternalDef = int;
 //- @C defines/binding TemplateC
-//- @T defines/binding AbsvarT
+//- @T defines/binding TvarT
 template <typename T> struct C {
 //- @X defines/binding ExternalDefAlias
 //- @X.loc/start XStart
 //- @X.loc/end XEnd
   using X = ExternalDef;
-//- @Y defines/binding AbsvarAlias
+//- @Y defines/binding TvarAlias
 //- @Y.loc/start YStart
 //- @Y.loc/end YEnd
   using Y = T;
@@ -21,7 +21,7 @@ C<int> x;
 //- WraithXAnchor.loc/start XStart
 //- WraithXAnchor.loc/end XEnd
 //- WraithXAnchor defines/binding ExternalDefAlias
-//- AbsvarAlias aliases AbsvarT
+//- TvarAlias aliases TvarT
 //- WraithYAnchor childof/context ImpX
 //- WraithYAnchor.loc/start YStart
 //- WraithYAnchor.loc/end YEnd

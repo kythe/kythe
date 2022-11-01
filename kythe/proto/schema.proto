@@ -37,8 +37,7 @@ extend google.protobuf.EnumValueOptions {
 enum NodeKind {
   UNKNOWN_NODE_KIND = 0;
 
-  ABS = 1 [(metadata).label = "abs"];
-  ABSVAR = 2 [(metadata).label = "absvar"];
+  reserved 1, 2;
   ANCHOR = 3 [(metadata).label = "anchor"];
   CONSTANT = 4 [(metadata).label = "constant"];
   DIAGNOSTIC = 5 [(metadata).label = "diagnostic"];

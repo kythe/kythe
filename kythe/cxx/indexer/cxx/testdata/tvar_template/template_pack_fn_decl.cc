@@ -1,7 +1,7 @@
 // We index function template declarations with parameter pack arguments.
-//- @Ts defines/binding PackAbsvar
+//- @Ts defines/binding PackTvar
 template <typename... Ts>
-//- @Ts ref PackAbsvar
+//- @Ts ref PackTvar
 //- @ts defines/binding PackParam
-//- PackParam typed PackAbsvar
+//- PackParam typed PackTvar
 void f(Ts... ts) { }

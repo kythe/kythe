@@ -25,7 +25,7 @@ kwazthis() { "$KWAZTHIS" --local_repo=NONE --api "http://$LISTEN_AT" "$@" | tee 
 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
-JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 870)
+JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 813)
 jq --slurp 'length == 4'
 # .[0] is Generics class def
 # .[1] is f method def
