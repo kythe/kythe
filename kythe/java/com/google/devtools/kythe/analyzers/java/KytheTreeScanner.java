@@ -369,8 +369,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             ctx,
             classNode,
             classDef.getTypeParameters(),
-            ImmutableList.<VName>of(), /* There are no wildcards in class definitions */
-            markedSource.build());
+            /* There are no wildcards in class definitions */
+            ImmutableList.<VName>of());
 
     boolean documented = visitDocComment(classNode, absNode, classDef.getModifiers());
 
@@ -543,8 +543,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitVisibility(methodNode, methodDef.getModifiers(), ctx);
 
     VName absNode =
-        defineTypeParameters(
-            ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
+        defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
 
     if (!isErroneous(methodDef.sym)) {
@@ -1111,8 +1110,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       TreeContext ownerContext,
       VName owner,
       List<JCTypeParameter> params,
-      List<VName> wildcards,
-      MarkedSource markedSource) {
+      List<VName> wildcards) {
     if (params.isEmpty() && wildcards.isEmpty()) {
       return null;
     }
@@ -1144,12 +1142,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     // Add all of the wildcards that roll up to this node. For example:
     // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
-    // node that has 1 named absvar (T) and 5 unnamed absvars.
+    // node that has 1 named tparam (T) and 5 unnamed tparam.
     typeParams.addAll(wildcards);
 
-    if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
-      return entrySets.newAbstractAndEmit(owner, typeParams, markedSource).getVName();
-    }
     entrySets.emitOrdinalEdges(owner, EdgeKind.TPARAM, typeParams);
     return owner;
   }
@@ -1316,7 +1311,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private @Nullable JavaNode getRefNode(TreeContext ctx, Symbol sym) {
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
-    boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     try {
       if (sym == null) {
         logger.atWarning().log("sym was null");
@@ -1326,16 +1320,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           && ctx.getTree() instanceof JCFieldAccess) {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }
-      JavaNode node = getJavaNode(sym);
-      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
-          && node != null
-          && sym instanceof ClassSymbol
-          && inGenericContext
-          && !sym.getTypeParameters().isEmpty()) {
-        // Always reference the abs node of a generic class, unless used as a raw type.
-        node = new JavaNode(entrySets.newAbstractAndEmit(node.getVName()));
-      }
-      return node;
+      return getJavaNode(sym);
     } finally {
       signatureGenerator.setArrayTypeContext(null);
     }
@@ -1358,9 +1343,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaLangEnumNode(VName enumVName) {
     if (javaLangEnumNode == null) {
       VName v = resolveJavaLangSymbol(getSymbols().enumSym).getVName();
-      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
-        v = entrySets.newAbstractAndEmit(v).getVName();
-      }
       javaLangEnumNode = new JavaNode(v);
     }
     EntrySet typeNode =

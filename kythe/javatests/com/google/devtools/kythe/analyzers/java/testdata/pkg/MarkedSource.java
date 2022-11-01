@@ -410,7 +410,7 @@ public class MarkedSource {
   }
 
   //- @T defines/binding TVar
-  //- TVar.node/kind absvar
+  //- TVar.node/kind tvar
   //- TVar code TVarCode
   //- TVarCode.kind "BOX"
   //- TVarCode child.0 TVarContext

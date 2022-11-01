@@ -27,7 +27,6 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -315,26 +314,6 @@ public class KytheEntrySets {
     for (VName target : targets) {
       emitEdge(source, kind, target, ordinal++);
     }
-  }
-
-  /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstractAndEmit(
-      VName child, List<VName> params, @Nullable MarkedSource markedSource) {
-    NodeBuilder absBuilder =
-        newNode(NodeKind.ABS).addSignatureSalt(child).setCorpusPath(CorpusPath.fromVName(child));
-    if (markedSource != null) {
-      absBuilder.setProperty("code", markedSource);
-    }
-
-    EntrySet abs = emitAndReturn(absBuilder);
-    emitEdge(child, EdgeKind.CHILDOF, abs.getVName());
-    emitOrdinalEdges(abs.getVName(), EdgeKind.PARAM, params);
-    return abs;
-  }
-
-  /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstractAndEmit(VName child) {
-    return newAbstractAndEmit(child, Collections.emptyList(), null);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */

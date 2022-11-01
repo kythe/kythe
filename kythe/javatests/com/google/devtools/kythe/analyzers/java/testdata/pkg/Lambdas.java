@@ -5,8 +5,7 @@ import java.util.function.Function;
 @SuppressWarnings({"unused", "JavaLangClash", "UnnecessaryLambda"})
 //- @Lambdas defines/binding LambdasClass
 public class Lambdas {
-  //- @Function ref FuncAbs
-  //- Func childof FuncAbs
+  //- @Function ref Func
   //- @"x -> x" defines IdentLambda
   //- IdentLambda.node/kind function
   //- IdentLambda extends Func
