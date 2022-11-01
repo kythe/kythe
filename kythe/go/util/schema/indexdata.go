@@ -23,8 +23,6 @@ import scpb "kythe.io/kythe/proto/schema_go_proto"
 
 var (
 	nodeKinds = map[string]scpb.NodeKind{
-		"abs":          1,
-		"absvar":       2,
 		"anchor":       3,
 		"constant":     4,
 		"diagnostic":   5,
@@ -148,8 +146,6 @@ var (
 	}
 
 	nodeKindsRev = map[scpb.NodeKind]string{
-		1:  "abs",
-		2:  "absvar",
 		3:  "anchor",
 		4:  "constant",
 		5:  "diagnostic",

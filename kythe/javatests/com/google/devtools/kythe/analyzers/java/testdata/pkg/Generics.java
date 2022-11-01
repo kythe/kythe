@@ -7,8 +7,6 @@ package pkg;
 //- TVar.node/kind tvar
 //- Class tparam.0 TVar
 public class Generics<T> {
-  //- !{ _.node/kind abs }
-  //- !{ _.node/kind absvar }
 
   //- @obj defines/binding V
   //- V typed Obj

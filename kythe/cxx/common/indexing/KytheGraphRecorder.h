@@ -33,8 +33,6 @@ enum class NodeKindID {
   kRecord,
   kSum,
   kConstant,
-  kAbs,
-  kAbsVar,
   kFunction,
   kLookup,
   kMacro,

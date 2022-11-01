@@ -2735,16 +2735,8 @@ test_suite(
 )
 
 cc_indexer_test(
-    name = "ms_absvar",
-    srcs = ["marked_source/ms_absvar.cc"],
-    convert_marked_source = True,
-    std = "c++14",
-    tags = ["marked_source"],
-)
-
-cc_indexer_test(
-    name = "tvar_ms_absvar",
-    srcs = ["marked_source/tvar_ms_absvar.cc"],
+    name = "ms_tvar",
+    srcs = ["marked_source/ms_tvar.cc"],
     convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
