@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:sid
+FROM debian:stable-slim
 
 # Install C++ compilers and other deps
 # note that openjdk-11-jdk-headless is a dependency of the java extractor
