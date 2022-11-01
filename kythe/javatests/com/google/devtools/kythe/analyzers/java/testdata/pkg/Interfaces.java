@@ -18,8 +18,7 @@ public interface Interfaces {
     Object obj;
   }
 
-  //- @Ordered defines/binding OrderedTAbs
-  //- OrderedInterface childof OrderedTAbs
+  //- @Ordered defines/binding OrderedInterface
   //- @Interfaces ref Inter
   //- OrderedInterface extends Inter
   //- !{ OrderedInterface extends Obj }
@@ -44,15 +43,14 @@ public interface Interfaces {
     }
   }
 
-  //- @Deredro defines/binding DeredroTAbs
-  //- DeredroInterface childof DeredroTAbs
+  //- @Deredro defines/binding DeredroInterface
   //- @T defines/binding TypeVariable
-  //- DeredroTAbs param.0 TypeVariable
+  //- DeredroInterface tparam.0 TypeVariable
   public static interface Deredro<T>
-      //- @Ordered ref OrderedTAbs
+      //- @Ordered ref OrderedInterface
       //- @T ref TypeVariable
       //- OrderedTApp.node/kind tapp
-      //- OrderedTApp param.0 OrderedTAbs
+      //- OrderedTApp param.0 OrderedInterface
       //- OrderedTApp param.1 TypeVariable
       //- DeredroInterface extends OrderedTApp
       extends Ordered<T> {
@@ -73,7 +71,7 @@ public interface Interfaces {
   //- @IntComparison defines/binding IntComparisonClass
   //- @Integer ref IntegerClass
   //- DeredroTApp.node/kind tapp
-  //- DeredroTApp param.0 DeredroTAbs
+  //- DeredroTApp param.0 DeredroInterface
   //- DeredroTApp param.1 IntegerClass
   //- IntComparisonClass extends DeredroTApp
   public static class IntComparison implements Deredro<Integer> {
@@ -113,8 +111,7 @@ public interface Interfaces {
 
   // TODO(mazurak): should @FunctionalInterface classes interact with calleables in some way?
   //- @FunctionalInterface ref FunctionalAnnotation
-  //- @Reducer defines/binding ReducerInterfaceAbs
-  //- ReducerInterface childof ReducerInterfaceAbs
+  //- @Reducer defines/binding ReducerInterface
   //- ReducerInterface annotatedby FunctionalAnnotation
   @FunctionalInterface public static interface Reducer<T, S> {
     //- @reduce defines/binding ReduceMethod

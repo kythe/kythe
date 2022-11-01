@@ -176,18 +176,18 @@ bounded/upper or bounded/lower
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Brief description::
-  <<absvar>>/<<tvar>> A is *bounded/upper* by B when A is constrained to be a
-  subtype of B. <<absvar>>/<<tvar>> A is *bounded/lower* by B when A is
+  <<tvar>> A is *bounded/upper* by B when A is constrained to be a
+  subtype of B. <<tvar>> A is *bounded/lower* by B when A is
   constrained to be a supertype of B.
 See also::
-  <<absvar>>, <<tvar>>
+  <<tvar>>
 Commonly arises from::
   Type parameters
 Notes::
-  * Kythe leaves the interpretation of unbounded <<absvar>>/<<tvar>> nodes to
-    each language. For example, an <<absvar>>/<<tvar>> with no *bounded* edges
+  * Kythe leaves the interpretation of unbounded <<tvar>> nodes to
+    each language. For example, an <<tvar>> with no *bounded* edges
     in Java may be assigned any subtype of Object, but no primitive type.
-  * It is possible for an <<absvar>>/<<tvar>> to have multiple bounds. For
+  * It is possible for an <<tvar>> to have multiple bounds. For
     example, this occurs in Java when a type parameter must implement several
     interfaces.  In cases where the order of the bounds matters (e.g., in Java,
     where the order affects type erasure), the bound edge kind may be qualified
@@ -204,7 +204,7 @@ public class E {
   //- OptionalWild.node/kind tapp
   //- OptionalWild param.0 OptionalClass
   //- OptionalWild param.1 Wildcard0
-  //- Wildcard0.node/kind absvar
+  //- Wildcard0.node/kind tvar
   //- !{ Wildcard0 bounded/upper Anything0
   //-    Wildcard0 bounded/lower Anything1 }
   private static void wildcard(Optional<?> o) {}
@@ -213,7 +213,7 @@ public class E {
   //- OptionalWildString.node/kind tapp
   //- OptionalWildString param.0 OptionalClass
   //- OptionalWildString param.1 Wildcard1
-  //- Wildcard1.node/kind absvar
+  //- Wildcard1.node/kind tvar
   //- Wildcard1 bounded/upper Str
   //- @String ref Str
   //- !{ Wildcard1 bounded/lower Anything2 }
@@ -223,7 +223,7 @@ public class E {
   //- OptionalWildSuperString.node/kind tapp
   //- OptionalWildSuperString param.0 OptionalClass
   //- OptionalWildSuperString param.1 WildcardSuper1
-  //- WildcardSuper1.node/kind absvar
+  //- WildcardSuper1.node/kind tvar
   //- WildcardSuper1 bounded/lower Str
   //- !{ WildcardSuper1 bounded/upper Anything1 }
   //- @String ref Str
@@ -1799,46 +1799,6 @@ Attached to::
 
 Node kinds
 ----------
-
-[[abs]]
-abs
-~~~
-
-Brief description::
-  An *abs* abstracts over a subgraph by binding <<absvar>>s.
-See also::
-  <<absvar>>, <<specializes>>, <<tapp>>
-
-WARNING: *abs* nodes are deprecated.  Their structure should be replaced with
-the one documented for <<tparam>>.
-
-It is not necessarily the case that the child of the abs node be a type;
-for example, in $$C++$$, it may be a variable or a function.
-
-[kythe,Java,"Generic classes are abs nodes."]
---------------------------------------------------------------------------------
-public class E {
-  //- @Generics defines/binding GAbs
-  //- Class childof GAbs
-  //- GAbs.node/kind abs
-  //- GAbs param.0 TVar
-  //- @T defines/binding TVar
-  //- TVar.node/kind absvar
-  public static class Generics<T> {}
-}
---------------------------------------------------------------------------------
-
-[[absvar]]
-absvar
-~~~~~~
-
-Brief description::
-  An *absvar* is bound by an <<abs>> and valid in its children.
-See also::
-  <<abs>>, <<specializes>>, <<tvar>>
-
-WARNING: *absvar* nodes are deprecated.  They should be replaced with <<tvar>>
-nodes.
 
 [[anchor]]
 anchor
