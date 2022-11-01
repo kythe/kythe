@@ -542,8 +542,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitModifiers(methodNode, methodDef.getModifiers());
     emitVisibility(methodNode, methodDef.getModifiers(), ctx);
 
-    VName absNode =
-        defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
+    VName absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
 
     if (!isErroneous(methodDef.sym)) {
@@ -1107,10 +1106,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Create an abs node if we have type variables or if we have wildcards. */
   private @Nullable VName defineTypeParameters(
-      TreeContext ownerContext,
-      VName owner,
-      List<JCTypeParameter> params,
-      List<VName> wildcards) {
+      TreeContext ownerContext, VName owner, List<JCTypeParameter> params, List<VName> wildcards) {
     if (params.isEmpty() && wildcards.isEmpty()) {
       return null;
     }

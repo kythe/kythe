@@ -275,7 +275,9 @@ public class JavaEntrySets extends KytheEntrySets {
     int counter = sourceToWildcardCounter.getOrDefault(sourcePath, 0);
     sourceToWildcardCounter.put(sourcePath, counter + 1);
     return emitAndReturn(
-        newNode(NodeKind.TVAR).addSignatureSalt(sourcePath + counter).setCorpusPath(defaultCorpusPath()));
+        newNode(NodeKind.TVAR)
+            .addSignatureSalt(sourcePath + counter)
+            .setCorpusPath(defaultCorpusPath()));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
