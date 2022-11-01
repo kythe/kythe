@@ -243,9 +243,9 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
 
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
-bool SkipAliasedDecl(const clang::Decl* D, bool absnodes) {
+bool SkipAliasedDecl(const clang::Decl* D) {
   return absl::GetFlag(FLAGS_experimental_alias_template_instantiations) &&
-         (FindSpecializedTemplate(D, !absnodes) != D);
+         (FindSpecializedTemplate(D) != D);
 }
 
 bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl* decl) {
@@ -1059,42 +1059,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl* Decl) {
         VisitComment(CommentOrNull, DCxt, DCID.value());
       }
     }
-    if (options_.AbsNodes) {
-      if (const auto* CTPSD =
-              dyn_cast_or_null<clang::ClassTemplatePartialSpecializationDecl>(
-                  Decl)) {
-        auto NodeId = BuildNodeIdForDecl(CTPSD);
-        VisitAttributes(Decl, NodeId);
-        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
-      }
-      if (const auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
-        if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(FTD);
-          VisitAttributes(Decl, NodeId);
-          if (CommentOrNull != nullptr)
-            VisitComment(CommentOrNull, DCxt, NodeId);
-        }
-      }
-    }
   } else {
-    if (options_.AbsNodes) {
-      if (const auto* VD = dyn_cast_or_null<clang::VarDecl>(Decl)) {
-        if (const auto* VTD = VD->getDescribedVarTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(VTD);
-          VisitAttributes(VTD, NodeId);
-          if (CommentOrNull != nullptr)
-            VisitComment(CommentOrNull, DCxt, NodeId);
-        }
-      } else if (const auto* AD =
-                     dyn_cast_or_null<clang::TypeAliasDecl>(Decl)) {
-        if (const auto* TATD = AD->getDescribedAliasTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(TATD);
-          VisitAttributes(TATD, NodeId);
-          if (CommentOrNull != nullptr)
-            VisitComment(CommentOrNull, DCxt, NodeId);
-        }
-      }
-    }
     auto NodeId = BuildNodeIdForDecl(Decl);
     VisitAttributes(Decl, NodeId);
     if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
@@ -1944,19 +1909,6 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
     if (llvm::isa<clang::TranslationUnitDecl>(DCDecl)) {
       return absl::nullopt;
     }
-    if (options_.AbsNodes) {
-      if (llvm::isa<clang::ClassTemplatePartialSpecializationDecl>(DCDecl)) {
-        return BuildNodeIdForDecl(DCDecl, 0);
-      } else if (auto* CRD = dyn_cast<const clang::CXXRecordDecl>(DCDecl)) {
-        if (const auto* CTD = CRD->getDescribedClassTemplate()) {
-          return BuildNodeIdForDecl(DCDecl, 0);
-        }
-      } else if (auto* FD = dyn_cast<const clang::FunctionDecl>(DCDecl)) {
-        if (FD->getDescribedFunctionTemplate()) {
-          return BuildNodeIdForDecl(DCDecl, 0);
-        }
-      }
-    }
     return BuildNodeIdForDecl(DCDecl);
   }
   return absl::nullopt;
@@ -2588,7 +2540,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(
 }
 
 bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
-  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
+  if (SkipAliasedDecl(Decl)) {
     return true;
   }
   if (isa<clang::ParmVarDecl>(Decl)) {
@@ -2611,8 +2563,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   if (const auto* VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
     ArgsAsWritten = VTPSD->getTemplateArgsAsWritten();
-    BodyDeclNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
-                                     : BuildNodeIdForDecl(Decl);
+    BodyDeclNode = BuildNodeIdForDecl(Decl);
     DeclNode = RecordTemplate(VTPSD, BodyDeclNode);
   } else if (const auto* VTD = Decl->getDescribedVarTemplate()) {
     CHECK(!isa<clang::VarTemplateSpecializationDecl>(VTD));
@@ -2704,8 +2655,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
       FileID NextDeclFile =
           Observer.getSourceManager()->getFileID(NextDecl->getLocation());
       // We should not point a completes edge from an abs node to a var node.
-      GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(
-          OuterTemplate && options_.AbsNodes ? OuterTemplate : NextDecl);
+      GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
       if (NameRangeInContext) {
         Observer.recordCompletionRange(
             NameRangeInContext.value(), TargetDecl,
@@ -3109,11 +3059,6 @@ GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     const clang::ObjCInterfaceDecl* IDecl, const clang::ObjCTypeParamList* TPL,
     const GraphObserver::NodeId& BodyId) {
   GraphObserver::NodeId AbsId = BodyId;
-  if (options_.AbsNodes) {
-    AbsId = BuildNodeIdForDecl(IDecl);
-    Observer.recordAbsNode(AbsId);
-    Observer.recordChildOfEdge(BodyId, AbsId);
-  }
 
   for (const clang::ObjCTypeParamDecl* TP : *TPL) {
     GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(TP);
@@ -3122,10 +3067,7 @@ GraphObserver::NodeId IndexerASTVisitor::RecordGenericClass(
     // specific to this context, which is how it interacts with the generic type
     // (BodyID). See VisitObjCTypeParamDecl for where we record this other
     // information.
-    if (options_.AbsNodes)
-      Observer.recordParamEdge(AbsId, TP->getIndex(), TypeParamId);
-    else
-      Observer.recordTParamEdge(AbsId, TP->getIndex(), TypeParamId);
+    Observer.recordTParamEdge(AbsId, TP->getIndex(), TypeParamId);
   }
   return AbsId;
 }
@@ -3134,11 +3076,6 @@ template <typename TemplateDeclish>
 GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     const TemplateDeclish* Decl, const GraphObserver::NodeId& BodyDeclNode) {
   auto DeclNode = BodyDeclNode;
-  if (options_.AbsNodes) {
-    DeclNode = BuildNodeIdForDecl(Decl);
-    Observer.recordChildOfEdge(BodyDeclNode, DeclNode);
-    Observer.recordAbsNode(DeclNode);
-  }
   for (const auto* ND : *Decl->getTemplateParameters()) {
     GraphObserver::NodeId ParamId =
         Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
@@ -3146,33 +3083,21 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     auto Marks = MarkedSources.Generate(ND);
     if (const auto* TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      if (options_.AbsNodes)
-        Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
-      else
-        Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = TTPD->getIndex();
     } else if (const auto* NTTPD =
                    dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      if (options_.AbsNodes)
-        Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
-      else
-        Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
+      Observer.recordTVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = NTTPD->getIndex();
     } else if (const auto* TTPD =
                    dyn_cast<clang::TemplateTemplateParmDecl>(ND)) {
       // We make the external Abs the primary node for TTPD so that
       // uses of the ParmDecl later on point at the Abs and not the wrapped
       // AbsVar.
-      GraphObserver::NodeId ParamBodyId = options_.AbsNodes
-                                              ? BuildNodeIdForDecl(ND, 0)
-                                              : BuildNodeIdForDecl(ND);
-      if (options_.AbsNodes)
-        Observer.recordAbsVarNode(ParamBodyId,
-                                  Marks.GenerateMarkedSource(ParamBodyId));
-      else
-        Observer.recordTVarNode(ParamBodyId,
-                                Marks.GenerateMarkedSource(ParamBodyId));
+      GraphObserver::NodeId ParamBodyId = BuildNodeIdForDecl(ND);
+      Observer.recordTVarNode(ParamBodyId,
+                              Marks.GenerateMarkedSource(ParamBodyId));
       ParamId = RecordTemplate(TTPD, ParamBodyId);
       ParamIndex = TTPD->getIndex();
     } else {
@@ -3182,16 +3107,13 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     MaybeRecordDefinitionRange(
         RangeInCurrentContext(Decl->isImplicit(), ParamId, Range), ParamId,
         absl::nullopt);
-    if (options_.AbsNodes)
-      Observer.recordParamEdge(DeclNode, ParamIndex, ParamId);
-    else
-      Observer.recordTParamEdge(DeclNode, ParamIndex, ParamId);
+    Observer.recordTParamEdge(DeclNode, ParamIndex, ParamId);
   }
   return DeclNode;
 }
 
 bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
-  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
+  if (SkipAliasedDecl(Decl)) {
     return true;
   }
   if (Decl->isInjectedClassName()) {
@@ -3214,14 +3136,12 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
   if (const auto* CTPSD =
           dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
     ArgsAsWritten = CTPSD->getTemplateArgsAsWritten();
-    BodyDeclNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
-                                     : BuildNodeIdForDecl(Decl);
+    BodyDeclNode = BuildNodeIdForDecl(Decl);
     DeclNode = RecordTemplate(CTPSD, BodyDeclNode);
   } else if (auto* CRD = dyn_cast<const clang::CXXRecordDecl>(Decl)) {
     if (const auto* CTD = CRD->getDescribedClassTemplate()) {
       CHECK(!isa<clang::ClassTemplateSpecializationDecl>(CRD));
-      BodyDeclNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
-                                       : BuildNodeIdForDecl(Decl);
+      BodyDeclNode = BuildNodeIdForDecl(Decl);
       DeclNode = RecordTemplate(CTD, BodyDeclNode);
     } else {
       BodyDeclNode = BuildNodeIdForDecl(Decl);
@@ -3308,8 +3228,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         // We should not point a completes edge from an abs node to a record
         // node.
-        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(
-            OuterTemplate && options_.AbsNodes ? OuterTemplate : NextDecl);
+        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
         Observer.recordCompletionRange(
             NameRangeInContext.value(), TargetDecl,
             NextDeclFile == DeclFile
@@ -3336,7 +3255,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
 }
 
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
-  if (SkipAliasedDecl(Decl, options_.AbsNodes)) {
+  if (SkipAliasedDecl(Decl)) {
     return true;
   }
   // Add the decl to the cache. This helps if a declaration is annotated, its
@@ -3358,8 +3277,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   SourceLocation TemplateKeywordLoc;
   if (auto* FTD = Decl->getDescribedFunctionTemplate()) {
     // Function template (inc. overloads)
-    InnerNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
-                                  : BuildNodeIdForDecl(Decl);
+    InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = RecordTemplate(FTD, InnerNode);
     TemplateKeywordLoc = FTD->getSourceRange().getBegin();
   } else if (auto* MSI = Decl->getMemberSpecializationInfo()) {
@@ -3635,8 +3553,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
             NextDecl->getDescribedFunctionTemplate();
         FileID NextDeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
-        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(
-            OuterTemplate && options_.AbsNodes ? OuterTemplate : NextDecl);
+        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
 
         Observer.recordCompletionRange(
             NameRangeInContext.value(), TargetDecl,
@@ -3674,12 +3591,7 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
     const clang::ObjCTypeParamDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(Decl);
-  if (options_.AbsNodes)
-    Observer.recordAbsVarNode(TypeParamId,
-                              Marks.GenerateMarkedSource(TypeParamId));
-  else
-    Observer.recordTVarNode(TypeParamId,
-                            Marks.GenerateMarkedSource(TypeParamId));
+  Observer.recordTVarNode(TypeParamId, Marks.GenerateMarkedSource(TypeParamId));
   SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), TypeParamId, TypeSR),
@@ -3992,7 +3904,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // the IDs given to class definitions (in part because of the language rules).
 
   if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
-    Decl = FindSpecializedTemplate(Decl, !options_.AbsNodes);
+    Decl = FindSpecializedTemplate(Decl);
   }
 
   if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(Decl)) {
@@ -4259,12 +4171,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
         } else if (const auto* FD =
                        dyn_cast<clang::FunctionDecl>(UnderlyingDecl)) {
           const clang::NamedDecl* decl = FD;
-          if (options_.AbsNodes) {
-            // Direct references to function templates to the outer function
-            // template shell.
-            decl = Name.getAsTemplateDecl();
-          } else if (absl::GetFlag(
-                         FLAGS_experimental_alias_template_instantiations)) {
+          if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
             // Point to the original member function template.
             // This solves problems with aliasing when dealing with nested
             // templates.
@@ -4282,7 +4189,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
           // template decl (may be a partial specialization or the
           // primary template).
           const clang::NamedDecl* decl = VD;
-          if (options_.AbsNodes) decl = Name.getAsTemplateDecl();
           return BuildNodeIdForDecl(decl);
         } else {
           LOG(FATAL) << "Unexpected UnderlyingDecl";
@@ -4626,12 +4532,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     }
     const auto* SpecDecl = Spec->getSpecializedTemplate();
     const clang::NamedDecl* SpecFocus = SpecDecl;
-    if (!options_.AbsNodes) {
-      if (SpecDecl->getTemplatedDecl()->getDefinition())
-        SpecFocus = SpecDecl->getTemplatedDecl()->getDefinition();
-      else
-        SpecFocus = SpecDecl->getTemplatedDecl();
-    }
+    if (SpecDecl->getTemplatedDecl()->getDefinition())
+      SpecFocus = SpecDecl->getTemplatedDecl()->getDefinition();
+    else
+      SpecFocus = SpecDecl->getTemplatedDecl();
     NodeId DeclId =
         Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
@@ -4649,9 +4553,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
 NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
     const clang::InjectedClassNameType& T) {
   // TODO(zarko): Replace with logic that uses InjectedType.
-  return options_.AbsNodes
-             ? BuildNodeSetForNonSpecializedRecordDecl(T.getDecl())
-             : BuildNodeIdForDecl(T.getDecl());
+  return BuildNodeIdForDecl(T.getDecl());
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
@@ -5484,8 +5386,7 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
   // If we have type arguments, treat this as a generic type and indirect
   // through an abs node.
   if (const auto* TPL = Decl->getTypeParamList()) {
-    BodyDeclNode = options_.AbsNodes ? BuildNodeIdForDecl(Decl, 0)
-                                     : BuildNodeIdForDecl(Decl);
+    BodyDeclNode = BuildNodeIdForDecl(Decl);
     DeclNode = RecordGenericClass(Decl, TPL, BodyDeclNode);
   } else {
     BodyDeclNode = BuildNodeIdForDecl(Decl);

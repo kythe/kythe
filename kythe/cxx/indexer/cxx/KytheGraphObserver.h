@@ -214,15 +214,9 @@ class KytheGraphObserver : public GraphObserver {
   void assignUsr(const NodeId& node, llvm::StringRef usr,
                  int byte_size) override;
 
-  void recordAbsVarNode(
-      const NodeId& node,
-      const absl::optional<MarkedSource>& marked_source) override;
-
   void recordTVarNode(
       const NodeId& node,
       const absl::optional<MarkedSource>& marked_source) override;
-
-  void recordAbsNode(const NodeId& node) override;
 
   void recordMarkedSource(
       const NodeId& node,

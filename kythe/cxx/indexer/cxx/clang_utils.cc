@@ -103,17 +103,15 @@ class DereferenceMemberTemplatesDeclVisitor
 
 }  // anonymous namespace
 
-const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
-                                              bool use_mts) {
-  return use_mts ? DereferenceMemberTemplatesDeclVisitor().Visit(decl) : decl;
+const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl) {
+  return DereferenceMemberTemplatesDeclVisitor().Visit(decl);
 }
 
-const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl,
-                                           bool use_mts) {
+const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
   if (const auto* FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
     if (auto* ftsi = FD->getTemplateSpecializationInfo()) {
       if (!ftsi->isExplicitInstantiationOrSpecialization()) {
-        return DereferenceMemberTemplates(ftsi->getTemplate(), use_mts);
+        return DereferenceMemberTemplates(ftsi->getTemplate());
       }
     }
   } else if (const auto* ctsd =
@@ -124,10 +122,10 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl,
       if (const auto* partial =
               primary_or_partial
                   .dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
-        return DereferenceMemberTemplates(partial, use_mts);
+        return DereferenceMemberTemplates(partial);
       } else if (const auto* primary =
                      primary_or_partial.dyn_cast<clang::ClassTemplateDecl*>()) {
-        return DereferenceMemberTemplates(primary, use_mts);
+        return DereferenceMemberTemplates(primary);
       }
     }
   } else if (const auto* vtsd =
@@ -138,14 +136,14 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl,
       if (const auto* partial =
               primary_or_partial
                   .dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
-        return DereferenceMemberTemplates(partial, use_mts);
+        return DereferenceMemberTemplates(partial);
       } else if (const auto* primary =
                      primary_or_partial.dyn_cast<clang::VarTemplateDecl*>()) {
-        return DereferenceMemberTemplates(primary, use_mts);
+        return DereferenceMemberTemplates(primary);
       }
     }
   }
-  return DereferenceMemberTemplates(decl, use_mts);
+  return DereferenceMemberTemplates(decl);
 }
 
 bool ShouldHaveBlameContext(const clang::Decl* decl) {
