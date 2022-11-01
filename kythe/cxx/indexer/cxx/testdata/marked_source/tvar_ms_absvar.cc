@@ -1,4 +1,4 @@
-// We emit MarkedSource for absvars.
+// We emit MarkedSource for tvars.
 //- @T defines/binding TvarT
 //- TvarT.node/kind tvar
 //- TvarT code TRoot

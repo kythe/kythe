@@ -37,6 +37,8 @@ ABSL_FLAG(bool, show_protos, false,
 ABSL_FLAG(bool, show_goals, false, "Show goals after parsing");
 ABSL_FLAG(bool, ignore_dups, false,
           "Ignore duplicate facts during verification");
+ABSL_FLAG(bool, ignore_code_conflicts, false,
+          "Ignore conflicting /kythe/code facts during verification");
 ABSL_FLAG(bool, graphviz, false,
           "Only dump facts as a GraphViz-compatible graph");
 ABSL_FLAG(bool, annotated_graphviz, false,
@@ -91,6 +93,10 @@ Example:
 
   if (absl::GetFlag(FLAGS_ignore_dups)) {
     v.IgnoreDuplicateFacts();
+  }
+
+  if (absl::GetFlag(FLAGS_ignore_code_conflicts)) {
+    v.IgnoreCodeConflicts();
   }
 
   if (absl::GetFlag(FLAGS_annotated_graphviz)) {

@@ -293,13 +293,11 @@ Ordinals are used::
 //- CTemplateBody childof CTemplate
 template <typename T> struct C {
 //- @x=AnchorX defines/binding XBinding
-//- XBinding childof CTemplateBody
 //- @x=AnchorCX defines/binding CXBinding
   int x;
 };
 //- @C defines/binding CInst
 //- AnchorCX childof/context CInst
-//- CXBinding childof CInst
 //- !{ AnchorX childof/context CInst }
 template struct C<int>;
 --------------------------------------------------------------------------------
@@ -400,15 +398,13 @@ class C;
 class C { };
 --------------------------------------------------------------------------------
 
-[kythe,C++,"Completeness links abs nodes for function templates."]
+[kythe,C++,"Completeness links nodes for function templates."]
 --------------------------------------------------------------------------------
 //- @id defines/binding Decl
 template <typename T> T id(T x);
 //- @id defines/binding Defn
 //- @id completes/uniquely Decl
 template <typename T> T id(T x) { return x; }
-//- Defn.node/kind abs
-//- Decl.node/kind abs
 --------------------------------------------------------------------------------
 
 [[defines]]
@@ -1576,7 +1572,6 @@ template <> class C<int> { };
 //- SpecializedClassC specializes TAppCInt
 //- TAppCInt.node/kind tapp
 //- TAppCInt param.0 TemplateClassC
-//- TemplateClassC.node/kind abs
 --------------------------------------------------------------------------------
 
 [kythe,C++,"Function templates specialize."]
@@ -1820,23 +1815,6 @@ the one documented for <<tparam>>.
 It is not necessarily the case that the child of the abs node be a type;
 for example, in $$C++$$, it may be a variable or a function.
 
-[kythe,C++,"Templates are abs nodes."]
---------------------------------------------------------------------------------
-//- @C defines/binding TemplateC
-//- TemplateC.node/kind abs
-//- TemplateCBody childof TemplateC
-//- TemplateCBody.node/kind record
-template <typename T, typename S> class C { };
-
-//- @C defines/binding PartialSpecializationC
-//- PartialSpecializationC.node/kind abs
-template <typename U> class C<int, U> { };
-
-//- @C defines/binding TotalSpecializationC
-//- TotalSpecializationC.node/kind record
-template <> class C<int, float> { };
---------------------------------------------------------------------------------
-
 [kythe,Java,"Generic classes are abs nodes."]
 --------------------------------------------------------------------------------
 public class E {
@@ -1861,18 +1839,6 @@ See also::
 
 WARNING: *absvar* nodes are deprecated.  They should be replaced with <<tvar>>
 nodes.
-
-[kythe,C++,"Type variables are absvars."]
---------------------------------------------------------------------------------
-//- @C defines/binding TemplateC
-//- @T defines/binding AbsVarT
-//- AbsVarT.node/kind absvar
-//- TemplateC param.0 AbsVarT
-template <typename T> class C {
-//- @T ref AbsVarT
-  using S = T;
-};
---------------------------------------------------------------------------------
 
 [[anchor]]
 anchor
@@ -2582,6 +2548,18 @@ type Container[T any] struct {
 }
 --------------------------------------------------------------------------------
 
+[kythe,C++,"Type variables are tvars."]
+--------------------------------------------------------------------------------
+//- @C defines/binding TemplateC
+//- @T defines/binding TVarT
+//- TVarT.node/kind tvar
+//- TemplateC tparam.0 TVarT
+template <typename T> class C {
+//- @T ref TVarT
+  using S = T;
+};
+--------------------------------------------------------------------------------
+
 [[variable]]
 variable
 ~~~~~~~~
@@ -2702,21 +2680,17 @@ The variance fact can be omitted, in which case covariance is assumed.
 
 //- @Type defines/binding TypeVar1
 //- @G1 defines/binding G1Abs
-//- TypeVar1.node/kind absvar
+//- TypeVar1.node/kind tvar
 //- TypeVar1.variance covariant
-//- G1Decl childof G1Abs
-//- G1Abs.node/kind abs
-//- G1Abs param.0 TypeVar1
+//- G1Abs tparam.0 TypeVar1
 @interface G1<__covariant Type> : Root
 @end
 
 //- @Type defines/binding TypeVar2
 //- @G2 defines/binding G2Abs
-//- TypeVar2.node/kind absvar
+//- TypeVar2.node/kind tvar
 //- TypeVar2.variance contravariant
-//- G2Decl childof G2Abs
-//- G2Abs.node/kind abs
-//- G2Abs param.0 TypeVar2
+//- G2Abs tparam.0 TypeVar2
 @interface G2<__contravariant Type> : Root
 @end
 
@@ -3006,10 +2980,8 @@ parameter is given to the inner <<abs>>.
 //- @B defines/binding NestedAbs
 //- @C defines/binding TemplateC
 template <template <typename A> class B> class C;
-//- TemplateC param.0 NestedAbs
-//- NestedAbs.node/kind abs
-//- NestedAbsvar childof NestedAbs
-//- NestedAbs param.0 AbsvarA
+//- TemplateC tparam.0 NestedAbs
+//- NestedAbs tparam.0 AbsvarA
 --------------------------------------------------------------------------------
 
 Special values for dependent lookups

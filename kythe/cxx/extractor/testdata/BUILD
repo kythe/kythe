@@ -6,7 +6,10 @@ load(
 )
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 filegroup(
     name = "skip",
@@ -23,7 +26,8 @@ cc_test(
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
@@ -36,7 +40,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -50,7 +55,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -65,7 +71,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -82,7 +89,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -145,7 +153,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -161,7 +170,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -176,7 +186,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -192,7 +203,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -208,7 +220,8 @@ cc_test(
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -227,7 +240,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -643,11 +643,12 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
       }
     }
     llvm::SmallVector<clang::TemplateArgument, 4> out_arguments;
+    llvm::SmallVector<clang::TemplateArgument, 4> sugared_arguments;
     noprint = first_default;
     for (; noprint < template_args.size(); ++noprint) {
       bool was_ok = !cache_->sema()->CheckTemplateArgumentList(
           template_decl, template_decl->getLocation(), list_prefix, false,
-          out_arguments);
+          out_arguments, sugared_arguments);
       if (was_ok) {
         if (out_arguments.size() != template_args.size()) {
           break;
