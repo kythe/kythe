@@ -538,6 +538,16 @@ java_verifier_test(
     ],
 )
 
+java_library(
+    name = "writes",
+    srcs = ["Writes.java"],
+)
+
+java_verifier_test(
+    name = "writes_test",
+    compilation = ":writes",
+)
+
 empty_corpus_test(
     name = "empty_corpus_test",
     # TODO(justinbuchanan): adjust extractor to assign 'kythe' instead of

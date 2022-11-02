@@ -290,12 +290,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    EdgeKind edgeKind = EdgeKind.REF;
+
+    JavaNode node = null;
     if (ident.sym instanceof ClassSymbol && ident == owner.getNewClassIdentifier()) {
       // Use ref/id edges for the primary identifier to disambiguate from the constructor.
-      edgeKind = EdgeKind.REF_ID;
+      node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_ID);
+    } else {
+      RefType refType = getRefType(owner.getTree(), ident.sym, ident.pos);
+      if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+        node = emitSymUsage(ctx, ident.sym, EdgeKind.REF);
+      }
+      if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+        node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_WRITES);
+      }
     }
-    JavaNode node = emitSymUsage(ctx, ident.sym, edgeKind);
+
     if (node != null && ident.sym instanceof VarSymbol) {
       // Emit typed edges for "this"/"super" on reference since there is no definition location.
       // TODO(schroederc): possibly add implicit definition on class declaration
@@ -844,11 +853,24 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return new JavaNode(pkgNode);
     } else {
       scan(field.getExpression(), ctx);
-      return emitNameUsage(
-          ctx,
-          sym,
-          field.name.contentEquals("class") ? Keyword.CLASS : field.name,
-          imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
+
+      Name name = field.name.contentEquals("class") ? Keyword.CLASS : field.name;
+      if (imprt != null) {
+        return emitNameUsage(ctx, sym, name, EdgeKind.REF_IMPORTS);
+      }
+
+      RefType refType = getRefType(owner.getTree(), sym, field.pos);
+      // RefType can only be READ, WRITE, OR READ_WRITE so node will always have a value set by
+      // at least one call to emitNameUsage. We just have to initialize to null to keep the compiler
+      // happy.
+      JavaNode node = null;
+      if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+        node = emitNameUsage(ctx, sym, name, EdgeKind.REF);
+      }
+      if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+        node = emitNameUsage(ctx, sym, name, EdgeKind.REF_WRITES);
+      }
+      return node;
     }
   }
 
@@ -1759,5 +1781,70 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     public Optional<String> getDocSubkind() {
       return subkind;
     }
+  }
+
+  /** An enum representing whether a reference reads from a symbol, writes to it, or both. */
+  private enum RefType {
+    READ,
+    WRITE,
+    READ_WRITE,
+  }
+
+  /**
+   * Returns the type of reference for a symbol in a tree at a specific position.
+   *
+   * @param tree The {@link JCTree} containing the reference
+   * @param sym The {@link Symbol} being referenced
+   * @param position The integer position of the {@link Symbol} being referenced
+   * @return A {@link RefType} indicating whether the reference reads from the symbol, writes to it,
+   *     or does both.
+   */
+  private static RefType getRefType(JCTree tree, Symbol sym, int position) {
+    // JCAssign looks like "a = 1 + 2"
+    // JCAssignOp looks like "a += 3"
+    if (tree instanceof JCAssign || tree instanceof JCAssignOp) {
+      JCExpression lhs;
+      if (tree instanceof JCAssign) {
+        lhs = ((JCAssign) tree).lhs;
+      } else {
+        lhs = ((JCAssignOp) tree).lhs;
+      }
+
+      // Check that the symbol is on the left side of the assignment. To do this we need to check
+      // that both the symbol and the position match. If we only check the symbol then we process
+      // "a = a + 1" as having both instances of "a" be ref/writes
+      boolean isWrite = false;
+      if (lhs instanceof JCIdent) {
+        JCIdent ident = (JCIdent) lhs;
+        if (ident.sym.equals(sym) && ident.pos == position) {
+          isWrite = true;
+        }
+      } else if (lhs instanceof JCFieldAccess) {
+        JCFieldAccess fieldAccess = (JCFieldAccess) lhs;
+        if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
+          isWrite = true;
+        }
+      }
+
+      // JCAssignOp expressions are READ_WRITE, while JCAssign expressions are only WRITE
+      if (isWrite) {
+        if (tree instanceof JCAssignOp) {
+          return RefType.READ_WRITE;
+        }
+        return RefType.WRITE;
+      }
+    } else if (tree instanceof JCExpressionStatement) {
+      JCExpressionStatement stmt = (JCExpressionStatement) tree;
+      switch (stmt.getExpression().getKind()) {
+        case POSTFIX_INCREMENT:
+        case POSTFIX_DECREMENT:
+        case PREFIX_INCREMENT:
+        case PREFIX_DECREMENT:
+          return RefType.READ_WRITE;
+        default:
+          // Some other expression like ! or ~
+      }
+    }
+    return RefType.READ;
   }
 }

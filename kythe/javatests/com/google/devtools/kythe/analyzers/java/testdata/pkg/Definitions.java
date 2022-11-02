@@ -52,7 +52,7 @@ public class Definitions {
     //- PuncDef.loc/end @$";"
     String punctuation;
 
-    //- @punctuation ref PuncVar
+    //- @punctuation ref/writes PuncVar
     punctuation = "!";
 
     System.out.printf("%s %s%s\n", HELLO, name, punctuation);

@@ -14,7 +14,7 @@ public class Selectors {
     if (maybe.isPresent()) {
       //- @maybe ref Param
       //- @get ref _GetMethod
-      //- @field ref Field
+      //- @field ref/writes Field
       //- @this ref This
       this.field = maybe.get();
     }

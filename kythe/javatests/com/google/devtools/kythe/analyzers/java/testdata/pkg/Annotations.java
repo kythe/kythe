@@ -15,7 +15,7 @@ public @interface Annotations {
 @Annotations(
   //- @C ref C
   //- @Annotations ref Annotation
-  //- @classes ref ClassesM
+  //- @classes ref/writes ClassesM
   classes = {C.class, Annotations.class}
 )
 //- @Deprecated ref Deprecated
