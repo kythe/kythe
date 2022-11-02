@@ -413,3 +413,16 @@ message Callgraph {
 
   Type type = 2;
 }
+
+// A Diff is a lossy, offset-only representation of a diff between two texts.
+message Diff {
+  enum Type {
+    EQUAL = 0;
+    INSERT = 1;
+    DELETE = 2;
+  }
+
+  // Parallel array of diff spans so the values are packed.
+  repeated int32 span_length = 1 [packed = true];
+  repeated Type span_type = 2 [packed = true];
+}

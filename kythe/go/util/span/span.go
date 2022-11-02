@@ -26,8 +26,10 @@ import (
 	"sort"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
@@ -63,10 +65,64 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 	return &Patcher{mapToOffsets(diff)}, nil
 }
 
+// Marshal encodes the Patcher into a packed binary format.
+func (p *Patcher) Marshal() ([]byte, error) {
+	db := &srvpb.Diff{
+		SpanLength: make([]int32, len(p.spans)),
+		SpanType:   make([]srvpb.Diff_Type, len(p.spans)),
+	}
+	for i, d := range p.spans {
+		db.SpanLength[i] = d.Length
+		switch d.Type {
+		case eq:
+			db.SpanType[i] = srvpb.Diff_EQUAL
+		case ins:
+			db.SpanType[i] = srvpb.Diff_INSERT
+		case del:
+			db.SpanType[i] = srvpb.Diff_DELETE
+		default:
+			return nil, fmt.Errorf("unknown diff type: %s", d.Type)
+		}
+	}
+	return proto.Marshal(db)
+}
+
+// Unmarshal decodes a Patcher from its packed binary format.
+func Unmarshal(rec []byte) (*Patcher, error) {
+	var db srvpb.Diff
+	if err := proto.Unmarshal(rec, &db); err != nil {
+		return nil, err
+	}
+	if len(db.SpanLength) != len(db.SpanType) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_type: %d vs %d", len(db.SpanLength), len(db.SpanType))
+	}
+	spans := make([]diff, len(db.SpanLength))
+	for i, l := range db.SpanLength {
+		spans[i].Length = l
+		switch db.SpanType[i] {
+		case srvpb.Diff_EQUAL:
+			spans[i].Type = eq
+		case srvpb.Diff_INSERT:
+			spans[i].Type = ins
+		case srvpb.Diff_DELETE:
+			spans[i].Type = del
+		default:
+			return nil, fmt.Errorf("unknown diff type: %s", db.SpanType[i])
+		}
+	}
+	return &Patcher{spans}, nil
+}
+
 type diff struct {
 	Length int32
 	Type   diffmatchpatch.Operation
 }
+
+const (
+	eq  = diffmatchpatch.DiffEqual
+	ins = diffmatchpatch.DiffInsert
+	del = diffmatchpatch.DiffDelete
+)
 
 func mapToOffsets(ds []diffmatchpatch.Diff) []diff {
 	res := make([]diff, len(ds))
@@ -94,7 +150,7 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 			return 0, 0, false
 		}
 		switch d.Type {
-		case diffmatchpatch.DiffEqual:
+		case eq:
 			if old <= spanStart && spanEnd <= old+l {
 				newStart = new + (spanStart - old)
 				newEnd = new + (spanEnd - old)
@@ -103,9 +159,9 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 			}
 			old += l
 			new += l
-		case diffmatchpatch.DiffDelete:
+		case del:
 			old += l
-		case diffmatchpatch.DiffInsert:
+		case ins:
 			new += l
 		}
 	}

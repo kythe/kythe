@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"testing"
 
+	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
+
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -151,6 +154,22 @@ func TestPatcher(t *testing.T) {
 				t.Errorf("Expected %v; received (%d, %d]", ns, start, end)
 			}
 		}
+	}
+}
+
+func TestMarshal(t *testing.T) {
+	expected := &Patcher{
+		[]diff{{2, ins}, {10, del}, {3, eq}, {5, ins}},
+	}
+
+	rec, err := expected.Marshal()
+	testutil.Fatalf(t, "Marshal: %v", err)
+
+	found, err := Unmarshal(rec)
+	testutil.Fatalf(t, "Unmarshal: %v", err)
+
+	if diff := compare.ProtoDiff(expected.spans, found.spans); diff != "" {
+		t.Errorf("(-expected; +found)\n%s", diff)
 	}
 }
 
