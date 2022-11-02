@@ -47,8 +47,7 @@ func InBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundary, e
 // Patcher uses a computed diff between two texts to map spans from the original
 // text to the new text.
 type Patcher struct {
-	dmp  *diffmatchpatch.DiffMatchPatch
-	diff []diffmatchpatch.Diff
+	spans []diff
 }
 
 // NewPatcher returns a Patcher based on the diff between oldText and newText.
@@ -60,7 +59,21 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 		}
 	}()
 	dmp := diffmatchpatch.New()
-	return &Patcher{dmp, dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))}, nil
+	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))
+	return &Patcher{mapToOffsets(diff)}, nil
+}
+
+type diff struct {
+	Length int32
+	Type   diffmatchpatch.Operation
+}
+
+func mapToOffsets(ds []diffmatchpatch.Diff) []diff {
+	res := make([]diff, len(ds))
+	for i, d := range ds {
+		res[i] = diff{Length: int32(len(d.Text)), Type: d.Type}
+	}
+	return res
 }
 
 // Patch returns the resulting span of mapping the given span from the Patcher's
@@ -75,8 +88,8 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 	}
 
 	var old, new int32
-	for _, d := range p.diff {
-		l := int32(len(d.Text))
+	for _, d := range p.spans {
+		l := d.Length
 		if old > spanStart {
 			return 0, 0, false
 		}
