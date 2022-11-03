@@ -214,6 +214,55 @@ func (Callgraph_Type) EnumDescriptor() ([]byte, []int) {
 	return file_kythe_proto_serving_proto_rawDescGZIP(), []int{17, 0}
 }
 
+type Diff_Type int32
+
+const (
+	Diff_EQUAL  Diff_Type = 0
+	Diff_INSERT Diff_Type = 1
+	Diff_DELETE Diff_Type = 2
+)
+
+// Enum value maps for Diff_Type.
+var (
+	Diff_Type_name = map[int32]string{
+		0: "EQUAL",
+		1: "INSERT",
+		2: "DELETE",
+	}
+	Diff_Type_value = map[string]int32{
+		"EQUAL":  0,
+		"INSERT": 1,
+		"DELETE": 2,
+	}
+)
+
+func (x Diff_Type) Enum() *Diff_Type {
+	p := new(Diff_Type)
+	*p = x
+	return p
+}
+
+func (x Diff_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Diff_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_kythe_proto_serving_proto_enumTypes[4].Descriptor()
+}
+
+func (Diff_Type) Type() protoreflect.EnumType {
+	return &file_kythe_proto_serving_proto_enumTypes[4]
+}
+
+func (x Diff_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Diff_Type.Descriptor instead.
+func (Diff_Type) EnumDescriptor() ([]byte, []int) {
+	return file_kythe_proto_serving_proto_rawDescGZIP(), []int{18, 0}
+}
+
 type Node struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1548,6 +1597,61 @@ func (x *Callgraph) GetType() Callgraph_Type {
 	return Callgraph_UNKNOWN
 }
 
+type Diff struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SpanLength []int32     `protobuf:"varint,1,rep,packed,name=span_length,json=spanLength,proto3" json:"span_length,omitempty"`
+	SpanType   []Diff_Type `protobuf:"varint,2,rep,packed,name=span_type,json=spanType,proto3,enum=kythe.proto.serving.Diff_Type" json:"span_type,omitempty"`
+}
+
+func (x *Diff) Reset() {
+	*x = Diff{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_kythe_proto_serving_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Diff) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Diff) ProtoMessage() {}
+
+func (x *Diff) ProtoReflect() protoreflect.Message {
+	mi := &file_kythe_proto_serving_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Diff.ProtoReflect.Descriptor instead.
+func (*Diff) Descriptor() ([]byte, []int) {
+	return file_kythe_proto_serving_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Diff) GetSpanLength() []int32 {
+	if x != nil {
+		return x.SpanLength
+	}
+	return nil
+}
+
+func (x *Diff) GetSpanType() []Diff_Type {
+	if x != nil {
+		return x.SpanType
+	}
+	return nil
+}
+
 type EdgeGroup_Edge struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1560,7 +1664,7 @@ type EdgeGroup_Edge struct {
 func (x *EdgeGroup_Edge) Reset() {
 	*x = EdgeGroup_Edge{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[18]
+		mi := &file_kythe_proto_serving_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1573,7 +1677,7 @@ func (x *EdgeGroup_Edge) String() string {
 func (*EdgeGroup_Edge) ProtoMessage() {}
 
 func (x *EdgeGroup_Edge) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[18]
+	mi := &file_kythe_proto_serving_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1616,7 +1720,7 @@ type FileDirectory_Entry struct {
 func (x *FileDirectory_Entry) Reset() {
 	*x = FileDirectory_Entry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[19]
+		mi := &file_kythe_proto_serving_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1629,7 +1733,7 @@ func (x *FileDirectory_Entry) String() string {
 func (*FileDirectory_Entry) ProtoMessage() {}
 
 func (x *FileDirectory_Entry) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[19]
+	mi := &file_kythe_proto_serving_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1679,7 +1783,7 @@ type CorpusRoots_Corpus struct {
 func (x *CorpusRoots_Corpus) Reset() {
 	*x = CorpusRoots_Corpus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[20]
+		mi := &file_kythe_proto_serving_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1692,7 +1796,7 @@ func (x *CorpusRoots_Corpus) String() string {
 func (*CorpusRoots_Corpus) ProtoMessage() {}
 
 func (x *CorpusRoots_Corpus) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[20]
+	mi := &file_kythe_proto_serving_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,7 +1848,7 @@ type FileDecorations_Decoration struct {
 func (x *FileDecorations_Decoration) Reset() {
 	*x = FileDecorations_Decoration{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[21]
+		mi := &file_kythe_proto_serving_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1757,7 +1861,7 @@ func (x *FileDecorations_Decoration) String() string {
 func (*FileDecorations_Decoration) ProtoMessage() {}
 
 func (x *FileDecorations_Decoration) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[21]
+	mi := &file_kythe_proto_serving_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1823,7 +1927,7 @@ type FileDecorations_Override struct {
 func (x *FileDecorations_Override) Reset() {
 	*x = FileDecorations_Override{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[22]
+		mi := &file_kythe_proto_serving_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1836,7 +1940,7 @@ func (x *FileDecorations_Override) String() string {
 func (*FileDecorations_Override) ProtoMessage() {}
 
 func (x *FileDecorations_Override) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[22]
+	mi := &file_kythe_proto_serving_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1899,7 +2003,7 @@ type PagedCrossReferences_RelatedNode struct {
 func (x *PagedCrossReferences_RelatedNode) Reset() {
 	*x = PagedCrossReferences_RelatedNode{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[23]
+		mi := &file_kythe_proto_serving_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1912,7 +2016,7 @@ func (x *PagedCrossReferences_RelatedNode) String() string {
 func (*PagedCrossReferences_RelatedNode) ProtoMessage() {}
 
 func (x *PagedCrossReferences_RelatedNode) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[23]
+	mi := &file_kythe_proto_serving_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1956,7 +2060,7 @@ type PagedCrossReferences_Caller struct {
 func (x *PagedCrossReferences_Caller) Reset() {
 	*x = PagedCrossReferences_Caller{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[24]
+		mi := &file_kythe_proto_serving_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1969,7 +2073,7 @@ func (x *PagedCrossReferences_Caller) String() string {
 func (*PagedCrossReferences_Caller) ProtoMessage() {}
 
 func (x *PagedCrossReferences_Caller) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[24]
+	mi := &file_kythe_proto_serving_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2029,7 +2133,7 @@ type PagedCrossReferences_Group struct {
 func (x *PagedCrossReferences_Group) Reset() {
 	*x = PagedCrossReferences_Group{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[25]
+		mi := &file_kythe_proto_serving_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2042,7 +2146,7 @@ func (x *PagedCrossReferences_Group) String() string {
 func (*PagedCrossReferences_Group) ProtoMessage() {}
 
 func (x *PagedCrossReferences_Group) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[25]
+	mi := &file_kythe_proto_serving_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2113,7 +2217,7 @@ type PagedCrossReferences_Page struct {
 func (x *PagedCrossReferences_Page) Reset() {
 	*x = PagedCrossReferences_Page{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[26]
+		mi := &file_kythe_proto_serving_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2126,7 +2230,7 @@ func (x *PagedCrossReferences_Page) String() string {
 func (*PagedCrossReferences_Page) ProtoMessage() {}
 
 func (x *PagedCrossReferences_Page) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[26]
+	mi := &file_kythe_proto_serving_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2177,7 +2281,7 @@ type PagedCrossReferences_PageIndex struct {
 func (x *PagedCrossReferences_PageIndex) Reset() {
 	*x = PagedCrossReferences_PageIndex{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[27]
+		mi := &file_kythe_proto_serving_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2190,7 +2294,7 @@ func (x *PagedCrossReferences_PageIndex) String() string {
 func (*PagedCrossReferences_PageIndex) ProtoMessage() {}
 
 func (x *PagedCrossReferences_PageIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[27]
+	mi := &file_kythe_proto_serving_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2247,7 +2351,7 @@ type IdentifierMatch_Node struct {
 func (x *IdentifierMatch_Node) Reset() {
 	*x = IdentifierMatch_Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_kythe_proto_serving_proto_msgTypes[28]
+		mi := &file_kythe_proto_serving_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2260,7 +2364,7 @@ func (x *IdentifierMatch_Node) String() string {
 func (*IdentifierMatch_Node) ProtoMessage() {}
 
 func (x *IdentifierMatch_Node) ProtoReflect() protoreflect.Message {
-	mi := &file_kythe_proto_serving_proto_msgTypes[28]
+	mi := &file_kythe_proto_serving_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2661,11 +2765,20 @@ var file_kythe_proto_serving_proto_rawDesc = []byte{
 	0x68, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x2b, 0x0a, 0x04,
 	0x54, 0x79, 0x70, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10,
 	0x00, 0x12, 0x0a, 0x0a, 0x06, 0x43, 0x41, 0x4c, 0x4c, 0x45, 0x52, 0x10, 0x01, 0x12, 0x0a, 0x0a,
-	0x06, 0x43, 0x41, 0x4c, 0x4c, 0x45, 0x45, 0x10, 0x02, 0x42, 0x33, 0x0a, 0x1f, 0x63, 0x6f, 0x6d,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x64, 0x65, 0x76, 0x74, 0x6f, 0x6f, 0x6c, 0x73,
-	0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5a, 0x10, 0x73, 0x65,
-	0x72, 0x76, 0x69, 0x6e, 0x67, 0x5f, 0x67, 0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x06, 0x43, 0x41, 0x4c, 0x4c, 0x45, 0x45, 0x10, 0x02, 0x22, 0x97, 0x01, 0x0a, 0x04, 0x44, 0x69,
+	0x66, 0x66, 0x12, 0x23, 0x0a, 0x0b, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74,
+	0x68, 0x18, 0x01, 0x20, 0x03, 0x28, 0x05, 0x42, 0x02, 0x10, 0x01, 0x52, 0x0a, 0x73, 0x70, 0x61,
+	0x6e, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x12, 0x3f, 0x0a, 0x09, 0x73, 0x70, 0x61, 0x6e, 0x5f,
+	0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x1e, 0x2e, 0x6b, 0x79, 0x74,
+	0x68, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x69, 0x6e, 0x67,
+	0x2e, 0x44, 0x69, 0x66, 0x66, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x42, 0x02, 0x10, 0x01, 0x52, 0x08,
+	0x73, 0x70, 0x61, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x22, 0x29, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65,
+	0x12, 0x09, 0x0a, 0x05, 0x45, 0x51, 0x55, 0x41, 0x4c, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x49,
+	0x4e, 0x53, 0x45, 0x52, 0x54, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x44, 0x45, 0x4c, 0x45, 0x54,
+	0x45, 0x10, 0x02, 0x42, 0x33, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x64, 0x65, 0x76, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5a, 0x10, 0x73, 0x65, 0x72, 0x76, 0x69, 0x6e, 0x67, 0x5f,
+	0x67, 0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2680,105 +2793,108 @@ func file_kythe_proto_serving_proto_rawDescGZIP() []byte {
 	return file_kythe_proto_serving_proto_rawDescData
 }
 
-var file_kythe_proto_serving_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_kythe_proto_serving_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_kythe_proto_serving_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_kythe_proto_serving_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_kythe_proto_serving_proto_goTypes = []interface{}{
 	(FileDirectory_Kind)(0),                  // 0: kythe.proto.serving.FileDirectory.Kind
 	(FileDecorations_Override_Kind)(0),       // 1: kythe.proto.serving.FileDecorations.Override.Kind
 	(Relatives_Type)(0),                      // 2: kythe.proto.serving.Relatives.Type
 	(Callgraph_Type)(0),                      // 3: kythe.proto.serving.Callgraph.Type
-	(*Node)(nil),                             // 4: kythe.proto.serving.Node
-	(*Edge)(nil),                             // 5: kythe.proto.serving.Edge
-	(*EdgeGroup)(nil),                        // 6: kythe.proto.serving.EdgeGroup
-	(*PagedEdgeSet)(nil),                     // 7: kythe.proto.serving.PagedEdgeSet
-	(*PageIndex)(nil),                        // 8: kythe.proto.serving.PageIndex
-	(*EdgePage)(nil),                         // 9: kythe.proto.serving.EdgePage
-	(*FileDirectory)(nil),                    // 10: kythe.proto.serving.FileDirectory
-	(*CorpusRoots)(nil),                      // 11: kythe.proto.serving.CorpusRoots
-	(*File)(nil),                             // 12: kythe.proto.serving.File
-	(*RawAnchor)(nil),                        // 13: kythe.proto.serving.RawAnchor
-	(*ExpandedAnchor)(nil),                   // 14: kythe.proto.serving.ExpandedAnchor
-	(*FileInfo)(nil),                         // 15: kythe.proto.serving.FileInfo
-	(*FileDecorations)(nil),                  // 16: kythe.proto.serving.FileDecorations
-	(*PagedCrossReferences)(nil),             // 17: kythe.proto.serving.PagedCrossReferences
-	(*Document)(nil),                         // 18: kythe.proto.serving.Document
-	(*IdentifierMatch)(nil),                  // 19: kythe.proto.serving.IdentifierMatch
-	(*Relatives)(nil),                        // 20: kythe.proto.serving.Relatives
-	(*Callgraph)(nil),                        // 21: kythe.proto.serving.Callgraph
-	(*EdgeGroup_Edge)(nil),                   // 22: kythe.proto.serving.EdgeGroup.Edge
-	(*FileDirectory_Entry)(nil),              // 23: kythe.proto.serving.FileDirectory.Entry
-	(*CorpusRoots_Corpus)(nil),               // 24: kythe.proto.serving.CorpusRoots.Corpus
-	(*FileDecorations_Decoration)(nil),       // 25: kythe.proto.serving.FileDecorations.Decoration
-	(*FileDecorations_Override)(nil),         // 26: kythe.proto.serving.FileDecorations.Override
-	(*PagedCrossReferences_RelatedNode)(nil), // 27: kythe.proto.serving.PagedCrossReferences.RelatedNode
-	(*PagedCrossReferences_Caller)(nil),      // 28: kythe.proto.serving.PagedCrossReferences.Caller
-	(*PagedCrossReferences_Group)(nil),       // 29: kythe.proto.serving.PagedCrossReferences.Group
-	(*PagedCrossReferences_Page)(nil),        // 30: kythe.proto.serving.PagedCrossReferences.Page
-	(*PagedCrossReferences_PageIndex)(nil),   // 31: kythe.proto.serving.PagedCrossReferences.PageIndex
-	(*IdentifierMatch_Node)(nil),             // 32: kythe.proto.serving.IdentifierMatch.Node
-	(*common_go_proto.Fact)(nil),             // 33: kythe.proto.common.Fact
-	(*common_go_proto.Span)(nil),             // 34: kythe.proto.common.Span
-	(*common_go_proto.CorpusPath)(nil),       // 35: kythe.proto.common.CorpusPath
-	(*common_go_proto.Hash)(nil),             // 36: kythe.proto.common.Hash
-	(*common_go_proto.Diagnostic)(nil),       // 37: kythe.proto.common.Diagnostic
-	(*common_go_proto.MarkedSource)(nil),     // 38: kythe.proto.common.MarkedSource
-	(*common_go_proto.Link)(nil),             // 39: kythe.proto.common.Link
+	(Diff_Type)(0),                           // 4: kythe.proto.serving.Diff.Type
+	(*Node)(nil),                             // 5: kythe.proto.serving.Node
+	(*Edge)(nil),                             // 6: kythe.proto.serving.Edge
+	(*EdgeGroup)(nil),                        // 7: kythe.proto.serving.EdgeGroup
+	(*PagedEdgeSet)(nil),                     // 8: kythe.proto.serving.PagedEdgeSet
+	(*PageIndex)(nil),                        // 9: kythe.proto.serving.PageIndex
+	(*EdgePage)(nil),                         // 10: kythe.proto.serving.EdgePage
+	(*FileDirectory)(nil),                    // 11: kythe.proto.serving.FileDirectory
+	(*CorpusRoots)(nil),                      // 12: kythe.proto.serving.CorpusRoots
+	(*File)(nil),                             // 13: kythe.proto.serving.File
+	(*RawAnchor)(nil),                        // 14: kythe.proto.serving.RawAnchor
+	(*ExpandedAnchor)(nil),                   // 15: kythe.proto.serving.ExpandedAnchor
+	(*FileInfo)(nil),                         // 16: kythe.proto.serving.FileInfo
+	(*FileDecorations)(nil),                  // 17: kythe.proto.serving.FileDecorations
+	(*PagedCrossReferences)(nil),             // 18: kythe.proto.serving.PagedCrossReferences
+	(*Document)(nil),                         // 19: kythe.proto.serving.Document
+	(*IdentifierMatch)(nil),                  // 20: kythe.proto.serving.IdentifierMatch
+	(*Relatives)(nil),                        // 21: kythe.proto.serving.Relatives
+	(*Callgraph)(nil),                        // 22: kythe.proto.serving.Callgraph
+	(*Diff)(nil),                             // 23: kythe.proto.serving.Diff
+	(*EdgeGroup_Edge)(nil),                   // 24: kythe.proto.serving.EdgeGroup.Edge
+	(*FileDirectory_Entry)(nil),              // 25: kythe.proto.serving.FileDirectory.Entry
+	(*CorpusRoots_Corpus)(nil),               // 26: kythe.proto.serving.CorpusRoots.Corpus
+	(*FileDecorations_Decoration)(nil),       // 27: kythe.proto.serving.FileDecorations.Decoration
+	(*FileDecorations_Override)(nil),         // 28: kythe.proto.serving.FileDecorations.Override
+	(*PagedCrossReferences_RelatedNode)(nil), // 29: kythe.proto.serving.PagedCrossReferences.RelatedNode
+	(*PagedCrossReferences_Caller)(nil),      // 30: kythe.proto.serving.PagedCrossReferences.Caller
+	(*PagedCrossReferences_Group)(nil),       // 31: kythe.proto.serving.PagedCrossReferences.Group
+	(*PagedCrossReferences_Page)(nil),        // 32: kythe.proto.serving.PagedCrossReferences.Page
+	(*PagedCrossReferences_PageIndex)(nil),   // 33: kythe.proto.serving.PagedCrossReferences.PageIndex
+	(*IdentifierMatch_Node)(nil),             // 34: kythe.proto.serving.IdentifierMatch.Node
+	(*common_go_proto.Fact)(nil),             // 35: kythe.proto.common.Fact
+	(*common_go_proto.Span)(nil),             // 36: kythe.proto.common.Span
+	(*common_go_proto.CorpusPath)(nil),       // 37: kythe.proto.common.CorpusPath
+	(*common_go_proto.Hash)(nil),             // 38: kythe.proto.common.Hash
+	(*common_go_proto.Diagnostic)(nil),       // 39: kythe.proto.common.Diagnostic
+	(*common_go_proto.MarkedSource)(nil),     // 40: kythe.proto.common.MarkedSource
+	(*common_go_proto.Link)(nil),             // 41: kythe.proto.common.Link
 }
 var file_kythe_proto_serving_proto_depIdxs = []int32{
-	33, // 0: kythe.proto.serving.Node.fact:type_name -> kythe.proto.common.Fact
-	14, // 1: kythe.proto.serving.Node.definition_location:type_name -> kythe.proto.serving.ExpandedAnchor
-	4,  // 2: kythe.proto.serving.Edge.source:type_name -> kythe.proto.serving.Node
-	4,  // 3: kythe.proto.serving.Edge.target:type_name -> kythe.proto.serving.Node
-	33, // 4: kythe.proto.serving.Edge.fact:type_name -> kythe.proto.common.Fact
-	22, // 5: kythe.proto.serving.EdgeGroup.edge:type_name -> kythe.proto.serving.EdgeGroup.Edge
-	4,  // 6: kythe.proto.serving.PagedEdgeSet.source:type_name -> kythe.proto.serving.Node
-	6,  // 7: kythe.proto.serving.PagedEdgeSet.group:type_name -> kythe.proto.serving.EdgeGroup
-	8,  // 8: kythe.proto.serving.PagedEdgeSet.page_index:type_name -> kythe.proto.serving.PageIndex
-	6,  // 9: kythe.proto.serving.EdgePage.edges_group:type_name -> kythe.proto.serving.EdgeGroup
-	23, // 10: kythe.proto.serving.FileDirectory.entry:type_name -> kythe.proto.serving.FileDirectory.Entry
-	24, // 11: kythe.proto.serving.CorpusRoots.corpus:type_name -> kythe.proto.serving.CorpusRoots.Corpus
-	15, // 12: kythe.proto.serving.File.info:type_name -> kythe.proto.serving.FileInfo
-	34, // 13: kythe.proto.serving.ExpandedAnchor.span:type_name -> kythe.proto.common.Span
-	34, // 14: kythe.proto.serving.ExpandedAnchor.snippet_span:type_name -> kythe.proto.common.Span
-	15, // 15: kythe.proto.serving.ExpandedAnchor.file_info:type_name -> kythe.proto.serving.FileInfo
-	35, // 16: kythe.proto.serving.FileInfo.corpus_path:type_name -> kythe.proto.common.CorpusPath
-	36, // 17: kythe.proto.serving.FileInfo.hash:type_name -> kythe.proto.common.Hash
-	12, // 18: kythe.proto.serving.FileDecorations.file:type_name -> kythe.proto.serving.File
-	25, // 19: kythe.proto.serving.FileDecorations.decoration:type_name -> kythe.proto.serving.FileDecorations.Decoration
-	4,  // 20: kythe.proto.serving.FileDecorations.target:type_name -> kythe.proto.serving.Node
-	14, // 21: kythe.proto.serving.FileDecorations.target_definitions:type_name -> kythe.proto.serving.ExpandedAnchor
-	26, // 22: kythe.proto.serving.FileDecorations.target_override:type_name -> kythe.proto.serving.FileDecorations.Override
-	37, // 23: kythe.proto.serving.FileDecorations.diagnostic:type_name -> kythe.proto.common.Diagnostic
-	15, // 24: kythe.proto.serving.FileDecorations.file_info:type_name -> kythe.proto.serving.FileInfo
-	4,  // 25: kythe.proto.serving.PagedCrossReferences.source_node:type_name -> kythe.proto.serving.Node
-	29, // 26: kythe.proto.serving.PagedCrossReferences.group:type_name -> kythe.proto.serving.PagedCrossReferences.Group
-	31, // 27: kythe.proto.serving.PagedCrossReferences.page_index:type_name -> kythe.proto.serving.PagedCrossReferences.PageIndex
-	38, // 28: kythe.proto.serving.PagedCrossReferences.marked_source:type_name -> kythe.proto.common.MarkedSource
-	38, // 29: kythe.proto.serving.Document.marked_source:type_name -> kythe.proto.common.MarkedSource
-	39, // 30: kythe.proto.serving.Document.link:type_name -> kythe.proto.common.Link
-	4,  // 31: kythe.proto.serving.Document.node:type_name -> kythe.proto.serving.Node
-	32, // 32: kythe.proto.serving.IdentifierMatch.node:type_name -> kythe.proto.serving.IdentifierMatch.Node
+	35, // 0: kythe.proto.serving.Node.fact:type_name -> kythe.proto.common.Fact
+	15, // 1: kythe.proto.serving.Node.definition_location:type_name -> kythe.proto.serving.ExpandedAnchor
+	5,  // 2: kythe.proto.serving.Edge.source:type_name -> kythe.proto.serving.Node
+	5,  // 3: kythe.proto.serving.Edge.target:type_name -> kythe.proto.serving.Node
+	35, // 4: kythe.proto.serving.Edge.fact:type_name -> kythe.proto.common.Fact
+	24, // 5: kythe.proto.serving.EdgeGroup.edge:type_name -> kythe.proto.serving.EdgeGroup.Edge
+	5,  // 6: kythe.proto.serving.PagedEdgeSet.source:type_name -> kythe.proto.serving.Node
+	7,  // 7: kythe.proto.serving.PagedEdgeSet.group:type_name -> kythe.proto.serving.EdgeGroup
+	9,  // 8: kythe.proto.serving.PagedEdgeSet.page_index:type_name -> kythe.proto.serving.PageIndex
+	7,  // 9: kythe.proto.serving.EdgePage.edges_group:type_name -> kythe.proto.serving.EdgeGroup
+	25, // 10: kythe.proto.serving.FileDirectory.entry:type_name -> kythe.proto.serving.FileDirectory.Entry
+	26, // 11: kythe.proto.serving.CorpusRoots.corpus:type_name -> kythe.proto.serving.CorpusRoots.Corpus
+	16, // 12: kythe.proto.serving.File.info:type_name -> kythe.proto.serving.FileInfo
+	36, // 13: kythe.proto.serving.ExpandedAnchor.span:type_name -> kythe.proto.common.Span
+	36, // 14: kythe.proto.serving.ExpandedAnchor.snippet_span:type_name -> kythe.proto.common.Span
+	16, // 15: kythe.proto.serving.ExpandedAnchor.file_info:type_name -> kythe.proto.serving.FileInfo
+	37, // 16: kythe.proto.serving.FileInfo.corpus_path:type_name -> kythe.proto.common.CorpusPath
+	38, // 17: kythe.proto.serving.FileInfo.hash:type_name -> kythe.proto.common.Hash
+	13, // 18: kythe.proto.serving.FileDecorations.file:type_name -> kythe.proto.serving.File
+	27, // 19: kythe.proto.serving.FileDecorations.decoration:type_name -> kythe.proto.serving.FileDecorations.Decoration
+	5,  // 20: kythe.proto.serving.FileDecorations.target:type_name -> kythe.proto.serving.Node
+	15, // 21: kythe.proto.serving.FileDecorations.target_definitions:type_name -> kythe.proto.serving.ExpandedAnchor
+	28, // 22: kythe.proto.serving.FileDecorations.target_override:type_name -> kythe.proto.serving.FileDecorations.Override
+	39, // 23: kythe.proto.serving.FileDecorations.diagnostic:type_name -> kythe.proto.common.Diagnostic
+	16, // 24: kythe.proto.serving.FileDecorations.file_info:type_name -> kythe.proto.serving.FileInfo
+	5,  // 25: kythe.proto.serving.PagedCrossReferences.source_node:type_name -> kythe.proto.serving.Node
+	31, // 26: kythe.proto.serving.PagedCrossReferences.group:type_name -> kythe.proto.serving.PagedCrossReferences.Group
+	33, // 27: kythe.proto.serving.PagedCrossReferences.page_index:type_name -> kythe.proto.serving.PagedCrossReferences.PageIndex
+	40, // 28: kythe.proto.serving.PagedCrossReferences.marked_source:type_name -> kythe.proto.common.MarkedSource
+	40, // 29: kythe.proto.serving.Document.marked_source:type_name -> kythe.proto.common.MarkedSource
+	41, // 30: kythe.proto.serving.Document.link:type_name -> kythe.proto.common.Link
+	5,  // 31: kythe.proto.serving.Document.node:type_name -> kythe.proto.serving.Node
+	34, // 32: kythe.proto.serving.IdentifierMatch.node:type_name -> kythe.proto.serving.IdentifierMatch.Node
 	2,  // 33: kythe.proto.serving.Relatives.type:type_name -> kythe.proto.serving.Relatives.Type
 	3,  // 34: kythe.proto.serving.Callgraph.type:type_name -> kythe.proto.serving.Callgraph.Type
-	4,  // 35: kythe.proto.serving.EdgeGroup.Edge.target:type_name -> kythe.proto.serving.Node
-	0,  // 36: kythe.proto.serving.FileDirectory.Entry.kind:type_name -> kythe.proto.serving.FileDirectory.Kind
-	13, // 37: kythe.proto.serving.FileDecorations.Decoration.anchor:type_name -> kythe.proto.serving.RawAnchor
-	1,  // 38: kythe.proto.serving.FileDecorations.Override.kind:type_name -> kythe.proto.serving.FileDecorations.Override.Kind
-	38, // 39: kythe.proto.serving.FileDecorations.Override.marked_source:type_name -> kythe.proto.common.MarkedSource
-	4,  // 40: kythe.proto.serving.PagedCrossReferences.RelatedNode.node:type_name -> kythe.proto.serving.Node
-	14, // 41: kythe.proto.serving.PagedCrossReferences.Caller.caller:type_name -> kythe.proto.serving.ExpandedAnchor
-	38, // 42: kythe.proto.serving.PagedCrossReferences.Caller.marked_source:type_name -> kythe.proto.common.MarkedSource
-	14, // 43: kythe.proto.serving.PagedCrossReferences.Caller.callsite:type_name -> kythe.proto.serving.ExpandedAnchor
-	14, // 44: kythe.proto.serving.PagedCrossReferences.Group.anchor:type_name -> kythe.proto.serving.ExpandedAnchor
-	27, // 45: kythe.proto.serving.PagedCrossReferences.Group.related_node:type_name -> kythe.proto.serving.PagedCrossReferences.RelatedNode
-	28, // 46: kythe.proto.serving.PagedCrossReferences.Group.caller:type_name -> kythe.proto.serving.PagedCrossReferences.Caller
-	15, // 47: kythe.proto.serving.PagedCrossReferences.Group.file_info:type_name -> kythe.proto.serving.FileInfo
-	29, // 48: kythe.proto.serving.PagedCrossReferences.Page.group:type_name -> kythe.proto.serving.PagedCrossReferences.Group
-	49, // [49:49] is the sub-list for method output_type
-	49, // [49:49] is the sub-list for method input_type
-	49, // [49:49] is the sub-list for extension type_name
-	49, // [49:49] is the sub-list for extension extendee
-	0,  // [0:49] is the sub-list for field type_name
+	4,  // 35: kythe.proto.serving.Diff.span_type:type_name -> kythe.proto.serving.Diff.Type
+	5,  // 36: kythe.proto.serving.EdgeGroup.Edge.target:type_name -> kythe.proto.serving.Node
+	0,  // 37: kythe.proto.serving.FileDirectory.Entry.kind:type_name -> kythe.proto.serving.FileDirectory.Kind
+	14, // 38: kythe.proto.serving.FileDecorations.Decoration.anchor:type_name -> kythe.proto.serving.RawAnchor
+	1,  // 39: kythe.proto.serving.FileDecorations.Override.kind:type_name -> kythe.proto.serving.FileDecorations.Override.Kind
+	40, // 40: kythe.proto.serving.FileDecorations.Override.marked_source:type_name -> kythe.proto.common.MarkedSource
+	5,  // 41: kythe.proto.serving.PagedCrossReferences.RelatedNode.node:type_name -> kythe.proto.serving.Node
+	15, // 42: kythe.proto.serving.PagedCrossReferences.Caller.caller:type_name -> kythe.proto.serving.ExpandedAnchor
+	40, // 43: kythe.proto.serving.PagedCrossReferences.Caller.marked_source:type_name -> kythe.proto.common.MarkedSource
+	15, // 44: kythe.proto.serving.PagedCrossReferences.Caller.callsite:type_name -> kythe.proto.serving.ExpandedAnchor
+	15, // 45: kythe.proto.serving.PagedCrossReferences.Group.anchor:type_name -> kythe.proto.serving.ExpandedAnchor
+	29, // 46: kythe.proto.serving.PagedCrossReferences.Group.related_node:type_name -> kythe.proto.serving.PagedCrossReferences.RelatedNode
+	30, // 47: kythe.proto.serving.PagedCrossReferences.Group.caller:type_name -> kythe.proto.serving.PagedCrossReferences.Caller
+	16, // 48: kythe.proto.serving.PagedCrossReferences.Group.file_info:type_name -> kythe.proto.serving.FileInfo
+	31, // 49: kythe.proto.serving.PagedCrossReferences.Page.group:type_name -> kythe.proto.serving.PagedCrossReferences.Group
+	50, // [50:50] is the sub-list for method output_type
+	50, // [50:50] is the sub-list for method input_type
+	50, // [50:50] is the sub-list for extension type_name
+	50, // [50:50] is the sub-list for extension extendee
+	0,  // [0:50] is the sub-list for field type_name
 }
 
 func init() { file_kythe_proto_serving_proto_init() }
@@ -3004,7 +3120,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EdgeGroup_Edge); i {
+			switch v := v.(*Diff); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3016,7 +3132,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FileDirectory_Entry); i {
+			switch v := v.(*EdgeGroup_Edge); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3028,7 +3144,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CorpusRoots_Corpus); i {
+			switch v := v.(*FileDirectory_Entry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3040,7 +3156,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FileDecorations_Decoration); i {
+			switch v := v.(*CorpusRoots_Corpus); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3052,7 +3168,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FileDecorations_Override); i {
+			switch v := v.(*FileDecorations_Decoration); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3064,7 +3180,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagedCrossReferences_RelatedNode); i {
+			switch v := v.(*FileDecorations_Override); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3076,7 +3192,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagedCrossReferences_Caller); i {
+			switch v := v.(*PagedCrossReferences_RelatedNode); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3088,7 +3204,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagedCrossReferences_Group); i {
+			switch v := v.(*PagedCrossReferences_Caller); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3100,7 +3216,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagedCrossReferences_Page); i {
+			switch v := v.(*PagedCrossReferences_Group); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3112,7 +3228,7 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PagedCrossReferences_PageIndex); i {
+			switch v := v.(*PagedCrossReferences_Page); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3124,6 +3240,18 @@ func file_kythe_proto_serving_proto_init() {
 			}
 		}
 		file_kythe_proto_serving_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PagedCrossReferences_PageIndex); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_kythe_proto_serving_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IdentifierMatch_Node); i {
 			case 0:
 				return &v.state
@@ -3141,8 +3269,8 @@ func file_kythe_proto_serving_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_kythe_proto_serving_proto_rawDesc,
-			NumEnums:      4,
-			NumMessages:   29,
+			NumEnums:      5,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
