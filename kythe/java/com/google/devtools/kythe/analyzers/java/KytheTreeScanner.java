@@ -64,6 +64,7 @@ import com.sun.tools.javac.tree.JCTree.JCArrayTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCAssert;
 import com.sun.tools.javac.tree.JCTree.JCAssign;
 import com.sun.tools.javac.tree.JCTree.JCAssignOp;
+import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -81,11 +82,13 @@ import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPackageDecl;
+import com.sun.tools.javac.tree.JCTree.JCParens;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
 import com.sun.tools.javac.tree.JCTree.JCThrow;
 import com.sun.tools.javac.tree.JCTree.JCTypeApply;
 import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
+import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
@@ -296,7 +299,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Use ref/id edges for the primary identifier to disambiguate from the constructor.
       node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_ID);
     } else {
-      RefType refType = getRefType(owner.getTree(), ident.sym, ident.pos);
+      RefType refType = getRefType(owner.getTree(), owner.up().getTree(), ident.sym, ident.pos);
       if (refType == RefType.READ || refType == RefType.READ_WRITE) {
         node = emitSymUsage(ctx, ident.sym, EdgeKind.REF);
       }
@@ -859,7 +862,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return emitNameUsage(ctx, sym, name, EdgeKind.REF_IMPORTS);
       }
 
-      RefType refType = getRefType(owner.getTree(), sym, field.pos);
+      RefType refType = getRefType(owner.getTree(), owner.up().getTree(), sym, field.pos);
       // RefType can only be READ, WRITE, OR READ_WRITE so node will always have a value set by
       // at least one call to emitNameUsage. We just have to initialize to null to keep the compiler
       // happy.
@@ -1794,44 +1797,44 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
    * Returns the type of reference for a symbol in a tree at a specific position.
    *
    * @param tree The {@link JCTree} containing the reference
+   * @param parent The parent {@link JCTree} of {@code tree}
    * @param sym The {@link Symbol} being referenced
    * @param position The integer position of the {@link Symbol} being referenced
    * @return A {@link RefType} indicating whether the reference reads from the symbol, writes to it,
    *     or does both.
    */
-  private static RefType getRefType(JCTree tree, Symbol sym, int position) {
+  private static RefType getRefType(JCTree tree, JCTree parent, Symbol sym, int position) {
     // JCAssign looks like "a = 1 + 2"
     // JCAssignOp looks like "a += 3"
     if (tree instanceof JCAssign || tree instanceof JCAssignOp) {
       JCExpression lhs;
+      JCExpression rhs;
       if (tree instanceof JCAssign) {
         lhs = ((JCAssign) tree).lhs;
+        rhs = ((JCAssign) tree).rhs;
       } else {
         lhs = ((JCAssignOp) tree).lhs;
+        rhs = ((JCAssignOp) tree).rhs;
       }
 
-      // Check that the symbol is on the left side of the assignment. To do this we need to check
-      // that both the symbol and the position match. If we only check the symbol then we process
-      // "a = a + 1" as having both instances of "a" be ref/writes
-      boolean isWrite = false;
-      if (lhs instanceof JCIdent) {
-        JCIdent ident = (JCIdent) lhs;
-        if (ident.sym.equals(sym) && ident.pos == position) {
-          isWrite = true;
-        }
-      } else if (lhs instanceof JCFieldAccess) {
-        JCFieldAccess fieldAccess = (JCFieldAccess) lhs;
-        if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
-          isWrite = true;
-        }
-      }
-
-      // JCAssignOp expressions are READ_WRITE, while JCAssign expressions are only WRITE
-      if (isWrite) {
+      // Check if the symbol is on the left side of the assignment, which is always at least a WRITE
+      // reference, or if the symbol experiences a write on the right side such as "a = b++",
+      // which is always a READ_WRITE.
+      if (expressionMatchesSymbol(lhs, sym, position)) {
+        // We also need to check if this reference is READ_WRITE. This is true in the following
+        // cases:
+        //   - The tree is a JCAssignOp such as "b++;" or
+        //   - The parent tree is a JCAssign and the current tree is on the RHS of that assignment.
+        //     An example of this would be "a = b = 1;", where b is both written to and read from.
+        RefType refType = RefType.WRITE;
         if (tree instanceof JCAssignOp) {
-          return RefType.READ_WRITE;
+          refType = RefType.READ_WRITE;
+        } else if (parent instanceof JCAssign && ((JCAssign) parent).rhs.getTree().equals(tree)) {
+          refType = RefType.READ_WRITE;
         }
-        return RefType.WRITE;
+        return refType;
+      } else if (symbolWrittenOnRHS(rhs, sym, position)) {
+        return RefType.READ_WRITE;
       }
     } else if (tree instanceof JCExpressionStatement) {
       JCExpressionStatement stmt = (JCExpressionStatement) tree;
@@ -1843,8 +1846,54 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           return RefType.READ_WRITE;
         default:
           // Some other expression like ! or ~
+          return RefType.READ;
       }
     }
     return RefType.READ;
+  }
+
+  /**
+   * Returns whether a {@link JCExpression}, representing either a {@link JCIdent} or a {@link
+   * JCFieldAccess}, matches a {@link Symbol} at a given integer position.
+   */
+  private static boolean expressionMatchesSymbol(JCExpression e, Symbol sym, int position) {
+    if (e instanceof JCIdent) {
+      JCIdent ident = (JCIdent) e;
+      if (ident.sym.equals(sym) && ident.pos == position) {
+        return true;
+      }
+    } else if (e instanceof JCFieldAccess) {
+      JCFieldAccess fieldAccess = (JCFieldAccess) e;
+      if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether a {@link Symbol} at a given integer position is written to in a {@link
+   * JCExpression} from the right-hand side of a {@link JCAssign} or {@link JCAssignOp} expression.
+   */
+  private static boolean symbolWrittenOnRHS(JCExpression e, Symbol sym, int position) {
+    if (e instanceof JCParens) {
+      return symbolWrittenOnRHS(((JCParens) e).expr, sym, position);
+    } else if (e instanceof JCUnary) {
+      switch (e.getTree().getKind()) {
+        case POSTFIX_INCREMENT:
+        case POSTFIX_DECREMENT:
+        case PREFIX_INCREMENT:
+        case PREFIX_DECREMENT:
+          return expressionMatchesSymbol(((JCUnary) e).arg, sym, position);
+        default:
+          return false;
+      }
+    } else if (e instanceof JCBinary) {
+      JCExpression lhs = ((JCBinary) e).lhs;
+      JCExpression rhs = ((JCBinary) e).rhs;
+      // Process the each side recursively because they could be another binary expression
+      return symbolWrittenOnRHS(lhs, sym, position) || symbolWrittenOnRHS(rhs, sym, position);
+    }
+    return false;
   }
 }

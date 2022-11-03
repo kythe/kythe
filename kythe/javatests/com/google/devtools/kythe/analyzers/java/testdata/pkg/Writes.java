@@ -24,9 +24,13 @@ public class Writes {
     //- !{ @#1a ref/writes A }
     a = a + 1;
 
+    //- @b defines/binding B
     //- @a ref A
     //- !{ @a ref/writes A }
     int b = a;
+
+    //- @c defines/binding C
+    int c = 2;
 
     //- @sc ref SC
     //- !{ @sc ref/writes SC }
@@ -55,6 +59,31 @@ public class Writes {
     //- @a ref MemberA
     //- @a ref/writes MemberA
     sc.a += 1;
+
+    //
+    // Test chained writes and writes on the right-hand side
+    //
+
+    //- !{ @a ref A }
+    //- @a ref/writes A
+    //- @b ref B
+    //- @b ref/writes B
+    //- @c ref C
+    //- @c ref/writes C
+    a = b = c++;
+
+    //- @a ref A
+    //- @a ref/writes A
+    //- @#0c ref C
+    //- @#0c ref/writes C
+    //- @#1c ref C
+    //- !{ @#1c ref/writes C }
+    a += c++ + 1 + ~c;
+
+    //- @#0a ref/writes A
+    //- @#1a ref A
+    //- @#1a ref/writes A
+    a = (a++ + 1) + 1;
 
     //
     // Test unary operations
