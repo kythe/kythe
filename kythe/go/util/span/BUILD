@@ -7,8 +7,10 @@ go_library(
     srcs = ["span.go"],
     deps = [
         "//kythe/proto:common_go_proto",
+        "//kythe/proto:serving_go_proto",
         "//kythe/proto:xref_go_proto",
         "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 
@@ -18,5 +20,9 @@ go_test(
     srcs = ["span_test.go"],
     library = "span",
     visibility = ["//visibility:private"],
-    deps = ["@org_golang_google_protobuf//proto:go_default_library"],
+    deps = [
+        "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
 )
