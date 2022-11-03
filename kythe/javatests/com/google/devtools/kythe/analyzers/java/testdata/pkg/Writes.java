@@ -23,7 +23,7 @@ public class Writes {
     //- @#1a ref A
     //- !{ @#1a ref/writes A }
     a = a + 1;
-    
+
     //- @a ref A
     //- !{ @a ref/writes A }
     int b = a;
@@ -104,5 +104,13 @@ public class Writes {
     public Subclass sub = new Subclass();
 
     public Subclass() {}
+
+    public void inc(int x) {
+      //- @#0a ref/writes MemberA
+      //- !{ @#0a ref MemberA }
+      //- @#1a ref MemberA
+      //- !{ @#1a ref/writes MemberA }
+      this.a = this.a + x;
+    }
   }
 }
