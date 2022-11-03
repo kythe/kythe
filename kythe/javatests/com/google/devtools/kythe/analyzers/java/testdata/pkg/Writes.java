@@ -105,11 +105,13 @@ public class Writes {
 
     public Subclass() {}
 
+    //- @x defines/binding X
     public void inc(int x) {
       //- @#0a ref/writes MemberA
       //- !{ @#0a ref MemberA }
       //- @#1a ref MemberA
       //- !{ @#1a ref/writes MemberA }
+      //- @x ref X
       this.a = this.a + x;
     }
   }
