@@ -130,7 +130,7 @@ fn bad_extra_action_path_fails() {
     let vnames_path = r.rlocation("io_kythe/external/io_kythe/kythe/data/vnames_config.json");
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
 
-    let output = Command::new(&extractor_path)
+    let output = Command::new(extractor_path)
         .arg("--extra_action=badPath")
         .arg("--output=/tmp/wherever")
         .arg(format!("--vnames_config={}", vnames_path.to_string_lossy()))
@@ -151,7 +151,7 @@ fn correct_arguments_succeed(
 
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
     let kzip_path_str = format!("{}/output.kzip", temp_dir_str);
-    let exit_status = Command::new(&extractor_path)
+    let exit_status = Command::new(extractor_path)
         .arg(format!("--extra_action={}", extra_action_path_str))
         .arg(format!("--output={}", kzip_path_str))
         .arg(format!("--vnames_config={}", vnames_path.to_string_lossy()))
