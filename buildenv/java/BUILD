@@ -14,8 +14,8 @@ config_setting(
             (
                 config_setting(
                     name = "runtime_version_{version}_{value}".format(
-                        version = v,
                         value = value,
+                        version = v,
                     ),
                     values = {
                         "java_runtime_version": value,
@@ -23,8 +23,8 @@ config_setting(
                     visibility = ["//visibility:private"],
                 ),
                 ":runtime_version_{version}_{value}".format(
-                    version = v,
                     value = value,
+                    version = v,
                 ),
             )[1]
             for value in values
