@@ -4,14 +4,16 @@ syntax = "proto2";
 
 package proto_kythe_test;
 
-//- @+8"DocComment" defines/binding DocCommentMessage
+//- @+10"DocComment" defines/binding DocCommentMessage
 //- DocCommentComment.node/kind doc
 //- DocCommentComment documents DocCommentMessage
 //- DocCommentComment.text
-//-   "A doc comment is a piece of text which documents a code element.\nDoc comments can have html code in them."
+//-   "A doc comment is a piece of text which documents a code element.\nDoc comments can have html code in them.\n\n"
 
 // A doc comment is a piece of text which documents a code element.
 // Doc comments can have html code in them.
+//
+//
 message DocComment {
 
   //- Type1Comment.node/kind doc

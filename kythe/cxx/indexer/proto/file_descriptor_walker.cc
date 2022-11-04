@@ -128,7 +128,8 @@ Location FileDescriptorWalker::LocationOfLeadingComments(
   comment_location.end = entity_location.begin - line_offset_of_entity - 1;
   int next_line_number = entity_start_line - 1;
   absl::string_view bottom_line = line_index_.GetLine(next_line_number);
-  while (RE2::FullMatch(ToStringPiece(bottom_line), R"(\s*\*/?\s*)")) {
+  while (
+      RE2::FullMatch(ToStringPiece(bottom_line), R"((\s*\*/?\s*)|(\s*//\n))")) {
     comment_location.begin -= bottom_line.size();
     --next_line_number;
     bottom_line = line_index_.GetLine(next_line_number);
