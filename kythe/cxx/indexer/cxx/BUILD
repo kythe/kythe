@@ -540,7 +540,7 @@ cc_test(
         "-Wno-implicit-fallthrough",
     ],
     linkopts = select({
-        ":darwin": ["-headerpad_max_install_names"],
+        "@platforms//os:osx": ["-headerpad_max_install_names"],
         "//conditions:default": [],
     }),
     deps = [
@@ -617,10 +617,4 @@ cc_library(
         "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//llvm:Support",
     ],
-)
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:public"],
 )

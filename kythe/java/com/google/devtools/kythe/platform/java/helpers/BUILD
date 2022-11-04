@@ -68,6 +68,9 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
     ],
+    # This is incompatible with the default test configuration and
+    # bazel cquery doesn't work with objc_library targets.
+    tags = ["manual"],
     target_compatible_with = select({
         "//buildenv/java:language_version_17": [],
         "//conditions:default": ["@platforms//:incompatible"],
