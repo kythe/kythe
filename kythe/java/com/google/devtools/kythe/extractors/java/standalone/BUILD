@@ -39,7 +39,6 @@ java_library(
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
     deps = [
-        ":jdk9_compatibility_shims",
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
@@ -49,7 +48,10 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "@maven//:com_google_flogger_flogger",
-    ],
+    ] + select({
+        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
+        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
+    }),
 )
 
 java_library(
@@ -66,6 +68,10 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
+    target_compatible_with = select({
+        "//buildenv/java:language_version_11": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
@@ -73,19 +79,22 @@ java_library(
     ],
 )
 
-# TODO(shahms): Condition the use and compilation of this on Java15+
-#java_library(
-#    name = "jdk15_compatibility_shims",
-#    srcs = ["Jdk15CompatibilityShims.java"],
-#    javacopts = [
-#        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-#    ],
-#    deps = [
-#        ":jdk_compatibility_shims",
-#        "//kythe/java/com/google/devtools/kythe/common:autoservice",
-#        "//third_party/guava",
-#    ],
-#)
+java_library(
+    name = "jdk15_compatibility_shims",
+    srcs = ["Jdk15CompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    target_compatible_with = select({
+        "//buildenv/java:language_version_17": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//third_party/guava",
+    ],
+)
 
 bzl_library(
     name = "aspect_bzl",

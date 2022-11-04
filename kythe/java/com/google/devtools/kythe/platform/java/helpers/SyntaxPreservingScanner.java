@@ -77,15 +77,19 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
     }
   }
 
-  UnicodeReader getReader() {
+  private UnicodeReader getReader() {
     // Access the UnicodeReader either via the `reader` member or `this`.
-    // This can't be done via JdkCompatibilityShims as it requires access to a protected member.
-    Object self = this;
-    if (self instanceof UnicodeReader) {
-      return (UnicodeReader) self;
+    // This can't be done via JdkCompatibilityShims as it requires access to a protected member, so
+    // do use reflection in all its unmaintable fragile glory.
+    try {
+      try {
+        return (UnicodeReader) JavaTokenizer.class.getDeclaredField("reader").get(this);
+      } catch (ReflectiveOperationException e) {
+        return (UnicodeReader) this;
+      }
+    } catch (ClassCastException e) {
+      throw new LinkageError(e.getMessage(), e);
     }
-    // TODO(shahms): this would need to be reflective.
-    return reader;
   }
 
   @Override
