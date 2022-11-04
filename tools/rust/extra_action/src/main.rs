@@ -72,7 +72,7 @@ fn main() -> Result<()> {
     } else {
         &source_files[source_files
             .iter()
-            .position(|file_path| file_path.contains(&"main.rs") || file_path.contains(&"lib.rs"))
+            .position(|file_path| file_path.contains("main.rs") || file_path.contains("lib.rs"))
             .unwrap()]
     };
     let mut arguments: Vec<String> = vec![
