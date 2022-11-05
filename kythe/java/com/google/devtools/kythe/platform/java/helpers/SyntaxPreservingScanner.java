@@ -22,6 +22,7 @@ import com.sun.tools.javac.parser.ScannerFactory;
 import com.sun.tools.javac.parser.Tokens;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.parser.Tokens.Token;
+import com.sun.tools.javac.parser.UnicodeReader;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Position;
 import java.nio.CharBuffer;
@@ -76,11 +77,28 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
     }
   }
 
+  private UnicodeReader getReader() {
+    // Access the UnicodeReader either via the `reader` member or `this`.
+    // This can't be done via JdkCompatibilityShims as it requires access to a protected member, so
+    // do use reflection in all its unmaintable fragile glory.
+    Object instance;
+    try {
+      instance = JavaTokenizer.class.getDeclaredField("reader").get(this);
+    } catch (ReflectiveOperationException e) {
+      instance = this;
+    }
+    try {
+      return (UnicodeReader) instance;
+    } catch (ClassCastException e) {
+      throw new LinkageError(e.getMessage(), e);
+    }
+  }
+
   @Override
   protected Tokens.Comment processComment(int pos, int endPos, CommentStyle style) {
     customTokens.add(
         new CommentToken(
-            new Span(pos, endPos), new String(reader.getRawCharacters(pos, endPos)), style));
+            new Span(pos, endPos), new String(getReader().getRawCharacters(pos, endPos)), style));
     return super.processComment(pos, endPos, style);
   }
 

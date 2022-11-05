@@ -303,6 +303,9 @@ objc_library(
         "broken",
         "manual",
     ],
+    target_compatible_with = [
+        "@platforms//os:osx",
+    ],
 )
 
 # Test that we can use the bazel extractor to extract a .xa file, index the
@@ -318,12 +321,14 @@ objc_bazel_extractor_test(
     size = "small",
     src = "objc_lib.m",
     data = "objc_lib.xa",
-    restricted_to = ["//buildenv:darwin"],
-    # This test no longer passes, even on darwin, so do not include it in our presubmit.
+    # This test no longer passes, even on OSX, so do not include it in our presubmit.
     tags = [
         "arc-ignore",
         "broken",
         "manual",
+    ],
+    target_compatible_with = [
+        "@platforms//os:osx",
     ],
 )
 

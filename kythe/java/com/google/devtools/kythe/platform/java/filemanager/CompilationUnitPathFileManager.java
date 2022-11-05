@@ -202,6 +202,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   @Override
+  public ClassLoader getClassLoader(Location location) {
+    return null;
+  }
+
+  @Override
   public void close() throws IOException {
     Closer closer = Closer.create();
     closer.register(super::close);

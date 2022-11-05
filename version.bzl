@@ -1,5 +1,5 @@
 # Minimum supported Bazel version.  Should match .bazelminversion file.
-MIN_VERSION = "5.1.0"
+MIN_VERSION = "5.3.0"
 
 # Maximum supported Bazel version.  Should match .bazelversion file.
 MAX_VERSION = "5.3.2"

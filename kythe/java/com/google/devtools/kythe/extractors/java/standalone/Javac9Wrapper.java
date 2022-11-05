@@ -46,7 +46,7 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
 
     JavacFileManager fileManager = new JavacFileManager(context, true, null);
     Arguments args = Arguments.instance(context);
-    args.init("kythe_javac", arguments);
+    shims.initializeArguments(args, arguments);
     fileManager.handleOptions(args.getDeferredFileManagerOptions());
     Options options = Options.instance(context);
 

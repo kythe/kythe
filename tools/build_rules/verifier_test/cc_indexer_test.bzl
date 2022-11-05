@@ -725,7 +725,7 @@ def _indexer_test(
         deps = [],
         tags = [],
         size = "small",
-        restricted_to = ["//buildenv:all"],
+        target_compatible_with = [],
         bundled = False,
         expect_fail_verify = False,
         indexer = None,
@@ -740,7 +740,7 @@ def _indexer_test(
             testonly = True,
             src = srcs[0],
             opts = copts,
-            restricted_to = restricted_to,
+            target_compatible_with = target_compatible_with,
             tags = tags,
         )
 
@@ -762,7 +762,7 @@ def _indexer_test(
         srcs = srcs,
         copts = copts if not bundled else [],
         opts = (["-claim_unknown=false"] if bundled else []) + flags.indexer,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
         deps = deps,
         **indexer_args
@@ -774,20 +774,20 @@ def _indexer_test(
         deps = [":" + name + "_entries"],
         expect_success = not expect_fail_verify,
         opts = flags.verifier,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
     )
 
-# If a test is expected to pass on darwin but not on linux, you can set
-# restricted_to=["//buildenv:darwin"]. This causes the test to be skipped on linux and it
-# causes the actual test to execute on darwin.
+# If a test is expected to pass on OSX but not on linux, you can set
+# target_compatible_with=["@platforms//os:osx"]. This causes the test to be skipped on linux and it
+# causes the actual test to execute on OSX.
 def cc_indexer_test(
         name,
         srcs,
         deps = [],
         tags = [],
         size = "small",
-        restricted_to = ["//buildenv:all"],
+        target_compatible_with = [],
         std = "c++11",
         bundled = False,
         expect_fail_verify = False,
@@ -827,7 +827,7 @@ def cc_indexer_test(
         tags = tags,
         size = size,
         copts = ["-std=" + std] + copts,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,
         indexer = indexer,
@@ -840,7 +840,7 @@ def objc_indexer_test(
         deps = [],
         tags = [],
         size = "small",
-        restricted_to = ["//buildenv:all"],
+        target_compatible_with = [],
         bundled = False,
         expect_fail_verify = False,
         **kwargs):
@@ -877,13 +877,19 @@ def objc_indexer_test(
         size = size,
         # Newer ObjC features are only enabled on the "modern" runtime.
         copts = ["-fblocks", "-fobjc-runtime=macosx"],
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,
         **kwargs
     )
 
-def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restricted_to = ["//buildenv:all"]):
+def objc_bazel_extractor_test(
+        name,
+        src,
+        data,
+        size = "small",
+        tags = [],
+        target_compatible_with = []):
     """Objective C Bazel extractor test.
 
     Args:
@@ -896,7 +902,7 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
         srcs = [src],
         data = data,
         extractor = "//kythe/cxx/extractor:objc_extractor_bazel",
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         scripts = [
             "//third_party/bazel:get_devdir",
             "//third_party/bazel:get_sdkroot",
@@ -907,7 +913,7 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
         name = name + "_entries",
         testonly = True,
         srcs = [":" + name + "_kzip"],
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
     )
     return verifier_test(
@@ -916,7 +922,7 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
         srcs = [src],
         deps = [":" + name + "_entries"],
         opts = ["--ignore_dups"],
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
     )
 
@@ -957,7 +963,7 @@ def cc_extractor_test(
         size = "small",
         std = "c++11",
         tags = [],
-        restricted_to = ["//buildenv:all"]):
+        target_compatible_with = []):
     """C++ verifier test on an extracted source file."""
     args = ["-std=" + std, "-c"]
     cc_extract_kzip(
@@ -965,7 +971,7 @@ def cc_extractor_test(
         testonly = True,
         srcs = srcs,
         opts = args,
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
         deps = data,
     )
@@ -974,7 +980,7 @@ def cc_extractor_test(
         testonly = True,
         srcs = [":" + name + "_kzip"],
         opts = ["--ignore_unimplemented"],
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
         deps = data,
     )
@@ -983,7 +989,7 @@ def cc_extractor_test(
         size = size,
         srcs = srcs,
         opts = ["--ignore_dups", "--ignore_code_conflicts"],
-        restricted_to = restricted_to,
+        target_compatible_with = target_compatible_with,
         tags = tags,
         deps = deps + [":" + name + "_entries"],
     )
