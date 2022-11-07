@@ -41,6 +41,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   }
 
   @Override
+  @SuppressWarnings("CheckedExceptionNotThrown")
   public List<String> parseCompilerArguments(String[] args) throws IOException {
     try {
       try {
