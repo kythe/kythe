@@ -80,6 +80,11 @@ java_library(
     ],
 )
 
+java_library(
+    name = "ordered_compatibility_service",
+    srcs = ["OrderedCompatibilityService.java"],
+)
+
 # Sources used to test Java extraction in //kythe/release:release_test.
 filegroup(
     name = "test_srcs",

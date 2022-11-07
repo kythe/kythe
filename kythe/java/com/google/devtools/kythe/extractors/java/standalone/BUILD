@@ -40,6 +40,7 @@ java_library(
     ],
     deps = [
         ":jdk_compatibility_shims",
+        ":reflective_jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
@@ -60,6 +61,8 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
+    visibility = ["//visibility:private"],
+    deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
 )
 
 java_library(
@@ -72,9 +75,11 @@ java_library(
         "//buildenv/java:language_version_11": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+    visibility = ["//visibility:private"],
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
         "//third_party/guava",
     ],
 )
@@ -92,10 +97,26 @@ java_library(
         "//buildenv/java:language_version_17": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+    visibility = ["//visibility:private"],
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
         "//third_party/guava",
+    ],
+)
+
+java_library(
+    name = "reflective_jdk_compatibility_shims",
+    srcs = ["ReflectiveJdkCompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
     ],
 )
 

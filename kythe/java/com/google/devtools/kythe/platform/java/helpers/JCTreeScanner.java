@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.sun.source.tree.AnnotatedTypeTree;
 import com.sun.source.tree.AnnotationTree;
@@ -143,12 +142,10 @@ import com.sun.tools.javac.tree.JCTree.JCWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
-import java.util.ServiceLoader;
 
 /** A {@link TreeScanner} with the scan/reduce semantics of a {@link TreeVisitor}. */
 public class JCTreeScanner<R, P> extends SimpleTreeVisitor<R, P> {
-  protected static final JdkCompatibilityShims shims =
-      Iterables.find(ServiceLoader.load(JdkCompatibilityShims.class), s -> s != null);
+  protected static final JdkCompatibilityShims shims = JdkCompatibilityShims.loadBest().get();
 
   protected TreePath treePath;
 
