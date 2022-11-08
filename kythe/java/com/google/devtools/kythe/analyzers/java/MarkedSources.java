@@ -20,6 +20,7 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
+import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Type;
@@ -33,6 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link MarkedSource} utility class. */
 public final class MarkedSources {
+
   private MarkedSources() {}
 
   /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C<T1, T2, T3...>}. */
@@ -269,7 +271,10 @@ public final class MarkedSources {
             break;
           case WILDCARD:
             Type.WildcardType wild = (Type.WildcardType) arg;
-            if (wild.isUnbound()) {
+            // JDK19+ changes the isBound() accessor to include
+            // extends Object bounds. This causes gratuitous differences
+            // in documentation and tests.
+            if (wild.kind == BoundKind.UNBOUND) {
               typeArgs.addChildBuilder().setPreText(wild.kind.toString());
             } else {
               MarkedSource.Builder boundedWild = typeArgs.addChildBuilder();
