@@ -16,12 +16,19 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
+import com.google.devtools.kythe.util.OrderedCompatibilityService;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import java.util.List;
+import java.util.Optional;
 
 /** Shims for providing source-level compatibility between JDK versions. */
-interface JdkCompatibilityShims {
+public interface JdkCompatibilityShims extends OrderedCompatibilityService {
+  /** Loads the best service provider for this interface, if any. */
+  public static Optional<JdkCompatibilityShims> loadBest() {
+    return OrderedCompatibilityService.loadBest(JdkCompatibilityShims.class);
+  }
+
   /** Return the list of expressions from a JCCase object */
   List<JCExpression> getCaseExpressions(JCCase tree);
 }

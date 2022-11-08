@@ -20,7 +20,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.hash.Hashing;
@@ -39,7 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.ServiceLoader;
 
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.
@@ -63,8 +61,7 @@ import java.util.ServiceLoader;
  */
 public abstract class AbstractJavacWrapper {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-  protected static final JdkCompatibilityShims shims =
-      Iterables.find(ServiceLoader.load(JdkCompatibilityShims.class), s -> s != null);
+  protected static final JdkCompatibilityShims shims = JdkCompatibilityShims.loadBest().get();
 
   protected abstract Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)

@@ -27,7 +27,19 @@ import java.util.List;
 /** JdkCompatibilityShims implementation for JDK15-compatible releases. */
 @AutoService(JdkCompatibilityShims.class)
 public final class Jdk15CompatibilityShims implements JdkCompatibilityShims {
+  private static final Runtime.Version minVersion = Runtime.Version.parse("15");
+
   public Jdk15CompatibilityShims() {}
+
+  @Override
+  public CompatibilityClass getCompatibility() {
+    Runtime.Version version = Runtime.version();
+    if (version.compareToIgnoreOptional(minVersion) >= 0) {
+      // We don't know when this class will cease being compatible.
+      return CompatibilityClass.COMPATIBLE;
+    }
+    return CompatibilityClass.INCOMPATIBLE;
+  }
 
   @Override
   public List<String> parseCompilerArguments(String[] args) throws IOException {

@@ -21,6 +21,7 @@ java_library(
     ],
     deps = [
         ":jdk_compatibility_shims",
+        ":reflective_jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/guava",
@@ -41,6 +42,7 @@ java_library(
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
     ],
     visibility = ["//visibility:private"],
+    deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
 )
 
 java_library(
@@ -58,6 +60,7 @@ java_library(
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
         "//third_party/guava",
     ],
 )
@@ -79,5 +82,22 @@ java_library(
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
+)
+
+java_library(
+    name = "reflective_jdk_compatibility_shims",
+    srcs = ["ReflectiveJdkCompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+        "//third_party/guava",
     ],
 )

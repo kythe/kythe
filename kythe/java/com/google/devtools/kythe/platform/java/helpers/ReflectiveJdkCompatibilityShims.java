@@ -20,22 +20,24 @@ import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
-public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
+public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("9");
-  private static final Runtime.Version maxVersion = Runtime.Version.parse("15");
 
-  public Jdk9CompatibilityShims() {}
+  public ReflectiveJdkCompatibilityShims() {}
 
   @Override
   public CompatibilityClass getCompatibility() {
     Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0
-        && version.compareToIgnoreOptional(maxVersion) < 0) {
-      return CompatibilityClass.COMPATIBLE;
+    if (version.compareToIgnoreOptional(minVersion) >= 0) {
+      // We don't know when this class will cease being compatible,
+      // but should not be the first choice if there is a better implementation
+      // available.
+      return CompatibilityClass.FALLBACK;
     }
     return CompatibilityClass.INCOMPATIBLE;
   }
@@ -43,10 +45,18 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
   /** Return the list of expressions from a JCCase object */
   @Override
   public List<JCExpression> getCaseExpressions(JCCase tree) {
-    JCExpression expr = tree.getExpression();
-    if (expr == null) {
-      return ImmutableList.of();
+    try {
+      try {
+        return (List<JCExpression>) tree.getClass().getMethod("getExpressions").invoke(tree);
+      } catch (NoSuchMethodException nsme) {
+        return ImmutableList.of(
+            (JCExpression) tree.getClass().getMethod("getExpression").invoke(tree));
+      }
+    } catch (InvocationTargetException
+        | IllegalAccessException
+        | NoSuchMethodException
+        | ClassCastException ex) {
+      throw new LinkageError(ex.getMessage(), ex);
     }
-    return ImmutableList.of(tree.getExpression());
   }
 }

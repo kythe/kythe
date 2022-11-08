@@ -16,12 +16,19 @@
 
 package com.google.devtools.kythe.extractors.java.standalone;
 
+import com.google.devtools.kythe.util.OrderedCompatibilityService;
 import com.sun.tools.javac.main.Arguments;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /** Shims for providing source-level compatibility between JDK versions. */
-interface JdkCompatibilityShims {
+public interface JdkCompatibilityShims extends OrderedCompatibilityService {
+  /** Loads the best service provider for this interface, if any. */
+  public static Optional<JdkCompatibilityShims> loadBest() {
+    return OrderedCompatibilityService.loadBest(JdkCompatibilityShims.class);
+  }
+
   /** Parse the compiler arguments and returns them as an expanded list. */
   List<String> parseCompilerArguments(String[] args) throws IOException;
 
