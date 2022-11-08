@@ -23,6 +23,8 @@ import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.sun.source.doctree.DeprecatedTree;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.DocSourcePositions;
@@ -33,7 +35,6 @@ import com.sun.source.util.TreePath;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.DCTree.DCDocComment;
-import com.sun.tools.javac.tree.DCTree.DCReference;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Position;
 import java.io.IOException;
@@ -104,8 +105,6 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
   @Override
   public Void visitReference(ReferenceTree tree, DCDocComment doc) {
-    DCReference ref = (DCReference) tree;
-
     Symbol sym = null;
     try {
       sym = (Symbol) trees.getElement(getCurrentPath());
@@ -116,8 +115,8 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       return null;
     }
 
-    int startPos = (int) ref.getSourcePosition(doc);
-    int endPos = ref.getEndPos(doc);
+    int startPos = getStartPosition(doc, tree);
+    int endPos = getEndPosition(doc, tree);
 
     treeScanner.emitDocReference(sym, startPos, endPos);
     miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
@@ -132,10 +131,8 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       deprecation = Optional.of("");
       return null;
     }
-    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
-    DocSourcePositions positions = trees.getSourcePositions();
-    int start = (int) positions.getStartPosition(unit, doc, node.getBody().get(0));
-    int end = (int) positions.getEndPosition(unit, doc, node);
+    int start = getStartPosition(doc, node.getBody().get(0));
+    int end = getEndPosition(doc, node);
     if (end == Position.NOPOS) {
       // deprecated tag is empty
       deprecation = Optional.of("");
@@ -143,7 +140,12 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     }
     CharSequence source;
     try {
-      source = unit.getSourceFile().getCharContent(/* ignoreEncodingErrors= */ true);
+      source =
+          getCurrentPath()
+              .getTreePath()
+              .getCompilationUnit()
+              .getSourceFile()
+              .getCharContent(/* ignoreEncodingErrors= */ true);
     } catch (IOException e) {
       return null;
     }
@@ -157,5 +159,17 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     // Save the contents of the @deprecated tag to emit.
     deprecation = Optional.of(text);
     return null;
+  }
+
+  private int getStartPosition(DocCommentTree comment, DocTree tree) {
+    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
+    DocSourcePositions positions = trees.getSourcePositions();
+    return (int) positions.getStartPosition(unit, comment, tree);
+  }
+
+  private int getEndPosition(DocCommentTree comment, DocTree tree) {
+    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
+    DocSourcePositions positions = trees.getSourcePositions();
+    return (int) positions.getEndPosition(unit, comment, tree);
   }
 }
