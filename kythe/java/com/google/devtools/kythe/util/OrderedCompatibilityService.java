@@ -25,7 +25,7 @@ import java.util.ServiceLoader;
  */
 public interface OrderedCompatibilityService {
 
-  /** The compatibilty level of the provider. */
+  /** The compatibility level of the provider. */
   public enum CompatibilityClass {
     /** This provider is incompatible with the current runtime. */
     INCOMPATIBLE,
