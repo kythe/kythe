@@ -38,9 +38,15 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
+    runtime_deps = [
+        ":reflective_jdk_compatibility_shims",
+    ] + select({
+        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
+        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
+        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
+    }),
     deps = [
         ":jdk_compatibility_shims",
-        ":reflective_jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
@@ -49,11 +55,7 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "@maven//:com_google_flogger_flogger",
-    ] + select({
-        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
-        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
-        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
-    }),
+    ],
 )
 
 java_library(
