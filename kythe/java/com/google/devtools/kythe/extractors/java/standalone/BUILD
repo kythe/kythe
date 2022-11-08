@@ -52,6 +52,7 @@ java_library(
     ] + select({
         "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
         "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
+        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
     }),
 )
 
@@ -95,6 +96,7 @@ java_library(
     tags = ["manual"],
     target_compatible_with = select({
         "//buildenv/java:language_version_17": [],
+        "//buildenv/java:language_version_19": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
