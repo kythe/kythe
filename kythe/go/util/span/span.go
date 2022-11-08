@@ -68,11 +68,17 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 // Marshal encodes the Patcher into a packed binary format.
 func (p *Patcher) Marshal() ([]byte, error) {
 	db := &srvpb.Diff{
-		SpanLength: make([]int32, len(p.spans)),
-		SpanType:   make([]srvpb.Diff_Type, len(p.spans)),
+		SpanLength:       make([]int32, len(p.spans)),
+		SpanType:         make([]srvpb.Diff_Type, len(p.spans)),
+		SpanNewlines:     make([]int32, len(p.spans)),
+		SpanFirstNewline: make([]int32, len(p.spans)),
+		SpanLastNewline:  make([]int32, len(p.spans)),
 	}
 	for i, d := range p.spans {
 		db.SpanLength[i] = d.Length
+		db.SpanNewlines[i] = d.Newlines
+		db.SpanFirstNewline[i] = d.FirstNewline
+		db.SpanLastNewline[i] = d.LastNewline
 		switch d.Type {
 		case eq:
 			db.SpanType[i] = srvpb.Diff_EQUAL
@@ -95,10 +101,21 @@ func Unmarshal(rec []byte) (*Patcher, error) {
 	}
 	if len(db.SpanLength) != len(db.SpanType) {
 		return nil, fmt.Errorf("length of span_length does not match length of span_type: %d vs %d", len(db.SpanLength), len(db.SpanType))
+	} else if len(db.SpanLength) != len(db.SpanNewlines) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_newlines: %d vs %d", len(db.SpanLength), len(db.SpanNewlines))
+	} else if len(db.SpanLength) != len(db.SpanFirstNewline) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_first_newline: %d vs %d", len(db.SpanLength), len(db.SpanFirstNewline))
+	} else if len(db.SpanLength) != len(db.SpanLastNewline) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_last_newline: %d vs %d", len(db.SpanLength), len(db.SpanLastNewline))
 	}
 	spans := make([]diff, len(db.SpanLength))
 	for i, l := range db.SpanLength {
-		spans[i].Length = l
+		spans[i] = diff{
+			Length:       l,
+			Newlines:     db.SpanNewlines[i],
+			FirstNewline: db.SpanFirstNewline[i],
+			LastNewline:  db.SpanLastNewline[i],
+		}
 		switch db.SpanType[i] {
 		case srvpb.Diff_EQUAL:
 			spans[i].Type = eq
@@ -116,6 +133,10 @@ func Unmarshal(rec []byte) (*Patcher, error) {
 type diff struct {
 	Length int32
 	Type   diffmatchpatch.Operation
+
+	Newlines     int32
+	FirstNewline int32
+	LastNewline  int32
 }
 
 const (
@@ -127,9 +148,104 @@ const (
 func mapToOffsets(ds []diffmatchpatch.Diff) []diff {
 	res := make([]diff, len(ds))
 	for i, d := range ds {
-		res[i] = diff{Length: int32(len(d.Text)), Type: d.Type}
+		l := len(d.Text)
+		var newlines int
+		var first, last int = -1, -1
+		for j := 0; j < l; j++ {
+			if d.Text[j] != '\n' {
+				continue
+			}
+			newlines++
+			if first == -1 {
+				first = j
+			}
+			last = j
+		}
+		res[i] = diff{
+			Length:       int32(l),
+			Type:         d.Type,
+			Newlines:     int32(newlines),
+			FirstNewline: int32(first),
+			LastNewline:  int32(last),
+		}
 	}
 	return res
+}
+
+type offsetTracker struct {
+	Type diffmatchpatch.Operation
+
+	Offset       int32
+	Lines        int32
+	ColumnOffset int32
+}
+
+func (t *offsetTracker) Update(d diff) {
+	if d.Type != eq && d.Type != t.Type {
+		return
+	}
+	t.Offset += d.Length
+	t.Lines += d.Newlines
+	if d.LastNewline == -1 {
+		t.ColumnOffset += d.Length
+	} else {
+		t.ColumnOffset = d.Length - d.LastNewline - 1
+	}
+}
+
+// PatchSpan returns the resulting Span of mapping the given Span from the
+// Patcher's constructed oldText to its newText.  If the span no longer exists
+// in newText or is invalid, the returned bool will be false.  As a convenience,
+// if p==nil, the original span will be returned.
+func (p *Patcher) PatchSpan(s *cpb.Span) (span *cpb.Span, exists bool) {
+	spanStart := s.GetStart().GetByteOffset()
+	spanEnd := s.GetEnd().GetByteOffset()
+	if spanStart > spanEnd {
+		return nil, false
+	} else if p == nil {
+		return s, true
+	}
+
+	oldT := offsetTracker{Type: del}
+	newT := offsetTracker{Type: ins}
+
+	for _, d := range p.spans {
+		if oldT.Offset > spanStart {
+			return nil, false
+		}
+
+		if d.Type == eq && oldT.Offset <= spanStart && spanEnd <= oldT.Offset+d.Length {
+			// The span is located within the equal region.  It exists.
+			lineDiff := newT.Lines - oldT.Lines
+			colDiff := newT.ColumnOffset - oldT.ColumnOffset
+			if d.FirstNewline != -1 && spanStart-oldT.Offset >= d.FirstNewline {
+				// The given span is past the first newline so it has no column diff.
+				colDiff = 0
+			}
+			return &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   newT.Offset + (spanStart - oldT.Offset),
+					ColumnOffset: s.GetStart().GetColumnOffset() + colDiff,
+					LineNumber:   s.GetStart().GetLineNumber() + lineDiff,
+				},
+				End: &cpb.Point{
+					ByteOffset:   newT.Offset + (spanEnd - oldT.Offset),
+					ColumnOffset: s.GetEnd().GetColumnOffset() + colDiff,
+					LineNumber:   s.GetEnd().GetLineNumber() + lineDiff,
+				},
+			}, true
+		}
+
+		oldT.Update(d)
+		newT.Update(d)
+	}
+
+	return nil, false
+}
+
+// ByteOffsets returns the starting and ending byte offsets of the Span.
+func ByteOffsets(s *cpb.Span) (int32, int32) {
+	return s.GetStart().GetByteOffset(), s.GetEnd().GetByteOffset()
 }
 
 // Patch returns the resulting span of mapping the given span from the Patcher's
@@ -167,12 +283,6 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 	}
 
 	return 0, 0, false
-}
-
-// PatchSpan returns the given Span's byte offsets mapped from the Patcher's
-// oldText to its newText using Patcher.Patch.
-func (p *Patcher) PatchSpan(span *cpb.Span) (newStart, newEnd int32, exists bool) {
-	return p.Patch(span.GetStart().GetByteOffset(), span.GetEnd().GetByteOffset())
 }
 
 // Normalizer fixes xref.Locations within a given source text so that each point

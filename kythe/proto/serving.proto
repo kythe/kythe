@@ -425,4 +425,7 @@ message Diff {
   // Parallel array of diff spans so the values are packed.
   repeated int32 span_length = 1 [packed = true];
   repeated Type span_type = 2 [packed = true];
+  repeated int32 span_newlines = 3 [packed = true];
+  repeated int32 span_first_newline = 4 [packed = true];
+  repeated int32 span_last_newline = 5 [packed = true];
 }

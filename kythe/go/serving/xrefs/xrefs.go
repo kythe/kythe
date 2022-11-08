@@ -548,7 +548,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			if diag.Span == nil {
 				reply.Diagnostic = append(reply.Diagnostic, diag)
 			} else {
-				start, end, exists := patcher.PatchSpan(diag.Span)
+				start, end, exists := patcher.Patch(span.ByteOffsets(diag.Span))
 				// Filter non-existent (or out-of-bounds) diagnostic.  Diagnostics can
 				// no longer exist if we were given a dirty buffer and the diagnostic
 				// was inside a changed region.
