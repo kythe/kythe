@@ -44,6 +44,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
 
   /** Return the list of expressions from a JCCase object */
   @Override
+  @SuppressWarnings("unchecked") // Safe by specification.
   public List<JCExpression> getCaseExpressions(JCCase tree) {
     try {
       try {

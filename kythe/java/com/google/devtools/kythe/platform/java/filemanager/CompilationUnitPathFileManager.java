@@ -202,7 +202,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   @Override
-  public ClassLoader getClassLoader(Location location) {
+  public @Nullable ClassLoader getClassLoader(Location location) {
     return null;
   }
 

@@ -41,7 +41,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   }
 
   @Override
-  @SuppressWarnings("CheckedExceptionNotThrown")
+  @SuppressWarnings({"CheckedExceptionNotThrown", "unchecked"}) // Safe by specification.
   public List<String> parseCompilerArguments(String[] args) throws IOException {
     try {
       try {
@@ -67,6 +67,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   }
 
   @Override
+  @SuppressWarnings("unchecked") // Safe by specification.
   public void initializeArguments(Arguments arguments, String[] args) {
     try {
       try {
