@@ -67,7 +67,6 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   }
 
   @Override
-  @SuppressWarnings("unchecked") // Safe by specification.
   public void initializeArguments(Arguments arguments, String[] args) {
     try {
       try {
