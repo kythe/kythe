@@ -2930,18 +2930,19 @@ definitions that appear across distinct and unrelated translation units.
 Template template parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Template template parameters are stored as <<abs>>-dominated <<absvar>>
-parameters of their binding abstractions. The name of the template template
-parameter is given to the inner <<abs>>.
+Template template parameters are represented from the outside in. In this
+example, the top-level template C's first <<tparam>> is the template template
+parameter B. This is stored as a <<tvar>>. Then the ordinary template
+parameter A is B's first <<tparam>>.
 
 [kythe,C++,"We do not represent higher kinds"]
 --------------------------------------------------------------------------------
-//- @A defines/binding AbsvarA
-//- @B defines/binding NestedAbs
+//- @A defines/binding TvarA
+//- @B defines/binding TvarB
 //- @C defines/binding TemplateC
 template <template <typename A> class B> class C;
-//- TemplateC tparam.0 NestedAbs
-//- NestedAbs tparam.0 AbsvarA
+//- TemplateC tparam.0 TvarB
+//- TvarB tparam.0 TvarA
 --------------------------------------------------------------------------------
 
 Special values for dependent lookups
