@@ -102,6 +102,17 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
       } else if (absl::StartsWith(token, "mutable_")) {
         rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;
       }
+    } else {
+      switch (annotation.semantic()) {
+        case proto2::GeneratedCodeInfo_Annotation_Semantic_SET:
+          rule.semantic = kythe::MetadataFile::Semantic::kWrite;
+          break;
+        case proto2::GeneratedCodeInfo_Annotation_Semantic_ALIAS:
+          rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;
+          break;
+        default:
+          rule.semantic = kythe::MetadataFile::Semantic::kNone;
+      }
     }
     rules.push_back(rule);
   }
