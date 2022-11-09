@@ -219,7 +219,7 @@ func (p *Patcher) PatchSpan(s *cpb.Span) (span *cpb.Span, exists bool) {
 	spanEnd := s.GetEnd().GetByteOffset()
 	if spanStart > spanEnd {
 		return nil, false
-	} else if p == nil {
+	} else if p == nil || s == nil {
 		return s, true
 	}
 

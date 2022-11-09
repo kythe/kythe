@@ -8,7 +8,7 @@ load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 # Bazel and our maximum supported version of Bazel.
 check_version(MIN_VERSION, MAX_VERSION)
 
-load("//:setup.bzl", "kythe_rule_repositories")
+load("//:setup.bzl", "kythe_rule_repositories", "remote_java_repository")
 
 kythe_rule_repositories()
 
@@ -136,16 +136,14 @@ register_toolchains(
 )
 
 # Bazel does not yet ship with JDK-19 compatible JDK, so configure our own.
-load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
-
 remote_java_repository(
     name = "remotejdk19_linux",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-    ],
     prefix = "remotejdk",
     sha256 = "2ac8cd9e7e1e30c8fba107164a2ded9fad698326899564af4b1254815adfaa8a",
     strip_prefix = "zulu19.30.11-ca-jdk19.0.1-linux_x64",
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     urls = [
         "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu19.30.11-ca-jdk19.0.1-linux_x64.tar.gz",
         "https://cdn.azul.com/zulu/bin/zulu19.30.11-ca-jdk19.0.1-linux_x64.tar.gz",
