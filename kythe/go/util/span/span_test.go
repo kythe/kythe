@@ -177,10 +177,12 @@ func TestPatchSpan(t *testing.T) {
 		oldSpans: []*cpb.Span{
 			sp(p(0, 1, 0), p(4, 1, 4)),
 			sp(p(13, 1, 13), p(17, 1, 17)),
+			nil,
 		},
 		newSpans: []*cpb.Span{
 			sp(p(0, 1, 0), p(4, 1, 4)),
 			sp(p(21, 1, 21), p(25, 1, 25)),
+			nil,
 		},
 	}, {
 		oldText: "line one\nline two\nline three\nline four\n",
@@ -281,7 +283,11 @@ func TestPatchSpan(t *testing.T) {
 				t.Run(strconv.Itoa(i), func(t *testing.T) {
 					found, exists := p.PatchSpan(s)
 
-					if ns := test.newSpans[i]; ns == nil && exists {
+					if ns := test.newSpans[i]; s == nil && ns == nil {
+						if found != nil || !exists {
+							t.Errorf("Expected nil span to exist as nil span in new text; received %s %v", found, exists)
+						}
+					} else if ns == nil && exists {
 						t.Errorf("Expected span not to exist in new text; received %s", found)
 					} else if ns != nil && !exists {
 						t.Errorf("Expected span %s to exist in new text as %s; did not exist", s, ns)
