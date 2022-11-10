@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/compare"
 
@@ -303,10 +304,10 @@ func TestPatchSpan(t *testing.T) {
 func TestMarshal(t *testing.T) {
 	expected := &Patcher{
 		[]diff{
-			{2, ins, 1, 2, 5},
-			{10, del, 5, 0, 9},
-			{3, eq, 0, -1, -1},
-			{5, ins, 1, 2, 2},
+			{Length: 2, Type: ins, Newlines: 1, FirstNewline: 2, LastNewline: 5},
+			{Length: 10, Type: del, Newlines: 5, FirstNewline: 0, LastNewline: 9},
+			{Length: 3, Type: eq, Newlines: 0, FirstNewline: -1, LastNewline: -1},
+			{Length: 5, Type: ins, Newlines: 1, FirstNewline: 2, LastNewline: 2},
 		},
 	}
 
@@ -316,7 +317,23 @@ func TestMarshal(t *testing.T) {
 	found, err := Unmarshal(rec)
 	testutil.Fatalf(t, "Unmarshal: %v", err)
 
-	if diff := compare.ProtoDiff(expected.spans, found.spans); diff != "" {
+	// Check that the unmarshalled Patcher has correct prefix sums
+	ignoreTypeField := cmpopts.IgnoreFields(offsetTracker{}, "Type")
+	oldT := offsetTracker{Type: del}
+	newT := offsetTracker{Type: ins}
+	for _, d := range found.spans {
+		if diff := compare.ProtoDiff(oldT, d.oldPrefix, ignoreTypeField); diff != "" {
+			t.Fatalf("Old prefix sum incorrect (-expected; +found)\n%s", diff)
+		}
+		if diff := compare.ProtoDiff(newT, d.newPrefix, ignoreTypeField); diff != "" {
+			t.Fatalf("New prefix sum incorrect (-expected; +found)\n%s", diff)
+		}
+
+		oldT.Update(d)
+		newT.Update(d)
+	}
+
+	if diff := compare.ProtoDiff(expected.spans, found.spans, cmpopts.IgnoreUnexported(diff{})); diff != "" {
 		t.Errorf("(-expected; +found)\n%s", diff)
 	}
 }
