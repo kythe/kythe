@@ -215,8 +215,7 @@ func (t *offsetTracker) Update(d diff) {
 // in newText or is invalid, the returned bool will be false.  As a convenience,
 // if p==nil, the original span will be returned.
 func (p *Patcher) PatchSpan(s *cpb.Span) (span *cpb.Span, exists bool) {
-	spanStart := s.GetStart().GetByteOffset()
-	spanEnd := s.GetEnd().GetByteOffset()
+	spanStart, spanEnd := ByteOffsets(s)
 	if spanStart > spanEnd {
 		return nil, false
 	} else if p == nil || s == nil {
@@ -270,6 +269,13 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 		return 0, 0, false
 	} else if p == nil {
 		return spanStart, spanEnd, true
+	}
+
+	if spanStart == spanEnd {
+		// Give zero-width span a positive length for the below algorithm; then fix
+		// the length on return.
+		spanEnd++
+		defer func() { newEnd = newStart }()
 	}
 
 	var old, new int32
