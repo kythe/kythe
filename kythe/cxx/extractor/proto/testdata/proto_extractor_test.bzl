@@ -34,7 +34,7 @@ extract_kzip = rule(
         "srcs": attr.label_list(allow_files = True, mandatory = True),
         "deps": attr.label_list(allow_files = True),
         "extractor": attr.label(
-            cfg = "host",
+            cfg = "exec",
             executable = True,
             default = Label("//kythe/cxx/extractor/proto:proto_extractor"),
         ),
@@ -73,17 +73,17 @@ kzip_diff_test = rule(
         "golden_file": attr.label(mandatory = True, allow_single_file = True),
         "kzip": attr.label(mandatory = True, allow_single_file = True),
         "diff_bin": attr.label(
-            cfg = "host",
+            cfg = "exec",
             executable = True,
             default = Label("//kythe/cxx/extractor/proto/testdata:kzip_diff_test"),
         ),
         "kzip_tool": attr.label(
-            cfg = "host",
+            cfg = "exec",
             executable = True,
             default = Label("//kythe/go/platform/tools/kzip"),
         ),
         "formatjson": attr.label(
-            cfg = "host",
+            cfg = "exec",
             executable = True,
             default = Label("//kythe/go/util/formatjson"),
         ),
