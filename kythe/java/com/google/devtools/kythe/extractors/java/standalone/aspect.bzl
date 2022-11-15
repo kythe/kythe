@@ -94,7 +94,7 @@ extract_java_aspect = aspect(
         "_java_aspect_extractor": attr.label(
             default = Label("@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_java_aspect_vnames_config": attr.label(
             default = Label("//external:vnames_config"),
