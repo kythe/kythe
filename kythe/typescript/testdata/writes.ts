@@ -172,3 +172,7 @@ const arr = [1, 2, 3];
 //- @arr ref Arr
 //- !{ @arr ref/writes Arr }
 arr[0] = 1;
+
+//- @arr ref Arr
+//- !{ @arr ref/writes Arr }
+arr[0]++;
