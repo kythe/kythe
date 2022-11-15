@@ -26,6 +26,12 @@ import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
 
+enum RefType {
+  READ,
+  WRITE,
+  READ_WRITE
+}
+
 /**
  * An indexer host holds information about the program indexing and methods
  * used by the TypeScript indexer that may also be useful to plugins, reducing
@@ -2255,8 +2261,135 @@ class Visitor {
     const name = this.host.getSymbolName(sym, TSNamespace.VALUE);
     if (!name) return;
     const anchor = this.newAnchor(node);
-    this.emitEdge(anchor, EdgeKind.REF, name);
+
+    const refType = this.getRefType(node, sym);
+    if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+      this.emitEdge(anchor, EdgeKind.REF, name);
+    }
+    if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+      this.emitEdge(anchor, EdgeKind.REF_WRITES, name);
+    }
     this.addInfluencer(name);
+  }
+
+  /**
+   * Determines the type of reference type of a {@link ts.Node} in its parent
+   * expression.
+   * @param node The {@link ts.Node} being referenced
+   * @param sym The {@link ts.Symbol} associated with the node
+   * @returns The {@link RefType} indicating whether the reference is READ,
+   * WRITE, or READ_WRITE
+   */
+  getRefType(node: ts.Node, sym: ts.Symbol): RefType {
+    // If the identifier being accessed is a property of a class, we need to
+    // recurse through the parents nodes until we get the true parent
+    // expression.
+    let parent = node.parent;
+    while (ts.isPropertyAccessExpression(parent)) {
+      parent = parent.parent;
+    }
+
+    if (ts.isPrefixUnaryExpression(parent) ||
+        ts.isPostfixUnaryExpression(parent)) {
+      // PrefixUnaryExpression and PostfixUnaryExpression have different types
+      // for operator/operand but they respective properties have the same
+      // super types so we just cast them.
+      let operator: ts.SyntaxKind;
+      let operand: ts.Expression;
+      if (ts.isPrefixUnaryExpression(parent)) {
+        const exp = parent as ts.PrefixUnaryExpression;
+        operator = exp.operator as ts.SyntaxKind;
+        operand = exp.operand as ts.Expression;
+      } else {
+        const exp = parent as ts.PostfixUnaryExpression;
+        operator = exp.operator as ts.SyntaxKind;
+        operand = exp.operand as ts.Expression;
+      }
+
+      const operandNode = ts.isPropertyAccessExpression(operand) ?
+          this.propertyAccessIdentifier(operand) as ts.Node :
+          operand as ts.Node;
+
+      // Check if the operand is the same as referenced symbol and if this was
+      // an increment or decrement operation. If both are true, this is a
+      // READ_WRITE reference.
+      if (this.expressionMatchesSymbol(operand, sym) &&
+          operandNode.pos === node.pos) {
+        if (operator === ts.SyntaxKind.PlusPlusToken ||
+            operator === ts.SyntaxKind.MinusMinusToken) {
+          return RefType.READ_WRITE;
+        }
+      }
+    } else if (ts.isBinaryExpression(parent)) {
+      const exp = parent as ts.BinaryExpression;
+      const lhsNode = ts.isPropertyAccessExpression(exp.left) ?
+          this.propertyAccessIdentifier(exp.left) as ts.Node :
+          exp.left as ts.Node;
+      const opString = ts.tokenToString(exp.operatorToken.kind) || '';
+
+      if (this.expressionMatchesSymbol(exp.left, sym) &&
+          lhsNode.pos === node.pos) {
+        const compoundAssignmentOperators = [
+          '+=', '-=', '*=', '**=', '/=', '%=', '<<=', '>>=', '>>>=', '&=', '|=',
+          '^='
+        ];
+        if (compoundAssignmentOperators.includes(opString)) {
+          // Compound assignment operations are always a READ_WRITE reference
+          return RefType.READ_WRITE;
+        } else if (opString === '=') {
+          // If the symbol is on the left side of a assignment operation, it
+          // is always at least a WRITE reference. However, we then need to
+          // check if the parent expression is also a binary expression. If so,
+          // we check whether the current binary expression is on the right
+          // side of that expression, indicating a chained assignment such as
+          // x = y = z. If this is the case, the reference becomes READ_WRITE
+          // instead.
+          if (ts.isBinaryExpression(exp.parent)) {
+            const parentExp = exp.parent as ts.BinaryExpression;
+            if (ts.tokenToString(parentExp.operatorToken.kind) === '=' &&
+                parentExp.right === parent) {
+              return RefType.READ_WRITE;
+            }
+          }
+          return RefType.WRITE;
+        }
+      }
+    }
+    return RefType.READ;
+  }
+
+  /**
+   * Check whether a {@link ts.Expression} matches a symbol. If the expression
+   * is a {@link ts.PropertyAccessExpression}, the check is performed against
+   * the base property being accessed.
+   */
+  expressionMatchesSymbol(expression: ts.Expression, symbol: ts.Symbol):
+      boolean {
+    if (ts.isIdentifier(expression)) {
+      return this.host.getSymbolAtLocation(expression) === symbol;
+    } else if (ts.isPropertyAccessExpression(expression)) {
+      return this.host.getSymbolAtLocation(
+                 this.propertyAccessIdentifier(expression)) === symbol;
+    }
+    return false;
+  }
+
+
+  /**
+   * Recurses through a {@link ts.PropertyAccessExpression} to find the
+   * identifier of the base property being accessed. Recursion is necessary
+   * because a chained property accesses such as `obj.member.member` will
+   * have two layers of {@link ts.PropertyAccessExpression}s.
+   *
+   * @param expression The {@link ts.PropertyAccessExpression} to process
+   * @returns The identifier of the base property being accessed
+   */
+  propertyAccessIdentifier(expression: ts.PropertyAccessExpression):
+      ts.Identifier|ts.PrivateIdentifier {
+    while (ts.isPropertyAccessExpression(expression.parent)) {
+      expression = expression.parent;
+    }
+    return expression.name;
   }
 
   /**
