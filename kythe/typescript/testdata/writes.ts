@@ -165,3 +165,10 @@ z = x = w++ + w + 1;
 //- @#1z ref Z
 //- !{ @#1z ref/writes Z }
 z += z;
+
+//- @arr defines/binding Arr
+const arr = [1, 2, 3];
+
+//- @arr ref Arr
+//- !{ @arr ref/writes Arr }
+arr[0] = 1;
