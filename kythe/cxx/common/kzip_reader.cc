@@ -163,7 +163,8 @@ absl::StatusOr<std::string> ReadTextFile(zip_t* archive,
     if (auto file = ZipFile(zip_fopen_index(archive, index, 0))) {
       if (auto size = FileSize(archive, index)) {
         std::string result(*size, '\0');
-        if (zip_fread(file.get(), &result.front(), *size) == *size) {
+        if (*size == 0 ||
+            zip_fread(file.get(), result.data(), *size) == *size) {
           return result;
         } else {
           return libzip::ToStatus(zip_file_get_error(file.get()));
