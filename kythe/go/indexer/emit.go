@@ -220,7 +220,12 @@ func exprRefKind(tgt ast.Expr, stack stackFunc, depth int) refKind {
 		// and checked by the caller.
 		for _, lhs := range parent.Lhs {
 			if lhs == tgt {
-				return writeRef
+				switch parent.Tok {
+				case token.ASSIGN, token.DEFINE:
+					return writeRef
+				default: // +=, etc.
+					return readWriteRef
+				}
 			}
 		}
 	case *ast.IncDecStmt:

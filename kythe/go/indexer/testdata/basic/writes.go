@@ -19,6 +19,10 @@ func f() {
 	//- @y defines/binding Y
 	x, y := 1, 2
 
+	//- @x ref X
+	//- @x ref/writes X
+	x += 42
+
 	//- @y ref Y
 	//- @y ref/writes Y
 	y++
