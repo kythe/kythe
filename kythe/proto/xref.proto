@@ -564,6 +564,10 @@ message CrossReferencesReply {
   // This may be an approximation if allowed by the CrossReferencesRequest.
   Total total = 5;
 
+  // Total number of cross-references removed based on requested filters.
+  // This may be an approximation if allowed by the CrossReferencesRequest.
+  Total filtered = 12;
+
   // A map from ticket to cross-references for each ticket specified in the
   // request message.
   map<string, CrossReferenceSet> cross_references = 1;
