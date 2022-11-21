@@ -1686,6 +1686,11 @@ filter: {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		References: 1,
+	}, reply.Filtered); err != nil {
+		t.Error(err)
+	}
 
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
@@ -1751,6 +1756,11 @@ func TestCrossReferences_BuildConfigRefs(t *testing.T) {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Definitions: 1,
 	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		References: 2,
+	}, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -1859,6 +1869,9 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+		t.Error(err)
+	}
 
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
@@ -1923,6 +1936,11 @@ func TestCrossReferencesMerge(t *testing.T) {
 			"/kythe/edge/param":   2,
 		},
 	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Callers: 2,
+	}, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -2033,6 +2051,11 @@ func TestCrossReferencesIndirection(t *testing.T) {
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
+		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+			Definitions: 1,
+		}, reply.Filtered); err != nil {
+			t.Error(err)
+		}
 
 		xr := reply.CrossReferences[ticket]
 		if xr == nil {
@@ -2102,6 +2125,11 @@ func TestCrossReferencesIndirection(t *testing.T) {
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
+		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+			Definitions: 1,
+		}, reply.Filtered); err != nil {
+			t.Error(err)
+		}
 
 		xr := reply.CrossReferences[ticket]
 		if xr == nil {
@@ -2152,6 +2180,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 2,
 		}, reply.Total); err != nil {
+			t.Error(err)
+		}
+		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
 			t.Error(err)
 		}
 
@@ -2232,6 +2263,11 @@ func TestCrossReferencesIndirection(t *testing.T) {
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
+		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+			Definitions: 1,
+		}, reply.Filtered); err != nil {
+			t.Error(err)
+		}
 
 		xr := reply.CrossReferences[ticket]
 		if xr == nil {
@@ -2279,6 +2315,11 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Callers: 1,
 	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Callers: 2,
+	}, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -2347,6 +2388,9 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+		t.Error(err)
+	}
 
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
@@ -2372,6 +2416,7 @@ func TestCrossReferencesRevisions(t *testing.T) {
 		Total: &xpb.CrossReferencesReply_Total{
 			References: 1,
 		},
+		Filtered: &xpb.CrossReferencesReply_Total{},
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: &xpb.CrossReferencesReply_CrossReferenceSet{
 				Ticket: ticket,
