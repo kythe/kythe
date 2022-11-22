@@ -683,6 +683,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		Nodes:           make(map[string]*cpb.NodeInfo, len(req.Ticket)),
 
 		Total: &xpb.CrossReferencesReply_Total{},
+		Filtered: &xpb.CrossReferencesReply_Total{
+			RelatedNodesByRelation: make(map[string]int64),
+		},
 	}
 	if len(req.Filter) > 0 {
 		reply.Total.RelatedNodesByRelation = make(map[string]int64)
@@ -691,6 +694,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
 	}
 	stats.reply = reply
+
+	addFiltered := func(kind string, incomplete bool, total int64) {
+		switch {
+		case xrefs.IsDefKind(xpb.CrossReferencesRequest_ALL_DEFINITIONS, kind, incomplete):
+			reply.Filtered.Definitions += total
+		case xrefs.IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, kind, incomplete):
+			reply.Filtered.Declarations += total
+		case xrefs.IsCallerKind(xpb.CrossReferencesRequest_OVERRIDE_CALLERS, kind):
+			reply.Filtered.Callers += total
+		case xrefs.IsRelatedNodeKind(nil, kind):
+			reply.Filtered.RelatedNodesByRelation[kind] += total
+		default:
+			reply.Filtered.References += total
+		}
+	}
 
 	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
@@ -800,6 +818,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		for _, grp := range cr.Group {
 			// Filter anchor groups based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(grp.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
+				addFiltered(grp.Kind, cr.Incomplete, int64(len(grp.Anchor)+len(grp.Caller)+len(grp.RelatedNode)))
 				continue
 			}
 
@@ -839,12 +858,15 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs {
 					stats.addCallers(crs, grp)
 				}
+			default:
+				addFiltered(grp.Kind, cr.Incomplete, int64(len(grp.Anchor)+len(grp.Caller)+len(grp.RelatedNode)))
 			}
 		}
 
 		for _, idx := range cr.PageIndex {
 			// Filter anchor pages based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
+				addFiltered(idx.Kind, cr.Incomplete, int64(idx.Count))
 				continue
 			}
 
@@ -857,6 +879,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.Definitions -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Definitions += int64(filtered)
 					stats.addAnchors(&crs.Definition, p.Group)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
@@ -867,6 +890,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.Declarations -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Declarations += int64(filtered)
 					stats.addAnchors(&crs.Declaration, p.Group)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
@@ -877,6 +901,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.References -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.References += int64(filtered)
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
 			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
@@ -891,6 +916,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 						}
 						reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
+						reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(filtered)
 						stats.addRelatedNodes(crs, p.Group)
 					}
 				}
@@ -917,8 +943,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
 					reply.Total.Callers -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Callers += int64(filtered)
 					stats.addCallers(crs, p.Group)
 				}
+			default:
+				addFiltered(idx.Kind, cr.Incomplete, int64(idx.Count))
 			}
 		}
 
