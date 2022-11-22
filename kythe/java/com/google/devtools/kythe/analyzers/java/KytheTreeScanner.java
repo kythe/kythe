@@ -1114,7 +1114,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
       d.getSpanBuilder().getEndBuilder().setByteOffset(span.getStart());
     }
-    entrySets.emitDiagnostic(file, d.build());
+    var unused = entrySets.emitDiagnostic(file, d.build());
   }
 
   int charToLine(int charPosition) {

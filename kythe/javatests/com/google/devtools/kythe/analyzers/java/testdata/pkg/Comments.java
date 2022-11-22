@@ -145,7 +145,7 @@ public class Comments implements Comparable<Comments> {
   //- @"double.NAN" tagged BadRef
   //- BadRef.node/kind diagnostic
   /** This documents InvalidRef {@link INVALID} using {@link double.NAN} */
-  void InvalidRef() {
+  void invalidRef() {
     return;
   }
 }
