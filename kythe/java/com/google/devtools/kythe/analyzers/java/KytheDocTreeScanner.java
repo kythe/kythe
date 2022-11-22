@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.Span;
 import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.tools.JavaFileObject;
 
 public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -105,22 +107,20 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
   @Override
   public Void visitReference(ReferenceTree tree, DCDocComment doc) {
+    Span span = getSpan(doc, tree);
     Symbol sym = null;
     try {
       sym = (Symbol) trees.getElement(getCurrentPath());
     } catch (Throwable e) {
-      logger.atInfo().log("Failed to resolve documentation reference: %s\n%s", tree, e);
-      logger.atFine().withCause(e).log();
+      logger.atFine().withCause(e).log("Failed to resolve documentation reference: %s", tree);
     }
     if (sym == null) {
+      treeScanner.emitDocDiagnostic(
+          getSourceFile(), span, "Failed to resolve documentation reference");
       return null;
     }
-
-    int startPos = getStartPosition(doc, tree);
-    int endPos = getEndPosition(doc, tree);
-
-    treeScanner.emitDocReference(sym, startPos, endPos);
-    miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
+    treeScanner.emitDocReference(sym, span.getStart(), span.getEnd());
+    miniAnchors.add(new MiniAnchor<Symbol>(sym, span.getStart(), span.getEnd()));
 
     return null;
   }
@@ -132,9 +132,8 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       deprecation = Optional.of("");
       return null;
     }
-    int start = getStartPosition(doc, node.getBody().get(0));
-    int end = getEndPosition(doc, node);
-    if (end == Position.NOPOS) {
+    Span span = getSpan(doc, node.getBody().get(0), node);
+    if (span.getEnd() == Position.NOPOS) {
       // deprecated tag is empty
       deprecation = Optional.of("");
       return null;
@@ -152,7 +151,9 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     }
     // Join lines from multi-line @deprecated tags, removing the leading `*` from the javadoc.
     String text =
-        Splitter.onPattern("\\R").splitToList(source.subSequence(start, end)).stream()
+        Splitter.onPattern("\\R")
+            .splitToList(source.subSequence(span.getStart(), span.getEnd()))
+            .stream()
             .map(String::trim)
             .map(l -> l.startsWith("*") ? l.substring(1).trim() : l)
             .collect(Collectors.joining(" "));
@@ -162,15 +163,19 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     return null;
   }
 
-  private int getStartPosition(DocCommentTree comment, DocTree tree) {
-    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
-    DocSourcePositions positions = trees.getSourcePositions();
-    return (int) positions.getStartPosition(unit, comment, tree);
+  private JavaFileObject getSourceFile() {
+    return getCurrentPath().getTreePath().getCompilationUnit().getSourceFile();
   }
 
-  private int getEndPosition(DocCommentTree comment, DocTree tree) {
+  private Span getSpan(DocCommentTree comment, DocTree tree) {
+    return getSpan(comment, tree, tree);
+  }
+
+  private Span getSpan(DocCommentTree comment, DocTree start, DocTree end) {
     CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
     DocSourcePositions positions = trees.getSourcePositions();
-    return (int) positions.getEndPosition(unit, comment, tree);
+    return new Span(
+        (int) positions.getStartPosition(unit, comment, start),
+        (int) positions.getEndPosition(unit, comment, end));
   }
 }

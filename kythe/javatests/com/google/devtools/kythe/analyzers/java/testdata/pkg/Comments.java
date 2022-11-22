@@ -139,4 +139,13 @@ public class Comments implements Comparable<Comments> {
     return;
   }
   //- !{_ documents FooFunction}
+
+  //- @INVALID tagged InvalidRef
+  //- InvalidRef.node/kind diagnostic
+  //- @"double.NAN" tagged BadRef
+  //- BadRef.node/kind diagnostic
+  /** This documents InvalidRef {@link INVALID} using {@link double.NAN} */
+  void InvalidRef() {
+    return;
+  }
 }

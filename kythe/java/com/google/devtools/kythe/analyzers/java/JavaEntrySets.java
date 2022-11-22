@@ -301,7 +301,12 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a DIAGNOSTIC node attached to the given file. */
   public EntrySet emitDiagnostic(Positions filePositions, Diagnostic d) {
-    return emitDiagnostic(getFileVName(getDigest(filePositions.getSourceFile())), d);
+    return emitDiagnostic(filePositions.getSourceFile(), d);
+  }
+
+  /** Emits and returns a DIAGNOSTIC node attached to the given file. */
+  public EntrySet emitDiagnostic(JavaFileObject file, Diagnostic d) {
+    return emitDiagnostic(getFileVName(getDigest(file)), d);
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
