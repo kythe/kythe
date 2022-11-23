@@ -23,6 +23,7 @@ go_test(
     deps = [
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
+        "@com_github_google_go_cmp//cmp/cmpopts:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

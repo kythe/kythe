@@ -131,7 +131,7 @@ final class CompilationUnitFileSystemProvider extends FileSystemProvider {
   @Override
   public <V extends FileAttributeView> V getFileAttributeView(
       Path path, Class<V> type, LinkOption... options) {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
   @Override

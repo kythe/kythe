@@ -560,9 +560,15 @@ message CrossReferencesReply {
 
     map<string, int64> related_nodes_by_relation = 6;
   }
-  // Total number of cross-references on all pages matching requested filters.
-  // This may be an approximation if allowed by the CrossReferencesRequest.
+  // Total number of cross-references on all pages matching requested kinds,
+  // build configs, and filters. This may be an approximation if allowed by the
+  // CrossReferencesRequest.
   Total total = 5;
+
+  // Total number of cross-references removed based on the request's
+  // corpus_path_filters. This may be an approximation if allowed by the
+  // CrossReferencesRequest.
+  Total filtered = 12;
 
   // A map from ticket to cross-references for each ticket specified in the
   // request message.

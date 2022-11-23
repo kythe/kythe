@@ -299,7 +299,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Use ref/id edges for the primary identifier to disambiguate from the constructor.
       node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_ID);
     } else {
-      RefType refType = getRefType(owner.getTree(), owner.up().getTree(), ident.sym, ident.pos);
+      JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
+      RefType refType = getRefType(owner.getTree(), parentTree, ident.sym, ident.pos);
       if (refType == RefType.READ || refType == RefType.READ_WRITE) {
         node = emitSymUsage(ctx, ident.sym, EdgeKind.REF);
       }
@@ -862,7 +863,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return emitNameUsage(ctx, sym, name, EdgeKind.REF_IMPORTS);
       }
 
-      RefType refType = getRefType(owner.getTree(), owner.up().getTree(), sym, field.pos);
+      JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
+      RefType refType = getRefType(owner.getTree(), parentTree, sym, field.pos);
       // RefType can only be READ, WRITE, OR READ_WRITE so node will always have a value set by
       // at least one call to emitNameUsage. We just have to initialize to null to keep the compiler
       // happy.
@@ -1100,6 +1102,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (anchor != null) {
       emitAnchor(anchor, EdgeKind.REF_DOC, node, ImmutableList.of());
     }
+  }
+
+  void emitDocDiagnostic(JavaFileObject file, Span span, String message) {
+    Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(message);
+    if (span.isValid()) {
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getEnd());
+    } else if (span.getStart() >= 0) {
+      // If the span isn't valid but we have a valid start, use the start for a zero-width span.
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getStart());
+    }
+    var unused = entrySets.emitDiagnostic(file, d.build());
   }
 
   int charToLine(int charPosition) {
@@ -1803,7 +1818,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
    * @return A {@link RefType} indicating whether the reference reads from the symbol, writes to it,
    *     or does both.
    */
-  private static RefType getRefType(JCTree tree, JCTree parent, Symbol sym, int position) {
+  private static RefType getRefType(
+      JCTree tree, @Nullable JCTree parent, Symbol sym, int position) {
     // JCAssign looks like "a = 1 + 2"
     // JCAssignOp looks like "a += 3"
     if (tree instanceof JCAssign || tree instanceof JCAssignOp) {

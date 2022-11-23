@@ -51,7 +51,7 @@ cxx_extractor_toolchain = rule(
         "extractor": attr.label(
             executable = True,
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
-            cfg = "host",
+            cfg = "exec",
         ),
         "compiler_executable": attr.string(),
         "_cc_toolchain": attr.label(

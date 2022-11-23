@@ -144,7 +144,7 @@ go_extract = rule(
         "_extractor": attr.label(
             default = Label("//kythe/go/extractors/cmd/gotool"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_sdk_files": attr.label(
             allow_files = True,
@@ -216,7 +216,7 @@ go_entries = rule(
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},
@@ -259,7 +259,7 @@ def _go_indexer(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_for_all = False,
-        override_stdlib_corpus= "",
+        override_stdlib_corpus = "",
         metadata_suffix = "",
         extra_extractor_args = []):
     if importpath == None:
@@ -305,7 +305,7 @@ def go_indexer_test(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_for_all = False,
-        override_stdlib_corpus= "",
+        override_stdlib_corpus = "",
         metadata_suffix = "",
         extra_extractor_args = []):
     entries = _go_indexer(
@@ -315,7 +315,7 @@ def go_indexer_test(
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
         use_compilation_corpus_for_all = use_compilation_corpus_for_all,
-        override_stdlib_corpus=override_stdlib_corpus,
+        override_stdlib_corpus = override_stdlib_corpus,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,

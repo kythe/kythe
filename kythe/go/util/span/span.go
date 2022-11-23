@@ -126,8 +126,20 @@ func Unmarshal(rec []byte) (*Patcher, error) {
 		default:
 			return nil, fmt.Errorf("unknown diff type: %s", db.SpanType[i])
 		}
+		if i != 0 {
+			updatePrefix(&spans[i-1], &spans[i])
+		}
 	}
 	return &Patcher{spans}, nil
+}
+
+func updatePrefix(prev, d *diff) {
+	d.oldPrefix = prev.oldPrefix
+	d.newPrefix = prev.newPrefix
+	d.oldPrefix.Type = del
+	d.newPrefix.Type = ins
+	d.oldPrefix.Update(*prev)
+	d.newPrefix.Update(*prev)
 }
 
 type diff struct {
@@ -137,6 +149,8 @@ type diff struct {
 	Newlines     int32
 	FirstNewline int32
 	LastNewline  int32
+
+	oldPrefix, newPrefix offsetTracker
 }
 
 const (
@@ -168,6 +182,9 @@ func mapToOffsets(ds []diffmatchpatch.Diff) []diff {
 			FirstNewline: int32(first),
 			LastNewline:  int32(last),
 		}
+		if i != 0 {
+			updatePrefix(&res[i-1], &res[i])
+		}
 	}
 	return res
 }
@@ -198,49 +215,44 @@ func (t *offsetTracker) Update(d diff) {
 // in newText or is invalid, the returned bool will be false.  As a convenience,
 // if p==nil, the original span will be returned.
 func (p *Patcher) PatchSpan(s *cpb.Span) (span *cpb.Span, exists bool) {
-	spanStart := s.GetStart().GetByteOffset()
-	spanEnd := s.GetEnd().GetByteOffset()
+	spanStart, spanEnd := ByteOffsets(s)
 	if spanStart > spanEnd {
 		return nil, false
 	} else if p == nil || s == nil {
 		return s, true
 	}
 
-	oldT := offsetTracker{Type: del}
-	newT := offsetTracker{Type: ins}
-
-	for _, d := range p.spans {
-		if oldT.Offset > spanStart {
-			return nil, false
-		}
-
-		if d.Type == eq && oldT.Offset <= spanStart && spanEnd <= oldT.Offset+d.Length {
-			// The span is located within the equal region.  It exists.
-			lineDiff := newT.Lines - oldT.Lines
-			colDiff := newT.ColumnOffset - oldT.ColumnOffset
-			if d.FirstNewline != -1 && spanStart-oldT.Offset >= d.FirstNewline {
-				// The given span is past the first newline so it has no column diff.
-				colDiff = 0
-			}
-			return &cpb.Span{
-				Start: &cpb.Point{
-					ByteOffset:   newT.Offset + (spanStart - oldT.Offset),
-					ColumnOffset: s.GetStart().GetColumnOffset() + colDiff,
-					LineNumber:   s.GetStart().GetLineNumber() + lineDiff,
-				},
-				End: &cpb.Point{
-					ByteOffset:   newT.Offset + (spanEnd - oldT.Offset),
-					ColumnOffset: s.GetEnd().GetColumnOffset() + colDiff,
-					LineNumber:   s.GetEnd().GetLineNumber() + lineDiff,
-				},
-			}, true
-		}
-
-		oldT.Update(d)
-		newT.Update(d)
+	// Find the diff span that contains the starting offset.
+	idx := sort.Search(len(p.spans), func(i int) bool {
+		return spanStart < p.spans[i].oldPrefix.Offset
+	}) - 1
+	if idx < 0 {
+		return nil, false
 	}
 
-	return nil, false
+	d := p.spans[idx]
+	if d.Type != eq || spanEnd > d.oldPrefix.Offset+d.Length {
+		return nil, false
+	}
+
+	lineDiff := d.newPrefix.Lines - d.oldPrefix.Lines
+	colDiff := d.newPrefix.ColumnOffset - d.oldPrefix.ColumnOffset
+	if d.FirstNewline != -1 && spanStart-d.oldPrefix.Offset >= d.FirstNewline {
+		// The given span is past the first newline so it has no column diff.
+		colDiff = 0
+	}
+	return &cpb.Span{
+		Start: &cpb.Point{
+			ByteOffset:   d.newPrefix.Offset + (spanStart - d.oldPrefix.Offset),
+			ColumnOffset: s.GetStart().GetColumnOffset() + colDiff,
+			LineNumber:   s.GetStart().GetLineNumber() + lineDiff,
+		},
+		End: &cpb.Point{
+			ByteOffset:   d.newPrefix.Offset + (spanEnd - d.oldPrefix.Offset),
+			ColumnOffset: s.GetEnd().GetColumnOffset() + colDiff,
+			LineNumber:   s.GetEnd().GetLineNumber() + lineDiff,
+		},
+	}, true
 }
 
 // ByteOffsets returns the starting and ending byte offsets of the Span.
@@ -257,6 +269,13 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 		return 0, 0, false
 	} else if p == nil {
 		return spanStart, spanEnd, true
+	}
+
+	if spanStart == spanEnd {
+		// Give zero-width span a positive length for the below algorithm; then fix
+		// the length on return.
+		spanEnd++
+		defer func() { newEnd = newStart }()
 	}
 
 	var old, new int32

@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/compare"
 
@@ -126,35 +127,50 @@ func TestPatcher(t *testing.T) {
 	}{{
 		oldText:  "this is some text",
 		newText:  "this is some changed text",
-		oldSpans: []*span{{0, 5}, {13, 17}, {8, 17}},
-		newSpans: []*span{{0, 5}, {21, 25}, nil},
+		oldSpans: []*span{{0, 5}, {13, 17}, {13, 13}, {8, 17}},
+		newSpans: []*span{{0, 5}, {21, 25}, {21, 21}, nil},
 	}, {
 		oldText:  "line one\nline two\nline three\nline four\n",
 		newText:  "line one\nline three\nline two\nline four\n",
 		oldSpans: []*span{{0, 10}, {10, 14}, {16, 19}, {20, 24}, {25, 30}, {29, 38}},
 		newSpans: []*span{{0, 10}, {10, 14}, nil, {22, 26}, nil, {29, 38}},
+	}, {
+		oldText: "line three\n",
+		newText: "line one\ntwo\nthree\n",
+		oldSpans: []*span{
+			{0, 4},
+			{5, 5},
+			{5, 10},
+		},
+		newSpans: []*span{
+			{0, 4},
+			{13, 13},
+			{13, 18},
+		},
 	}}
 
-	for _, test := range tests {
-		p, err := NewPatcher([]byte(test.oldText), []byte(test.newText))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(test.oldSpans) != len(test.newSpans) {
-			t.Fatalf("Invalid test: {%v}", test)
-		}
-
-		for i, s := range test.oldSpans {
-			start, end, exists := p.Patch(s.start, s.end)
-
-			if ns := test.newSpans[i]; ns == nil && exists {
-				t.Errorf("Expected span not to exist in new text; received (%d, %d]", start, end)
-			} else if ns != nil && !exists {
-				t.Errorf("Expected span %v to exist in new text as %v; did not exist", s, ns)
-			} else if ns != nil && exists && (start != ns.start || end != ns.end) {
-				t.Errorf("Expected %v; received (%d, %d]", ns, start, end)
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			p, err := NewPatcher([]byte(test.oldText), []byte(test.newText))
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
+			if len(test.oldSpans) != len(test.newSpans) {
+				t.Fatalf("Invalid test: {%v}", test)
+			}
+
+			for i, s := range test.oldSpans {
+				start, end, exists := p.Patch(s.Start, s.End)
+
+				if ns := test.newSpans[i]; ns == nil && exists {
+					t.Errorf("Expected span not to exist in new text; received (%d, %d]", start, end)
+				} else if ns != nil && !exists {
+					t.Errorf("Expected span %v to exist in new text as %v; did not exist", s, ns)
+				} else if ns != nil && exists && (start != ns.Start || end != ns.End) {
+					t.Errorf("Expected %v; received (%d, %d]", ns, start, end)
+				}
+			}
+		})
 	}
 }
 
@@ -171,6 +187,18 @@ func TestPatchSpan(t *testing.T) {
 		oldSpans []*cpb.Span
 		newSpans []*cpb.Span
 	}{{
+		oldText: "this is some text\nsecond line\n",
+		newText: "this is some text\nsecond line\n",
+
+		oldSpans: []*cpb.Span{
+			sp(p(0, 1, 0), p(4, 1, 4)),
+			sp(p(13, 1, 13), p(17, 1, 17)),
+		},
+		newSpans: []*cpb.Span{
+			sp(p(0, 1, 0), p(4, 1, 4)),
+			sp(p(13, 1, 13), p(17, 1, 17)),
+		},
+	}, {
 		oldText: "this is some text",
 		newText: "this is some changed text",
 
@@ -217,11 +245,13 @@ func TestPatchSpan(t *testing.T) {
 		newText: "line one\nline two\nthee\n",
 
 		oldSpans: []*cpb.Span{
+			sp(p(0, 1, 0), p(0, 1, 0)),
 			sp(p(0, 1, 0), p(4, 1, 4)),
 			sp(p(5, 2, 0), p(8, 2, 3)),
 			sp(p(9, 3, 0), p(14, 3, 5)),
 		},
 		newSpans: []*cpb.Span{
+			sp(p(0, 1, 0), p(0, 1, 0)),
 			sp(p(0, 1, 0), p(4, 1, 4)),
 			sp(p(14, 2, 5), p(17, 2, 8)),
 			nil,
@@ -232,10 +262,12 @@ func TestPatchSpan(t *testing.T) {
 
 		oldSpans: []*cpb.Span{
 			sp(p(0, 1, 0), p(4, 1, 4)),
+			sp(p(5, 1, 5), p(5, 1, 5)),
 			sp(p(5, 1, 5), p(10, 1, 10)),
 		},
 		newSpans: []*cpb.Span{
 			sp(p(0, 1, 0), p(4, 1, 4)),
+			sp(p(13, 3, 0), p(13, 3, 0)),
 			sp(p(13, 3, 0), p(18, 3, 5)),
 		},
 	}, {
@@ -303,10 +335,10 @@ func TestPatchSpan(t *testing.T) {
 func TestMarshal(t *testing.T) {
 	expected := &Patcher{
 		[]diff{
-			{2, ins, 1, 2, 5},
-			{10, del, 5, 0, 9},
-			{3, eq, 0, -1, -1},
-			{5, ins, 1, 2, 2},
+			{Length: 2, Type: ins, Newlines: 1, FirstNewline: 2, LastNewline: 5},
+			{Length: 10, Type: del, Newlines: 5, FirstNewline: 0, LastNewline: 9},
+			{Length: 3, Type: eq, Newlines: 0, FirstNewline: -1, LastNewline: -1},
+			{Length: 5, Type: ins, Newlines: 1, FirstNewline: 2, LastNewline: 2},
 		},
 	}
 
@@ -316,11 +348,27 @@ func TestMarshal(t *testing.T) {
 	found, err := Unmarshal(rec)
 	testutil.Fatalf(t, "Unmarshal: %v", err)
 
-	if diff := compare.ProtoDiff(expected.spans, found.spans); diff != "" {
+	// Check that the unmarshalled Patcher has correct prefix sums
+	ignoreTypeField := cmpopts.IgnoreFields(offsetTracker{}, "Type")
+	oldT := offsetTracker{Type: del}
+	newT := offsetTracker{Type: ins}
+	for _, d := range found.spans {
+		if diff := compare.ProtoDiff(oldT, d.oldPrefix, ignoreTypeField); diff != "" {
+			t.Fatalf("Old prefix sum incorrect (-expected; +found)\n%s", diff)
+		}
+		if diff := compare.ProtoDiff(newT, d.newPrefix, ignoreTypeField); diff != "" {
+			t.Fatalf("New prefix sum incorrect (-expected; +found)\n%s", diff)
+		}
+
+		oldT.Update(d)
+		newT.Update(d)
+	}
+
+	if diff := compare.ProtoDiff(expected.spans, found.spans, cmpopts.IgnoreUnexported(diff{})); diff != "" {
 		t.Errorf("(-expected; +found)\n%s", diff)
 	}
 }
 
-type span struct{ start, end int32 }
+type span struct{ Start, End int32 }
 
-func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.start, s.end) }
+func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.Start, s.End) }
