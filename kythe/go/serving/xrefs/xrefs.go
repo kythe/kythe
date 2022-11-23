@@ -695,21 +695,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	}
 	stats.reply = reply
 
-	addFiltered := func(kind string, incomplete bool, total int64) {
-		switch {
-		case xrefs.IsDefKind(xpb.CrossReferencesRequest_ALL_DEFINITIONS, kind, incomplete):
-			reply.Filtered.Definitions += total
-		case xrefs.IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, kind, incomplete):
-			reply.Filtered.Declarations += total
-		case xrefs.IsCallerKind(xpb.CrossReferencesRequest_OVERRIDE_CALLERS, kind):
-			reply.Filtered.Callers += total
-		case xrefs.IsRelatedNodeKind(nil, kind):
-			reply.Filtered.RelatedNodesByRelation[kind] += total
-		default:
-			reply.Filtered.References += total
-		}
-	}
-
 	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
 	stats.nodeConverter = nodeConverter{patterns}
@@ -818,24 +803,26 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		for _, grp := range cr.Group {
 			// Filter anchor groups based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(grp.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
-				addFiltered(grp.Kind, cr.Incomplete, int64(len(grp.Anchor)+len(grp.Caller)+len(grp.RelatedNode)))
 				continue
 			}
 
-			filter.FilterGroup(grp)
+			filtered := filter.FilterGroup(grp)
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(len(grp.Anchor))
+				reply.Filtered.Definitions += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(len(grp.Anchor))
+				reply.Filtered.Declarations += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				reply.Total.References += int64(len(grp.Anchor))
+				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
 				}
@@ -849,24 +836,23 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
 					reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
+					reply.Filtered.RelatedNodesByRelation[grp.Kind] += int64(filtered)
 					if wantMoreCrossRefs {
 						stats.addRelatedNodes(crs, grp)
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
 				reply.Total.Callers += int64(len(grp.Caller))
+				reply.Filtered.Callers += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addCallers(crs, grp)
 				}
-			default:
-				addFiltered(grp.Kind, cr.Incomplete, int64(len(grp.Anchor)+len(grp.Caller)+len(grp.RelatedNode)))
 			}
 		}
 
 		for _, idx := range cr.PageIndex {
 			// Filter anchor pages based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
-				addFiltered(idx.Kind, cr.Incomplete, int64(idx.Count))
 				continue
 			}
 
@@ -946,8 +932,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					reply.Filtered.Callers += int64(filtered)
 					stats.addCallers(crs, p.Group)
 				}
-			default:
-				addFiltered(idx.Kind, cr.Incomplete, int64(idx.Count))
 			}
 		}
 
