@@ -806,21 +806,23 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				continue
 			}
 
-			filtered := filter.FilterGroup(grp)
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Definitions += int64(len(grp.Anchor))
 				reply.Filtered.Definitions += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Declarations += int64(len(grp.Anchor))
 				reply.Filtered.Declarations += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.References += int64(len(grp.Anchor))
 				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
@@ -835,6 +837,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				}
 
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
+					filtered := filter.FilterGroup(grp)
 					reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
 					reply.Filtered.RelatedNodesByRelation[grp.Kind] += int64(filtered)
 					if wantMoreCrossRefs {
@@ -842,6 +845,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Callers += int64(len(grp.Caller))
 				reply.Filtered.Callers += int64(filtered)
 				if wantMoreCrossRefs {
