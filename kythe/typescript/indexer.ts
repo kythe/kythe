@@ -2291,20 +2291,8 @@ class Visitor {
 
     if (ts.isPrefixUnaryExpression(parent) ||
         ts.isPostfixUnaryExpression(parent)) {
-      // PrefixUnaryExpression and PostfixUnaryExpression have different types
-      // for operator/operand but they respective properties have the same
-      // super types so we just cast them.
-      let operator: ts.SyntaxKind;
-      let operand: ts.Expression;
-      if (ts.isPrefixUnaryExpression(parent)) {
-        const exp = parent as ts.PrefixUnaryExpression;
-        operator = exp.operator as ts.SyntaxKind;
-        operand = exp.operand as ts.Expression;
-      } else {
-        const exp = parent as ts.PostfixUnaryExpression;
-        operator = exp.operator as ts.SyntaxKind;
-        operand = exp.operand as ts.Expression;
-      }
+      let operator: ts.SyntaxKind = parent.operator;
+      let operand: ts.Expression = parent.operand;
 
       const operandNode = ts.isPropertyAccessExpression(operand) ?
           this.propertyAccessIdentifier(operand) as ts.Node :
@@ -2321,13 +2309,12 @@ class Visitor {
         }
       }
     } else if (ts.isBinaryExpression(parent)) {
-      const exp = parent as ts.BinaryExpression;
-      const lhsNode = ts.isPropertyAccessExpression(exp.left) ?
-          this.propertyAccessIdentifier(exp.left) as ts.Node :
-          exp.left as ts.Node;
-      const opString = ts.tokenToString(exp.operatorToken.kind) || '';
+      const lhsNode = ts.isPropertyAccessExpression(parent.left) ?
+          this.propertyAccessIdentifier(parent.left) as ts.Node :
+          parent.left as ts.Node;
+      const opString = ts.tokenToString(parent.operatorToken.kind) || '';
 
-      if (this.expressionMatchesSymbol(exp.left, sym) &&
+      if (this.expressionMatchesSymbol(parent.left, sym) &&
           lhsNode.pos === node.pos) {
         const compoundAssignmentOperators = [
           '+=', '-=', '*=', '**=', '/=', '%=', '<<=', '>>=', '>>>=', '&=', '|=',
@@ -2344,10 +2331,9 @@ class Visitor {
           // side of that expression, indicating a chained assignment such as
           // x = y = z. If this is the case, the reference becomes READ_WRITE
           // instead.
-          if (ts.isBinaryExpression(exp.parent)) {
-            const parentExp = exp.parent as ts.BinaryExpression;
-            if (ts.tokenToString(parentExp.operatorToken.kind) === '=' &&
-                parentExp.right === parent) {
+          if (parent.parent !== null && ts.isBinaryExpression(parent.parent)) {
+            if (ts.tokenToString(parent.parent.operatorToken.kind) === '=' &&
+                parent.parent.right === parent) {
               return RefType.READ_WRITE;
             }
           }
