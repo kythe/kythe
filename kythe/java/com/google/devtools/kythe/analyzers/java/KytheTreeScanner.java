@@ -1104,6 +1104,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  void emitDocDiagnostic(JavaFileObject file, Span span, String message) {
+    Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(message);
+    if (span.isValid()) {
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getEnd());
+    } else if (span.getStart() >= 0) {
+      // If the span isn't valid but we have a valid start, use the start for a zero-width span.
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getStart());
+    }
+    var unused = entrySets.emitDiagnostic(file, d.build());
+  }
+
   int charToLine(int charPosition) {
     return filePositions.charToLine(charPosition);
   }
