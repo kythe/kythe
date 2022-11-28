@@ -81,7 +81,7 @@ type NestedArray = number[][];
 //- BF param.4 FF
 //- @NestedArray ref NestedArray
 function bindingTest({aa, bb: {cc, dd}}, [ee, [ff]]: NestedArray) {
-  //- @dd ref DD
+  //- @dd ref/writes DD
   //- @ff ref FF
   dd = ff;
 }

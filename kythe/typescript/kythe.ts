@@ -81,6 +81,7 @@ export enum EdgeKind {
   REF_INIT = '/kythe/edge/ref/init',
   REF_INIT_IMPLICIT = '/kythe/edge/ref/init/implicit',
   REF_QUERIES = '/kythe/edge/ref/queries',
+  REF_WRITES = '/kythe/edge/ref/writes',
   SATISFIES = '/kythe/edge/satisfies',
   SPECIALIZES = '/kythe/edge/specializes',
   SPECIALIZES_SPECULATIVE = '/kythe/edge/specializes/speculative',
