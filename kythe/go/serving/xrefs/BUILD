@@ -30,6 +30,7 @@ go_library(
         "//kythe/proto:xref_go_proto",
         "//kythe/proto:xref_serving_go_proto",
         "@com_github_golang_snappy//:go_default_library",
+        "@com_github_google_codesearch//index:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",

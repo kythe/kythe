@@ -24,7 +24,7 @@ class A {
   method() {
     //- @foo ref GetFoo
     this.foo;
-    //- @foo ref GetFoo
+    //- @foo ref/writes GetFoo
     this.foo = 0;
   }
 }
@@ -66,7 +66,7 @@ class C {
   method() {
     //- @mem ref SetMem
     this.mem;
-    //- @mem ref SetMem
+    //- @mem ref/writes SetMem
     this.mem = 0;
   }
 }

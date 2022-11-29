@@ -4,7 +4,7 @@
 //- @b defines/binding B=vname("b", _, _, _, _)
 let [a, b] = [1, 2];
 
-//- @a ref A
+//- @a ref/writes A
 //- @b ref B
 a = b;
 
@@ -12,6 +12,6 @@ a = b;
 //- @letD defines/binding D=vname("letD", _, _, _, _)
 let {c, d: letD} = {c: 0, d: 0};
 
-//- @c ref C
+//- @c ref/writes C
 //- @letD ref D
 c = letD;

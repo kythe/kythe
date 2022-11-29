@@ -1,0 +1,6 @@
+The files in this directory list tokens in the Kythe schema in
+priority order. For example, if you had to come up with
+`ref/call/direct/implicit`, observe that `ref` is listed first;
+then `call`; then `direct`; and finally `implicit`. Not all
+combinations of tokens make sense, but canonicalizing their
+order helps with some optimizations.

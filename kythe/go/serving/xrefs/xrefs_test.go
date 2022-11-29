@@ -19,10 +19,12 @@ package xrefs
 import (
 	"bytes"
 	"context"
+	"math"
 	"sort"
 	"strconv"
 	"testing"
 
+	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
@@ -2668,6 +2670,133 @@ func TestDocumentationIndirection(t *testing.T) {
 	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
 		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
+}
+
+func TestPageSearchIndex(t *testing.T) {
+	set := &srvpb.PagedCrossReferences{
+		PageSearchIndex: &srvpb.PagedCrossReferences_PageSearchIndex{
+			ByCorpus: &srvpb.PagedCrossReferences_PageSearchIndex_Postings{
+				Index: map[uint32]*srvpb.PagedCrossReferences_PageSearchIndex_Pages{
+					tri("kyt"): pages(0),
+					tri("the"): pages(0, 1, 2),
+					tri("yth"): pages(0),
+					tri("oth"): pages(1),
+					tri("her"): pages(1),
+					tri("Pag"): pages(math.MaxUint32), // short-hand for all pages
+					tri("age"): pages(0, 1, 2),
+					tri("ge_"): pages(1, 2),
+				},
+			},
+			ByRoot: &srvpb.PagedCrossReferences_PageSearchIndex_Postings{
+				Index: map[uint32]*srvpb.PagedCrossReferences_PageSearchIndex_Pages{
+					tri("baz"): pages(1, 2),
+					tri("aze"): pages(1, 2),
+					tri("zel"): pages(1, 2),
+				},
+			},
+			ByPath: &srvpb.PagedCrossReferences_PageSearchIndex_Postings{
+				Index: map[uint32]*srvpb.PagedCrossReferences_PageSearchIndex_Pages{
+					tri("kyt"): pages(0),
+					tri("yth"): pages(0),
+					tri("the"): pages(0),
+					tri("he/"): pages(0),
+					tri("e/g"): pages(0),
+					tri("/go"): pages(0),
+				},
+			},
+			ByResolvedPath: &srvpb.PagedCrossReferences_PageSearchIndex_Postings{
+				Index: map[uint32]*srvpb.PagedCrossReferences_PageSearchIndex_Pages{
+					tri("the"): pages(0, 2),
+					tri("he/"): pages(0, 2),
+					tri("e/b"): pages(0, 2),
+					tri("/ba"): pages(0, 2),
+				},
+			},
+		},
+		PageIndex: []*srvpb.PagedCrossReferences_PageIndex{{
+			PageKey: "kythePage",
+		}, {
+			PageKey: "otherPage_",
+		}, {
+			PageKey: "thePage_",
+		}},
+	}
+
+	// All pages are represented by nil
+	var allPages stringset.Set
+
+	tests := []struct {
+		Filter *xpb.CorpusPathFilters
+		Keys   stringset.Set
+	}{
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kyt" }`), stringset.New("kythePage")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe" }`), stringset.New("kythePage")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe|golang" }`), stringset.New("kythePage")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "other" }`), stringset.New("otherPage_")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe|other" }`), stringset.New("kythePage", "otherPage_")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "Page_" }`), stringset.New("thePage_", "otherPage_")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "the" }`), allPages},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "Page" }`), allPages},
+
+		// Trigrams are separated by field
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe/go" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "bazel" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "the/ba" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY root: "the/ba" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY path: "the/ba" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY path: "kythe/go" }`), stringset.New("kythePage")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY path: "/go" }`), stringset.New("kythePage")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY root: "bazel" }`), stringset.New("otherPage_", "thePage_")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "the/ba" }`), stringset.New("kythePage", "thePage_")},
+
+		// Merge filters
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe|other" } filter: { type: INCLUDE_ONLY corpus: "other" }`), stringset.New("otherPage_")},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "the/ba" } filter: { type: INCLUDE_ONLY root: "bazel" }`), stringset.New("thePage_")},
+
+		// No trigrams; matches everything
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "ne" }`), allPages},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^$" }`), allPages},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "\\.s" }`), allPages},
+
+		// Matches nothing
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "nope" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "rip" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kyther" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "kythe.+google" }`), stringset.New()},
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "golang" }`), stringset.New()},
+
+		// Exclusion filter are not handled by the search index; they match all pages.
+		{mustParseFilters(`filter: { type: EXCLUDE corpus: "kythe" }`), allPages},
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Logf("CorpusPathFilters: %s", test.Filter)
+			filter, err := compileCorpusPathFilters(test.Filter, nil)
+			testutil.Fatalf(t, "compileCorpusPathFilters: %v", err)
+			found := filter.PageSet(set)
+
+			var expected *pageSet
+			if test.Keys != nil {
+				expected = &pageSet{KeySet: test.Keys}
+			}
+			if diff := compare.ProtoDiff(expected, found); diff != "" {
+				t.Fatalf("Unexpected diff (-expected; +found):\n%s", diff)
+			}
+		})
+	}
+}
+
+func pages(ps ...uint32) *srvpb.PagedCrossReferences_PageSearchIndex_Pages {
+	if len(ps) <= 1 {
+		return &srvpb.PagedCrossReferences_PageSearchIndex_Pages{PageIndex: ps}
+	}
+	encoded := make([]uint32, len(ps))
+	encoded[0] = ps[0]
+	for i, n := range ps[1:] {
+		encoded[i+1] = n - encoded[i]
+	}
+	return &srvpb.PagedCrossReferences_PageSearchIndex_Pages{PageIndex: encoded}
 }
 
 func TestCorpusPathFilters(t *testing.T) {
