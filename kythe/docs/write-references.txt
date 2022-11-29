@@ -30,7 +30,7 @@ n = 1;
 It turns out that filtering by writes can make certain tasks much
 easier. In this document, we'll discuss the changes that need to be
 made to an indexer (or other Kythe-supporting software, such as the
-protobuf indexer) to support the `ref/writes` distinction.
+protobuf generator) to support the `ref/writes` distinction.
 
 == Goals and non-goals
 
