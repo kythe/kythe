@@ -406,6 +406,13 @@ def _go_dependencies():
     )
 
     go_repository(
+        name = "com_github_google_codesearch",
+        importpath = "github.com/google/codesearch",
+        sum = "h1:VlyAH+AntnIbGGArOUs6sEBdPVwYvf1e8Uw3/TC77cA=",
+        version = "v1.2.0",
+    )
+
+    go_repository(
         name = "com_github_creachadair_staticfile",
         importpath = "github.com/creachadair/staticfile",
         sum = "h1:RhyrMgi7IQn3GejgmGtFuCec58vboEMt5CH6N3ulRJk=",
