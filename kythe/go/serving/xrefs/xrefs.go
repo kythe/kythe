@@ -854,7 +854,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			}
 		}
 
-		for _, idx := range cr.PageIndex {
+		pageSet := filter.PageSet(cr)
+		for _, idx := range cr.GetPageIndex() {
 			// Filter anchor pages based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
 				continue
@@ -862,6 +863,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
+				if !pageSet.Contains(idx) {
+					reply.Filtered.Definitions += int64(idx.Count)
+					continue
+				}
 				reply.Total.Definitions += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
@@ -873,6 +878,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					stats.addAnchors(&crs.Definition, p.Group)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
+				if !pageSet.Contains(idx) {
+					reply.Filtered.Declarations += int64(idx.Count)
+					continue
+				}
 				reply.Total.Declarations += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
@@ -884,6 +893,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					stats.addAnchors(&crs.Declaration, p.Group)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
+				if !pageSet.Contains(idx) {
+					reply.Filtered.References += int64(idx.Count)
+					continue
+				}
 				reply.Total.References += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
@@ -898,16 +911,20 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				var p *srvpb.PagedCrossReferences_Page
 
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
-					reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
-					if wantMoreCrossRefs && !stats.skipPage(idx) {
-						var filtered int
-						p, filtered, err = getFilteredPage(ctx, idx.PageKey)
-						if err != nil {
-							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					if pageSet.Contains(idx) {
+						reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
+						if wantMoreCrossRefs && !stats.skipPage(idx) {
+							var filtered int
+							p, filtered, err = getFilteredPage(ctx, idx.PageKey)
+							if err != nil {
+								return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+							}
+							reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
+							reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(filtered)
+							stats.addRelatedNodes(crs, p.Group)
 						}
-						reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
-						reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(filtered)
-						stats.addRelatedNodes(crs, p.Group)
+					} else {
+						reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
 					}
 				}
 
@@ -926,6 +943,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
+				if !pageSet.Contains(idx) {
+					reply.Filtered.Callers += int64(idx.Count)
+					continue
+				}
 				reply.Total.Callers += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)

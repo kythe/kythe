@@ -330,6 +330,31 @@ message PagedCrossReferences {
 
   // The source node's MarkedSource.
   kythe.proto.common.MarkedSource marked_source = 6;
+
+  message PageSearchIndex {
+    message Pages {
+      // Set of page indices.
+      //
+      // These indices are sorted and then encoded as the difference between
+      // consecutive elements.
+      //
+      // Example:
+      //   [2, 5, 6] would be encoded here as [2, 3, 1]
+      repeated uint32 page_index = 1 [packed = true];
+    }
+    message Postings {
+      // trigram -> set of pages containing trigram
+      map<uint32, Pages> index = 1;
+    }
+
+    Postings by_corpus = 1;
+    Postings by_root = 2;
+    Postings by_path = 3;
+    Postings by_resolved_path = 4;
+  }
+
+  // Trigram search index for this set's xref Pages.
+  PageSearchIndex page_search_index = 11;
 }
 
 // A single node's documentation for the xrefs Documentation API.

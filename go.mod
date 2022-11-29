@@ -13,6 +13,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/brotli/go/cbrotli v0.0.0-20210804124202-19d86fb9a60a
+	github.com/google/codesearch v1.2.0 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/orderedcode v0.0.1
 	github.com/google/subcommands v1.2.0
