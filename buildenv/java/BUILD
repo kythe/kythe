@@ -5,6 +5,8 @@ load(
     "default_java_toolchain",
 )
 
+package(default_visibility = ["//visibility:public"])
+
 # Bazel does not yet ship with a JDK-19 compatible JDK, so
 # fetch and install our own.
 default_java_toolchain(

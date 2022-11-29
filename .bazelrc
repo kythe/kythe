@@ -6,6 +6,7 @@ build --strategy=TypeScriptCompile=sandboxed,local
 
 # Compatibility flags to avoid regressions.
 common --incompatible_disallow_empty_glob
+common --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
 
 build --workspace_status_command tools/buildstamp/get_workspace_status
 
