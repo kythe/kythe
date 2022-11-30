@@ -1,0 +1,154 @@
+// Copyright 2022 The Kythe Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+= Adding Support for Write References
+
+We recently updated the schema with the `ref/writes` edge, which is
+intended to allow users to distinguish between ordinary references and
+references that have some lasting effect on a program. Consider this
+basic example:
+
+[source, c]
+----
+//- @n defines/binding VarN
+int n;
+//- @n ref/writes VarN
+n = 1;
+----
+
+It turns out that filtering by writes can make certain tasks much
+easier. In this document, we'll discuss the changes that need to be
+made to an indexer (or other Kythe-supporting software, such as the
+protobuf generator) to support the `ref/writes` distinction.
+
+== Goals and non-goals
+
+Throughout this document, we emphasize that we should only distinguish
+writes that are *almost certainly* writes. Indexer authors are not
+expected to do alias analysis or track dataflow, except in some narrow
+circumstances (such as supporting an immediate dereference-and-assignment,
+like `*x = 3;`).
+
+As users interact with the data, we may add or remove guidance.
+
+== Core language features
+
+These features should be implemented for write references to be useful.
+
+=== Basic assignment
+
+The basic set of assignment operators (`=`, `+=`, `--`, etc) should be
+supported. The minimal set of lvalues should include:
+
+* Ordinary variables.
+* Fields.
+* Arrays, in which the array variable is the thing that is written.
+
+This means that we don't need to worry about most calculated lvalues.
+We should walk through member specifiers. For example, `(*x + 3) = 5`
+doesn't get special treatment. Where possible, writes to containers
+(i.e., any data type that has an open-ended field count) should use
+the `ref/writes/partial` edge:
+
+[source, c]
+----
+//- @a ref VarA
+//- @foo ref/writes/partial FieldFoo
+a.foo[x] = 3;
+----
+
+Note that `*x = 0;` should use ref/writes; `x[0]` should use
+`ref/writes/partial`. `0[x]` is left as an exercise to the reader.
+
+=== Property assignment
+
+The `property/reads` and `property/writes` edges point from semantic
+nodes to semantic nodes; this is in distinction to `ref/writes/*`, which
+points from anchors to semantic nodes. These edges are still useful
+for code generators, as it is not always the case that an indexer
+has access to the metadata for generated code (e.g., javac might
+receive an interface jar instead of the full source in a build system).
+
+== Extensions and refinements
+
+=== Assignment through pointers
+
+Our goal is to mark writes that are *almost certainly* writes.
+Fortunately, we can still support many basic patterns that appear
+frequently in code. For example:
+
+[source, c]
+----
+//- @mutable_foo ref/writes FieldFoo
+*(proto_x.mutable_foo()) = 3;
+...
+int& bar() { return bar_; }
+...
+//- @bar ref/writes FieldBar
+bar() = 4;
+----
+
+=== Getters and setters
+
+Many languages encourage the use of getter and setter functions.
+These typically look like some small variation of:
+
+[source, c]
+----
+int foo() const { return foo_; }
+void set_foo(int foo) { foo_ = foo; }
+----
+
+There is some value in being able to detect the structure of these
+functions and to treat `set_foo` as a ref/write to `foo` (as
+well as a ref to `set_foo` itself):
+
+[source, c]
+----
+//- @set_foo ref/writes FooField
+//- @set_foo ref SetFoo
+//- ...
+x.set_foo(1);
+----
+
+It may also be possible in a target language to provide a library
+of annotations so that end-users can describe the semantics of
+non-trivial library functions.
+
+=== Builder-like classes
+
+Setters on builder classes should appear as writes to the relevant
+fields:
+
+[source, java]
+----
+//- @setFoo ref/writes FieldFoo
+//- @setBar ref/writes FieldBar
+Thing t = Thing.builder().setFoo(1).setBar(2).build();
+----
+
+== Code generators
+
+Kythe's metadata facility supports attaching semantics to generated code.
+This is used, for example, to turn calls into protocol buffer setters into
+writes to the relevant fields (in C++, where metadata is available) or
+to emit property/writes and property/reads edges for languages like Java,
+where it is not available downstream.
+
+The current C++ implementation for proto uses a name-based heuristic with
+https://github.com/kythe/kythe/blob/dfb439a63de909e9eb67d0f36fc2471fe0693afb/kythe/cxx/common/protobuf_metadata_file.cc#L97[obvious flaws].
+(A more precise version is in development.) Still, the basic structure is
+visible: various metadata rules are instantiated with particular semantics.
+When a reference is made, the indexer consults a table of offsets and
+declarations to check whether to change its behavior when adding edges.

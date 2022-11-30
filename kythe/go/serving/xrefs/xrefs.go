@@ -34,6 +34,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
@@ -65,6 +66,8 @@ var (
 
 	// TODO(schroederc): remove once relevant clients specify their required quality
 	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "APPROXIMATE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
+
+	responseLeewayTime = flag.Duration("xrefs_response_leeway_time", 50*time.Millisecond, "If possible, leave this much time at the end of a CrossReferencesRequest to return any results already read")
 )
 
 func init() {
@@ -628,6 +631,15 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		return nil, err
 	}
 
+	var leewayTime time.Time
+	if d, ok := ctx.Deadline(); ok && *responseLeewayTime > 0 {
+		leewayTime = d.Add(-*responseLeewayTime)
+		if leewayTime.After(time.Now()) {
+			// Clear leeway time; try to use entire leftover timeout.
+			leewayTime = time.Time{}
+		}
+	}
+
 	filter, err := compileCorpusPathFilters(req.GetCorpusPathFilters(), t.ResolvePath)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid corpus_path_filters %s: %v", strings.ReplaceAll(req.GetCorpusPathFilters().String(), "\n", " "), err)
@@ -750,8 +762,14 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var indirectionPages []string
 
 	var foundCrossRefs bool
+readLoop:
 	for i := 0; i < len(tickets); i++ {
 		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			break
+		}
+
+		if !leewayTime.IsZero() && time.Now().After(leewayTime) {
+			log.Println("WARNING: hit soft deadline; trying to return already read xrefs")
 			break
 		}
 
@@ -859,6 +877,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			// Filter anchor pages based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
 				continue
+			}
+
+			if !leewayTime.IsZero() && time.Now().After(leewayTime) {
+				log.Println("WARNING: hit soft deadline; trying to return already read xrefs")
+				break readLoop
 			}
 
 			switch {
