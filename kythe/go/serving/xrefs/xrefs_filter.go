@@ -88,7 +88,7 @@ func (p *pageSet) Contains(i *srvpb.PagedCrossReferences_PageIndex) bool {
 
 func (f *corpusPathFilter) PageSet(set *srvpb.PagedCrossReferences) *pageSet {
 	idx := set.GetPageSearchIndex()
-	if idx == nil || len(f.corpusQuery)+len(f.rootQuery)+len(f.pathQuery)+len(f.resolvedPathQuery) == 0 {
+	if idx == nil || f == nil || len(f.corpusQuery)+len(f.rootQuery)+len(f.pathQuery)+len(f.resolvedPathQuery) == 0 {
 		return nil
 	}
 
