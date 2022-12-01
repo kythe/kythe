@@ -792,6 +792,7 @@ readLoop:
 			crs = &xpb.CrossReferencesReply_CrossReferenceSet{
 				Ticket: ticket,
 			}
+			reply.CrossReferences[ticket] = crs
 
 			// If visiting a non-merge node and facts are requested, add them to the result.
 			if ticket == cr.SourceTicket && len(patterns) > 0 && cr.SourceNode != nil {
@@ -983,11 +984,6 @@ readLoop:
 			}
 		}
 
-		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
-			reply.CrossReferences[crs.Ticket] = crs
-			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
-		}
-
 		for i == len(tickets)-1 && len(indirectionPages) > 0 {
 			// We've hit the end of known tickets to pull for xrefs; read an
 			// indirection page until we've found another ticket or we've exhausted
@@ -1002,10 +998,22 @@ readLoop:
 				tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
 			}
 		}
+
+		tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 	}
 	if !foundCrossRefs {
 		// Short-circuit return; skip any slow requests.
 		return &xpb.CrossReferencesReply{}, nil
+	}
+
+	var emptySets []string
+	for key, crs := range reply.CrossReferences {
+		if len(crs.Declaration)+len(crs.Definition)+len(crs.Reference)+len(crs.Caller)+len(crs.RelatedNode) == 0 {
+			emptySets = append(emptySets, key)
+		}
+	}
+	for _, k := range emptySets {
+		delete(reply.CrossReferences, k)
 	}
 
 	if initialSkip+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
