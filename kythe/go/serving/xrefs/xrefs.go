@@ -634,7 +634,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var leewayTime time.Time
 	if d, ok := ctx.Deadline(); ok && *responseLeewayTime > 0 {
 		leewayTime = d.Add(-*responseLeewayTime)
-		if leewayTime.After(time.Now()) {
+		if leewayTime.Before(time.Now()) {
 			// Clear leeway time; try to use entire leftover timeout.
 			leewayTime = time.Time{}
 		}
