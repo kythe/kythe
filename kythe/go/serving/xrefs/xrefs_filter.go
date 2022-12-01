@@ -153,12 +153,24 @@ func tri(t string) uint32 {
 
 func isAllPages(list []uint32) bool { return len(list) == 1 && list[0] == math.MaxUint32 }
 
+func allPagesToNil(list []uint32) []uint32 {
+	if isAllPages(list) {
+		return nil
+	}
+	return list
+}
+
+func nilToAllPages(list []uint32) []uint32 {
+	if list == nil {
+		return allPages
+	}
+	return list
+}
+
 var allPages = []uint32{math.MaxUint32}
 
 func applyQuery(idx postings, q *index.Query, restrict []uint32) []uint32 {
-	if isAllPages(restrict) {
-		restrict = nil
-	}
+	restrict = allPagesToNil(restrict)
 
 	var list []uint32
 	switch q.Op {
@@ -170,8 +182,9 @@ func applyQuery(idx postings, q *index.Query, restrict []uint32) []uint32 {
 		}
 		return allPages
 	case index.QAnd:
+		list = restrict
 		for _, t := range q.Trigram {
-			list = postingAnd(idx, list, tri(t), restrict)
+			list = postingAnd(idx, list, tri(t))
 			if len(list) == 0 {
 				return []uint32{}
 			}
@@ -198,10 +211,14 @@ func applyQuery(idx postings, q *index.Query, restrict []uint32) []uint32 {
 }
 
 func postingList(idx postings, trigram uint32, restrict []uint32) []uint32 {
+	restrict = allPagesToNil(restrict)
 	ps := idx[trigram]
+	if isAllPages(ps) {
+		return nilToAllPages(restrict)
+	}
 	list := make([]uint32, 0, len(ps))
 	for _, p := range ps {
-		if restrict != nil && !isAllPages(restrict) {
+		if restrict != nil {
 			i := 0
 			for i < len(restrict) && restrict[i] < p {
 				i++
@@ -216,24 +233,19 @@ func postingList(idx postings, trigram uint32, restrict []uint32) []uint32 {
 	return list
 }
 
-func postingAnd(idx postings, list []uint32, trigram uint32, restrict []uint32) []uint32 {
+func postingAnd(idx postings, list []uint32, trigram uint32) []uint32 {
 	if list == nil || isAllPages(list) {
-		return postingList(idx, trigram, restrict)
+		return postingList(idx, trigram, list)
+	}
+
+	ps := idx[trigram]
+	if isAllPages(ps) {
+		return nilToAllPages(list)
 	}
 
 	var l int
 	res := list[:0]
-	for _, p := range idx[trigram] {
-		if restrict != nil && !isAllPages(restrict) {
-			i := 0
-			for i < len(restrict) && restrict[i] < p {
-				i++
-			}
-			restrict = restrict[i:]
-			if len(restrict) == 0 || restrict[0] != p {
-				continue
-			}
-		}
+	for _, p := range ps {
 		for l < len(list) && list[l] < p {
 			l++
 		}
@@ -275,10 +287,16 @@ func postingOr(idx postings, list []uint32, trigram uint32, restrict []uint32) [
 		return list
 	}
 
+	ps := idx[trigram]
+	if isAllPages(ps) {
+		return nilToAllPages(restrict)
+	}
+	restrict = allPagesToNil(restrict)
+
 	var l int
 	res := list[:0]
-	for _, p := range idx[trigram] {
-		if restrict != nil && !isAllPages(restrict) {
+	for _, p := range ps {
+		if restrict != nil {
 			i := 0
 			for i < len(restrict) && restrict[i] < p {
 				i++
