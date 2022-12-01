@@ -37,8 +37,9 @@ RUN update-alternatives \
       --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt  100
 
 # Install pip-packages
-RUN pip3 install --upgrade pip \
- && pip3 install pre-commit
+COPY requirements.txt pre-commit-requirements.txt
+RUN pip3 install --require-hashes -r pre-commit-requirements.txt \
+ && rm pre-commit-requirements.txt
 
 # Install extra linters
 RUN go install github.com/bazelbuild/buildtools/buildifier@latest \
