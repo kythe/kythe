@@ -70,8 +70,10 @@ enum class PropertyID {
   kDiagnosticDetails,
   kDiagnosticContextOrUrl,
   kDocUri,
-  kBuildConfig
+  kBuildConfig,
+  kVisibility,
 };
+
 
 /// \brief Known edge kinds. See the schema for details.
 enum class EdgeKindID {

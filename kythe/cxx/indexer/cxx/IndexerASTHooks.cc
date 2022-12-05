@@ -2735,6 +2735,7 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
     Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  Observer.recordVisibility(DeclNode, Decl->getAccess());
   return true;
 }
 
@@ -3540,6 +3541,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                                 Subkind, absl::nullopt);
     Observer.recordMarkedSource(OuterNode,
                                 Marks.GenerateMarkedSource(OuterNode));
+    Observer.recordVisibility(OuterNode, Decl->getAccess());
     AssignUSR(OuterNode, Decl);
     return true;
   }
@@ -3583,6 +3585,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                               GraphObserver::Completeness::Definition, Subkind,
                               absl::nullopt);
   Observer.recordMarkedSource(OuterNode, Marks.GenerateMarkedSource(OuterNode));
+  Observer.recordVisibility(OuterNode, Decl->getAccess());
   AssignUSR(OuterNode, Decl);
   return true;
 }

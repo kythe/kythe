@@ -1726,6 +1726,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "rec_class_visibility",
+    srcs = ["rec/rec_class_visibility.cc"],
+    tags = ["rec"],
+)
+
+cc_indexer_test(
     name = "rec_class_base",
     srcs = ["rec/rec_class_base.cc"],
     tags = ["rec"],

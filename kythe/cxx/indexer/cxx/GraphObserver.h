@@ -964,6 +964,10 @@ class GraphObserver {
   /// \param VarNodeId The `NodeId` of the static variable.
   virtual void recordStaticVariable(const NodeId& VarNodeId) {}
 
+  /// \brief Records the visibility of the specified field.
+  /// \param FieldNodeId The `NodeId` of the field.
+  virtual void recordVisibility(const NodeId& FieldNodeId, clang::AccessSpecifier access) {}
+
   /// \brief Records that the specified node is deprecated.
   /// \param NodeId The `NodeId` of the deprecated node.
   /// \param Advice A user-readable message about the deprecation (or empty).
