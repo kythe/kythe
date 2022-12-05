@@ -125,6 +125,7 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/context/url"),
     new std::string("/kythe/doc/uri"),
     new std::string("/kythe/build/config"),
+    new std::string("/kythe/visibility"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");
