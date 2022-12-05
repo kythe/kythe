@@ -44,7 +44,7 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
-#include "clang/include/clang/Basic/Specifiers.h"
+#include "clang/Basic/Specifiers.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/schema/edges.h"
