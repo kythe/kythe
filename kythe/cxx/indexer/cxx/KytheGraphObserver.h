@@ -371,7 +371,8 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordStaticVariable(const NodeId& VarNodeId) override;
 
-  void recordVisibility(const NodeId& FieldNodeId, clang::AccessSpecifier access) override;
+  void recordVisibility(const NodeId& FieldNodeId,
+                        clang::AccessSpecifier access) override;
 
   void recordDeprecated(const NodeId& NodeId,
                         const llvm::StringRef& advice) override;

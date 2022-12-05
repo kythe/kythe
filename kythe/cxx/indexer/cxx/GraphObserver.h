@@ -966,7 +966,8 @@ class GraphObserver {
 
   /// \brief Records the visibility of the specified field.
   /// \param FieldNodeId The `NodeId` of the field.
-  virtual void recordVisibility(const NodeId& FieldNodeId, clang::AccessSpecifier access) {}
+  virtual void recordVisibility(const NodeId& FieldNodeId,
+                                clang::AccessSpecifier access) {}
 
   /// \brief Records that the specified node is deprecated.
   /// \param NodeId The `NodeId` of the deprecated node.

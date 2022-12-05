@@ -15,6 +15,7 @@
  */
 
 #include "KytheGraphObserver.h"
+
 #include <string>
 
 #include "IndexerASTHooks.h"
@@ -78,7 +79,8 @@ const char* VisibilityPropertyValue(clang::AccessSpecifier access) {
     case clang::AS_none:
       return "";
   }
-  LOG(FATAL) << "Unknown access specifier passed to VisibilityPropertyValue " << access;
+  LOG(FATAL) << "Unknown access specifier passed to VisibilityPropertyValue< "
+             << access;
   return "";
 }
 
@@ -1145,12 +1147,14 @@ void KytheGraphObserver::recordStaticVariable(const NodeId& VarNodeId) {
   recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");
 }
 
-void KytheGraphObserver::recordVisibility(const NodeId& FieldNodeId, clang::AccessSpecifier access) {
+void KytheGraphObserver::recordVisibility(const NodeId& FieldNodeId,
+                                          clang::AccessSpecifier access) {
   if (access == clang::AS_none) {
     return;
   }
   const VNameRef node_vname = VNameRefFromNodeId(FieldNodeId);
-  recorder_->AddProperty(node_vname, PropertyID::kVisibility, VisibilityPropertyValue(access));
+  recorder_->AddProperty(node_vname, PropertyID::kVisibility,
+                         VisibilityPropertyValue(access));
 }
 
 void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
