@@ -74,7 +74,6 @@ enum class PropertyID {
   kVisibility,
 };
 
-
 /// \brief Known edge kinds. See the schema for details.
 enum class EdgeKindID {
   kDefinesFull,
