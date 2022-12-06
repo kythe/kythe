@@ -1128,8 +1128,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=",
-        version = "v0.0.0-20210220032951-036812b2e83c",
+        sum = "h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=",
+        version = "v0.1.0",
     )
 
     go_repository(
