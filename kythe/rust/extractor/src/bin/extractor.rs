@@ -79,7 +79,9 @@ fn main() -> Result<()> {
         let absolute_out_dir = out_dir.replace("${pwd}", pwd.to_str().unwrap());
         let glob_pattern = format!("{}/**/*", absolute_out_dir);
         for path in glob(&glob_pattern).unwrap().flatten() {
-            out_dir_inputs.push(path.display().to_string());
+            if path.is_file() {
+                out_dir_inputs.push(path.display().to_string());
+            }
         }
     }
 
