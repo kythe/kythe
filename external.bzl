@@ -406,6 +406,13 @@ def _go_dependencies():
     )
 
     go_repository(
+        name = "com_github_google_codesearch",
+        importpath = "github.com/google/codesearch",
+        sum = "h1:VlyAH+AntnIbGGArOUs6sEBdPVwYvf1e8Uw3/TC77cA=",
+        version = "v1.2.0",
+    )
+
+    go_repository(
         name = "com_github_creachadair_staticfile",
         importpath = "github.com/creachadair/staticfile",
         sum = "h1:RhyrMgi7IQn3GejgmGtFuCec58vboEMt5CH6N3ulRJk=",
@@ -1121,8 +1128,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=",
-        version = "v0.0.0-20210220032951-036812b2e83c",
+        sum = "h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=",
+        version = "v0.1.0",
     )
 
     go_repository(

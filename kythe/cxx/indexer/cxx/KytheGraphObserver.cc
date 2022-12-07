@@ -16,11 +16,14 @@
 
 #include "KytheGraphObserver.h"
 
+#include <string>
+
 #include "IndexerASTHooks.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -41,6 +44,7 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/schema/edges.h"
@@ -63,6 +67,23 @@ struct ClaimedStringFormatter {
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
+
+const char* VisibilityPropertyValue(clang::AccessSpecifier access) {
+  switch (access) {
+    case clang::AS_public:
+      return "public";
+    case clang::AS_protected:
+      return "protected";
+    case clang::AS_private:
+      return "private";
+    case clang::AS_none:
+      return "";
+  }
+  LOG(FATAL) << "Unknown access specifier passed to VisibilityPropertyValue< "
+             << access;
+  return "";
+}
+
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -402,8 +423,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
                                          const VNameRef& decl) {
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
-    if (rule->second.semantic == MetadataFile::Semantic::kNone &&
-        rule->second.begin == range_begin && rule->second.end == range_end &&
+    if (rule->second.begin == range_begin && rule->second.end == range_end &&
         (rule->second.edge_in == kythe::common::schema::kDefines ||
          rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
       VNameRef remote(rule->second.vname);
@@ -1125,6 +1145,16 @@ void KytheGraphObserver::recordInitLocation(
 void KytheGraphObserver::recordStaticVariable(const NodeId& VarNodeId) {
   const VNameRef node_vname = VNameRefFromNodeId(VarNodeId);
   recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");
+}
+
+void KytheGraphObserver::recordVisibility(const NodeId& FieldNodeId,
+                                          clang::AccessSpecifier access) {
+  if (access == clang::AS_none) {
+    return;
+  }
+  const VNameRef node_vname = VNameRefFromNodeId(FieldNodeId);
+  recorder_->AddProperty(node_vname, PropertyID::kVisibility,
+                         VisibilityPropertyValue(access));
 }
 
 void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
