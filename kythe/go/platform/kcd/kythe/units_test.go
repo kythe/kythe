@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/ptypes"
 
 	"google.golang.org/protobuf/encoding/prototext"
@@ -149,8 +150,8 @@ func TestLookupVName(t *testing.T) {
 	}
 	for _, test := range tests {
 		got := unit.LookupVName(test.path)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("VName for %s: got %+q, want %+q", test.path, got, test.want)
+		if diff := compare.ProtoDiff(test.want, got); diff != "" {
+			t.Errorf("(-expected; +found)", test.want, got)
 		}
 	}
 }
