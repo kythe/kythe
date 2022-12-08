@@ -83,41 +83,22 @@ func (u Unit) Index() kcd.Index {
 	return idx
 }
 
-// ResolveVName satisfies part of the kcd.Unit interface.
-func (u Unit) ResolveVName(inputPath string) *spb.VName {
-	root := u.Proto.GetWorkingDirectory()
-	if root == "" {
-		root = "/"
-	}
-
-	// match inputPath against the cleaned, absolute path.
-	if path.IsAbs(inputPath) {
-		inputPath = path.Clean(inputPath)
-	} else {
-		inputPath = path.Join(root, inputPath)
-	}
+// LookupVName satisfies part of the kcd.Unit interface.
+func (u Unit) LookupVName(inputPath string) *spb.VName {
+	inputPath = u.pathKey(inputPath)
 	for _, ri := range u.Proto.RequiredInput {
 		if ri.Info == nil {
 			continue
 		}
-		qp := ri.Info.GetPath()
-		if path.IsAbs(qp) {
-			qp = path.Clean(qp)
-		} else {
-			qp = path.Join(root, qp)
-		}
+		qp := u.pathKey(ri.Info.GetPath())
 		if qp == inputPath {
-			v := ri.GetVName()
+			v := proto.Clone(ri.GetVName()).(*spb.VName)
 			if v.GetCorpus() == "" {
 				v.Corpus = u.Proto.GetVName().GetCorpus()
 				v.Root = u.Proto.GetVName().GetRoot()
 			}
 			if v.GetPath() == "" {
-				prefix := root + "/"
-				if root == "/" {
-					prefix = "/"
-				}
-				v.Path = strings.TrimPrefix(qp, prefix)
+				v.Path = inputPath
 			}
 			return v
 		}
@@ -170,6 +151,28 @@ func (u Unit) Digest() string {
 		put("DET", d.TypeUrl, string(d.Value))
 	}
 	return hex.EncodeToString(sha.Sum(nil)[:])
+}
+
+// pathKey returns a cleaned path, relative to the compilation working directory.
+func (u Unit) pathKey(inputPath string) string {
+	root := path.Clean(u.Proto.GetWorkingDirectory())
+	if root == "" {
+		root = "/"
+	}
+
+	if path.IsAbs(inputPath) {
+		inputPath = path.Clean(inputPath)
+	} else {
+		inputPath = path.Join(root, inputPath)
+	}
+
+	var prefix string
+	if root == "/" {
+		prefix = root
+	} else {
+		prefix = root + "/"
+	}
+	return strings.TrimPrefix(inputPath, prefix)
 }
 
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if

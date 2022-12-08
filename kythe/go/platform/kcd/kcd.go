@@ -247,9 +247,9 @@ type Unit interface {
 	// serve as a content-addressable digest.
 	Digest() string
 
-	// ResolveVName looks up and returns the VName for the given file path
-	// or nil if it could not be found.
-	ResolveVName(path string) *spb.VName
+	// LookupVName looks up and returns the VName for the given file path
+	// or nil if it could not be found or the operation is unsupported.
+	LookupVName(path string) *spb.VName
 }
 
 // Index represents the indexable terms of a compilation.

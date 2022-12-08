@@ -112,7 +112,7 @@ func TestCanonicalization(t *testing.T) {
 	}
 }
 
-func TestResolveVName(t *testing.T) {
+func TestLookupVName(t *testing.T) {
 	unit := Unit{Proto: &apb.CompilationUnit{
 		VName: &spb.VName{Corpus: "DefaultCorpus", Root: "DefaultRoot"},
 		RequiredInput: []*apb.CompilationUnit_FileInput{
@@ -148,7 +148,7 @@ func TestResolveVName(t *testing.T) {
 		{"missing/vname/path/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "missing/vname/path/file.go"}},
 	}
 	for _, test := range tests {
-		got := unit.ResolveVName(test.path)
+		got := unit.LookupVName(test.path)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("VName for %s: got %+q, want %+q", test.path, got, test.want)
 		}
