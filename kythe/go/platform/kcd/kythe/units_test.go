@@ -112,6 +112,49 @@ func TestCanonicalization(t *testing.T) {
 	}
 }
 
+func TestResolveVName(t *testing.T) {
+	unit := Unit{Proto: &apb.CompilationUnit{
+		VName: &spb.VName{Corpus: "DefaultCorpus", Root: "DefaultRoot"},
+		RequiredInput: []*apb.CompilationUnit_FileInput{
+			{Info: &apb.FileInfo{Path: "/absolute/path/file.go"},
+				VName: &spb.VName{Corpus: "Corpus", Root: "Root", Path: "abspath/file.go"},
+			},
+			{Info: &apb.FileInfo{Path: "/build/absolute/path/file.go"},
+				VName: &spb.VName{Corpus: "Corpus", Root: "Root", Path: "buildrelpath/file.go"},
+			},
+			{Info: &apb.FileInfo{Path: "relative/file.go"},
+				VName: &spb.VName{Corpus: "Corpus", Root: "Root", Path: "relpath/file.go"},
+			},
+			{Info: &apb.FileInfo{Path: "missing/vname/corpus/file.go"},
+				VName: &spb.VName{Path: "missing/corpus/file.go"},
+			},
+			{Info: &apb.FileInfo{Path: "missing/vname/path/file.go"},
+				VName: &spb.VName{Corpus: "Corpus", Root: "Root"},
+			},
+		},
+		WorkingDirectory: "/build",
+	}}
+	tests := []struct {
+		path string
+		want *spb.VName
+	}{
+		{"missing/file.go", nil},
+		{"/absolute/path/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "abspath/file.go"}},
+		{"/build/absolute/path/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "buildrelpath/file.go"}},
+		{"relative/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "relpath/file.go"}},
+		{"./relative/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "relpath/file.go"}},
+		{"/build/relative/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "relpath/file.go"}},
+		{"missing/vname/corpus/file.go", &spb.VName{Corpus: "DefaultCorpus", Root: "DefaultRoot", Path: "missing/corpus/file.go"}},
+		{"missing/vname/path/file.go", &spb.VName{Corpus: "Corpus", Root: "Root", Path: "missing/vname/path/file.go"}},
+	}
+	for _, test := range tests {
+		got := unit.ResolveVName(test.path)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("VName for %s: got %+q, want %+q", test.path, got, test.want)
+		}
+	}
+}
+
 func keys(v interface{}) (keys []string) {
 	switch t := v.(type) {
 	case []*apb.CompilationUnit_FileInput:

@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -80,6 +81,48 @@ func (u Unit) Index() kcd.Index {
 		}
 	}
 	return idx
+}
+
+// ResolveVName satisfies part of the kcd.Unit interface.
+func (u Unit) ResolveVName(inputPath string) *spb.VName {
+	root := u.Proto.GetWorkingDirectory()
+	if root == "" {
+		root = "/"
+	}
+
+	// match inputPath against the cleaned, absolute path.
+	if path.IsAbs(inputPath) {
+		inputPath = path.Clean(inputPath)
+	} else {
+		inputPath = path.Join(root, inputPath)
+	}
+	for _, ri := range u.Proto.RequiredInput {
+		if ri.Info == nil {
+			continue
+		}
+		qp := ri.Info.GetPath()
+		if path.IsAbs(qp) {
+			qp = path.Clean(qp)
+		} else {
+			qp = path.Join(root, qp)
+		}
+		if qp == inputPath {
+			v := ri.GetVName()
+			if v.GetCorpus() == "" {
+				v.Corpus = u.Proto.GetVName().GetCorpus()
+				v.Root = u.Proto.GetVName().GetRoot()
+			}
+			if v.GetPath() == "" {
+				prefix := root + "/"
+				if root == "/" {
+					prefix = "/"
+				}
+				v.Path = strings.TrimPrefix(qp, prefix)
+			}
+			return v
+		}
+	}
+	return nil
 }
 
 // Canonicalize satisfies part of the kcd.Unit interface.  It orders required
