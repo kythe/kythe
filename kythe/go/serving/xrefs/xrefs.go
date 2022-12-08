@@ -695,7 +695,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		return nil, status.Errorf(codes.InvalidArgument, "invalid corpus_path_filters %s: %v", strings.ReplaceAll(req.GetCorpusPathFilters().String(), "\n", " "), err)
 	}
 
-	pageReadGroup, pageReadGroupCtx := errgroup.WithContext(ctx)
+	pageReadGroupCtx, stopReadingPages := context.WithCancel(ctx)
+	defer stopReadingPages()
+	pageReadGroup, pageReadGroupCtx := errgroup.WithContext(pageReadGroupCtx)
 	pageReadGroup.SetLimit(int(*pageReadAhead) + 1)
 	single := new(syncCache[*srvpb.PagedCrossReferences_Page])
 
@@ -1103,6 +1105,14 @@ readLoop:
 
 		tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 	}
+
+	stopReadingPages()
+	go func() {
+		if err := pageReadGroup.Wait(); isNonContextError(err) {
+			log.Printf("ERROR: page read ahead error: %v", err)
+		}
+	}()
+
 	if !foundCrossRefs {
 		// Short-circuit return; skip any slow requests.
 		return &xpb.CrossReferencesReply{}, nil

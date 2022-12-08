@@ -29,6 +29,7 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
         "@io_bazel_rules_go//proto/wkt:any_go_proto",
         "@org_golang_google_protobuf//encoding/prototext:go_default_library",
     ],
