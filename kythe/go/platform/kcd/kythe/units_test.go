@@ -151,7 +151,7 @@ func TestLookupVName(t *testing.T) {
 	for _, test := range tests {
 		got := unit.LookupVName(test.path)
 		if diff := compare.ProtoDiff(test.want, got); diff != "" {
-			t.Errorf("(-expected; +found)", test.want, got)
+			t.Errorf("(-expected; +found):\n%s", diff)
 		}
 	}
 }
