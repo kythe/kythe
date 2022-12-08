@@ -1007,7 +1007,12 @@ readLoop:
 			}
 
 			c := pageCategory(idx)
-			c.AddCount(reply, idx, pageSet)
+			if c == xrefCategoryNone {
+				continue
+			}
+			if wantMoreCrossRefs && !stats.skipPage(idx) {
+				c.AddCount(reply, idx, pageSet)
+			}
 			if c != xrefCategoryIndirection && c != xrefCategoryRelated && !pageSet.Contains(idx) {
 				continue
 			}
