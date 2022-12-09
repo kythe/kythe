@@ -39,5 +39,11 @@ service TestService {
   //- MNContext0.pre_text "proto_kythe_test"
   //- MNContext1.pre_text "TestService"
   rpc TestMethod(TestRequest) returns (TestReply);
-}
 
+  //- @+3"TestRequest" ref RequestNode
+  //- @+4"TestReply" ref ReplyNode
+  rpc FullTestMethod(proto_kythe_test.
+      TestRequest) returns (
+          proto_kythe_test.
+          TestReply);
+}
