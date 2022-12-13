@@ -86,17 +86,36 @@ class ScopedLookup {
   const int component_;
 };
 
+absl::optional<absl::string_view> TypeName(const EnumDescriptor& desc) {
+  return desc.name();
+}
+
+absl::optional<absl::string_view> TypeName(const Descriptor& desc) {
+  return desc.name();
+}
+
 absl::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
   if (field.is_map()) {
     return absl::nullopt;
   }
   if (const EnumDescriptor* desc = field.enum_type()) {
-    return desc->name();
+    return TypeName(*desc);
   }
   if (const Descriptor* desc = field.message_type()) {
-    return desc->name();
+    return TypeName(*desc);
   }
   return absl::nullopt;
+}
+
+template <typename DescriptorType>
+void TruncateLocationToTypeName(Location& location,
+                                const DescriptorType& desc) {
+  absl::optional<absl::string_view> type_name = TypeName(desc);
+  if (!type_name.has_value() || location.end <= location.begin ||
+      (location.end - location.begin) <= type_name->size()) {
+    return;
+  }
+  location.begin = (location.end - type_name->size());
 }
 
 }  // namespace
@@ -450,14 +469,7 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
     // covering the type name itself, not the full package name.
     // This is consistent with other languages and avoids the possibility
     // of a multi-line span, which some UIs have problems with.
-    if (absl::optional<absl::string_view> type_name = TypeName(*field)) {
-      absl::string_view full_type = absl::string_view(content_).substr(
-          type_location.begin, type_location.end - type_location.begin);
-      if (auto pos = full_type.rfind(*type_name); pos != full_type.npos) {
-        type_location.begin += pos;
-        type_location.end = type_location.begin + type_name->size();
-      }
-    }
+    TruncateLocationToTypeName(type_location, *field);
   }
   if (auto type = VNameForFieldType(field)) {
     // TODO: add value_type back in at some point.
@@ -918,6 +930,9 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
         Location input_location;
         InitializeLocation(location_map_[lookup_path], &input_location);
         const Descriptor* input = method_dp->input_type();
+        // Only decorate the type name, not the full <package>.<type> span.
+        TruncateLocationToTypeName(input_location, *input);
+
         VName input_sig = builder_->VNameForDescriptor(input);
         builder_->AddArgumentToMethod(method, input_sig, input_location);
       }
@@ -929,6 +944,9 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
         Location output_location;
         InitializeLocation(location_map_[lookup_path], &output_location);
         const Descriptor* output = method_dp->output_type();
+        // Only decorate the type name, not the full <package>.<type> span.
+        TruncateLocationToTypeName(output_location, *output);
+
         VName output_sig = builder_->VNameForDescriptor(output);
         builder_->AddArgumentToMethod(method, output_sig, output_location);
       }

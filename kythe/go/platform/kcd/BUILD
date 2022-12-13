@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "kcd",
     srcs = ["kcd.go"],
+    deps = ["//kythe/proto:storage_go_proto"],
 )
 
 go_test(

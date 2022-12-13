@@ -782,6 +782,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 )?;
                 continue;
             }
+            reference_vname.set_root(file_vname.unwrap().get_root().to_string());
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
             let byte_span = self.get_byte_span(&ref_id, span)?;
@@ -855,6 +856,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 )?;
                 continue;
             }
+            reference_vname.set_root(file_vname.unwrap().get_root().to_string());
             reference_vname.set_path(file_vname.unwrap().get_path().to_string());
 
             let byte_span = self.get_byte_span(&reference.ref_id, span)?;
