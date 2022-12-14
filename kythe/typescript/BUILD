@@ -57,11 +57,16 @@ ts_library(
     ],
 )
 
+DISABLED_TESTS = []
+
 nodejs_test(
     name = "indexer_test",
     data = [
         ":test_ts",
-    ] + glob(["testdata/**/*"]) + [
+    ] + glob(
+        ["testdata/**/*"],
+        exclude = DISABLED_TESTS,
+    ) + [
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
     ],
