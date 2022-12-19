@@ -205,6 +205,7 @@ type AnalysisResult struct {
 
 	Status  AnalysisResult_Status `protobuf:"varint,1,opt,name=status,proto3,enum=kythe.proto.AnalysisResult_Status" json:"status,omitempty"`
 	Summary string                `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
+	Details []*anypb.Any          `protobuf:"bytes,3,rep,name=details,proto3" json:"details,omitempty"`
 }
 
 func (x *AnalysisResult) Reset() {
@@ -251,6 +252,13 @@ func (x *AnalysisResult) GetSummary() string {
 		return x.Summary
 	}
 	return ""
+}
+
+func (x *AnalysisResult) GetDetails() []*anypb.Any {
+	if x != nil {
+		return x.Details
+	}
+	return nil
 }
 
 type CompilationUnit struct {
@@ -1061,13 +1069,16 @@ var file_kythe_proto_analysis_proto_rawDesc = []byte{
 	0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x6e, 0x61, 0x6c, 0x79, 0x73, 0x69, 0x73, 0x52, 0x65, 0x73, 0x75,
 	0x6c, 0x74, 0x52, 0x0b, 0x66, 0x69, 0x6e, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22,
-	0xa3, 0x01, 0x0a, 0x0e, 0x41, 0x6e, 0x61, 0x6c, 0x79, 0x73, 0x69, 0x73, 0x52, 0x65, 0x73, 0x75,
+	0xd3, 0x01, 0x0a, 0x0e, 0x41, 0x6e, 0x61, 0x6c, 0x79, 0x73, 0x69, 0x73, 0x52, 0x65, 0x73, 0x75,
 	0x6c, 0x74, 0x12, 0x3a, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0e, 0x32, 0x22, 0x2e, 0x6b, 0x79, 0x74, 0x68, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x2e, 0x41, 0x6e, 0x61, 0x6c, 0x79, 0x73, 0x69, 0x73, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2e,
 	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18,
 	0x0a, 0x07, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x07, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x22, 0x3b, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74,
+	0x07, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x12, 0x2e, 0x0a, 0x07, 0x64, 0x65, 0x74, 0x61,
+	0x69, 0x6c, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x41, 0x6e, 0x79, 0x52,
+	0x07, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x73, 0x22, 0x3b, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74,
 	0x75, 0x73, 0x12, 0x0c, 0x0a, 0x08, 0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x45, 0x10, 0x00,
 	0x12, 0x0e, 0x0a, 0x0a, 0x49, 0x4e, 0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x45, 0x10, 0x01,
 	0x12, 0x13, 0x0a, 0x0f, 0x49, 0x4e, 0x56, 0x41, 0x4c, 0x49, 0x44, 0x5f, 0x52, 0x45, 0x51, 0x55,
@@ -1245,39 +1256,40 @@ var file_kythe_proto_analysis_proto_goTypes = []interface{}{
 	nil,                              // 17: kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry
 	nil,                              // 18: kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry
 	(*IndexedCompilation_Index)(nil), // 19: kythe.proto.IndexedCompilation.Index
-	(*storage_go_proto.VName)(nil),   // 20: kythe.proto.VName
-	(*anypb.Any)(nil),                // 21: google.protobuf.Any
+	(*anypb.Any)(nil),                // 20: google.protobuf.Any
+	(*storage_go_proto.VName)(nil),   // 21: kythe.proto.VName
 	(*timestamppb.Timestamp)(nil),    // 22: google.protobuf.Timestamp
 }
 var file_kythe_proto_analysis_proto_depIdxs = []int32{
 	4,  // 0: kythe.proto.AnalysisRequest.compilation:type_name -> kythe.proto.CompilationUnit
 	3,  // 1: kythe.proto.AnalysisOutput.final_result:type_name -> kythe.proto.AnalysisResult
 	0,  // 2: kythe.proto.AnalysisResult.status:type_name -> kythe.proto.AnalysisResult.Status
-	20, // 3: kythe.proto.CompilationUnit.v_name:type_name -> kythe.proto.VName
-	12, // 4: kythe.proto.CompilationUnit.required_input:type_name -> kythe.proto.CompilationUnit.FileInput
-	13, // 5: kythe.proto.CompilationUnit.environment:type_name -> kythe.proto.CompilationUnit.Env
-	21, // 6: kythe.proto.CompilationUnit.details:type_name -> google.protobuf.Any
-	15, // 7: kythe.proto.KzipInfo.corpora:type_name -> kythe.proto.KzipInfo.CorporaEntry
-	22, // 8: kythe.proto.BuildMetadata.commit_timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 9: kythe.proto.FilesRequest.files:type_name -> kythe.proto.FileInfo
-	8,  // 10: kythe.proto.FileData.info:type_name -> kythe.proto.FileInfo
-	4,  // 11: kythe.proto.CompilationBundle.unit:type_name -> kythe.proto.CompilationUnit
-	9,  // 12: kythe.proto.CompilationBundle.files:type_name -> kythe.proto.FileData
-	4,  // 13: kythe.proto.IndexedCompilation.unit:type_name -> kythe.proto.CompilationUnit
-	19, // 14: kythe.proto.IndexedCompilation.index:type_name -> kythe.proto.IndexedCompilation.Index
-	20, // 15: kythe.proto.CompilationUnit.FileInput.v_name:type_name -> kythe.proto.VName
-	8,  // 16: kythe.proto.CompilationUnit.FileInput.info:type_name -> kythe.proto.FileInfo
-	21, // 17: kythe.proto.CompilationUnit.FileInput.details:type_name -> google.protobuf.Any
-	17, // 18: kythe.proto.KzipInfo.CorpusInfo.language_required_inputs:type_name -> kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry
-	18, // 19: kythe.proto.KzipInfo.CorpusInfo.language_sources:type_name -> kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry
-	14, // 20: kythe.proto.KzipInfo.CorporaEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo
-	16, // 21: kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo.RequiredInputs
-	16, // 22: kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo.RequiredInputs
-	23, // [23:23] is the sub-list for method output_type
-	23, // [23:23] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	20, // 3: kythe.proto.AnalysisResult.details:type_name -> google.protobuf.Any
+	21, // 4: kythe.proto.CompilationUnit.v_name:type_name -> kythe.proto.VName
+	12, // 5: kythe.proto.CompilationUnit.required_input:type_name -> kythe.proto.CompilationUnit.FileInput
+	13, // 6: kythe.proto.CompilationUnit.environment:type_name -> kythe.proto.CompilationUnit.Env
+	20, // 7: kythe.proto.CompilationUnit.details:type_name -> google.protobuf.Any
+	15, // 8: kythe.proto.KzipInfo.corpora:type_name -> kythe.proto.KzipInfo.CorporaEntry
+	22, // 9: kythe.proto.BuildMetadata.commit_timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 10: kythe.proto.FilesRequest.files:type_name -> kythe.proto.FileInfo
+	8,  // 11: kythe.proto.FileData.info:type_name -> kythe.proto.FileInfo
+	4,  // 12: kythe.proto.CompilationBundle.unit:type_name -> kythe.proto.CompilationUnit
+	9,  // 13: kythe.proto.CompilationBundle.files:type_name -> kythe.proto.FileData
+	4,  // 14: kythe.proto.IndexedCompilation.unit:type_name -> kythe.proto.CompilationUnit
+	19, // 15: kythe.proto.IndexedCompilation.index:type_name -> kythe.proto.IndexedCompilation.Index
+	21, // 16: kythe.proto.CompilationUnit.FileInput.v_name:type_name -> kythe.proto.VName
+	8,  // 17: kythe.proto.CompilationUnit.FileInput.info:type_name -> kythe.proto.FileInfo
+	20, // 18: kythe.proto.CompilationUnit.FileInput.details:type_name -> google.protobuf.Any
+	17, // 19: kythe.proto.KzipInfo.CorpusInfo.language_required_inputs:type_name -> kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry
+	18, // 20: kythe.proto.KzipInfo.CorpusInfo.language_sources:type_name -> kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry
+	14, // 21: kythe.proto.KzipInfo.CorporaEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo
+	16, // 22: kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo.RequiredInputs
+	16, // 23: kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry.value:type_name -> kythe.proto.KzipInfo.CorpusInfo.RequiredInputs
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_kythe_proto_analysis_proto_init() }
