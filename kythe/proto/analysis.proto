@@ -79,6 +79,9 @@ message AnalysisResult {
 
   Status status = 1;   // the status code describing the result
   string summary = 2;  // a human-readable error message for use in diagnostics
+
+  // Freeform details from the analyzer
+  repeated google.protobuf.Any details = 3;
 }
 
 // Describes a single unit of compilation.
