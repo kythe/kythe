@@ -163,10 +163,11 @@ func (d *Driver) runAnalysis(ctx context.Context, cu Compilation) error {
 		ctx, cancel = context.WithTimeout(ctx, d.AnalysisOptions.Timeout)
 		defer cancel()
 	}
-	return d.Analyzer.Analyze(ctx, &apb.AnalysisRequest{
+	_, err := d.Analyzer.Analyze(ctx, &apb.AnalysisRequest{
 		Compilation:     cu.Unit,
 		FileDataService: d.FileDataService,
 		Revision:        cu.Revision,
 		BuildId:         cu.BuildID,
 	}, d.writeOutput)
+	return err
 }
