@@ -38,10 +38,11 @@ type mock struct {
 
 	idx int
 
-	Compilations []Compilation
-	Outputs      []*apb.AnalysisOutput
-	AnalyzeError error
-	OutputError  error
+	Compilations   []Compilation
+	Outputs        []*apb.AnalysisOutput
+	AnalysisResult *apb.AnalysisResult
+	AnalyzeError   error
+	OutputError    error
 
 	AnalysisDuration time.Duration
 
@@ -66,7 +67,7 @@ func (m *mock) out() analysis.OutputFunc {
 const buildID = "aabbcc"
 
 // Analyze implements the analysis.CompilationAnalyzer interface.
-func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) error {
+func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) (*apb.AnalysisResult, error) {
 	if m.AnalysisDuration != 0 {
 		log.Printf("Waiting %s for analysis request", m.AnalysisDuration)
 		time.Sleep(m.AnalysisDuration)
@@ -76,7 +77,7 @@ func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analys
 	for _, o := range m.Outputs {
 		if err := out(ctx, o); err != m.OutputError {
 			m.t.Errorf("Expected OutputFunc error: %v; found: %v", m.OutputError, err)
-			return err
+			return nil, err
 		}
 	}
 	if m.OutputIndex != len(m.Outputs) {
@@ -86,9 +87,9 @@ func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analys
 		m.t.Errorf("Missing build ID")
 	}
 	if err := ctx.Err(); err != nil {
-		return err
+		return m.AnalysisResult, err
 	}
-	return m.AnalyzeError
+	return m.AnalysisResult, m.AnalyzeError
 }
 
 // Next implements the Queue interface.
