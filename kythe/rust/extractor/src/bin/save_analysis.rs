@@ -21,13 +21,9 @@ use std::path::{Path, PathBuf};
 ///
 /// * `arguments` - The Bazel arguments extracted from the extra action protobuf
 /// * `output_dir` - The base directory to output the save_analysis
-pub fn generate_save_analysis(
-    arguments: Vec<String>,
-    output_dir: PathBuf,
-    output_file_name: &str,
-) -> Result<()> {
+pub fn generate_save_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
     let rustc_arguments = generate_arguments(arguments, &output_dir)?;
-    kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir, output_file_name)
+    kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
         .map_err(|_| anyhow!("Failed to generate save_analysis"))?;
     Ok(())
 }
@@ -59,7 +55,7 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
         .ok_or_else(|| anyhow!("Could not find the output directory argument: {:?}", arguments))?;
     let outdir_str =
         output_dir.to_str().ok_or_else(|| anyhow!("Couldn't convert temporary path to string"))?;
-    rustc_arguments[outdir_position] = format!("--out-dir={}", outdir_str);
+    rustc_arguments[outdir_position] = format!("--out-dir={outdir_str}");
 
     // Check if there is a file containing environment variables
     let env_file_position = arguments.iter().position(|arg| arg == "--env-file");

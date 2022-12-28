@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     let mut out_dir_inputs: Vec<String> = Vec::new();
     if let Some(out_dir) = out_dir_var {
         let absolute_out_dir = out_dir.replace("${pwd}", pwd.to_str().unwrap());
-        let glob_pattern = format!("{}/**/*", absolute_out_dir);
+        let glob_pattern = format!("{absolute_out_dir}/**/*");
         for path in glob(&glob_pattern).unwrap().flatten() {
             if path.is_file() {
                 out_dir_inputs.push(path.display().to_string());
@@ -91,15 +91,6 @@ fn main() -> Result<()> {
         .get(0)
         .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
 
-    // Get the name of the output file (without extension)
-    let output_file_name = PathBuf::from(build_output_path)
-        .with_extension("")
-        .file_name()
-        .ok_or_else(|| anyhow!("Failed to extract file name from build output path"))?
-        .to_str()
-        .ok_or_else(|| anyhow!("Failed to convert build output path file name to string"))?
-        .to_string();
-
     // Create temporary directory and run the analysis
     let tmp_dir = TempDir::new("rust_extractor")
         .with_context(|| "Failed to make temporary directory".to_string())?;
@@ -107,7 +98,6 @@ fn main() -> Result<()> {
     save_analysis::generate_save_analysis(
         build_target_arguments.clone(),
         PathBuf::from(tmp_dir.path()),
-        &output_file_name,
     )?;
 
     // Create the output kzip
@@ -153,7 +143,7 @@ fn main() -> Result<()> {
     }
 
     // Add save analysis to kzip
-    let save_analysis_path = analysis_path_string(&output_file_name, tmp_dir.path())?;
+    let save_analysis_path = analysis_path_string(tmp_dir.path())?;
     let save_analysis_vname = create_vname(&mut vname_rules, &save_analysis_path, &default_corpus);
     kzip_add_required_input(
         &save_analysis_path,
@@ -187,7 +177,7 @@ fn main() -> Result<()> {
         .with_context(|| "Failed to serialize IndexedCompilation to bytes".to_string())?;
     let indexed_compilation_digest = sha256digest(&indexed_compilation_bytes);
     kzip_add_file(
-        format!("root/pbunits/{}", indexed_compilation_digest),
+        format!("root/pbunits/{indexed_compilation_digest}"),
         &indexed_compilation_bytes,
         &mut kzip,
     )?;
@@ -273,13 +263,13 @@ fn kzip_add_required_input(
     required_inputs: &mut Vec<CompilationUnit_FileInput>,
 ) -> Result<()> {
     let mut source_file = File::open(file_path_string)
-        .with_context(|| format!("Failed open file {:?}", file_path_string))?;
+        .with_context(|| format!("Failed open file {file_path_string}"))?;
     let mut source_file_contents: Vec<u8> = Vec::new();
     source_file
         .read_to_end(&mut source_file_contents)
-        .with_context(|| format!("Failed read file {:?}", file_path_string))?;
+        .with_context(|| format!("Failed read file {file_path_string}"))?;
     let digest = sha256digest(&source_file_contents);
-    kzip_add_file(format!("root/files/{}", digest), &source_file_contents, zip_writer)?;
+    kzip_add_file(format!("root/files/{digest}"), &source_file_contents, zip_writer)?;
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
@@ -306,26 +296,22 @@ fn kzip_add_file(
 ) -> Result<()> {
     zip_writer
         .start_file(&file_name, FileOptions::default())
-        .with_context(|| format!("Failed create file in kzip: {:?}", file_name))?;
+        .with_context(|| format!("Failed create file in kzip: {file_name}"))?;
     zip_writer
         .write_all(file_bytes)
-        .with_context(|| format!("Failed write file contents to kzip: {:?}", file_name))?;
+        .with_context(|| format!("Failed write file contents to kzip: {file_name}"))?;
     Ok(())
 }
 
-/// Find the path of the save_analysis file using the build target's
-/// output file name and the temporary base directory
-fn analysis_path_string(output_file_name: &str, temp_dir_path: &Path) -> Result<String> {
-    // The path should always be {tmp_dir}/save-analysis/{output_file_name}.json
-    let expected_path =
-        temp_dir_path.join("save-analysis").join(output_file_name).with_extension("json");
-    if expected_path.exists() {
-        expected_path
-            .to_str()
-            .ok_or_else(|| anyhow!("save_analysis file path is not valid UTF-8"))
-            .map(String::from)
-    } else {
-        Err(anyhow!("Failed to find save-analysis file in {:?}", temp_dir_path))
+/// Find the path of the save_analysis file in the temporary directory
+fn analysis_path_string(temp_dir_path: &Path) -> Result<String> {
+    let glob_pattern = format!("{}/save-analysis/*.json", temp_dir_path.display());
+    let mut glob_result = glob(&glob_pattern).context("Failed to glob for save_analysis file")?;
+    let first_path =
+        glob_result.next().ok_or_else(|| anyhow!("Failed to find save_analysis file"))?;
+    match first_path {
+        Ok(path) => Ok(path.display().to_string()),
+        Err(e) => Err(e.into()),
     }
 }
 

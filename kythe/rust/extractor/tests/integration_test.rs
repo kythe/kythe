@@ -46,16 +46,16 @@ fn main() -> Result<()> {
         "--".to_string(),
         "rustc".to_string(),
         rust_test_source.clone(),
-        format!("-L{}", sysroot),
+        format!("-L{sysroot}"),
         "--crate-name=test_crate".to_string(),
-        format!("--out-dir={}", temp_dir_str),
+        format!("--out-dir={temp_dir_str}"),
     ];
     spawn_info.set_argument(protobuf::RepeatedField::from_vec(arguments.clone()));
 
     let input_files: Vec<String> = vec![rust_test_source];
     spawn_info.set_input_file(protobuf::RepeatedField::from_vec(input_files));
 
-    let output_key = format!("{}/libtest_crate-1234", temp_dir_str);
+    let output_key = format!("{temp_dir_str}/libtest_crate-1234");
     let output_files: Vec<String> = vec![output_key.clone()];
     spawn_info.set_output_file(protobuf::RepeatedField::from_vec(output_files));
 
@@ -150,10 +150,10 @@ fn correct_arguments_succeed(
     let vnames_path = r.rlocation("io_kythe/external/io_kythe/kythe/data/vnames_config.json");
 
     let extractor_path = std::env::var("EXTRACTOR_PATH").expect("Couldn't find extractor path");
-    let kzip_path_str = format!("{}/output.kzip", temp_dir_str);
+    let kzip_path_str = format!("{temp_dir_str}/output.kzip");
     let exit_status = Command::new(extractor_path)
-        .arg(format!("--extra_action={}", extra_action_path_str))
-        .arg(format!("--output={}", kzip_path_str))
+        .arg(format!("--extra_action={extra_action_path_str}"))
+        .arg(format!("--output={kzip_path_str}"))
         .arg(format!("--vnames_config={}", vnames_path.to_string_lossy()))
         .status()
         .unwrap();
@@ -231,8 +231,7 @@ fn correct_arguments_succeed(
     let source_file_path = source_input.get_info().get_path();
     assert!(
         source_file_path.contains("kythe/rust/extractor/main.rs"),
-        "Path for the first required input doesn't contain \"kythe/rust/extractor/main.rs\": {}",
-        source_file_path
+        "Path for the first required input doesn't contain \"kythe/rust/extractor/main.rs\": {source_file_path}"
     );
     assert_eq!(
         source_input.get_info().get_digest(),
@@ -246,8 +245,7 @@ fn correct_arguments_succeed(
     let out_dir_input_path = out_dir_input.get_info().get_path();
     assert!(
         out_dir_input_path.contains("out_dir/input.rs"),
-        "Path for the second required input doesn't contain \"out_dir/input.rs\": {}",
-        out_dir_input_path
+        "Path for the second required input doesn't contain \"out_dir/input.rs\": {out_dir_input_path}"
     );
     assert_eq!(
         out_dir_input.get_info().get_digest(),
@@ -260,8 +258,7 @@ fn correct_arguments_succeed(
     let analysis_input = required_inputs.get(2).expect("Failed to get the third required input");
     let analysis_path = analysis_input.get_info().get_path();
     assert!(
-        analysis_path.contains("save-analysis/libtest_crate-1234.json"),
-        "Unexpected file path for save_analysis file: {}",
-        analysis_path
+        analysis_path.contains("save-analysis/test_crate.json"),
+        "Unexpected file path for save_analysis file: {analysis_path}"
     );
 }

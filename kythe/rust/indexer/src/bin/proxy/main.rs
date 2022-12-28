@@ -81,7 +81,7 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 /// value, and the second sets the error message if the first argument is false.
 fn send_done(ok: bool, msg: String) -> Result<()> {
     let request = proxyrequests::done(ok, msg)?;
-    println!("{}", request);
+    println!("{request}");
     io::stdout().flush().context("Failed to flush stdout")?;
 
     // Grab the response, but we don't care what it is so just throw it away

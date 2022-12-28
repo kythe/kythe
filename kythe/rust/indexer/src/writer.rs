@@ -114,25 +114,23 @@ impl KytheWriter for ProxyWriter {
         // Write the proxy command to output
         let request = proxyrequests::output(self.buffer.clone())?;
         self.buffer.clear();
-        println!("{}", request);
-        io::stdout().flush().map_err(|err| {
-            KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
-        })?;
+        println!("{request}");
+        io::stdout()
+            .flush()
+            .map_err(|err| KytheError::IndexerError(format!("Failed to flush stdout: {err:?}")))?;
 
         // Read the response from the proxy
         let mut response_string = String::new();
         io::stdin().read_line(&mut response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
 
         // Convert to json and extract information
         let response: Value = serde_json::from_str(&response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
         if response["rsp"].as_str().unwrap() == "error" {

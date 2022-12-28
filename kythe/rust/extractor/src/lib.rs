@@ -31,18 +31,14 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(
-    rustc_arguments: Vec<String>,
-    output_dir: PathBuf,
-    output_file_name: &str,
-) -> Result<(), String> {
+pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
     let first_arg =
         rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
     if first_arg != &"".to_string() {
         return Err("The first argument must be an empty string".into());
     }
 
-    let mut callback_shim = CallbackShim::new(output_dir, output_file_name.to_string());
+    let mut callback_shim = CallbackShim::new(output_dir);
 
     rustc_driver::catch_fatal_errors(|| {
         RunCompiler::new(&rustc_arguments, &mut callback_shim).run()
@@ -57,13 +53,12 @@ pub fn generate_analysis(
 #[derive(Default)]
 struct CallbackShim {
     output_dir: PathBuf,
-    output_file_name: String,
 }
 
 impl CallbackShim {
     /// Create a new CallbackShim that dumps save_analysis files to `output_dir`
-    pub fn new(output_dir: PathBuf, output_file_name: String) -> Self {
-        Self { output_dir, output_file_name }
+    pub fn new(output_dir: PathBuf) -> Self {
+        Self { output_dir }
     }
 }
 
@@ -79,7 +74,7 @@ impl Callbacks for CallbackShim {
         queries: &'tcx Queries<'tcx>,
     ) -> Compilation {
         let input = compiler.input();
-        let crate_name = queries.crate_name().unwrap().peek().clone();
+        let crate_name = *queries.crate_name().unwrap().peek();
 
         // Configure the save_analysis to include full documentation.
         // Normally this would be set using a `rls_data::config::Config` struct on the
@@ -98,10 +93,10 @@ impl Callbacks for CallbackShim {
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             rustc_save_analysis::process_crate(
                 tcx,
-                &crate_name,
+                crate_name,
                 input,
                 None,
-                DumpHandler::new(Some(self.output_dir.as_path()), &self.output_file_name),
+                DumpHandler::new(Some(self.output_dir.as_path()), crate_name),
             )
         });
 
