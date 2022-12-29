@@ -160,25 +160,23 @@ impl ProxyFileProvider {
     fn file_request(&mut self, path: &str, digest: &str) -> Result<Value, KytheError> {
         // Submit the file request to the proxy
         let request = proxyrequests::file(path.to_string(), digest.to_string())?;
-        println!("{}", request);
-        io::stdout().flush().map_err(|err| {
-            KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
-        })?;
+        println!("{request}");
+        io::stdout()
+            .flush()
+            .map_err(|err| KytheError::IndexerError(format!("Failed to flush stdout: {err:?}")))?;
 
         // Read the response from the proxy
         let mut response_string = String::new();
         io::stdin().read_line(&mut response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
 
         // Convert to json and extract information
         let response: Value = serde_json::from_str(&response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
         if response["rsp"].as_str().unwrap() == "error" {
@@ -216,8 +214,7 @@ impl FileProvider for ProxyFileProvider {
         let content_base64: &str = content_option.unwrap();
         let content: Vec<u8> = base64::decode(content_base64).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to convert base64 file contents response to bytes: {:?}",
-                err
+                "Failed to convert base64 file contents response to bytes: {err:?}"
             ))
         })?;
         Ok(content)

@@ -159,8 +159,7 @@ impl<'a> UnitAnalyzer<'a> {
                     let file_bytes = self.provider.contents(source_file, file_digest)?;
                     String::from_utf8(file_bytes).map_err(|_| {
                         KytheError::IndexerError(format!(
-                            "Failed to read file {} as UTF8 string",
-                            source_file
+                            "Failed to read file {source_file} as UTF8 string"
                         ))
                     })?
                 } else {
@@ -257,7 +256,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         vname_template.set_language("rust".to_string());
         for t in types.iter() {
             let mut type_vname = vname_template.clone();
-            type_vname.set_signature(format!("{}#builtin", t));
+            type_vname.set_signature(format!("{t}#builtin"));
             type_vnames.insert(t.to_string(), type_vname);
         }
 
@@ -349,8 +348,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             if let rls_data::RelationKind::Impl { id: impl_id, .. } = relation.kind {
                 let implementation = impl_map.get(&impl_id).ok_or_else(|| {
                     KytheError::IndexerError(format!(
-                        "Couldn't find implementation for relation {:?}",
-                        relation
+                        "Couldn't find implementation for relation {relation:?}"
                     ))
                 })?;
                 // Add all of the childred to the HashMap
@@ -455,8 +453,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         for (child_id, parent_vname) in self.children_ids.iter() {
             let child_vname = self.definition_vnames.remove(child_id).ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get vname for child {:?} when emitting childof edge",
-                    child_id
+                    "Failed to get vname for child {child_id:?} when emitting childof edge"
                 ))
             })?;
             self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
@@ -529,7 +526,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                         // Generate a diagnostic node indicating that we couldn't find the parent
                         let mut anchor_vname = def_vname.clone();
                         let def_signature = def_vname.get_signature();
-                        anchor_vname.set_signature(format!("{}_anchor", def_signature));
+                        anchor_vname.set_signature(format!("{def_signature}_anchor"));
                         self.emitter.emit_diagnostic(
                             &anchor_vname,
                             "Cross reference could not be generated",
@@ -754,7 +751,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 self.emitter.emit_diagnostic(
                     file_vname,
                     "Cross reference could not be generated",
-                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    Some(&format!("Failed to generate cross reference for \"{ref_id:?}\" because the referenced crate could not be found")),
                     None
                 )?;
                 continue;
@@ -777,7 +774,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 self.emitter.emit_diagnostic(
                     file_vname,
                     "Failed to get file VName for reference",
-                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{file_name}\"").as_ref()),
                     None,
                 )?;
                 continue;
@@ -830,7 +827,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 self.emitter.emit_diagnostic(
                     file_vname,
                     "Cross reference could not be generated",
-                    Some(&format!("Failed to generate cross reference for \"{:?}\" because the referenced crate could not be found", ref_id)),
+                    Some(&format!("Failed to generate cross reference for \"{ref_id:?}\" because the referenced crate could not be found")),
                     None
                 )?;
                 continue;
@@ -851,7 +848,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 self.emitter.emit_diagnostic(
                     &target_vname,
                     "Failed to get file VName for reference",
-                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{}\"", file_name).as_ref()),
+                    Some(format!("The Rust indexer was unable to locate the file VName for the reference in the file \"{file_name}\"").as_ref()),
                     None,
                 )?;
                 continue;
@@ -882,7 +879,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     fn generate_def_vname(&self, crate_id: &rls_analysis::CrateId, index: u32) -> VName {
         let mut crate_vname = self.generate_crate_vname(crate_id);
         let crate_signature = crate_vname.get_signature().to_owned();
-        crate_vname.set_signature(format!("{}_def_{}", crate_signature, index));
+        crate_vname.set_signature(format!("{crate_signature}_def_{index}"));
         crate_vname
     }
 
@@ -909,8 +906,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             .get_byte_offset(&file_name, span.line_end.0, span.column_end.0)
             .ok_or_else(|| {
                 KytheError::IndexerError(format!(
-                    "Failed to get ending offset for reference {:?}",
-                    ref_id
+                    "Failed to get ending offset for reference {ref_id:?}"
                 ))
             })?;
 
