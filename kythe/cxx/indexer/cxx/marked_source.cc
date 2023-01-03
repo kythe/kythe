@@ -509,8 +509,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   /// is placed to the left of types, _Nullable is placed to the right of types.
   bool ShouldSkipDecl(const clang::Decl* decl, const clang::QualType& qt,
                       const clang::SourceRange& sr) {
-    clang::Optional<clang::NullabilityKind> k =
-        qt->getNullability(decl->getASTContext());
+    clang::Optional<clang::NullabilityKind> k = qt->getNullability();
     return k && sr.getBegin().getRawEncoding() > sr.getEnd().getRawEncoding();
   }
 

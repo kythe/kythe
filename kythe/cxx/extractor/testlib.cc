@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include <iostream>
+#include <optional>
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
@@ -36,7 +37,6 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
-#include "llvm/ADT/None.h"
 #include "llvm/Support/Program.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
@@ -209,7 +209,7 @@ bool ExecuteAndWait(const std::string& program,
   int exit_code = llvm::sys::ExecuteAndWait(
       program, VectorForExecute(argv),
       llvm::makeArrayRef(VectorForExecute(env)),
-      /* Redirects */ llvm::None,
+      /* Redirects */ std::nullopt,
       /* SecondsToWait */ 0, /* MemoryLimit */ 0, &error, &execution_failed);
   if (!error.empty() || execution_failed || exit_code != 0) {
     LOG(ERROR) << "unable to run extractor (" << exit_code << "): " << error;
