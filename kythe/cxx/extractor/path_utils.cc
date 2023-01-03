@@ -66,7 +66,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
   } else {
     result_filename->append(filename.begin(), filename.end());
   }
-  llvm::Optional<clang::FileEntryRef> file = preprocessor->LookupFile(
+  clang::OptionalFileEntryRef file = preprocessor->LookupFile(
       filename_token.getLocation(),
       preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
                                              : filename,

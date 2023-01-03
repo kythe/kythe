@@ -281,7 +281,7 @@ class PreprocessorHooks : public clang::PPCallbacks {
                           const clang::Token& include_token,
                           llvm::StringRef file_name, bool is_angled,
                           clang::CharSourceRange file_name_range,
-                          llvm::Optional<clang::FileEntryRef> include_file,
+                          clang::OptionalFileEntryRef include_file,
                           llvm::StringRef search_path,
                           llvm::StringRef relative_path,
                           const clang::Module* imported,
@@ -491,9 +491,9 @@ void PreprocessorHooks::InclusionDirective(
     clang::SourceLocation hash_location, const clang::Token& include_token,
     llvm::StringRef file_name, bool is_angled,
     clang::CharSourceRange file_name_range,
-    llvm::Optional<clang::FileEntryRef> include_file,
-    llvm::StringRef search_path, llvm::StringRef relative_path,
-    const clang::Module* imported, clang::SrcMgr::CharacteristicKind FileType) {
+    clang::OptionalFileEntryRef include_file, llvm::StringRef search_path,
+    llvm::StringRef relative_path, const clang::Module* imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   if (!enclosing_pass_ || !enclosing_pass_->tracker()) {
     return;
   }

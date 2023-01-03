@@ -451,7 +451,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   void InclusionDirective(
       clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
       llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
-      llvm::Optional<clang::FileEntryRef> File, llvm::StringRef SearchPath,
+      clang::OptionalFileEntryRef File, llvm::StringRef SearchPath,
       llvm::StringRef RelativePath, const clang::Module* Imported,
       clang::SrcMgr::CharacteristicKind FileType) override;
 
@@ -840,7 +840,7 @@ std::string IncludeDirGroupToString(const clang::frontend::IncludeDirGroup& G) {
 void ExtractorPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
     llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
-    llvm::Optional<clang::FileEntryRef> File, llvm::StringRef SearchPath,
+    clang::OptionalFileEntryRef File, llvm::StringRef SearchPath,
     llvm::StringRef RelativePath, const clang::Module* Imported,
     clang::SrcMgr::CharacteristicKind FileType) {
   if (!File) {
