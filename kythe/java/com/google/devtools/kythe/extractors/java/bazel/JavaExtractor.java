@@ -136,20 +136,26 @@ public class JavaExtractor {
       Files.createDirectories(genSrcDir.get());
     }
 
-    // TODO(salguarnieri) Read -system module directory from the javac arguments.
-    CompilationDescription description =
+    JavaCompilationUnitExtractor javaCompilationUnitExtractor =
         new JavaCompilationUnitExtractor(FileVNames.fromFile(vNamesConfigPath), USER_DIR.value())
-            .setAllowServiceProcessors(false) // Bazel provides any necessary processors
-            .extract(
-                info.getOwner(),
-                sources,
-                jInfo.getClasspathList(),
-                jInfo.getBootclasspathList(),
-                sourcepaths,
-                jInfo.getProcessorpathList(),
-                jInfo.getProcessorList(),
-                javacOpts,
-                jInfo.getOutputjar());
+            .setAllowServiceProcessors(false); // Bazel provides any necessary processors
+
+    String sysd = jInfo.getSystem();
+    if (!sysd.isEmpty() && !sysd.equals("none")) {
+      javaCompilationUnitExtractor.useSystemDirectory(sysd);
+    }
+
+    CompilationDescription description =
+        javaCompilationUnitExtractor.extract(
+            info.getOwner(),
+            sources,
+            jInfo.getClasspathList(),
+            jInfo.getBootclasspathList(),
+            sourcepaths,
+            jInfo.getProcessorpathList(),
+            jInfo.getProcessorList(),
+            javacOpts,
+            jInfo.getOutputjar());
 
     if (!outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
       throw new IllegalArgumentException("Expected output file path to have .kzip extension.");
