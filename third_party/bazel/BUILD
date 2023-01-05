@@ -64,7 +64,10 @@ proto_library(
     srcs = ["src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto"],
     deps = [
         ":command_line_proto",
+        ":failure_details_proto",
         ":invocation_policy_proto",
+        "@com_google_protobuf//:duration_proto",
+        "@com_google_protobuf//:timestamp_proto",
     ],
 )
 
@@ -74,6 +77,7 @@ go_proto_library(
     proto = ":build_event_stream_proto",
     deps = [
         ":command_line_go_proto",
+        ":failure_details_go_proto",
         ":invocation_policy_go_proto",
     ],
 )
@@ -93,6 +97,20 @@ go_proto_library(
     deps = [
         ":option_filters_go_proto",
     ],
+)
+
+proto_library(
+    name = "failure_details_proto",
+    srcs = ["src/main/protobuf/failure_details.proto"],
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+)
+
+go_proto_library(
+    name = "failure_details_go_proto",
+    importpath = "kythe.io/third_party/bazel/failure_details_go_proto",
+    proto = ":failure_details_proto",
 )
 
 proto_library(

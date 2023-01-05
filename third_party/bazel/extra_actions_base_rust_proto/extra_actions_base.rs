@@ -2772,6 +2772,7 @@ pub struct JavaCompileInfo {
     pub processorpath: ::protobuf::RepeatedField<::std::string::String>,
     pub bootclasspath: ::protobuf::RepeatedField<::std::string::String>,
     pub argument: ::protobuf::RepeatedField<::std::string::String>,
+    system: ::protobuf::SingularField<::std::string::String>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -3023,6 +3024,42 @@ impl JavaCompileInfo {
     pub fn take_argument(&mut self) -> ::protobuf::RepeatedField<::std::string::String> {
         ::std::mem::replace(&mut self.argument, ::protobuf::RepeatedField::new())
     }
+
+    // optional string system = 10;
+
+
+    pub fn get_system(&self) -> &str {
+        match self.system.as_ref() {
+            Some(v) => &v,
+            None => "",
+        }
+    }
+    pub fn clear_system(&mut self) {
+        self.system.clear();
+    }
+
+    pub fn has_system(&self) -> bool {
+        self.system.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_system(&mut self, v: ::std::string::String) {
+        self.system = ::protobuf::SingularField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_system(&mut self) -> &mut ::std::string::String {
+        if self.system.is_none() {
+            self.system.set_default();
+        }
+        self.system.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_system(&mut self) -> ::std::string::String {
+        self.system.take().unwrap_or_else(|| ::std::string::String::new())
+    }
 }
 
 impl ::protobuf::Message for JavaCompileInfo {
@@ -3060,6 +3097,9 @@ impl ::protobuf::Message for JavaCompileInfo {
                 },
                 9 => {
                     ::protobuf::rt::read_repeated_string_into(wire_type, is, &mut self.argument)?;
+                },
+                10 => {
+                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.system)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -3100,6 +3140,9 @@ impl ::protobuf::Message for JavaCompileInfo {
         for value in &self.argument {
             my_size += ::protobuf::rt::string_size(9, &value);
         };
+        if let Some(ref v) = self.system.as_ref() {
+            my_size += ::protobuf::rt::string_size(10, &v);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -3133,6 +3176,9 @@ impl ::protobuf::Message for JavaCompileInfo {
         for v in &self.argument {
             os.write_string(9, &v)?;
         };
+        if let Some(ref v) = self.system.as_ref() {
+            os.write_string(10, &v)?;
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -3216,6 +3262,11 @@ impl ::protobuf::Message for JavaCompileInfo {
                 |m: &JavaCompileInfo| { &m.argument },
                 |m: &mut JavaCompileInfo| { &mut m.argument },
             ));
+            fields.push(::protobuf::reflect::accessor::make_singular_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "system",
+                |m: &JavaCompileInfo| { &m.system },
+                |m: &mut JavaCompileInfo| { &mut m.system },
+            ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<JavaCompileInfo>(
                 "JavaCompileInfo",
                 fields,
@@ -3241,6 +3292,7 @@ impl ::protobuf::Clear for JavaCompileInfo {
         self.processorpath.clear();
         self.bootclasspath.clear();
         self.argument.clear();
+        self.system.clear();
         self.unknown_fields.clear();
     }
 }
@@ -3502,7 +3554,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x20\x03(\tR\tlinkStamp\x12;\n\x1abuild_info_header_artifact\x18\x07\x20\
     \x03(\tR\x17buildInfoHeaderArtifact\x12\x19\n\x08link_opt\x18\x08\x20\
     \x03(\tR\x07linkOpt2O\n\rcpp_link_info\x18\xea\x07\x20\x01(\x0b2\x12.bla\
-    ze.CppLinkInfo\x12\x16.blaze.ExtraActionInfoR\x0bcppLinkInfo\"\x8e\x03\n\
+    ze.CppLinkInfo\x12\x16.blaze.ExtraActionInfoR\x0bcppLinkInfo\"\xa6\x03\n\
     \x0fJavaCompileInfo\x12\x1c\n\toutputjar\x18\x01\x20\x01(\tR\toutputjar\
     \x12\x1c\n\tclasspath\x18\x02\x20\x03(\tR\tclasspath\x12\x1e\n\nsourcepa\
     th\x18\x03\x20\x03(\tR\nsourcepath\x12\x1f\n\x0bsource_file\x18\x04\x20\
@@ -3510,12 +3562,13 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     t\x12\x1c\n\tprocessor\x18\x06\x20\x03(\tR\tprocessor\x12$\n\rprocessorp\
     ath\x18\x07\x20\x03(\tR\rprocessorpath\x12$\n\rbootclasspath\x18\x08\x20\
     \x03(\tR\rbootclasspath\x12\x1a\n\x08argument\x18\t\x20\x03(\tR\x08argum\
-    ent2[\n\x11java_compile_info\x18\xe8\x07\x20\x01(\x0b2\x16.blaze.JavaCom\
-    pileInfo\x12\x16.blaze.ExtraActionInfoR\x0fjavaCompileInfo\"\x95\x01\n\n\
-    PythonInfo\x12\x1f\n\x0bsource_file\x18\x01\x20\x03(\tR\nsourceFile\x12\
-    \x19\n\x08dep_file\x18\x02\x20\x03(\tR\x07depFile2K\n\x0bpython_info\x18\
-    \xed\x07\x20\x01(\x0b2\x11.blaze.PythonInfo\x12\x16.blaze.ExtraActionInf\
-    oR\npythonInfoB/\n+com.google.devtools.build.lib.actions.extraP\x01\
+    ent\x12\x16\n\x06system\x18\n\x20\x01(\tR\x06system2[\n\x11java_compile_\
+    info\x18\xe8\x07\x20\x01(\x0b2\x16.blaze.JavaCompileInfo\x12\x16.blaze.E\
+    xtraActionInfoR\x0fjavaCompileInfo\"\x95\x01\n\nPythonInfo\x12\x1f\n\x0b\
+    source_file\x18\x01\x20\x03(\tR\nsourceFile\x12\x19\n\x08dep_file\x18\
+    \x02\x20\x03(\tR\x07depFile2K\n\x0bpython_info\x18\xed\x07\x20\x01(\x0b2\
+    \x11.blaze.PythonInfo\x12\x16.blaze.ExtraActionInfoR\npythonInfoB/\n+com\
+    .google.devtools.build.lib.actions.extraP\x01\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
