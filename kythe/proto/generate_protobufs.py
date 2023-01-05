@@ -65,7 +65,7 @@ def do_lang(lang, ext):
     # First build all the rules to ensure we have the output files.
     # Then strip off each :baz_proto, convert it to a filename "baz.proto",
     # and copy the generated output "baz.pb.go" into the source tree.
-    if call(['bazel', 'build'] + protos) != 0:
+    if call(['bazel', 'build', '--remote_download_outputs=all'] + protos) != 0:
         print('Build failed')
         sys.exit(1)
 
