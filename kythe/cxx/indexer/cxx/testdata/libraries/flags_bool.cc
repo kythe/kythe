@@ -7,4 +7,5 @@
 //- BoolFlag.complete definition
 //- BoolFlag.node/kind google/gflag
 //- @boolflag completes BoolFlagDecl
+//- BoolFlagDecl completedby BoolFlag
 DEFINE_bool(boolflag, true, "y");

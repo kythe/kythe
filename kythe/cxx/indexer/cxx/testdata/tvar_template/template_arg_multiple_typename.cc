@@ -21,6 +21,8 @@ template
 //- @C defines/binding CDefn
 //- @C completes/uniquely CDecl2
 //- @C completes/uniquely CDecl1
+//- CDecl1 completedby CDefn
+//- CDecl2 completedby CDefn
 class C { };
 
 //- CDecl1 tparam.0 TT

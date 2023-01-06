@@ -8,6 +8,7 @@ DECLARE_int64(defnflag);
 //- FlagNode.node/kind google/gflag
 //- FlagNode.complete definition
 //- @defnflag completes/uniquely FlagNodeDecl
+//- FlagNodeDecl completedby FlagNode
 DEFINE_int64(defnflag, 0, "adef");
 //- @FLAGS_defnflag ref FlagNode
 //- @FLAGS_defnflag ref FlagVar
