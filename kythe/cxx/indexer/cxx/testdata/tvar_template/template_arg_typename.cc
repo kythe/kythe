@@ -18,6 +18,8 @@ template
 //- @C defines/binding CDefn
 //- @C completes/uniquely CDecl1
 //- @C completes/uniquely CDecl2
+//- CDecl1 completedby CDefn
+//- CDecl2 completedby CDefn
 class C { };
 
 //- TT.node/kind tvar

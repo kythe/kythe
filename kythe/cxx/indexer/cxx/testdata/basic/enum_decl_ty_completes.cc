@@ -6,5 +6,6 @@ enum class E : short;
 //- @E defines/binding EEnum
 //- EEnum.complete definition
 //- @E completes/uniquely EEnumFwdT
+//- EEnumFwdT completedby EEnum
 //- EEnum typed ShortType
 enum class E : short { };

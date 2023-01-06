@@ -21,6 +21,7 @@ struct S {
 //- @T ref StructT
 //- @V defines/binding StructV
 //- @V completes/uniquely StructVDecl
+//- StructVDecl completedby StructV
 struct S::T::V { };
 
 }  // namespace ns

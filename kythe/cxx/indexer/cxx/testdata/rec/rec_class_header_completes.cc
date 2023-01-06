@@ -12,6 +12,8 @@ class C;
 //- @C defines/binding ClassC
 //- @C completes/uniquely ClassCFwd
 //- @C completes HClassCFwd
+//- ClassCFwd completedby ClassC
+//- HClassCFwd completedby ClassC
 class C { };
 //- ClassC.node/kind record
 //- ClassC.complete definition

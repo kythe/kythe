@@ -8,6 +8,7 @@ class C {
   void g() { }
 };
 
-//- @"void C::f() { }" defines _FnFDefn
+//- @"void C::f() { }" defines FnFDefn
 //- @f completes/uniquely FnFDecl
+//- FnFDecl completedby FnFDefn
 void C::f() { }
