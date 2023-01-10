@@ -23,12 +23,11 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::Path;
 use std::process::Command;
-use tempdir::TempDir;
+use tempfile::tempdir;
 
 fn main() -> Result<()> {
     // Setup temporary directory for the test and write the test source file
-    let temp_dir = TempDir::new("rust_extractor_test")
-        .with_context(|| "Failed to make temporary directory".to_string())?;
+    let temp_dir = tempdir().with_context(|| "Failed to make temporary directory".to_string())?;
     let temp_dir_str = temp_dir
         .path()
         .to_str()

@@ -35,7 +35,7 @@ rust_binary(
         "@crate_index//:protobuf",
         "@crate_index//:rls-data",
         "@crate_index//:sha2",
-        "@crate_index//:tempdir",
+        "@crate_index//:tempfile",
         "@crate_index//:zip",
     ],
 )
@@ -71,7 +71,7 @@ rust_binary(
         ":kythe_rust_extractor",
         "//kythe/proto:analysis_rust_proto",
         "@crate_index//:regex",
-        "@crate_index//:tempdir",
+        "@crate_index//:tempfile",
     ],
 )
 
@@ -91,7 +91,7 @@ rust_binary(
         "//tools/rust/runfiles",
         "@crate_index//:anyhow",
         "@crate_index//:protobuf",
-        "@crate_index//:tempdir",
+        "@crate_index//:tempfile",
         "@crate_index//:zip",
     ],
 )

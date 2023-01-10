@@ -147,11 +147,11 @@ impl Writer {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, std::path::Path, tempdir::TempDir};
+    use {super::*, std::path::Path, tempfile::tempdir};
 
     #[test]
     fn check_zip_exists() {
-        let temp_dir = TempDir::new("check_zip_exists").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let output_file = temp_dir.path().join("out.kzip");
         let content = "content";
         let unit = analysis::IndexedCompilation::new();
