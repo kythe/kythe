@@ -26,7 +26,7 @@ use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use tempdir::TempDir;
+use tempfile::tempdir;
 use zip::{write::FileOptions, ZipWriter};
 
 #[derive(Parser)]
@@ -92,8 +92,7 @@ fn main() -> Result<()> {
         .ok_or_else(|| anyhow!("Failed to get output file from spawn info"))?;
 
     // Create temporary directory and run the analysis
-    let tmp_dir = TempDir::new("rust_extractor")
-        .with_context(|| "Failed to make temporary directory".to_string())?;
+    let tmp_dir = tempdir().with_context(|| "Failed to make temporary directory".to_string())?;
     let build_target_arguments: Vec<String> = spawn_info.get_argument().to_vec();
     save_analysis::generate_save_analysis(
         build_target_arguments.clone(),

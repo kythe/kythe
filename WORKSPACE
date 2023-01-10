@@ -102,8 +102,8 @@ crates_repository(
         "sha2": crate.spec(
             version = "0.10.2",
         ),
-        "tempdir": crate.spec(
-            version = "0.3.7",
+        "tempfile": crate.spec(
+            version = "3.3.0",
         ),
         "zip": crate.spec(
             version = "0.5.11",

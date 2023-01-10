@@ -1,5 +1,5 @@
 {
-  "checksum": "bbb6a25632b3207fab7195fbc9094c2a9503d0f3cdb7b748162dc79a51a9a0fe",
+  "checksum": "e969b2e1c330353cef69ec1c3d3b96d30b14cd643ca8a58c03714ef5e71a5aaf",
   "crates": {
     "adler 1.0.2": {
       "name": "adler",
@@ -421,13 +421,13 @@
       },
       "license": "MIT"
     },
-    "bzip2 0.4.3": {
+    "bzip2 0.4.4": {
       "name": "bzip2",
-      "version": "0.4.3",
+      "version": "0.4.4",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/bzip2/0.4.3/download",
-          "sha256": "6afcd980b5f3a45017c57e57a2fcccbb351cc43a356ce117ef760ef8052b89b0"
+          "url": "https://crates.io/api/v1/crates/bzip2/0.4.4/download",
+          "sha256": "bdb116a6ef3f6c3698828873ad02c3014b3c85cadb88496095628e3ef1e347f8"
         }
       },
       "targets": [
@@ -463,7 +463,7 @@
           "selects": {}
         },
         "edition": "2015",
-        "version": "0.4.3"
+        "version": "0.4.4"
       },
       "license": "MIT/Apache-2.0"
     },
@@ -693,7 +693,7 @@
               "target": "indexmap"
             },
             {
-              "id": "once_cell 1.16.0",
+              "id": "once_cell 1.17.0",
               "target": "once_cell"
             },
             {
@@ -1464,7 +1464,7 @@
               "target": "colored"
             },
             {
-              "id": "glob 0.3.0",
+              "id": "glob 0.3.1",
               "target": "glob"
             },
             {
@@ -1496,7 +1496,7 @@
               "target": "rayon"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -1508,7 +1508,7 @@
               "target": "rls_data"
             },
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "serde"
             },
             {
@@ -1524,8 +1524,8 @@
               "target": "sha2"
             },
             {
-              "id": "tempdir 0.3.7",
-              "target": "tempdir"
+              "id": "tempfile 3.3.0",
+              "target": "tempfile"
             },
             {
               "id": "zip 0.5.13",
@@ -1574,6 +1574,50 @@
         "version": "1.8.0"
       },
       "license": "MIT/Apache-2.0"
+    },
+    "fastrand 1.8.0": {
+      "name": "fastrand",
+      "version": "1.8.0",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/fastrand/1.8.0/download",
+          "sha256": "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "fastrand",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "fastrand",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [],
+          "selects": {
+            "cfg(target_arch = \"wasm32\")": [
+              {
+                "id": "instant 0.1.12",
+                "target": "instant"
+              }
+            ]
+          }
+        },
+        "edition": "2018",
+        "version": "1.8.0"
+      },
+      "license": "Apache-2.0 OR MIT"
     },
     "flate2 1.0.25": {
       "name": "flate2",
@@ -1691,39 +1735,6 @@
       },
       "license": "Unlicense/MIT"
     },
-    "fuchsia-cprng 0.1.1": {
-      "name": "fuchsia-cprng",
-      "version": "0.1.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/fuchsia-cprng/0.1.1/download",
-          "sha256": "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "fuchsia_cprng",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "fuchsia_cprng",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2018",
-        "version": "0.1.1"
-      },
-      "license": null
-    },
     "generic-array 0.14.6": {
       "name": "generic-array",
       "version": "0.14.6",
@@ -1799,13 +1810,13 @@
       },
       "license": "MIT"
     },
-    "glob 0.3.0": {
+    "glob 0.3.1": {
       "name": "glob",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/glob/0.3.0/download",
-          "sha256": "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
+          "url": "https://crates.io/api/v1/crates/glob/0.3.1/download",
+          "sha256": "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
         }
       },
       "targets": [
@@ -1828,9 +1839,9 @@
           "**"
         ],
         "edition": "2015",
-        "version": "0.3.0"
+        "version": "0.3.1"
       },
-      "license": "MIT/Apache-2.0"
+      "license": "MIT OR Apache-2.0"
     },
     "hashbrown 0.12.3": {
       "name": "hashbrown",
@@ -2722,13 +2733,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "once_cell 1.16.0": {
+    "once_cell 1.17.0": {
       "name": "once_cell",
-      "version": "1.16.0",
+      "version": "1.17.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/once_cell/1.16.0/download",
-          "sha256": "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
+          "url": "https://crates.io/api/v1/crates/once_cell/1.17.0/download",
+          "sha256": "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
         }
       },
       "targets": [
@@ -2757,7 +2768,7 @@
           "std"
         ],
         "edition": "2021",
-        "version": "1.16.0"
+        "version": "1.17.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -3476,152 +3487,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "rand 0.4.6": {
-      "name": "rand",
-      "version": "0.4.6",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/rand/0.4.6/download",
-          "sha256": "552840b97013b1a26992c11eac34bdd778e464601a4c2054b5f0bff7c6761293"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "rand",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "rand",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": [
-          "default",
-          "libc",
-          "std"
-        ],
-        "deps": {
-          "common": [],
-          "selects": {
-            "cfg(target_env = \"sgx\")": [
-              {
-                "id": "rand_core 0.3.1",
-                "target": "rand_core"
-              },
-              {
-                "id": "rdrand 0.4.0",
-                "target": "rdrand"
-              }
-            ],
-            "cfg(target_os = \"fuchsia\")": [
-              {
-                "id": "fuchsia-cprng 0.1.1",
-                "target": "fuchsia_cprng"
-              }
-            ],
-            "cfg(unix)": [
-              {
-                "id": "libc 0.2.139",
-                "target": "libc"
-              }
-            ],
-            "cfg(windows)": [
-              {
-                "id": "winapi 0.3.9",
-                "target": "winapi"
-              }
-            ]
-          }
-        },
-        "edition": "2015",
-        "version": "0.4.6"
-      },
-      "license": "MIT/Apache-2.0"
-    },
-    "rand_core 0.3.1": {
-      "name": "rand_core",
-      "version": "0.3.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/rand_core/0.3.1/download",
-          "sha256": "7a6fdeb83b075e8266dcc8762c22776f6877a63111121f5f8c7411e5be7eed4b"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "rand_core",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "rand_core",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "rand_core 0.4.2",
-              "target": "rand_core"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2015",
-        "version": "0.3.1"
-      },
-      "license": "MIT/Apache-2.0"
-    },
-    "rand_core 0.4.2": {
-      "name": "rand_core",
-      "version": "0.4.2",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/rand_core/0.4.2/download",
-          "sha256": "9c33a3c44ca05fa6f1807d8e6743f3824e8509beca625669633be0acbdf509dc"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "rand_core",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "rand_core",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "0.4.2"
-      },
-      "license": "MIT/Apache-2.0"
-    },
     "rayon 1.6.1": {
       "name": "rayon",
       "version": "1.6.1",
@@ -3744,52 +3609,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "rdrand 0.4.0": {
-      "name": "rdrand",
-      "version": "0.4.0",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/rdrand/0.4.0/download",
-          "sha256": "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "rdrand",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "rdrand",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": [
-          "default",
-          "std"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "rand_core 0.3.1",
-              "target": "rand_core"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2015",
-        "version": "0.4.0"
-      },
-      "license": "ISC"
-    },
     "redox_syscall 0.2.16": {
       "name": "redox_syscall",
       "version": "0.2.16",
@@ -3832,13 +3651,13 @@
       },
       "license": "MIT"
     },
-    "regex 1.7.0": {
+    "regex 1.7.1": {
       "name": "regex",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/regex/1.7.0/download",
-          "sha256": "e076559ef8e241f2ae3479e36f97bd5741c0330689e217ad51ce2c76808b868a"
+          "url": "https://crates.io/api/v1/crates/regex/1.7.1/download",
+          "sha256": "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
         }
       },
       "targets": [
@@ -3897,7 +3716,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.7.0"
+        "version": "1.7.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -4047,7 +3866,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "serde"
             },
             {
@@ -4110,7 +3929,7 @@
               "target": "rls_span"
             },
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "serde"
             }
           ],
@@ -4156,7 +3975,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "serde"
             }
           ],
@@ -4292,13 +4111,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "serde 1.0.151": {
+    "serde 1.0.152": {
       "name": "serde",
-      "version": "1.0.151",
+      "version": "1.0.152",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde/1.0.151/download",
-          "sha256": "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
+          "url": "https://crates.io/api/v1/crates/serde/1.0.152/download",
+          "sha256": "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
         }
       },
       "targets": [
@@ -4341,7 +4160,7 @@
         "deps": {
           "common": [
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "build_script_build"
             }
           ],
@@ -4351,13 +4170,13 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "serde_derive 1.0.151",
+              "id": "serde_derive 1.0.152",
               "target": "serde_derive"
             }
           ],
           "selects": {}
         },
-        "version": "1.0.151"
+        "version": "1.0.152"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4366,13 +4185,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "serde_derive 1.0.151": {
+    "serde_derive 1.0.152": {
       "name": "serde_derive",
-      "version": "1.0.151",
+      "version": "1.0.152",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.151/download",
-          "sha256": "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
+          "url": "https://crates.io/api/v1/crates/serde_derive/1.0.152/download",
+          "sha256": "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
         }
       },
       "targets": [
@@ -4420,7 +4239,7 @@
               "target": "quote"
             },
             {
-              "id": "serde_derive 1.0.151",
+              "id": "serde_derive 1.0.152",
               "target": "build_script_build"
             },
             {
@@ -4431,7 +4250,7 @@
           "selects": {}
         },
         "edition": "2015",
-        "version": "1.0.151"
+        "version": "1.0.152"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4495,7 +4314,7 @@
               "target": "ryu"
             },
             {
-              "id": "serde 1.0.151",
+              "id": "serde 1.0.152",
               "target": "serde"
             },
             {
@@ -4840,19 +4659,19 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "tempdir 0.3.7": {
-      "name": "tempdir",
-      "version": "0.3.7",
+    "tempfile 3.3.0": {
+      "name": "tempfile",
+      "version": "3.3.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/tempdir/0.3.7/download",
-          "sha256": "15f2b5fb00ccdf689e0149d1b1b3c03fead81c2b37735d812fa8bddbbf41b6d8"
+          "url": "https://crates.io/api/v1/crates/tempfile/3.3.0/download",
+          "sha256": "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4"
         }
       },
       "targets": [
         {
           "Library": {
-            "crate_name": "tempdir",
+            "crate_name": "tempfile",
             "crate_root": "src/lib.rs",
             "srcs": {
               "include": [
@@ -4863,7 +4682,7 @@
           }
         }
       ],
-      "library_target_name": "tempdir",
+      "library_target_name": "tempfile",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -4871,20 +4690,43 @@
         "deps": {
           "common": [
             {
-              "id": "rand 0.4.6",
-              "target": "rand"
+              "id": "cfg-if 1.0.0",
+              "target": "cfg_if"
+            },
+            {
+              "id": "fastrand 1.8.0",
+              "target": "fastrand"
             },
             {
               "id": "remove_dir_all 0.5.3",
               "target": "remove_dir_all"
             }
           ],
-          "selects": {}
+          "selects": {
+            "cfg(any(unix, target_os = \"wasi\"))": [
+              {
+                "id": "libc 0.2.139",
+                "target": "libc"
+              }
+            ],
+            "cfg(target_os = \"redox\")": [
+              {
+                "id": "redox_syscall 0.2.16",
+                "target": "syscall"
+              }
+            ],
+            "cfg(windows)": [
+              {
+                "id": "winapi 0.3.9",
+                "target": "winapi"
+              }
+            ]
+          }
         },
-        "edition": "2015",
-        "version": "0.3.7"
+        "edition": "2018",
+        "version": "3.3.0"
       },
-      "license": "MIT/Apache-2.0"
+      "license": "MIT OR Apache-2.0"
     },
     "termcolor 1.1.3": {
       "name": "termcolor",
@@ -5346,7 +5188,6 @@
           "minwinbase",
           "minwindef",
           "ntdef",
-          "ntsecapi",
           "ntstatus",
           "processenv",
           "profileapi",
@@ -5594,7 +5435,7 @@
               "target": "byteorder"
             },
             {
-              "id": "bzip2 0.4.3",
+              "id": "bzip2 0.4.4",
               "target": "bzip2"
             },
             {
@@ -5663,6 +5504,28 @@
       "x86_64-unknown-freebsd",
       "x86_64-unknown-linux-gnu"
     ],
+    "cfg(any(unix, target_os = \"wasi\"))": [
+      "aarch64-apple-darwin",
+      "aarch64-apple-ios",
+      "aarch64-apple-ios-sim",
+      "aarch64-linux-android",
+      "aarch64-unknown-linux-gnu",
+      "arm-unknown-linux-gnueabi",
+      "armv7-linux-androideabi",
+      "armv7-unknown-linux-gnueabi",
+      "i686-apple-darwin",
+      "i686-linux-android",
+      "i686-unknown-freebsd",
+      "i686-unknown-linux-gnu",
+      "powerpc-unknown-linux-gnu",
+      "s390x-unknown-linux-gnu",
+      "wasm32-wasi",
+      "x86_64-apple-darwin",
+      "x86_64-apple-ios",
+      "x86_64-linux-android",
+      "x86_64-unknown-freebsd",
+      "x86_64-unknown-linux-gnu"
+    ],
     "cfg(not(windows))": [
       "aarch64-apple-darwin",
       "aarch64-apple-ios",
@@ -5687,8 +5550,10 @@
       "x86_64-unknown-freebsd",
       "x86_64-unknown-linux-gnu"
     ],
-    "cfg(target_env = \"sgx\")": [],
-    "cfg(target_os = \"fuchsia\")": [],
+    "cfg(target_arch = \"wasm32\")": [
+      "wasm32-unknown-unknown",
+      "wasm32-wasi"
+    ],
     "cfg(target_os = \"hermit\")": [],
     "cfg(target_os = \"redox\")": [],
     "cfg(target_os = \"wasi\")": [

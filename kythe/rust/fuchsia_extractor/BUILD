@@ -34,7 +34,7 @@ rust_test(
         "//conditions:default": [],
     }),
     deps = [
-        "@crate_index//:tempdir",
+        "@crate_index//:tempfile",
     ],
 )
 
@@ -59,7 +59,7 @@ rust_binary(
         "@crate_index//:rls-data",
         "@crate_index//:serde_json",
         "@crate_index//:sha2",
-        "@crate_index//:tempdir",
+        "@crate_index//:tempfile",
     ],
 )
 
