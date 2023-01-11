@@ -76,6 +76,10 @@
 //	{"req":"done",...}   -- to mark the analysis as complete
 //	                        and to report success/failure
 //
+// The proxy supports an extra /kythe/code/json fact.  Its value will be
+// interpreted as a JSON-encoded kythe.proto.common.MarkedSource message and
+// will be rewritted to the equivalent wire-encoded /kythe/code fact.
+//
 // In case of an indexing error, the indexer is free to terminate the analysis
 // early and report {"req":"done","args":{"ok":false}} to the driver.
 //
