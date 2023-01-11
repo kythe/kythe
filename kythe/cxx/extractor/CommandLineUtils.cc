@@ -24,8 +24,10 @@
 #include <algorithm>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <vector>
 
+#include "absl/functional/function_ref.h"
 #include "absl/strings/str_format.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -133,15 +135,31 @@ bool HasCxxInputInCommandLineOrArgs(
   return action == CXX_COMPILE || action == C_COMPILE;
 }
 
+static std::vector<std::string> CopySkippingN(
+    const std::vector<std::string>& input,
+    absl::FunctionRef<size_t(std::string_view)> skip) {
+  std::vector<std::string> output;
+  output.reserve(input.size());
+  for (auto iter = input.begin(), end = input.end(); iter < end;) {
+    if (size_t count = skip(*iter)) {
+      if (count >= end - iter) {
+        break;
+      }
+      iter += count;
+    } else {
+      output.push_back(*iter++);
+    }
+  }
+  return output;
+}
+
 // Returns a copy of the input vector with every string which matches the
 // regular expression removed.
 static std::vector<std::string> CopyOmittingMatches(
     const FullMatchRegex& re, const std::vector<std::string>& input) {
-  std::vector<std::string> output;
-  std::remove_copy_if(
-      input.begin(), input.end(), back_inserter(output),
-      [&re](const std::string& arg) { return re.FullMatch(arg); });
-  return output;
+  return CopySkippingN(input, [&](std::string_view arg) -> size_t {
+    return re.FullMatch(arg) ? 1 : 0;
+  });
 }
 
 // Returns a copy of the input vector after removing each string which matches
@@ -149,15 +167,9 @@ static std::vector<std::string> CopyOmittingMatches(
 // string.
 static std::vector<std::string> CopyOmittingMatchesAndFollowers(
     const FullMatchRegex& re, const std::vector<std::string>& input) {
-  std::vector<std::string> output;
-  for (size_t i = 0; i < input.size(); ++i) {
-    if (!re.FullMatch(input[i])) {
-      output.push_back(input[i]);
-    } else {
-      ++i;  // Skip the matching string *and* the next string.
-    }
-  }
-  return output;
+  return CopySkippingN(input, [&](std::string_view arg) -> size_t {
+    return re.FullMatch(arg) ? 2 : 0;
+  });
 }
 
 // Returns a copy of the input vector with the supplied prefix string removed
@@ -269,6 +281,8 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-M[MGP]?"
       "|-S"
       "|-W[al],.*"
+      "|-Xlinker=.*"
+      "|--for-linker=.*"
       "|-c"
       "|-f(no-)?data-sections"
       "|-f(no-)?function-sections"
@@ -282,14 +296,32 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-g.+"
       "|-nostartfiles"
       "|-s"
-      "|-shared");
-  const FullMatchRegex inapplicable_args_with_values_re("-M[FTQ]");
+      "|-shared"
+      "|-Xcrosstool.*");
+  const FullMatchRegex inapplicable_args_with_values_re(
+      "-M[FTQ]"
+      "|-Xlinker"
+      "|--for-linker"
+      "|-Xassembler");
+  // Arguments which may match one of the above lists which we want to keep
+  // regardless.
+  const FullMatchRegex keep_args("-X(clang|preprocessor).*");
 
-  std::vector<std::string> result = CopyOmittingMatchesAndFollowers(
-      inapplicable_args_with_values_re,
-      CopyOmittingMatches(inapplicable_args_re, clang_args));
+  std::vector<std::string> result =
+      CopySkippingN(clang_args, [&](std::string_view arg) -> size_t {
+        if (keep_args.FullMatch(arg)) {
+          return 0;
+        }
+        if (inapplicable_args_re.FullMatch(arg)) {
+          return 1;
+        }
+        if (inapplicable_args_with_values_re.FullMatch(arg)) {
+          return 2;
+        }
+        return 0;
+      });
+
   result.push_back("-fsyntax-only");
-
   return result;
 }
 
