@@ -91,11 +91,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -306,6 +310,27 @@ func (p *Proxy) Run(h Handler) error {
 	}
 }
 
+const codeJSONFact = facts.Code + "/json"
+
+func rewriteEntry(e *spb.Entry) (*spb.Entry, error) {
+	if e.GetFactName() == codeJSONFact {
+		ms := new(cpb.MarkedSource)
+		if err := protojson.Unmarshal(e.GetFactValue(), ms); err != nil {
+			return nil, err
+		}
+		rec, err := proto.Marshal(ms)
+		if err != nil {
+			return nil, err
+		}
+		return &spb.Entry{
+			Source:    e.Source,
+			FactName:  facts.Code,
+			FactValue: rec,
+		}, nil
+	}
+	return e, nil
+}
+
 func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	var messages []json.RawMessage
 	if err := json.Unmarshal(jsonArray, &messages); err != nil {
@@ -313,11 +338,16 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	}
 	entries := make([]*spb.Entry, len(messages))
 	for i, msg := range messages {
-		var e spb.Entry
-		if err := protojson.Unmarshal(msg, &e); err != nil {
+		e := new(spb.Entry)
+		if err := protojson.Unmarshal(msg, e); err != nil {
 			return nil, err
 		}
-		entries[i] = &e
+		e, err := rewriteEntry(e)
+		if err != nil {
+			log.Printf("ERROR: could not rewrite entry: %v", err)
+			continue
+		}
+		entries[i] = e
 	}
 	return entries, nil
 }
@@ -329,11 +359,16 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	}
 	entries := make([]*spb.Entry, len(messages))
 	for i, msg := range messages {
-		var e spb.Entry
-		if err := (proto.UnmarshalOptions{}.Unmarshal(msg, &e)); err != nil {
+		e := new(spb.Entry)
+		if err := (proto.UnmarshalOptions{}.Unmarshal(msg, e)); err != nil {
 			return nil, err
 		}
-		entries[i] = &e
+		e, err := rewriteEntry(e)
+		if err != nil {
+			log.Printf("ERROR: could not rewrite entry: %v", err)
+			continue
+		}
+		entries[i] = e
 	}
 	return entries, nil
 }
