@@ -6,7 +6,10 @@ go_library(
     name = "proxy",
     srcs = ["proxy.go"],
     deps = [
+        "//kythe/go/test/testutil",
+        "//kythe/go/util/schema/facts",
         "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",

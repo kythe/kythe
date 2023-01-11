@@ -23,11 +23,15 @@ import (
 	"log"
 	"testing"
 
+	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/compare"
+	"kythe.io/kythe/go/util/schema/facts"
+
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"kythe.io/kythe/go/util/compare"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -325,6 +329,74 @@ func TestAnalysisWorks(t *testing.T) {
 		t.Error("The handler's Done method was never called")
 	}
 	if diff := compare.ProtoDiff(gotEntries, testEntries); diff != "" {
+		t.Errorf("Incorrect entries:\n got: %+v\nwant: %+v: %s", gotEntries, testEntries, diff)
+	}
+
+	// Verify that we got the expected replies back from the proxy.
+	want := []string{
+		analysisReply, // from Analyze
+		`{"rsp":"ok","args":{"content":"ZGF0YQ==","path":"exists"}}`, // from File (1)
+		`{"rsp":"ok"}`,                      // from Output
+		`{"rsp":"error","args":"notfound"}`, // from File (2)
+		`{"rsp":"ok"}`,                      // from Done
+	}
+	if diff := compare.ProtoDiff(rsps, want); diff != "" {
+		t.Errorf("Wrong incorrect responses:\n got: %+v\nwant: %+v: %s", rsps, want, diff)
+	}
+}
+
+func TestCodeJSON(t *testing.T) {
+	ms := &cpb.MarkedSource{}
+	json, err := protojson.Marshal(ms)
+	testutil.Fatalf(t, "protojson.Marshal: %v", err)
+	rec, err := proto.Marshal(ms)
+	testutil.Fatalf(t, "proto.Marshal: %v", err)
+
+	testEntries := []*spb.Entry{
+		&spb.Entry{
+			Source:    &spb.VName{Signature: "sig"},
+			FactName:  codeJSONFact,
+			FactValue: json,
+		},
+	}
+	expectedEntries := []*spb.Entry{
+		&spb.Entry{
+			Source:    &spb.VName{Signature: "sig"},
+			FactName:  facts.Code,
+			FactValue: rec,
+		},
+	}
+
+	var gotEntries []*spb.Entry
+
+	rsps, err := runProxy(handler{
+		done: func(err error) {
+			if err != nil {
+				t.Errorf("Done was called with an error: %v", err)
+			}
+		},
+		output: func(es ...*spb.Entry) error {
+			gotEntries = append(gotEntries, es...)
+			return nil
+		},
+		file: func(path, digest string) ([]byte, error) {
+			if path == "exists" {
+				return []byte("data"), nil
+			}
+			return nil, errors.New("notfound")
+		},
+	},
+		testreq{Type: "analysis"},
+		testreq{Type: "file", Args: file{Path: "exists"}},
+		testreq{Type: "output", Args: encodeEntries(testEntries)},
+		testreq{Type: "file", Args: file{Path: "does not exist"}},
+		testreq{Type: "done"},
+	)
+	if err != nil {
+		t.Errorf("Unexpected error from proxy: %v", err)
+	}
+
+	if diff := compare.ProtoDiff(gotEntries, expectedEntries); diff != "" {
 		t.Errorf("Incorrect entries:\n got: %+v\nwant: %+v: %s", gotEntries, testEntries, diff)
 	}
 

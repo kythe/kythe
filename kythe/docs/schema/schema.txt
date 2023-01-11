@@ -1733,6 +1733,11 @@ code
 Brief description::
   A node's *code* is a serialized link:marked-source.html[MarkedSource]
   message that can be used to describe that node.
+
+  For indexers implemented through the proxy API, *code/json* is an extra
+  supported fact.  Its value will be interpreted as a JSON-encoded MarkedSource
+  message and will be rewritted to the equivalent wire-encoded *code* fact.
+
 Attached to::
   semantic nodes
 
