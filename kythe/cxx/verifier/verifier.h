@@ -228,6 +228,14 @@ class Verifier {
   AstNode* ConvertCodeFact(const yy::location& loc,
                            const google::protobuf::string& code_data);
 
+  /// \brief Converts an encoded /kythe/code/json fact to a form that's useful
+  /// to the verifier.
+  /// \param loc The location to use in diagnostics.
+  /// \return null if something went wrong; otherwise, an AstNode corresponding
+  /// to a VName of a synthetic node for `code_data`.
+  AstNode* ConvertCodeJsonFact(const yy::location& loc,
+                               const google::protobuf::string& code_data);
+
   /// \brief Converts a MarkedSource message to a form that's useful
   /// to the verifier.
   /// \param loc The location to use in diagnostics.
@@ -320,6 +328,10 @@ class Verifier {
   /// Node to use for the `code` fact kind. The fact value should be a
   /// serialized kythe.proto.MarkedSource message.
   AstNode* code_id_;
+
+  /// Node to use for the `code/json` fact kind. The fact value should be a
+  /// JSON-serialized kythe.proto.MarkedSource message.
+  AstNode* code_json_id_;
 
   /// The highest goal group reached during solving (often the culprit for why
   /// the solution failed).

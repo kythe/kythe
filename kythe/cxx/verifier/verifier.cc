@@ -27,6 +27,7 @@
 #include "assertions.h"
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
+#include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/verifier/souffle_interpreter.h"
@@ -644,6 +645,7 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   file_id_ = IdentifierFor(builtin_location_, "file");
   text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
   code_id_ = IdentifierFor(builtin_location_, "/kythe/code");
+  code_json_id_ = IdentifierFor(builtin_location_, "/kythe/code/json");
   marked_source_child_id_ =
       IdentifierFor(builtin_location_, "/kythe/edge/child");
   marked_source_box_id_ = IdentifierFor(builtin_location_, "BOX");
@@ -1268,7 +1270,8 @@ bool Verifier::PrepareDatabase() {
         tb->element(2) == empty_string_id_ &&
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
-      if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
+      if (EncodedIdentEqualTo(ta->element(3), code_id_) ||
+          EncodedIdentEqualTo(ta->element(3), code_json_id_)) {
         if (!ignore_code_conflicts_) {
           // TODO(#1553): (closed?) Add documentation for these new edges.
           printer.Print(
@@ -1340,7 +1343,18 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
                                    const google::protobuf::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
-    std::cerr << loc << ": can't parse code protobuf" << std::endl;
+    LOG(ERROR) << loc << ": can't parse code protobuf" << std::endl;
+    return nullptr;
+  }
+  return ConvertMarkedSource(loc, marked_source);
+}
+
+AstNode* Verifier::ConvertCodeJsonFact(
+    const yy::location& loc, const google::protobuf::string& code_data) {
+  proto::common::MarkedSource marked_source;
+  if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
+           .ok()) {
+    LOG(ERROR) << loc << ": can't parse code/json protobuf" << std::endl;
     return nullptr;
   }
   return ConvertMarkedSource(loc, marked_source);
@@ -1449,6 +1463,7 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
   loc.begin.line = fact_id;
   loc.end = loc.begin;
   Symbol code_symbol = code_id_->AsIdentifier()->symbol();
+  Symbol code_json_symbol = code_json_id_->AsIdentifier()->symbol();
   AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
@@ -1474,6 +1489,18 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
       // Code facts are turned into subgraphs, so this fact entry will turn
       // into an edge entry.
       if ((values[2] = ConvertCodeFact(loc, entry.fact_value())) == nullptr) {
+        return false;
+      }
+      values[1] = marked_source_code_edge_id_;
+      values[3] = root_id_;
+      values[4] = empty_string_id_;
+      is_code = true;
+    } else if (values[3]->AsIdentifier()->symbol() == code_json_symbol &&
+               convert_marked_source_) {
+      // Code facts are turned into subgraphs, so this fact entry will turn
+      // into an edge entry.
+      if ((values[2] = ConvertCodeJsonFact(loc, entry.fact_value())) ==
+          nullptr) {
         return false;
       }
       values[1] = marked_source_code_edge_id_;
