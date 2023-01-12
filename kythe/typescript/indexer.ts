@@ -20,8 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {MarkedSource} from '../proto/common_pb';
-import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
@@ -727,25 +726,6 @@ function fmtMarkedSource(s: string) {
     s += '...';
   }
   return s;
-}
-
-function makeMarkedSource({
-  kind,
-  preText,
-  postText,
-  childList,
-}: {
-  kind?: keyof typeof MarkedSource.Kind,
-  preText?: string,
-  postText?: string,
-  childList?: MarkedSource[]
-}): MarkedSource {
-  const ms = new MarkedSource();
-  if (kind !== undefined) ms.setKind(MarkedSource.Kind[kind]);
-  if (preText !== undefined) ms.setPreText(fmtMarkedSource(preText));
-  if (postText !== undefined) ms.setPostText(fmtMarkedSource(postText));
-  if (childList !== undefined) ms.setChildList(childList);
-  return ms;
 }
 
 function isNonNullableArray<T>(arr: Array<T>): arr is Array<NonNullable<T>> {
@@ -1712,7 +1692,7 @@ class Visitor {
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
       ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment,
       declVName: VName) {
-    const codeParts: MarkedSource[] = [];
+    const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
     let varDecl;
     const bindingPath: Array<string|number|undefined> = [];
@@ -1749,12 +1729,12 @@ class Visitor {
     }
     const ty = this.typeChecker.getTypeAtLocation(decl);
     const tyStr = this.typeChecker.typeToString(ty, decl);
-    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
-    codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' '}));
+    codeParts.push({kind: 'CONTEXT', pre_text: fmtMarkedSource(declKw)});
+    codeParts.push({kind: 'BOX', pre_text: ' '});
     codeParts.push(
-        makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
+      {kind: 'IDENTIFIER', pre_text: fmtMarkedSource(decl.name.getText())});
     codeParts.push(
-        makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
+      {kind: 'TYPE', pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
     if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
 
@@ -1765,13 +1745,13 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
+      codeParts.push({kind: 'BOX', pre_text: ' = '});
       codeParts.push(
-          makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
+        {kind: 'INITIALIZER', pre_text: fmtMarkedSource(init.getText())});
     }
 
-    const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
-    this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
+    const markedSource = ({kind: 'BOX', child: codeParts});
+    this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
   /**
