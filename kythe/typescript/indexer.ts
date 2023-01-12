@@ -20,7 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
@@ -1729,12 +1729,12 @@ class Visitor {
     }
     const ty = this.typeChecker.getTypeAtLocation(decl);
     const tyStr = this.typeChecker.typeToString(ty, decl);
-    codeParts.push({kind: 'CONTEXT', pre_text: fmtMarkedSource(declKw)});
-    codeParts.push({kind: 'BOX', pre_text: ' '});
+    codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(declKw)});
+    codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
     codeParts.push(
-      {kind: 'IDENTIFIER', pre_text: fmtMarkedSource(decl.name.getText())});
+      {kind: MarkedSourceKind.IDENTIFIER, pre_text: fmtMarkedSource(decl.name.getText())});
     codeParts.push(
-      {kind: 'TYPE', pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
+      {kind: MarkedSourceKind.TYPE, pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
     if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
 
@@ -1745,12 +1745,12 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push({kind: 'BOX', pre_text: ' = '});
+      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' = '});
       codeParts.push(
-        {kind: 'INITIALIZER', pre_text: fmtMarkedSource(init.getText())});
+        {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
     }
 
-    const markedSource = ({kind: 'BOX', child: codeParts});
+    const markedSource = ({kind: MarkedSourceKind.BOX, child: codeParts});
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 

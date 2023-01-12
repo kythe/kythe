@@ -233,21 +233,6 @@ export interface JSONEdge {
   fact_name: '/';
 }
 
-// export enum MarkedSourceKind {
-//   BOX = 0,
-//   TYPE = 1,
-//   PARAMETER = 2,
-//   IDENTIFIER = 3,
-//   CONTEXT = 4,
-//   INITIALIZER = 5,
-//   PARAMETER_LOOKUP_BY_PARAM = 6,
-//   LOOKUP_BY_PARAM = 7,
-//   PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS = 8,
-//   LOOKUP_BY_TYPED = 9,
-//   PARAMETER_LOOKUP_BY_TPARAM = 10,
-//   LOOKUP_BY_TPARAM = 11,
-// }
-
 /*
  * Kythe marked source Linkd expressed in the schema JSON-style encoding.
  */
@@ -256,10 +241,29 @@ export interface JSONLink {
 }
 
 /*
+ * Enum corresponding to Kythe MarkedSource.Kind proto enum.
+ */
+export enum MarkedSourceKind {
+  BOX,
+  TYPE,
+  PARAMETER,
+  IDENTIFIER,
+  CONTEXT,
+  INITIALIZER,
+  PARAMETER_LOOKUP_BY_PARAM,
+  LOOKUP_BY_PARAM,
+  PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS,
+  LOOKUP_BY_TYPED,
+  PARAMETER_LOOKUP_BY_TPARAM,
+  LOOKUP_BY_TPARAM,
+}
+
+
+/*
  * Kythe MarkedSource expressed in the schema JSON-style encoding.
  */
 export interface JSONMarkedSource {
-  kind: string; // MarkedSourceKind;
+  kind: MarkedSourceKind;
   pre_text?: string;
   child?: JSONMarkedSource[];
   post_child_text?: string;
