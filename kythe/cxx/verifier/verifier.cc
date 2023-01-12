@@ -1343,7 +1343,7 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
                                    const google::protobuf::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
-    std::cerr << loc << ": can't parse code protobuf" << std::endl;
+    LOG(ERROR) << loc << ": can't parse code protobuf" << std::endl;
     return nullptr;
   }
   return ConvertMarkedSource(loc, marked_source);
@@ -1354,7 +1354,7 @@ AstNode* Verifier::ConvertCodeJsonFact(
   proto::common::MarkedSource marked_source;
   if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
            .ok()) {
-    std::cerr << loc << ": can't parse code/json protobuf" << std::endl;
+    LOG(ERROR) << loc << ": can't parse code/json protobuf" << std::endl;
     return nullptr;
   }
   return ConvertMarkedSource(loc, marked_source);

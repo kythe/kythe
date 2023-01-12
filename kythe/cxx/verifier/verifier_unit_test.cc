@@ -26,7 +26,6 @@ namespace kythe {
 namespace verifier {
 namespace {
 using MarkedSource = kythe::proto::common::MarkedSource;
-using ::testing::Values;
 
 TEST(VerifierUnitTest, StringPrettyPrinter) {
   StringPrettyPrinter c_string;
@@ -2883,7 +2882,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
 }
 
 INSTANTIATE_TEST_SUITE_P(JsonAndProto, VerifierMarkedSourceUnitTest,
-                         Values(false, true));
+                         ::testing::Bool());
 
 }  // anonymous namespace
 }  // namespace verifier
