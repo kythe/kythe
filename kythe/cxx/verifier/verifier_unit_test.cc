@@ -2673,7 +2673,7 @@ TEST(VerifierUnitTest, DontConvertMarkedSource) {
 
 class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
  protected:
-  std::string Entries(const MarkedSource &source) const {
+  std::string Entries(const MarkedSource& source) const {
     kythe::proto::Entries entries;
     auto entry = entries.add_entries();
     entry->mutable_source()->set_signature("test");
@@ -2689,16 +2689,18 @@ class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
     return GetParam() ? "/kythe/code" : "/kythe/code/json";
   }
 
-  google::protobuf::string Encode(const MarkedSource &source) const {
+  google::protobuf::string Encode(const MarkedSource& source) const {
     if (GetParam()) {
       google::protobuf::string source_string;
       GTEST_CHECK_(source.SerializeToString(&source_string))
-        << "Failure serializing MarkedSource";
+          << "Failure serializing MarkedSource";
       return source_string;
     } else {
       google::protobuf::string source_string;
-      GTEST_CHECK_(google::protobuf::util::MessageToJsonString(source, &source_string).ok())
-        << "Failure serializing MarkedSource to JSON";
+      GTEST_CHECK_(
+          google::protobuf::util::MessageToJsonString(source, &source_string)
+              .ok())
+          << "Failure serializing MarkedSource to JSON";
       return source_string;
     }
   }
@@ -2836,7 +2838,8 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceFields) {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST_P(VerifierMarkedSourceUnitTest, DontConvertMarkedSourceDuplicateFactsWellFormed) {
+TEST_P(VerifierMarkedSourceUnitTest,
+       DontConvertMarkedSourceDuplicateFactsWellFormed) {
   Verifier v;
   MarkedSource source;
   v.IgnoreDuplicateFacts();
@@ -2845,7 +2848,8 @@ TEST_P(VerifierMarkedSourceUnitTest, DontConvertMarkedSourceDuplicateFactsWellFo
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceDuplicateFactsWellFormed) {
+TEST_P(VerifierMarkedSourceUnitTest,
+       ConvertMarkedSourceDuplicateFactsWellFormed) {
   Verifier v;
   v.ConvertMarkedSource();
   MarkedSource source;
@@ -2860,8 +2864,8 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsNotWellFormed) {
 
   MarkedSource source_conflict;
   source_conflict.set_pre_text("pre_text");
-  ASSERT_TRUE(v.LoadInlineProtoFile(Entries(source) + "\n" +
-                                    Entries(source_conflict)));
+  ASSERT_TRUE(
+      v.LoadInlineProtoFile(Entries(source) + "\n" + Entries(source_conflict)));
   ASSERT_FALSE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
@@ -2872,8 +2876,8 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
   MarkedSource source;
   MarkedSource source_conflict;
   source_conflict.set_pre_text("pre_text");
-  ASSERT_TRUE(v.LoadInlineProtoFile(Entries(source) + "\n" +
-                                    Entries(source_conflict)));
+  ASSERT_TRUE(
+      v.LoadInlineProtoFile(Entries(source) + "\n" + Entries(source_conflict)));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }

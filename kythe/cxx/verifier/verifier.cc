@@ -1349,10 +1349,11 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
   return ConvertMarkedSource(loc, marked_source);
 }
 
-AstNode* Verifier::ConvertCodeJsonFact(const yy::location& loc,
-                                       const google::protobuf::string& code_data) {
+AstNode* Verifier::ConvertCodeJsonFact(
+    const yy::location& loc, const google::protobuf::string& code_data) {
   proto::common::MarkedSource marked_source;
-  if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source).ok()) {
+  if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
+           .ok()) {
     std::cerr << loc << ": can't parse code/json protobuf" << std::endl;
     return nullptr;
   }
@@ -1495,10 +1496,11 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
       values[4] = empty_string_id_;
       is_code = true;
     } else if (values[3]->AsIdentifier()->symbol() == code_json_symbol &&
-        convert_marked_source_) {
+               convert_marked_source_) {
       // Code facts are turned into subgraphs, so this fact entry will turn
       // into an edge entry.
-      if ((values[2] = ConvertCodeJsonFact(loc, entry.fact_value())) == nullptr) {
+      if ((values[2] = ConvertCodeJsonFact(loc, entry.fact_value())) ==
+          nullptr) {
         return false;
       }
       values[1] = marked_source_code_edge_id_;
