@@ -13,7 +13,6 @@
     "jasmine-core": "^3.7.1"
   },
   "dependencies": {
-    "google-protobuf": "^3.15.6",
     "source-map-support": "^0.5.19",
     "typescript": "~3.8"
   },

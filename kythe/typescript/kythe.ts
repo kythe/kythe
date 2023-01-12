@@ -143,7 +143,7 @@ export enum NodeKind {
  */
 export enum FactName {
   BUILD_CONFIG = '/kythe/build/config',
-  CODE = '/kythe/code',
+  CODE_JSON = '/kythe/code/json',
   COMPLETE = '/kythe/complete',
   CONTEXT_URL = '/kythe/context/url',
   DETAILS = '/kythe/details',
@@ -231,4 +231,45 @@ export interface JSONEdge {
   target: VName;
   edge_kind: EdgeKind|OrdinalEdge;
   fact_name: '/';
+}
+
+/*
+ * Kythe marked source Linkd expressed in the schema JSON-style encoding.
+ */
+export interface JSONLink {
+  definition: string[];
+}
+
+/*
+ * Enum corresponding to Kythe MarkedSource.Kind proto enum.
+ */
+export enum MarkedSourceKind {
+  BOX,
+  TYPE,
+  PARAMETER,
+  IDENTIFIER,
+  CONTEXT,
+  INITIALIZER,
+  PARAMETER_LOOKUP_BY_PARAM,
+  LOOKUP_BY_PARAM,
+  PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS,
+  LOOKUP_BY_TYPED,
+  PARAMETER_LOOKUP_BY_TPARAM,
+  LOOKUP_BY_TPARAM,
+}
+
+
+/*
+ * Kythe MarkedSource expressed in the schema JSON-style encoding.
+ */
+export interface JSONMarkedSource {
+  kind: MarkedSourceKind;
+  pre_text?: string;
+  child?: JSONMarkedSource[];
+  post_child_text?: string;
+  post_text?: string;
+  lookup_index?: number;
+  default_children_count?: number;
+  add_final_list_token?: boolean;
+  link?: JSONLink[];
 }
