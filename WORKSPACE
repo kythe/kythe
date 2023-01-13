@@ -8,13 +8,9 @@ load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 # Bazel and our maximum supported version of Bazel.
 check_version(MIN_VERSION, MAX_VERSION)
 
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 load("//:setup.bzl", "kythe_rule_repositories", "remote_java_repository")
 
 kythe_rule_repositories()
-
 
 # rules_ts setup
 # loads are sensitive to intervening calls, so they need to happen in the
