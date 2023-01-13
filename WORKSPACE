@@ -12,8 +12,10 @@ load("//:setup.bzl", "kythe_rule_repositories", "remote_java_repository")
 
 kythe_rule_repositories()
 
-# rules_ts setup
-# loads are sensitive to intervening calls, so they need to happen in the
+###
+# BEGIN rules_ts setup
+# loads are sensitive to intervening calls, so they need to happen at the
+# top-level and not in e.g. a _ts_dependencies() function.
 load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
 
 rules_ts_dependencies(
@@ -46,6 +48,9 @@ jasmine_repositories(name = "jasmine")
 load("@jasmine//:npm_repositories.bzl", jasmine_npm_repositories = "npm_repositories")
 
 jasmine_npm_repositories()
+
+# END rules_ts setup
+###
 
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
