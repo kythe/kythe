@@ -88,6 +88,13 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
+        name = "build_bazel_rules_nodejs",
+        sha256 = "dd7ea7efda7655c218ca707f55c3e1b9c68055a70c31a98f264b3445bc8f4cb1",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.2.3/rules_nodejs-3.2.3.tar.gz"],
+    )
+
+    maybe(
+        http_archive,
         name = "rules_jvm_external",
         sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
         strip_prefix = "rules_jvm_external-4.0",
