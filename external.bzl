@@ -1292,9 +1292,9 @@ def kythe_dependencies():
         http_file,
         name = "bazel_toolchains_rbe_gen_config_linux_amd64",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
-            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.2/rbe_configs_gen_linux_amd64",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.2/rbe_configs_gen_linux_amd64",
         ],
-        sha256 = "3e3ba75f14eb7c87de8934ae8dfa814f84b5be3b0081dcb8cb95ff42ed1a73b2",
+        sha256 = "1206e8a79b41cb22524f73afa4f4ee648478f46ef6990d78e7cc953665a1db89",
         executable = True,
     )
