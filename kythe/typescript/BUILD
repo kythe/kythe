@@ -4,6 +4,17 @@ load("@aspect_rules_js//js:defs.bzl", "js_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
+# If you need to add / update dependencies:
+#
+# 0. Ensure you have a recent nodejs and pnpm installed.
+# 1. Edit package.json in this directory as appropriate
+# 2. From the *root dir* of the project, run
+#
+#       cp kythe/typescript/package.json .
+#       pnpm import
+#
+# 3. Add the dependencies to the ts_project build rule below.
+
 ts_project(
     name = "kythe",
     srcs = ["kythe.ts"],
