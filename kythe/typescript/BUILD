@@ -9,6 +9,7 @@ ts_project(
     srcs = ["kythe.ts"],
     declaration = True,
     source_map = True,
+    supports_workers = False,
 )
 
 ts_project(
@@ -19,6 +20,7 @@ ts_project(
     ],
     declaration = True,
     source_map = True,
+    supports_workers = False,
     deps = [
         ":kythe",
         "//:node_modules/@types/node",
@@ -31,6 +33,7 @@ ts_project(
     srcs = ["test.ts"],
     declaration = True,
     source_map = True,
+    supports_workers = False,
     deps = [
         ":indexer",
         ":kythe",
@@ -46,6 +49,7 @@ ts_project(
     srcs = ["utf8_test.ts"],
     declaration = True,
     source_map = True,
+    supports_workers = False,
     deps = [
         ":indexer",
         "//:node_modules/@types/jasmine",

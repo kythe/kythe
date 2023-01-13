@@ -2,7 +2,7 @@
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
 # Disable persistent workers for Typescript (#3816)
-build --strategy=TsProject=sandboxed,local
+build --strategy=TsProject=remote,sandboxed,local
 
 # Compatibility flags to avoid regressions.
 common --incompatible_disallow_empty_glob
