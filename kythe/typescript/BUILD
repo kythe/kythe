@@ -53,15 +53,12 @@ ts_project(
     ],
 )
 
-DISABLED_TESTS = []
-
 js_test(
-    name = "js_indexer_test",
+    name = "indexer_test",
     data = [
         ":test_ts",
     ] + glob(
         ["testdata/**/*"],
-        exclude = DISABLED_TESTS,
     ) + [
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
