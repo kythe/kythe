@@ -75,3 +75,7 @@ refresh_compile_commands(
     # With layering_check enabled, clangd warns about missing dependencies on standard library headers.
     targets = {"//kythe/cxx/...": "--config=clang-tidy"},
 )
+
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+npm_link_all_packages(name = "node_modules")

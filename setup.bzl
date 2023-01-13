@@ -103,6 +103,22 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
+        name = "aspect_rules_ts",
+        sha256 = "6406905c5f7c5ca6dedcca5dacbffbf32bb2a5deb77f50da73e7195b2b7e8cbc",
+        strip_prefix = "rules_ts-1.0.5",
+        url = "https://github.com/aspect-build/rules_ts/archive/refs/tags/v1.0.5.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "aspect_rules_jasmine",
+        sha256 = "0357d45b5dba77004931db83ced43c6c432eee658a51d1876a9f2b57838e4080",
+        strip_prefix = "rules_jasmine-0.2.1",
+        url = "https://github.com/aspect-build/rules_jasmine/archive/refs/tags/v0.2.1.tar.gz",
+    )
+
+    maybe(
+        http_archive,
         name = "rules_python",
         sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
         strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
