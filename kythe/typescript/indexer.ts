@@ -1937,7 +1937,7 @@ class Visitor {
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
-    this.visitDecorators(decl.decorators || []);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     const {sym, vname} = this.getSymbolAndVNameForFunctionDeclaration(decl);
     if (!vname) {
       todo(
@@ -2031,7 +2031,7 @@ class Visitor {
     let paramNum = 0;
     const recurseVisit =
         (param: ts.ParameterDeclaration|ts.BindingElement) => {
-          this.visitDecorators(param.decorators || []);
+          this.visitDecorators(ts.canHaveDecorators(param) ? ts.getDecorators(param) : []);
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
@@ -2098,9 +2098,11 @@ class Visitor {
     }
   }
 
-  visitDecorators(decors: ReadonlyArray<ts.Decorator>) {
-    for (const decor of decors) {
-      this.visit(decor);
+  visitDecorators(decors: ReadonlyArray<ts.Decorator> | undefined) {
+    if (decors) {
+      for (const decor of decors) {
+        this.visit(decor);
+      }
     }
   }
 
@@ -2146,12 +2148,12 @@ class Visitor {
     // The entire module declaration defines the created namespace.
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
 
-    if (decl.decorators) this.visitDecorators(decl.decorators);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     if (decl.body) this.visit(decl.body);
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
-    this.visitDecorators(decl.decorators || []);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     let kClass: VName|undefined;
     if (decl.name) {
       const sym = this.host.getSymbolAtLocation(decl.name);

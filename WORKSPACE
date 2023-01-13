@@ -8,9 +8,48 @@ load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 # Bazel and our maximum supported version of Bazel.
 check_version(MIN_VERSION, MAX_VERSION)
 
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 load("//:setup.bzl", "kythe_rule_repositories", "remote_java_repository")
 
 kythe_rule_repositories()
+
+
+# rules_ts setup
+# loads are sensitive to intervening calls, so they need to happen in the
+load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
+
+rules_ts_dependencies(
+    ts_version_from = "//:package.json",
+)
+
+# Fetch and register node, if you haven't already
+load("@rules_nodejs//nodejs:repositories.bzl", "DEFAULT_NODE_VERSION", "nodejs_register_toolchains")
+
+nodejs_register_toolchains(
+    name = "node",
+    node_version = DEFAULT_NODE_VERSION,
+)
+
+load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock")
+
+npm_translate_lock(
+    name = "npm",
+    pnpm_lock = "//:pnpm-lock.yaml",
+)
+
+load("@npm//:repositories.bzl", "npm_repositories")
+
+npm_repositories()
+
+load("@aspect_rules_jasmine//jasmine:repositories.bzl", "jasmine_repositories")
+
+jasmine_repositories(name = "jasmine")
+
+load("@jasmine//:npm_repositories.bzl", jasmine_npm_repositories = "npm_repositories")
+
+jasmine_npm_repositories()
 
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
@@ -20,10 +59,6 @@ kythe_dependencies()
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()
-
-load("@npm//@bazel/labs:package.bzl", "npm_bazel_labs_dependencies")
-
-npm_bazel_labs_dependencies()
 
 load("@maven//:compat.bzl", "compat_repositories")
 

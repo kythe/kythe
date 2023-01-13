@@ -88,17 +88,26 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
-        name = "build_bazel_rules_nodejs",
-        sha256 = "dd7ea7efda7655c218ca707f55c3e1b9c68055a70c31a98f264b3445bc8f4cb1",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.2.3/rules_nodejs-3.2.3.tar.gz"],
-    )
-
-    maybe(
-        http_archive,
         name = "rules_jvm_external",
         sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
         strip_prefix = "rules_jvm_external-4.0",
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.0.zip"],
+    )
+
+    maybe(
+        http_archive,
+        name = "aspect_rules_ts",
+        sha256 = "6406905c5f7c5ca6dedcca5dacbffbf32bb2a5deb77f50da73e7195b2b7e8cbc",
+        strip_prefix = "rules_ts-1.0.5",
+        url = "https://github.com/aspect-build/rules_ts/archive/refs/tags/v1.0.5.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "aspect_rules_jasmine",
+        sha256 = "0357d45b5dba77004931db83ced43c6c432eee658a51d1876a9f2b57838e4080",
+        strip_prefix = "rules_jasmine-0.2.1",
+        url = "https://github.com/aspect-build/rules_jasmine/archive/refs/tags/v0.2.1.tar.gz",
     )
 
     maybe(

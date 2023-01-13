@@ -1,64 +1,63 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_library")
-load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
+load("@aspect_rules_jasmine//jasmine:defs.bzl", "jasmine_test")
+load("@aspect_rules_js//js:defs.bzl", "js_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-ts_config(
-    name = "tsconfig",
-    src = "tsconfig.json",
-    deps = [],
-)
-
-ts_library(
+ts_project(
     name = "kythe",
     srcs = ["kythe.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
 )
 
-ts_library(
+ts_project(
     name = "indexer",
     srcs = [
         "indexer.ts",
         "utf8.ts",
     ],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
     deps = [
         ":kythe",
-        "@npm//@types/node",
-        "@npm//typescript",
+        "//:node_modules/@types/node",
+        "//:node_modules/typescript",
     ],
 )
 
-ts_library(
+ts_project(
     name = "test_ts",
     srcs = ["test.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
     deps = [
         ":indexer",
         ":kythe",
-        "@npm//@types/node",
-        "@npm//source-map-support",
-        "@npm//typescript",
+        "//:node_modules/@types/node",
+        "//:node_modules/source-map-support",
+        "//:node_modules/typescript",
     ],
 )
 
-ts_library(
+ts_project(
     name = "utf8_test_ts",
     testonly = True,
     srcs = ["utf8_test.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
     deps = [
         ":indexer",
-        "@npm//@types/jasmine",
-        "@npm//typescript",
+        "//:node_modules/@types/jasmine",
+        "//:node_modules/typescript",
     ],
 )
 
 DISABLED_TESTS = []
 
-nodejs_test(
-    name = "indexer_test",
+js_test(
+    name = "js_indexer_test",
     data = [
         ":test_ts",
     ] + glob(
@@ -68,12 +67,15 @@ nodejs_test(
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
     ],
-    entry_point = ":test.ts",
-    # See https://github.com/bazelbuild/rules_nodejs/wiki#--bazel_patch_module_resolver-now-defaults-to-false-2324
-    templated_args = ["--bazel_patch_module_resolver"],
+    entry_point = ":test.js",
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "utf8_test",
-    deps = [":utf8_test_ts"],
+    args = ["utf8_test.js"],
+    chdir = package_name(),
+    data = [
+        "utf8_test.js",
+        ":utf8_test_ts",
+    ],
 )

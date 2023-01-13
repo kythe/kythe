@@ -3,7 +3,6 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load(":go.bzl", "go_kythe_proto")
-load("@npm//@bazel/labs:index.bzl", "ts_proto_library")
 load("@rules_rust//proto:proto.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
@@ -72,12 +71,6 @@ java_proto_library(
     name = "common_java_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":common_proto"],
-)
-
-ts_proto_library(
-    name = "common_ts_proto",
-    proto = ":common_proto",
-    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 # Public Kythe GraphStore analyzer output format
@@ -747,10 +740,4 @@ cc_proto_library(
     deps = [
         ":generated_message_info_proto",
     ],
-)
-
-ts_proto_library(
-    name = "generated_message_info_ts_proto",
-    proto = ":generated_message_info_proto",
-    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
