@@ -10,12 +10,13 @@
     "fmt": "clang-format -i *.ts"
   },
   "dependencies": {
+    "source-map": "^0.7.4",
     "source-map-support": "^0.4.11",
     "typescript": "4.8.4"
   },
   "devDependencies": {
-    "@types/node": "^10.15.3",
     "@types/jasmine": "^3.6.9",
+    "@types/node": "^10.15.3",
     "jasmine": "^4.0.0",
     "jasmine-core": "^4.0.0"
   },

@@ -38,6 +38,7 @@ ts_project(
         ":indexer",
         ":kythe",
         "//:node_modules/@types/node",
+        "//:node_modules/source-map",
         "//:node_modules/source-map-support",
         "//:node_modules/typescript",
     ],
@@ -68,6 +69,8 @@ js_test(
         "//kythe/cxx/verifier",
     ],
     entry_point = ":test.js",
+    log_level = "debug",
+    patch_node_fs = False,
 )
 
 jasmine_test(
