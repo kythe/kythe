@@ -22,6 +22,11 @@ rules_ts_dependencies(
     ts_version_from = "//:package.json",
 )
 
+load("@aspect_rules_jasmine//jasmine:dependencies.bzl", "rules_jasmine_dependencies")
+
+# Fetch dependencies which users need as well
+rules_jasmine_dependencies()
+
 # Fetch and register node, if you haven't already
 load("@rules_nodejs//nodejs:repositories.bzl", "DEFAULT_NODE_VERSION", "nodejs_register_toolchains")
 

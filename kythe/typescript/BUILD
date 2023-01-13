@@ -54,7 +54,19 @@ ts_project(
     deps = [
         ":indexer",
         "//:node_modules/@types/jasmine",
+        "//:node_modules/balanced-match",
+        "//:node_modules/brace-expansion",
+        "//:node_modules/fs.realpath",
+        "//:node_modules/glob",
+        "//:node_modules/inflight",
+        "//:node_modules/inherits",
+        "//:node_modules/jasmine",
+        "//:node_modules/jasmine-core",
+        "//:node_modules/jasmine-reporters",
+        "//:node_modules/minimatch",
+        "//:node_modules/once",
         "//:node_modules/typescript",
+        "//:node_modules/wrappy",
     ],
 )
 
@@ -69,8 +81,6 @@ js_test(
         "//kythe/cxx/verifier",
     ],
     entry_point = ":test.js",
-    log_level = "debug",
-    patch_node_fs = False,
 )
 
 jasmine_test(
@@ -81,4 +91,9 @@ jasmine_test(
         "utf8_test.js",
         ":utf8_test_ts",
     ],
+    include_declarations = True,
+    include_npm_linked_packages = True,
+    include_transitive_sources = True,
+    log_level = "debug",
+    patch_node_fs = True,
 )
