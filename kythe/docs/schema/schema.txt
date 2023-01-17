@@ -371,15 +371,6 @@ See also::
 WARNING: *completes/uniquely* edges are deprecated.  Their structure should be
 replaced with the one documented for <<completedby>>.
 
-[kythe,C++,"Completeness links nodes for function templates."]
---------------------------------------------------------------------------------
-//- @id defines/binding Decl
-template <typename T> T id(T x);
-//- @id defines/binding Defn
-//- @id completes/uniquely Decl
-template <typename T> T id(T x) { return x; }
---------------------------------------------------------------------------------
-
 [[defines]]
 defines
 ~~~~~~~
