@@ -352,21 +352,6 @@ See also::
 WARNING: *completes* edges are deprecated.  Their structure should be replaced
 with the one documented for <<completedby>>.
 
-[kythe,C++,"Definitions complete forward declarations in headers."]
---------------------------------------------------------------------------------
-#include "test.h"
-//- @C completes Decl1
-//- @C completes Decl2
-//- @C defines/binding Defn
-class C { };
-
-#example test.h
-//- @C defines/binding Decl1
-class C;
-//- @C defines/binding Decl2
-class C;
---------------------------------------------------------------------------------
-
 [[completesuniquely]]
 completes/uniquely
 ~~~~~~~~~~~~~~~~~~
