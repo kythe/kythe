@@ -371,18 +371,6 @@ See also::
 WARNING: *completes/uniquely* edges are deprecated.  Their structure should be
 replaced with the one documented for <<completedby>>.
 
-[kythe,C++,"Definitions uniquely complete same-file forward declarations."]
---------------------------------------------------------------------------------
-//- @C defines/binding Decl1
-class C;
-//- @C defines/binding Decl2
-class C;
-//- @C completes/uniquely Decl1
-//- @C completes/uniquely Decl2
-//- @C defines/binding Defn
-class C { };
---------------------------------------------------------------------------------
-
 [kythe,C++,"Completeness links nodes for function templates."]
 --------------------------------------------------------------------------------
 //- @id defines/binding Decl
