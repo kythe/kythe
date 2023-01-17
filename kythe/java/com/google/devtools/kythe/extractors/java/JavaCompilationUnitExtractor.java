@@ -88,7 +88,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -115,7 +114,6 @@ public class JavaCompilationUnitExtractor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final Pattern JDK_MODULE_PATTERN = Pattern.compile("^/modules/(java|jdk)[.].*");
   private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
 
@@ -665,7 +663,8 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if ((isJarPath && jarPath.startsWith(jdkJar)) || JDK_MODULE_PATTERN.matcher(path).matches()) {
+    if ((isJarPath && jarPath.startsWith(jdkJar))
+        || (location != null && location.getName().startsWith("SYSTEM_MODULES"))) {
       return;
     }
 
