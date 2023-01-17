@@ -3,8 +3,6 @@
 //- @f defines/binding FSDecl
 void f();
 //- @f defines/binding FSDefn
-//- @f completes FHDecl
-//- @f completes/uniquely FSDecl
 //- FSDecl completedby FSDefn
 //- FHDecl completedby FSDefn
 void f() { }

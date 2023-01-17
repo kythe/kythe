@@ -20,7 +20,7 @@
 
 //- @Box defines/binding BoxImpl
 //- File.node/kind file
-//- @Box completes/uniquely BoxDecl
+//- BoxDecl completedby BoxImpl
 @implementation Box
 -(int) doSomething:(id)t {
   return 0;

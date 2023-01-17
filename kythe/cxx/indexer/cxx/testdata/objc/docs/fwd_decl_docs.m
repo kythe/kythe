@@ -21,7 +21,7 @@
 //- BoxImpl.node/kind record
 //- BoxImpl.subkind class
 //- BoxImpl.complete definition
-//- @+5"Box" completes/uniquely BoxIface
+//- BoxIface completedby BoxImpl
 
 //- @+2"// This is a second doc" documents BoxImpl
 

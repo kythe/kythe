@@ -8,8 +8,6 @@
 //- EnumEFwd.complete complete
 enum class E : short;
 //- @E defines/binding EnumE
-//- @E completes/uniquely EnumEFwd
-//- @E completes HEnumEFwd
 //- EnumEFwd completedby EnumE
 //- HEnumEFwd completedby EnumE
 enum class E : short { };
