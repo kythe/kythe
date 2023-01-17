@@ -13,7 +13,7 @@ message Extendee {
 //- @Extendee ref RootExtendeeNode
 extend Extendee {
   //- @no_package_ext defines/binding RootExtField
-  //- RootExtField completes RootExtendeeNode
+  //- RootExtendeeNode completedby RootExtField
   //- !{ RootExtField childof _SomeMessage }
   optional string no_package_ext = 1000;
 }
