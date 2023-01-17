@@ -1,12 +1,10 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+load("@npm//:@commitlint/cli/package_json.bzl", "bin")
 
-nodejs_binary(
+bin.commitlint_binary(
     name = "commitlint",
     data = [
-        "@npm//@commitlint/cli",
-        "@npm//@commitlint/config-conventional",
+        "//:node_modules/@commitlint/config-conventional",
     ],
-    entry_point = "@npm//:node_modules/@commitlint/cli/lib/cli.js",
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )

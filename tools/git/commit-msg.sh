@@ -20,4 +20,4 @@ bazel run \
   --show_result=0 \
   --noshow_progress \
   --noshow_loading_progress \
-  --run_under "cd '$PWD' && " @io_kythe//tools/git:commitlint -- --edit "$1"
+  --run_under "cd '$PWD' && export BAZEL_BINDIR=. && " @io_kythe//tools/git:commitlint -- --edit "$1"

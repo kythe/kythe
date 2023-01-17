@@ -25,6 +25,8 @@
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.4.2",
+    "@commitlint/config-conventional": "^17.4.2",
     "@types/jasmine": "^3.10.7",
     "@types/node": "^10.15.3",
     "jasmine": "^4.5.0",
