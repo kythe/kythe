@@ -7,14 +7,14 @@
 
 //- @Box defines/binding BoxIface
 //- BoxIface.complete complete
-//- @Box completes/uniquely FwdDecl
+//- FwdDecl completedby BoxIface
 @interface Box
 
 @end
 
 //- @Box defines/binding BoxImpl
 //- BoxImpl.complete definition
-//- @Box completes/uniquely BoxIface
+//- BoxIface completedby BoxImpl
 @implementation Box
 @end
 

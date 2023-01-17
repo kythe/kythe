@@ -30,7 +30,7 @@
 -(int) doSomething:(Type)t;
 @end
 
-//- @Box completes/uniquely BoxDecl
+//- BoxDecl completedby BoxImpl
 //- @Box defines/binding BoxImpl
 //- File.node/kind file
 @implementation Box

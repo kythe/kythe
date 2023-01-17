@@ -21,13 +21,13 @@
 @implementation Box
 
 //- @foo defines/binding FooDefn
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 -(int) foo {
   return 8;
 }
 
 //- @bar defines/binding BarDefn
-//- @bar completes/uniquely BarDecl
+//- BarDecl completedby BarDefn
 //- @k defines/binding KArgDefn
 //- BarDefn param.0 KArgDefn
 -(int) bar:(int) k {

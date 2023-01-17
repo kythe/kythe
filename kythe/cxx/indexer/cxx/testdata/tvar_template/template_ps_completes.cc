@@ -7,11 +7,14 @@ template <typename T> class C<int, T>;
 //- @C defines/binding Template
 template <> class C<int, float>;
 
-//- @C completes/uniquely TemplateTS
+//- @C defines/binding TemplateTSDefn
+//- TemplateTS completedby TemplateTSDefn
 template <typename T, typename S> class C { };
 
-//- @C completes/uniquely TemplateT
+//- @C defines/binding TemplateTDefn
+//- TemplateT completedby TemplateTDefn
 template <typename T> class C<int, T> { };
 
-//- @C completes/uniquely Template
+//- @C defines/binding TemplateDefn
+//- Template completedby TemplateDefn
 template <> class C<int, float> { };

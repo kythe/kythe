@@ -15,7 +15,7 @@
 @implementation Box
 
 //- @foo defines/binding FooDefn
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl

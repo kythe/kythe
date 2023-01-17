@@ -9,6 +9,5 @@ class C {
 };
 
 //- @"void C::f() { }" defines FnFDefn
-//- @f completes/uniquely FnFDecl
 //- FnFDecl completedby FnFDefn
 void C::f() { }

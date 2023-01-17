@@ -19,8 +19,6 @@ template
 //- @X defines/binding TX
 <typename W, typename X>
 //- @C defines/binding CDefn
-//- @C completes/uniquely CDecl2
-//- @C completes/uniquely CDecl1
 //- CDecl1 completedby CDefn
 //- CDecl2 completedby CDefn
 class C { };

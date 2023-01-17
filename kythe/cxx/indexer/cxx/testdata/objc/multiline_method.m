@@ -23,7 +23,7 @@ bar;
 @implementation Box
 
 //- @foo defines/binding FooDefn
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 -(int) foo:(int) var1
        at:(int) var2 {
   return 8;
@@ -31,13 +31,13 @@ bar;
 
 -(int)
 //- @bar defines/binding BarDefn
-//- @bar completes/uniquely BarDecl
+//- BarDecl completedby BarDefn
 bar {
   return 28;
 }
 
 //- @baz defines/binding BazDefn
-//- @baz completes/uniquely BazDecl
+//- BazDecl completedby BazDefn
 -(int) baz:(int) v1
        with:(int) v2
        without:(int)v3 {

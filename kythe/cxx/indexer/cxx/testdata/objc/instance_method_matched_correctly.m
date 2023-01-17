@@ -16,19 +16,19 @@
 
 @implementation Box
 //- @foo defines/binding FooDefn
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 -(int) foo {
   return 8;
 }
 
 //- @foo defines/binding FooKDefn
-//- @foo completes/uniquely FooKDecl
+//- FooKDecl completedby FooKDefn
 -(int) foo:(int)k {
   return k;
 }
 
 //- @foo defines/binding FooKWithBarDefn
-//- @foo completes/uniquely FooKWithBarDecl
+//- FooKWithBarDecl completedby FooKWithBarDefn
 -(int) foo:(int)k withBar:(int)bar {
   return k * bar;
 }

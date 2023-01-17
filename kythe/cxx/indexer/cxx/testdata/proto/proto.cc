@@ -44,8 +44,8 @@ void fn() {
 }
 //- Message generates CxxMessage
 //- CxxSetStringFieldTapp param.0 CxxSetStringFieldAbs
-//- CxxSetStringFieldAbsBindingAnchor defines/binding CxxSetStringFieldAbs
-//- CxxSetStringFieldAbsBindingAnchor completes/uniquely SetStringFieldAbs
+//- _CxxSetStringFieldAbsBindingAnchor defines/binding CxxSetStringFieldAbs
+//- SetStringFieldAbs completedby CxxSetStringFieldAbs
 //- StringField generates SetStringFieldAbs
 //- StringField generates CxxGetStringField
 //- Int32Field generates CxxSetInt32Field
@@ -54,8 +54,8 @@ void fn() {
 //- NestedMessageField generates CxxGetNestedMessageField
 //- NestedMessage generates CxxNestedMessage
 //- CxxSetNestedStringFieldTapp param.0 CxxSetNestedStringFieldAbs
-//- CxxSetNestedStringFieldAbsBindingAnchor defines/binding CxxSetNestedStringFieldAbs
-//- CxxSetNestedStringFieldAbsBindingAnchor completes/uniquely SetNestedStringFieldAbs
+//- _CxxSetNestedStringFieldAbsBindingAnchor defines/binding CxxSetNestedStringFieldAbs
+//- SetNestedStringFieldAbs completedby CxxSetNestedStringFieldAbs
 //- NestedString generates SetNestedStringFieldAbs
 //- NestedString generates CxxGetNestedStringField
 //- NestedBool generates CxxSetNestedBoolField
@@ -63,7 +63,7 @@ void fn() {
 //- OneofField generates CxxOneofFieldCase
 //- OneofField generates CxxClearOneofField
 //- CxxSetOneofStringTapp param.0 CxxSetOneofStringAbs
-//- CxxSetOneofStringAbsBindingAnchor defines/binding CxxSetOneofStringAbs
-//- CxxSetOneofStringAbsBindingAnchor completes/uniquely SetOneofStringAbs
+//- _CxxSetOneofStringAbsBindingAnchor defines/binding CxxSetOneofStringAbs
+//- SetOneofStringAbs completedby CxxSetOneofStringAbs
 //- OneofString generates SetOneofStringAbs
 //- RepeatedInt32Field generates CxxRepeatedInt32Field

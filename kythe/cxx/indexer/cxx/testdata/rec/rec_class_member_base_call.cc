@@ -6,7 +6,6 @@ struct B { void f(); };
 struct C : B { void f(); };
 
 //- @C ref StructC
-//- @f completes/uniquely FnFCDecl
 //- @f defines/binding FnFCDefn
 //- FnFCDecl completedby FnFCDefn
 void C::f() {

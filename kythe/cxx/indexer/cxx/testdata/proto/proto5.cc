@@ -13,7 +13,7 @@ void fn() {
 }
 //- Message generates CxxMessage
 //- CxxSetStringFieldTapp param.0 CxxSetStringFieldAbs
-//- CxxSetStringFieldAbsBindingAnchor defines/binding CxxSetStringFieldAbs
-//- CxxSetStringFieldAbsBindingAnchor completes/uniquely SetStringFieldAbs
+//- _CxxSetStringFieldAbsBindingAnchor defines/binding CxxSetStringFieldAbs
+//- SetStringFieldAbs completedby CxxSetStringFieldAbs
 //- StringField generates SetStringFieldAbs
 //- StringField generates CxxGetStringField

@@ -36,7 +36,7 @@
 //- @setWidth defines/binding SetWidthDefn
 //- SetWidthDefn.node/kind function
 //- SetWidthDefn childof BoxImpl
-//- @setWidth completes/uniquely SetWidthDecl
+//- SetWidthDecl completedby SetWidthDefn
 -(void) setWidth:(int)value {
   self->_testwidth = value;
 }

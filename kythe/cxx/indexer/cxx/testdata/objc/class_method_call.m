@@ -18,7 +18,7 @@
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 +(int) foo {
   return 8;
 }
