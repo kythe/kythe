@@ -177,7 +177,7 @@ void ProtoGraphBuilder::AddFieldToMessage(const VName* parent,
   }
   if (parent == nullptr || !VNameEquals(message, *parent)) {
     // Extension; add a reference to the message being extended.
-    AddEdge(field, message, EdgeKindID::kCompletes);
+    AddEdge(message, field, EdgeKindID::kCompletedby);
   }
   if (oneof != nullptr) {
     AddEdge(field, *oneof, EdgeKindID::kChildOf);
