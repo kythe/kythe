@@ -7,7 +7,6 @@ id(T x);
 template <typename T>
 T
 //- @id defines/binding Defn
-//- @id completes/uniquely Decl
 //- Decl completedby Defn
 id(T x)
 { return x; }

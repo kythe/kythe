@@ -4,12 +4,11 @@
 
 #import "FwdClass.h"
 
-//- FwdIface=vname(_,_,_,"kythe/cxx/indexer/cxx/testdata/objc/FwdClass.h",_) completes FwdDecl
+//- FwdDecl completedby FwdIFace
 //- FwdIface.node/kind anchor
 
 //- @FwdClass defines/binding FwdDecl
 //- FwdDecl.node/kind record
-//- !{@FwdClass completes _}
 @class FwdClass;
 
 //- @Box defines/binding BoxIface

@@ -25,7 +25,7 @@
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 -(int) foo {
   return 8;
 }
@@ -34,7 +34,7 @@
 //- BarDefn.node/kind function
 //- BarDefn.complete definition
 //- BarDefn childof BoxImpl
-//- @bar completes/uniquely BarDecl
+//- BarDecl completedby BarDefn
 -(int) bar:(int)k {
   return k * 2;
 }

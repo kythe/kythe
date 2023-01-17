@@ -39,7 +39,7 @@
 //- @foo defines/binding FooImpl
 //- FooImpl.node/kind function
 //- FooImpl childof BoxImpl
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooImpl
 -(int) foo {
   return self->_testwidth;
 }
@@ -47,7 +47,7 @@
 //- @bar defines/binding BarImpl
 //- BarImpl.node/kind function
 //- BarImpl childof BoxImpl
-//- @bar completes/uniquely BarDecl
+//- BarDecl completedby BarImpl
 -(void) bar:(int)value {
   self->_testwidth = value;
 }

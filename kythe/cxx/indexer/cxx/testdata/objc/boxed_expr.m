@@ -17,7 +17,7 @@
 @implementation Box
 
 //- @foo defines/binding FooDefn
-//- @foo completes/uniquely FooDecl
+//- FooDecl completedby FooDefn
 -() foo {
   return @8;
 }

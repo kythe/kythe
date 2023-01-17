@@ -23,7 +23,7 @@
   return 20;
 }
 
-//- @magicNum completes/uniquely MagicNumDecl
+//- MagicNumDecl completedby MagicNumDefn
 //- @magicNum defines/binding MagicNumDefn
 //- MagicNumDefn.node/kind function
 //- MagicNumDefn.complete definition
