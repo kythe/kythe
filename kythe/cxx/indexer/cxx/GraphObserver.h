@@ -722,18 +722,6 @@ class GraphObserver {
   virtual void recordDeclUseLocationInDocumentation(const Range& SourceRange,
                                                     const NodeId& DeclId) {}
 
-  /// \brief Describes how specific a completion relationship is.
-  enum class Specificity {
-    /// This relationship is the only possible relationship given its context.
-    /// For example, a class definition uniquely completes a forward declaration
-    /// in the same source file.
-    UniquelyCompletes,
-    /// This relationship is one of many possible relationships. For example, a
-    /// forward declaration in a header file may be completed by definitions in
-    /// many different source files.
-    Completes
-  };
-
   /// \brief Describes how much of a guess an edge is.
   enum class Confidence {
     /// This relationship definitely exists.
@@ -754,7 +742,7 @@ class GraphObserver {
   /// where there are multiple possible nodes, like when the function is
   /// actually a function template, pass the ID for the outer (abs) node.
   virtual void recordCompletionRange(const Range& SourceRange,
-                                     const NodeId& DefnId, Specificity Spec,
+                                     const NodeId& DefnId,
                                      const NodeId& CompletingNode) {}
 
   /// \brief Records the type of a node as an edge in the graph.

@@ -2657,12 +2657,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
       // We should not point a completes edge from an abs node to a var node.
       GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
       if (NameRangeInContext) {
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), TargetDecl,
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            DeclNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
+                                       DeclNode);
       }
       Completions.push_back(LibrarySupport::Completion{NextDecl, TargetDecl});
     }
@@ -2806,12 +2802,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
           Observer.getSourceManager()->getFileID(NextDecl->getLocation());
       if (auto RCC =
               RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
-        Observer.recordCompletionRange(
-            RCC.value(), BuildNodeIdForDecl(NextDecl),
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            DeclNode);
+        Observer.recordCompletionRange(RCC.value(),
+                                       BuildNodeIdForDecl(NextDecl), DeclNode);
       }
     }
   }
@@ -3230,12 +3222,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
         // We should not point a completes edge from an abs node to a record
         // node.
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), TargetDecl,
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            DeclNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
+                                       DeclNode);
       }
     }
   }
@@ -3557,12 +3545,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
 
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), TargetDecl,
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            OuterNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
+                                       OuterNode);
 
         if (options_.DataflowEdges) {
           Observer.recordInfluences(OuterNode, TargetDecl);
@@ -5206,12 +5190,8 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
         FileID InterfaceFile =
             Observer.getSourceManager()->getFileID(Interface->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(Interface);
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), TargetDecl,
-            InterfaceFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            DeclNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
+                                       DeclNode);
       }
       RecordCompletesForRedecls(ImplDecl, NameRange, DeclNode);
     }
@@ -5256,12 +5236,8 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
         FileID DeclFile =
             Observer.getSourceManager()->getFileID(CategoryDecl->getLocation());
         GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(CategoryDecl);
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), DeclNode,
-            DeclFile == ImplDeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            ImplDeclNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), DeclNode,
+                                       ImplDeclNode);
       }
       RecordCompletesForRedecls(ImplDecl, NameRange, ImplDeclNode);
     }
@@ -5489,12 +5465,8 @@ void IndexerASTVisitor::RecordCompletesForRedecls(
         FileID NextDeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
-        Observer.recordCompletionRange(
-            NameRangeInContext.value(), TargetDecl,
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            DeclNode);
+        Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
+                                       DeclNode);
       }
     }
   }
@@ -5606,12 +5578,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
             auto ImplNameRangeInContext(RangeInCurrentContext(
                 MethodImpl->isImplicit(), ImplNode, ImplNameRange));
             if (ImplNameRangeInContext) {
-              Observer.recordCompletionRange(
-                  ImplNameRangeInContext.value(), BuildNodeIdForDecl(Decl),
-                  DeclFile == ImplFile
-                      ? GraphObserver::Specificity::UniquelyCompletes
-                      : GraphObserver::Specificity::Completes,
-                  Node);
+              Observer.recordCompletionRange(ImplNameRangeInContext.value(),
+                                             BuildNodeIdForDecl(Decl), Node);
             }
           }
         }
@@ -5639,11 +5607,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
     if (Decl != CD) {
       FileID CDDeclFile =
           Observer.getSourceManager()->getFileID(CD->getLocation());
-      Observer.recordCompletionRange(
-          DeclNameRangeInContext, BuildNodeIdForDecl(CD),
-          CDDeclFile == DefnFile ? GraphObserver::Specificity::UniquelyCompletes
-                                 : GraphObserver::Specificity::Completes,
-          Node);
+      Observer.recordCompletionRange(DeclNameRangeInContext,
+                                     BuildNodeIdForDecl(CD), Node);
     }
 
     // Connect all other redecls to this definition with a completion edge.
@@ -5653,12 +5618,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
       if (NextDecl != Decl && NextDecl != CD) {
         FileID RedeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
-        Observer.recordCompletionRange(
-            DeclNameRangeInContext, BuildNodeIdForDecl(NextDecl),
-            RedeclFile == DefnFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes,
-            Node);
+        Observer.recordCompletionRange(DeclNameRangeInContext,
+                                       BuildNodeIdForDecl(NextDecl), Node);
       }
     }
   }
