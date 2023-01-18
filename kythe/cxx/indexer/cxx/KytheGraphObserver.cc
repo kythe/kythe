@@ -832,7 +832,7 @@ void KytheGraphObserver::recordDefinitionRangeWithBinding(
 
 void KytheGraphObserver::recordCompletionRange(
     const GraphObserver::Range& source_range, const NodeId& node,
-    Specificity spec, const NodeId& completing_node) {
+    const NodeId& completing_node) {
   recorder_->AddEdge(VNameRefFromNodeId(node), EdgeKindID::kCompletedby,
                      VNameRefFromNodeId(completing_node));
 }

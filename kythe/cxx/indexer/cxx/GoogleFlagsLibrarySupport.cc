@@ -206,12 +206,8 @@ void GoogleFlagsLibrarySupport::InspectVariable(
           if (NextDeclRange.isValid()) {
             clang::FileID NextDeclFile =
                 GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
-            GO.recordCompletionRange(
-                *RCC, NodeIdForFlag(GO, C.DeclId),
-                NextDeclFile == DeclFile
-                    ? GraphObserver::Specificity::UniquelyCompletes
-                    : GraphObserver::Specificity::Completes,
-                FlagNodeId);
+            GO.recordCompletionRange(*RCC, NodeIdForFlag(GO, C.DeclId),
+                                     FlagNodeId);
           }
         }
       }

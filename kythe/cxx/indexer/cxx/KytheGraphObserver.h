@@ -307,7 +307,6 @@ class KytheGraphObserver : public GraphObserver {
                                             const NodeId& node) override;
 
   void recordCompletionRange(const Range& source_range, const NodeId& node,
-                             Specificity spec,
                              const NodeId& completing_node) override;
 
   void recordTypeSpellingLocation(const Range& source_range,
