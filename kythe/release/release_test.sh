@@ -27,17 +27,17 @@ TEST_REPOSRCDIR="$PWD"
 
 # The Java extractor and indexer need access to various packages in the jdk.compiler module.
 JAVA_EXPORTS=(
-  jdk.compiler/com.sun.tools.javac.api
-  jdk.compiler/com.sun.tools.javac.code
-  jdk.compiler/com.sun.tools.javac.file
-  jdk.compiler/com.sun.tools.javac.main
-  jdk.compiler/com.sun.tools.javac.model
-  jdk.compiler/com.sun.tools.javac.parser
-  jdk.compiler/com.sun.tools.javac.tree
-  jdk.compiler/com.sun.tools.javac.util
+  --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
+  --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
 )
 
-export KYTHE_JAVA_RUNTIME_OPTIONS="${JAVA_EXPORTS[*]/*/--add-exports=&=ALL-UNNAMED}"
+export KYTHE_JAVA_RUNTIME_OPTIONS="${JAVA_EXPORTS[*]}"
 
 jq() { "$TEST_REPOSRCDIR/external/com_github_stedolan_jq/jq" "$@"; }
 
