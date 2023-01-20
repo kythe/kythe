@@ -1,5 +1,105 @@
 # Release Notes
 
+## [v0.0.61] - 2023-01-19
+
+#### Bug Fixes
+
+*   include TsProject as a typescript rule mnemonic for extraction extra action (#5504) ([a80fd84d](https://github.com/kythe/kythe/commit/a80fd84d1bae5039d94689c1015e0765f1427f86))
+*   correctly patch zero-width spans (#5442) ([2f5811d9](https://github.com/kythe/kythe/commit/2f5811d9bac67edaf0999af8f95f3b2f0cd2ec35))
+*   passthrough nil Spans without work (#5438) ([a8f3b96e](https://github.com/kythe/kythe/commit/a8f3b96e05c2398493b5253ba38e9f25296a99b0))
+*   guard against nil patcher from errors (#5395) ([9a4281bf](https://github.com/kythe/kythe/commit/9a4281bff0daf08bafb8736e1e8b5d657cd666d8))
+*   log patcher errors; continue (#5394) ([cbec0f7c](https://github.com/kythe/kythe/commit/cbec0f7c970a9e59c81675f6122ded5550695fb5))
+*   update gofmt path in pre-commit docker image (#5376) ([837db591](https://github.com/kythe/kythe/commit/837db5914f54f4377f8a6c50d972b02af8e5d16b))
+* **api:**  only count xrefs cut by CorpusPathFilters (#5451) ([781cbf2b](https://github.com/kythe/kythe/commit/781cbf2b930125b3cfc3cfaca439bea81d93c936))
+* **cxx:**  use canonical clang include path (#5468) ([8b5bc95c](https://github.com/kythe/kythe/commit/8b5bc95c4cdb9a03a0dfeb13f1e1639f73ab19cd))
+* **cxx_common:**  address bug with zero sized files (#5445) ([6a1dcbfc](https://github.com/kythe/kythe/commit/6a1dcbfc3be19d04076869fa1b6280903df3f4e1))
+* **cxx_indexer:**
+  *  remove unnecessary precondition (#5461) ([1c481fc0](https://github.com/kythe/kythe/commit/1c481fc07b34c4fb0bc3b6915690d8b86df2e7cb))
+  *  reintroduce dereferencing to BuildNodeIdForTemplateName (#5383) ([7f6be7a2](https://github.com/kythe/kythe/commit/7f6be7a2de04239c7152d013d75bf210c457a463))
+  *  dereference member templates (#5381) ([a57e0fdb](https://github.com/kythe/kythe/commit/a57e0fdbbaa2ae699bfc37bd92d981ee2b4ca3c8))
+  *  make logic less tricky and more functional (#5377) ([e8e05c23](https://github.com/kythe/kythe/commit/e8e05c23a8f9f4424d2f53e50a3d9b4f4af2529d))
+  *  fix tvar support with aliasing on (#5373) ([12fd89d0](https://github.com/kythe/kythe/commit/12fd89d0b5336084e960f1f6f12fd4ac7509f63b))
+  *  fix crash when logging non-identifier names (#5364) ([2ac93dae](https://github.com/kythe/kythe/commit/2ac93dae5ed35e0f79db69774ac5fef6a216ad36))
+* **go:**  re-add Compilation struct and associated methods (#5351) ([3b640116](https://github.com/kythe/kythe/commit/3b640116c90bb47c147600d973d68996dc83b675))
+* **go_indexer:**
+  *  compound assignments should be rw (#5446) ([3f41a10b](https://github.com/kythe/kythe/commit/3f41a10b5449bf763574f38f39f0a89e5ad13a86))
+  *  fix go package marked source (#5375) ([2b64f9fd](https://github.com/kythe/kythe/commit/2b64f9fdfae6407922aac022cb2ae192e8bb7aaa))
+* **java:**  move runtime dependencies to runtime_deps (#5433) ([29037261](https://github.com/kythe/kythe/commit/290372617db4dce660b0b049161fa1c7187a6079))
+* **java_extractor:**  disable service processors when extracting from Bazel (#5368) ([1920ad60](https://github.com/kythe/kythe/commit/1920ad607cfe6ad65acf1e6410dcddba09798245))
+* **java_indexer:**
+  *  properly handle null parent trees (#5448) ([e0c175ab](https://github.com/kythe/kythe/commit/e0c175abd566ba956c935635b49f924333635cda))
+  *  return null instead of throwing for unsupported attribute views (#5441) ([e5d3e384](https://github.com/kythe/kythe/commit/e5d3e384261303563fde214338570a6e5d8e66c4))
+  *  fix marked source test in JDK19 (#5435) ([ba71f5f2](https://github.com/kythe/kythe/commit/ba71f5f2c2316e71fc6f8cfe4835b0309443bdc3))
+  *  assign all diagnostics a corpus (#5337) ([024aba95](https://github.com/kythe/kythe/commit/024aba95140c497bb19ef87f884b090f6f900e89))
+* **proto_indexer:**
+  *  only decorate the type name in service definitions (#5478) ([272cac30](https://github.com/kythe/kythe/commit/272cac301772fbea67ea79158ff06181555c6743))
+  *  properly handle comments that end with an empty commented line (#5427) ([e979b1e3](https://github.com/kythe/kythe/commit/e979b1e37b2839c698517a72df4b361d6a1a6e5a))
+* **rust_common:**
+  *  migrate from tempdir crate to tempfile (#5489) ([0fa54f72](https://github.com/kythe/kythe/commit/0fa54f72c7a715626817eab71e9d8a8727b69965))
+  *  fix compatibility with 2022-12-21 (#5482) ([8d422877](https://github.com/kythe/kythe/commit/8d422877d34faa4323c53902868e7920bb630f51))
+  *  fix clippy lints of new rust version (#5425) ([d746a506](https://github.com/kythe/kythe/commit/d746a506e5276b945c2b64314bc9f0cbf85c3485))
+  *  fix rustc_lib location in release (#5339) ([5036c159](https://github.com/kythe/kythe/commit/5036c159387d25eb2c0e3b564b19ebde39b873c7))
+* **rust_extractor:**
+  *  ensure glob result is a file (#5470) ([8e023633](https://github.com/kythe/kythe/commit/8e023633326c6b73ba8941e8ac2e02e30eb9fab7))
+  *  set extractor_test script as executable (#5382) ([329663bf](https://github.com/kythe/kythe/commit/329663bf4c75d21053f235f1690b02cd9ea81df8))
+  *  improve logic for finding the save analysis file (#5354) ([c3bae69e](https://github.com/kythe/kythe/commit/c3bae69e2c85a1649c8dd508ef7ce7183636d814))
+* **rust_indexer:**  set root when creating vname for reference (#5471) ([f87b41e7](https://github.com/kythe/kythe/commit/f87b41e7165766b0997e53d8e238edc0e7f068d3))
+* **schema:**  get rid of more abs stuff (#5420) (#5439) ([dfb439a6](https://github.com/kythe/kythe/commit/dfb439a63de909e9eb67d0f36fc2471fe0693afb))
+* **serving:**
+  *  only count unskipped pages (#5477) ([2dbe8785](https://github.com/kythe/kythe/commit/2dbe878584f4b56fa7b278cf36003ebe6a672753))
+  *  ensure page read ahead stops promptly (#5473) ([005a6fb6](https://github.com/kythe/kythe/commit/005a6fb68395a3059bd52a0c557831fdb22ecc4c))
+  *  clear empty xref sets after all reads (#5465) ([48cd9d01](https://github.com/kythe/kythe/commit/48cd9d0106ca2ae0b62c5d0e33cd951a1ff7417a))
+  *  fix reversed inequality (#5464) ([1b69b531](https://github.com/kythe/kythe/commit/1b69b531bcca46218afbb91bb37c1aefd732ac05))
+  *  skip PageSet check when given no filters (#5463) ([207c04ff](https://github.com/kythe/kythe/commit/207c04ff17255442f30bf2fe94da47994de7b414))
+* **textproto:**  use ref/file for proto-file schema comments (#5416) ([e055c8a0](https://github.com/kythe/kythe/commit/e055c8a0ede82cac870de29d3be938bc9af3ae23))
+* **typescript:**
+  *  update typescript dependency to 4.8.4, move to apsect-build/rules_ts (#5495) ([301a10ab](https://github.com/kythe/kythe/commit/301a10abb34731951baa67d846afa51ccdb099be))
+  *  emit code/json not code facts; remove proto dependency (#5494) ([2996b793](https://github.com/kythe/kythe/commit/2996b79347147b46cfe2b2f1617d73dced9a6365))
+  *  add knob to disable some tests (#5479) ([dddd1dd2](https://github.com/kythe/kythe/commit/dddd1dd27e4c447ce79b7ccdc09b84eec958a9f2))
+* **typescript_indexer:**  fix linting issues (#5455) ([b5af7ecf](https://github.com/kythe/kythe/commit/b5af7ecf868bfa0a487556699300ee1021634b8b))
+
+#### Performance
+
+*   update patcher to use binary search (#5434) ([dda61f6f](https://github.com/kythe/kythe/commit/dda61f6f6753487c60087abdf518351a5c553c22))
+* **serving:**
+  *  only filter groups that match requested kinds (#5454) ([519da956](https://github.com/kythe/kythe/commit/519da9561dfd8ff3d669134f7419132c0f225498))
+  *  reduce patching to offsets; drop text (#5422) ([69bef08d](https://github.com/kythe/kythe/commit/69bef08de731d0a8e7aecdb54f2b9a97a4d2dbe7))
+
+#### Features
+
+* **api:**  add filtered xrefs counts to reply (#5447) ([4035fe45](https://github.com/kythe/kythe/commit/4035fe4546486eab77b6059dfefac6b892b210f6))
+* **cxx:**  emit member visibility facts (#5467) ([9f6d6847](https://github.com/kythe/kythe/commit/9f6d6847ddf644602f71eb6f2a03416628e3a649))
+* **cxx_indexer:**
+  *  distinguish direct function calls (#5378) ([134d58a5](https://github.com/kythe/kythe/commit/134d58a56f145458d4341a3e58e89ae1ca84e0d7))
+  *  handle deprecation via clang::availability (#5365) ([21d416c7](https://github.com/kythe/kythe/commit/21d416c73e94cc07704170f8fff37a25275fe99b))
+* **go_indexer:**
+  *  implement ref/writes edges for members (#5399) ([50e7e238](https://github.com/kythe/kythe/commit/50e7e23872ef10689ea67042ec741c65338bd670))
+  *  implement ref/writes edges (#5398) ([6c8237dc](https://github.com/kythe/kythe/commit/6c8237dc6d97dedb30910cd47ea1a379c37a6b91))
+  *  rework --use_compilation_corpus_as_default (#5338) ([9a4050a3](https://github.com/kythe/kythe/commit/9a4050a346f68533310be4b9466829c894ee4cca))
+* **go_serving:**  add ResolveVName to Unit interface (#5474) ([90ee7a3c](https://github.com/kythe/kythe/commit/90ee7a3c878a28bf5dc477f005668dd4f74b5b8f))
+* **indexing:**
+  *  support rewriting JSON-encoded code facts in proxy (#5491) ([c8359d19](https://github.com/kythe/kythe/commit/c8359d19d66a78db47465f0c94bad8dfe872a90e))
+  *  allow an AnalysisResult return from the driver (#5481) ([872432aa](https://github.com/kythe/kythe/commit/872432aac6acda1b00867a20f05b9446cbdbaa00))
+  *  add details field for AnalysisResults (#5480) ([6f17a714](https://github.com/kythe/kythe/commit/6f17a71442b54c155362b25f7092605a5e7d3be3))
+* **java_common:**
+  *  improve JDK19 source compatibility (#5432) ([ce8e3b13](https://github.com/kythe/kythe/commit/ce8e3b133aa1afcd471c152e20d8638cdcc41454))
+  *  include reflective fallback for compatibility shims (#5428) ([dba039ca](https://github.com/kythe/kythe/commit/dba039ca4fdbef9483687ffca05822da535d25ac))
+  *  add function to render signature as plaintext (#5400) ([a70ccc01](https://github.com/kythe/kythe/commit/a70ccc016d38d6d3406e6f4638294092265325f2))
+* **java_indexer:**  implement ref/writes edges (#5423) ([b426d6db](https://github.com/kythe/kythe/commit/b426d6db0fc40d1bfa6a7829460e853de9741a92))
+* **schema:**
+  *  document ref/writes edges (#5452) ([cfe09e00](https://github.com/kythe/kythe/commit/cfe09e0096ac3aeec98e4f5c2918b2386fff2c7a))
+  *  document canonical order of schema tags (#5440) ([7c9bf1b0](https://github.com/kythe/kythe/commit/7c9bf1b0bff8507003becfa60c89c15bf527f69f))
+* **serving:**
+  *  add option to read xref pages concurrently (#5469) ([9493a8d4](https://github.com/kythe/kythe/commit/9493a8d4ac6ff23f259bd46a6aae2713cbcee5a9))
+  *  allow some leeway time to return before xrefs deadline (#5460) ([a9cc5003](https://github.com/kythe/kythe/commit/a9cc5003712f1493b1821cd4665106ad9cfc2905))
+  *  trigram search index for xref pages (#5456) ([78c7db93](https://github.com/kythe/kythe/commit/78c7db93f14e021c60ce3d8ce72e35e5ed8fb2a2))
+  *  support marshalling Patchers (#5424) ([54a8664a](https://github.com/kythe/kythe/commit/54a8664a5191c2d3dee830480c2919bb519d11ed))
+* **tooling:**
+  *  mark conflicting /kythe/code facts as ok with ignore flag and add tests (#5410) ([73dab3e8](https://github.com/kythe/kythe/commit/73dab3e8fda62194c6fd8396ffd731a5de6edaa2))
+  *  add a flag to ignore conflicting /kythe/code facts (#5409) ([e99afd28](https://github.com/kythe/kythe/commit/e99afd280522ba800fd4fbc31b9099093ef8a435))
+* **typescript_indexer:**  add support for ref/writes (#5444) ([9d5400d2](https://github.com/kythe/kythe/commit/9d5400d230812949b0d30a3b566732737f2673f1))
+* **verifier:**  support code/json fact (#5493) ([0a9814e9](https://github.com/kythe/kythe/commit/0a9814e9252dc451d961d555a57f9fad80375d16))
+
 ## [v0.0.60] - 2022-08-01
 
 #### Bug Fixes
@@ -1355,7 +1455,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.60...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.61...HEAD
+[v0.0.61] https://github.com/kythe/kythe/compare/v0.0.60...v0.0.61
 [v0.0.60] https://github.com/kythe/kythe/compare/v0.0.59...v0.0.60
 [v0.0.59] https://github.com/kythe/kythe/compare/v0.0.58...v0.0.59
 [v0.0.58] https://github.com/kythe/kythe/compare/v0.0.57...v0.0.58
