@@ -108,6 +108,7 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 	}
 	switch ms.GetKind() {
 	case cpb.MarkedSource_LOOKUP_BY_PARAM:
+		// TODO: determine what to do when a lookup isn't found
 		params := r.params[ticket]
 		if p := params[ms.GetLookupIndex()]; p != "" {
 			return r.ResolveTicket(p)
