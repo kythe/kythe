@@ -38,13 +38,13 @@ using ::google::protobuf::compiler::DiskSourceTree;
 class LoggingMultiFileErrorCollector
     : public google::protobuf::compiler::MultiFileErrorCollector {
  public:
-  void AddError(absl::string_view& filename, int line, int column,
-                absl::string_view& message) override {
+  void AddError(absl::string_view filename, int line, int column,
+                absl::string_view message) override {
     LOG(ERROR) << filename << "@" << line << ":" << column << ": " << message;
   }
 
-  void AddWarning(absl::string_view& filename, int line, int column,
-                  absl::string_view& message) override {
+  void AddWarning(absl::string_view filename, int line, int column,
+                  absl::string_view message) override {
     LOG(ERROR) << filename << "@" << line << ":" << column << ": " << message;
   }
 };
