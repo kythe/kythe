@@ -207,8 +207,7 @@ bool ExecuteAndWait(const std::string& program,
   std::string error;
   bool execution_failed = false;
   int exit_code = llvm::sys::ExecuteAndWait(
-      program, VectorForExecute(argv),
-      llvm::makeArrayRef(VectorForExecute(env)),
+      program, VectorForExecute(argv), VectorForExecute(env),
       /* Redirects */ std::nullopt,
       /* SecondsToWait */ 0, /* MemoryLimit */ 0, &error, &execution_failed);
   if (!error.empty() || execution_failed || exit_code != 0) {
