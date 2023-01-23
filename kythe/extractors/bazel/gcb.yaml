@@ -5,11 +5,11 @@ steps:
     args:
       - clone
       - '--recurse-submodules'
-      - 'https://github.com/kythe/kythe'
+      - ${_REPO}
       - .
-    dir: code,
-  - name: gcr.io/cloud-builders/git,
-    id: checkout,
+    dir: code
+  - name: gcr.io/cloud-builders/git
+    id: checkout
     args:
       - checkout
       - '--recurse-submodules'
@@ -20,12 +20,14 @@ steps:
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel-release
     args:
+      - bazel
       - build
       - '--config=remote'
       - '-c'
       - opt
       - '--stamp'
       - '//kythe/extractors/bazel:stage'
+    dir: code
   - name: gcr.io/cloud-builders/docker
     id: docker-build
     args:
@@ -40,6 +42,10 @@ steps:
       - push
       - '-t'
       - gcr.io/kythe-public/bazel-extractor:latest
+substitutions:
+  _REPO: 'https://github.com/kythe/kythe'
+  _COMMIT: master
+
 # Use a long timeout as some builds, particularly LLVM updates, can
 # exceed 30 minutes.
 timeout: 2700s

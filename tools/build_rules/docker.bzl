@@ -43,6 +43,8 @@ def docker_build(
         "touch $@",
     ]
 
+    print("docker dir is ", done_marker)
+
     native.genrule(
         name = name,
         cmd = "\n".join(cmd),
