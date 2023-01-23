@@ -20,7 +20,6 @@ steps:
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel-release
     args:
-      - bazel
       - build
       - '--config=remote'
       - '-c'
