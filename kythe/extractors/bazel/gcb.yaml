@@ -1,4 +1,4 @@
-# Cloud Build configuration for mandatory presubmit tests.
+# Cloud Build configuration to build and push docker image for bazel extraction.
 steps:
   - name: gcr.io/cloud-builders/git
     id: clone
