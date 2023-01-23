@@ -7,27 +7,30 @@ steps:
       - '--recurse-submodules'
       - ${_REPO}
       - .
-    dir: code
+    dir: /workspace/code
   - name: gcr.io/cloud-builders/git
     id: checkout
     args:
       - checkout
       - '--recurse-submodules'
       - ${_COMMIT}
-    dir: code
+    dir: /workspace/code
     waitFor:
       - clone
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel-release
     args:
       - bazel
+      - '--output_base=/workspace/code/bzob'
       - build
       - '--config=remote'
       - '-c'
       - opt
       - '--stamp'
       - '//kythe/extractors/bazel:stage'
-    dir: code
+    dir: /workspace/code
+    waitFor:
+      - checkout
   - name: gcr.io/cloud-builders/docker
     id: docker-build
     args:
@@ -35,13 +38,17 @@ steps:
       - '-t'
       - gcr.io/kythe-public/bazel-extractor:latest
       - .
-    dir: code/bazel-out/k8-opt/bin/kythe/extractors/bazel/stage.done
+    dir: /workspace/code/bazel-bin/kythe/extractors/bazel/stage.done.ctx
+    waitFor:
+      - bazel-release
   - name: gcr.io/cloud-builders/docker
     id: docker-push
     args:
       - push
-      - '-t'
       - gcr.io/kythe-public/bazel-extractor:latest
+    dir: /workspace/code/bazel-bin/kythe/extractors/bazel/stage.done.ct
+    waitFor:
+      - docker-build
 substitutions:
   _REPO: 'https://github.com/kythe/kythe'
   _COMMIT: master
