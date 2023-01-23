@@ -4,6 +4,7 @@ def docker_build(
         src = "Dockerfile",
         deps = [],
         data = [],
+        stage_only = False,
         tags = None,
         use_cache = False):
     done_marker = name + ".done"
@@ -18,6 +19,9 @@ def docker_build(
 
     # Use cp -p instead of cp --preserve=all because --preserve is a non-standard
     # flag.
+    build_step = []
+    if not stage_only:
+        build_step = ["docker build -t %s %s ." % (image_name, " ".join(args))]
     cmd = [
         "set +u",
         "CTX=$@.ctx",
@@ -34,7 +38,7 @@ def docker_build(
         "done",
         "cp $(location %s) \"$$CTX\"" % (src),
         'cd "$$CTX"',
-        "docker build -t %s %s ." % (image_name, " ".join(args)),
+    ] + build_step + [
         "cd - >/dev/null",
         "touch $@",
     ]

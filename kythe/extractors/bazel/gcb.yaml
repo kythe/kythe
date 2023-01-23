@@ -1,0 +1,49 @@
+# Cloud Build configuration for mandatory presubmit tests.
+steps:
+  - name: gcr.io/cloud-builders/git
+    id: clone
+    args:
+      - clone
+      - '--recurse-submodules'
+      - 'https://github.com/kythe/kythe'
+      - .
+    dir: code,
+  - name: gcr.io/cloud-builders/git,
+    id: checkout,
+    args:
+      - checkout
+      - '--recurse-submodules'
+      - ${_COMMIT}
+    dir: code
+    waitFor:
+      - clone
+  - name: gcr.io/kythe-repo/bazelisk-builder-client
+    id: bazel-release
+    args:
+      - bazel
+      - build
+      - '--config=remote'
+      - '-c'
+      - opt
+      - '--stamp'
+      - '//kythe/extractors/bazel:stage'
+  - name: gcr.io/cloud-builders/docker
+    id: docker-build
+    args:
+      - build
+      - '-t'
+      - gcr.io/kythe-public/bazel-extractor:latest
+      - .
+    dir: code/bazel-out/k8-opt/bin/kythe/extractors/bazel/stage.done
+  - name: gcr.io/cloud-builders/docker
+    id: docker-push
+    args:
+      - push
+      - '-t'
+      - gcr.io/kythe-public/bazel-extractor:latest
+# Use a long timeout as some builds, particularly LLVM updates, can
+# exceed 30 minutes.
+timeout: 2700s
+options:
+  # The increased scheduling time is more than offset by the substantially improved test runtime.
+  machineType: E2_HIGHCPU_8
