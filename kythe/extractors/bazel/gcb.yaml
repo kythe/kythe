@@ -1,4 +1,13 @@
 # Cloud Build configuration to build and push docker image for bazel extraction.
+#
+# REV=v0.99.9
+# # gcloud auth login
+# gcloud config set project kythe-public
+# # gcloud auth configure-docker
+# gcloud builds submit --config kythe/extractors/bazel/gcb.yaml \
+#    --substitutions=_COMMIT=${REV}
+#
+
 steps:
   - name: gcr.io/cloud-builders/git
     id: clone
@@ -41,18 +50,10 @@ steps:
     dir: /workspace/code/bazel-bin/kythe/extractors/bazel/stage.done.ctx
     waitFor:
       - bazel-release
-  - name: gcr.io/cloud-builders/docker
-    id: docker-push
-    args:
-      - push
-      - gcr.io/kythe-public/bazel-extractor:latest
-    dir: /workspace/code/bazel-bin/kythe/extractors/bazel/stage.done.ct
-    waitFor:
-      - docker-build
 substitutions:
   _REPO: 'https://github.com/kythe/kythe'
   _COMMIT: master
-
+images: ['gcr.io/kythe-public/bazel-extractor:latest']
 # Use a long timeout as some builds, particularly LLVM updates, can
 # exceed 30 minutes.
 timeout: 2700s
