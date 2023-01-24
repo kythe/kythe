@@ -1,0 +1,62 @@
+# Cloud Build configuration to build and push docker image for bazel extraction.
+#
+# REV=v0.99.9
+# # gcloud auth login
+# gcloud config set project kythe-public
+# # gcloud auth configure-docker
+# gcloud builds submit --config kythe/extractors/bazel/gcb.yaml \
+#    --substitutions=_COMMIT=${REV}
+#
+
+steps:
+  - name: gcr.io/cloud-builders/git
+    id: clone
+    args:
+      - clone
+      - '--recurse-submodules'
+      - ${_REPO}
+      - .
+    dir: /workspace/code
+  - name: gcr.io/cloud-builders/git
+    id: checkout
+    args:
+      - checkout
+      - '--recurse-submodules'
+      - ${_COMMIT}
+    dir: /workspace/code
+    waitFor:
+      - clone
+  - name: gcr.io/kythe-repo/bazelisk-builder-client
+    id: bazel-release
+    args:
+      - bazel
+      - '--output_base=/workspace/code/bzob'
+      - build
+      - '--config=remote'
+      - '-c'
+      - opt
+      - '--stamp'
+      - '//kythe/extractors/bazel:stage'
+    dir: /workspace/code
+    waitFor:
+      - checkout
+  - name: gcr.io/cloud-builders/docker
+    id: docker-build
+    args:
+      - build
+      - '-t'
+      - gcr.io/kythe-public/bazel-extractor:latest
+      - .
+    dir: /workspace/code/bazel-bin/kythe/extractors/bazel/stage.done.ctx
+    waitFor:
+      - bazel-release
+substitutions:
+  _REPO: 'https://github.com/kythe/kythe'
+  _COMMIT: master
+images: ['gcr.io/kythe-public/bazel-extractor:latest']
+# Use a long timeout as some builds, particularly LLVM updates, can
+# exceed 30 minutes.
+timeout: 2700s
+options:
+  # The increased scheduling time is more than offset by the substantially improved test runtime.
+  machineType: E2_HIGHCPU_8
