@@ -56,7 +56,7 @@ function mergeAliasLikeNodes(data: Readonly<KytheData>): KytheData {
     if (entry.edge_kind === EdgeKind.DEFINES_BINDING) {
       defines.set(vnameToString(entry.source), entry.target);
     }
-    if (entry.edge_kind === EdgeKind.REF) {
+    if (entry.edge_kind === EdgeKind.REF || entry.edge_kind === EdgeKind.REF_ID) {
       refs.set(vnameToString(entry.source), entry.target);
     }
   }

@@ -9,7 +9,7 @@ let [a, b] = [1, 2];
 a = b;
 
 //- @#1"c" defines/binding C=vname("anon0.c", _, _, _, _)
-//- @#0"c" ref C
+//- @#0"c" ref/id C
 //- @letD defines/binding D=vname("letD", _, _, _, _)
 let {c, d: letD} = {c: 0, d: 0};
 

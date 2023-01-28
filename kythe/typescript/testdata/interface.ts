@@ -23,6 +23,7 @@ const p2 = {
   //- !{@name defines/binding _}
   name: 'Alice',
   //- @getAge ref/id GetAge
+  //- !{@getAge defines/binding _}
   getAge() {}
 } as Person;
 
@@ -64,7 +65,7 @@ function returnPerson(): Person {
 // test property shorthands
 {
   const name = 'Alice';
-  const getAge = () = {};
+  const getAge = () => {};
   //- @name ref/id Name
   //- @getAge ref/id GetAge
   const p3: Person = {name, getAge};
