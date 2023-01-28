@@ -154,62 +154,62 @@ import "fmt"
 //- EmptyTuple param.0 TupleBuiltin
 //- EmptyTuple code TupleTAppCode
 
-//- @f0 defines/binding F0
-//- F0 typed NullFuncType
-//- NullFuncType.node/kind tapp
-//- NullFuncType param.0 FnBuiltin
-//- NullFuncType param.1 EmptyTuple
-//- NullFuncType param.2 EmptyTuple
-//- !{ NullFuncType param.3 _ }
-//- NullFuncType code VoidFnTAppCode
+// - @f0 defines/binding F0
+// - F0 typed NullFuncType
+// - NullFuncType.node/kind tapp
+// - NullFuncType param.0 FnBuiltin
+// - NullFuncType param.1 EmptyTuple
+// - NullFuncType param.2 EmptyTuple
+// - !{ NullFuncType param.3 _ }
+// - NullFuncType code VoidFnTAppCode
 func f0() {}
 
-//- @f1 defines/binding F1
-//- F1 typed F1FuncType
-//- F1FuncType.node/kind tapp
-//- F1FuncType param.0 FnBuiltin
-//- F1FuncType param.1 EmptyTuple
-//- F1FuncType param.2 EmptyTuple
-//- F1FuncType param.3 IntBuiltin
-//- F1FuncType param.4 BoolBuiltin
-//- F1FuncType param.5 StringBuiltin
+// - @f1 defines/binding F1
+// - F1 typed F1FuncType
+// - F1FuncType.node/kind tapp
+// - F1FuncType param.0 FnBuiltin
+// - F1FuncType param.1 EmptyTuple
+// - F1FuncType param.2 EmptyTuple
+// - F1FuncType param.3 IntBuiltin
+// - F1FuncType param.4 BoolBuiltin
+// - F1FuncType param.5 StringBuiltin
 func f1(a int, b bool, c string) {}
 
-//- @f2 defines/binding F2
-//- F2 typed F2FuncType
-//- F2FuncType.node/kind tapp
-//- F2FuncType param.0 FnBuiltin
-//- F2FuncType param.1 IntBuiltin
-//- F2FuncType param.2 EmptyTuple
-//- !{ NullFuncType param.3 _ }
-//- F2FuncType code FnTAppCode
+// - @f2 defines/binding F2
+// - F2 typed F2FuncType
+// - F2FuncType.node/kind tapp
+// - F2FuncType param.0 FnBuiltin
+// - F2FuncType param.1 IntBuiltin
+// - F2FuncType param.2 EmptyTuple
+// - !{ NullFuncType param.3 _ }
+// - F2FuncType code FnTAppCode
 func f2() int { return 0 }
 
-//- @f3 defines/binding F3
-//- F3 typed F3FuncType
-//- F3FuncType.node/kind tapp
-//- F3FuncType param.0 FnBuiltin
-//- F3FuncType param.1 F3Return
-//- F3FuncType param.2 EmptyTuple
-//- F3Return.node/kind tapp
-//- F3Return param.0 TupleBuiltin
-//- F3Return param.1 IntBuiltin
-//- F3Return param.2 BoolBuiltin
-//- !{ NullFuncType param.3 _ }
+// - @f3 defines/binding F3
+// - F3 typed F3FuncType
+// - F3FuncType.node/kind tapp
+// - F3FuncType param.0 FnBuiltin
+// - F3FuncType param.1 F3Return
+// - F3FuncType param.2 EmptyTuple
+// - F3Return.node/kind tapp
+// - F3Return param.0 TupleBuiltin
+// - F3Return param.1 IntBuiltin
+// - F3Return param.2 BoolBuiltin
+// - !{ NullFuncType param.3 _ }
 func f3() (int, bool) { return 0, false }
 
-//- @f4 defines/binding F4
-//- F4 typed F4FuncType
-//- F4FuncType.node/kind tapp
-//- F4FuncType param.0 FnBuiltin
-//- F4FuncType param.1 EmptyTuple
-//- F4FuncType param.2 EmptyTuple
-//- F4FuncType param.3 IntBuiltin
-//- F4FuncType param.4 VariadicInt
-//- VariadicInt.node/kind tapp
-//- VariadicInt param.0 VariadicBuiltin
-//- VariadicInt param.1 IntBuiltin
-//- VariadicInt code VariadicTAppCode
+// - @f4 defines/binding F4
+// - F4 typed F4FuncType
+// - F4FuncType.node/kind tapp
+// - F4FuncType param.0 FnBuiltin
+// - F4FuncType param.1 EmptyTuple
+// - F4FuncType param.2 EmptyTuple
+// - F4FuncType param.3 IntBuiltin
+// - F4FuncType param.4 VariadicInt
+// - VariadicInt.node/kind tapp
+// - VariadicInt param.0 VariadicBuiltin
+// - VariadicInt param.1 IntBuiltin
+// - VariadicInt code VariadicTAppCode
 func f4(a int, b ...int) {}
 
 func paramTypes(
@@ -231,12 +231,12 @@ func retTypes() (
 	return 0, nil
 }
 
-//- @EmptyStruct defines/binding EmptyStruct
-//- EmptyStruct typed EmptyStruct
+// - @EmptyStruct defines/binding EmptyStruct
+// - EmptyStruct typed EmptyStruct
 type EmptyStruct struct{}
 
-//- @S defines/binding S
-//- S.node/kind record
+// - @S defines/binding S
+// - S.node/kind record
 type S struct {
 	//- @Float64Field defines/binding Float64Field
 	//- Float64Field.node/kind variable
@@ -310,34 +310,34 @@ type S struct {
 	SendIntChan chan<- int
 }
 
-//- @sv defines/binding SVar
-//- SVar.node/kind variable
-//- SVar typed S
+// - @sv defines/binding SVar
+// - SVar.node/kind variable
+// - SVar typed S
 var sv = S{}
 
-//- @Method defines/binding Method
-//- Method typed MethodType
-//- MethodType.node/kind tapp
-//- MethodType param.0 FnBuiltin
-//- MethodType param.1 IntBuiltin
-//- MethodType param.2 S
-//- MethodType code MethodTAppCode
+// - @Method defines/binding Method
+// - Method typed MethodType
+// - MethodType.node/kind tapp
+// - MethodType param.0 FnBuiltin
+// - MethodType param.1 IntBuiltin
+// - MethodType param.2 S
+// - MethodType code MethodTAppCode
 func (s S) Method() int { return 0 }
 
-//- @PMethod defines/binding PMethod
-//- PMethod typed PMethodType
-//- PMethodType.node/kind tapp
-//- PMethodType param.0 FnBuiltin
-//- PMethodType param.1 EmptyTuple
-//- PMethodType param.2 SPointer
-//- SPointer.node/kind tapp
-//- SPointer param.0 PointerBuiltin
-//- SPointer param.1 S
-//- MethodType code VoidMethodTAppCode
+// - @PMethod defines/binding PMethod
+// - PMethod typed PMethodType
+// - PMethodType.node/kind tapp
+// - PMethodType param.0 FnBuiltin
+// - PMethodType param.1 EmptyTuple
+// - PMethodType param.2 SPointer
+// - SPointer.node/kind tapp
+// - SPointer param.0 PointerBuiltin
+// - SPointer param.1 S
+// - MethodType code VoidMethodTAppCode
 func (s *S) PMethod() {}
 
-//- @Iter defines/binding Iter
-//- Iter.node/kind interface
+// - @Iter defines/binding Iter
+// - Iter.node/kind interface
 type Iter interface {
 	//- @Method defines/binding IMethod
 	//- IMethod typed IMethodType
@@ -348,13 +348,13 @@ type Iter interface {
 	Method() int
 }
 
-//- @iv defines/binding IVar
-//- IVar.node/kind variable
-//- IVar typed Iter
+// - @iv defines/binding IVar
+// - IVar.node/kind variable
+// - IVar typed Iter
 var iv Iter
 
-//- @main defines/binding Main
-//- Main typed NullFuncType
+// - @main defines/binding Main
+// - Main typed NullFuncType
 func main() {
 	//- @i defines/binding LocalAssign
 	//- LocalAssign.node/kind variable
@@ -397,7 +397,7 @@ func f(
 }
 
 // TODO(schroederc): taliases
-//- @StringAlias defines/binding StringAlias
-//- StringAlias.node/kind record
-//- StringAlias typed StringBuiltin
+// - @StringAlias defines/binding StringAlias
+// - StringAlias.node/kind record
+// - StringAlias typed StringBuiltin
 type StringAlias = string

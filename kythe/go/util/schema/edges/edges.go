@@ -63,6 +63,7 @@ const (
 	RefImports        = Prefix + "ref/imports"
 	RefInit           = Prefix + "ref/init"
 	RefInitImplicit   = Prefix + "ref/init/implicit"
+	RefWrites         = Prefix + "ref/writes"
 	Tagged            = Prefix + "tagged"
 )
 
@@ -95,8 +96,8 @@ func IsReverse(kind string) bool { return strings.HasPrefix(kind, revPrefix) }
 // IsVariant reports whether x is equal to or a subkind of y.
 // For example, each of the following returns true:
 //
-//    IsVariant("/kythe/edge/defines/binding", "/kythe/edge/defines")
-//    IsVariant("/kythe/edge/defines", "/kythe/edge/defines")
+//	IsVariant("/kythe/edge/defines/binding", "/kythe/edge/defines")
+//	IsVariant("/kythe/edge/defines", "/kythe/edge/defines")
 //
 // Moreover IsVariant(x, y) == IsVariant(Mirror(x), Mirror(y)) for all x, y.
 func IsVariant(x, y string) bool { return x == y || strings.HasPrefix(x, y+"/") }

@@ -16,42 +16,39 @@ use kythe_rust_indexer::{indexer::KytheIndexer, providers::*, proxyrequests, wri
 
 use analysis_rust_proto::*;
 use anyhow::{anyhow, Context, Result};
-use clap::{App, Arg};
+use clap::Parser;
 use serde_json::Value;
 use std::io::{self, Write};
 
+#[derive(Parser)]
+#[clap(author = "The Kythe Authors")]
+#[clap(about = "Kythe Rust Proxy Indexer", long_about = None)]
+#[clap(rename_all = "snake_case")]
+struct Args {
+    /// Disables emitting cross references to the standard library
+    #[clap(long, action)]
+    no_emit_std_lib: bool,
+
+    /// Emits built-in types in the "std" corpus
+    #[clap(long, action)]
+    tbuiltin_std_corpus: bool,
+}
+
 fn main() -> Result<()> {
     let mut file_provider = ProxyFileProvider::new();
-    let mut kythe_writer = ProxyWriter::new();
+    let mut kythe_writer = ProxyWriter::default();
     let mut indexer = KytheIndexer::new(&mut kythe_writer);
 
-    let matches = App::new("Kythe Rust Proxy Indexer")
-        .arg(
-            Arg::with_name("no_emit_std_lib")
-                .long("no_emit_std_lib")
-                .required(false)
-                .help("Disables emitting cross references to the standard library"),
-        )
-        .arg(
-            Arg::with_name("tbuiltin_std_corpus")
-                .long("tbuiltin_std_corpus")
-                .required(false)
-                .help("Emits built-in types in the \"std\" corpus"),
-        )
-        .get_matches();
-    let emit_std_lib = !matches.is_present("no_emit_std_lib");
-    let tbuiltin_std_corpus = matches.is_present("tbuiltin_std_corpus");
+    let args = Args::parse();
+    let emit_std_lib = !args.no_emit_std_lib;
 
     // Request and process
     loop {
         let unit = request_compilation_unit()?;
         // Index the CompilationUnit and let the proxy know we are done
-        let index_res =
-            indexer.index_cu(&unit, &mut file_provider, emit_std_lib, tbuiltin_std_corpus);
-        if index_res.is_ok() {
-            send_done(true, String::new())?;
-        } else {
-            send_done(false, index_res.err().unwrap().to_string())?;
+        match indexer.index_cu(&unit, &mut file_provider, emit_std_lib, args.tbuiltin_std_corpus) {
+            Ok(_) => send_done(true, String::new())?,
+            Err(e) => send_done(false, e.to_string())?,
         }
     }
 }
@@ -67,13 +64,13 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
     // Convert to json and extract information
     let response: Value =
         serde_json::from_str(&response_string).context("Failed to parse response as JSON")?;
-    if response["rsp"].as_str().unwrap() == "ok" {
-        let args = response["args"].clone();
+    if response["rsp"].as_str().unwrap_or_default() == "ok" {
+        let args = &response["args"];
         let unit_base64 = args["unit"].as_str().unwrap();
         let unit_bytes = base64::decode(unit_base64)
             .context("Failed to decode CompilationUnit sent by proxy")?;
-        let unit = protobuf::parse_from_bytes::<CompilationUnit>(&unit_bytes)
-            .context("Failed to parse protobuf")?;
+        let unit: CompilationUnit =
+            protobuf::Message::parse_from_bytes(&unit_bytes).context("Failed to parse protobuf")?;
         Ok(unit)
     } else {
         Err(anyhow!("Failed to get a CompilationUnit from the proxy"))
@@ -84,7 +81,7 @@ fn request_compilation_unit() -> Result<CompilationUnit> {
 /// value, and the second sets the error message if the first argument is false.
 fn send_done(ok: bool, msg: String) -> Result<()> {
     let request = proxyrequests::done(ok, msg)?;
-    println!("{}", request);
+    println!("{request}");
     io::stdout().flush().context("Failed to flush stdout")?;
 
     // Grab the response, but we don't care what it is so just throw it away

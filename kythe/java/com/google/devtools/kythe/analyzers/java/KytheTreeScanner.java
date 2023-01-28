@@ -64,6 +64,7 @@ import com.sun.tools.javac.tree.JCTree.JCArrayTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCAssert;
 import com.sun.tools.javac.tree.JCTree.JCAssign;
 import com.sun.tools.javac.tree.JCTree.JCAssignOp;
+import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -81,11 +82,13 @@ import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPackageDecl;
+import com.sun.tools.javac.tree.JCTree.JCParens;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
 import com.sun.tools.javac.tree.JCTree.JCThrow;
 import com.sun.tools.javac.tree.JCTree.JCTypeApply;
 import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
+import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
@@ -290,12 +293,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    EdgeKind edgeKind = EdgeKind.REF;
+
+    JavaNode node = null;
     if (ident.sym instanceof ClassSymbol && ident == owner.getNewClassIdentifier()) {
       // Use ref/id edges for the primary identifier to disambiguate from the constructor.
-      edgeKind = EdgeKind.REF_ID;
+      node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_ID);
+    } else {
+      JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
+      RefType refType = getRefType(owner.getTree(), parentTree, ident.sym, ident.pos);
+      if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+        node = emitSymUsage(ctx, ident.sym, EdgeKind.REF);
+      }
+      if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+        node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_WRITES);
+      }
     }
-    JavaNode node = emitSymUsage(ctx, ident.sym, edgeKind);
+
     if (node != null && ident.sym instanceof VarSymbol) {
       // Emit typed edges for "this"/"super" on reference since there is no definition location.
       // TODO(schroederc): possibly add implicit definition on class declaration
@@ -369,8 +382,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             ctx,
             classNode,
             classDef.getTypeParameters(),
-            ImmutableList.<VName>of(), /* There are no wildcards in class definitions */
-            markedSource.build());
+            /* There are no wildcards in class definitions */
+            ImmutableList.<VName>of());
 
     boolean documented = visitDocComment(classNode, absNode, classDef.getModifiers());
 
@@ -542,9 +555,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitModifiers(methodNode, methodDef.getModifiers());
     emitVisibility(methodNode, methodDef.getModifiers(), ctx);
 
-    VName absNode =
-        defineTypeParameters(
-            ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
+    VName absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
 
     if (!isErroneous(methodDef.sym)) {
@@ -660,10 +671,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
     for (Type target : getTargets(lambda)) {
-      if (target != null) {
-        VName targetNode = getNode(target.asElement());
-        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
-      }
+      VName targetNode = getNode(target.asElement());
+      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
     }
 
     scan(lambda.body, ctx);
@@ -672,6 +681,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private static Iterable<Type> getTargets(JCFunctionalExpression node) {
+    if (node == null || node.target == null) {
+      return ImmutableList.of();
+    }
     return ImmutableList.of(node.target);
   }
 
@@ -772,7 +784,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   @Override
-  public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
+  public @Nullable JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
     TreeContext ctx = owner.down(field);
 
     JCImport imprt = null;
@@ -845,11 +857,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return new JavaNode(pkgNode);
     } else {
       scan(field.getExpression(), ctx);
-      return emitNameUsage(
-          ctx,
-          sym,
-          field.name.contentEquals("class") ? Keyword.CLASS : field.name,
-          imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
+
+      Name name = field.name.contentEquals("class") ? Keyword.CLASS : field.name;
+      if (imprt != null) {
+        return emitNameUsage(ctx, sym, name, EdgeKind.REF_IMPORTS);
+      }
+
+      JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
+      RefType refType = getRefType(owner.getTree(), parentTree, sym, field.pos);
+      // RefType can only be READ, WRITE, OR READ_WRITE so node will always have a value set by
+      // at least one call to emitNameUsage. We just have to initialize to null to keep the compiler
+      // happy.
+      JavaNode node = null;
+      if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+        node = emitNameUsage(ctx, sym, name, EdgeKind.REF);
+      }
+      if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+        node = emitNameUsage(ctx, sym, name, EdgeKind.REF_WRITES);
+      }
+      return node;
     }
   }
 
@@ -1078,6 +1104,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  void emitDocDiagnostic(JavaFileObject file, Span span, String message) {
+    Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(message);
+    if (span.isValid()) {
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getEnd());
+    } else if (span.getStart() >= 0) {
+      // If the span isn't valid but we have a valid start, use the start for a zero-width span.
+      d.getSpanBuilder().getStartBuilder().setByteOffset(span.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(span.getStart());
+    }
+    var unused = entrySets.emitDiagnostic(file, d.build());
+  }
+
   int charToLine(int charPosition) {
     return filePositions.charToLine(charPosition);
   }
@@ -1106,12 +1145,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   /** Create an abs node if we have type variables or if we have wildcards. */
-  private VName defineTypeParameters(
-      TreeContext ownerContext,
-      VName owner,
-      List<JCTypeParameter> params,
-      List<VName> wildcards,
-      MarkedSource markedSource) {
+  private @Nullable VName defineTypeParameters(
+      TreeContext ownerContext, VName owner, List<JCTypeParameter> params, List<VName> wildcards) {
     if (params.isEmpty() && wildcards.isEmpty()) {
       return null;
     }
@@ -1143,12 +1178,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     // Add all of the wildcards that roll up to this node. For example:
     // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
-    // node that has 1 named absvar (T) and 5 unnamed absvars.
+    // node that has 1 named tparam (T) and 5 unnamed tparam.
     typeParams.addAll(wildcards);
 
-    if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
-      return entrySets.newAbstractAndEmit(owner, typeParams, markedSource).getVName();
-    }
     entrySets.emitOrdinalEdges(owner, EdgeKind.TPARAM, typeParams);
     return owner;
   }
@@ -1179,7 +1211,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return node;
   }
 
-  private VName getJvmNode(Symbol sym) {
+  private @Nullable VName getJvmNode(Symbol sym) {
     if (isErroneous(sym)) {
       return null;
     }
@@ -1312,10 +1344,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Returns the reference node for the given symbol.
-  private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
+  private @Nullable JavaNode getRefNode(TreeContext ctx, Symbol sym) {
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
-    boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     try {
       if (sym == null) {
         logger.atWarning().log("sym was null");
@@ -1325,16 +1356,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           && ctx.getTree() instanceof JCFieldAccess) {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }
-      JavaNode node = getJavaNode(sym);
-      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
-          && node != null
-          && sym instanceof ClassSymbol
-          && inGenericContext
-          && !sym.getTypeParameters().isEmpty()) {
-        // Always reference the abs node of a generic class, unless used as a raw type.
-        node = new JavaNode(entrySets.newAbstractAndEmit(node.getVName()));
-      }
-      return node;
+      return getJavaNode(sym);
     } finally {
       signatureGenerator.setArrayTypeContext(null);
     }
@@ -1357,9 +1379,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaLangEnumNode(VName enumVName) {
     if (javaLangEnumNode == null) {
       VName v = resolveJavaLangSymbol(getSymbols().enumSym).getVName();
-      if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
-        v = entrySets.newAbstractAndEmit(v).getVName();
-      }
       javaLangEnumNode = new JavaNode(v);
     }
     EntrySet typeNode =
@@ -1421,7 +1440,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
-  private EntrySet emitAnchor(
+  private @Nullable EntrySet emitAnchor(
       Name name, int startOffset, EdgeKind kind, VName node, Span snippet, List<VName> scope) {
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, name, startOffset, snippet);
     if (anchor == null) {
@@ -1431,7 +1450,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return emitAnchor(anchor, kind, node, scope);
   }
   // Creates/emits an anchor and an associated edge
-  private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {
+  private @Nullable EntrySet emitAnchor(
+      EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {
     Preconditions.checkArgument(
         kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: %s", kind);
     if (anchor == null) {
@@ -1779,5 +1799,117 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     public Optional<String> getDocSubkind() {
       return subkind;
     }
+  }
+
+  /** An enum representing whether a reference reads from a symbol, writes to it, or both. */
+  private enum RefType {
+    READ,
+    WRITE,
+    READ_WRITE,
+  }
+
+  /**
+   * Returns the type of reference for a symbol in a tree at a specific position.
+   *
+   * @param tree The {@link JCTree} containing the reference
+   * @param parent The parent {@link JCTree} of {@code tree}
+   * @param sym The {@link Symbol} being referenced
+   * @param position The integer position of the {@link Symbol} being referenced
+   * @return A {@link RefType} indicating whether the reference reads from the symbol, writes to it,
+   *     or does both.
+   */
+  private static RefType getRefType(
+      JCTree tree, @Nullable JCTree parent, Symbol sym, int position) {
+    // JCAssign looks like "a = 1 + 2"
+    // JCAssignOp looks like "a += 3"
+    if (tree instanceof JCAssign || tree instanceof JCAssignOp) {
+      JCExpression lhs;
+      JCExpression rhs;
+      if (tree instanceof JCAssign) {
+        lhs = ((JCAssign) tree).lhs;
+        rhs = ((JCAssign) tree).rhs;
+      } else {
+        lhs = ((JCAssignOp) tree).lhs;
+        rhs = ((JCAssignOp) tree).rhs;
+      }
+
+      // Check if the symbol is on the left side of the assignment, which is always at least a WRITE
+      // reference, or if the symbol experiences a write on the right side such as "a = b++",
+      // which is always a READ_WRITE.
+      if (expressionMatchesSymbol(lhs, sym, position)) {
+        // We also need to check if this reference is READ_WRITE. This is true in the following
+        // cases:
+        //   - The tree is a JCAssignOp such as "b++;" or
+        //   - The parent tree is a JCAssign and the current tree is on the RHS of that assignment.
+        //     An example of this would be "a = b = 1;", where b is both written to and read from.
+        RefType refType = RefType.WRITE;
+        if (tree instanceof JCAssignOp) {
+          refType = RefType.READ_WRITE;
+        } else if (parent instanceof JCAssign && ((JCAssign) parent).rhs.getTree().equals(tree)) {
+          refType = RefType.READ_WRITE;
+        }
+        return refType;
+      } else if (symbolWrittenOnRHS(rhs, sym, position)) {
+        return RefType.READ_WRITE;
+      }
+    } else if (tree instanceof JCExpressionStatement) {
+      JCExpressionStatement stmt = (JCExpressionStatement) tree;
+      switch (stmt.getExpression().getKind()) {
+        case POSTFIX_INCREMENT:
+        case POSTFIX_DECREMENT:
+        case PREFIX_INCREMENT:
+        case PREFIX_DECREMENT:
+          return RefType.READ_WRITE;
+        default:
+          // Some other expression like ! or ~
+          return RefType.READ;
+      }
+    }
+    return RefType.READ;
+  }
+
+  /**
+   * Returns whether a {@link JCExpression}, representing either a {@link JCIdent} or a {@link
+   * JCFieldAccess}, matches a {@link Symbol} at a given integer position.
+   */
+  private static boolean expressionMatchesSymbol(JCExpression e, Symbol sym, int position) {
+    if (e instanceof JCIdent) {
+      JCIdent ident = (JCIdent) e;
+      if (ident.sym.equals(sym) && ident.pos == position) {
+        return true;
+      }
+    } else if (e instanceof JCFieldAccess) {
+      JCFieldAccess fieldAccess = (JCFieldAccess) e;
+      if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether a {@link Symbol} at a given integer position is written to in a {@link
+   * JCExpression} from the right-hand side of a {@link JCAssign} or {@link JCAssignOp} expression.
+   */
+  private static boolean symbolWrittenOnRHS(JCExpression e, Symbol sym, int position) {
+    if (e instanceof JCParens) {
+      return symbolWrittenOnRHS(((JCParens) e).expr, sym, position);
+    } else if (e instanceof JCUnary) {
+      switch (e.getTree().getKind()) {
+        case POSTFIX_INCREMENT:
+        case POSTFIX_DECREMENT:
+        case PREFIX_INCREMENT:
+        case PREFIX_DECREMENT:
+          return expressionMatchesSymbol(((JCUnary) e).arg, sym, position);
+        default:
+          return false;
+      }
+    } else if (e instanceof JCBinary) {
+      JCExpression lhs = ((JCBinary) e).lhs;
+      JCExpression rhs = ((JCBinary) e).rhs;
+      // Process the each side recursively because they could be another binary expression
+      return symbolWrittenOnRHS(lhs, sym, position) || symbolWrittenOnRHS(rhs, sym, position);
+    }
+    return false;
   }
 }

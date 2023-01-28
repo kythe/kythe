@@ -42,8 +42,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
    * comment in base64 format.
    */
   public interface GeneratedCodeInfoExtractor {
-    @Nullable
-    GeneratedCodeInfo extract(String fileName, byte[] data);
+    @Nullable GeneratedCodeInfo extract(String fileName, byte[] data);
   }
 
   /**
@@ -83,7 +82,9 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** extractor is used to extract GeneratedCodeInfo proto from a file. */
   private final GeneratedCodeInfoExtractor extractor;
 
-  /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
+  /**
+   * @return a function that looks up the VName for some filename in the given CompilationUnit.
+   */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
     Path root = Paths.get("/", unit.getWorkingDirectory());
@@ -99,7 +100,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   }
 
   @Override
-  public Metadata parseFile(String fileName, byte[] data) {
+  public @Nullable Metadata parseFile(String fileName, byte[] data) {
     GeneratedCodeInfo info = extractor.extract(fileName, data);
     if (info == null) {
       return null;
@@ -158,8 +159,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     return metadata;
   }
 
-  @Nullable
-  private static GeneratedCodeInfo extractAnnotationsFromPbMetaFile(String fileName, byte[] data) {
+  private static @Nullable GeneratedCodeInfo extractAnnotationsFromPbMetaFile(
+      String fileName, byte[] data) {
     if (!fileName.endsWith(META_SUFFIX)) {
       return null;
     }

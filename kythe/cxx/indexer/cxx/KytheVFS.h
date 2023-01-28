@@ -17,6 +17,11 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
+#include <memory>
+
+#include "absl/base/attributes.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
@@ -33,19 +38,24 @@ namespace kythe {
 class IndexVFS : public llvm::vfs::FileSystem {
  public:
   /// \param working_directory The absolute path to the working directory.
-  /// \param virtual_files Files to map.
+  /// \param virtual_files Files to map.  File content must outlive IndexVFS.
   /// \param virtual_dirs Directories to map.
   /// \param style Style used to parse incoming paths. Paths are normalized
   /// to POSIX-style.
-  IndexVFS(const std::string& working_directory,
-           const std::vector<proto::FileData>& virtual_files,
-           const std::vector<llvm::StringRef>& virtual_dirs,
-           llvm::sys::path::Style style);
+  explicit IndexVFS(absl::string_view working_directory,
+                    const std::vector<proto::FileData>& virtual_files
+                        ABSL_ATTRIBUTE_LIFETIME_BOUND,
+                    const std::vector<llvm::StringRef>& virtual_dirs,
+                    llvm::sys::path::Style style);
   /// \return nullopt if `awd` is not absolute or its style could not be
   /// detected; otherwise, the style of `awd`.
   static absl::optional<llvm::sys::path::Style>
   DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
-  ~IndexVFS();
+
+  // IndexVFS is neither copyable nor movable.
+  IndexVFS(const IndexVFS&) = delete;
+  IndexVFS& operator=(const IndexVFS&) = delete;
+
   /// \brief Implements llvm::vfs::FileSystem::status.
   llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override;
   /// \brief Implements llvm::vfs::FileSystem::openFileForRead.
@@ -116,6 +126,28 @@ class IndexVFS : public llvm::vfs::FileSystem {
     std::string name_;
   };
 
+  class DirectoryIteratorImpl : public ::llvm::vfs::detail::DirIterImpl {
+   public:
+    explicit DirectoryIteratorImpl(std::string path, const FileRecord* record)
+        : path_(std::move(path)), record_(record) {
+      CurrentEntry = GetEntry();
+    }
+
+    std::error_code increment() override {
+      ++curr_;
+      CurrentEntry = GetEntry();
+      return {};
+    }
+
+   private:
+    ::llvm::vfs::directory_entry GetEntry() const;
+
+    std::string path_;
+    const FileRecord* record_;
+    std::vector<FileRecord*>::const_iterator curr_ = record_->children.begin(),
+                                             end_ = record_->children.end();
+  };
+
   /// \brief Controls what happens when a missing path node is encountered.
   enum class BehaviorOnMissing {
     kCreateFile,       ///< Create intermediate directories and a final file.
@@ -149,15 +181,15 @@ class IndexVFS : public llvm::vfs::FileSystem {
                                       llvm::sys::fs::file_type type,
                                       size_t size);
 
-  /// The virtual files that were included in the index.
-  const std::vector<proto::FileData>& virtual_files_;
   /// The working directory. Must be absolute.
   std::string working_directory_;
   /// Maps root names to root nodes. For indexes captured from Unix
   /// environments, there will be only one root name (the empty string).
-  std::map<std::string, FileRecord*> root_name_to_root_map_;
+  absl::flat_hash_map<std::string, FileRecord*> root_name_to_root_map_;
   /// Maps unique IDs to file records.
-  std::map<std::pair<uint64_t, uint64_t>, FileRecord*> uid_to_record_map_;
+  absl::flat_hash_map<std::pair<uint64_t, uint64_t>,
+                      std::unique_ptr<FileRecord>>
+      uid_to_record_map_;
 };
 
 }  // namespace kythe

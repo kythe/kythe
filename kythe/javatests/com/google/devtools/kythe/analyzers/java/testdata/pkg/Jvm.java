@@ -61,9 +61,7 @@ public class Jvm {
   //- Param1Java named Param1Jvm
   public static void func(int intParam, Object objectParam) {}
 
-  //- @Generic defines/binding GenericAbs
-  //- GenericAbs.node/kind abs
-  //- GenericClass childof GenericAbs
+  //- @Generic defines/binding GenericClass
   //- GenericClass.node/kind record
   //- GenericClass generates GenericJvm
   //- GenericClass named GenericJvm
@@ -95,9 +93,7 @@ public class Jvm {
     }
   }
 
-  //- @MultipleBoundGeneric defines/binding MBGenericAbs
-  //- MBGenericAbs.node/kind abs
-  //- MBGenericClass childof MBGenericAbs
+  //- @MultipleBoundGeneric defines/binding MBGenericClass
   //- MBGenericClass.node/kind record
   //- MBGenericClass generates MBGenericJvm
   //- MBGenericClass named MBGenericJvm

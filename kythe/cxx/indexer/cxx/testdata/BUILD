@@ -7,7 +7,10 @@ load(
 )
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 exports_files(
     ["test_vnames.json"],
@@ -234,6 +237,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "attribute_availability",
+    srcs = ["basic/attribute_availability.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "auto",
     srcs = ["basic/auto.cc"],
     check_for_singletons = True,
@@ -271,7 +281,6 @@ cc_indexer_test(
     name = "tvar_auto_zoo",
     srcs = ["basic/tvar_auto_zoo.cc"],
     check_for_singletons = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++14",
     tags = [
@@ -958,6 +967,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_call_directness",
+    srcs = ["function/function_call_directness.cc"],
+    record_call_directness = True,
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_ctor",
     srcs = ["function/function_ctor.cc"],
     tags = ["function"],
@@ -1308,6 +1324,9 @@ cc_indexer_test(
 cc_indexer_test(
     name = "metadata_self",
     srcs = ["metadata/metadata_self.cc"],
+    # This test attempts to read itself as a metadata file via __FILE__.
+    # This is inherently unreliable, but can be improved by this include path.
+    copts = ["-I."],
     tags = ["metadata"],
     deps = ["metadata/metadata_self.h"],
 )
@@ -1489,84 +1508,44 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_docs_template_alias",
     srcs = ["docs/tvar_docs_template_alias.cc"],
-    experimental_use_abs_nodes = False,
+    ignore_dups = True,
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "tvar_docs_template_function",
     srcs = ["docs/tvar_docs_template_function.cc"],
-    experimental_use_abs_nodes = False,
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "tvar_docs_template_record",
     srcs = ["docs/tvar_docs_template_record.cc"],
-    experimental_use_abs_nodes = False,
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "tvar_docs_template_var",
     srcs = ["docs/tvar_docs_template_var.cc"],
-    experimental_use_abs_nodes = False,
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "tvar_docs_template_partial_spec_record",
     srcs = ["docs/tvar_docs_template_partial_spec_record.cc"],
-    experimental_use_abs_nodes = False,
+    ignore_dups = True,
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "tvar_docs_template_partial_spec_var",
     srcs = ["docs/tvar_docs_template_partial_spec_var.cc"],
-    experimental_use_abs_nodes = False,
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_alias",
-    srcs = ["docs/docs_template_alias.cc"],
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_function",
-    srcs = ["docs/docs_template_function.cc"],
     tags = ["docs"],
 )
 
 cc_indexer_test(
     name = "docs_template_function_spec",
     srcs = ["docs/docs_template_function_spec.cc"],
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_record",
-    srcs = ["docs/docs_template_record.cc"],
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_var",
-    srcs = ["docs/docs_template_var.cc"],
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_partial_spec_record",
-    srcs = ["docs/docs_template_partial_spec_record.cc"],
-    tags = ["docs"],
-)
-
-cc_indexer_test(
-    name = "docs_template_partial_spec_var",
-    srcs = ["docs/docs_template_partial_spec_var.cc"],
     tags = ["docs"],
 )
 
@@ -1747,6 +1726,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "rec_class_visibility",
+    srcs = ["rec/rec_class_visibility.cc"],
+    tags = ["rec"],
+)
+
+cc_indexer_test(
     name = "rec_class_base",
     srcs = ["rec/rec_class_base.cc"],
     tags = ["rec"],
@@ -1761,7 +1746,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_rec_class_base_dependent",
     srcs = ["rec/tvar_rec_class_base_dependent.cc"],
-    experimental_use_abs_nodes = False,
     tags = ["rec"],
 )
 
@@ -1947,714 +1931,44 @@ test_suite(
     tags = ["rec"],
 )
 
-cc_indexer_test(
-    name = "template_alias",
-    srcs = ["template/template_alias.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_decl_arg",
-    srcs = ["template/template_decl_arg.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_alias_naming",
-    srcs = ["template/template_alias_naming.cc"],
-    check_for_singletons = True,
-    experimental_alias_template_instantiations = True,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_type_alias_param",
-    srcs = ["template/template_type_alias_param.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_alias_implicit_instantiation",
-    srcs = ["template/template_alias_implicit_instantiation.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_alias_implicit_instantiation_decls",
-    srcs = ["template/template_alias_implicit_instantiation_decls.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_alias_multilevel_abs",
-    srcs = ["template/template_alias_multilevel_abs.cc"],
-    check_for_singletons = True,
-    experimental_alias_template_instantiations = True,
-    ignore_dups = True,
-    ignore_unimplemented = True,  # hash of SubstTemplateTemplateParm
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_arg_multiple_typename",
-    srcs = ["template/template_arg_multiple_typename.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_arg_typename",
-    srcs = ["template/template_arg_typename.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_blame_member",
-    srcs = ["template/template_blame_member.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_blame_spec",
-    srcs = ["template/template_blame_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_blame_pspec_member",
-    srcs = ["template/template_blame_pspec_member.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_blame_spec_member",
-    srcs = ["template/template_blame_spec_member.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_template_ctor",
-    srcs = ["template/template_class_template_ctor.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_ctor_default_and_init",
-    srcs = ["template/template_class_ctor_default_and_init.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_defn",
-    srcs = ["template/template_class_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_fn_spec",
-    srcs = ["template/template_class_fn_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_inner",
-    srcs = ["template/template_class_inner.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_inst_explicit",
-    srcs = ["template/template_class_inst_explicit.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_inst_implicit",
-    srcs = ["template/template_class_inst_implicit.cc"],
-    # Type alias alias inside a class template gets the same documentation text.
-    # TODO(zarko): Should the two aliases be distinctly named?
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_inst_implicit_dependent",
-    srcs = ["template/template_class_inst_implicit_dependent.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_inst_vs_spec",
-    srcs = ["template/template_class_inst_vs_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_ref",
-    srcs = ["template/template_class_ref.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_ref_ps",
-    srcs = ["template/template_class_ref_ps.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_class_skip_implicit_on",
-    srcs = ["template/template_class_skip_implicit_on.cc"],
-    index_template_instantiations = False,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depbase_field_ref",
-    srcs = ["template/template_depbase_field_ref.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_dependent_ctor",
-    srcs = ["template/template_dependent_ctor.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_dependent_ctor_small",
-    srcs = ["template/template_dependent_ctor_small.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_dependent_dtor",
-    srcs = ["template/template_dependent_dtor.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_dependent_dtor_qualified",
-    srcs = ["template/template_dependent_dtor_qualified.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template/template_dependent_name_ref",
-    srcs = ["template/template_dependent_name_ref.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_dependent_sized_array",
-    srcs = ["template/template_dependent_sized_array.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depexpr_field_ref",
-    srcs = ["template/template_depexpr_field_ref.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_field_ref",
-    srcs = ["template/template_depname_field_ref.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_template_field_ref",
-    srcs = ["template/template_depname_template_field_ref.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_class",
-    srcs = ["template/template_depname_class.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_implicit",
-    srcs = ["template/template_depname_implicit.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_inst_class",
-    srcs = ["template/template_depname_inst_class.cc"],
-    ignore_unimplemented = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_depname_path_graph",
-    srcs = ["template/template_depname_path_graph.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_drop_redundant_wraiths_off",
-    srcs = ["template/template_drop_redundant_wraiths.cc"],
-    experimental_drop_instantiation_independent_data = False,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_drop_redundant_wraiths_on",
-    srcs = ["template/template_drop_redundant_wraiths.cc"],
-    experimental_drop_instantiation_independent_data = True,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_drop_redundant_wraiths_off_expect_fail",
-    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
-    experimental_drop_instantiation_independent_data = False,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_drop_redundant_wraiths_on_expect_fail",
-    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
-    expect_fail_verify = True,
-    experimental_drop_instantiation_independent_data = True,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_exclude",
-    srcs = ["template/template_exclude.cc"],
-    check_for_singletons = True,
-    ignore_dups = True,
-    tags = ["template"],
-    template_instance_exclude_path_pattern = ".*exclude.*",
-    deps = [
-        "template/exclude_this_file.h",
-        "template/include_this_file.h",
-    ],
-)
-
-cc_indexer_test(
-    name = "template_field",
-    srcs = ["template/template_field.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_file_call",
-    srcs = ["template/template_file_call.cc"],
-    check_for_singletons = True,
-    convert_marked_source = True,
-    std = "c++17",
-    tags = [
-        "c++17",
-        "template",
-    ],
-)
-
-cc_indexer_test(
-    name = "template_fn_call",
-    srcs = ["template/template_fn_call.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_decl",
-    srcs = ["template/template_fn_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_decl_defn",
-    srcs = ["template/template_fn_decl_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_defines",
-    srcs = ["template/template_fn_defines.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_defn",
-    srcs = ["template/template_fn_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_dependent_spec_defn",
-    srcs = ["template/template_fn_dependent_spec_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_explicit_spec_completes",
-    srcs = ["template/template_fn_explicit_spec_completes.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_explicit_spec_with_default_completes",
-    srcs = ["template/template_fn_explicit_spec_with_default_completes.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_implicit_spec",
-    srcs = ["template/template_fn_implicit_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_inst_vs_spec",
-    srcs = ["template/template_fn_inst_vs_spec.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_member_spec_defn",
-    srcs = ["template/template_fn_member_spec_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_multi_decl_def",
-    srcs = ["template/template_fn_multi_decl_def.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_multiple_implicit_spec",
-    srcs = ["template/template_fn_multiple_implicit_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_overload",
-    srcs = ["template/template_fn_overload.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_spec",
-    srcs = ["template/template_fn_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_spec_decl",
-    srcs = ["template/template_fn_spec_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_spec_defn_decl",
-    srcs = ["template/template_fn_spec_defn_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_spec_defn_defn_decl_decl",
-    srcs = ["template/template_fn_spec_defn_defn_decl_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_fn_spec_overload",
-    srcs = ["template/template_fn_spec_overload.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_incomplete_array",
-    srcs = ["template/template_incomplete_array.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_instance_type_from_class",
-    srcs = ["template/template_instance_type_from_class.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_nested_name",
-    srcs = ["template/template_nested_name.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_multilevel_argument",
-    srcs = ["template/template_multilevel_argument.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_pack_fn_decl",
-    srcs = ["template/template_pack_fn_decl.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_pack_fn_mono_call",
-    srcs = ["template/template_pack_fn_mono_call.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_pack_fn_pack_call",
-    srcs = ["template/template_pack_fn_pack_call.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_pack_rec_pack_call",
-    srcs = ["template/template_pack_rec_pack_call.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ps_completes",
-    srcs = ["template/template_ps_completes.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ps_decl",
-    srcs = ["template/template_ps_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ps_defn",
-    srcs = ["template/template_ps_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ps_multiple_decl",
-    srcs = ["template/template_ps_multiple_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ps_twovar_decl",
-    srcs = ["template/template_ps_twovar_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_rec_member_abs",
-    srcs = ["template/template_rec_member_abs.cc"],
-    experimental_alias_template_instantiations = True,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_rec_override",
-    srcs = ["template/template_rec_override.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_rec_override_root",
-    srcs = ["template/template_rec_override_root.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_rec_override_root_aliasing",
-    srcs = ["template/template_rec_override_root_aliasing.cc"],
-    check_for_singletons = True,
-    experimental_alias_template_instantiations = True,
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_redundant_constituents_anchored",
-    srcs = ["template/template_redundant_constituents_anchored.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_static_member",
-    srcs = ["template/template_static_member.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_two_arg_spec",
-    srcs = ["template/template_two_arg_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_ty_typename",
-    srcs = ["template/template_ty_typename.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_unresolved_ctor_expr",
-    srcs = ["template/template_unresolved_ctor_expr.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_decl",
-    srcs = ["template/template_var_decl.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_defn",
-    srcs = ["template/template_var_defn.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_defn_completes",
-    srcs = ["template/template_var_defn_completes.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_explicit_spec",
-    srcs = ["template/template_var_explicit_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_implicit_spec",
-    srcs = ["template/template_var_implicit_spec.cc"],
-    ignore_dups = True,
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_inst_total_spec",
-    srcs = ["template/template_var_inst_total_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_ps",
-    srcs = ["template/template_var_ps.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_ps_completes",
-    srcs = ["template/template_var_ps_completes.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_ps_implicit_spec",
-    srcs = ["template/template_var_ps_implicit_spec.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_ref_ps",
-    srcs = ["template/template_var_ref_ps.cc"],
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "template_var_constexpr",
-    srcs = ["template/template_var_constexpr.cc"],
-    ignore_dups = True,
-    std = "c++14",
-    tags = ["template"],
-)
-
-cc_indexer_test(
-    name = "generic_lambda",
-    srcs = ["template/generic_lambda.cc"],
-    ignore_dups = True,
-    std = "c++14",
-    tags = ["template, c++14"],
-)
-
-cc_indexer_test(
-    name = "template_using_pack_expansion",
-    srcs = ["template/template_using_pack_expansion.cc"],
-    std = "c++17",
-    tags = [
-        "c++17",
-        "template",
-    ],
-)
-
-cc_indexer_test(
-    name = "template_auto_parameter",
-    srcs = ["template/template_auto_parameter.cc"],
-    std = "c++17",
-    tags = [
-        "c++17",
-        "template",
-    ],
-)
-
-cc_indexer_test(
-    name = "template_fold_expressions",
-    srcs = ["template/template_fold_expressions.cc"],
-    ignore_dups = True,
-    std = "c++17",
-    tags = [
-        "c++17",
-        "template",
-    ],
-)
-
-cc_indexer_test(
-    name = "template_class_ctor_deduction",
-    srcs = ["template/template_class_ctor_deduction.cc"],
-    ignore_dups = True,
-    ignore_unimplemented = True,
-    std = "c++17",
-    tags = [
-        "c++17",
-        "template",
-    ],
-)
-
 test_suite(
     name = "indexer_template",
     tags = ["template"],
 )
 
-# A note on all the ignore_dups = True lines: experimental_use_abs_nodes = False
 # implies the effects of experimental_alias_template_instantiations = True,
 # leading to more duplicate ("aliased") output.
+
+cc_indexer_test(
+    name = "tvar_template_alias_tvar",
+    srcs = ["tvar_template/template_alias_tvar.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "tvar_template_alias_tvar_class",
+    srcs = ["tvar_template/template_alias_tvar_class.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "tvar_template_alias_tvar_alias",
+    srcs = ["tvar_template/template_alias_tvar_alias.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
 cc_indexer_test(
     name = "tvar_template_alias",
     srcs = ["tvar_template/template_alias.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2662,7 +1976,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_decl_arg",
     srcs = ["tvar_template/template_decl_arg.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2672,7 +1985,6 @@ cc_indexer_test(
     srcs = ["tvar_template/template_alias_naming.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2680,7 +1992,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_type_alias_param",
     srcs = ["tvar_template/template_type_alias_param.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2688,7 +1999,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_alias_implicit_instantiation",
     srcs = ["tvar_template/template_alias_implicit_instantiation.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2696,7 +2006,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_alias_implicit_instantiation_decls",
     srcs = ["tvar_template/template_alias_implicit_instantiation_decls.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2706,7 +2015,6 @@ cc_indexer_test(
     srcs = ["tvar_template/template_alias_multilevel_abs.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     ignore_unimplemented = True,  # hash of SubstTemplateTemplateParm
     tags = ["tvar_template"],
@@ -2715,7 +2023,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_arg_multiple_typename",
     srcs = ["tvar_template/template_arg_multiple_typename.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2723,7 +2030,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_arg_typename",
     srcs = ["tvar_template/template_arg_typename.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2731,7 +2037,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_blame_member",
     srcs = ["tvar_template/template_blame_member.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2739,7 +2044,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_blame_spec",
     srcs = ["tvar_template/template_blame_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2747,7 +2051,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_blame_pspec_member",
     srcs = ["tvar_template/template_blame_pspec_member.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2755,7 +2058,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_blame_spec_member",
     srcs = ["tvar_template/template_blame_spec_member.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2763,7 +2065,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_template_ctor",
     srcs = ["tvar_template/template_class_template_ctor.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2771,7 +2072,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_ctor_default_and_init",
     srcs = ["tvar_template/template_class_ctor_default_and_init.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2779,7 +2079,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_defn",
     srcs = ["tvar_template/template_class_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2787,7 +2086,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_fn_spec",
     srcs = ["tvar_template/template_class_fn_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2795,7 +2093,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_inner",
     srcs = ["tvar_template/template_class_inner.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2803,7 +2100,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_inst_explicit",
     srcs = ["tvar_template/template_class_inst_explicit.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2811,7 +2107,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_inst_implicit",
     srcs = ["tvar_template/template_class_inst_implicit.cc"],
-    experimental_use_abs_nodes = False,
     # Type alias alias inside a class template gets the same documentation text.
     # TODO(zarko): Should the two aliases be distinctly named?
     ignore_dups = True,
@@ -2821,7 +2116,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_inst_implicit_dependent",
     srcs = ["tvar_template/template_class_inst_implicit_dependent.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2829,7 +2123,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_inst_vs_spec",
     srcs = ["tvar_template/template_class_inst_vs_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2837,7 +2130,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_ref",
     srcs = ["tvar_template/template_class_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2845,7 +2137,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_ref_ps",
     srcs = ["tvar_template/template_class_ref_ps.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2853,7 +2144,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_skip_implicit_on",
     srcs = ["tvar_template/template_class_skip_implicit_on.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     index_template_instantiations = False,
     tags = ["tvar_template"],
@@ -2862,7 +2152,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depbase_field_ref",
     srcs = ["tvar_template/template_depbase_field_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2870,7 +2159,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_dependent_ctor",
     srcs = ["tvar_template/template_dependent_ctor.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2878,7 +2166,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_dependent_ctor_small",
     srcs = ["tvar_template/template_dependent_ctor_small.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2886,7 +2173,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_dependent_dtor",
     srcs = ["tvar_template/template_dependent_dtor.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2894,7 +2180,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_dependent_dtor_qualified",
     srcs = ["tvar_template/template_dependent_dtor_qualified.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2902,7 +2187,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template/template_dependent_name_ref",
     srcs = ["tvar_template/template_dependent_name_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2910,7 +2194,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_dependent_sized_array",
     srcs = ["tvar_template/template_dependent_sized_array.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2918,7 +2201,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depexpr_field_ref",
     srcs = ["tvar_template/template_depexpr_field_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2926,7 +2208,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_field_ref",
     srcs = ["tvar_template/template_depname_field_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2934,7 +2215,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_template_field_ref",
     srcs = ["tvar_template/template_depname_template_field_ref.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2942,7 +2222,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_class",
     srcs = ["tvar_template/template_depname_class.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2950,7 +2229,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_implicit",
     srcs = ["tvar_template/template_depname_implicit.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2958,7 +2236,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_inst_class",
     srcs = ["tvar_template/template_depname_inst_class.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     ignore_unimplemented = True,
     tags = ["tvar_template"],
@@ -2967,7 +2244,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_depname_path_graph",
     srcs = ["tvar_template/template_depname_path_graph.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2976,7 +2252,6 @@ cc_indexer_test(
     name = "tvar_template_drop_redundant_wraiths_off",
     srcs = ["tvar_template/template_drop_redundant_wraiths.cc"],
     experimental_drop_instantiation_independent_data = False,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2985,7 +2260,6 @@ cc_indexer_test(
     name = "tvar_template_drop_redundant_wraiths_on",
     srcs = ["tvar_template/template_drop_redundant_wraiths.cc"],
     experimental_drop_instantiation_independent_data = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -2994,7 +2268,6 @@ cc_indexer_test(
     name = "tvar_template_drop_redundant_wraiths_off_expect_fail",
     srcs = ["tvar_template/template_drop_redundant_wraiths_expect_fail.cc"],
     experimental_drop_instantiation_independent_data = False,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3004,7 +2277,6 @@ cc_indexer_test(
     srcs = ["tvar_template/template_drop_redundant_wraiths_expect_fail.cc"],
     expect_fail_verify = True,
     experimental_drop_instantiation_independent_data = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3013,10 +2285,9 @@ cc_indexer_test(
     name = "tvar_template_exclude",
     srcs = ["tvar_template/template_exclude.cc"],
     check_for_singletons = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
-    template_instance_exclude_path_pattern = ".*exclude.*",
+    template_instance_exclude_path_pattern = ".*/exclude.*",
     deps = [
         "tvar_template/exclude_this_file.h",
         "tvar_template/include_this_file.h",
@@ -3026,7 +2297,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_field",
     srcs = ["tvar_template/template_field.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3036,7 +2306,6 @@ cc_indexer_test(
     srcs = ["tvar_template/template_file_call.cc"],
     check_for_singletons = True,
     convert_marked_source = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++17",
     tags = [
@@ -3048,7 +2317,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_call",
     srcs = ["tvar_template/template_fn_call.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3056,7 +2324,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_decl",
     srcs = ["tvar_template/template_fn_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3064,7 +2331,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_decl_defn",
     srcs = ["tvar_template/template_fn_decl_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3072,7 +2338,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_defines",
     srcs = ["tvar_template/template_fn_defines.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3080,7 +2345,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_defn",
     srcs = ["tvar_template/template_fn_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3088,7 +2352,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_dependent_spec_defn",
     srcs = ["tvar_template/template_fn_dependent_spec_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3096,7 +2359,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_explicit_spec_completes",
     srcs = ["tvar_template/template_fn_explicit_spec_completes.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3104,7 +2366,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_explicit_spec_with_default_completes",
     srcs = ["tvar_template/template_fn_explicit_spec_with_default_completes.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3112,7 +2373,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_implicit_spec",
     srcs = ["tvar_template/template_fn_implicit_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3120,7 +2380,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_inst_vs_spec",
     srcs = ["tvar_template/template_fn_inst_vs_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3128,7 +2387,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_member_spec_defn",
     srcs = ["tvar_template/template_fn_member_spec_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3136,7 +2394,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_multi_decl_def",
     srcs = ["tvar_template/template_fn_multi_decl_def.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3144,7 +2401,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_multiple_implicit_spec",
     srcs = ["tvar_template/template_fn_multiple_implicit_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3152,7 +2408,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_overload",
     srcs = ["tvar_template/template_fn_overload.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3160,7 +2415,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_spec",
     srcs = ["tvar_template/template_fn_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3168,7 +2422,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_spec_decl",
     srcs = ["tvar_template/template_fn_spec_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3176,7 +2429,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_spec_defn_decl",
     srcs = ["tvar_template/template_fn_spec_defn_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3184,7 +2436,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_spec_defn_defn_decl_decl",
     srcs = ["tvar_template/template_fn_spec_defn_defn_decl_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3192,7 +2443,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fn_spec_overload",
     srcs = ["tvar_template/template_fn_spec_overload.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3200,7 +2450,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_incomplete_array",
     srcs = ["tvar_template/template_incomplete_array.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3208,7 +2457,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_instance_type_from_class",
     srcs = ["tvar_template/template_instance_type_from_class.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3216,7 +2464,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_nested_name",
     srcs = ["tvar_template/template_nested_name.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3224,7 +2471,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_multilevel_argument",
     srcs = ["tvar_template/template_multilevel_argument.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3232,7 +2478,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_pack_fn_decl",
     srcs = ["tvar_template/template_pack_fn_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3240,7 +2485,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_pack_fn_mono_call",
     srcs = ["tvar_template/template_pack_fn_mono_call.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3248,7 +2492,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_pack_fn_pack_call",
     srcs = ["tvar_template/template_pack_fn_pack_call.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3256,7 +2499,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_pack_rec_pack_call",
     srcs = ["tvar_template/template_pack_rec_pack_call.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3264,7 +2506,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ps_completes",
     srcs = ["tvar_template/template_ps_completes.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3272,7 +2513,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ps_decl",
     srcs = ["tvar_template/template_ps_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3280,7 +2520,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ps_defn",
     srcs = ["tvar_template/template_ps_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3288,7 +2527,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ps_multiple_decl",
     srcs = ["tvar_template/template_ps_multiple_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3296,7 +2534,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ps_twovar_decl",
     srcs = ["tvar_template/template_ps_twovar_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3305,7 +2542,6 @@ cc_indexer_test(
     name = "tvar_template_rec_member_abs",
     srcs = ["tvar_template/template_rec_member_abs.cc"],
     experimental_alias_template_instantiations = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3313,7 +2549,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_rec_override",
     srcs = ["tvar_template/template_rec_override.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3321,7 +2556,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_rec_override_root",
     srcs = ["tvar_template/template_rec_override_root.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3331,7 +2565,6 @@ cc_indexer_test(
     srcs = ["tvar_template/template_rec_override_root_aliasing.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3339,7 +2572,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_redundant_constituents_anchored",
     srcs = ["tvar_template/template_redundant_constituents_anchored.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3347,7 +2579,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_static_member",
     srcs = ["tvar_template/template_static_member.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3355,7 +2586,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_two_arg_spec",
     srcs = ["tvar_template/template_two_arg_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3363,7 +2593,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_ty_typename",
     srcs = ["tvar_template/template_ty_typename.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3371,7 +2600,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_unresolved_ctor_expr",
     srcs = ["tvar_template/template_unresolved_ctor_expr.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3379,7 +2607,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_decl",
     srcs = ["tvar_template/template_var_decl.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3387,7 +2614,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_defn",
     srcs = ["tvar_template/template_var_defn.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3395,7 +2621,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_defn_completes",
     srcs = ["tvar_template/template_var_defn_completes.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3403,7 +2628,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_explicit_spec",
     srcs = ["tvar_template/template_var_explicit_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3411,7 +2635,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_implicit_spec",
     srcs = ["tvar_template/template_var_implicit_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3419,7 +2642,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_inst_total_spec",
     srcs = ["tvar_template/template_var_inst_total_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3427,7 +2649,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_ps",
     srcs = ["tvar_template/template_var_ps.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3435,7 +2656,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_ps_completes",
     srcs = ["tvar_template/template_var_ps_completes.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3443,7 +2663,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_ps_implicit_spec",
     srcs = ["tvar_template/template_var_ps_implicit_spec.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3451,7 +2670,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_ref_ps",
     srcs = ["tvar_template/template_var_ref_ps.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["tvar_template"],
 )
@@ -3459,7 +2677,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_var_constexpr",
     srcs = ["tvar_template/template_var_constexpr.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++14",
     tags = ["tvar_template"],
@@ -3468,7 +2685,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_generic_lambda",
     srcs = ["tvar_template/generic_lambda.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++14",
     tags = ["tvar_template, c++14"],
@@ -3477,7 +2693,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_using_pack_expansion",
     srcs = ["tvar_template/template_using_pack_expansion.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++17",
     tags = [
@@ -3489,7 +2704,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_auto_parameter",
     srcs = ["tvar_template/template_auto_parameter.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++17",
     tags = [
@@ -3501,7 +2715,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_fold_expressions",
     srcs = ["tvar_template/template_fold_expressions.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     std = "c++17",
     tags = [
@@ -3513,7 +2726,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "tvar_template_class_ctor_deduction",
     srcs = ["tvar_template/template_class_ctor_deduction.cc"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     ignore_unimplemented = True,
     std = "c++17",
@@ -3529,18 +2741,9 @@ test_suite(
 )
 
 cc_indexer_test(
-    name = "ms_absvar",
-    srcs = ["marked_source/ms_absvar.cc"],
+    name = "ms_tvar",
+    srcs = ["marked_source/ms_tvar.cc"],
     convert_marked_source = True,
-    std = "c++14",
-    tags = ["marked_source"],
-)
-
-cc_indexer_test(
-    name = "tvar_ms_absvar",
-    srcs = ["marked_source/tvar_ms_absvar.cc"],
-    convert_marked_source = True,
-    experimental_use_abs_nodes = False,
     std = "c++14",
     tags = ["marked_source"],
 )
@@ -3976,7 +3179,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_bound",
     srcs = ["objc/tvar_generics/generic_bound.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -3984,14 +3186,12 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_contravariant_decl",
     srcs = ["objc/tvar_generics/generic_contravariant_decl.m"],
-    experimental_use_abs_nodes = False,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "tvar_generic_contravariant_restricted_super_class",
     srcs = ["objc/tvar_generics/generic_contravariant_restricted_super_class.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -3999,14 +3199,12 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_covariant_decl",
     srcs = ["objc/tvar_generics/generic_covariant_decl.m"],
-    experimental_use_abs_nodes = False,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "tvar_generic_covariant_restricted_super_class",
     srcs = ["objc/tvar_generics/generic_covariant_restricted_super_class.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4014,7 +3212,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_inherited",
     srcs = ["objc/tvar_generics/generic_inherited.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4022,7 +3219,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_invariant",
     srcs = ["objc/tvar_generics/generic_invariant.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4030,7 +3226,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_instantiation",
     srcs = ["objc/tvar_generics/generic_instantiation.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4038,7 +3233,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_method_call",
     srcs = ["objc/tvar_generics/generic_method_call.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4046,7 +3240,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_method_type",
     srcs = ["objc/tvar_generics/generic_method_type.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4054,7 +3247,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_nested",
     srcs = ["objc/tvar_generics/generic_nested.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4062,7 +3254,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_restricted_protocol",
     srcs = ["objc/tvar_generics/generic_restricted_protocol.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4070,7 +3261,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_two_args",
     srcs = ["objc/tvar_generics/generic_two_args.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -4078,7 +3268,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "tvar_generic_unbound",
     srcs = ["objc/tvar_generics/generic_unbound.m"],
-    experimental_use_abs_nodes = False,
     ignore_dups = True,
     tags = ["objc"],
 )

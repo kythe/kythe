@@ -36,9 +36,7 @@ public class Files {
   //- ODecl.node/kind sum
   enum OtherDecl {}
 
-  //- @Inter defines/binding InterAbs
-  //- InterAbs.node/kind abs
-  //- Inter childof InterAbs
+  //- @Inter defines/binding Inter
   //- Inter.node/kind interface
   interface Inter<T> {}
 }

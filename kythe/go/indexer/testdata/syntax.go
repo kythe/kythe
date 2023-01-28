@@ -2,7 +2,6 @@
 // handle correctly. This test "passes" if the indexer doesn't crash.
 package syntax
 
-
 type oldStruct struct {
 	n int
 }

@@ -135,17 +135,17 @@ const (
 
 // ParseOptions decodes a WriterOptions from text:
 //
-//   options ::= option? ("," option?)*
-//   option ::=
-//     "default" |
-//     "transpose" (":" ("true" | "false"))? |
-//     "uncompressed" |
-//     "brotli" (":" brotli_level)? |
-//     "zstd" (":" zstd_level)? |
-//     "chunk_size" ":" chunk_size
-//   brotli_level ::= integer 0..11 (default 9)
-//   zstd_level ::= integer 0..22 (default 9)
-//   chunk_size ::= positive integer
+//	options ::= option? ("," option?)*
+//	option ::=
+//	  "default" |
+//	  "transpose" (":" ("true" | "false"))? |
+//	  "uncompressed" |
+//	  "brotli" (":" brotli_level)? |
+//	  "zstd" (":" zstd_level)? |
+//	  "chunk_size" ":" chunk_size
+//	brotli_level ::= integer 0..11 (default 9)
+//	zstd_level ::= integer 0..22 (default 9)
+//	chunk_size ::= positive integer
 func ParseOptions(s string) (*WriterOptions, error) {
 	if s == "" {
 		return nil, nil

@@ -20,7 +20,7 @@ struct S {
 //- @S ref StructS
 //- @T ref StructT
 //- @V defines/binding StructV
-//- @V completes/uniquely StructVDecl
+//- StructVDecl completedby StructV
 struct S::T::V { };
 
 }  // namespace ns

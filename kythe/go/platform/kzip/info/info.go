@@ -49,9 +49,10 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 
 // Accumulator is used to build a summary of a collection of compilation units.
 // Usage:
-//   a := NewAccumulator(fileSize)
-//   a.Accumulate(unit) // call for each compilation unit
-//   info := a.Get()    // get the resulting KzipInfo
+//
+//	a := NewAccumulator(fileSize)
+//	a.Accumulate(unit) // call for each compilation unit
+//	info := a.Get()    // get the resulting KzipInfo
 type Accumulator struct {
 	*apb.KzipInfo
 }

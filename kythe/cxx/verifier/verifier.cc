@@ -21,10 +21,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "absl/memory/memory.h"
+#include <memory>
+
+#include "absl/strings/strip.h"
 #include "assertions.h"
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
+#include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/verifier/souffle_interpreter.h"
@@ -642,6 +645,7 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   file_id_ = IdentifierFor(builtin_location_, "file");
   text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
   code_id_ = IdentifierFor(builtin_location_, "/kythe/code");
+  code_json_id_ = IdentifierFor(builtin_location_, "/kythe/code/json");
   marked_source_child_id_ =
       IdentifierFor(builtin_location_, "/kythe/edge/child");
   marked_source_box_id_ = IdentifierFor(builtin_location_, "BOX");
@@ -694,7 +698,7 @@ void Verifier::SetGoalCommentPrefix(const std::string& it) {
 
 bool Verifier::SetGoalCommentRegex(const std::string& regex,
                                    std::string* error) {
-  auto re2 = absl::make_unique<RE2>(regex);
+  auto re2 = std::make_unique<RE2>(regex);
   if (re2->error_code() != RE2::NoError) {
     if (error) {
       *error = re2->error();
@@ -794,6 +798,8 @@ bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
 }
 
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
+
+void Verifier::IgnoreCodeConflicts() { ignore_code_conflicts_ = true; }
 
 void Verifier::SaveEVarAssignments() {
   saving_assignments_ = true;
@@ -1264,38 +1270,42 @@ bool Verifier::PrepareDatabase() {
         tb->element(2) == empty_string_id_ &&
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
-      if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
-        // TODO(#1553): (closed?) Add documentation for these new edges.
-        printer.Print(
-            "Two /kythe/code facts about a node differed in value:\n  ");
-        ta->element(0)->Dump(symbol_table_, &printer);
-        printer.Print("\n  ");
-        printer.Print("\nThe decoded values were:\n");
-        auto print_decoded = [&](AstNode* value) {
-          if (auto* ident = value->AsIdentifier()) {
-            proto::common::MarkedSource marked_source;
-            if (!marked_source.ParseFromString(
-                    symbol_table_.text(ident->symbol()))) {
-              printer.Print("(failed to decode)\n");
+      if (EncodedIdentEqualTo(ta->element(3), code_id_) ||
+          EncodedIdentEqualTo(ta->element(3), code_json_id_)) {
+        if (!ignore_code_conflicts_) {
+          // TODO(#1553): (closed?) Add documentation for these new edges.
+          printer.Print(
+              "Two /kythe/code facts about a node differed in value:\n  ");
+          ta->element(0)->Dump(symbol_table_, &printer);
+          printer.Print("\n  ");
+          printer.Print("\nThe decoded values were:\n");
+          auto print_decoded = [&](AstNode* value) {
+            if (auto* ident = value->AsIdentifier()) {
+              proto::common::MarkedSource marked_source;
+              if (!marked_source.ParseFromString(
+                      symbol_table_.text(ident->symbol()))) {
+                printer.Print("(failed to decode)\n");
+              } else {
+                printer.Print(marked_source.DebugString());
+                printer.Print("\n");
+              }
             } else {
-              printer.Print(marked_source.DebugString());
-              printer.Print("\n");
+              printer.Print("(not an identifier)\n");
             }
-          } else {
-            printer.Print("(not an identifier)\n");
-          }
-        };
-        print_decoded(ta->element(4));
-        printer.Print("\n -----------------  versus  ----------------- \n\n");
-        print_decoded(tb->element(4));
+          };
+          print_decoded(ta->element(4));
+          printer.Print("\n -----------------  versus  ----------------- \n\n");
+          print_decoded(tb->element(4));
+          is_ok = false;
+        }
       } else {
         printer.Print("Two facts about a node differed in value:\n  ");
         fa->Dump(symbol_table_, &printer);
         printer.Print("\n  ");
         fb->Dump(symbol_table_, &printer);
         printer.Print("\n");
+        is_ok = false;
       }
-      is_ok = false;
     }
   }
   if (is_ok) {
@@ -1333,7 +1343,18 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
                                    const google::protobuf::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
-    std::cerr << loc << ": can't parse code protobuf" << std::endl;
+    LOG(ERROR) << loc << ": can't parse code protobuf" << std::endl;
+    return nullptr;
+  }
+  return ConvertMarkedSource(loc, marked_source);
+}
+
+AstNode* Verifier::ConvertCodeJsonFact(
+    const yy::location& loc, const google::protobuf::string& code_data) {
+  proto::common::MarkedSource marked_source;
+  if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
+           .ok()) {
+    LOG(ERROR) << loc << ": can't parse code/json protobuf" << std::endl;
     return nullptr;
   }
   return ConvertMarkedSource(loc, marked_source);
@@ -1442,6 +1463,7 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
   loc.begin.line = fact_id;
   loc.end = loc.begin;
   Symbol code_symbol = code_id_->AsIdentifier()->symbol();
+  Symbol code_json_symbol = code_json_id_->AsIdentifier()->symbol();
   AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
@@ -1467,6 +1489,18 @@ bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
       // Code facts are turned into subgraphs, so this fact entry will turn
       // into an edge entry.
       if ((values[2] = ConvertCodeFact(loc, entry.fact_value())) == nullptr) {
+        return false;
+      }
+      values[1] = marked_source_code_edge_id_;
+      values[3] = root_id_;
+      values[4] = empty_string_id_;
+      is_code = true;
+    } else if (values[3]->AsIdentifier()->symbol() == code_json_symbol &&
+               convert_marked_source_) {
+      // Code facts are turned into subgraphs, so this fact entry will turn
+      // into an edge entry.
+      if ((values[2] = ConvertCodeJsonFact(loc, entry.fact_value())) ==
+          nullptr) {
         return false;
       }
       values[1] = marked_source_code_edge_id_;
@@ -1552,22 +1586,18 @@ void Verifier::DumpAsDot() {
     return;
   }
   std::map<std::string, std::string> vname_labels;
-  for (const auto& label_vname : saved_assignments_) {
-    if (!label_vname.second) {
+  for (const auto& [label, vname] : saved_assignments_) {
+    if (!vname) {
       continue;
     }
-    if (App* a = label_vname.second->AsApp()) {
-      if (Tuple* t = a->rhs()->AsTuple()) {
-        StringPrettyPrinter printer;
-        QuoteEscapingPrettyPrinter quote_printer(printer);
-        label_vname.second->Dump(symbol_table_, &printer);
-        auto old_label = vname_labels.find(printer.str());
-        if (old_label == vname_labels.end()) {
-          vname_labels[printer.str()] = label_vname.first;
-        } else {
-          old_label->second += ", " + label_vname.first;
-        }
-      }
+    StringPrettyPrinter printer;
+    QuoteEscapingPrettyPrinter quote_printer(printer);
+    vname->Dump(symbol_table_, &printer);
+    auto old_label = vname_labels.find(printer.str());
+    if (old_label == vname_labels.end()) {
+      vname_labels[printer.str()] = label;
+    } else {
+      old_label->second += ", " + label;
     }
   }
   auto GetLabel = [&](AstNode* node) {
@@ -1590,11 +1620,42 @@ void Verifier::DumpAsDot() {
     }
     return GetLabel(node).empty();
   };
+
   std::sort(facts_.begin(), facts_.end(), GraphvizSortOrder);
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter quote_printer(printer);
   HtmlEscapingPrettyPrinter html_printer(printer);
   FileHandlePrettyPrinter dprinter(stderr);
+
+  auto PrintQuotedNodeId = [&](AstNode* node) {
+    printer.Print("\"");
+    if (std::string label = GetLabel(node);
+        show_labeled_vnames_ || label.empty()) {
+      node->Dump(symbol_table_, &quote_printer);
+    } else {
+      quote_printer.Print(label);
+    }
+    printer.Print("\"");
+  };
+
+  auto FactName = [this](AstNode* node) {
+    StringPrettyPrinter printer;
+    node->Dump(symbol_table_, &printer);
+    if (show_fact_prefix_) {
+      return printer.str();
+    }
+    return std::string(absl::StripPrefix(printer.str(), "/kythe/"));
+  };
+
+  auto EdgeName = [this](AstNode* node) {
+    StringPrettyPrinter printer;
+    node->Dump(symbol_table_, &printer);
+    if (show_fact_prefix_) {
+      return printer.str();
+    }
+    return std::string(absl::StripPrefix(printer.str(), "/kythe/edge/"));
+  };
+
   printer.Print("digraph G {\n");
   for (size_t i = 0; i < facts_.size(); ++i) {
     AstNode* fact = facts_[i];
@@ -1611,14 +1672,14 @@ void Verifier::DumpAsDot() {
       if (ElideNode(t->element(0))) {
         continue;
       }
-      printer.Print("\"");
-      t->element(0)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\"");
+      PrintQuotedNodeId(t->element(0));
       std::string label = GetLabel(t->element(0));
       if (info.kind == NodeKind::kAnchor && !show_anchors_) {
-        printer.Print(" [ shape=circle, label=\"@");
-        printer.Print(label);
-        if (!label.empty()) {
+        printer.Print(" [ shape=circle, label=\"");
+        if (label.empty()) {
+          printer.Print("@");
+        } else {
+          printer.Print(label);
           printer.Print("\", color=\"blue");
         }
         printer.Print("\" ];\n");
@@ -1626,17 +1687,21 @@ void Verifier::DumpAsDot() {
         printer.Print(" [ label=<<TABLE>");
         printer.Print("<TR><TD COLSPAN=\"2\">");
         Tuple* nt = info.facts.front()->AsApp()->rhs()->AsTuple();
-        // Since all of our facts are well-formed, we know this is a vname.
-        nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
+        if (label.empty() || show_labeled_vnames_) {
+          // Since all of our facts are well-formed, we know this is a vname.
+          nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
+        }
         if (!label.empty()) {
-          html_printer.Print(" = ");
+          if (show_labeled_vnames_) {
+            html_printer.Print(" = ");
+          }
           html_printer.Print(label);
         }
         printer.Print("</TD></TR>");
         for (AstNode* fact : info.facts) {
           Tuple* nt = fact->AsApp()->rhs()->AsTuple();
           printer.Print("<TR><TD>");
-          nt->element(3)->Dump(symbol_table_, &html_printer);
+          html_printer.Print(FactName(nt->element(3)));
           printer.Print("</TD><TD>");
           if (info.kind == NodeKind::kFile &&
               EncodedIdentEqualTo(nt->element(3), text_id_)) {
@@ -1661,13 +1726,11 @@ void Verifier::DumpAsDot() {
       if (ElideNode(t->element(0)) || ElideNode(t->element(2))) {
         continue;
       }
-      printer.Print("\"");
-      t->element(0)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\"");
-      printer.Print(" -> \"");
-      t->element(2)->Dump(symbol_table_, &quote_printer);
-      printer.Print("\" [ label=\"");
-      t->element(1)->Dump(symbol_table_, &quote_printer);
+      PrintQuotedNodeId(t->element(0));
+      printer.Print(" -> ");
+      PrintQuotedNodeId(t->element(2));
+      printer.Print(" [ label=\"");
+      quote_printer.Print(EdgeName(t->element(1)));
       if (t->element(4) != empty_string_id()) {
         printer.Print(".");
         t->element(4)->Dump(symbol_table_, &quote_printer);

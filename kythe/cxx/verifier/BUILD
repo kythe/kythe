@@ -3,7 +3,9 @@ load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 package(
     default_visibility = ["//kythe:default_visibility"],
-    features = ["layering_check"],
+    features = [
+        "layering_check",
+    ],
 )
 
 genyacc(
@@ -160,7 +162,6 @@ cc_library(
         "//kythe/proto:storage_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -220,6 +221,7 @@ cc_library(
     srcs = ["pretty_printer.cc"],
     hdrs = ["pretty_printer.h"],
     deps = [
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

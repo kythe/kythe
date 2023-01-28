@@ -20,12 +20,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <memory>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -194,7 +194,7 @@ doc -common_signatures
     return kythe::DocumentNodesFromStdin();
   } else {
     kythe::JsonClient::InitNetwork();
-    kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
+    kythe::XrefsJsonClient client(std::make_unique<kythe::JsonClient>(),
                                   absl::GetFlag(FLAGS_xrefs));
     auto ticket = kythe::URI::FromString(absl::GetFlag(FLAGS_path));
     if (!ticket.first) {

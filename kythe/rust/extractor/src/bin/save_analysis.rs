@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
@@ -55,7 +55,7 @@ fn generate_arguments(arguments: Vec<String>, output_dir: &Path) -> Result<Vec<S
         .ok_or_else(|| anyhow!("Could not find the output directory argument: {:?}", arguments))?;
     let outdir_str =
         output_dir.to_str().ok_or_else(|| anyhow!("Couldn't convert temporary path to string"))?;
-    rustc_arguments[outdir_position] = format!("--out-dir={}", outdir_str);
+    rustc_arguments[outdir_position] = format!("--out-dir={outdir_str}");
 
     // Check if there is a file containing environment variables
     let env_file_position = arguments.iter().position(|arg| arg == "--env-file");

@@ -31,8 +31,6 @@ bazel build //kythe/cxx/extractor:cxx_extractor \
     //kythe/go/storage/tools:write_entries \
     //kythe/go/serving/tools:write_tables \
     //kythe/go/serving/tools:http_server
-git clean -fdx kythe/web/ui
-bazel build kythe/web/ui
 
 export KYTHE_EXTRACTOR="${PWD}/bazel-bin/kythe/cxx/extractor/cxx_extractor"
 export KYTHE_INDEXER="${PWD}/bazel-bin/kythe/cxx/indexer/cxx/indexer"
@@ -40,7 +38,6 @@ export KYTHE_DEDUP_STREAM="${PWD}/bazel-bin/kythe/go/platform/tools/dedup_stream
 export KYTHE_WRITE_ENTRIES="${PWD}/bazel-bin/kythe/go/storage/tools/write_entries/write_entries"
 export KYTHE_WRITE_TABLES="${PWD}/bazel-bin/kythe/go/serving/tools/write_tables/write_tables"
 export KYTHE_HTTP_SERVER="${PWD}/bazel-bin/kythe/go/serving/tools/http_server/http_server"
-export KYTHE_WEB_UI="${PWD}/kythe/web/ui/resources/public"
 ----
 
 Get the kernel source. I'm using 3.19-rc6 from kernel.org.
@@ -120,12 +117,11 @@ extractor output:
 
 [source,bash]
 ----
-export KYTHE_INDEX_PACK=1
 export KYTHE_OUTPUT_DIRECTORY="${KERNEL_SOURCES}/kernel-pack"
 export KYTHE_VNAMES="${KERNEL_SOURCES}/vnames.json"
 ----
 
-Build the kernel, pulling the code into a Kythe index pack:
+Build the kernel, pulling the code into a Kythe kzip:
 [source,bash]
 ----
 make CC="${KERNEL_SOURCES}/extract_compile.sh" \
@@ -160,8 +156,7 @@ Host the index:
 
 [source,bash]
 ----
-"${KYTHE_HTTP_SERVER}" -public_resources="${KYTHE_WEB_UI}" \
-    -serving_table "${KERNEL_SOURCES}/tables"
+"${KYTHE_HTTP_SERVER}" -serving_table "${KERNEL_SOURCES}/tables"
 ----
 
-The demonstration UI listens by default on http://localhost:8080
+The demonstration API listens by default on http://localhost:8080

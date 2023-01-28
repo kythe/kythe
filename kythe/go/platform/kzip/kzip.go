@@ -22,43 +22,42 @@
 //
 // Reading an Archive:
 //
-//   r, err := kzip.NewReader(file, size)
-//   ...
+//	r, err := kzip.NewReader(file, size)
+//	...
 //
-//   // Look up a compilation record by its digest.
-//   unit, err := r.Lookup(unitDigest)
-//   ...
+//	// Look up a compilation record by its digest.
+//	unit, err := r.Lookup(unitDigest)
+//	...
 //
-//   // Scan all the compilation records stored.
-//   err := r.Scan(func(unit *kzip.Unit) error {
-//      if hasInterestingProperty(unit) {
-//         doStuffWith(unit)
-//      }
-//      return nil
-//   })
+//	// Scan all the compilation records stored.
+//	err := r.Scan(func(unit *kzip.Unit) error {
+//	   if hasInterestingProperty(unit) {
+//	      doStuffWith(unit)
+//	   }
+//	   return nil
+//	})
 //
-//   // Open a reader for a stored file.
-//   rc, err := r.Open(fileDigest)
-//   ...
-//   defer rc.Close()
+//	// Open a reader for a stored file.
+//	rc, err := r.Open(fileDigest)
+//	...
+//	defer rc.Close()
 //
-//   // Read the complete contents of a stored file.
-//   bits, err := r.ReadAll(fileDigest)
-//   ...
+//	// Read the complete contents of a stored file.
+//	bits, err := r.ReadAll(fileDigest)
+//	...
 //
 // Writing an Archive:
 //
-//   w, err := kzip.NewWriter(file)
-//   ...
+//	w, err := kzip.NewWriter(file)
+//	...
 //
-//   // Add a compilation record and (optional) index data.
-//   udigest, err := w.AddUnit(unit, nil)
-//   ...
+//	// Add a compilation record and (optional) index data.
+//	udigest, err := w.AddUnit(unit, nil)
+//	...
 //
-//   // Add file contents.
-//   fdigest, err := w.AddFile(file)
-//   ...
-//
+//	// Add file contents.
+//	fdigest, err := w.AddFile(file)
+//	...
 package kzip // import "kythe.io/kythe/go/platform/kzip"
 
 import (
@@ -81,13 +80,15 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd/kythe"
+	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	// These are common detail messages used by Kythe compilations, and
 	// required for JSON (un)marshaling to work.
@@ -112,6 +113,12 @@ const (
 	prefixJSON  = "units"
 	prefixProto = "pbunits"
 )
+
+// Compilation is a CompilationUnit with the contents for all of its required inputs.
+type Compilation struct {
+	Proto *apb.CompilationUnit `json:"compilation"`
+	Files []*apb.FileData      `json:"files"`
+}
 
 var (
 	// Use a constant file modification time in the kzip so file diffs only compare the contents,
@@ -651,4 +658,88 @@ func Scan(f File, scan func(*Reader, *Unit) error, opts ...ScanOption) error {
 type File interface {
 	io.ReaderAt
 	io.Seeker
+}
+
+// FileData creates a file data protobuf message by fully reading the contents
+// of r, having the designated path.
+func FileData(path string, r io.Reader) (*apb.FileData, error) {
+	var buf bytes.Buffer
+	hash := sha256.New()
+
+	w := io.MultiWriter(&buf, hash)
+	if _, err := io.Copy(w, r); err != nil {
+		return nil, err
+	}
+	digest := hex.EncodeToString(hash.Sum(nil))
+	return &apb.FileData{
+		Content: buf.Bytes(),
+		Info: &apb.FileInfo{
+			Path:   path,
+			Digest: digest,
+		},
+	}, nil
+}
+
+// Fetch implements the analysis.Fetcher interface for files attached to c.
+// If digest == "", files are matched by path only.
+func (c *Compilation) Fetch(path, digest string) ([]byte, error) {
+	for _, f := range c.Files {
+		info := f.GetInfo()
+		fp := info.Path
+		fd := info.Digest
+		if path == fp && (digest == "" || digest == fd) {
+			return f.Content, nil
+		}
+		if digest != "" && digest == fd {
+			return f.Content, nil
+		}
+	}
+	return nil, os.ErrNotExist
+}
+
+// Unit returns the CompilationUnit associated with c, creating a new empty one
+// if necessary.
+func (c *Compilation) Unit() *apb.CompilationUnit {
+	if c.Proto == nil {
+		c.Proto = new(apb.CompilationUnit)
+	}
+	return c.Proto
+}
+
+// AddFile adds an input file to the compilation by fully reading r.  The file
+// is added to the required inputs, attributed to the designated path, and also
+// to the file data slice.  If v != nil it is used as the vname of the input
+// added.
+func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName, details ...proto.Message) error {
+	var anys []*ptypes.Any
+	for _, d := range details {
+		any, err := ptypes.MarshalAny(d)
+		if err != nil {
+			return fmt.Errorf("unable to marshal %T to Any: %v", d, err)
+		}
+		anys = append(anys, any)
+	}
+	fd, err := FileData(path, r)
+	if err != nil {
+		return err
+	}
+	c.Files = append(c.Files, fd)
+	unit := c.Unit()
+	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName:   v,
+		Info:    fd.Info,
+		Details: anys,
+	})
+	return nil
+}
+
+// AddDetails adds the specified details message to the compilation.
+func (c *Compilation) AddDetails(msg proto.Message) error {
+	details, err := ptypes.MarshalAny(msg)
+	if err != nil {
+		return err
+	}
+	unit := c.Unit()
+	unit.Details = append(unit.Details, details)
+	return nil
 }

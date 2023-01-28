@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:sid
+FROM debian:stable-slim
 
 # Install C++ compilers and other deps
-# note that openjdk-8-jdk is a dependency of the java extractor
+# note that openjdk-11-jdk-headless is a dependency of the java extractor
 RUN apt-get update && \
-    apt-get install -y git clang-11 build-essential zip python openjdk-8-jdk && \
+    apt-get install -y git clang-11 build-essential zip python3 openjdk-11-jdk-headless && \
     apt-get clean
 
 # Create clang symlinks

@@ -13,6 +13,13 @@ java_binary(
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
     ],
+    jvm_flags = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac9Wrapper",
     visibility = ["//visibility:public"],
     deps = [
@@ -31,7 +38,15 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
+    runtime_deps = [
+        ":reflective_jdk_compatibility_shims",
+    ] + select({
+        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
+        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
+        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
+    }),
     deps = [
+        ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:environment",
@@ -40,6 +55,72 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "@maven//:com_google_flogger_flogger",
+    ],
+)
+
+java_library(
+    name = "jdk_compatibility_shims",
+    srcs = ["JdkCompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+    deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
+)
+
+java_library(
+    name = "jdk9_compatibility_shims",
+    srcs = ["Jdk9CompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    target_compatible_with = select({
+        "//buildenv/java:language_version_11": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+        "//third_party/guava",
+    ],
+)
+
+java_library(
+    name = "jdk15_compatibility_shims",
+    srcs = ["Jdk15CompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    # This is incompatible with the default test configuration and
+    # bazel cquery doesn't work with objc_library targets.
+    tags = ["manual"],
+    target_compatible_with = select({
+        "//buildenv/java:language_version_17": [],
+        "//buildenv/java:language_version_19": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+        "//third_party/guava",
+    ],
+)
+
+java_library(
+    name = "reflective_jdk_compatibility_shims",
+    srcs = ["ReflectiveJdkCompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
     ],
 )
 

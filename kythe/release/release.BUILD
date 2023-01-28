@@ -3,13 +3,13 @@ load(":vnames.bzl", "construct_vnames_config")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files([
+exports_files(glob([
     "LICENSE",
     "extractors/*",
     "indexers/*",
     "proto/*",
     "tools/*",
-])
+]))
 
 config_setting(
     name = "assign_external_projects_to_separate_corpora",
@@ -226,6 +226,7 @@ extractor_action(
     data = [":vnames_config"],
     extractor = ":bazel_extract_kzip",
     mnemonics = [
+        "TsProject",
         "TypeScriptCompile",
         "AngularTemplateCompile",
     ],
@@ -256,7 +257,7 @@ extractor_action(
     data = [
         ":bazel_rust_extractor",
         ":vnames_config",
-        "@rust_linux_x86_64//:rustc_lib",
+        "@rust_linux_x86_64__x86_64-unknown-linux-gnu_tools//:rustc_lib",
     ],
     extractor = ":bazel_rust_extractor_script",
     mnemonics = [

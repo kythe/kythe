@@ -137,6 +137,8 @@ struct KytheGraphObserverOptions {
   // The default corpus to use for nodes which would otherwise have an empty
   // corpus.
   std::string default_corpus = "";
+  // Associates a hash to its semantic signature.
+  HashRecorder* hash_recorder;
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -150,7 +152,7 @@ class KytheGraphObserver : public GraphObserver {
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              const Options& options = {})
+                              Options& options)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
@@ -163,6 +165,7 @@ class KytheGraphObserver : public GraphObserver {
     ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
+    hash_recorder_ = options.hash_recorder;
   }
 
   NodeId getNodeIdForBuiltinType(
@@ -211,15 +214,9 @@ class KytheGraphObserver : public GraphObserver {
   void assignUsr(const NodeId& node, llvm::StringRef usr,
                  int byte_size) override;
 
-  void recordAbsVarNode(
-      const NodeId& node,
-      const absl::optional<MarkedSource>& marked_source) override;
-
   void recordTVarNode(
       const NodeId& node,
       const absl::optional<MarkedSource>& marked_source) override;
-
-  void recordAbsNode(const NodeId& node) override;
 
   void recordMarkedSource(
       const NodeId& node,
@@ -310,7 +307,6 @@ class KytheGraphObserver : public GraphObserver {
                                             const NodeId& node) override;
 
   void recordCompletionRange(const Range& source_range, const NodeId& node,
-                             Specificity spec,
                              const NodeId& completing_node) override;
 
   void recordTypeSpellingLocation(const Range& source_range,
@@ -350,7 +346,8 @@ class KytheGraphObserver : public GraphObserver {
                                const NodeId& root_object) override;
 
   void recordCallEdge(const Range& source_range, const NodeId& caller_id,
-                      const NodeId& callee_id, Implicit i) override;
+                      const NodeId& callee_id, Implicit i,
+                      CallDispatch d) override;
 
   absl::optional<NodeId> recordFileInitializer(const Range& range) override;
 
@@ -372,6 +369,9 @@ class KytheGraphObserver : public GraphObserver {
                              const NodeId& macro_id) override;
 
   void recordStaticVariable(const NodeId& VarNodeId) override;
+
+  void recordVisibility(const NodeId& FieldNodeId,
+                        clang::AccessSpecifier access) override;
 
   void recordDeprecated(const NodeId& NodeId,
                         const llvm::StringRef& advice) override;

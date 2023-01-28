@@ -20,12 +20,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {MarkedSource} from '../proto/common_pb';
-import {EdgeKind, FactName, JSONEdge, JSONFact, KytheData, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, KytheData, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 import { runPostProcess } from './post_processing';
 
 const LANGUAGE = 'typescript';
+
+enum RefType {
+  READ,
+  WRITE,
+  READ_WRITE
+}
 
 /**
  * An indexer host holds information about the program indexing and methods
@@ -722,25 +727,6 @@ function fmtMarkedSource(s: string) {
     s += '...';
   }
   return s;
-}
-
-function makeMarkedSource({
-  kind,
-  preText,
-  postText,
-  childList,
-}: {
-  kind?: keyof typeof MarkedSource.Kind,
-  preText?: string,
-  postText?: string,
-  childList?: MarkedSource[]
-}): MarkedSource {
-  const ms = new MarkedSource();
-  if (kind !== undefined) ms.setKind(MarkedSource.Kind[kind]);
-  if (preText !== undefined) ms.setPreText(fmtMarkedSource(preText));
-  if (postText !== undefined) ms.setPostText(fmtMarkedSource(postText));
-  if (childList !== undefined) ms.setChildList(childList);
-  return ms;
 }
 
 function isNonNullableArray<T>(arr: Array<T>): arr is Array<NonNullable<T>> {
@@ -1665,7 +1651,8 @@ class Visitor {
 
     if (vname) {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
-          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl)) {
+          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
+          ts.isShorthandPropertyAssignment(decl)) {
         this.emitDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
@@ -1684,6 +1671,13 @@ class Visitor {
         this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
+    if (vname &&
+        (decl.kind === ts.SyntaxKind.PropertySignature ||
+         decl.kind === ts.SyntaxKind.PropertyDeclaration ||
+         decl.kind === ts.SyntaxKind.PropertyAssignment ||
+         decl.kind === ts.SyntaxKind.ShorthandPropertyAssignment)) {
+      this.emitSubkind(vname, Subkind.FIELD);
+    }
     return vname;
   }
 
@@ -1697,9 +1691,9 @@ class Visitor {
    */
   emitDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
-      ts.PropertyDeclaration|ts.BindingElement,
+      ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment,
       declVName: VName) {
-    const codeParts: MarkedSource[] = [];
+    const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
     let varDecl;
     const bindingPath: Array<string|number|undefined> = [];
@@ -1736,13 +1730,13 @@ class Visitor {
     }
     const ty = this.typeChecker.getTypeAtLocation(decl);
     const tyStr = this.typeChecker.typeToString(ty, decl);
-    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
-    codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' '}));
+    codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(declKw)});
+    codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
     codeParts.push(
-        makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
+      {kind: MarkedSourceKind.IDENTIFIER, pre_text: fmtMarkedSource(decl.name.getText())});
     codeParts.push(
-        makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
-    if (varDecl.initializer) {
+      {kind: MarkedSourceKind.TYPE, pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
+    if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
 
       if (ts.isObjectLiteralExpression(init) ||
@@ -1752,13 +1746,13 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
+      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' = '});
       codeParts.push(
-          makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
+        {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
     }
 
-    const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
-    this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
+    const markedSource = ({kind: MarkedSourceKind.BOX, child: codeParts});
+    this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
   /**
@@ -1844,7 +1838,7 @@ class Visitor {
     const vname = this.host.getSymbolName(propertyOnType, TSNamespace.VALUE);
     if (vname == null) return;
     const anchor = this.newAnchor(prop);
-    this.emitEdge(anchor, EdgeKind.REF, vname);
+    this.emitEdge(anchor, EdgeKind.REF_ID, vname);
   }
 
   /**
@@ -1944,7 +1938,7 @@ class Visitor {
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
-    this.visitDecorators(decl.decorators || []);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     const {sym, vname} = this.getSymbolAndVNameForFunctionDeclaration(decl);
     if (!vname) {
       todo(
@@ -2038,7 +2032,7 @@ class Visitor {
     let paramNum = 0;
     const recurseVisit =
         (param: ts.ParameterDeclaration|ts.BindingElement) => {
-          this.visitDecorators(param.decorators || []);
+          this.visitDecorators(ts.canHaveDecorators(param) ? ts.getDecorators(param) : []);
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
@@ -2105,9 +2099,11 @@ class Visitor {
     }
   }
 
-  visitDecorators(decors: ReadonlyArray<ts.Decorator>) {
-    for (const decor of decors) {
-      this.visit(decor);
+  visitDecorators(decors: ReadonlyArray<ts.Decorator> | undefined) {
+    if (decors) {
+      for (const decor of decors) {
+        this.visit(decor);
+      }
     }
   }
 
@@ -2153,12 +2149,12 @@ class Visitor {
     // The entire module declaration defines the created namespace.
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
 
-    if (decl.decorators) this.visitDecorators(decl.decorators);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     if (decl.body) this.visit(decl.body);
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
-    this.visitDecorators(decl.decorators || []);
+    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     let kClass: VName|undefined;
     if (decl.name) {
       const sym = this.host.getSymbolAtLocation(decl.name);
@@ -2248,8 +2244,121 @@ class Visitor {
     const name = this.host.getSymbolName(sym, TSNamespace.VALUE);
     if (!name) return;
     const anchor = this.newAnchor(node);
-    this.emitEdge(anchor, EdgeKind.REF, name);
+
+    const refType = this.getRefType(node, sym);
+    if (refType == RefType.READ || refType == RefType.READ_WRITE) {
+      this.emitEdge(anchor, EdgeKind.REF, name);
+    }
+    if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
+      this.emitEdge(anchor, EdgeKind.REF_WRITES, name);
+    }
     this.addInfluencer(name);
+  }
+
+  /**
+   * Determines the type of reference type of a {@link ts.Node} in its parent
+   * expression.
+   * @param node The {@link ts.Node} being referenced
+   * @param sym The {@link ts.Symbol} associated with the node
+   * @returns The {@link RefType} indicating whether the reference is READ,
+   * WRITE, or READ_WRITE
+   */
+  getRefType(node: ts.Node, sym: ts.Symbol): RefType {
+    // If the identifier being accessed is a property of a class, we need to
+    // recurse through the parents nodes until we get the true parent
+    // expression.
+    let parent = node.parent;
+    while (ts.isPropertyAccessExpression(parent)) {
+      parent = parent.parent;
+    }
+
+    if (ts.isPrefixUnaryExpression(parent) ||
+        ts.isPostfixUnaryExpression(parent)) {
+      let operator: ts.SyntaxKind = parent.operator;
+      let operand: ts.Expression = parent.operand;
+
+      const operandNode = ts.isPropertyAccessExpression(operand) ?
+          this.propertyAccessIdentifier(operand) as ts.Node :
+          operand as ts.Node;
+
+      // Check if the operand is the same as referenced symbol and if this was
+      // an increment or decrement operation. If both are true, this is a
+      // READ_WRITE reference.
+      if (this.expressionMatchesSymbol(operand, sym) &&
+          operandNode.pos === node.pos) {
+        if (operator === ts.SyntaxKind.PlusPlusToken ||
+            operator === ts.SyntaxKind.MinusMinusToken) {
+          return RefType.READ_WRITE;
+        }
+      }
+    } else if (ts.isBinaryExpression(parent)) {
+      const lhsNode = ts.isPropertyAccessExpression(parent.left) ?
+          this.propertyAccessIdentifier(parent.left) as ts.Node :
+          parent.left as ts.Node;
+      const opString = ts.tokenToString(parent.operatorToken.kind) || '';
+
+      if (this.expressionMatchesSymbol(parent.left, sym) &&
+          lhsNode.pos === node.pos) {
+        const compoundAssignmentOperators = [
+          '+=', '-=', '*=', '**=', '/=', '%=', '<<=', '>>=', '>>>=', '&=', '|=',
+          '^='
+        ];
+        if (compoundAssignmentOperators.includes(opString)) {
+          // Compound assignment operations are always a READ_WRITE reference
+          return RefType.READ_WRITE;
+        } else if (opString === '=') {
+          // If the symbol is on the left side of a assignment operation, it
+          // is always at least a WRITE reference. However, we then need to
+          // check if the parent expression is also a binary expression. If so,
+          // we check whether the current binary expression is on the right
+          // side of that expression, indicating a chained assignment such as
+          // x = y = z. If this is the case, the reference becomes READ_WRITE
+          // instead.
+          if (parent.parent !== null && ts.isBinaryExpression(parent.parent)) {
+            if (ts.tokenToString(parent.parent.operatorToken.kind) === '=' &&
+                parent.parent.right === parent) {
+              return RefType.READ_WRITE;
+            }
+          }
+          return RefType.WRITE;
+        }
+      }
+    }
+    return RefType.READ;
+  }
+
+  /**
+   * Check whether a {@link ts.Expression} matches a symbol. If the expression
+   * is a {@link ts.PropertyAccessExpression}, the check is performed against
+   * the base property being accessed.
+   */
+  expressionMatchesSymbol(expression: ts.Expression, symbol: ts.Symbol):
+      boolean {
+    if (ts.isIdentifier(expression)) {
+      return this.host.getSymbolAtLocation(expression) === symbol;
+    } else if (ts.isPropertyAccessExpression(expression)) {
+      return this.host.getSymbolAtLocation(
+                 this.propertyAccessIdentifier(expression)) === symbol;
+    }
+    return false;
+  }
+
+
+  /**
+   * Recurses through a {@link ts.PropertyAccessExpression} to find the
+   * identifier of the base property being accessed. Recursion is necessary
+   * because a chained property accesses such as `obj.member.member` will
+   * have two layers of {@link ts.PropertyAccessExpression}s.
+   *
+   * @param expression The {@link ts.PropertyAccessExpression} to process
+   * @returns The identifier of the base property being accessed
+   */
+  propertyAccessIdentifier(expression: ts.PropertyAccessExpression):
+      ts.Identifier|ts.PrivateIdentifier {
+    while (ts.isPropertyAccessExpression(expression.parent)) {
+      expression = expression.parent;
+    }
+    return expression.name;
   }
 
   /**

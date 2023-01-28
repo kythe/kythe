@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_verifier_test.bzl", "textproto_verifier_test")
 
+package(features = ["layering_check"])
+
 textproto_verifier_test(
     name = "basics_test",
     protos = [":example_proto"],
@@ -44,6 +46,15 @@ textproto_verifier_test(
         ":proto_with_imports_proto",
     ],
     textprotos = ["imports.pbtxt"],
+)
+
+textproto_verifier_test(
+    name = "imports_generated_test",
+    protos = [
+        ":generated_proto",
+        ":imports_generated_proto",
+    ],
+    textprotos = ["generated_imports.pbtxt"],
 )
 
 textproto_verifier_test(
@@ -107,4 +118,22 @@ proto_library(
 proto_library(
     name = "repeated_extension_proto",
     srcs = ["repeated_extension.proto"],
+)
+
+genrule(
+    name = "generate_proto",
+    srcs = ["example.proto"],
+    outs = ["generated.proto"],
+    cmd = "cp $< $@",
+)
+
+proto_library(
+    name = "generated_proto",
+    srcs = [":generated.proto"],
+)
+
+proto_library(
+    name = "imports_generated_proto",
+    srcs = ["imports_generated.proto"],
+    deps = [":generated_proto"],
 )

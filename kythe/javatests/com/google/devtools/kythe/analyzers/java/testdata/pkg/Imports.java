@@ -33,8 +33,7 @@ import java.util.ArrayList;
 import java.util.Map.Entry;
 
 public class Imports {
-  //- ListI childof ListAbs
-  //- @List ref ListAbs
+  //- @List ref ListI
   public static void forAll(List<String> lst) {
     //- @String ref String
     //- @CASE_INSENSITIVE_ORDER ref StringConst

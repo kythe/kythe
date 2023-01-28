@@ -76,10 +76,12 @@ export enum EdgeKind {
   REF_EXPANDS_TRANSITIVE = '/kythe/edge/ref/expands/transitive',
   REF_FILE = '/kythe/edge/ref/file',
   REF_IMPORTS = '/kythe/edge/ref/imports',
+  REF_ID = '/kythe/edge/ref/id',
   REF_INCLUDES = '/kythe/edge/ref/includes',
   REF_INIT = '/kythe/edge/ref/init',
   REF_INIT_IMPLICIT = '/kythe/edge/ref/init/implicit',
   REF_QUERIES = '/kythe/edge/ref/queries',
+  REF_WRITES = '/kythe/edge/ref/writes',
   SATISFIES = '/kythe/edge/satisfies',
   SPECIALIZES = '/kythe/edge/specializes',
   SPECIALIZES_SPECULATIVE = '/kythe/edge/specializes/speculative',
@@ -109,7 +111,6 @@ export function makeOrdinalEdge(edge: EdgeKind, ordinal: number): OrdinalEdge {
  *   https://github.com/kythe/kythe/tree/master/kythe/data/schema_index.textproto#L64
  */
 export enum NodeKind {
-  ABSVAR = 'absvar',
   ANCHOR = 'anchor',
   CONSTANT = 'constant',
   DIAGNOSTIC = 'diagnostic',
@@ -142,7 +143,7 @@ export enum NodeKind {
  */
 export enum FactName {
   BUILD_CONFIG = '/kythe/build/config',
-  CODE = '/kythe/code',
+  CODE_JSON = '/kythe/code/json',
   COMPLETE = '/kythe/complete',
   CONTEXT_URL = '/kythe/context/url',
   DETAILS = '/kythe/details',
@@ -230,6 +231,47 @@ export interface JSONEdge {
   target: VName;
   edge_kind: EdgeKind|OrdinalEdge;
   fact_name: '/';
+}
+
+/*
+ * Kythe marked source Linkd expressed in the schema JSON-style encoding.
+ */
+export interface JSONLink {
+  definition: string[];
+}
+
+/*
+ * Enum corresponding to Kythe MarkedSource.Kind proto enum.
+ */
+export enum MarkedSourceKind {
+  BOX,
+  TYPE,
+  PARAMETER,
+  IDENTIFIER,
+  CONTEXT,
+  INITIALIZER,
+  PARAMETER_LOOKUP_BY_PARAM,
+  LOOKUP_BY_PARAM,
+  PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS,
+  LOOKUP_BY_TYPED,
+  PARAMETER_LOOKUP_BY_TPARAM,
+  LOOKUP_BY_TPARAM,
+}
+
+
+/*
+ * Kythe MarkedSource expressed in the schema JSON-style encoding.
+ */
+export interface JSONMarkedSource {
+  kind: MarkedSourceKind;
+  pre_text?: string;
+  child?: JSONMarkedSource[];
+  post_child_text?: string;
+  post_text?: string;
+  lookup_index?: number;
+  default_children_count?: number;
+  add_final_list_token?: boolean;
+  link?: JSONLink[];
 }
 
 /** Type representing output of indexer: all entries emitted during indexing. */

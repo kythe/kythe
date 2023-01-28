@@ -34,6 +34,7 @@ repos:
         exclude: '(?x)
             ^(AUTHORS|CONTRIBUTORS|WORKSPACE|LICENSE)$
             |(^|/)BUILD([^/*]*\.bazel)?$
+            |(^|/)requirements\.[^.]+$
             |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|kzip|tex|tac|bazelproject)$
             |(^|/)(\.[^/]*|go\.mod|go\.sum)$
             |^tools/|^third_party/|^kythe/web/site/
@@ -90,8 +91,7 @@ repos:
         name: Format w/ rustfmt
         description: Runs `rustfmt` on Rust files
         language: system
-        entry: rustfmt
-        args: [--config-path, tools/rust/rustfmt.toml]
+        entry: tools/rust/rustfmt.sh
         types: [rust]
         exclude: '^(kythe/proto/.*|third_party/.*)'
 exclude: '(.*/testdata/.*|third_party/.*|tools/platforms/configs/rbe_default/.*)$'

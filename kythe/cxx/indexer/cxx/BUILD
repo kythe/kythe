@@ -57,7 +57,6 @@ cc_library(
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
@@ -163,7 +162,9 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/types:span",
         "@llvm-project//clang:basic",
@@ -199,6 +200,7 @@ cc_library(
         ":node_set",
         ":recursive_type_visitor",
         ":semantic_hash",
+        ":stream_adapter",
         ":type_map",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:scope_guard",
@@ -207,7 +209,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
@@ -227,6 +228,8 @@ cc_library(
     deps = [
         "//kythe/cxx/common:scope_guard",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//clang:ast",
         "@llvm-project//llvm:Support",
     ],
@@ -412,12 +415,27 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_google_absl//absl/memory",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_test(
+    name = "vfs_test",
+    srcs = ["KytheVFS_test.cc"],
+    deps = [
+        ":vfs",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
         "@llvm-project//llvm:Support",
     ],
 )
@@ -460,7 +478,6 @@ cc_library(
         "//kythe/proto:storage_cc_proto",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_googlesource_code_re2//:re2",
@@ -497,7 +514,6 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
@@ -524,7 +540,7 @@ cc_test(
         "-Wno-implicit-fallthrough",
     ],
     linkopts = select({
-        ":darwin": ["-headerpad_max_install_names"],
+        "@platforms//os:osx": ["-headerpad_max_install_names"],
         "//conditions:default": [],
     }),
     deps = [
@@ -533,7 +549,6 @@ cc_test(
         "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/common/indexing:testlib",
         "//third_party:gtest",
-        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:ast",
         "@llvm-project//clang:frontend",
@@ -593,8 +608,13 @@ cc_test(
     ],
 )
 
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:public"],
+cc_library(
+    name = "stream_adapter",
+    srcs = ["stream_adapter.cc"],
+    hdrs = ["stream_adapter.h"],
+    deps = [
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@llvm-project//llvm:Support",
+    ],
 )

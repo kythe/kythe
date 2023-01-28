@@ -80,6 +80,7 @@ type FileDecorations struct {
 
 	File *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	// Types that are assignable to Entry:
+	//
 	//	*FileDecorations_Index_
 	//	*FileDecorations_Text_
 	//	*FileDecorations_Target_
@@ -266,6 +267,7 @@ type CrossReferences struct {
 
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are assignable to Entry:
+	//
 	//	*CrossReferences_Index_
 	//	*CrossReferences_Reference_
 	//	*CrossReferences_Relation_
@@ -535,6 +537,7 @@ type FileDecorations_Target struct {
 	StartOffset int32 `protobuf:"varint,1,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`
 	EndOffset   int32 `protobuf:"varint,2,opt,name=end_offset,json=endOffset,proto3" json:"end_offset,omitempty"`
 	// Types that are assignable to Kind:
+	//
 	//	*FileDecorations_Target_KytheKind
 	//	*FileDecorations_Target_GenericKind
 	Kind        isFileDecorations_Target_Kind `protobuf_oneof:"kind"`
@@ -1030,6 +1033,7 @@ type CrossReferences_Reference struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
+	//
 	//	*CrossReferences_Reference_KytheKind
 	//	*CrossReferences_Reference_GenericKind
 	Kind     isCrossReferences_Reference_Kind `protobuf_oneof:"kind"`
@@ -1119,6 +1123,7 @@ type CrossReferences_Relation struct {
 
 	Node *storage_go_proto.VName `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
 	// Types that are assignable to Kind:
+	//
 	//	*CrossReferences_Relation_KytheKind
 	//	*CrossReferences_Relation_GenericKind
 	Kind    isCrossReferences_Relation_Kind `protobuf_oneof:"kind"`

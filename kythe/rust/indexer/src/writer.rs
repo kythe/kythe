@@ -25,7 +25,7 @@ pub trait KytheWriter {
     ///
     /// Given an Kythe storage proto Entry, write that entry to the output of
     /// the KytheWriter. If the operation is successful, the function will
-    /// return Ok with a void value.KytheError
+    /// return Ok.
     ///
     /// # Errors
     ///
@@ -33,7 +33,7 @@ pub trait KytheWriter {
     /// [WriterError][KytheError::WriterError] will be returned.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError>;
 
-    /// Flushes the CodedOutputStream buffer to output
+    /// Flushes the writer's underlying buffer.
     ///
     /// # Errors
     ///
@@ -78,34 +78,33 @@ impl<'a> KytheWriter for CodedOutputStreamWriter<'a> {
 /// A [KytheWriter] that communicates with the analysis driver proxy
 pub struct ProxyWriter {
     buffer: Vec<String>,
+    max_size: usize,
 }
 
 impl ProxyWriter {
     /// Create a new instance of ProxyWriter
-    ///
-    /// Takes a writer that implements the `Write` trait as the only argument.
-    pub fn new() -> ProxyWriter {
-        Self { buffer: Vec::new() }
+    pub fn new(max_buffer_size: usize) -> ProxyWriter {
+        Self { buffer: Vec::new(), max_size: max_buffer_size }
     }
 }
 
 impl Default for ProxyWriter {
     fn default() -> Self {
-        Self::new()
+        Self::new(1000)
     }
 }
 
 impl KytheWriter for ProxyWriter {
-    /// Given an [Entry], writes the entry to the buffer.
-    /// If the buffer reaches size 1000, automatically flush to the proxy.
+    /// Given an [Entry], writes the entry to the buffer, possibly flushing if
+    /// it has reached its maximum size.
     ///
     /// # Errors
     ///
     /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let bytes = entry.write_to_bytes().map_err(KytheError::WriterError)?;
-        self.buffer.push(base64::encode(&bytes));
-        if self.buffer.len() >= 1000 {
+        self.buffer.push(base64::encode(bytes));
+        if self.buffer.len() >= self.max_size {
             self.flush()?;
         }
         Ok(())
@@ -115,25 +114,23 @@ impl KytheWriter for ProxyWriter {
         // Write the proxy command to output
         let request = proxyrequests::output(self.buffer.clone())?;
         self.buffer.clear();
-        println!("{}", request);
-        io::stdout().flush().map_err(|err| {
-            KytheError::IndexerError(format!("Failed to flush stdout: {:?}", err))
-        })?;
+        println!("{request}");
+        io::stdout()
+            .flush()
+            .map_err(|err| KytheError::IndexerError(format!("Failed to flush stdout: {err:?}")))?;
 
         // Read the response from the proxy
         let mut response_string = String::new();
         io::stdin().read_line(&mut response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
 
         // Convert to json and extract information
         let response: Value = serde_json::from_str(&response_string).map_err(|err| {
             KytheError::IndexerError(format!(
-                "Failed to read proxy file response from stdin: {:?}",
-                err
+                "Failed to read proxy file response from stdin: {err:?}"
             ))
         })?;
         if response["rsp"].as_str().unwrap() == "error" {
@@ -169,7 +166,7 @@ mod tests {
 
         // Parse the other bytes into an Entry and check equality with original
         let entry_bytes = bytes.get(1..bytes.len()).unwrap();
-        let parsed_entry = protobuf::parse_from_bytes::<Entry>(entry_bytes).unwrap();
+        let parsed_entry: Entry = protobuf::Message::parse_from_bytes(entry_bytes).unwrap();
         assert_eq!(entry, parsed_entry);
     }
 }

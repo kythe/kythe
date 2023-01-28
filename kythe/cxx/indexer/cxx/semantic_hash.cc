@@ -74,7 +74,8 @@ uint64_t SemanticHash::Hash(const clang::TemplateArgument& arg) const {
     case TemplateArgument::Integral: {
       auto value = arg.getAsIntegral();
       if (value.getMinSignedBits() <= sizeof(uint64_t) * CHAR_BIT) {
-        return static_cast<uint64_t>(value.getExtValue());
+        return static_cast<uint64_t>(value.isSigned() ? value.getSExtValue()
+                                                      : value.getZExtValue());
       } else {
         return std::hash<std::string>()(llvm::toString(value, 10));
       }

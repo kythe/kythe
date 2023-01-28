@@ -41,5 +41,6 @@ java_library(
     ],
     deps = [
         "//kythe/proto:analysis_java_proto",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )

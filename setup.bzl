@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", _remote_java_repository = "remote_java_repository")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -18,6 +19,11 @@ def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **k
         **kwargs
     )
 
+def remote_java_repository(**kwargs):
+    if native.bazel_version.startswith("5."):
+        kwargs["exec_compatible_with"] = kwargs.pop("target_compatible_with")
+    _remote_java_repository(**kwargs)
+
 def kythe_rule_repositories():
     """Defines external repositories for Kythe Bazel rules.
 
@@ -27,19 +33,19 @@ def kythe_rule_repositories():
         http_archive,
         name = "bazel_skylib",
         urls = [
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
         ],
-        sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+        sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
     )
 
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "f2dcd210c7095febe54b804bb1cd3a58fe8435a909db2ec04e31542631cf715c",
+        sha256 = "ae013bf35bd23234d1dea46b079f1e05ba74ac0321423830119d3e787ec73483",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.31.0/rules_go-v0.31.0.zip",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.31.0/rules_go-v0.31.0.zip",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.36.0/rules_go-v0.36.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.36.0/rules_go-v0.36.0.zip",
         ],
     )
 
@@ -73,10 +79,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "62ca106be173579c0a167deb23358fdfe71ffa1e4cfdddf5582af26520f1c66f",
+        sha256 = "448e37e0dbf61d6fa8f00aaa12d191745e14f07c31cabfa731f0c8e8a4f41b97",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.23.0/bazel-gazelle-v0.23.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.28.0/bazel-gazelle-v0.28.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.28.0/bazel-gazelle-v0.28.0.tar.gz",
         ],
     )
 
@@ -97,6 +103,22 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
+        name = "aspect_rules_ts",
+        sha256 = "6406905c5f7c5ca6dedcca5dacbffbf32bb2a5deb77f50da73e7195b2b7e8cbc",
+        strip_prefix = "rules_ts-1.0.5",
+        url = "https://github.com/aspect-build/rules_ts/archive/refs/tags/v1.0.5.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "aspect_rules_jasmine",
+        sha256 = "0357d45b5dba77004931db83ced43c6c432eee658a51d1876a9f2b57838e4080",
+        strip_prefix = "rules_jasmine-0.2.1",
+        url = "https://github.com/aspect-build/rules_jasmine/archive/refs/tags/v0.2.1.tar.gz",
+    )
+
+    maybe(
+        http_archive,
         name = "rules_python",
         sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
         strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
@@ -109,10 +131,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-        sha256 = "39458d9bc8f44b23bf963a09c2823b1703b312bcb51d2e8938d640e5b9780180",
-        strip_prefix = "rules_rust-1f2e6231de29d8fad8d21486f0d16403632700bf",
+        sha256 = "05e15e536cc1e5fd7b395d044fc2dabf73d2b27622fbc10504b7e48219bb09bc",
         urls = [
-            "https://github.com/bazelbuild/rules_rust/archive/1f2e6231de29d8fad8d21486f0d16403632700bf.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_rust/releases/download/0.8.1/rules_rust-v0.8.1.tar.gz",
+            "https://github.com/bazelbuild/rules_rust/releases/download/0.8.1/rules_rust-v0.8.1.tar.gz",
         ],
     )
 
@@ -141,9 +163,18 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "4c564940a14f55d2315d2676b10fea0660ea814a",
+        commit = "171e7b83122734788c6329d8a699877415cc9a48",
+        sha256 = "304fcf647018d0f0b3ac12ba85161ffc87adf9f232dc13036833b41c2b437ee6",
         name = "llvm-project-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
+    )
+
+    maybe(
+        github_archive,
+        repo_name = "hedronvision/bazel-compile-commands-extractor",
+        name = "hedron_compile_commands",
+        commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
+        sha256 = "0dfe793b5779855cf73b3ee9f430e00225f51f38c70555936d4dd6f1b3c65e66",
     )

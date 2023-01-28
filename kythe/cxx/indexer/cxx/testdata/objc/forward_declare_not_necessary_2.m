@@ -4,10 +4,9 @@
 
 //- @FwdClass defines/binding FwdDecl
 //- FwdDecl.node/kind record
-//- !{@FwdClass completes _}
 @class FwdClass;
 
-// FwdIface=vname(_,_,_,"kythe/cxx/indexer/cxx/testdata/objc/FwdClass.h",_) completes FwdDecl
+// FwdDecl completedby FwdIface=vname(_,_,_,"kythe/cxx/indexer/cxx/testdata/objc/FwdClass.h",_)
 // FwdIface.node/kind anchor
 
 #import "FwdClass.h"

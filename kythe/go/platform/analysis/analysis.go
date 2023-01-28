@@ -42,7 +42,7 @@ type CompilationAnalyzer interface {
 	// Analyze calls f on each analysis output resulting from the analysis of the
 	// given apb.CompilationUnit.  If f returns an error, f is no longer called
 	// and Analyze returns with the same error.
-	Analyze(ctx context.Context, req *apb.AnalysisRequest, f OutputFunc) error
+	Analyze(ctx context.Context, req *apb.AnalysisRequest, f OutputFunc) (*apb.AnalysisResult, error)
 }
 
 // EntryOutput returns an OutputFunc that unmarshals each output's value as an

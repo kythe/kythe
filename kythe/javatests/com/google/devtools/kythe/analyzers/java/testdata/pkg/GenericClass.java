@@ -6,7 +6,7 @@ package pkg;
 //- GAbs.node/kind abs
 //- GAbs param.0 TVar
 //- @T defines/binding TVar
-//- TVar.node/kind absvar
+//- TVar.node/kind tparam
 public class GenericClass<T> {
 
   public static void foo() {
@@ -15,8 +15,8 @@ public class GenericClass<T> {
     //- @var defines/binding VarVar
     //- VarVar typed OType
     //- OType.node/kind tapp
-    //- OType param.0 GAbs
-    //- OType param.1 StringType
+    //- OType tparam.0 GAbs
+    //- OType tparam.1 StringType
     GenericClass<String> var;
   }
 }

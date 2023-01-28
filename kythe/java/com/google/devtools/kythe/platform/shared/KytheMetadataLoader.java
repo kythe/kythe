@@ -66,12 +66,10 @@ public class KytheMetadataLoader implements MetadataLoader {
 
     abstract Metadata.@Nullable Rule rule();
 
-    @Nullable
-    abstract String error();
+    abstract @Nullable String error();
   }
 
-  @Nullable
-  private static RuleXorError parseRule(JsonObject json) {
+  private static @Nullable RuleXorError parseRule(JsonObject json) {
     JsonPrimitive ruleType = json.getAsJsonPrimitive(TYPE);
     if (ruleType == null) {
       return RuleXorError.create("Rule missing type.");
@@ -104,7 +102,7 @@ public class KytheMetadataLoader implements MetadataLoader {
   }
 
   @Override
-  public Metadata parseFile(String fileName, byte[] data) {
+  public @Nullable Metadata parseFile(String fileName, byte[] data) {
     if (!fileName.endsWith(META_SUFFIX)) {
       return null;
     }

@@ -5,7 +5,7 @@
 template <typename T> struct C { static void F(); };
 
 //- @F defines/binding IntMemDefn
-//- @F completes/uniquely IntMemDecl
+//- IntMemDecl completedby IntMemDefn
 template <> void C<int>::F() {}
 //- IntMemDecl.complete incomplete
 //- IntMemDefn.complete definition

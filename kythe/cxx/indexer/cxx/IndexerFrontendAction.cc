@@ -22,7 +22,6 @@
 
 #include "KytheGraphObserver.h"
 #include "KytheVFS.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -180,7 +179,7 @@ class TextErrorBuffer : public clang::DiagnosticConsumer {
 std::string IndexCompilationUnit(
     const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
     KytheClaimClient& Client, HashCache* Cache, KytheCachingOutput& Output,
-    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
     const MetadataSupports* MetaSupports,
     const LibrarySupports* LibrarySupports) {
   llvm::sys::path::Style Style =
@@ -216,6 +215,7 @@ std::string IndexCompilationUnit(
   options.build_config = ExtractBuildConfig(Unit);
   options.default_corpus =
       Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
+  options.hash_recorder = Options.HashRecorder;
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent, options);
   if (Cache != nullptr) {
@@ -253,7 +253,7 @@ std::string IndexCompilationUnit(
         });
   }
   std::unique_ptr<IndexerFrontendAction> Action =
-      absl::make_unique<IndexerFrontendAction>(
+      std::make_unique<IndexerFrontendAction>(
           &Observer, HSIValid ? &HSI : nullptr, LibrarySupports, Options);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
@@ -265,7 +265,7 @@ std::string IndexCompilationUnit(
 
   // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
   std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool =
-      absl::make_unique<StdinAdjustSingleFrontendActionFactory>(
+      std::make_unique<StdinAdjustSingleFrontendActionFactory>(
           std::move(Action));
   // ToolInvocation doesn't take ownership of ToolActions.
   clang::tooling::ToolInvocation Invocation(

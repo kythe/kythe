@@ -17,11 +17,11 @@
 //- BaseFooImpl.node/kind record
 //- BaseFooImpl.subkind category
 //- BaseFooImpl.complete definition
-//- @Foo completes BaseFooDecl
+//- BaseFooDecl completedby BaseFooImpl
 @implementation Base (Foo)
 
 //- @getFoo defines/binding GetFooImpl
-//- @getFoo completes GetFooDecl
+//- GetFooDecl completedby GetFooImpl
 //- GetFooImpl.node/kind function
 //- GetFooImpl.complete definition
 //- GetFooImpl childof BaseFooImpl

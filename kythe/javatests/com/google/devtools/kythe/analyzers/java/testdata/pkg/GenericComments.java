@@ -2,26 +2,17 @@ package pkg;
 
 // After #1501 is fixed, only the abs nodes should have documents/code.
 
-//- @+2GenericComments defines/binding GAbsClass
+//- @+2GenericComments defines/binding GClass
 /** C */
 public class GenericComments<T> {
-  //- GAbsClass.node/kind abs
-  //- GClass childof GAbsClass
   //- GClassDoc documents GClass
   //- GClassDoc.text "C "
-  //- GClassDoc documents GAbsClass
-  //- GClass.code GCCode
-  //- GAbsClass.code GCCode
 
-  //- @+2genericMethod defines/binding GAbsFunction
+  //- @+2genericMethod defines/binding GFunction
   /** M */
   public static <T> T genericMethod(T x) { return x; }
 
-  //- GAbsFunction.node/kind abs
-  //- GFunction childof GAbsFunction
+  //- GFunction.node/kind function
   //- GFunctionDoc documents GFunction
   //- GFunctionDoc.text "M "
-  //- GFunctionDoc documents GAbsFunction
-  //- GFunction.code GFCode
-  //- GAbsFunction.code GFCode
 }

@@ -13,16 +13,17 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/cargo:base64",
-        "//kythe/rust/cargo:hex",
-        "//kythe/rust/cargo:quick_error",
-        "//kythe/rust/cargo:rls_analysis",
-        "//kythe/rust/cargo:rls_data",
-        "//kythe/rust/cargo:serde",
-        "//kythe/rust/cargo:serde_json",
-        "//kythe/rust/cargo:sha2",
-        "//kythe/rust/cargo:zip",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:base64",
+        "@crate_index//:hex",
+        "@crate_index//:path-clean",
+        "@crate_index//:protobuf",
+        "@crate_index//:quick-error",
+        "@crate_index//:rls-analysis",
+        "@crate_index//:rls-data",
+        "@crate_index//:serde",
+        "@crate_index//:serde_json",
+        "@crate_index//:sha2",
+        "@crate_index//:zip",
     ],
 )
 
@@ -35,9 +36,9 @@ rust_binary(
     edition = "2021",
     deps = [
         ":kythe_rust_indexer",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:clap",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:protobuf",
     ],
 )
 
@@ -51,11 +52,11 @@ rust_binary(
     deps = [
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/cargo:anyhow",
-        "//kythe/rust/cargo:base64",
-        "//kythe/rust/cargo:clap",
-        "//kythe/rust/cargo:serde_json",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:anyhow",
+        "@crate_index//:base64",
+        "@crate_index//:clap",
+        "@crate_index//:protobuf",
+        "@crate_index//:serde_json",
     ],
 )
 
@@ -70,14 +71,15 @@ rust_test(
     data = [
         "tests/testkzip.kzip",
     ],
+    edition = "2021",
     deps = [
         ":inline_tests",
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/cargo:hex",
-        "//kythe/rust/cargo:sha2",
-        "@rules_rust//proto/raze:protobuf",
+        "@crate_index//:hex",
+        "@crate_index//:protobuf",
+        "@crate_index//:sha2",
         "@rules_rust//tools/runfiles",
     ],
 )
@@ -149,4 +151,21 @@ rust_indexer_test(
 rust_indexer_test(
     name = "xrefs_test",
     srcs = glob(["testdata/xrefs/*.rs"]),
+)
+
+rust_indexer_test(
+    name = "relative_module_test",
+    srcs = glob(["testdata/relative/**/*.rs"]),
+)
+
+rust_indexer_test(
+    name = "out_dir_test",
+    srcs = ["testdata/out_dir/main.rs"],
+    out_dir_files = ["testdata/out_dir/generated.rs"],
+)
+
+rust_indexer_test(
+    name = "test_lib_test",
+    srcs = ["testdata/test_lib.rs"],
+    is_test_lib = True,
 )

@@ -6,7 +6,7 @@
 //- @stringflag defines/binding StringFlag
 //- StringFlag.complete definition
 //- StringFlag.node/kind google/gflag
-//- @stringflag completes StringFlagDecl
+//- StringFlagDecl completedby StringFlag
 DEFINE_string(stringflag, "gnirts", "rtsgni");
 //- @FLAGS_stringflag ref StringFlag
 //- @FLAGS_stringflag ref FlagVar

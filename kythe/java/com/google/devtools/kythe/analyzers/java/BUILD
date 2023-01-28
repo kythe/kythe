@@ -64,6 +64,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/java/com/google/devtools/kythe/util:span",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -86,6 +87,16 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
+    jvm_flags = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
+    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",
@@ -129,5 +140,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )

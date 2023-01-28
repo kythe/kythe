@@ -9,6 +9,12 @@ java_test(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
+    jvm_flags = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    ],
     test_class = "com.google.devtools.kythe.platform.java.OptionsTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java:options",

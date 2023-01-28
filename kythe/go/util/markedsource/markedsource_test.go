@@ -42,10 +42,11 @@ type oracleResults struct {
 // output is then parsed and returned.
 //
 // Example utility output:
-//         RenderSimpleIdentifier: "hello world"
-//         RenderSimpleParams: "param"
-//   RenderSimpleQualifiedName-ID: ""
-//   RenderSimpleQualifiedName+ID: "hello world"
+//
+//	      RenderSimpleIdentifier: "hello world"
+//	      RenderSimpleParams: "param"
+//	RenderSimpleQualifiedName-ID: ""
+//	RenderSimpleQualifiedName+ID: "hello world"
 func runOracle(t *testing.T, ms *cpb.MarkedSource) *oracleResults {
 	cmd := exec.Command(docPath, "--common_signatures")
 	// The doc utility expects its stdin to be a single text-format MarkedSource

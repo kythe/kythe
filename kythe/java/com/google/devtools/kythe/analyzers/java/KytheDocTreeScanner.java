@@ -22,7 +22,10 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.Span;
 import com.sun.source.doctree.DeprecatedTree;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.DocSourcePositions;
@@ -33,7 +36,6 @@ import com.sun.source.util.TreePath;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.DCTree.DCDocComment;
-import com.sun.tools.javac.tree.DCTree.DCReference;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Position;
 import java.io.IOException;
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.tools.JavaFileObject;
 
 public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -104,23 +107,20 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
   @Override
   public Void visitReference(ReferenceTree tree, DCDocComment doc) {
-    DCReference ref = (DCReference) tree;
-
+    Span span = getSpan(doc, tree);
     Symbol sym = null;
     try {
       sym = (Symbol) trees.getElement(getCurrentPath());
     } catch (Throwable e) {
-      logger.atWarning().withCause(e).log("Failed to resolve documentation reference: %s", tree);
+      logger.atFine().withCause(e).log("Failed to resolve documentation reference: %s", tree);
     }
     if (sym == null) {
+      treeScanner.emitDocDiagnostic(
+          getSourceFile(), span, "Failed to resolve documentation reference");
       return null;
     }
-
-    int startPos = (int) ref.getSourcePosition(doc);
-    int endPos = ref.getEndPos(doc);
-
-    treeScanner.emitDocReference(sym, startPos, endPos);
-    miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
+    treeScanner.emitDocReference(sym, span.getStart(), span.getEnd());
+    miniAnchors.add(new MiniAnchor<Symbol>(sym, span.getStart(), span.getEnd()));
 
     return null;
   }
@@ -132,24 +132,28 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       deprecation = Optional.of("");
       return null;
     }
-    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
-    DocSourcePositions positions = trees.getSourcePositions();
-    int start = (int) positions.getStartPosition(unit, doc, node.getBody().get(0));
-    int end = (int) positions.getEndPosition(unit, doc, node);
-    if (end == Position.NOPOS) {
+    Span span = getSpan(doc, node.getBody().get(0), node);
+    if (span.getEnd() == Position.NOPOS) {
       // deprecated tag is empty
       deprecation = Optional.of("");
       return null;
     }
     CharSequence source;
     try {
-      source = unit.getSourceFile().getCharContent(/* ignoreEncodingErrors= */ true);
+      source =
+          getCurrentPath()
+              .getTreePath()
+              .getCompilationUnit()
+              .getSourceFile()
+              .getCharContent(/* ignoreEncodingErrors= */ true);
     } catch (IOException e) {
       return null;
     }
     // Join lines from multi-line @deprecated tags, removing the leading `*` from the javadoc.
     String text =
-        Splitter.onPattern("\\R").splitToList(source.subSequence(start, end)).stream()
+        Splitter.onPattern("\\R")
+            .splitToList(source.subSequence(span.getStart(), span.getEnd()))
+            .stream()
             .map(String::trim)
             .map(l -> l.startsWith("*") ? l.substring(1).trim() : l)
             .collect(Collectors.joining(" "));
@@ -157,5 +161,21 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     // Save the contents of the @deprecated tag to emit.
     deprecation = Optional.of(text);
     return null;
+  }
+
+  private JavaFileObject getSourceFile() {
+    return getCurrentPath().getTreePath().getCompilationUnit().getSourceFile();
+  }
+
+  private Span getSpan(DocCommentTree comment, DocTree tree) {
+    return getSpan(comment, tree, tree);
+  }
+
+  private Span getSpan(DocCommentTree comment, DocTree start, DocTree end) {
+    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
+    DocSourcePositions positions = trees.getSourcePositions();
+    return new Span(
+        (int) positions.getStartPosition(unit, comment, start),
+        (int) positions.getEndPosition(unit, comment, end));
   }
 }

@@ -1,8 +1,8 @@
 // We index dependent base classes.
 //- @T defines/binding TyvarT
 template <typename T>
-//- @A defines/binding AbsA
-//- ClassA childof AbsA
+//- @A defines/binding ClassA
+//- ClassA.node/kind record
 //- ClassA extends/public TyvarT
 //- ClassA extends/private DepTS
 //- DepTS.node/kind lookup

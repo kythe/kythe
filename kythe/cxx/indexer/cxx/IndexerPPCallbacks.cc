@@ -240,10 +240,9 @@ void IndexerPPCallbacks::Ifndef(clang::SourceLocation Location,
 void IndexerPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLocation, const clang::Token& IncludeToken,
     llvm::StringRef Filename, bool IsAngled,
-    clang::CharSourceRange FilenameRange,
-    llvm::Optional<clang::FileEntryRef> FileRef, llvm::StringRef SearchPath,
-    llvm::StringRef RelativePath, const clang::Module* Imported,
-    clang::SrcMgr::CharacteristicKind FileType) {
+    clang::CharSourceRange FilenameRange, clang::OptionalFileEntryRef FileRef,
+    llvm::StringRef SearchPath, llvm::StringRef RelativePath,
+    const clang::Module* Imported, clang::SrcMgr::CharacteristicKind FileType) {
   // TODO(zarko) (Modules): Check if `Imported` is non-null; if so, this
   // was transformed to a module import.
   if (FileRef) {
@@ -326,8 +325,8 @@ GraphObserver::NodeId IndexerPPCallbacks::BuildNodeIdForMacro(
     // cases should contain canonical source file information).
     Ostream << "@" << SM.getFileOffset(Loc);
   }
-  return GraphObserver::NodeId(Observer.getClaimTokenForLocation(Loc),
-                               Ostream.str());
+  return Observer.MakeNodeId(Observer.getClaimTokenForLocation(Loc),
+                             Ostream.str());
 }
 
 void IndexerPPCallbacks::HandleKytheMetadataPragma(

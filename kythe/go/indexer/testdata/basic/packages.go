@@ -1,5 +1,5 @@
 // Package pkg verifies that the required package structure is created.
-//- @pkg defines/binding Pkg
+// - @pkg defines/binding Pkg
 package pkg
 
 //- Pkg=vname("package", "test", _, "pkg", "go").node/kind package

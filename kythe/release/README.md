@@ -98,9 +98,7 @@ rm -rf "$SERVING"
 # connections on port 9898.  Using `--listen :9898` instead will allow
 # connections from other networked machines.
 /opt/kythe/tools/http_server --serving_table "$SERVING" \
-  --public_resources /opt/kythe/web/ui --listen localhost:9898
-
-# The sample web UI will be serving at http://localhost:9898
+  --listen localhost:9898
 
 # /opt/kythe/tools/kythe and /opt/kythe/tools/kwazthis can be used with the
 # local running server by passing the '--api=http://localhost:9898' flag.

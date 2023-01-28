@@ -1,6 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":cc_proto_verifier_test.bzl", "cc_proto_verifier_test")
 
+package(features = ["layering_check"])
+
 cc_proto_verifier_test(
     name = "proto_test",
     size = "medium",
@@ -57,6 +59,15 @@ cc_proto_verifier_test(
     srcs = ["proto5.cc"],
     proto_libs = [
         "//kythe/testdata/indexers/proto:testdata5_proto",
+    ],
+)
+
+cc_proto_verifier_test(
+    name = "enum_test",
+    size = "medium",
+    srcs = ["enum.cc"],
+    proto_libs = [
+        "//kythe/testdata/indexers/proto:enum_proto",
     ],
 )
 

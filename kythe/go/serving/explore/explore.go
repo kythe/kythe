@@ -18,10 +18,11 @@
 // ExploreService defined in kythe/proto/explore.proto.
 //
 // Table format:
-//   <parent ticket>   -> srvpb.Relatives (children)
-//   <child ticket>    -> srvpb.Relatives (parents)
-//   <called ticket>   -> srvpb.Callgraph (callers)
-//   <calling ticket>  -> srvpb.Callgraph (callees)
+//
+//	<parent ticket>   -> srvpb.Relatives (children)
+//	<child ticket>    -> srvpb.Relatives (parents)
+//	<called ticket>   -> srvpb.Callgraph (callers)
+//	<calling ticket>  -> srvpb.Callgraph (callees)
 package explore // import "kythe.io/kythe/go/serving/explore"
 
 import (

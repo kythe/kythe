@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import junit.framework.TestCase;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Tests for {@link JavaCompilationExtractor}. */
 // TODO(schroederc): replace asserts with Truth#assertThat
@@ -120,7 +121,8 @@ public class JavaExtractorTest extends TestCase {
         java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertThat(unit.getVName().getCorpus()).isEmpty(); // source files are from different corpora
+    // source files are from different corpora, so unit is assigned default corpus of "kythe"
+    assertThat(unit.getVName().getCorpus()).isEqualTo("kythe");
     assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
@@ -731,7 +733,8 @@ public class JavaExtractorTest extends TestCase {
     }
   }
 
-  private JavaDetails getJavaDetails(CompilationUnit unit) throws InvalidProtocolBufferException {
+  private @Nullable JavaDetails getJavaDetails(CompilationUnit unit)
+      throws InvalidProtocolBufferException {
     for (Any any : unit.getDetailsList()) {
       if (any.getTypeUrl().equals(JavaCompilationUnitExtractor.JAVA_DETAILS_URL)) {
         return JavaDetails.parseFrom(any.getValue());

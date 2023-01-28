@@ -681,7 +681,7 @@ fn main() -> Result<()> {
 mod testing {
     use {
         super::*, serial_test::serial, std::collections::HashSet, std::fs, std::io::Read,
-        tempdir::TempDir,
+        tempfile::tempdir,
     };
 
     /// Rebases the given `relative_path`, such that it is relative to
@@ -710,7 +710,7 @@ mod testing {
     #[test]
     #[serial]
     fn test_rebase_path() {
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         #[derive(Debug)]
         struct TestCase {
             source: PathBuf,
@@ -760,7 +760,7 @@ mod testing {
     #[test]
     #[serial]
     fn test_make_file_input() {
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let base_dir = temp_dir.path().join("src-root-dir");
         fs::create_dir_all(&base_dir).expect(&format!("base dir created: {:?}", &base_dir));
         let save_analysis_dir = base_dir.join("save-analysis-dir");
@@ -834,7 +834,7 @@ mod testing {
     #[test]
     #[serial]
     fn test_read_dir_recursive() {
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let base_dir = temp_dir.path().join("src-root-dir");
         fs::create_dir_all(&base_dir).expect("base dir created");
         let base_dir = rebase_path(base_dir, temp_dir).expect("rebase is a success");
@@ -930,7 +930,8 @@ mod testing {
             }
             let mut buf: Vec<u8> = vec![];
             file.read_to_end(&mut buf).unwrap();
-            let result: analysis::IndexedCompilation = protobuf::parse_from_bytes(&buf).unwrap();
+            let result: analysis::IndexedCompilation =
+                protobuf::Message::parse_from_bytes(&buf).unwrap();
             return result;
         }
         panic!("pbunits file not found in existing zip file: zip_path: {:?}", &zip_path.as_ref(),);
@@ -939,7 +940,7 @@ mod testing {
     #[test]
     #[serial]
     fn run_one_analysis() {
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let test_srcdir =
             PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
         let data_dir = test_srcdir
@@ -1024,7 +1025,7 @@ mod testing {
     fn kzip_info_spec_test() {
         use std::process::Command;
 
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let test_srcdir =
             PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
         let data_dir = test_srcdir
@@ -1069,7 +1070,7 @@ mod testing {
     #[test]
     #[serial]
     fn test_sorting_repo_roots() {
-        let temp_dir = TempDir::new("dir").expect("temp dir created");
+        let temp_dir = tempdir().expect("temp dir created");
         let test_srcdir =
             PathBuf::from(std::env::var("TEST_SRCDIR").expect("data dir is available"));
         let data_dir = test_srcdir

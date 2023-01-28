@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 cc_binary(
     name = "static_claim",
@@ -15,6 +18,7 @@ cc_binary(
         "//kythe/cxx/common:init",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:re2_flag",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "//kythe/proto:filecontext_cc_proto",

@@ -144,7 +144,7 @@ go_extract = rule(
         "_extractor": attr.label(
             default = Label("//kythe/go/extractors/cmd/gotool"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "_sdk_files": attr.label(
             allow_files = True,
@@ -169,8 +169,11 @@ def _go_entries(ctx):
     if ctx.attr.emit_anchor_scopes:
         iargs.append("-anchor_scopes")
 
-    if ctx.attr.use_compilation_corpus_as_default:
-        iargs.append("-use_compilation_corpus_as_default")
+    if ctx.attr.use_compilation_corpus_for_all:
+        iargs.append("-use_compilation_corpus_for_all")
+
+    if ctx.attr.override_stdlib_corpus:
+        iargs.append("-override_stdlib_corpus=%s" % ctx.attr.override_stdlib_corpus)
 
     # If the test wants linkage metadata, enable support for it in the indexer.
     if ctx.attr.metadata_suffix:
@@ -206,13 +209,14 @@ go_entries = rule(
 
         # The suffix used to recognize linkage metadata files, if non-empty.
         "metadata_suffix": attr.string(default = ""),
-        "use_compilation_corpus_as_default": attr.bool(default = False),
+        "use_compilation_corpus_for_all": attr.bool(default = False),
+        "override_stdlib_corpus": attr.string(default = ""),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},
@@ -227,7 +231,7 @@ def go_verifier_test(
         log_entries = False,
         has_marked_source = False,
         allow_duplicates = False):
-    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons"]
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
@@ -254,7 +258,8 @@ def _go_indexer(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
-        use_compilation_corpus_as_default = False,
+        use_compilation_corpus_for_all = False,
+        override_stdlib_corpus = "",
         metadata_suffix = "",
         extra_extractor_args = []):
     if importpath == None:
@@ -278,7 +283,8 @@ def _go_indexer(
         name = entries,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
-        use_compilation_corpus_as_default = use_compilation_corpus_as_default,
+        use_compilation_corpus_for_all = use_compilation_corpus_for_all,
+        override_stdlib_corpus = override_stdlib_corpus,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -298,7 +304,8 @@ def go_indexer_test(
         has_marked_source = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
-        use_compilation_corpus_as_default = False,
+        use_compilation_corpus_for_all = False,
+        override_stdlib_corpus = "",
         metadata_suffix = "",
         extra_extractor_args = []):
     entries = _go_indexer(
@@ -307,7 +314,8 @@ def go_indexer_test(
         data = data,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
-        use_compilation_corpus_as_default = use_compilation_corpus_as_default,
+        use_compilation_corpus_for_all = use_compilation_corpus_for_all,
+        override_stdlib_corpus = override_stdlib_corpus,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,

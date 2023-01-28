@@ -39,9 +39,10 @@ type Mapper struct {
 // Patterns strings are paths that have named segments that are extracted during
 // parsing and populated during generation.
 // Example:
-// 		m := NewMapper("/dir/:segment/home/:rest*")
-//  	s, err := m.Parse("/dir/foo/home/hello/world")	// {"segment": "foo", "rest": "hello/world"}, nil
-//		p := m.Generate(s) 								// /dir/foo/home/hello/world
+//
+//			m := NewMapper("/dir/:segment/home/:rest*")
+//	 	s, err := m.Parse("/dir/foo/home/hello/world")	// {"segment": "foo", "rest": "hello/world"}, nil
+//			p := m.Generate(s) 								// /dir/foo/home/hello/world
 func NewMapper(pat string) (*Mapper, error) {
 	// All handling below assumes unix-style '/' separated paths
 	pat = filepath.ToSlash(pat)

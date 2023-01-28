@@ -25,7 +25,7 @@
 
 //- @wind defines/binding WindClockImpl
 //- WindClockImpl childof ClockClassImpl
-//- @wind completes/uniquely WindDecl
+//- WindDecl completedby WindClockImpl
 -(int)wind {
   return 2;
 }

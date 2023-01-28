@@ -18,22 +18,24 @@
 // xrefs.Service.
 //
 // Table format:
-//   decor:<ticket>         -> srvpb.FileDecorations
-//   docs:<ticket>          -> srvpb.Document
-//   xrefs:<ticket>         -> srvpb.PagedCrossReferences
-//   xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
+//
+//	decor:<ticket>         -> srvpb.FileDecorations
+//	docs:<ticket>          -> srvpb.Document
+//	xrefs:<ticket>         -> srvpb.PagedCrossReferences
+//	xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
 package xrefs // import "kythe.io/kythe/go/serving/xrefs"
 
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
@@ -65,6 +67,10 @@ var (
 
 	// TODO(schroederc): remove once relevant clients specify their required quality
 	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "APPROXIMATE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
+
+	pageReadAhead = flag.Uint("page_read_ahead", 0, "How many xref pages to read ahead concurrently (0 disables readahead)")
+
+	responseLeewayTime = flag.Duration("xrefs_response_leeway_time", 50*time.Millisecond, "If possible, leave this much time at the end of a CrossReferencesRequest to return any results already read")
 )
 
 func init() {
@@ -309,15 +315,18 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	var multiPatcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		multiPatcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := multiPatcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
+
+		if multiPatcher != nil {
+			defer func() {
+				if err := multiPatcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+		}
 	}
 
 	decor, err := t.fileDecorations(ctx, ticket)
@@ -443,7 +452,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					fileInfo = fileInfos[a.GetParent()]
 				}
 				if fileInfo != nil {
-					if err := multiPatcher.AddFile(ctx, fileInfo); err != nil {
+					if err := multiPatcher.AddFile(ctx, fileInfo); isNonContextError(err) {
 						// Attempt to continue with the request, just log the error.
 						log.Printf("ERROR: adding file: %v", err)
 					}
@@ -545,7 +554,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			if diag.Span == nil {
 				reply.Diagnostic = append(reply.Diagnostic, diag)
 			} else {
-				start, end, exists := patcher.PatchSpan(diag.Span)
+				start, end, exists := patcher.Patch(span.ByteOffsets(diag.Span))
 				// Filter non-existent (or out-of-bounds) diagnostic.  Diagnostics can
 				// no longer exist if we were given a dirty buffer and the diagnostic
 				// was inside a changed region.
@@ -618,6 +627,53 @@ func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decor
 	}
 }
 
+type xrefCategory int
+
+const (
+	xrefCategoryNone xrefCategory = iota
+	xrefCategoryDef
+	xrefCategoryDecl
+	xrefCategoryRef
+	xrefCategoryCall
+	xrefCategoryRelated
+	xrefCategoryIndirection
+)
+
+func (c xrefCategory) AddCount(reply *xpb.CrossReferencesReply, idx *srvpb.PagedCrossReferences_PageIndex, pageSet *pageSet) {
+	switch c {
+	case xrefCategoryDef:
+		if pageSet.Contains(idx) {
+			reply.Total.Definitions += int64(idx.Count)
+		} else {
+			reply.Filtered.Definitions += int64(idx.Count)
+		}
+	case xrefCategoryDecl:
+		if pageSet.Contains(idx) {
+			reply.Total.Declarations += int64(idx.Count)
+		} else {
+			reply.Filtered.Declarations += int64(idx.Count)
+		}
+	case xrefCategoryRef:
+		if pageSet.Contains(idx) {
+			reply.Total.References += int64(idx.Count)
+		} else {
+			reply.Filtered.References += int64(idx.Count)
+		}
+	case xrefCategoryRelated:
+		if pageSet.Contains(idx) {
+			reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
+		} else {
+			reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
+		}
+	case xrefCategoryCall:
+		if pageSet.Contains(idx) {
+			reply.Total.Callers += int64(idx.Count)
+		} else {
+			reply.Filtered.Callers += int64(idx.Count)
+		}
+	}
+}
+
 // CrossReferences implements part of the xrefs.Service interface.
 func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
@@ -625,16 +681,38 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		return nil, err
 	}
 
+	var leewayTime time.Time
+	if d, ok := ctx.Deadline(); ok && *responseLeewayTime > 0 {
+		leewayTime = d.Add(-*responseLeewayTime)
+		if leewayTime.Before(time.Now()) {
+			// Clear leeway time; try to use entire leftover timeout.
+			leewayTime = time.Time{}
+		}
+	}
+
 	filter, err := compileCorpusPathFilters(req.GetCorpusPathFilters(), t.ResolvePath)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid corpus_path_filters %s: %v", strings.ReplaceAll(req.GetCorpusPathFilters().String(), "\n", " "), err)
 	}
 
+	pageReadGroupCtx, stopReadingPages := context.WithCancel(ctx)
+	defer stopReadingPages()
+	pageReadGroup, pageReadGroupCtx := errgroup.WithContext(pageReadGroupCtx)
+	pageReadGroup.SetLimit(int(*pageReadAhead) + 1)
+	single := new(syncCache[*srvpb.PagedCrossReferences_Page])
+
+	getCachedPage := func(ctx context.Context, pageKey string) (*srvpb.PagedCrossReferences_Page, error) {
+		return single.Get(pageKey, func() (*srvpb.PagedCrossReferences_Page, error) {
+			return t.crossReferencesPage(ctx, pageKey)
+		})
+	}
 	getFilteredPage := func(ctx context.Context, pageKey string) (*srvpb.PagedCrossReferences_Page, int, error) {
-		p, err := t.crossReferencesPage(ctx, pageKey)
+		p, err := getCachedPage(ctx, pageKey)
 		if err != nil {
 			return nil, 0, err
 		}
+		// Clear page from cache; it should only be used once.
+		single.Delete(pageKey)
 		return p, filter.FilterGroup(p.GetGroup()), nil
 	}
 
@@ -680,6 +758,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		Nodes:           make(map[string]*cpb.NodeInfo, len(req.Ticket)),
 
 		Total: &xpb.CrossReferencesReply_Total{},
+		Filtered: &xpb.CrossReferencesReply_Total{
+			RelatedNodesByRelation: make(map[string]int64),
+		},
 	}
 	if len(req.Filter) > 0 {
 		reply.Total.RelatedNodesByRelation = make(map[string]int64)
@@ -719,20 +800,23 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var patcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := patcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
 
-		stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); err != nil {
-				// Attempt to continue with the request, just log the error.
-				log.Printf("ERROR: adding file: %v", err)
+		if patcher != nil {
+			defer func() {
+				if err := patcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+
+			stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
+				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
+					// Attempt to continue with the request, just log the error.
+					log.Printf("ERROR: adding file: %v", err)
+				}
 			}
 		}
 	}
@@ -741,8 +825,14 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var indirectionPages []string
 
 	var foundCrossRefs bool
+readLoop:
 	for i := 0; i < len(tickets); i++ {
 		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			break
+		}
+
+		if !leewayTime.IsZero() && time.Now().After(leewayTime) {
+			log.Println("WARNING: hit soft deadline; trying to return already read xrefs")
 			break
 		}
 
@@ -765,6 +855,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			crs = &xpb.CrossReferencesReply_CrossReferenceSet{
 				Ticket: ticket,
 			}
+			reply.CrossReferences[ticket] = crs
 
 			// If visiting a non-merge node and facts are requested, add them to the result.
 			if ticket == cr.SourceTicket && len(patterns) > 0 && cr.SourceNode != nil {
@@ -797,20 +888,25 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				continue
 			}
 
-			filter.FilterGroup(grp)
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Definitions += int64(len(grp.Anchor))
+				reply.Filtered.Definitions += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Declarations += int64(len(grp.Anchor))
+				reply.Filtered.Declarations += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.References += int64(len(grp.Anchor))
+				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
 				}
@@ -823,69 +919,150 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				}
 
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
+					filtered := filter.FilterGroup(grp)
 					reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
+					reply.Filtered.RelatedNodesByRelation[grp.Kind] += int64(filtered)
 					if wantMoreCrossRefs {
 						stats.addRelatedNodes(crs, grp)
 					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
+				filtered := filter.FilterGroup(grp)
 				reply.Total.Callers += int64(len(grp.Caller))
+				reply.Filtered.Callers += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addCallers(crs, grp)
 				}
 			}
 		}
 
-		for _, idx := range cr.PageIndex {
+		pageSet := filter.PageSet(cr)
+
+		pageCategory := func(idx *srvpb.PagedCrossReferences_PageIndex) xrefCategory {
 			// Filter anchor pages based on requested build configs
 			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
-				continue
+				return xrefCategoryNone
 			}
 
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
-				reply.Total.Definitions += int64(idx.Count)
+				return xrefCategoryDef
+			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
+				return xrefCategoryDecl
+			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
+				return xrefCategoryRef
+			case len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind):
+				return xrefCategoryRelated
+			case indirections.Contains(idx.Kind):
+				return xrefCategoryIndirection
+			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
+				return xrefCategoryCall
+			default:
+				return xrefCategoryNone
+			}
+		}
+
+		// Find the first unskipped page index so proper read ahead.
+		firstUnskippedPage := len(cr.GetPageIndex())
+		for i, idx := range cr.GetPageIndex() {
+			c := pageCategory(idx)
+			if c == xrefCategoryNone {
+				continue
+			}
+
+			if !stats.skipPage(idx) {
+				firstUnskippedPage = i
+				break
+			}
+			c.AddCount(reply, idx, pageSet)
+		}
+
+		// If enabled, start reading pages concurrently starting from the first
+		// unskipped page.
+		if *pageReadAhead > 0 {
+			pageReadGroup.Go(func() error {
+				ctx := pageReadGroupCtx
+				for _, idx := range cr.GetPageIndex()[firstUnskippedPage:] {
+					if err := ctx.Err(); err != nil {
+						return err
+					}
+					if pageCategory(idx) == xrefCategoryNone || !pageSet.Contains(idx) {
+						continue
+					}
+
+					idx := idx
+					pageReadGroup.Go(func() error {
+						_, err := getCachedPage(ctx, idx.PageKey)
+						return err
+					})
+				}
+				return nil
+			})
+		}
+
+		for _, idx := range cr.GetPageIndex()[firstUnskippedPage:] {
+			if !leewayTime.IsZero() && time.Now().After(leewayTime) {
+				log.Printf("WARNING: hit soft deadline; trying to return already read xrefs: %s", time.Now().Sub(leewayTime))
+				break readLoop
+			}
+
+			c := pageCategory(idx)
+			if c == xrefCategoryNone {
+				continue
+			}
+			if wantMoreCrossRefs && !stats.skipPage(idx) {
+				c.AddCount(reply, idx, pageSet)
+			}
+			if c != xrefCategoryIndirection && c != xrefCategoryRelated && !pageSet.Contains(idx) {
+				continue
+			}
+
+			switch c {
+			case xrefCategoryDef:
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.Definitions -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Definitions += int64(filtered)
 					stats.addAnchors(&crs.Definition, p.Group)
 				}
-			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
-				reply.Total.Declarations += int64(idx.Count)
+			case xrefCategoryDecl:
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.Declarations -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Declarations += int64(filtered)
 					stats.addAnchors(&crs.Declaration, p.Group)
 				}
-			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
-				reply.Total.References += int64(idx.Count)
+			case xrefCategoryRef:
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					reply.Total.References -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.References += int64(filtered)
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
-			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
+			case xrefCategoryRelated, xrefCategoryIndirection:
 				var p *srvpb.PagedCrossReferences_Page
 
 				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
-					reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
-					if wantMoreCrossRefs && !stats.skipPage(idx) {
-						var filtered int
-						p, filtered, err = getFilteredPage(ctx, idx.PageKey)
-						if err != nil {
-							return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					if pageSet.Contains(idx) {
+						if wantMoreCrossRefs && !stats.skipPage(idx) {
+							var filtered int
+							p, filtered, err = getFilteredPage(ctx, idx.PageKey)
+							if err != nil {
+								return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+							}
+							reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
+							reply.Filtered.RelatedNodesByRelation[idx.Kind] += int64(filtered)
+							stats.addRelatedNodes(crs, p.Group)
 						}
-						reply.Total.RelatedNodesByRelation[idx.Kind] -= int64(filtered) // update counts to reflect filtering
-						stats.addRelatedNodes(crs, p.Group)
 					}
 				}
 
@@ -903,22 +1080,17 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						}
 					}
 				}
-			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
-				reply.Total.Callers += int64(idx.Count)
+			case xrefCategoryCall:
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, filtered, err := getFilteredPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
 					reply.Total.Callers -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.Callers += int64(filtered)
 					stats.addCallers(crs, p.Group)
 				}
 			}
-		}
-
-		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
-			reply.CrossReferences[crs.Ticket] = crs
-			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 		}
 
 		for i == len(tickets)-1 && len(indirectionPages) > 0 {
@@ -935,10 +1107,30 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
 			}
 		}
+
+		tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 	}
+
+	stopReadingPages()
+	go func() {
+		if err := pageReadGroup.Wait(); isNonContextError(err) {
+			log.Printf("ERROR: page read ahead error: %v", err)
+		}
+	}()
+
 	if !foundCrossRefs {
 		// Short-circuit return; skip any slow requests.
 		return &xpb.CrossReferencesReply{}, nil
+	}
+
+	var emptySets []string
+	for key, crs := range reply.CrossReferences {
+		if len(crs.Declaration)+len(crs.Definition)+len(crs.Reference)+len(crs.Caller)+len(crs.RelatedNode) == 0 {
+			emptySets = append(emptySets, key)
+		}
+	}
+	for _, k := range emptySets {
+		delete(reply.CrossReferences, k)
 	}
 
 	if initialSkip+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
@@ -1341,20 +1533,23 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	var patcher MultiFilePatcher
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid workspace: %v", err)
+		if isNonContextError(err) {
+			log.Printf("ERROR: creating patcher: %v", err)
 		}
-		defer func() {
-			if err := patcher.Close(); isNonContextError(err) {
-				// No need to fail the request; just log the error.
-				log.Printf("ERROR: closing patcher: %v", err)
-			}
-		}()
 
-		dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
-			if err := patcher.AddFile(ctx, f); err != nil {
-				// Attempt to continue with the request, just log the error.
-				log.Printf("ERROR: adding file: %v", err)
+		if patcher != nil {
+			defer func() {
+				if err := patcher.Close(); isNonContextError(err) {
+					// No need to fail the request; just log the error.
+					log.Printf("ERROR: closing patcher: %v", err)
+				}
+			}()
+
+			dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
+				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
+					// Attempt to continue with the request, just log the error.
+					log.Printf("ERROR: adding file: %v", err)
+				}
 			}
 		}
 	}
@@ -1424,6 +1619,8 @@ func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
 // http://google.github.io/google-api-cpp-client/latest/doxygen/namespacegoogleapis_1_1util_1_1error.html
 func canonicalError(err error, caller string, ticket string) error {
 	switch code := status.Code(err); code {
+	case codes.OK:
+		return nil
 	case codes.Canceled:
 		return xrefs.ErrCanceled
 	case codes.DeadlineExceeded:
@@ -1441,5 +1638,50 @@ func canonicalError(err error, caller string, ticket string) error {
 }
 
 func isNonContextError(err error) bool {
-	return err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+	err = canonicalError(err, "", "")
+	return err != nil && err != xrefs.ErrCanceled && err != xrefs.ErrDeadlineExceeded
+}
+
+// call is an in-flight or completed Get call
+type call[T any] struct {
+	wg  sync.WaitGroup
+	val T
+	err error
+}
+
+type syncCache[T any] struct {
+	mu sync.Mutex
+	m  map[string]*call[T]
+}
+
+// Get executes and returns the results of the given function, making sure that
+// there is only one execution for a given key (until Delete is called). If a
+// duplicate comes in, the duplicate caller waits for the original to complete
+// and receives the same results.
+func (g *syncCache[T]) Get(key string, fn func() (T, error)) (T, error) {
+	g.mu.Lock()
+	if g.m == nil {
+		g.m = make(map[string]*call[T])
+	}
+	if c, ok := g.m[key]; ok {
+		g.mu.Unlock()
+		c.wg.Wait()
+		return c.val, c.err
+	}
+	c := new(call[T])
+	c.wg.Add(1)
+	g.m[key] = c
+	g.mu.Unlock()
+
+	c.val, c.err = fn()
+	c.wg.Done()
+
+	return c.val, c.err
+}
+
+// Delete removes the given key from the cache.
+func (g *syncCache[T]) Delete(key string) {
+	g.mu.Lock()
+	delete(g.m, key)
+	g.mu.Unlock()
 }

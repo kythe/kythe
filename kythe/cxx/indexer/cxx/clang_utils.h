@@ -32,6 +32,13 @@ bool isObjCSelector(const clang::DeclarationName& DN);
 /// instantiated. Otherwise, returns `decl`.
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
 
+/// \brief Finds the root member template starting at `decl` (which can be
+/// any decl; if it's not a member template, returns `decl`).
+/// \param use_mts If false, always return `decl`. (This parameter is temporary
+/// and is used for the abs deprecation.)
+const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
+                                              bool use_mts);
+
 /// \return true if a reference to `decl` should be given blame context.
 bool ShouldHaveBlameContext(const clang::Decl* decl);
 

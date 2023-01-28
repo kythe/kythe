@@ -6,6 +6,13 @@ package(default_visibility = ["//visibility:public"])
 java_binary(
     name = "java_extractor",
     srcs = ["JavaExtractor.java"],
+    jvm_flags = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    ],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:flogger",

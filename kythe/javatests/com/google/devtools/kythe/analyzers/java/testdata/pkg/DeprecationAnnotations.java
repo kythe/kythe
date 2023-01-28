@@ -24,21 +24,15 @@ public class DeprecationAnnotations {
   int deprecatedField;
   //- DeprecationField.tag/deprecated ""
 
-  //- InnerAbs.node/kind abs
-  //- InnerAbs.tag/deprecated ""
-  //- InnerClass childof InnerAbs
   //- InnerClass.node/kind record
   //- InnerClass.tag/deprecated ""
-  //- @+3Inner defines/binding InnerAbs
+  //- @+3Inner defines/binding InnerClass
 
   @Deprecated
   public class Inner<E> {}
-  
-  //- MethodAbs.node/kind abs
+
   //- Method.node/kind function
-  //- MethodAbs.tag/deprecated ""
   //- Method.tag/deprecated ""
-  //- Method childof MethodAbs
   //- @+3method defines/binding Method
 
   @Deprecated

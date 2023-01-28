@@ -7,9 +7,18 @@ index 6a61b99f9..5cce43bb1 100644
  # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
+ load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
  load("//llvm:tblgen.bzl", "gentbl")
  load("//llvm:binary_alias.bzl", "binary_alias")
- load("//llvm:cc_plugin_library.bzl", "cc_plugin_library")
+@@ -17,7 +18,7 @@
+
+ package(
+     default_visibility = ["//visibility:public"],
+-    features = ["layering_check"],
++    features = ["-layering_check"],
+ )
+
+ licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
 index 93e905260..2c3cedcd9 100644
 --- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
@@ -19,6 +28,15 @@ index 93e905260..2c3cedcd9 100644
  # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load(":template_rule.bzl", "template_rule")
+ load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+ load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
  load(":tblgen.bzl", "gentbl")
- load(":config.bzl", "llvm_config_defines")
+@@ -12,7 +13,7 @@
+
+ package(
+     default_visibility = ["//visibility:public"],
+-    features = ["layering_check"],
++    features = ["-layering_check"],
+ )
+
+ licenses(["notice"])

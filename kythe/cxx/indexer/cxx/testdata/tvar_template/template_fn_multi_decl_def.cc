@@ -4,6 +4,6 @@ template <typename T> void f();
 //- @f defines/binding Decl2
 template <typename T> void f();
 //- @f defines/binding Defn
-//- @f completes/uniquely Decl1
-//- @f completes/uniquely Decl2
+//- Decl1 completedby Defn
+//- Decl2 completedby Defn
 template <typename T> void f() { }

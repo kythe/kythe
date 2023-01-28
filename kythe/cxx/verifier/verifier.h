@@ -63,6 +63,9 @@ class Verifier {
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();
 
+  /// \brief During verification, ignore conflicting /kythe/code facts.
+  void IgnoreCodeConflicts();
+
   /// \brief Save results of verification keyed by inspection label.
   void SaveEVarAssignments();
 
@@ -188,6 +191,12 @@ class Verifier {
   /// \brief Show anchor locations in graph dumps (instead of @).
   void ShowAnchors() { show_anchors_ = true; }
 
+  /// \brief Show VNames for nodes which also have labels in graph dumps.
+  void ShowLabeledVnames() { show_labeled_vnames_ = true; }
+
+  /// \brief Show the /kythe and /kythe/edge prefixes in graph dumps.
+  void ShowFactPrefix() { show_fact_prefix_ = true; }
+
   /// \brief Elide unlabeled nodes from graph dumps.
   void ElideUnlabeled() { show_unlabeled_ = false; }
 
@@ -218,6 +227,14 @@ class Verifier {
   /// to a VName of a synthetic node for `code_data`.
   AstNode* ConvertCodeFact(const yy::location& loc,
                            const google::protobuf::string& code_data);
+
+  /// \brief Converts an encoded /kythe/code/json fact to a form that's useful
+  /// to the verifier.
+  /// \param loc The location to use in diagnostics.
+  /// \return null if something went wrong; otherwise, an AstNode corresponding
+  /// to a VName of a synthetic node for `code_data`.
+  AstNode* ConvertCodeJsonFact(const yy::location& loc,
+                               const google::protobuf::string& code_data);
 
   /// \brief Converts a MarkedSource message to a form that's useful
   /// to the verifier.
@@ -262,6 +279,9 @@ class Verifier {
 
   /// Ignore duplicate facts during verification?
   bool ignore_dups_ = false;
+
+  /// Ignore conflicting /kythe/code facts during verification?
+  bool ignore_code_conflicts_ = false;
 
   /// Filename to use for builtin constants.
   std::string builtin_location_name_;
@@ -309,6 +329,10 @@ class Verifier {
   /// serialized kythe.proto.MarkedSource message.
   AstNode* code_id_;
 
+  /// Node to use for the `code/json` fact kind. The fact value should be a
+  /// JSON-serialized kythe.proto.MarkedSource message.
+  AstNode* code_json_id_;
+
   /// The highest goal group reached during solving (often the culprit for why
   /// the solution failed).
   size_t highest_group_reached_ = 0;
@@ -347,6 +371,12 @@ class Verifier {
 
   /// If true, show unlabeled nodes in graph dumps.
   bool show_unlabeled_ = true;
+
+  /// If true, show VNames for labeled nodes in graph dumps.
+  bool show_labeled_vnames_ = false;
+
+  /// If true, include the /kythe and /kythe/edge prefix on facts and edges.
+  bool show_fact_prefix_ = false;
 
   /// Identifier for MarkedSource child edges.
   AstNode* marked_source_child_id_;

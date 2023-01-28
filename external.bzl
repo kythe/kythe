@@ -9,7 +9,7 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
-load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
+load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
@@ -17,7 +17,7 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
-load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
 load(
     "@bazelruby_rules_ruby//ruby:deps.bzl",
     "rules_ruby_dependencies",
@@ -27,22 +27,20 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
-
-# The raze macros automatically check for duplicated dependencies so we can
-# simply load each macro here.
-load("//kythe/rust/cargo:crates.bzl", "raze_fetch_remote_crates")
+load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.18.1")
+    go_register_toolchains(version = "1.19.2")
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()
-    rust_register_toolchains(version = "nightly", iso_date = "2022-01-09", dev_components = True, include_rustc_srcs = True)
-    rust_proto_repositories()
+    rust_register_toolchains(version = "nightly", iso_date = "2022-12-21", dev_components = True, include_rustc_srcs = True)
+    rust_proto_repositories(register_default_toolchain = False)
     rust_analyzer_deps()
+    crate_universe_dependencies()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
     rules_foreign_cc_dependencies(register_built_tools = False)
@@ -161,16 +159,19 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "ec0d76f1d012cc1a4b3b08dfafcfc5237f5ba2c9",
-        sha256 = "32a00f5834195d6656097c800a773e2fc766741e434d1eff092ed5578a21dd3a",
+        commit = "188138facb785e704e2107a3fee58cf9672a22cc",
+        sha256 = "6db2791c66a4b0cded7daca87cd7e1524f882a0463b54a336525f76f6ee629c2",
     )
 
     maybe(
-        github_archive,
+        http_archive,
         name = "com_google_googletest",
-        repo_name = "google/googletest",
-        commit = "3005672db1d05f2378f642b61faa96f85498befe",
-        sha256 = "d87849e281d376a1c955f867cf10be0d672ff41dbe7fd600bcc2faa9bcb6e23f",
+        sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
+        strip_prefix = "googletest-release-1.12.1",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz",
+            "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz",
+        ],
     )
 
     maybe(
@@ -278,10 +279,16 @@ def _cc_dependencies():
 
 def _java_dependencies():
     maybe(
-        git_repository,
+        bazel_repository_files,
         name = "io_bazel",
         commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
-        remote = "https://github.com/bazelbuild/bazel",
+        files = [
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/JavacOptions.java",
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/WerrorCustomOption.java",
+        ],
+        overlay = {
+            "@io_kythe//third_party/bazel:javac_options.BUILD": "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/BUILD",
+        },
     )
     maven_install(
         name = "maven",
@@ -395,6 +402,13 @@ def _go_dependencies():
         importpath = "github.com/cncf/xds/go",
         sum = "h1:OZmjad4L3H8ncOIR8rnb5MREYqG8ixi5+WbeUsquF0c=",
         version = "v0.0.0-20210312221358-fbca930ec8ed",
+    )
+
+    go_repository(
+        name = "com_github_google_codesearch",
+        importpath = "github.com/google/codesearch",
+        sum = "h1:VlyAH+AntnIbGGArOUs6sEBdPVwYvf1e8Uw3/TC77cA=",
+        version = "v1.2.0",
     )
 
     go_repository(
@@ -1113,8 +1127,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=",
-        version = "v0.0.0-20210220032951-036812b2e83c",
+        sum = "h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=",
+        version = "v0.1.0",
     )
 
     go_repository(
@@ -1155,13 +1169,13 @@ def _go_dependencies():
 
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.9, latest as of 2022-03-14
+        # v0.1.12, latest as of 2022-09-10
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/v0.1.9.zip",
-            "https://github.com/golang/tools/archive/v0.1.9.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
+            "https://github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
         ],
-        sha256 = "1d338afb3cd8013cfb035da6831dea2210efb0386c17b9c99b5e84724e3d733a",
-        strip_prefix = "tools-0.1.9",
+        sha256 = "4e3d94e7bf8dde5dad681c5ddddda6e634f8c8c500683fdf3d2f77a9c086702d",
+        strip_prefix = "tools-0.1.12",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested
@@ -1179,16 +1193,6 @@ def _go_dependencies():
         importpath = "golang.org/x/xerrors",
         sum = "h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=",
         version = "v0.0.0-20200804184101-5ec99f83aff1",
-    )
-
-def _rust_dependencies():
-    raze_fetch_remote_crates()
-
-def _js_dependencies():
-    npm_install(
-        name = "npm",
-        package_json = "@io_kythe//:package.json",
-        package_lock_json = "@io_kythe//:package-lock.json",
     )
 
 def _bindings():
@@ -1253,15 +1257,7 @@ def _extractor_image_dependencies():
         tag = "v1.1.0",
     )
 
-def _sample_ui_dependencies():
-    """Defines external repositories necessary for building the sample UI."""
-    lein_repository(
-        name = "org_leiningen",
-        sha256 = "a0a1f093677045c4e1e40219ccc989acd61433f61c50e098a2185faf4f03553c",
-        version = "2.5.3",
-    )
-
-def kythe_dependencies(sample_ui = True):
+def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
@@ -1271,8 +1267,6 @@ def kythe_dependencies(sample_ui = True):
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-    _rust_dependencies()
-    _js_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
@@ -1290,18 +1284,17 @@ def kythe_dependencies(sample_ui = True):
 
     _bindings()
     _rule_dependencies()
+    hedron_compile_commands_setup()
 
-    if sample_ui:
-        _sample_ui_dependencies()
     _extractor_image_dependencies()
 
     maybe(
         http_file,
         name = "bazel_toolchains_rbe_gen_config_linux_amd64",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
-            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.1/rbe_configs_gen_linux_amd64",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.2/rbe_configs_gen_linux_amd64",
+            "https://github.com/bazelbuild/bazel-toolchains/releases/download/v5.1.2/rbe_configs_gen_linux_amd64",
         ],
-        sha256 = "3e3ba75f14eb7c87de8934ae8dfa814f84b5be3b0081dcb8cb95ff42ed1a73b2",
+        sha256 = "1206e8a79b41cb22524f73afa4f4ee648478f46ef6990d78e7cc953665a1db89",
         executable = True,
     )

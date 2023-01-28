@@ -26,8 +26,10 @@ import (
 	"sort"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
@@ -47,8 +49,7 @@ func InBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundary, e
 // Patcher uses a computed diff between two texts to map spans from the original
 // text to the new text.
 type Patcher struct {
-	dmp  *diffmatchpatch.DiffMatchPatch
-	diff []diffmatchpatch.Diff
+	spans []diff
 }
 
 // NewPatcher returns a Patcher based on the diff between oldText and newText.
@@ -60,7 +61,203 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 		}
 	}()
 	dmp := diffmatchpatch.New()
-	return &Patcher{dmp, dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))}, nil
+	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))
+	return &Patcher{mapToOffsets(diff)}, nil
+}
+
+// Marshal encodes the Patcher into a packed binary format.
+func (p *Patcher) Marshal() ([]byte, error) {
+	db := &srvpb.Diff{
+		SpanLength:       make([]int32, len(p.spans)),
+		SpanType:         make([]srvpb.Diff_Type, len(p.spans)),
+		SpanNewlines:     make([]int32, len(p.spans)),
+		SpanFirstNewline: make([]int32, len(p.spans)),
+		SpanLastNewline:  make([]int32, len(p.spans)),
+	}
+	for i, d := range p.spans {
+		db.SpanLength[i] = d.Length
+		db.SpanNewlines[i] = d.Newlines
+		db.SpanFirstNewline[i] = d.FirstNewline
+		db.SpanLastNewline[i] = d.LastNewline
+		switch d.Type {
+		case eq:
+			db.SpanType[i] = srvpb.Diff_EQUAL
+		case ins:
+			db.SpanType[i] = srvpb.Diff_INSERT
+		case del:
+			db.SpanType[i] = srvpb.Diff_DELETE
+		default:
+			return nil, fmt.Errorf("unknown diff type: %s", d.Type)
+		}
+	}
+	return proto.Marshal(db)
+}
+
+// Unmarshal decodes a Patcher from its packed binary format.
+func Unmarshal(rec []byte) (*Patcher, error) {
+	var db srvpb.Diff
+	if err := proto.Unmarshal(rec, &db); err != nil {
+		return nil, err
+	}
+	if len(db.SpanLength) != len(db.SpanType) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_type: %d vs %d", len(db.SpanLength), len(db.SpanType))
+	} else if len(db.SpanLength) != len(db.SpanNewlines) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_newlines: %d vs %d", len(db.SpanLength), len(db.SpanNewlines))
+	} else if len(db.SpanLength) != len(db.SpanFirstNewline) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_first_newline: %d vs %d", len(db.SpanLength), len(db.SpanFirstNewline))
+	} else if len(db.SpanLength) != len(db.SpanLastNewline) {
+		return nil, fmt.Errorf("length of span_length does not match length of span_last_newline: %d vs %d", len(db.SpanLength), len(db.SpanLastNewline))
+	}
+	spans := make([]diff, len(db.SpanLength))
+	for i, l := range db.SpanLength {
+		spans[i] = diff{
+			Length:       l,
+			Newlines:     db.SpanNewlines[i],
+			FirstNewline: db.SpanFirstNewline[i],
+			LastNewline:  db.SpanLastNewline[i],
+		}
+		switch db.SpanType[i] {
+		case srvpb.Diff_EQUAL:
+			spans[i].Type = eq
+		case srvpb.Diff_INSERT:
+			spans[i].Type = ins
+		case srvpb.Diff_DELETE:
+			spans[i].Type = del
+		default:
+			return nil, fmt.Errorf("unknown diff type: %s", db.SpanType[i])
+		}
+		if i != 0 {
+			updatePrefix(&spans[i-1], &spans[i])
+		}
+	}
+	return &Patcher{spans}, nil
+}
+
+func updatePrefix(prev, d *diff) {
+	d.oldPrefix = prev.oldPrefix
+	d.newPrefix = prev.newPrefix
+	d.oldPrefix.Type = del
+	d.newPrefix.Type = ins
+	d.oldPrefix.Update(*prev)
+	d.newPrefix.Update(*prev)
+}
+
+type diff struct {
+	Length int32
+	Type   diffmatchpatch.Operation
+
+	Newlines     int32
+	FirstNewline int32
+	LastNewline  int32
+
+	oldPrefix, newPrefix offsetTracker
+}
+
+const (
+	eq  = diffmatchpatch.DiffEqual
+	ins = diffmatchpatch.DiffInsert
+	del = diffmatchpatch.DiffDelete
+)
+
+func mapToOffsets(ds []diffmatchpatch.Diff) []diff {
+	res := make([]diff, len(ds))
+	for i, d := range ds {
+		l := len(d.Text)
+		var newlines int
+		var first, last int = -1, -1
+		for j := 0; j < l; j++ {
+			if d.Text[j] != '\n' {
+				continue
+			}
+			newlines++
+			if first == -1 {
+				first = j
+			}
+			last = j
+		}
+		res[i] = diff{
+			Length:       int32(l),
+			Type:         d.Type,
+			Newlines:     int32(newlines),
+			FirstNewline: int32(first),
+			LastNewline:  int32(last),
+		}
+		if i != 0 {
+			updatePrefix(&res[i-1], &res[i])
+		}
+	}
+	return res
+}
+
+type offsetTracker struct {
+	Type diffmatchpatch.Operation
+
+	Offset       int32
+	Lines        int32
+	ColumnOffset int32
+}
+
+func (t *offsetTracker) Update(d diff) {
+	if d.Type != eq && d.Type != t.Type {
+		return
+	}
+	t.Offset += d.Length
+	t.Lines += d.Newlines
+	if d.LastNewline == -1 {
+		t.ColumnOffset += d.Length
+	} else {
+		t.ColumnOffset = d.Length - d.LastNewline - 1
+	}
+}
+
+// PatchSpan returns the resulting Span of mapping the given Span from the
+// Patcher's constructed oldText to its newText.  If the span no longer exists
+// in newText or is invalid, the returned bool will be false.  As a convenience,
+// if p==nil, the original span will be returned.
+func (p *Patcher) PatchSpan(s *cpb.Span) (span *cpb.Span, exists bool) {
+	spanStart, spanEnd := ByteOffsets(s)
+	if spanStart > spanEnd {
+		return nil, false
+	} else if p == nil || s == nil {
+		return s, true
+	}
+
+	// Find the diff span that contains the starting offset.
+	idx := sort.Search(len(p.spans), func(i int) bool {
+		return spanStart < p.spans[i].oldPrefix.Offset
+	}) - 1
+	if idx < 0 {
+		return nil, false
+	}
+
+	d := p.spans[idx]
+	if d.Type != eq || spanEnd > d.oldPrefix.Offset+d.Length {
+		return nil, false
+	}
+
+	lineDiff := d.newPrefix.Lines - d.oldPrefix.Lines
+	colDiff := d.newPrefix.ColumnOffset - d.oldPrefix.ColumnOffset
+	if d.FirstNewline != -1 && spanStart-d.oldPrefix.Offset >= d.FirstNewline {
+		// The given span is past the first newline so it has no column diff.
+		colDiff = 0
+	}
+	return &cpb.Span{
+		Start: &cpb.Point{
+			ByteOffset:   d.newPrefix.Offset + (spanStart - d.oldPrefix.Offset),
+			ColumnOffset: s.GetStart().GetColumnOffset() + colDiff,
+			LineNumber:   s.GetStart().GetLineNumber() + lineDiff,
+		},
+		End: &cpb.Point{
+			ByteOffset:   d.newPrefix.Offset + (spanEnd - d.oldPrefix.Offset),
+			ColumnOffset: s.GetEnd().GetColumnOffset() + colDiff,
+			LineNumber:   s.GetEnd().GetLineNumber() + lineDiff,
+		},
+	}, true
+}
+
+// ByteOffsets returns the starting and ending byte offsets of the Span.
+func ByteOffsets(s *cpb.Span) (int32, int32) {
+	return s.GetStart().GetByteOffset(), s.GetEnd().GetByteOffset()
 }
 
 // Patch returns the resulting span of mapping the given span from the Patcher's
@@ -74,14 +271,21 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 		return spanStart, spanEnd, true
 	}
 
+	if spanStart == spanEnd {
+		// Give zero-width span a positive length for the below algorithm; then fix
+		// the length on return.
+		spanEnd++
+		defer func() { newEnd = newStart }()
+	}
+
 	var old, new int32
-	for _, d := range p.diff {
-		l := int32(len(d.Text))
+	for _, d := range p.spans {
+		l := d.Length
 		if old > spanStart {
 			return 0, 0, false
 		}
 		switch d.Type {
-		case diffmatchpatch.DiffEqual:
+		case eq:
 			if old <= spanStart && spanEnd <= old+l {
 				newStart = new + (spanStart - old)
 				newEnd = new + (spanEnd - old)
@@ -90,20 +294,14 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 			}
 			old += l
 			new += l
-		case diffmatchpatch.DiffDelete:
+		case del:
 			old += l
-		case diffmatchpatch.DiffInsert:
+		case ins:
 			new += l
 		}
 	}
 
 	return 0, 0, false
-}
-
-// PatchSpan returns the given Span's byte offsets mapped from the Patcher's
-// oldText to its newText using Patcher.Patch.
-func (p *Patcher) PatchSpan(span *cpb.Span) (newStart, newEnd int32, exists bool) {
-	return p.Patch(span.GetStart().GetByteOffset(), span.GetEnd().GetByteOffset())
 }
 
 // Normalizer fixes xref.Locations within a given source text so that each point

@@ -1,0 +1,149 @@
+Checks: >
+  abseil-duration-addition,
+  abseil-duration-comparison,
+  abseil-duration-conversion-cast,
+  abseil-duration-division,
+  abseil-duration-factory-float,
+  abseil-duration-factory-scale,
+  abseil-duration-subtraction,
+  abseil-duration-unnecessary-conversion,
+  abseil-faster-strsplit-delimiter,
+  abseil-redundant-strcat-calls,
+  abseil-str-cat-append,
+  abseil-string-find-startswith,
+  abseil-string-find-str-contains,
+  abseil-time-comparison,
+  abseil-time-subtraction,
+  bugprone-argument-comment,
+  bugprone-assert-side-effect,
+  bugprone-bool-pointer-implicit-conversion,
+  bugprone-dangling-handle,
+  bugprone-fold-init-type,
+  bugprone-forward-declaration-namespace,
+  bugprone-inaccurate-erase,
+  bugprone-macro-repeated-side-effects,
+  bugprone-move-forwarding-reference,
+  bugprone-multiple-statement-macro,
+  bugprone-string-constructor,
+  bugprone-stringview-nullptr,
+  bugprone-suspicious-memset-usage,
+  bugprone-swapped-arguments,
+  bugprone-undefined-memory-manipulation,
+  bugprone-undelegated-constructor,
+  bugprone-unused-raii,
+  bugprone-use-after-move,
+  clang-diagnostic-deprecated-declarations,
+  clang-diagnostic-deprecated-register,
+  clang-diagnostic-expansion-to-defined,
+  clang-diagnostic-ignored-attributes,
+  clang-diagnostic-non-pod-varargs,
+  clang-diagnostic-shadow-field,
+  clang-diagnostic-shift-sign-overflow,
+  clang-diagnostic-tautological-undefined-compare,
+  clang-diagnostic-thread-safety*,
+  clang-diagnostic-undefined-bool-conversion,
+  clang-diagnostic-unreachable-code,
+  clang-diagnostic-unreachable-code-loop-increment,
+  clang-diagnostic-unused-const-variable,
+  clang-diagnostic-unused-function,
+  clang-diagnostic-unused-lambda-capture,
+  clang-diagnostic-unused-local-typedef,
+  clang-diagnostic-unused-private-field,
+  clang-diagnostic-user-defined-warnings,
+  darwin-avoid-spinlock,
+  google-build-explicit-make-pair,
+  google-build-namespaces,
+  google-build-using-namespace,
+  google-default-arguments,
+  google-explicit-constructor,
+  google-global-names-in-headers,
+  google-objc-avoid-nsobject-new,
+  google-objc-avoid-throwing-exception,
+  google-objc-function-naming,
+  google-objc-global-variable-declaration,
+  google-readability-avoid-underscore-in-googletest-name,
+  google-readability-casting,
+  google-readability-function-size,
+  google-readability-namespace-comments,
+  google-readability-todo,
+  google-runtime-int,
+  google-runtime-memset,
+  google-runtime-operator,
+  misc-definitions-in-headers,
+  misc-static-assert,
+  misc-unconventional-assign-operator,
+  misc-uniqueptr-reset-release,
+  misc-unused-alias-decls,
+  misc-unused-using-decls,
+  modernize-make-unique,
+  modernize-redundant-void-arg,
+  modernize-replace-auto-ptr,
+  modernize-shrink-to-fit,
+  modernize-use-bool-literals,
+  modernize-use-nullptr,
+  modernize-use-override,
+  objc-avoid-nserror-init,
+  objc-dealloc-in-category,
+  objc-forbidden-subclassing,
+  objc-nsinvocation-argument-lifetime,
+  objc-property-declaration,
+  objc-super-self,
+  performance-faster-string-find,
+  performance-for-range-copy,
+  performance-implicit-conversion-in-loop,
+  performance-inefficient-algorithm,
+  performance-inefficient-vector-operation,
+  performance-move-const-arg,
+  performance-move-constructor-init,
+  portability-std-allocator-const,
+  readability-container-size-empty,
+  readability-deleted-default,G
+  readability-inconsistent-declaration-parameter-name,
+  readability-misleading-indentation,
+  readability-redundant-control-flow,
+  readability-redundant-smartptr-get,
+  readability-string-compare,
+
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     file
+CheckOptions:
+  - key:             llvm-else-after-return.WarnOnConditionVariables
+    value:           'false'
+  - key:             modernize-loop-convert.MinConfidence
+    value:           reasonable
+  - key:             modernize-replace-auto-ptr.IncludeStyle
+    value:           llvm
+  - key:             cert-str34-c.DiagnoseSignedUnsignedCharComparisons
+    value:           'false'
+  - key:             google-readability-namespace-comments.ShortNamespaceLines
+    value:           '10'
+  - key:             cert-oop54-cpp.WarnOnlyIfThisHasSuspiciousField
+    value:           'false'
+  - key:             cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value:           'true'
+  - key:             cert-dcl16-c.NewSuffixes
+    value:           'L;LL;LU;LLU'
+  - key:             google-readability-braces-around-statements.ShortStatementLines
+    value:           '1'
+  - key:             modernize-pass-by-value.IncludeStyle
+    value:           llvm
+  - key:             google-readability-namespace-comments.SpacesBeforeComments
+    value:           '2'
+  - key:             modernize-loop-convert.MaxCopySize
+    value:           '16'
+  - key:             cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors
+    value:           'true'
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+  - key:             llvm-qualified-auto.AddConstToQualified
+    value:           'false'
+  - key:             modernize-loop-convert.NamingStyle
+    value:           CamelCase
+  - key:             llvm-else-after-return.WarnOnUnfixable
+    value:           'false'
+  - key:             google-readability-function-size.StatementThreshold
+    value:           '800'
+  - key:             'bugprone-dangling-handle.HandleClasses'
+    value:           '::std::string_view;::absl::string_view;::absl::Span;::absl::FunctionRef;::llvm::StringRef;::llvm::ArrayRef;::absl::BitGenRef'

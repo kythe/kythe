@@ -18,7 +18,7 @@
 # requires the same environment variables as the javac extractor (see
 # AbstractJavacWrapper.java).  In particular, it needs KYTHE_ROOT_DIRECTORY and
 # KYTHE_OUTPUT_DIRECTORY set to understand where the root of the compiled source
-# repository is and where to put the resulting .kindex files, respectively.
+# repository is and where to put the resulting .kzip files, respectively.
 #
 # This script assumes a usable java binary is on $PATH or in $JAVA_HOME.
 # Runtime options (e.g -Xbootclasspath/p:)can be passed to `java` with the
@@ -40,16 +40,21 @@
 #   KYTHE_EXTRACT_ONLY: if set, suppress the call to javac after extraction
 
 if [[ -z "$JAVA_HOME" ]]; then
-  readonly JAVABIN="$(command -v java)"
+  JAVABIN="$(command -v java)"
 else
-  readonly JAVABIN="$JAVA_HOME/bin/java"
+  JAVABIN="$JAVA_HOME/bin/java"
 fi
+readonly JAVABIN
+
 if [[ -z "$REAL_JAVAC" ]]; then
-  readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
+  REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
 fi
+readonly REAL_JAVAC
+
 if [[ -z "$JAVAC_EXTRACTOR_JAR" ]]; then
-  readonly JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
+  JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
 fi
+readonly JAVAC_EXTRACTOR_JAR
 
 fix_permissions() {
   local dir="${1:?missing path}"
@@ -68,7 +73,10 @@ if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-"$JAVABIN" "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
+# We do not want to inhibit word splitting here.
+# shellcheck disable=SC2086
+"$JAVABIN" \
+  $KYTHE_JAVA_RUNTIME_OPTIONS \
   -jar "$JAVAC_EXTRACTOR_JAR" "$@" \
   1> >(sed -e 's/^/EXTRACT OUT: /') \
   2> >(sed -e 's/^/EXTRACT ERR: /' >&2)

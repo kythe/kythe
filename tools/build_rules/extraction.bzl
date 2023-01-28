@@ -33,7 +33,7 @@ merge_kzips = rule(
         "_kzip": attr.label(
             default = Label("//kythe/go/platform/tools/kzip"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {"kzip": "%{name}.kzip"},
@@ -69,7 +69,7 @@ filter_kzip = rule(
         "_kzip": attr.label(
             default = Label("//kythe/go/platform/tools/kzip"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     outputs = {"kzip": "%{name}.kzip"},

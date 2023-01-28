@@ -33,7 +33,6 @@
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
-#include "absl/memory/memory.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -118,12 +117,12 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return absl::make_unique<IndexerASTConsumer>(Observer, Supports, options_);
+    return std::make_unique<IndexerASTConsumer>(Observer, Supports, options_);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
-      CI.getPreprocessor().addPPCallbacks(absl::make_unique<IndexerPPCallbacks>(
+      CI.getPreprocessor().addPPCallbacks(std::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer, options_.Verbosity,
           options_.UsrByteSize));
     }
@@ -207,7 +206,7 @@ class StdinAdjustSingleFrontendActionFactory
 std::string IndexCompilationUnit(
     const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
     KytheClaimClient& ClaimClient, HashCache* Cache, KytheCachingOutput& Output,
-    const IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
     const MetadataSupports* MetaSupports,
     const LibrarySupports* LibrarySupports);
 

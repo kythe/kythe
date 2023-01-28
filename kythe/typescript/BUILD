@@ -1,77 +1,111 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_library")
-load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
+load("@aspect_rules_jasmine//jasmine:defs.bzl", "jasmine_test")
+load("@aspect_rules_js//js:defs.bzl", "js_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-ts_config(
-    name = "tsconfig",
-    src = "tsconfig.json",
-    deps = [],
-)
+# If you need to add / update dependencies:
+#
+# 0. Ensure you have a recent nodejs and pnpm installed.
+# 1. Edit package.json in this directory as appropriate
+# 2. From the *root dir* of the project, run
+#
+#       cp kythe/typescript/package.json .
+#       pnpm import
+#
+# 3. Add the dependencies to the ts_project build rule below.
 
-ts_library(
+ts_project(
     name = "kythe",
     srcs = ["kythe.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
+    supports_workers = False,
 )
 
-ts_library(
+ts_project(
     name = "indexer",
     srcs = [
         "indexer.ts",
-        "utf8.ts",
         "post_processing.ts",
+        "utf8.ts",
     ],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
+    supports_workers = False,
     deps = [
         ":kythe",
-        "//kythe/proto:common_ts_proto",
-        "@npm//@types/node",
-        "@npm//google-protobuf",
-        "@npm//typescript",
+        "//:node_modules/@types/node",
+        "//:node_modules/typescript",
     ],
 )
 
-ts_library(
+ts_project(
     name = "test_ts",
     srcs = ["test.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
+    supports_workers = False,
     deps = [
         ":indexer",
         ":kythe",
-        "@npm//@types/node",
-        "@npm//source-map-support",
-        "@npm//typescript",
+        "//:node_modules/@types/node",
+        "//:node_modules/source-map",
+        "//:node_modules/source-map-support",
+        "//:node_modules/typescript",
     ],
 )
 
-ts_library(
+ts_project(
     name = "utf8_test_ts",
     testonly = True,
     srcs = ["utf8_test.ts"],
-    tsconfig = ":tsconfig",
+    declaration = True,
+    source_map = True,
+    supports_workers = False,
     deps = [
         ":indexer",
-        "@npm//@types/jasmine",
-        "@npm//typescript",
+        "//:node_modules/@types/jasmine",
+        "//:node_modules/balanced-match",
+        "//:node_modules/brace-expansion",
+        "//:node_modules/fs.realpath",
+        "//:node_modules/glob",
+        "//:node_modules/inflight",
+        "//:node_modules/inherits",
+        "//:node_modules/jasmine",
+        "//:node_modules/jasmine-core",
+        "//:node_modules/jasmine-reporters",
+        "//:node_modules/minimatch",
+        "//:node_modules/once",
+        "//:node_modules/typescript",
+        "//:node_modules/wrappy",
     ],
 )
 
-nodejs_test(
+js_test(
     name = "indexer_test",
     data = [
         ":test_ts",
-    ] + glob(["testdata/**/*"]) + [
+    ] + glob(
+        ["testdata/**/*"],
+    ) + [
         "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
     ],
-    entry_point = ":test.ts",
-    # See https://github.com/bazelbuild/rules_nodejs/wiki#--bazel_patch_module_resolver-now-defaults-to-false-2324
-    templated_args = ["--bazel_patch_module_resolver"],
+    entry_point = ":test.js",
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "utf8_test",
-    deps = [":utf8_test_ts"],
+    args = ["utf8_test.js"],
+    chdir = package_name(),
+    data = [
+        "utf8_test.js",
+        ":utf8_test_ts",
+    ],
+    include_declarations = True,
+    include_npm_linked_packages = True,
+    include_transitive_sources = True,
+    log_level = "debug",
+    patch_node_fs = True,
 )

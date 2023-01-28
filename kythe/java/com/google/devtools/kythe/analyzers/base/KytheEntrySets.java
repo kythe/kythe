@@ -27,7 +27,6 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -180,7 +179,7 @@ public class KytheEntrySets {
    * Returns (and emits) a new anchor node at the given location in the file with an optional
    * snippet span.
    */
-  public EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
+  public @Nullable EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
     if (loc == null || !loc.isValid()) {
       // TODO(schroederc): reduce number of invalid anchors
       return null;
@@ -222,11 +221,17 @@ public class KytheEntrySets {
     if (!d.getContextUrl().isEmpty()) {
       builder.setProperty("context/url", d.getContextUrl());
     }
+    if (fileVName == null) {
+      if (getUseCompilationCorpusAsDefault()) {
+        builder.setCorpusPath(defaultCorpusPath());
+      }
+    } else {
+      builder.setCorpusPath(CorpusPath.fromVName(fileVName));
+    }
     EntrySet dn = emitAndReturn(builder);
     if (fileVName == null) {
       return dn;
     } else {
-      builder.setCorpusPath(CorpusPath.fromVName(fileVName));
       if (d.hasSpan()) {
         Span s =
             new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
@@ -243,7 +248,7 @@ public class KytheEntrySets {
    * Returns the {@link VName} of the {@link NodeKind#FILE} node with the given contents digest. If
    * none is found, returns {@code null}.
    */
-  public VName getFileVName(String digest) {
+  public @Nullable VName getFileVName(String digest) {
     VName name = lookupVName(digest);
     if (name == null) {
       return null;
@@ -311,26 +316,6 @@ public class KytheEntrySets {
     }
   }
 
-  /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstractAndEmit(
-      VName child, List<VName> params, @Nullable MarkedSource markedSource) {
-    NodeBuilder absBuilder =
-        newNode(NodeKind.ABS).addSignatureSalt(child).setCorpusPath(CorpusPath.fromVName(child));
-    if (markedSource != null) {
-      absBuilder.setProperty("code", markedSource);
-    }
-
-    EntrySet abs = emitAndReturn(absBuilder);
-    emitEdge(child, EdgeKind.CHILDOF, abs.getVName());
-    emitOrdinalEdges(abs.getVName(), EdgeKind.PARAM, params);
-    return abs;
-  }
-
-  /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstractAndEmit(VName child) {
-    return newAbstractAndEmit(child, Collections.emptyList(), null);
-  }
-
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
   public EntrySet newFunctionTypeAndEmit(
       VName returnType, VName receiverType, List<VName> arguments, MarkedSource ms) {
@@ -368,7 +353,7 @@ public class KytheEntrySets {
    * Returns the {@link FileInput}'s {@link VName} with the given digest. If none is found, return
    * {@code null}.
    */
-  protected VName lookupVName(String digest) {
+  protected @Nullable VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);
     return inputVName == null ? null : EntrySet.extendVName(compilationVName, inputVName);
   }

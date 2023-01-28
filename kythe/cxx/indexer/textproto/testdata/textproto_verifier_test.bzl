@@ -64,7 +64,7 @@ textproto_extract_kzip = rule(
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor/textproto:textproto_extractor"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
         "opts": attr.string_list(),
         "vnames_config": attr.label(
@@ -165,7 +165,6 @@ def textproto_verifier_test(
         verifier_test,
         name = name,
         size = size,
-        srcs = textproto_entries + [proto_entries],
         opts = vopts,
         tags = tags,
         visibility = visibility,

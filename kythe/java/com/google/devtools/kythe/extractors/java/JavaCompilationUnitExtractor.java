@@ -44,6 +44,7 @@ import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Any;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
@@ -87,7 +88,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -98,6 +98,7 @@ import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Extracts all required information (set of source files, class paths, and compiler options) from a
@@ -113,7 +114,6 @@ public class JavaCompilationUnitExtractor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final Pattern JDK_MODULE_PATTERN = Pattern.compile("^/modules/(java|jdk)[.].*");
   private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
 
@@ -128,6 +128,14 @@ public class JavaCompilationUnitExtractor {
   private final String rootDirectory;
   private final FileVNames fileVNames;
   private String systemDir;
+  private boolean allowServiceProcessors = true;
+
+  /** Set whether to allow service processors to run during extraction. Defaults to {@code true}. */
+  @CanIgnoreReturnValue
+  public JavaCompilationUnitExtractor setAllowServiceProcessors(boolean allowServiceProcessors) {
+    this.allowServiceProcessors = allowServiceProcessors;
+    return this;
+  }
 
   /**
    * ExtractionTask represents a single invocation of the java compiler in order to determine the
@@ -145,9 +153,11 @@ public class JavaCompilationUnitExtractor {
     private final CompilationUnitCollector compilationCollector = new CompilationUnitCollector();
     private final UsageAsInputReportingFileManager fileManager =
         JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
+    private final boolean allowServiceProcessors;
 
-    ExtractionTask() throws ExtractionException {
+    ExtractionTask(boolean allowServiceProcessors) throws ExtractionException {
       this.tempDir = new TemporaryDirectory();
+      this.allowServiceProcessors = allowServiceProcessors;
     }
 
     public UsageAsInputReportingFileManager getFileManager() {
@@ -210,7 +220,7 @@ public class JavaCompilationUnitExtractor {
       return compileResolved(
           options,
           fileManager.getJavaFileObjectsFromStrings(sourcePaths),
-          loadProcessors(processingClassLoader(fileManager), processors));
+          loadProcessors(processingClassLoader(fileManager), processors, allowServiceProcessors));
     }
 
     @Override
@@ -225,7 +235,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(String corpus) throws ExtractionException {
@@ -233,7 +243,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(String corpus, String rootDirectory)
@@ -242,7 +252,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
+   * Creates an instance of the JavaExtractor to store java compilation information in an .kzip
    * file.
    */
   public JavaCompilationUnitExtractor(FileVNames fileVNames) throws ExtractionException {
@@ -304,10 +314,13 @@ public class JavaCompilationUnitExtractor {
       unit.addSourceFile(sourceFile);
       sourceFileCorpora.add(inputCorpus.getOrDefault(sourceFile, ""));
     }
-    if (sourceFileCorpora.size() == 1) {
-      // Attribute the source files' corpus to the CompilationUnit if it is unambiguous.
-      unit.getVNameBuilder().setCorpus(Iterables.getOnlyElement(sourceFileCorpora));
-    }
+    // Attribute the source files' corpus to the CompilationUnit if it is unambiguous. Otherwise use
+    // the default corpus.
+    String cuCorpus =
+        sourceFileCorpora.size() == 1
+            ? Iterables.getOnlyElement(sourceFileCorpora)
+            : fileVNames.getDefaultCorpus();
+    unit.getVNameBuilder().setCorpus(cuCorpus);
     unit.setOutputKey(outputPath);
     unit.setWorkingDirectory(stableRoot(rootDirectory, options, requiredInputs));
     unit.addDetails(
@@ -650,7 +663,8 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if ((isJarPath && jarPath.startsWith(jdkJar)) || JDK_MODULE_PATTERN.matcher(path).matches()) {
+    if ((isJarPath && jarPath.startsWith(jdkJar))
+        || (location != null && location.getName().startsWith("SYSTEM_MODULES"))) {
       return;
     }
 
@@ -758,7 +772,7 @@ public class JavaCompilationUnitExtractor {
    * Returns the location and binary name of a class file, or {@code null} if the file object is not
    * a class.
    */
-  private static String getBinaryNameForClass(
+  private static @Nullable String getBinaryNameForClass(
       UsageAsInputReportingFileManager fileManager, JavaFileObject fileObject)
       throws ExtractionException {
     if (fileObject.getKind() != Kind.CLASS) {
@@ -846,7 +860,7 @@ public class JavaCompilationUnitExtractor {
     AnalysisResults results = new AnalysisResults();
 
     // Generate class files in a temporary directory
-    try (ExtractionTask task = new ExtractionTask()) {
+    try (ExtractionTask task = new ExtractionTask(allowServiceProcessors)) {
       for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
         setLocation(task.getFileManager(), entry.getKey(), entry.getValue());
       }
@@ -1059,9 +1073,10 @@ public class JavaCompilationUnitExtractor {
     return sourceBaseNames;
   }
 
-  private static Iterable<Processor> loadProcessors(ClassLoader loader, Iterable<String> names)
+  private static Iterable<Processor> loadProcessors(
+      ClassLoader loader, Iterable<String> names, boolean allowServiceProcessors)
       throws ExtractionException {
-    return Iterables.isEmpty(names)
+    return Iterables.isEmpty(names) && allowServiceProcessors
         // If no --processors were passed, add any processors registered in the META-INF/services
         // configuration.
         ? loadServiceProcessors(loader)

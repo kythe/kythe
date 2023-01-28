@@ -16,19 +16,21 @@
 
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
-#include "absl/memory/memory.h"
+#include <memory>
+
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 namespace kythe {
 namespace {
 class IndexerWorklistImpl : public IndexerWorklist {
  public:
-  IndexerWorklistImpl(IndexerASTVisitor* indexer) : indexer_(indexer) {}
+  explicit IndexerWorklistImpl(IndexerASTVisitor* indexer)
+      : indexer_(indexer) {}
 
   void EnqueueJobForImplicitDecl(clang::Decl* decl,
                                  bool set_prune_incomplete_functions,
                                  const std::string& id) override {
-    worklist_.emplace_back(absl::make_unique<IndexJob>(
+    worklist_.emplace_back(std::make_unique<IndexJob>(
         indexer_->getCurrentJob(), decl, set_prune_incomplete_functions, id));
   }
 
@@ -55,6 +57,6 @@ class IndexerWorklistImpl : public IndexerWorklist {
 
 std::unique_ptr<IndexerWorklist> IndexerWorklist::CreateDefaultWorklist(
     IndexerASTVisitor* indexer) {
-  return absl::make_unique<IndexerWorklistImpl>(indexer);
+  return std::make_unique<IndexerWorklistImpl>(indexer);
 }
 }  // namespace kythe

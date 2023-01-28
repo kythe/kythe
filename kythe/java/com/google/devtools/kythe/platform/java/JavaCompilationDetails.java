@@ -46,11 +46,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
 public class JavaCompilationDetails implements AutoCloseable {
-  @Nullable private final JavacTask javac;
+  private final @Nullable JavacTask javac;
   private final DiagnosticCollector<JavaFileObject> diagnostics;
-  @Nullable private final Iterable<? extends CompilationUnitTree> asts;
+  private final @Nullable Iterable<? extends CompilationUnitTree> asts;
   private final CompilationUnit compilationUnit;
-  @Nullable private final Throwable analysisCrash;
+  private final @Nullable Throwable analysisCrash;
   private final Charset encoding;
   private final StandardJavaFileManager fileManager;
 

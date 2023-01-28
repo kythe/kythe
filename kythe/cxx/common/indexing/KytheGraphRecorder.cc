@@ -25,8 +25,7 @@ static const std::string* const kNodeKindSpellings[] = {
     new std::string("variable"),   new std::string("talias"),
     new std::string("tapp"),       new std::string("tnominal"),
     new std::string("record"),     new std::string("sum"),
-    new std::string("constant"),   new std::string("abs"),
-    new std::string("absvar"),     new std::string("function"),
+    new std::string("constant"),   new std::string("function"),
     new std::string("lookup"),     new std::string("macro"),
     new std::string("interface"),  new std::string("package"),
     new std::string("tsigma"),     new std::string("doc"),
@@ -87,7 +86,9 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/influences"),
     new std::string("/kythe/edge/ref/file"),
     new std::string("/kythe/edge/tparam"),
-    new std::string("/kythe/edge/completedby")};
+    new std::string("/kythe/edge/completedby"),
+    new std::string("/kythe/edge/ref/call/direct"),
+    new std::string("/kythe/edge/ref/call/direct/implicit")};
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
   size_t edge_index = 0;
@@ -124,6 +125,7 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/context/url"),
     new std::string("/kythe/doc/uri"),
     new std::string("/kythe/build/config"),
+    new std::string("/kythe/visibility"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");

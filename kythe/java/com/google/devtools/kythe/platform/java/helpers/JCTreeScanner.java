@@ -78,6 +78,7 @@ import com.sun.source.tree.UsesTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.tree.WildcardTree;
+import com.sun.source.util.SimpleTreeVisitor;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotatedType;
@@ -143,7 +144,8 @@ import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
 
 /** A {@link TreeScanner} with the scan/reduce semantics of a {@link TreeVisitor}. */
-public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
+public class JCTreeScanner<R, P> extends SimpleTreeVisitor<R, P> {
+  protected static final JdkCompatibilityShims shims = JdkCompatibilityShims.loadBest().get();
 
   protected TreePath treePath;
 
@@ -349,7 +351,7 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
   }
 
   public R visitCase(JCCase tree, P p) {
-    R r = scan(tree.pat, p);
+    R r = scan(shims.getCaseExpressions(tree), p);
     return scanAndReduce(tree.stats, p, r);
   }
 
@@ -562,7 +564,7 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
 
   public R visitTypeTest(JCInstanceOf tree, P p) {
     R r = scan(tree.expr, p);
-    return scanAndReduce(tree.clazz, p, r);
+    return scanAndReduce(tree.getType(), p, r);
   }
 
   @Override

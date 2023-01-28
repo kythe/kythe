@@ -65,7 +65,7 @@ impl CallbackShim {
 impl Callbacks for CallbackShim {
     // Always enable save_analysis generation
     fn config(&mut self, config: &mut interface::Config) {
-        config.opts.debugging_opts.save_analysis = true;
+        config.opts.unstable_opts.save_analysis = true;
     }
 
     fn after_analysis<'tcx>(
@@ -74,7 +74,7 @@ impl Callbacks for CallbackShim {
         queries: &'tcx Queries<'tcx>,
     ) -> Compilation {
         let input = compiler.input();
-        let crate_name = queries.crate_name().unwrap().peek().clone();
+        let crate_name = *queries.crate_name().unwrap().peek();
 
         // Configure the save_analysis to include full documentation.
         // Normally this would be set using a `rls_data::config::Config` struct on the
@@ -93,10 +93,10 @@ impl Callbacks for CallbackShim {
         queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             rustc_save_analysis::process_crate(
                 tcx,
-                &crate_name,
+                crate_name,
                 input,
                 None,
-                DumpHandler::new(Some(self.output_dir.as_path()), &crate_name),
+                DumpHandler::new(Some(self.output_dir.as_path()), crate_name),
             )
         });
 

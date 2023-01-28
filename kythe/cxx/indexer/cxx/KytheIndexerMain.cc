@@ -21,12 +21,13 @@
 //
 //   eg: indexer -i foo.cc -o foo.bin -- -DINDEXING
 //       indexer -i foo.cc | verifier foo.cc
-//       indexer some/index.kindex
+//       indexer some/index.kzip
+
+#include <memory>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/init.h"
@@ -60,11 +61,13 @@ ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
 ABSL_FLAG(bool, experimental_guess_proto_semantics, false,
           "Guess proto semantics.");
-ABSL_FLAG(bool, experimental_use_abs_nodes, true, "Use abs nodes.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
           "template instance indexing.");
+ABSL_FLAG(std::string, record_hashes_file, "", "Record hashes to this file.");
+ABSL_FLAG(bool, record_call_directness, false,
+          "Record directness of function calls.");
 
 namespace kythe {
 
@@ -102,9 +105,6 @@ int main(int argc, char* argv[]) {
       absl::GetFlag(FLAGS_experimental_record_dataflow_edges)
           ? kythe::EmitDataflowEdges::Yes
           : kythe::EmitDataflowEdges::No;
-  options.AbsNodes = absl::GetFlag(FLAGS_experimental_use_abs_nodes)
-                         ? kythe::UseAbsNodes::Abs
-                         : kythe::UseAbsNodes::NoAbs;
   options.UseCompilationCorpusAsDefault =
       absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
@@ -116,9 +116,15 @@ int main(int argc, char* argv[]) {
                     event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
+  options.RecordCallDirectness = absl::GetFlag(FLAGS_record_call_directness);
   options.CreateWorklist = [](IndexerASTVisitor* indexer) {
     return IndexerWorklist::CreateDefaultWorklist(indexer);
   };
+  std::optional<FileHashRecorder> recorder;
+  if (!absl::GetFlag(FLAGS_record_hashes_file).empty()) {
+    recorder.emplace(absl::GetFlag(FLAGS_record_hashes_file));
+    options.HashRecorder = &*recorder;
+  }
 
   bool had_errors = false;
   NullOutputStream null_stream;
@@ -127,17 +133,17 @@ int main(int argc, char* argv[]) {
     options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
-    auto proto = absl::make_unique<ProtobufMetadataSupport>();
+    auto proto = std::make_unique<ProtobufMetadataSupport>();
     if (absl::GetFlag(FLAGS_experimental_guess_proto_semantics)) {
       proto->GuessSemantics(true);
     }
     meta_supports.Add(std::move(proto));
-    meta_supports.Add(absl::make_unique<KytheMetadataSupport>());
+    meta_supports.Add(std::make_unique<KytheMetadataSupport>());
 
     kythe::LibrarySupports library_supports;
-    library_supports.push_back(absl::make_unique<GoogleFlagsLibrarySupport>());
-    library_supports.push_back(absl::make_unique<GoogleProtoLibrarySupport>());
-    library_supports.push_back(absl::make_unique<ImputedConstructorSupport>());
+    library_supports.push_back(std::make_unique<GoogleFlagsLibrarySupport>());
+    library_supports.push_back(std::make_unique<GoogleProtoLibrarySupport>());
+    library_supports.push_back(std::make_unique<ImputedConstructorSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),

@@ -18,7 +18,6 @@
 // implementation of a Kythe compilation database.
 //
 // Design documentation: kythe/docs/kythe-compilation-database.txt
-//
 package kcd // import "kythe.io/kythe/go/platform/kcd"
 
 import (
@@ -32,6 +31,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Reader represents read-only access to an underlying storage layer used to
@@ -245,6 +246,10 @@ type Unit interface {
 	// Digest produces a unique string representation of a unit sufficient to
 	// serve as a content-addressable digest.
 	Digest() string
+
+	// LookupVName looks up and returns the VName for the given file path
+	// or nil if it could not be found or the operation is unsupported.
+	LookupVName(path string) *spb.VName
 }
 
 // Index represents the indexable terms of a compilation.

@@ -7,11 +7,11 @@ template <typename T> class C;
 template <> class C <int>;
 
 //- @C defines/binding Template
-//- @C completes/uniquely FwdTemplate
+//- FwdTemplate completedby Template
 template <typename T> class C { };
 
 //- @C defines/binding Spec
-//- @C completes/uniquely FwdSpec
+//- FwdSpec completedby Spec
 template <> class C <int> { };
 
 //- FwdTemplate.node/kind record

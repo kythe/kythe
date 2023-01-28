@@ -17,8 +17,8 @@
 #include "cxx_extractor.h"
 
 #include <map>
+#include <memory>
 
-#include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
@@ -211,7 +211,7 @@ class CxxExtractorTest : public testing::Test {
             const HeaderSearchInfo* header_search_info, bool had_errors) {
           index_writer.WriteIndex(
               supported_language::Language::kCpp,
-              absl::make_unique<ForwardingCompilationWriterSink>(sink),
+              std::make_unique<ForwardingCompilationWriterSink>(sink),
               main_source_file, transcript, source_files, header_search_info,
               had_errors, ".");
         });

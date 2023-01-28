@@ -16,11 +16,14 @@
 
 #include "KytheGraphObserver.h"
 
+#include <string>
+
 #include "IndexerASTHooks.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -41,6 +44,7 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/schema/edges.h"
@@ -63,6 +67,23 @@ struct ClaimedStringFormatter {
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
+
+const char* VisibilityPropertyValue(clang::AccessSpecifier access) {
+  switch (access) {
+    case clang::AS_public:
+      return "public";
+    case clang::AS_protected:
+      return "protected";
+    case clang::AS_private:
+      return "private";
+    case clang::AS_none:
+      return "";
+  }
+  LOG(FATAL) << "Unknown access specifier passed to VisibilityPropertyValue< "
+             << access;
+  return "";
+}
+
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -281,7 +302,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
   if (!build_config_.empty()) {
     absl::StrAppend(out_name.mutable_signature(), "%", build_config_);
   }
-  out_name.set_signature(CompressString(out_name.signature()));
+  out_name.set_signature(CompressAnchorSignature(out_name.signature()));
   return out_name;
 }
 
@@ -402,8 +423,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
                                          const VNameRef& decl) {
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
-    if (rule->second.semantic == MetadataFile::Semantic::kNone &&
-        rule->second.begin == range_begin && rule->second.end == range_end &&
+    if (rule->second.begin == range_begin && rule->second.end == range_end &&
         (rule->second.edge_in == kythe::common::schema::kDefines ||
          rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
       VNameRef remote(rule->second.vname);
@@ -564,13 +584,18 @@ void KytheGraphObserver::RecordAnchor(
 
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range& source_range, const NodeId& caller_id,
-    const NodeId& callee_id, Implicit i) {
+    const NodeId& callee_id, Implicit i, CallDispatch d) {
   RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf,
                Claimability::Claimable);
-  RecordAnchor(
-      source_range, callee_id,
-      i == Implicit::Yes ? EdgeKindID::kRefCallImplicit : EdgeKindID::kRefCall,
-      Claimability::Unclaimable);
+  EdgeKindID kind;
+  if (i == Implicit::Yes) {
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirectImplicit
+                                      : EdgeKindID::kRefCallImplicit;
+  } else {
+    kind = d == CallDispatch::kDirect ? EdgeKindID::kRefCallDirect
+                                      : EdgeKindID::kRefCall;
+  }
+  RecordAnchor(source_range, callee_id, kind, Claimability::Unclaimable);
 }
 
 absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
@@ -589,7 +614,7 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
   SourceLocation file_start =
       SourceManager->getLocForStartOfFile(SourceManager->getFileID(begin));
   const auto* token = getClaimTokenForLocation(file_start);
-  NodeId file_id(token, "#init");
+  NodeId file_id = MakeNodeId(token, "#init");
   if (recorded_inits_.insert(token).second) {
     MarkedSource file_source;
     file_source.set_pre_text(token->vname().path());
@@ -725,8 +750,8 @@ void KytheGraphObserver::recordOverridesRootEdge(const NodeId& overrider,
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
     const NameId& alias_name, const NodeId& aliased_type) const {
-  return NodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
-                                  aliased_type.ToClaimedString() + ")");
+  return MakeNodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
+                                      aliased_type.ToClaimedString() + ")");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
@@ -760,7 +785,7 @@ void KytheGraphObserver::recordDocumentationText(
   }
   // Force hashing because the serving backend gets upset if certain
   // characters appear in VName fields.
-  NodeId doc_id(node.getToken(), CompressString(signature, true));
+  NodeId doc_id = MakeNodeId(node.getToken(), ForceEncodeString(signature));
   VNameRef doc_vname(VNameRefFromNodeId(doc_id));
   if (written_docs_.insert(doc_id.ToClaimedString()).second) {
     recorder_->AddProperty(doc_vname, NodeKindID::kDoc);
@@ -807,12 +832,7 @@ void KytheGraphObserver::recordDefinitionRangeWithBinding(
 
 void KytheGraphObserver::recordCompletionRange(
     const GraphObserver::Range& source_range, const NodeId& node,
-    Specificity spec, const NodeId& completing_node) {
-  RecordStampedAnchor(source_range, node, absl::nullopt,
-                      spec == Specificity::UniquelyCompletes
-                          ? EdgeKindID::kUniquelyCompletes
-                          : EdgeKindID::kCompletes,
-                      completing_node);
+    const NodeId& completing_node) {
   recorder_->AddEdge(VNameRefFromNodeId(node), EdgeKindID::kCompletedby,
                      VNameRefFromNodeId(completing_node));
 }
@@ -822,7 +842,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
   // Appending #t to a name produces the VName signature of the nominal
   // type node referring to that name. For example, the VName for a
   // forward-declared class type will look like "C#c#t".
-  return NodeId(&type_token_, name_id.ToString() + "#t");
+  return MakeNodeId(&type_token_, name_id.ToString() + "#t");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
@@ -843,7 +863,7 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTsigmaNode(
     absl::Span<const NodeId> params) const {
-  return GraphObserver::NodeId(
+  return MakeNodeId(
       &type_token_,
       absl::StrCat("#sigma(",
                    absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
@@ -872,7 +892,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
   //   foo (bar baz)
   // We'll turn it into a C-style function application:
   //   foo(bar,baz) || foo(bar(baz))
-  return GraphObserver::NodeId(
+  return MakeNodeId(
       &type_token_,
       absl::StrCat(tycon_id.ToClaimedString(), "(",
                    absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
@@ -950,20 +970,9 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
   recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
 }
 
-void KytheGraphObserver::recordAbsNode(const NodeId& node_id) {
-  recorder_->AddProperty(VNameRefFromNodeId(node_id), NodeKindID::kAbs);
-}
-
 void KytheGraphObserver::recordMarkedSource(
     const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
-  AddMarkedSource(node_vname, marked_source);
-}
-
-void KytheGraphObserver::recordAbsVarNode(
-    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
-  auto node_vname = VNameRefFromNodeId(node_id);
-  recorder_->AddProperty(node_vname, NodeKindID::kAbsVar);
   AddMarkedSource(node_vname, marked_source);
 }
 
@@ -1131,6 +1140,16 @@ void KytheGraphObserver::recordInitLocation(
 void KytheGraphObserver::recordStaticVariable(const NodeId& VarNodeId) {
   const VNameRef node_vname = VNameRefFromNodeId(VarNodeId);
   recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");
+}
+
+void KytheGraphObserver::recordVisibility(const NodeId& FieldNodeId,
+                                          clang::AccessSpecifier access) {
+  if (access == clang::AS_none) {
+    return;
+  }
+  const VNameRef node_vname = VNameRefFromNodeId(FieldNodeId);
+  recorder_->AddProperty(node_vname, PropertyID::kVisibility,
+                         VisibilityPropertyValue(access));
 }
 
 void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
@@ -1365,7 +1384,7 @@ void KytheGraphObserver::popFile() {
 void KytheGraphObserver::iterateOverClaimedFiles(
     std::function<bool(clang::FileID, const NodeId&)> iter) const {
   for (const auto& file : claimed_file_specific_tokens_) {
-    if (!iter(file.first, NodeId(&file.second, ""))) {
+    if (!iter(file.first, MakeNodeId(&file.second, ""))) {
       return;
     }
   }

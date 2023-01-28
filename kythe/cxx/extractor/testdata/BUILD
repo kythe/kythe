@@ -6,7 +6,10 @@ load(
 )
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 filegroup(
     name = "skip",
@@ -23,7 +26,8 @@ cc_test(
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
@@ -36,7 +40,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -50,7 +55,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -65,7 +71,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -82,7 +89,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -101,7 +109,6 @@ cc_test(
         "//kythe/cxx/extractor:supported_language",
         "//third_party:gmock_main",
         "//third_party:gtest",
-        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -146,7 +153,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -162,7 +170,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -177,7 +186,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -193,7 +203,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -209,7 +220,8 @@ cc_test(
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -228,7 +240,8 @@ cc_test(
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
-        "//third_party:gtest_main",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -290,6 +303,9 @@ objc_library(
         "broken",
         "manual",
     ],
+    target_compatible_with = [
+        "@platforms//os:osx",
+    ],
 )
 
 # Test that we can use the bazel extractor to extract a .xa file, index the
@@ -305,12 +321,14 @@ objc_bazel_extractor_test(
     size = "small",
     src = "objc_lib.m",
     data = "objc_lib.xa",
-    restricted_to = ["//buildenv:darwin"],
-    # This test no longer passes, even on darwin, so do not include it in our presubmit.
+    # This test no longer passes, even on OSX, so do not include it in our presubmit.
     tags = [
         "arc-ignore",
         "broken",
         "manual",
+    ],
+    target_compatible_with = [
+        "@platforms//os:osx",
     ],
 )
 

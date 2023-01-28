@@ -2,5 +2,6 @@
 template <typename T, typename S> extern T z;
 //- @z defines/binding VarZPsAbsDecl
 template <typename U> extern int z<int, U>;
-//- @z completes/uniquely VarZPsAbsDecl
+//- @z defines/binding VarZPsAbsDefn
+//- VarzPsAbsDecl completedby VarZPsAbsDefn
 template <typename U> int z<int, U>;

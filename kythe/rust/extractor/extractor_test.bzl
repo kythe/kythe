@@ -44,6 +44,19 @@ def _rust_extractor_test_impl(ctx):
         content = source_content,
     )
 
+    out_dir_input = ctx.actions.declare_file("out_dir/input.rs")
+
+    # sha256 digest = 75d66361585a3ca351b88047de1e1ddbbd3f85b070be2faf8f53f5e886447cf7
+    input_content = """
+    pub fn hello() {
+        println!("I'm a generated input!");
+    }
+    """
+    ctx.actions.write(
+        output = out_dir_input,
+        content = input_content,
+    )
+
     rustc_lib_path = paths.dirname(rustc_lib[0].short_path)
     rust_lib_path = paths.dirname(rust_std[0].short_path)
     script = "\n".join(
@@ -53,15 +66,17 @@ def _rust_extractor_test_impl(ctx):
         ["export TEST_FILE=%s" % source_file.short_path] +
         ["export EXTRACTOR_PATH=%s" % extractor.short_path] +
         ["export KYTHE_CORPUS=test_corpus"] +
+        ["export CARGO_OUT_DIR='${pwd}/%s'" % paths.dirname(out_dir_input.short_path)] +
         ["./%s" % test_binary.short_path],
     )
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = script,
+        is_executable = True,
     )
 
     runfiles = ctx.runfiles(
-        files = [test_binary, source_file, extractor, ctx.outputs.executable] + rustc_lib + rust_std,
+        files = [test_binary, source_file, extractor, ctx.outputs.executable, out_dir_input] + rustc_lib + rust_std,
     )
     runfiles = runfiles.merge(ctx.attr.src[DefaultInfo].data_runfiles)
 

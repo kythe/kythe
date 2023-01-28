@@ -42,21 +42,30 @@ def string_output(args):
 # Find the locations of the workspace root and the generated files directory.
 workspace = string_output(['bazel', 'info', 'workspace']).strip()
 bazel_bin = string_output(['bazel', 'info', 'bazel-bin']).strip()
-targets = '//kythe/...'
+kythe_targets = '//kythe/...'
+bazel_targets = '//third_party/bazel/...'
 import_base = 'kythe.io'
 
 def do_lang(lang, ext):
-    protos = string_output([
+    kythe_protos = string_output([
         'bazel',
         'query',
-        'kind("%s_proto_library", %s)' % (lang, targets),
+        'kind("%s_proto_library", %s)' % (lang, kythe_targets),
     ]).split()
+
+    bazel_protos = string_output([
+        'bazel',
+        'query',
+        'kind("%s_proto_library", %s)' % (lang, bazel_targets),
+    ]).split()
+
+    protos = kythe_protos + bazel_protos
 
     # Each rule has the form //foo/bar:baz_proto.
     # First build all the rules to ensure we have the output files.
     # Then strip off each :baz_proto, convert it to a filename "baz.proto",
     # and copy the generated output "baz.pb.go" into the source tree.
-    if call(['bazel', 'build'] + protos) != 0:
+    if call(['bazel', 'build', '--remote_download_outputs=all'] + protos) != 0:
         print('Build failed')
         sys.exit(1)
 

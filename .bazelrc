@@ -2,13 +2,13 @@
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
 # Disable persistent workers for Typescript (#3816)
-build --strategy=TypeScriptCompile=sandboxed,local
+build --strategy=TsProject=remote,sandboxed,local
 
 # Compatibility flags to avoid regressions.
 common --incompatible_disallow_empty_glob
+build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
 
 build --workspace_status_command tools/buildstamp/get_workspace_status
-build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
 build --client_env=CC=clang
@@ -80,9 +80,25 @@ build:remote --extra_toolchains=//tools/build_rules/external_tools:external_tool
 
 build:remote --action_env=LEIN_JAVA_CMD=
 
-test:prepush --verbose_failures --noshow_loading_progress --noshow_progress
+build:prepush --verbose_failures --noshow_loading_progress --noshow_progress
 test:prepush --test_summary=terse --test_output=errors
 test:prepush --test_tag_filters=-manual,-broken,-arc-ignore,-docker
+
+# For clang tidy and related builds, include additional flags for use in compile_commands.json
+build:clang-tidy --features=-layering_check --copt=-Wno-everything --copt=-Wno-error
+build:clang-tidy --copt=-Wdeprecated-declarations --copt=-D_LIBCPP_DISABLE_DEPRECATION_WARNINGS
+build:clang-tidy --copt=-Wdeprecated-register --copt=-Wexpansion-to-defined
+build:clang-tidy --copt=-Wignored-attributes --copt=-Wnon-pod-varargs --copt=-Wshadow-field
+build:clang-tidy --copt=-Wshift-sign-overflow --copt=-Wtautological-undefined-compare
+build:clang-tidy --copt=-Wthread-safety-analysis --copt=-Wthread-safety-beta --copt=-Wthread-safety-reference
+build:clang-tidy --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --copt=-Wunused-const-variable
+build:clang-tidy --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
+build:clang-tidy --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
+
+# Enable rustfmt tests on all Rust targets
+build --@rules_rust//:rustfmt.toml=//tools/rust:rustfmt.toml
+build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
+build --output_groups=+rustfmt_checks
 
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc

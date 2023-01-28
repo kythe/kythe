@@ -523,6 +523,7 @@ type Path_Node struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Specialization:
+	//
 	//	*Path_Node_RawAnchor
 	//	*Path_Node_ExpandedAnchor
 	//	*Path_Node_File

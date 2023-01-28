@@ -18,15 +18,16 @@
 // messages. By default, entrystream does nothing to the entry stream.
 //
 // Examples:
-//   $ ... | entrystream                      # Passes through proto entry stream unchanged
-//   $ ... | entrystream --sort               # Sorts the entry stream into GraphStore order
-//   $ ... | entrystream --write_format=json  # Prints entry stream as JSON
-//   $ ... | entrystream --entrysets          # Prints combined entry sets as JSON
-//   $ ... | entrystream --count              # Prints the number of entries in the incoming stream
-//   $ ... | entrystream --read_format=json   # Reads entry stream as JSON and prints a proto stream
 //
-//   $ ... | entrystream --write_format=riegeli # Writes entry stream as a Riegeli file
-//   $ ... | entrystream --read_format=riegeli  # Reads the entry stream from a Riegeli file
+//	$ ... | entrystream                      # Passes through proto entry stream unchanged
+//	$ ... | entrystream --sort               # Sorts the entry stream into GraphStore order
+//	$ ... | entrystream --write_format=json  # Prints entry stream as JSON
+//	$ ... | entrystream --entrysets          # Prints combined entry sets as JSON
+//	$ ... | entrystream --count              # Prints the number of entries in the incoming stream
+//	$ ... | entrystream --read_format=json   # Reads entry stream as JSON and prints a proto stream
+//
+//	$ ... | entrystream --write_format=riegeli # Writes entry stream as a Riegeli file
+//	$ ... | entrystream --read_format=riegeli  # Reads the entry stream from a Riegeli file
 package main
 
 import (

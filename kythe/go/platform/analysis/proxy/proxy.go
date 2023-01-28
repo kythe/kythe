@@ -28,53 +28,57 @@
 //
 // The protocol between indexer (X) and proxy (P) is:
 //
-//   X → P: {"req":"analysis"}<LF>
-//   P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"analysis"}<LF>
+//	P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"analysis_wire"}<LF>
-//   P → X: {"rsp":"ok","args":{"unit":<unit_wire>,"rev":<revision>,"fds":<addr>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"analysis_wire"}<LF>
+//	P → X: {"rsp":"ok","args":{"unit":<unit_wire>,"rev":<revision>,"fds":<addr>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"output","args":[<entry>...]}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"output","args":[<entry>...]}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"output_wire","args":[<entry_wire>...]}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"output_wire","args":[<entry_wire>...]}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"done","args":{"ok":true,"msg":<error>}}<LF>
-//   P → X: {"rsp":"ok"}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"done","args":{"ok":true,"msg":<error>}}<LF>
+//	P → X: {"rsp":"ok"}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
-//   X → P: {"req":"file","args":{"path":<path>,"digest":<digest>}}<LF>
-//   P → X: {"rsp":"ok","args":{"path":<path>,"digest":<digest>,"content":<bytes>}}<LF>
-//          {"rsp":"error","args":<error>}<LF>
+//	X → P: {"req":"file","args":{"path":<path>,"digest":<digest>}}<LF>
+//	P → X: {"rsp":"ok","args":{"path":<path>,"digest":<digest>,"content":<bytes>}}<LF>
+//	       {"rsp":"error","args":<error>}<LF>
 //
 // Where:
 //
-//    <addr>       -- service address
-//    <bytes>      -- BASE-64 encoded bytes (string)
-//    <digest>     -- file content digest (string)
-//    <entry>      -- JSON encoded kythe.proto.Entry message
-//    <entry_wire> -- BASE-64 encoded kythe.proto.Entry message in wire format (string)
-//    <error>      -- error diagnostic (string)
-//    <path>       -- file path (string)
-//    <revision>   -- revision marker (string)
-//    <unit>       -- JSON encoded kythe.proto.CompilationUnit message
-//    <unit_wire>  -- BASE-64 encoded kythe.proto.CompilationUnit message in wire format (string)
-//    <LF>         -- line feed character (decimal code 10)
+//	<addr>       -- service address
+//	<bytes>      -- BASE-64 encoded bytes (string)
+//	<digest>     -- file content digest (string)
+//	<entry>      -- JSON encoded kythe.proto.Entry message
+//	<entry_wire> -- BASE-64 encoded kythe.proto.Entry message in wire format (string)
+//	<error>      -- error diagnostic (string)
+//	<path>       -- file path (string)
+//	<revision>   -- revision marker (string)
+//	<unit>       -- JSON encoded kythe.proto.CompilationUnit message
+//	<unit_wire>  -- BASE-64 encoded kythe.proto.CompilationUnit message in wire format (string)
+//	<LF>         -- line feed character (decimal code 10)
 //
 // When rsp="error" in a reply, the args are an error string. The ordinary flow
 // for the indexer is:
 //
-//     {"req":"analysis"}   -- to start a new analysis task
-//     {"req":"output",...} -- to send outputs for the task
-//     {"req":"file",...}   -- to fetch required input files.
-//         ... (as many times as needed) ...
-//     {"req":"done",...}   -- to mark the analysis as complete
-//                             and to report success/failure
+//	{"req":"analysis"}   -- to start a new analysis task
+//	{"req":"output",...} -- to send outputs for the task
+//	{"req":"file",...}   -- to fetch required input files.
+//	    ... (as many times as needed) ...
+//	{"req":"done",...}   -- to mark the analysis as complete
+//	                        and to report success/failure
+//
+// The proxy supports an extra /kythe/code/json fact.  Its value will be
+// interpreted as a JSON-encoded kythe.proto.common.MarkedSource message and
+// will be rewritted to the equivalent wire-encoded /kythe/code fact.
 //
 // In case of an indexing error, the indexer is free to terminate the analysis
 // early and report {"req":"done","args":{"ok":false}} to the driver.
@@ -84,7 +88,6 @@
 // as if the indexer had called "done". Subsequent calls to "output" or "done"
 // will behave as if no analysis is in progress. The indexer is free at that
 // point to start a new analysis.
-//
 package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 
 import (
@@ -92,11 +95,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -307,6 +314,27 @@ func (p *Proxy) Run(h Handler) error {
 	}
 }
 
+const codeJSONFact = facts.Code + "/json"
+
+func rewriteEntry(e *spb.Entry) (*spb.Entry, error) {
+	if e.GetFactName() == codeJSONFact {
+		ms := new(cpb.MarkedSource)
+		if err := protojson.Unmarshal(e.GetFactValue(), ms); err != nil {
+			return nil, err
+		}
+		rec, err := proto.Marshal(ms)
+		if err != nil {
+			return nil, err
+		}
+		return &spb.Entry{
+			Source:    e.Source,
+			FactName:  facts.Code,
+			FactValue: rec,
+		}, nil
+	}
+	return e, nil
+}
+
 func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	var messages []json.RawMessage
 	if err := json.Unmarshal(jsonArray, &messages); err != nil {
@@ -314,11 +342,16 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	}
 	entries := make([]*spb.Entry, len(messages))
 	for i, msg := range messages {
-		var e spb.Entry
-		if err := protojson.Unmarshal(msg, &e); err != nil {
+		e := new(spb.Entry)
+		if err := protojson.Unmarshal(msg, e); err != nil {
 			return nil, err
 		}
-		entries[i] = &e
+		e, err := rewriteEntry(e)
+		if err != nil {
+			log.Printf("ERROR: could not rewrite entry: %v", err)
+			continue
+		}
+		entries[i] = e
 	}
 	return entries, nil
 }
@@ -330,11 +363,16 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	}
 	entries := make([]*spb.Entry, len(messages))
 	for i, msg := range messages {
-		var e spb.Entry
-		if err := (proto.UnmarshalOptions{}.Unmarshal(msg, &e)); err != nil {
+		e := new(spb.Entry)
+		if err := (proto.UnmarshalOptions{}.Unmarshal(msg, e)); err != nil {
 			return nil, err
 		}
-		entries[i] = &e
+		e, err := rewriteEntry(e)
+		if err != nil {
+			log.Printf("ERROR: could not rewrite entry: %v", err)
+			continue
+		}
+		entries[i] = e
 	}
 	return entries, nil
 }

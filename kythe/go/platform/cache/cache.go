@@ -228,19 +228,22 @@ func (b *ByteSize) Set(s string) error {
 // Returns -1 and an error in case of invalid format.
 //
 // The supported unit labels are:
-//  B    * 2^0  bytes
-//  K    * 2^10 bytes
-//  M    * 2^20 bytes
-//  G    * 2^30 bytes
-//  T    * 2^40 bytes
+//
+//	B    * 2^0  bytes
+//	K    * 2^10 bytes
+//	M    * 2^20 bytes
+//	G    * 2^30 bytes
+//	T    * 2^40 bytes
+//
 // The labels are case-insensitive ("10g" is the same as "10G")
 //
 // Examples:
-//  ParseByteSize("25")    ==> 25
-//  ParseByteSize("1k")    ==> 1024
-//  ParseByteSize("2.5G")  ==> 2684354560
-//  ParseByteSize("10.3k") ==> 10547
-//  ParseByteSize("-45xx") ==> -1 [error]
+//
+//	ParseByteSize("25")    ==> 25
+//	ParseByteSize("1k")    ==> 1024
+//	ParseByteSize("2.5G")  ==> 2684354560
+//	ParseByteSize("10.3k") ==> 10547
+//	ParseByteSize("-45xx") ==> -1 [error]
 func ParseByteSize(s string) (int, error) {
 	var value float64
 	var unit string

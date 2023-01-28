@@ -286,15 +286,15 @@ func WebClient(addr string) Service {
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // xrefs Service.  The following methods with be exposed:
 //
-//   GET /decorations
-//     Request: JSON encoded xrefs.DecorationsRequest
-//     Response: JSON encoded xrefs.DecorationsReply
-//   GET /xrefs
-//     Request: JSON encoded xrefs.CrossReferencesRequest
-//     Response: JSON encoded xrefs.CrossReferencesReply
-//   GET /documentation
-//     Request: JSON encoded xrefs.DocumentationRequest
-//     Response: JSON encoded xrefs.DocumentationReply
+//	GET /decorations
+//	  Request: JSON encoded xrefs.DecorationsRequest
+//	  Response: JSON encoded xrefs.DecorationsReply
+//	GET /xrefs
+//	  Request: JSON encoded xrefs.CrossReferencesRequest
+//	  Response: JSON encoded xrefs.CrossReferencesReply
+//	GET /documentation
+//	  Request: JSON encoded xrefs.DocumentationRequest
+//	  Response: JSON encoded xrefs.DocumentationReply
 //
 // Note: /nodes, /edges, /decorations, and /xrefs will return their responses as
 // serialized protobufs if the "proto" query parameter is set.

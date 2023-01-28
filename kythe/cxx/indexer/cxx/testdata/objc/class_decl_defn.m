@@ -11,7 +11,7 @@
 //- BoxImpl.node/kind record
 //- BoxImpl.subkind class
 //- BoxImpl.complete definition
-//- @Box completes/uniquely BoxIface
+//- BoxIface completedby BoxImpl
 @implementation Box
 @end
 

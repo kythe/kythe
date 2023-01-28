@@ -106,7 +106,6 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],

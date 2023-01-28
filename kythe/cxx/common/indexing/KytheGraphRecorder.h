@@ -33,8 +33,6 @@ enum class NodeKindID {
   kRecord,
   kSum,
   kConstant,
-  kAbs,
-  kAbsVar,
   kFunction,
   kLookup,
   kMacro,
@@ -72,7 +70,8 @@ enum class PropertyID {
   kDiagnosticDetails,
   kDiagnosticContextOrUrl,
   kDocUri,
-  kBuildConfig
+  kBuildConfig,
+  kVisibility,
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -129,7 +128,9 @@ enum class EdgeKindID {
   kInfluences,
   kRefFile,
   kTParam,
-  kCompletedby
+  kCompletedby,
+  kRefCallDirect,
+  kRefCallDirectImplicit
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

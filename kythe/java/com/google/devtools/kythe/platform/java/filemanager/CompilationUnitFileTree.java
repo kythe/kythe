@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Represents the directory structure of the inputs of a compilation unit. */
 public class CompilationUnitFileTree {
@@ -75,7 +76,7 @@ public class CompilationUnitFileTree {
    * @param filename the file name.
    * @return the digest or null if no such file is present.
    */
-  public String lookup(String directory, String filename) {
+  public @Nullable String lookup(String directory, String filename) {
     Map<String, String> dir = dirs.get(directory);
     if (dir != null) {
       return dir.get(filename);

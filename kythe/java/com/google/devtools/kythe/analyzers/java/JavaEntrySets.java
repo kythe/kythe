@@ -274,12 +274,10 @@ public class JavaEntrySets extends KytheEntrySets {
   public EntrySet newWildcardNodeAndEmit(JCTree.JCWildcard wild, String sourcePath) {
     int counter = sourceToWildcardCounter.getOrDefault(sourcePath, 0);
     sourceToWildcardCounter.put(sourcePath, counter + 1);
-    NodeKind kind =
-        config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)
-            ? NodeKind.TVAR
-            : NodeKind.ABS_VAR;
     return emitAndReturn(
-        newNode(kind).addSignatureSalt(sourcePath + counter).setCorpusPath(defaultCorpusPath()));
+        newNode(NodeKind.TVAR)
+            .addSignatureSalt(sourcePath + counter)
+            .setCorpusPath(defaultCorpusPath()));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
@@ -293,7 +291,7 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Returns and emits a Java anchor for the given identifier. */
-  public EntrySet newAnchorAndEmit(
+  public @Nullable EntrySet newAnchorAndEmit(
       Positions filePositions, Name name, int startOffset, Span snippet) {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
@@ -303,12 +301,16 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a DIAGNOSTIC node attached to the given file. */
   public EntrySet emitDiagnostic(Positions filePositions, Diagnostic d) {
-    return emitDiagnostic(getFileVName(getDigest(filePositions.getSourceFile())), d);
+    return emitDiagnostic(filePositions.getSourceFile(), d);
+  }
+
+  /** Emits and returns a DIAGNOSTIC node attached to the given file. */
+  public EntrySet emitDiagnostic(JavaFileObject file, Diagnostic d) {
+    return emitDiagnostic(getFileVName(getDigest(file)), d);
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
-  @Nullable
-  private NodeKind elementNodeKind(ElementKind kind) {
+  private @Nullable NodeKind elementNodeKind(ElementKind kind) {
     switch (kind) {
       case CLASS:
         return NodeKind.RECORD_CLASS;
@@ -336,9 +338,6 @@ public class JavaEntrySets extends KytheEntrySets {
       case METHOD:
         return NodeKind.FUNCTION;
       case TYPE_PARAMETER:
-        if (!config.getGenericsStructure().equals(JavaIndexerConfig.GenericsStructure.TPARAM)) {
-          return NodeKind.ABS_VAR;
-        }
         return NodeKind.TVAR;
       default:
         // TODO(#1845): handle all cases, make this exceptional, and remove all null checks
@@ -394,8 +393,7 @@ public class JavaEntrySets extends KytheEntrySets {
         Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
   }
 
-  @Nullable
-  private VName lookupVName(@Nullable ClassSymbol cls) {
+  private @Nullable VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
       return null;
     } else if (cls.getQualifiedName().contentEquals(ARRAY_BUILTIN_CLASS)) {
@@ -405,8 +403,7 @@ public class JavaEntrySets extends KytheEntrySets {
     return clsVName != null ? clsVName : lookupVName(getDigest(cls.sourcefile));
   }
 
-  @Nullable
-  private static String getDigest(@Nullable JavaFileObject sourceFile) {
+  private static @Nullable String getDigest(@Nullable JavaFileObject sourceFile) {
     if (sourceFile == null) {
       return null;
     }

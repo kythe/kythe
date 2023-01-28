@@ -19,19 +19,19 @@
 // results are available to the caller.
 //
 // Usage:
-//   var c golang.Extractor
-//   if _, err := c.Locate("fmt"); err != nil {
-//     log.Fatalf(`Unable to locate package "fmt": %v`, err)
-//   }
-//   c.Extract()
-//   for _, pkg := range c.Packages {
-//     if pkg.Err != nil {
-//       log.Printf("Error extracting %q: %v", pkg.Path, pkg.Err)
-//     } else {
-//       writeOutput(pkg)
-//     }
-//   }
 //
+//	var c golang.Extractor
+//	if _, err := c.Locate("fmt"); err != nil {
+//	  log.Fatalf(`Unable to locate package "fmt": %v`, err)
+//	}
+//	c.Extract()
+//	for _, pkg := range c.Packages {
+//	  if pkg.Err != nil {
+//	    log.Printf("Error extracting %q: %v", pkg.Path, pkg.Err)
+//	  } else {
+//	    writeOutput(pkg)
+//	  }
+//	}
 package golang // import "kythe.io/kythe/go/extractors/golang"
 
 import (
@@ -45,7 +45,7 @@ import (
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/analysis"
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
 
@@ -355,7 +355,7 @@ func (p *Package) EachUnit(ctx context.Context, f func(cu *apb.CompilationUnit, 
 			if err != nil {
 				return fmt.Errorf("opening input: %v", err)
 			}
-			fd, err := kindex.FileData(ri.Info.Path, rc)
+			fd, err := kzip.FileData(ri.Info.Path, rc)
 			rc.Close()
 			if err != nil {
 				return fmt.Errorf("reading input: %v", err)

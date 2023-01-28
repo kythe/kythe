@@ -64,6 +64,7 @@ cc_library(
     ],
     deps = [
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/functional:function_ref",
         "@com_google_absl//absl/strings:str_format",
         "@llvm-project//llvm:Support",
     ],
@@ -122,7 +123,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -244,7 +244,6 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:frontend",

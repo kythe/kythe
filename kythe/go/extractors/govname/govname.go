@@ -32,9 +32,10 @@ import (
 )
 
 const (
-	pathTail     = `(?:/(?P<path>.+))?$`
-	packageSig   = "package"
-	golangCorpus = "golang.org"
+	pathTail   = `(?:/(?P<path>.+))?$`
+	packageSig = "package"
+	// GolangCorpus is the corpus used for the go std library
+	GolangCorpus = "golang.org"
 )
 
 // Language is the language string to use for Go VNames.
@@ -82,33 +83,34 @@ type PackageVNameOptions struct {
 // applicable. Note that vname rules are ignored for go stdlib packages.
 //
 // Examples:
-//   ForPackage(<kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
-//     Corpus: "kythe.io",
-//     Path: "kythe/go/util/schema",
-//		 Language: "go",
-//		 Signature: "package",
-//   }
 //
-//   ForPackage( <kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
-//     Corpus: "github.com/kythe/kythe",
-//     Path: "kythe/go/util/schema",
-//		 Language: "go",
-//		 Signature: "package",
-//   }
+//	  ForPackage(<kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
+//	    Corpus: "kythe.io",
+//	    Path: "kythe/go/util/schema",
+//			 Language: "go",
+//			 Signature: "package",
+//	  }
 //
-//   ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
-//     Corpus: "github.com/kythe/kythe",
-//     Path: "kythe/go/util/schema",
-//		 Language: "go",
-//		 Signature: "package",
-//   }
+//	  ForPackage( <kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
+//	    Corpus: "github.com/kythe/kythe",
+//	    Path: "kythe/go/util/schema",
+//			 Language: "go",
+//			 Signature: "package",
+//	  }
 //
-//   ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
-//     Corpus: "github.com/kythe/kythe",
-//     Path: "kythe/go/util/schema",
-//		 Language: "go",
-//		 Signature: "package",
-//   }
+//	  ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
+//	    Corpus: "github.com/kythe/kythe",
+//	    Path: "kythe/go/util/schema",
+//			 Language: "go",
+//			 Signature: "package",
+//	  }
+//
+//	  ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
+//	    Corpus: "github.com/kythe/kythe",
+//	    Path: "kythe/go/util/schema",
+//			 Language: "go",
+//			 Signature: "package",
+//	  }
 func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	if !pkg.Goroot && opts != nil && opts.Rules != nil {
 		root := pkg.Root
@@ -166,7 +168,7 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 		if opts.UseDefaultCorpusForStdLib {
 			v.Corpus = opts.DefaultCorpus
 		} else {
-			v.Corpus = golangCorpus
+			v.Corpus = GolangCorpus
 		}
 	} else if strings.HasPrefix(ip, ".") {
 		// Local import; no corpus
@@ -185,7 +187,7 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 // ForBuiltin returns a VName for a Go built-in with the given signature.
 func ForBuiltin(signature string) *spb.VName {
 	return &spb.VName{
-		Corpus:    golangCorpus,
+		Corpus:    GolangCorpus,
 		Language:  Language,
 		Root:      "ref/spec",
 		Signature: signature,
@@ -196,7 +198,7 @@ func ForBuiltin(signature string) *spb.VName {
 // given import path.
 func ForStandardLibrary(importPath string) *spb.VName {
 	return &spb.VName{
-		Corpus:    golangCorpus,
+		Corpus:    GolangCorpus,
 		Language:  Language,
 		Path:      importPath,
 		Signature: "package",
@@ -207,7 +209,7 @@ func ForStandardLibrary(importPath string) *spb.VName {
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
-	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == golangCorpus
+	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == GolangCorpus
 }
 
 // ImportPath returns the putative Go import path corresponding to v.  The
@@ -230,7 +232,7 @@ func ImportPath(v *spb.VName, goRoot string) string {
 
 // rootRelative reports whether path has the form
 //
-//     root[/pkg/os_arch/]tail
+//	root[/pkg/os_arch/]tail
 //
 // and if so, returns the tail. It returns path, false if path does not have
 // this form.

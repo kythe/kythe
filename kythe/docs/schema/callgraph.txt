@@ -59,12 +59,12 @@ overrides.
 == Forward declarations
 
 A call made using a forward declaration may not always `ref/call` the definition
-that link:./#completes[completes] that declaration. This allows the
+that link:./#completedby[completedby] that declaration. This allows the
 Kythe graph to model a set of programs (where different programs link against
 different implementations for the same declaration) rather than a single program
 (where linking different implementations in this way would result in undefined
 behavior). In order to build a complete call graph, one must therefore also look
-along `completes` edges to find alternate possible nodes that may be used to
+along `completedby` edges to find alternate possible nodes that may be used to
 make calls to a given declaration or definition.
 
 [kythe,C++,"foo calls a forward-declared bar.",0]
@@ -85,8 +85,7 @@ void C::bar() { }
 // Imagine that we only had BarDecl (by looking up the ref/call from c.bar()
 // in foo()). We can find the implementation BarImpl of C::bar by taking the
 // following trip:
-//- BarImplAnchor completes BarDecl
-//- BarImplAnchor defines/binding BarImpl
+//- BarDecl completedby BarImpl
 --------------------------------------------------------------------------------
 
 Note that this overestimates the possible set of nodes for a given callee: for
@@ -96,7 +95,7 @@ extra associations out, one would need to consider both which program is in
 focus by the user and which modules went into building that program. This is out
 of scope for this document.
 
-`completes` relationships should only be established when an indexer observes
+`completedby` relationships should only be established when an indexer observes
 that a completion has actually occurred. This allows users of the graph to
 avoid connecting implementations to signatures that those implementations
 never observe:
@@ -114,18 +113,18 @@ void foo();
 #example foo1.cc
 #include "foo1.h"
 // This definition sees the first declaration (but never the second).
-//- @foo completes Foo1Decl
-//- !{ @foo completes Foo2Decl }
+//- @foo defines/binding Foo1Defn
+//- Foo1Decl completedby Foo1Defn
 void foo() { }
 #example foo2.cc
 #include "foo2.h"
 // This definition sees only the second declaration.
-//- !{ @foo completes Foo1Decl }
-//- @foo completes Foo2Decl
+//- @foo defines/binding Foo2Defn
+//- Foo2Decl completedby Foo2Defn
 void foo() { }
 --------------------------------------------------------------------------------
 
-Finally, be careful to follow the `completes` relationship in both directions,
+Finally, be careful to follow the `completedby` relationship in both directions,
 since the Kythe graph records specifically *which* declaration is used in a
 function call.
 
@@ -144,9 +143,9 @@ void foo();
 
 // Finding all callsites for foo() follows the same query pattern. Depending
 // on your starting point, different VNames are unknown: if you begin with
-// FooImplAnchor, you'll need to search forward along the completes edge for
+// FooImplAnchor, you'll need to search forward along the completedby edge for
 // FooDecl.
-//- FooImplAnchor completes FooDecl
+//- FooDecl completedby FooImpl
 
 // If you start with FooDeclAnchor, you first need to find FooDecl,
 // then you can search backward for all of the nodes that complete it.
@@ -208,10 +207,10 @@ yields the various anchors that call `Fn` in the broadest sense.
 .. For every `o` in `O`, for all nodes `o'` such that `o' overrides o` or
    `o overrides o'`, add `o'` to `O`.
 .. For every `o` in `O`, for all nodes `o'` such that (for some `a`)
-   `a defines/binding o'` and (`a completes o` or `a completes/uniquely o`),
+   `a defines/binding o'` and (`o completedby o'`),
    add `o'` to `O`.
 .. For every `o` in `O`, for all nodes `o'` such that (for some `a`)
-   `a defines/binding o` and (`a completes o'` or `a completes/uniquely o'`),
+   `a defines/binding o` and (`o' completedby o`),
    add `o'` to `O`.
 . Return the set of all `a` such that there is some `o` in `O` such that
   `a ref/call o`.

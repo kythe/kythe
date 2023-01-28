@@ -3,33 +3,33 @@ package tspec
 
 import "fmt"
 
-//- @Int defines/binding Int
-//- @"Int int" defines Int
-//- Int.node/kind record
-//- Int.subkind type
+// - @Int defines/binding Int
+// - @"Int int" defines Int
+// - Int.node/kind record
+// - Int.subkind type
 type Int int
 
-//- @Ptr defines/binding Ptr
-//- @"Ptr *bool" defines Ptr
-//- Ptr.node/kind record
-//- Ptr.subkind type
+// - @Ptr defines/binding Ptr
+// - @"Ptr *bool" defines Ptr
+// - Ptr.node/kind record
+// - Ptr.subkind type
 type Ptr *bool
 
-type under struct { z int }
+type under struct{ z int }
 
-//- @Over defines/binding Over
-//- Over.node/kind record
-//- Over.subkind struct
+// - @Over defines/binding Over
+// - Over.node/kind record
+// - Over.subkind struct
 type Over under
 
-//- @UPtr defines/binding UPtr
-//- UPtr.node/kind record
-//- UPtr.subkind type
+// - @UPtr defines/binding UPtr
+// - UPtr.node/kind record
+// - UPtr.subkind type
 type UPtr *under
 
-//- @Struct defines/binding Struct
-//- Struct.node/kind record
-//- Struct.subkind struct
+// - @Struct defines/binding Struct
+// - Struct.node/kind record
+// - Struct.subkind struct
 type Struct struct {
 	//- @Alpha defines/binding Alpha
 	//- Alpha.node/kind variable
@@ -44,9 +44,9 @@ type Struct struct {
 	Bravo int
 }
 
-//- @Embed defines/binding Embed
-//- Embed.node/kind record
-//- Embed.subkind struct
+// - @Embed defines/binding Embed
+// - Embed.node/kind record
+// - Embed.subkind struct
 type Embed struct {
 	// An embedded type from this package.
 	//
@@ -78,8 +78,8 @@ type Embed struct {
 	Velocipede struct{}
 }
 
-//- @Thinger defines/binding Thinger
-//- Thinger.node/kind interface
+// - @Thinger defines/binding Thinger
+// - Thinger.node/kind interface
 type Thinger interface {
 	//- @Thing defines/binding Thing
 	//- Thing.node/kind function
@@ -87,9 +87,9 @@ type Thinger interface {
 	Thing()
 }
 
-//- @Extender defines/binding Extender
-//- Extender.node/kind interface
-//- Extender extends Thinger
+// - @Extender defines/binding Extender
+// - Extender.node/kind interface
+// - Extender extends Thinger
 type Extender interface {
 	Thinger
 

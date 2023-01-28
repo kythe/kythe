@@ -56,6 +56,8 @@ type baseDecorCommand struct {
 	decorSpan                string
 	corpus, root, pathPrefix string
 	buildConfigs             flagutil.StringSet
+
+	workspaceURI string
 }
 
 func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
@@ -65,6 +67,7 @@ func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
         b\d+-b\d+             -- Byte-offsets
         \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets
         \d+(:\d+)?            -- Full line span (with an optional starting column offset)`)
+	flag.StringVar(&c.workspaceURI, "workspace_uri", "", "Workspace URI to patch file decorations")
 	flag.StringVar(&c.corpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 	flag.StringVar(&c.root, "root", DefaultFileRoot, "File root to use if given a raw path")
 	flag.StringVar(&c.pathPrefix, "path_prefix", DefaultFilePathPrefix, "File path prefix to use if given a raw path (this is prepended directly to the raw path without any joining slashes)")
@@ -102,6 +105,10 @@ func (c baseDecorCommand) baseRequest(flag *flag.FlagSet) (*xpb.DecorationsReque
 		req.Location.Span = span
 	}
 	req.BuildConfig = c.buildConfigs.Elements()
+	if c.workspaceURI != "" {
+		req.Workspace = &xpb.Workspace{Uri: c.workspaceURI}
+		req.PatchAgainstWorkspace = true
+	}
 	return req, nil
 }
 

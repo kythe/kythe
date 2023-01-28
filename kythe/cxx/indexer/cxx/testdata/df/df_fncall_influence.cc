@@ -8,7 +8,7 @@ int f(int a, int b);
 //- @c defines/binding VarC
 //- @d defines/binding VarD
 //- @f defines/binding FDefn
-//- @f completes/uniquely FDecl
+//- FDecl completedby FDefn
 //- VarA influences VarC
 //- VarB influences VarD
 //- FDefn influences FDecl

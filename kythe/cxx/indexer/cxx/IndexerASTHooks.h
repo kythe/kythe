@@ -28,16 +28,11 @@
 #include "IndexerLibrarySupport.h"
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
-#include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Index/USRGeneration.h"
 #include "clang/Sema/SemaConsumer.h"
-#include "clang/Sema/Template.h"
 #include "glog/logging.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
@@ -86,12 +81,6 @@ enum EmitDataflowEdges : bool {
   Yes = true   ///< Emit dataflow edges.
 };
 
-/// \brief Specifies whether to use abs nodes.
-enum UseAbsNodes : bool {
-  Abs = true,    ///< Use abs nodes.
-  NoAbs = false  ///< Don't use abs nodes.
-};
-
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -132,8 +121,6 @@ struct IndexerOptions {
   int UsrByteSize = 0;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
-  /// \brief Controls whether abs nodes are emitted.
-  UseAbsNodes AbsNodes = UseAbsNodes::Abs;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
@@ -143,6 +130,10 @@ struct IndexerOptions {
       CreateWorklist = [](IndexerASTVisitor* indexer) {
         return IndexerWorklist::CreateDefaultWorklist(indexer);
       };
+  /// \brief Notified each time a semantic signature is hashed.
+  HashRecorder* HashRecorder = nullptr;
+  /// \brief If true, record directness of calls.
+  bool RecordCallDirectness = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and
@@ -315,13 +306,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   //   bool VisitBlockDecl(const clang::BlockDecl *Decl);
   //   bool VisitBlockExpr(const clang::BlockExpr *Expr);
 
-  /// \brief For functions that support it, controls the emission of range
-  /// information.
-  enum class EmitRanges {
-    No,  ///< Don't emit range information.
-    Yes  ///< Emit range information when it's available.
-  };
-
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
   absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
@@ -329,10 +313,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
-  /// \param ER Whether to notify the `GraphObserver` about source text
-  /// ranges for expressions.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForExpr(
-      const clang::Expr* Expr, EmitRanges ER);
+      const clang::Expr* Expr);
 
   /// \brief Builds a stable node ID for a special template argument.
   /// \param Id A string representing the special argument.
@@ -515,12 +497,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return absl::nullopt;
   }
 
-  /// \brief Builds a stable node ID for `TND`.
-  ///
-  /// \param Decl The declaration that is being identified.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl* Decl);
-
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// There is not a one-to-one correspondence between `Decl`s and nodes.
@@ -535,11 +511,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \return A stable node ID for `Decl`'s `Index`th subnode.
   GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl,
                                            unsigned Index);
-
-  /// \brief Categorizes the name of `Decl` according to the equivalence classes
-  /// defined by `GraphObserver::NameId::NameEqClass`.
-  GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
-      const clang::Decl* Decl) const;
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
@@ -731,13 +702,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
-    Worklist->EnqueueJob(absl::make_unique<IndexJob>(InitialDecl));
+    Worklist->EnqueueJob(std::make_unique<IndexJob>(InitialDecl));
     while (!options_.ShouldStopIndexing() && Worklist->DoWork())
       ;
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
-          RunJob(absl::make_unique<IndexJob>(InitialDecl, Id, FileNode));
+          RunJob(std::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !options_.ShouldStopIndexing();
         });
     Worklist.reset();
@@ -749,8 +720,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// Blames a call to `Callee` at `Range` on everything at the top of
   /// `BlameStack` (or does nothing if there's nobody to blame).
-  void RecordCallEdges(const GraphObserver::Range& Range,
-                       const GraphObserver::NodeId& Callee);
+  void RecordCallEdges(
+      const GraphObserver::Range& Range, const GraphObserver::NodeId& Callee,
+      GraphObserver::CallDispatch D = GraphObserver::CallDispatch::kDefault);
 
   // Blames the use of a `Decl` at a particular `Range` on everything at the
   // top of `BlameStack`. If there is nothing at the top of `BlameStack`,
@@ -809,7 +781,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
   bool AddNameToStream(llvm::raw_string_ostream& Ostream,
-                       const clang::NamedDecl* ND);
+                       const clang::NamedDecl* ND) const;
 
   /// \brief Assign `ND` (whose node ID is `TargetNode`) a USR if USRs are
   /// enabled.
@@ -837,8 +809,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
 
-  /// \brief Returns the parent of the given node, along with the index
-  /// at which the node appears underneath each parent.
+  /// \return true if `Decl` and all of the nodes underneath it are prunable.
+  ///
+  /// A subtree is prunable if it's "the same" in all possible indexer runs.
+  /// This excludes, for example, certain template instantiations.
+  bool declDominatesPrunableSubtree(const clang::Decl* Decl);
+
+  /// Initializes AllParents, if necessary, and then returns a pointer to it.
   ///
   /// Note that this will lazily compute the parents of all nodes
   /// and store them for later retrieval. Thus, the first call is O(n)
@@ -862,26 +839,14 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT>
-  const IndexedParent* getIndexedParent(const NodeT& Node) {
-    return getIndexedParent(clang::DynTypedNode::create(Node));
-  }
+  const IndexedParentMap* getAllParents() const;
 
-  /// \return true if `Decl` and all of the nodes underneath it are prunable.
-  ///
-  /// A subtree is prunable if it's "the same" in all possible indexer runs.
-  /// This excludes, for example, certain template instantiations.
-  bool declDominatesPrunableSubtree(const clang::Decl* Decl);
-
-  const IndexedParent* getIndexedParent(const clang::DynTypedNode& Node);
-
-  /// Initializes AllParents, if necessary, and then returns a pointer to it.
-  const IndexedParentMap* getAllParents();
-
+  // Used for building the indexed parent map and recording the time it took.
+  IndexedParentMap BuildIndexedParentMap() const;
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
   /// Filled on the first call to `getIndexedParents`.
-  std::unique_ptr<IndexedParentMap> AllParents;
+  LazyIndexedParentMap AllParents{[this] { return BuildIndexedParentMap(); }};
 
   /// Records information about the template `Template` wrapping the node
   /// `BodyId`, including the edge linking the template and its body. Returns

@@ -119,7 +119,7 @@ kzip_archive = rule(
             default = Label("//kythe/go/platform/tools/kzip"),
             allow_single_file = True,
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     implementation = _kzip_archive,

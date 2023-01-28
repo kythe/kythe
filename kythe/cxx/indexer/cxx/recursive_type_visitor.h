@@ -278,8 +278,8 @@ DEF_TRAVERSE_TYPEPAIR(TypeOfExprType, {
   return getDerived().TraverseStmt(TL.getUnderlyingExpr());
 });
 DEF_TRAVERSE_TYPEPAIR(TypeOfType, {
-  return getDerived().TraverseTypePair(TL.getUnderlyingTInfo()->getTypeLoc(),
-                                       T->getUnderlyingType());
+  return getDerived().TraverseTypePair(TL.getUnmodifiedTInfo()->getTypeLoc(),
+                                       T->getUnmodifiedType());
 });
 DEF_TRAVERSE_TYPEPAIR(DecltypeType, {
   return getDerived().TraverseStmt(TL.getUnderlyingExpr());

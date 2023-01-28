@@ -56,10 +56,21 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
-echo "$PACKAGE: go mod vendor" >&2
-pushd "$GOPATH/src/$PACKAGE"
-go mod vendor
-popd
+if [ -n "$KYTHE_SKIP_MOD_VENDOR" ]; then
+  if [ "$KYTHE_SKIP_MOD_VENDOR" == "1" ] || \
+     [ "$KYTHE_SKIP_MOD_VENDOR" == "True" ] || \
+     [ "$KYTHE_SKIP_MOD_VENDOR" == "true" ]; then
+    echo "$PACKAGE: Skipping 'go mod vendor' due to KYTHE_SKIP_MOD_VENDOR=$KYTHE_SKIP_MOD_VENDOR" >&2
+    SKIP_MOD_VENDOR=true
+  fi
+fi
+
+if [ -z "$SKIP_MOD_VENDOR" ]; then
+  echo "$PACKAGE: go mod vendor" >&2
+  pushd "$GOPATH/src/$PACKAGE"
+  go mod vendor
+  popd
+fi
 
 echo "Extracting ${PACKAGE}" >&2
   extract_go --continue -v \

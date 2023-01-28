@@ -20,7 +20,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.hash.Hashing;
@@ -32,7 +31,6 @@ import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
-import com.sun.tools.javac.main.CommandLine;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,6 +61,7 @@ import java.util.Optional;
  */
 public abstract class AbstractJavacWrapper {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  protected static final JdkCompatibilityShims shims = JdkCompatibilityShims.loadBest().get();
 
   protected abstract Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
@@ -72,8 +71,8 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file. Parameters to the extraction logic are passed by environment variables (see
-   * class comment).
+   * a .kzip file. Parameters to the extraction logic are passed by environment variables (see class
+   * comment).
    */
   public void process(String[] args) {
     JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
@@ -147,7 +146,7 @@ public abstract class AbstractJavacWrapper {
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
     // Expand all @file arguments
-    List<String> expandedArgs = Lists.newArrayList(CommandLine.parse(args));
+    List<String> expandedArgs = shims.parseCompilerArguments(args);
 
     // We skip some arguments that would normally be passed to javac:
     // -J, these are flags to the java environment running javac.

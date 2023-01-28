@@ -166,9 +166,10 @@ static clang::SourceRange GetVarDeclFlagDeclLoc(
 /// \brief Given the NodeId of the primary variable defn or decl of a flag,
 /// returns a NodeId for the flag itself.
 /// \param VarId the NodeId for the flag's primary variable (not a _no or _nono)
-static GraphObserver::NodeId NodeIdForFlag(const GraphObserver::NodeId& VarId) {
-  return GraphObserver::NodeId(VarId.getToken(),
-                               "google/gflag#" + VarId.getRawIdentity());
+static GraphObserver::NodeId NodeIdForFlag(GraphObserver& Observer,
+                                           const GraphObserver::NodeId& VarId) {
+  return Observer.MakeNodeId(VarId.getToken(),
+                             "google/gflag#" + VarId.getRawIdentity());
 }
 
 void GoogleFlagsLibrarySupport::InspectVariable(
@@ -191,7 +192,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
     // NB: Flags are always global.
     FlagNameId.Path = FlagName.str();
     FlagNameId.EqClass = GraphObserver::NameId::NameEqClass::None;
-    GraphObserver::NodeId FlagNodeId = NodeIdForFlag(NodeId);
+    GraphObserver::NodeId FlagNodeId = NodeIdForFlag(GO, NodeId);
     GO.recordUserDefinedNode(FlagNodeId, "google/gflag", Compl);
     if (auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       GO.recordDefinitionBindingRange(*RCC, FlagNodeId);
@@ -205,12 +206,8 @@ void GoogleFlagsLibrarySupport::InspectVariable(
           if (NextDeclRange.isValid()) {
             clang::FileID NextDeclFile =
                 GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
-            GO.recordCompletionRange(
-                *RCC, NodeIdForFlag(C.DeclId),
-                NextDeclFile == DeclFile
-                    ? GraphObserver::Specificity::UniquelyCompletes
-                    : GraphObserver::Specificity::Completes,
-                FlagNodeId);
+            GO.recordCompletionRange(*RCC, NodeIdForFlag(GO, C.DeclId),
+                                     FlagNodeId);
           }
         }
       }
@@ -230,7 +227,7 @@ void GoogleFlagsLibrarySupport::InspectDeclRef(
   }
   auto Range = GetVarDeclFlagDeclLoc(*GO.getLangOptions(), VD, DeclRefLocation);
   if (Range.isValid()) {
-    GO.recordDeclUseLocation(Ref, NodeIdForFlag(RefId),
+    GO.recordDeclUseLocation(Ref, NodeIdForFlag(GO, RefId),
                              GraphObserver::Claimability::Unclaimable,
                              V.IsImplicit(Ref));
   }
