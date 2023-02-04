@@ -1476,9 +1476,9 @@ class Visitor {
    *
    * const {SomeSym} = await import('./another/file');
    *
-   * TS represents dynamic import statements as CallExpressions.
-   *
    * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
+   *
+   * @param node import() statement. TS represents dynamic imports as CallExpressions.
    */
   visitDynamicImportCall(node: ts.CallExpression) {
     const moduleRef = node.arguments[0];
