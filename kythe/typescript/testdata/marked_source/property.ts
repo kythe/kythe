@@ -49,3 +49,17 @@ let b = {
   //- BPropInit.pre_text "1"
   bprop: 1,
 };
+
+interface C {
+  //- @cprop defines/binding CProp
+  //- CProp code CPropCode
+  //- CPropCode child.0 CPropContext
+  //- CPropContext.pre_text "(property)"
+  //- CPropCode child.1 CPropSpace
+  //- CPropSpace.pre_text " "
+  //- CPropCode child.2 CPropName
+  //- CPropName.pre_text "cprop"
+  //- CPropCode child.3 CPropTy
+  //- CPropTy.post_text "string"
+  cprop: string;
+}
