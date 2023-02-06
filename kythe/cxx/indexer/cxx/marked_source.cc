@@ -16,6 +16,8 @@
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 
+#include <optional>
+
 #include "absl/flags/flag.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"

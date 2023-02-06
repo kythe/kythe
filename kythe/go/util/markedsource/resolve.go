@@ -93,7 +93,7 @@ func (r *Resolver) Resolve(src *spb.VName) *cpb.MarkedSource {
 	return r.ResolveTicket(kytheuri.ToString(src))
 }
 
-// Resolve returns the fully resolved MarkedSource for the given source ticket.
+// ResolveTicket returns the fully resolved MarkedSource for the given source ticket.
 // May return nil if no MarkedSource is found.
 func (r *Resolver) ResolveTicket(ticket string) *cpb.MarkedSource {
 	if ticket == "" {
