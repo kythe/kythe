@@ -920,6 +920,14 @@ class Visitor {
     ts.forEachChild(node, n => {
       this.visit(n);
     });
+
+    // Special case dynamic imports as they are represendted as CallExpressions.
+    // We don't want to emit ref/call as we don't have anything to point it at:
+    // there is no import() function
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      this.visitDynamicImportCall(node);
+      return;
+    }
     const callAnchor = this.newAnchor(node);
     const symbol = this.host.getSymbolAtLocation(node.expression);
     if (!symbol) {
@@ -1301,6 +1309,42 @@ class Visitor {
     }
   }
 
+  /**
+   * Emits `ref/import` edge from a module name to its definition.
+   * It is used by static and dynamic imports:
+   *
+   * import {Bar} from './foo'; // static
+   *
+   * const {Bar} = await import('./foo'); // dynamic
+   *
+   * @param moduleRef Module reference. E.g. './foo' from the examples above.
+   * @returns true if corresponding module was found and an edge was emitted.
+   */
+  emitRefToImportedModule(moduleRef: ts.Node): boolean {
+    const moduleSym = this.host.getSymbolAtLocation(moduleRef);
+    if (!moduleSym) {
+      // This can occur when the module failed to resolve to anything.
+      // See testdata/import_missing.ts for more on how that could happen.
+      return false;
+    }
+    const modulePath = this.getModulePathFromModuleReference(moduleSym);
+    if (modulePath) {
+      const kModule = this.newVName('module', modulePath);
+      this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+    } else {
+      // Check if module being imported is declared via `declare module`
+      // and if so - output ref to that statement.
+      const decl = moduleSym.valueDeclaration;
+      if (decl && ts.isModuleDeclaration(decl)) {
+        const kModule =
+            this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
+        if (!kModule) return false;
+        this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+      }
+    }
+    return true;
+  }
+
   /** visitImportDeclaration handles the various forms of "import ...". */
   visitImportDeclaration(decl: ts.ImportDeclaration|
                          ts.ImportEqualsDeclaration) {
@@ -1323,26 +1367,9 @@ class Visitor {
           decl.moduleReference.expression :
           decl.moduleReference;
     }
-    const moduleSym = this.host.getSymbolAtLocation(moduleRef);
-    if (!moduleSym) {
-      // This can occur when the module failed to resolve to anything.
-      // See testdata/import_missing.ts for more on how that could happen.
+    const moduleFound = this.emitRefToImportedModule(moduleRef);
+    if (!moduleFound) {
       return;
-    }
-    const modulePath = this.getModulePathFromModuleReference(moduleSym);
-    if (modulePath) {
-      const kModule = this.newVName('module', modulePath);
-      this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
-    } else {
-      // Check if module being imported is declared via `declare module`
-      // and if so - output ref to that statement.
-      const decl = moduleSym.valueDeclaration;
-      if (decl && ts.isModuleDeclaration(decl)) {
-        const kModule =
-            this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
-        if (!kModule) return;
-        this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
-      }
     }
 
     // TODO(#4021): See discussion.
@@ -1442,6 +1469,20 @@ class Visitor {
         }
         break;
     }
+  }
+
+  /**
+   * Handles dynamic imports like:
+   *
+   * const {SomeSym} = await import('./another/file');
+   *
+   * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
+   *
+   * @param node import() statement. TS represents dynamic imports as CallExpressions.
+   */
+  visitDynamicImportCall(node: ts.CallExpression) {
+    const moduleRef = node.arguments[0];
+    this.emitRefToImportedModule(moduleRef);
   }
 
   /**
