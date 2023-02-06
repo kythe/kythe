@@ -560,9 +560,9 @@ class StandardIndexerContext implements IndexerHost {
           // TODO: namespace {}, etc.
 
           // If the node is actually some subtype that has a 'name' attribute
-          // it's likely this function should have handled it.  Dynamically
-          // probe for this case and warn if we missed one.
-          if ('name' in (node as any)) {
+          // and it's not empty it's likely this function should have handled
+          // it. Dynamically probe for this case and warn if we missed one.
+          if ((node as any).name != null) {
             todo(
                 this.sourceRoot, node,
                 `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
@@ -1692,7 +1692,8 @@ class Visitor {
     if (vname) {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
           ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
-          ts.isShorthandPropertyAssignment(decl)) {
+          ts.isShorthandPropertyAssignment(decl) ||
+          ts.isPropertySignature(decl)) {
         this.emitDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
@@ -1731,7 +1732,8 @@ class Visitor {
    */
   emitDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
-      ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment,
+      ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment|
+      ts.PropertySignature,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
