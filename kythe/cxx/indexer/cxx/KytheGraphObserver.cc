@@ -16,6 +16,7 @@
 
 #include "KytheGraphObserver.h"
 
+#include <optional>
 #include <string>
 
 #include "IndexerASTHooks.h"
