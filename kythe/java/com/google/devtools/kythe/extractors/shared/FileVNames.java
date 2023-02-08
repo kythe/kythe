@@ -228,14 +228,6 @@ public class FileVNames {
       return b.build();
     }
 
-    /**
-     * Returns a {@link VName} by filling in its corpus/root/path with regex groups in the given
-     * {@link Matcher}.
-     */
-    public VName fillInWith(Matcher m, String defaultCorpus) {
-      return fillInWith(m, () -> defaultCorpus);
-    }
-
     private static final Pattern replacerPattern = Pattern.compile("@(\\w+)@");
 
     private static String fillIn(String tmpl, Matcher m) {
