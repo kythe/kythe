@@ -2547,6 +2547,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "tvar_template_rec_inherit",
+    srcs = ["tvar_template/template_rec_inherit.cc"],
+    ignore_dups = True,
+    tags = ["tvar_template"],
+)
+
+cc_indexer_test(
     name = "tvar_template_rec_override",
     srcs = ["tvar_template/template_rec_override.cc"],
     ignore_dups = True,
