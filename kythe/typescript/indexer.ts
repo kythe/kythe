@@ -20,8 +20,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, KytheData, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
+import {performPostProcessing} from './post_processing';
 
 const LANGUAGE = 'typescript';
 
@@ -2627,8 +2628,9 @@ export function index(
 
   const indexingContext =
       new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
+  const output: KytheData = [];
   if (emit != null) {
-    indexingContext.emit = emit;
+    indexingContext.emit = (entry: JSONEdge|JSONFact) => void output.push(entry);;
   }
 
   for (const path of paths) {
@@ -2641,6 +2643,9 @@ export function index(
         sourceFile,
     );
     visitor.index();
+  }
+  for (const entry of performPostProcessing(output)) {
+    emit?.(entry);
   }
 
   if (plugins) {
