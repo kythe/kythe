@@ -287,6 +287,7 @@ export interface IndexingOptions {
   /** A map of file path to path-specific VName. */
   pathVNames: Map<string, VName>;
 
+  /** Program object created from all inputs, source and dependencies. */
   program: ts.Program;
 
   /** Function that receives final kythe indexing data. */
@@ -296,6 +297,7 @@ export interface IndexingOptions {
    * If provided, a list of plugin indexers to run after the TypeScript program has been indexed.
    */
   plugins?: Plugin[];
+
   /**
    * If provided, a function that reads a file as bytes to a Node Buffer. It'd be nice to just
    * reuse program.getSourceFile but unfortunately that returns a (Unicode) string and we need
