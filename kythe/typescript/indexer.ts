@@ -32,6 +32,36 @@ enum RefType {
 }
 
 /**
+ * Various options that are required in order to perform indexing.
+ */
+export interface IndexingOptions {
+  /** A VName for the entire compilation, containing e.g. corpus name. */
+  compilationUnit: VName;
+
+  /** A map of file path to path-specific VName. */
+  pathVNames: Map<string, VName>;
+
+  /** Program object created from all inputs, source and dependencies. */
+  program: ts.Program;
+
+  /** Function that receives final kythe indexing data. */
+  emit: (obj: JSONFact|JSONEdge) => void;
+
+  /**
+   * If provided, a list of plugin indexers to run after the TypeScript program has been indexed.
+   */
+  plugins?: Plugin[];
+
+  /**
+   * If provided, a function that reads a file as bytes to a Node Buffer. It'd be nice to just
+   * reuse program.getSourceFile but unfortunately that returns a (Unicode) string and we need
+   * to get at each file's raw bytes for UTF-8<->UTF-16 conversions. If omitted - fs.readFileSync
+   * is used.
+   */
+  readFile?: (path: string) => Buffer;
+}
+
+/**
  * An indexer host holds information about the program indexing and methods
  * used by the TypeScript indexer that may also be useful to plugins, reducing
  * code duplication.
@@ -275,36 +305,6 @@ function isParameterPropertyDeclaration(
     node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
   // TODO: remove/inline once fully on TypeScript 3.6+
   return (ts.isParameterPropertyDeclaration as any)(node, parent);
-}
-
-/**
- * Various options that are required in order to perform indexing.
- */
-export interface IndexingOptions {
-  /** A VName for the entire compilation, containing e.g. corpus name. */
-  compilationUnit: VName;
-
-  /** A map of file path to path-specific VName. */
-  pathVNames: Map<string, VName>;
-
-  /** Program object created from all inputs, source and dependencies. */
-  program: ts.Program;
-
-  /** Function that receives final kythe indexing data. */
-  emit: (obj: JSONFact|JSONEdge) => void;
-
-  /**
-   * If provided, a list of plugin indexers to run after the TypeScript program has been indexed.
-   */
-  plugins?: Plugin[];
-
-  /**
-   * If provided, a function that reads a file as bytes to a Node Buffer. It'd be nice to just
-   * reuse program.getSourceFile but unfortunately that returns a (Unicode) string and we need
-   * to get at each file's raw bytes for UTF-8<->UTF-16 conversions. If omitted - fs.readFileSync
-   * is used.
-   */
-  readFile?: (path: string) => Buffer;
 }
 
 /**
