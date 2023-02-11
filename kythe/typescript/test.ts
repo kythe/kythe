@@ -106,16 +106,20 @@ function verify(
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
-  const pathVnames = new Map<string, kythe.VName>();
+  const pathVNames = new Map<string, kythe.VName>();
   for (const file of testFiles) {
-    pathVnames.set(file, {...compilationUnit, path: file});
+    pathVNames.set(file, {...compilationUnit, path: file});
   }
 
   try {
-    indexer.index(
-        compilationUnit, pathVnames, testFiles, program, (obj: {}) => {
-          verifier.stdin.write(JSON.stringify(obj) + '\n');
-        }, plugins);
+    indexer.index(testFiles, {
+      compilationUnit,
+      pathVNames,
+      program, emit(obj: {}) {
+        verifier.stdin.write(JSON.stringify(obj) + '\n');
+      },
+      plugins,
+    });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
     // we hang waiting for the verifier to complete.
@@ -234,14 +238,14 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
 async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
-    index(context: indexer.IndexerHost) {
-      for (const testPath of context.paths) {
+    index(context: indexer.IndexerHost, paths: string[]) {
+      for (const testPath of paths) {
         const pluginMod = {
           ...context.pathToVName(context.moduleName(testPath)),
           signature: 'plugin-module',
           language: 'plugin-language',
         };
-        context.emit({
+        context.options.emit({
           source: pluginMod,
           fact_name: '/kythe/node/pluginKind' as kythe.FactName,
           fact_value: Buffer.from('pluginRecord').toString('base64'),

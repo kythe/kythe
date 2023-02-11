@@ -37,6 +37,8 @@ enum RefType {
  * code duplication.
  */
 export interface IndexerHost {
+  options: IndexingOptions;
+
   /**
    * Gets the offset table for a file path.
    * These are used to lookup UTF-8 offsets (used by Kythe) from UTF-16 offsets
@@ -76,14 +78,18 @@ export interface IndexerHost {
   moduleName(path: string): string;
   /**
    * Paths to index.
+   * TODO: Remove completely and instead pass paths explicitly
+   * as inputs to methods.
    */
   paths: string[];
   /**
    * TypeScript program.
+   * TODO: migrate usages to options.program
    */
   program: ts.Program;
   /**
    * Strategy to emit Kythe entries by.
+   * TODO: migrate usages to options.emit
    */
   emit(obj: JSONFact|JSONEdge): void;
 }
@@ -99,8 +105,12 @@ export interface Plugin {
    * Indexes a TypeScript program with extra functionality.
    * Takes a indexer host, which provides useful properties and methods that
    * the plugin can defer to rather than reimplementing.
+   *
+   * TODO: migrate plugins to take paths explicitly rather than relying on context.paths.
+   *
+   * @param paths Files to index.
    */
-  index(context: IndexerHost): void;
+  index(context: IndexerHost, paths?: string[]): void;
 }
 
 /**
@@ -268,6 +278,34 @@ function isParameterPropertyDeclaration(
 }
 
 /**
+ * Various options that are required in order to perform indexing.
+ */
+export interface IndexingOptions {
+  /** A VName for the entire compilation, containing e.g. corpus name. */
+  compilationUnit: VName;
+
+  /** A map of file path to path-specific VName. */
+  pathVNames: Map<string, VName>;
+
+  program: ts.Program;
+
+  /** Function that receives final kythe indexing data. */
+  emit: (obj: JSONFact|JSONEdge) => void;
+
+  /**
+   * If provided, a list of plugin indexers to run after the TypeScript program has been indexed.
+   */
+  plugins?: Plugin[];
+  /**
+   * If provided, a function that reads a file as bytes to a Node Buffer. It'd be nice to just
+   * reuse program.getSourceFile but unfortunately that returns a (Unicode) string and we need
+   * to get at each file's raw bytes for UTF-8<->UTF-16 conversions. If omitted - fs.readFileSync
+   * is used.
+   */
+  readFile?: (path: string) => Buffer;
+}
+
+/**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
@@ -300,32 +338,28 @@ class StandardIndexerContext implements IndexerHost {
 
   private typeChecker: ts.TypeChecker;
 
+  public program: ts.Program;
+  public emit: (obj: JSONFact|JSONEdge) => void;
+
+
   constructor(
-      /**
-       * The VName for the CompilationUnit, containing compilation-wide info.
-       */
-      private readonly compilationUnit: VName,
-      /**
-       * A map of path to path-specific VName.
-       */
-      private readonly pathVNames: Map<string, VName>,
-      /** All source file paths in the TypeScript program. */
-      public paths: string[],
-      public program: ts.Program,
-      private readFile: (path: string) => Buffer = fs.readFileSync,
+    public readonly paths: string[],
+    public readonly options: IndexingOptions,
   ) {
-    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    this.program = options.program;
+    this.emit = options.emit;
+    this.sourceRoot = options.program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = options.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
-    this.typeChecker = this.program.getTypeChecker();
+    this.typeChecker = options.program.getTypeChecker();
   }
 
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
     let table = this.offsetTables.get(path);
     if (!table) {
-      const buf = this.readFile(path);
+      const buf = (this.options.readFile || fs.readFileSync)(path);
       table = new utf8.OffsetTable(buf);
       this.offsetTables.set(path, table);
     }
@@ -660,24 +694,16 @@ class StandardIndexerContext implements IndexerHost {
    * and compilation unit.
    */
   pathToVName(path: string): VName {
-    const vname = this.pathVNames.get(path);
+    const vname = this.options.pathVNames.get(path);
     return {
       signature: '',
       language: '',
       corpus: vname && vname.corpus ? vname.corpus :
-                                      this.compilationUnit.corpus,
-      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+                                      this.options.compilationUnit.corpus,
+      root: vname && vname.corpus ? vname.root : this.options.compilationUnit.root,
       path: vname && vname.path ? vname.path : path,
     };
   }
-
-  /**
-   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
-   * emitting to stdout but users may replace it.
-   */
-  emit = (obj: JSONFact|JSONEdge) => {
-    console.log(JSON.stringify(obj));
-  };
 }
 
 const RE_FIRST_NON_WS = /\S|$/;
@@ -753,9 +779,9 @@ class Visitor {
       private file: ts.SourceFile,
   ) {
     this.sourceRoot =
-        this.host.program.getCompilerOptions().rootDir || process.cwd();
+        this.host.options.program.getCompilerOptions().rootDir || process.cwd();
 
-    this.typeChecker = this.host.program.getTypeChecker();
+    this.typeChecker = this.host.program.options.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
   }
@@ -806,7 +832,7 @@ class Visitor {
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
   emitFact(source: VName, name: FactName, value: string|Uint8Array) {
-    this.host.emit({
+    this.host.options.emit({
       source,
       fact_name: name,
       fact_value: Buffer.from(value).toString('base64'),
@@ -815,7 +841,7 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
-    this.host.emit({
+    this.host.options.emit({
       source,
       edge_kind: kind,
       target,
@@ -2595,29 +2621,16 @@ class Visitor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
- * @param compilationUnit A VName for the entire compilation, containing e.g.
- *     corpus name.
- * @param pathVNames A map of file path to path-specific VName.
- * @param emit If provided, a function that receives objects as they are
- *     emitted; otherwise, they are printed to stdout.
- * @param plugins If provided, a list of plugin indexers to run after the
- *     TypeScript program has been indexed.
- * @param readFile If provided, a function that reads a file as bytes to a
- *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
- *     unfortunately that returns a (Unicode) string and we need to get at
- *     each file's raw bytes for UTF-8<->UTF-16 conversions.
+ * @param paths Files to index
  */
-export function index(
-    vname: VName, pathVNames: Map<string, VName>, paths: string[],
-    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
-    readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
+export function index(paths: string[], options: IndexingOptions): ts.Diagnostic[] {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
+  const {program} = options;
   const diags: ts.Diagnostic[] = [];
   for (const path of paths) {
-    for (const diag of ts.getPreEmitDiagnostics(
-             program, program.getSourceFile(path))) {
+    for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
       diags.push(diag);
     }
   }
@@ -2625,11 +2638,7 @@ export function index(
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const indexingContext =
-      new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
-  if (emit != null) {
-    indexingContext.emit = emit;
-  }
+  const indexingContext =  new StandardIndexerContext(paths, options);
 
   for (const path of paths) {
     const sourceFile = program.getSourceFile(path);
@@ -2643,13 +2652,11 @@ export function index(
     visitor.index();
   }
 
-  if (plugins) {
-    for (const plugin of plugins) {
-      try {
-        plugin.index(indexingContext);
-      } catch (err) {
-        console.error(`Plugin ${plugin.name} errored: ${err}`);
-      }
+  for (const plugin of options.plugins ?? []) {
+    try {
+      plugin.index(indexingContext);
+    } catch (err) {
+      console.error(`Plugin ${plugin.name} errored: ${err}`);
     }
   }
 
@@ -2697,7 +2704,14 @@ function main(argv: string[]) {
     language: '',
   };
   const program = ts.createProgram(inPaths, config.options);
-  index(compilationUnit, new Map(), inPaths, program);
+  index(inPaths, {
+    compilationUnit,
+    pathVNames: new Map(),
+    program,
+    emit(obj: JSONFact | JSONEdge) {
+      console.log(JSON.stringify(obj));
+    }
+  });
   return 0;
 }
 
