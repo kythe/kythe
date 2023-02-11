@@ -33,10 +33,10 @@ function vnameToString(vname: VName): string {
   }
 
 /**
- * Finds node pairs that represent imported nodes. Key - string representation of a vname of the 
+ * Finds node pairs that represent imported nodes. Key - string representation of a vname of the
  * local node e.g. foo in `import {foo} from './bar';` and value is VName of the original node
- * e.g. `foo` in `export const foo = 1;`. 
- * 
+ * e.g. `foo` in `export const foo = 1;`.
+ *
  * All edges that point to the first node (local) will be reassigned to second (original).
  */
 function findImportNodesThatNeedEdgesReassignment(data: Readonly<KytheData>): Map<string, VName> {
@@ -66,32 +66,32 @@ function findImportNodesThatNeedEdgesReassignment(data: Readonly<KytheData>): Ma
 
 /**
  * This method merges nodes for imported symbols.
- * 
+ *
  * Indexer produces the following graph:
- * 
+ *
  * // foo.ts
  * //- @ANSWER defines/binding AnswerOrig
  * export const ANSWER = 42;
- * 
+ *
  * // bar.ts
  * //- @ANSWER ref/imports AnswerOrig
  * //- @ANSWER defines/binding AnswerLocal
  * import {ANSWER} from './foo';
  * //- @ANSWER ref AnswerLocal
  * console.log(ANSWER);
- * 
- * 
+ *
+ *
  * This pass changes
- * 
+ *
  * //- @ANSWER ref AnswerLocal
  * console.log(ANSWER);
- * 
+ *
  * to
- * 
+ *
  * //- @ANSWER ref AnswerOrig
  * console.log(ANSWER);
  *
- * 
+ *
  * Notice that ANSWER anchor in console.log call now points at the AnswerOrig node.
  * This is what users expect: that usages of imported symbols will point to the
  * original definition and not local aliases.
