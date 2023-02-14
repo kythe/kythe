@@ -243,8 +243,8 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
 async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
-    index(context: indexer.IndexerHost, paths: string[]) {
-      for (const testPath of paths) {
+    index(context: indexer.IndexerHost) {
+      for (const testPath of context.compilationUnit.srcs) {
         const pluginMod = {
           ...context.pathToVName(context.moduleName(testPath)),
           signature: 'plugin-module',

@@ -155,12 +155,8 @@ export interface Plugin {
    * Indexes a TypeScript program with extra functionality.
    * Takes a indexer host, which provides useful properties and methods that
    * the plugin can defer to rather than reimplementing.
-   *
-   * TODO: migrate plugins to take paths explicitly rather than relying on context.paths.
-   *
-   * @param paths Files to index.
    */
-  index(context: IndexerHost, paths?: string[]): void;
+  index(context: IndexerHost): void;
 }
 
 /**
