@@ -89,7 +89,7 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
     plugins?: indexer.Plugin[]): Promise<void> {
-  const compilationUnit: kythe.VName = {
+  const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
     path: '',
@@ -97,7 +97,6 @@ function verify(
     language: '',
   };
   const testFiles = testCase.files;
-  const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
       `${ENTRYSTREAM} --read_format=json | ` +
@@ -106,16 +105,22 @@ function verify(
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
-  const pathVNames = new Map<string, kythe.VName>();
+  const fileVNames = new Map<string, kythe.VName>();
   for (const file of testFiles) {
-    pathVNames.set(file, {...compilationUnit, path: file});
+    fileVNames.set(file, {...rootVName, path: file});
   }
 
   try {
-    indexer.index(testFiles, {
-      compilationUnit,
-      pathVNames,
-      program, emit(obj: {}) {
+    const compilationUnit: indexer.CompilationUnit = {
+      rootVName,
+      fileVNames,
+      srcs: testFiles,
+      allFiles: testFiles,
+    };
+    indexer.index(compilationUnit, {
+      compilerOptions: options,
+      compilerHost: host,
+      emit(obj: {}) {
         verifier.stdin.write(JSON.stringify(obj) + '\n');
       },
       plugins,

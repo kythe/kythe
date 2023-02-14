@@ -31,18 +31,35 @@ enum RefType {
   READ_WRITE
 }
 
+/** A unit of code that can be indexed. It resembles Kythe's CompilationUnit proto. */
+export interface CompilationUnit {
+  /** A VName for the entire compilation, containing e.g. corpus name. Used as basis for all vnames emitted by indexer. */
+  rootVName: VName;
+
+  /** A map of file path to file-specific VName. */
+  fileVNames: Map<string, VName>;
+
+  /** Files to index. */
+  srcs: string[];
+
+  /** List of all files, both srcs and deps. */
+  allFiles: string[];
+}
+
 /**
  * Various options that are required in order to perform indexing.
  */
 export interface IndexingOptions {
-  /** A VName for the entire compilation, containing e.g. corpus name. */
-  compilationUnit: VName;
 
-  /** A map of file path to path-specific VName. */
-  pathVNames: Map<string, VName>;
+  /** Compiler options to use for indexing. */
+  compilerOptions: ts.CompilerOptions;
 
-  /** Program object created from all inputs, source and dependencies. */
-  program: ts.Program;
+  /**
+   * Compiler host to use for indexing. Simplest approach is to create
+   * ts.createCompilerHost(options). In more advanced cases callers
+   * might augment host to cache commonly used libraries for example.
+   */
+  compilerHost: ts.CompilerHost;
 
   /** Function that receives final kythe indexing data. */
   emit: (obj: JSONFact|JSONEdge) => void;
@@ -67,6 +84,9 @@ export interface IndexingOptions {
  * code duplication.
  */
 export interface IndexerHost {
+  /** Compilation unit being indexed. */
+  compilationUnit: CompilationUnit;
+
   options: IndexingOptions;
 
   /**
@@ -340,22 +360,23 @@ class StandardIndexerContext implements IndexerHost {
 
   private typeChecker: ts.TypeChecker;
 
-  public program: ts.Program;
-  public emit: (obj: JSONFact|JSONEdge) => void;
+  public readonly emit: (obj: JSONFact|JSONEdge) => void;
+  public readonly paths: string[];
 
 
   constructor(
-    public readonly paths: string[],
+    public readonly program: ts.Program,
+    public readonly compilationUnit: CompilationUnit,
     public readonly options: IndexingOptions,
   ) {
-    this.program = options.program;
+    this.paths = compilationUnit.srcs;
     this.emit = options.emit;
-    this.sourceRoot = options.program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = options.program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    this.sourceRoot = this.program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
-    this.typeChecker = options.program.getTypeChecker();
+    this.typeChecker = this.program.getTypeChecker();
   }
 
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
@@ -696,13 +717,13 @@ class StandardIndexerContext implements IndexerHost {
    * and compilation unit.
    */
   pathToVName(path: string): VName {
-    const vname = this.options.pathVNames.get(path);
+    const vname = this.compilationUnit.fileVNames.get(path);
     return {
       signature: '',
       language: '',
       corpus: vname && vname.corpus ? vname.corpus :
-                                      this.options.compilationUnit.corpus,
-      root: vname && vname.corpus ? vname.root : this.options.compilationUnit.root,
+                                      this.compilationUnit.rootVName.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.rootVName.root,
       path: vname && vname.path ? vname.path : path,
     };
   }
@@ -781,9 +802,9 @@ class Visitor {
       private file: ts.SourceFile,
   ) {
     this.sourceRoot =
-        this.host.options.program.getCompilerOptions().rootDir || process.cwd();
+        this.host.program.getCompilerOptions().rootDir || process.cwd();
 
-    this.typeChecker = this.host.program.options.getTypeChecker();
+    this.typeChecker = this.host.program.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
   }
@@ -2625,13 +2646,17 @@ class Visitor {
  *
  * @param paths Files to index
  */
-export function index(paths: string[], options: IndexingOptions): ts.Diagnostic[] {
+export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
+  const program = ts.createProgram({
+    rootNames: compilationUnit.allFiles,
+    options: options.compilerOptions,
+    host: options.compilerHost,
+  });
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
-  const {program} = options;
   const diags: ts.Diagnostic[] = [];
-  for (const path of paths) {
+  for (const path of compilationUnit.srcs) {
     for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
       diags.push(diag);
     }
@@ -2640,9 +2665,9 @@ export function index(paths: string[], options: IndexingOptions): ts.Diagnostic[
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const indexingContext =  new StandardIndexerContext(paths, options);
+  const indexingContext =  new StandardIndexerContext(program, compilationUnit, options);
 
-  for (const path of paths) {
+  for (const path of compilationUnit.srcs) {
     const sourceFile = program.getSourceFile(path);
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
@@ -2698,18 +2723,22 @@ function main(argv: string[]) {
   }
 
   // This program merely demonstrates the API, so use a fake corpus/root/etc.
-  const compilationUnit: VName = {
+  const rootVName: VName = {
     corpus: 'corpus',
     root: '',
     path: '',
     signature: '',
     language: '',
   };
-  const program = ts.createProgram(inPaths, config.options);
-  index(inPaths, {
-    compilationUnit,
-    pathVNames: new Map(),
-    program,
+  const compilationUnit: CompilationUnit = {
+    srcs: inPaths,
+    rootVName,
+    allFiles: inPaths,
+    fileVNames: new Map(),
+  };
+  index(compilationUnit, {
+    compilerOptions: config.options,
+    compilerHost: ts.createCompilerHost(config.options),
     emit(obj: JSONFact | JSONEdge) {
       console.log(JSON.stringify(obj));
     }
