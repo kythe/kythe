@@ -89,7 +89,7 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
     plugins?: indexer.Plugin[]): Promise<void> {
-  const compilationUnit: kythe.VName = {
+  const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
     path: '',
@@ -97,7 +97,6 @@ function verify(
     language: '',
   };
   const testFiles = testCase.files;
-  const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
       `${ENTRYSTREAM} --read_format=json | ` +
@@ -106,16 +105,26 @@ function verify(
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
-  const pathVnames = new Map<string, kythe.VName>();
+  const fileVNames = new Map<string, kythe.VName>();
   for (const file of testFiles) {
-    pathVnames.set(file, {...compilationUnit, path: file});
+    fileVNames.set(file, {...rootVName, path: file});
   }
 
   try {
-    indexer.index(
-        compilationUnit, pathVnames, testFiles, program, (obj: {}) => {
-          verifier.stdin.write(JSON.stringify(obj) + '\n');
-        }, plugins);
+    const compilationUnit: indexer.CompilationUnit = {
+      rootVName,
+      fileVNames,
+      srcs: testFiles,
+      allFiles: testFiles,
+    };
+    indexer.index(compilationUnit, {
+      compilerOptions: options,
+      compilerHost: host,
+      emit(obj: {}) {
+        verifier.stdin.write(JSON.stringify(obj) + '\n');
+      },
+      plugins,
+    });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
     // we hang waiting for the verifier to complete.
@@ -235,13 +244,13 @@ async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
     index(context: indexer.IndexerHost) {
-      for (const testPath of context.paths) {
+      for (const testPath of context.compilationUnit.srcs) {
         const pluginMod = {
           ...context.pathToVName(context.moduleName(testPath)),
           signature: 'plugin-module',
           language: 'plugin-language',
         };
-        context.emit({
+        context.options.emit({
           source: pluginMod,
           fact_name: '/kythe/node/pluginKind' as kythe.FactName,
           fact_value: Buffer.from('pluginRecord').toString('base64'),
