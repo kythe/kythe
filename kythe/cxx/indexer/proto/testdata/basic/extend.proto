@@ -17,7 +17,7 @@ extend Extendee {
   // extendee_ext comment.
   //- @extendee_ext defines/binding ExtField
   //- ExtField childof MainPackage
-  //- ExtendeeMessage completedby ExtField
+  //- ExtField extends ExtendeeMessage
   optional string extendee_ext = 1001;
 }
 
@@ -26,7 +26,7 @@ extend itsapackage.Foo {
   //- @Bar ref BarMessage
   //- @other_package_ext defines/binding OtherExtField
   //- OtherExtField childof MainPackage
-  //- FooMessage completedby OtherExtField
+  //- OtherExtField extends FooMessage
   optional itsapackage.Bar other_package_ext = 1001;
 }
 
@@ -37,7 +37,7 @@ message Nested {
   extend Extendee {
     //- @nested_extendee_ext defines/binding NestedExtField
     //- NestedExtField childof NestedMessage
-    //- ExtendeeMessage completedby NestedExtField
+    //- NestedExtField extends ExtendeeMessage
     optional string nested_extendee_ext = 1002;
   }
 
@@ -46,7 +46,7 @@ message Nested {
     //- @Bar ref BarMessage
     //- @nested_other_package_ext defines/binding NestedOtherField
     //- NestedOtherField childof NestedMessage
-    //- FooMessage completedby NestedOtherField
+    //- NestedOtherField extends FooMessage
     optional itsapackage.Bar nested_other_package_ext = 1002;
   }
 }
