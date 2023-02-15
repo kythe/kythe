@@ -1278,7 +1278,7 @@ static inline std::string HashToString(size_t Hash) {
   if (!Hash) {
     return "";
   }
-  int SetBit = sizeof(Hash) * CHAR_BIT - llvm::countLeadingZeros(Hash);
+  int SetBit = llvm::bit_width(Hash);
   size_t Pos = (SetBit + kBitsPerCharacter - 1) / kBitsPerCharacter;
   std::string HashOut(Pos, kSafeEncodingCharacters[0]);
   while (Hash) {
