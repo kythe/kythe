@@ -76,6 +76,12 @@ export interface IndexingOptions {
    * is used.
    */
   readFile?: (path: string) => Buffer;
+
+  /**
+   * When set to true only CompilationUnit.srcs will be used to create TS program as roots.
+   * Other files will be loaded by TS compiler lazily.
+   */
+  passOnlySrcsToCreateProgram?: boolean;
 }
 
 /**
@@ -2644,7 +2650,7 @@ class Visitor {
  */
 export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
   const program = ts.createProgram({
-    rootNames: compilationUnit.allFiles,
+    rootNames: options.passOnlySrcsToCreateProgram ? compilationUnit.srcs : compilationUnit.allFiles,
     options: options.compilerOptions,
     host: options.compilerHost,
   });
