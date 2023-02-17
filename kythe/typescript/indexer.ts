@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,7 @@ export interface CompilationUnit {
   srcs: string[];
 
   /** List of all files, both srcs and deps. */
-  allFiles: string[];
+  allFiles?: string[];
 }
 
 /**
@@ -2650,7 +2650,8 @@ class Visitor {
  */
 export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
   const program = ts.createProgram({
-    rootNames: options.passOnlySrcsToCreateProgram ? compilationUnit.srcs : compilationUnit.allFiles,
+    rootNames: options.passOnlySrcsToCreateProgram ? compilationUnit.srcs :
+                                                     compilationUnit.allFiles!,
     options: options.compilerOptions,
     host: options.compilerHost,
   });
