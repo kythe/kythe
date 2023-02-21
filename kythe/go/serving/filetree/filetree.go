@@ -81,6 +81,7 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 		re := &ftpb.DirectoryReply_Entry{
 			Name:        e.Name,
 			BuildConfig: e.BuildConfig,
+			Generated:   e.GetGenerated(),
 		}
 		switch e.Kind {
 		case srvpb.FileDirectory_FILE:
@@ -116,8 +117,9 @@ func parseLegacyEntries(entries []*ftpb.DirectoryReply_Entry, kind ftpb.Director
 			return nil, fmt.Errorf("invalid serving data: %v", err)
 		}
 		entries = append(entries, &ftpb.DirectoryReply_Entry{
-			Kind: kind,
-			Name: filepath.Base(uri.Path),
+			Kind:      kind,
+			Name:      filepath.Base(uri.Path),
+			Generated: uri.Root != "",
 		})
 	}
 	return entries, nil
