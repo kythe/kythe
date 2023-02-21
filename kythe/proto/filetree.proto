@@ -74,6 +74,9 @@ message DirectoryReply {
     // Set of known build configurations of this FILE or all files recursively
     // contained in/below this DIRECTORY.
     repeated string build_config = 3;
+
+    // True if the entry is generated.
+    bool generated = 4;
   }
   enum Kind {
     UNKNOWN = 0;

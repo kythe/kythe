@@ -89,8 +89,9 @@ func (m *Map) AddFile(file *spb.VName) {
 	dirPath := CleanDirPath(path.Dir(file.Path))
 	dir := m.ensureDir(file.Corpus, file.Root, dirPath)
 	dir.Entry = addEntry(dir.Entry, &ftpb.DirectoryReply_Entry{
-		Kind: ftpb.DirectoryReply_FILE,
-		Name: filepath.Base(file.Path),
+		Kind:      ftpb.DirectoryReply_FILE,
+		Name:      filepath.Base(file.Path),
+		Generated: file.GetRoot() != "",
 	})
 }
 
@@ -159,8 +160,9 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 		if path != "" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
 			parent.Entry = addEntry(parent.Entry, &ftpb.DirectoryReply_Entry{
-				Kind: ftpb.DirectoryReply_DIRECTORY,
-				Name: filepath.Base(path),
+				Kind:      ftpb.DirectoryReply_DIRECTORY,
+				Name:      filepath.Base(path),
+				Generated: root != "",
 			})
 		}
 	}
