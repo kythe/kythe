@@ -32,12 +32,78 @@ enum RefType {
   READ_WRITE
 }
 
+/** A unit of code that can be indexed. It resembles Kythe's CompilationUnit proto. */
+export interface CompilationUnit {
+  /** A VName for the entire compilation, containing e.g. corpus name. Used as basis for all vnames emitted by indexer. */
+  rootVName: VName;
+
+  /** A map of file path to file-specific VName. */
+  fileVNames: Map<string, VName>;
+
+  /** Files to index. */
+  srcs: string[];
+
+  /** List of all files, both srcs and deps. */
+  allFiles: string[];
+}
+
+/**
+ * Various options that are required in order to perform indexing.
+ */
+export interface IndexingOptions {
+
+  /** Compiler options to use for indexing. */
+  compilerOptions: ts.CompilerOptions;
+
+  /**
+   * Compiler host to use for indexing. Simplest approach is to create
+   * ts.createCompilerHost(options). In more advanced cases callers
+   * might augment host to cache commonly used libraries for example.
+   */
+  compilerHost: ts.CompilerHost;
+
+  /** Function that receives final kythe indexing data. */
+  emit: (obj: JSONFact|JSONEdge) => void;
+
+  /**
+   * If provided, a list of plugin indexers to run after the TypeScript program has been indexed.
+   */
+  plugins?: Plugin[];
+
+  /**
+   * If provided, a function that reads a file as bytes to a Node Buffer. It'd be nice to just
+   * reuse program.getSourceFile but unfortunately that returns a (Unicode) string and we need
+   * to get at each file's raw bytes for UTF-8<->UTF-16 conversions. If omitted - fs.readFileSync
+   * is used.
+   */
+  readFile?: (path: string) => Buffer;
+
+  /**
+   * When set to true enables post-processing: all data emitted by indexer is
+   * stored in memory and then one or more steps applied to implement certain features.
+   * This option exists to safely roll out post processing to ensure that it doesn' cause
+   * OOM.
+   */
+  enablePostProcessing?: boolean;
+
+  /**
+   * Enables post processing that "inlines" refs to imported symbols to point instead
+   * to the original definition.
+   */
+  enableImportsEdgeReassignment?: boolean;
+}
+
 /**
  * An indexer host holds information about the program indexing and methods
  * used by the TypeScript indexer that may also be useful to plugins, reducing
  * code duplication.
  */
 export interface IndexerHost {
+  /** Compilation unit being indexed. */
+  compilationUnit: CompilationUnit;
+
+  options: IndexingOptions;
+
   /**
    * Gets the offset table for a file path.
    * These are used to lookup UTF-8 offsets (used by Kythe) from UTF-16 offsets
@@ -77,14 +143,18 @@ export interface IndexerHost {
   moduleName(path: string): string;
   /**
    * Paths to index.
+   * TODO: Remove completely and instead pass paths explicitly
+   * as inputs to methods.
    */
   paths: string[];
   /**
    * TypeScript program.
+   * TODO: migrate usages to options.program
    */
   program: ts.Program;
   /**
    * Strategy to emit Kythe entries by.
+   * TODO: migrate usages to options.emit
    */
   emit(obj: JSONFact|JSONEdge): void;
 }
@@ -301,22 +371,19 @@ class StandardIndexerContext implements IndexerHost {
 
   private typeChecker: ts.TypeChecker;
 
+  public readonly emit: (obj: JSONFact|JSONEdge) => void;
+  public readonly paths: string[];
+
+
   constructor(
-      /**
-       * The VName for the CompilationUnit, containing compilation-wide info.
-       */
-      private readonly compilationUnit: VName,
-      /**
-       * A map of path to path-specific VName.
-       */
-      private readonly pathVNames: Map<string, VName>,
-      /** All source file paths in the TypeScript program. */
-      public paths: string[],
-      public program: ts.Program,
-      private readFile: (path: string) => Buffer = fs.readFileSync,
+    public readonly program: ts.Program,
+    public readonly compilationUnit: CompilationUnit,
+    public readonly options: IndexingOptions,
   ) {
-    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    this.paths = compilationUnit.srcs;
+    this.emit = options.emit;
+    this.sourceRoot = this.program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
@@ -326,7 +393,7 @@ class StandardIndexerContext implements IndexerHost {
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
     let table = this.offsetTables.get(path);
     if (!table) {
-      const buf = this.readFile(path);
+      const buf = (this.options.readFile || fs.readFileSync)(path);
       table = new utf8.OffsetTable(buf);
       this.offsetTables.set(path, table);
     }
@@ -661,24 +728,16 @@ class StandardIndexerContext implements IndexerHost {
    * and compilation unit.
    */
   pathToVName(path: string): VName {
-    const vname = this.pathVNames.get(path);
+    const vname = this.compilationUnit.fileVNames.get(path);
     return {
       signature: '',
       language: '',
       corpus: vname && vname.corpus ? vname.corpus :
-                                      this.compilationUnit.corpus,
-      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+                                      this.compilationUnit.rootVName.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.rootVName.root,
       path: vname && vname.path ? vname.path : path,
     };
   }
-
-  /**
-   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
-   * emitting to stdout but users may replace it.
-   */
-  emit = (obj: JSONFact|JSONEdge) => {
-    console.log(JSON.stringify(obj));
-  };
 }
 
 const RE_FIRST_NON_WS = /\S|$/;
@@ -807,7 +866,7 @@ class Visitor {
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
   emitFact(source: VName, name: FactName, value: string|Uint8Array) {
-    this.host.emit({
+    this.host.options.emit({
       source,
       fact_name: name,
       fact_value: Buffer.from(value).toString('base64'),
@@ -816,7 +875,7 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
-    this.host.emit({
+    this.host.options.emit({
       source,
       edge_kind: kind,
       target,
@@ -1394,13 +1453,15 @@ class Visitor {
     const importTextAnchor =
         this.newAnchor(decl, importTextSpan.start, importTextSpan.end);
 
+    const enableReassignment = this.host.options.enableImportsEdgeReassignment;
     if (ts.isImportEqualsDeclaration(decl)) {
       // This is an equals import, e.g.:
       //   import foo = require('./bar');
       //
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
-      this.visitImport(decl.name, importTextAnchor, this.newAnchor(decl.name));
+      const refAnchor = this.newAnchor(decl.name)
+      this.visitImport(decl.name, enableReassignment ? refAnchor : importTextAnchor, refAnchor);
       return;
     }
 
@@ -1417,8 +1478,9 @@ class Visitor {
       //
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
+      const refAnchor = this.newAnchor(clause.name);
       this.visitImport(
-          clause.name, importTextAnchor, this.newAnchor(clause.name));
+          clause.name, enableReassignment ? refAnchor : importTextAnchor, refAnchor);
       return;
     }
 
@@ -1463,8 +1525,8 @@ class Visitor {
             bindingAnchor = this.newAnchor(imp.name);
             refAnchor = this.newAnchor(imp.propertyName);
           } else {
-            bindingAnchor = importTextAnchor;
             refAnchor = this.newAnchor(imp.name);
+            bindingAnchor = enableReassignment ? refAnchor : importTextAnchor;
           }
           this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
@@ -2596,29 +2658,20 @@ class Visitor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
- * @param compilationUnit A VName for the entire compilation, containing e.g.
- *     corpus name.
- * @param pathVNames A map of file path to path-specific VName.
- * @param emit If provided, a function that receives objects as they are
- *     emitted; otherwise, they are printed to stdout.
- * @param plugins If provided, a list of plugin indexers to run after the
- *     TypeScript program has been indexed.
- * @param readFile If provided, a function that reads a file as bytes to a
- *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
- *     unfortunately that returns a (Unicode) string and we need to get at
- *     each file's raw bytes for UTF-8<->UTF-16 conversions.
+ * @param paths Files to index
  */
-export function index(
-    vname: VName, pathVNames: Map<string, VName>, paths: string[],
-    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
-    readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
+export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
+  const program = ts.createProgram({
+    rootNames: compilationUnit.allFiles,
+    options: options.compilerOptions,
+    host: options.compilerHost,
+  });
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
   const diags: ts.Diagnostic[] = [];
-  for (const path of paths) {
-    for (const diag of ts.getPreEmitDiagnostics(
-             program, program.getSourceFile(path))) {
+  for (const path of compilationUnit.srcs) {
+    for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
       diags.push(diag);
     }
   }
@@ -2626,14 +2679,15 @@ export function index(
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const indexingContext =
-      new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
   const output: KytheData = [];
-  if (emit != null) {
-    indexingContext.emit = (entry: JSONEdge|JSONFact) => void output.push(entry);;
+  const originalEmit = options.emit;
+  if (options.enablePostProcessing) {
+    options.emit = (entry: JSONEdge|JSONFact) => void output.push(entry);
   }
 
-  for (const path of paths) {
+  const indexingContext =  new StandardIndexerContext(program, compilationUnit, options);
+
+  for (const path of compilationUnit.srcs) {
     const sourceFile = program.getSourceFile(path);
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
@@ -2644,17 +2698,17 @@ export function index(
     );
     visitor.index();
   }
-  for (const entry of performPostProcessing(output)) {
-    emit?.(entry);
+  if (options.enablePostProcessing) {
+    for (const entry of performPostProcessing(output, options.enableImportsEdgeReassignment ?? false)) {
+      originalEmit(entry);
+    }
   }
 
-  if (plugins) {
-    for (const plugin of plugins) {
-      try {
-        plugin.index(indexingContext);
-      } catch (err) {
-        console.error(`Plugin ${plugin.name} errored: ${err}`);
-      }
+  for (const plugin of options.plugins ?? []) {
+    try {
+      plugin.index(indexingContext);
+    } catch (err) {
+      console.error(`Plugin ${plugin.name} errored: ${err}`);
     }
   }
 
@@ -2694,15 +2748,26 @@ function main(argv: string[]) {
   }
 
   // This program merely demonstrates the API, so use a fake corpus/root/etc.
-  const compilationUnit: VName = {
+  const rootVName: VName = {
     corpus: 'corpus',
     root: '',
     path: '',
     signature: '',
     language: '',
   };
-  const program = ts.createProgram(inPaths, config.options);
-  index(compilationUnit, new Map(), inPaths, program);
+  const compilationUnit: CompilationUnit = {
+    srcs: inPaths,
+    rootVName,
+    allFiles: inPaths,
+    fileVNames: new Map(),
+  };
+  index(compilationUnit, {
+    compilerOptions: config.options,
+    compilerHost: ts.createCompilerHost(config.options),
+    emit(obj: JSONFact | JSONEdge) {
+      console.log(JSON.stringify(obj));
+    }
+  });
   return 0;
 }
 

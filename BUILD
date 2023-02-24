@@ -32,6 +32,16 @@ sh_test(
 # gazelle:prefix kythe.io
 gazelle(name = "gazelle")
 
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "-from_file=go.mod",
+        "-to_macro=external.bzl%_go_dependencies",
+        "-prune",
+    ],
+    command = "update-repos",
+)
+
 bzl_library(
     name = "external_bzl",
     srcs = ["external.bzl"],
