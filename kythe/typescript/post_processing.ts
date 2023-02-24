@@ -130,9 +130,11 @@ function reassignEdgesForImports(data: Readonly<KytheData>): KytheData {
  * Main function of this module. Runs one or more post-processing steps to clean
  * up data.
  */
-export function performPostProcessing(data: KytheData, enableImportsProcessing: boolean): KytheData {
-    if (enableImportsProcessing) {
-      data = reassignEdgesForImports(data);
-    }
-    return data;
+ export function performPostProcessing(
+    data: Readonly<KytheData>,
+    enableImportsProcessing: boolean): Readonly<KytheData> {
+  if (enableImportsProcessing) {
+    data = reassignEdgesForImports(data);
+  }
+  return data;
 }
