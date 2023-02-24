@@ -81,7 +81,7 @@ function findImportNodesThatNeedEdgesReassignment(data: Readonly<KytheData>): Ma
  * console.log(ANSWER);
  *
  *
- * This pass changes
+ * This pass `reassigneEdgesForImports` changes
  *
  * //- @ANSWER ref AnswerLocal
  * console.log(ANSWER);
@@ -91,6 +91,9 @@ function findImportNodesThatNeedEdgesReassignment(data: Readonly<KytheData>): Ma
  * //- @ANSWER ref AnswerOrig
  * console.log(ANSWER);
  *
+ * and removes `@ANSWER defines/binding AnswerLocal` definition as it doesn't
+ * have any refs to it now.
+ *
  *
  * Notice that ANSWER anchor in console.log call now points at the AnswerOrig node.
  * This is what users expect: that usages of imported symbols will point to the
@@ -99,29 +102,37 @@ function findImportNodesThatNeedEdgesReassignment(data: Readonly<KytheData>): Ma
 function reassignEdgesForImports(data: Readonly<KytheData>): KytheData {
     const result: KytheData = [];
     const nodesToReassign = findImportNodesThatNeedEdgesReassignment(data);
-    for (const entry of data) {
+            console.log('here');
+    return data.map((entry) => {
         if ('fact_value' in entry) {
-            // Add all facts as it is. We only update edges.
-            result.push(entry);
-            continue;
+            // Facts for nodes that being ressigned (AnswerLocal in the example in
+            // jsdocs) should be removed. All other facts stay.
+            return nodesToReassign.has(vnameToString(entry.source)) ? null : entry;
         }
         const newTargetNode = nodesToReassign.get(vnameToString(entry.target));
-        // Reassign all edges except for defines. We still want the local symbol to
-        // be clickable.
-        if (newTargetNode &&
-            entry.edge_kind !== EdgeKind.DEFINES_BINDING &&
-            entry.edge_kind !== EdgeKind.DEFINES) {
-            entry.target = newTargetNode;
+        if (newTargetNode == null) {
+            // Add all edges that are not affected by reassignment as it is.
+            return entry;
         }
-        result.push(entry);
-    }
-    return result;
+        if (entry.edge_kind === EdgeKind.DEFINES_BINDING ||
+            entry.edge_kind === EdgeKind.DEFINES) {
+            // Don't add defines edges. All refs to that node are reassigned so
+            // there is no point in keeping that node.
+            // This is removal of @ANSWER defines/binding AnswerLocal from jsdoc.
+            return null;
+        }
+        entry.target = newTargetNode;
+        return entry;
+    }).filter(entry => entry != null) as KytheData;
 }
 
 /**
  * Main function of this module. Runs one or more post-processing steps to clean
  * up data.
  */
-export function performPostProcessing(data: Readonly<KytheData>): KytheData {
-    return reassignEdgesForImports(data);
+export function performPostProcessing(data: KytheData, enableImportsProcessing: boolean): KytheData {
+    if (enableImportsProcessing) {
+      data = reassignEdgesForImports(data);
+    }
+    return data;
 }
