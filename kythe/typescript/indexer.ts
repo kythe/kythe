@@ -2698,17 +2698,17 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
     );
     visitor.index();
   }
-  if (options.enablePostProcessing) {
-    for (const entry of performPostProcessing(output, options.enableImportsEdgeReassignment ?? false)) {
-      originalEmit(entry);
-    }
-  }
 
   for (const plugin of options.plugins ?? []) {
     try {
       plugin.index(indexingContext);
     } catch (err) {
       console.error(`Plugin ${plugin.name} errored: ${err}`);
+    }
+  }
+  if (options.enablePostProcessing) {
+    for (const entry of performPostProcessing(output, options.enableImportsEdgeReassignment ?? false)) {
+      originalEmit(entry);
     }
   }
 
