@@ -78,14 +78,6 @@ export interface IndexingOptions {
   readFile?: (path: string) => Buffer;
 
   /**
-   * When set to true enables post-processing: all data emitted by indexer is
-   * stored in memory and then one or more steps applied to implement certain features.
-   * This option exists to safely roll out post processing to ensure that it doesn' cause
-   * OOM.
-   */
-  enablePostProcessing?: boolean;
-
-  /**
    * Enables post processing that "inlines" refs to imported symbols to point instead
    * to the original definition.
    */

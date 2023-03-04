@@ -125,7 +125,6 @@ function verify(
         verifier.stdin.write(JSON.stringify(obj) + '\n');
       },
       plugins,
-      enablePostProcessing: enableEdgeReassignment,
       enableImportsEdgeReassignment: enableEdgeReassignment,
     });
   } finally {
