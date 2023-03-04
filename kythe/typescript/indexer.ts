@@ -20,9 +20,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, KytheData, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
-import {performPostProcessing} from './post_processing';
 
 const LANGUAGE = 'typescript';
 
@@ -258,6 +257,14 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
   const {line, character} =
       ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
   console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
+}
+
+/**
+ * Convert VName to a string that can be used as key in Maps.
+ */
+function vnameToString(vname: VName): string {
+  return `(${vname.corpus},${vname.language},${vname.path},${vname.root},${
+      vname.signature})`;
 }
 
 type NamespaceAndContext = string&{__brand: 'nsctx'};
@@ -808,6 +815,18 @@ class Visitor {
   /** Cached anchor nodes. Signature is used as key. */
   private readonly anchors = new Map<string, VName>();
 
+  /** 
+   * Mapping from imported values to their remote definitions. For cases like
+   * 
+   * import {Foo} from './dep';
+   * new Foo();
+   * 
+   * We don't produce a defition to Foo symbol. Instead all refs ot it will
+   * point to the remote Foo from dep.ts. This map contains mapping from 
+   * VName of local Foo to the VName of the remote Foo.
+   */
+  private readonly localSymbolToRemoteReassignMap = new Map<string, VName>();
+
   constructor(
       private readonly host: IndexerHost,
       private file: ts.SourceFile,
@@ -875,6 +894,7 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
+    target = this.localSymbolToRemoteReassignMap.get(vnameToString(target)) ?? target;
     this.host.options.emit({
       source,
       edge_kind: kind,
@@ -1303,11 +1323,13 @@ class Visitor {
    *
    * @param name TypeScript import declaration node
    * @param bindingAnchor anchor that "defines/binding" the local import
-   *     definition
+   *     definition. If the bindingAnchor is null then the local definition
+   *     won't be created and refs to the local definition will be reassigned
+   *     to the remote definition.
    * @param refAnchor anchor that "ref" the import's remote declaration
    */
   visitImport(
-      name: ts.Node, bindingAnchor: Readonly<VName>,
+      name: ts.Node, bindingAnchor: Readonly<VName>|null,
       refAnchor: Readonly<VName>) {
     // An import both aliases a symbol from another module
     // (call it the remote symbol) and it defines a local symbol.
@@ -1340,15 +1362,17 @@ class Visitor {
       const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
       if (!kRemoteValue || !kLocalValue) return;
 
-      // The local import value is a "variable" with an "import" subkind, and
-      // aliases its remote definition.
-      this.emitNode(kLocalValue, NodeKind.VARIABLE);
-      this.emitFact(kLocalValue, FactName.SUBKIND, Subkind.IMPORT);
-      this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
-
-      // Emit edges from the binding and referencing anchors to the import's
-      // local and remote definition, respectively.
-      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
+      if (bindingAnchor == null) {
+        this.localSymbolToRemoteReassignMap.set(vnameToString(kLocalValue), kRemoteValue);
+      } else {
+        // The local import value is a "variable" with an "import" subkind, and
+        // aliases its remote definition.
+        this.emitNode(kLocalValue, NodeKind.VARIABLE);
+        this.emitFact(kLocalValue, FactName.SUBKIND, Subkind.IMPORT);
+        this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
+        this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
+      }
+      // Emit edges from the referencing anchor to the import's remote definition.
       this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
     }
     if (remoteSym.flags & ts.SymbolFlags.Type) {
@@ -1356,15 +1380,17 @@ class Visitor {
       const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
       if (!kRemoteType || !kLocalType) return;
 
-      // The local import value is a "talias" (type alias) with an "import"
-      // subkind, and aliases its remote definition.
-      this.emitNode(kLocalType, NodeKind.TALIAS);
-      this.emitFact(kLocalType, FactName.SUBKIND, Subkind.IMPORT);
-      this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
-
-      // Emit edges from the binding and referencing anchors to the import's
-      // local and remote definition, respectively.
-      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
+      if (bindingAnchor == null) {
+        this.localSymbolToRemoteReassignMap.set(vnameToString(kLocalType), kRemoteType);
+      } else {
+        // The local import value is a "talias" (type alias) with an "import"
+        // subkind, and aliases its remote definition.
+        this.emitNode(kLocalType, NodeKind.TALIAS);
+        this.emitFact(kLocalType, FactName.SUBKIND, Subkind.IMPORT);
+        this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
+        this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
+      }
+      // Emit edges from the referencing anchor to the import's remote definition.
       this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
     }
   }
@@ -1461,7 +1487,7 @@ class Visitor {
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       const refAnchor = this.newAnchor(decl.name)
-      this.visitImport(decl.name, enableReassignment ? refAnchor : importTextAnchor, refAnchor);
+      this.visitImport(decl.name, enableReassignment ? null : importTextAnchor, refAnchor);
       return;
     }
 
@@ -1480,7 +1506,7 @@ class Visitor {
       // definition on the import name.
       const refAnchor = this.newAnchor(clause.name);
       this.visitImport(
-          clause.name, enableReassignment ? refAnchor : importTextAnchor, refAnchor);
+          clause.name, enableReassignment ? null : importTextAnchor, refAnchor);
       return;
     }
 
@@ -1526,7 +1552,7 @@ class Visitor {
             refAnchor = this.newAnchor(imp.propertyName);
           } else {
             refAnchor = this.newAnchor(imp.name);
-            bindingAnchor = enableReassignment ? refAnchor : importTextAnchor;
+            bindingAnchor = enableReassignment ? null : importTextAnchor;
           }
           this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
@@ -2679,12 +2705,6 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const output: KytheData = [];
-  const originalEmit = options.emit;
-  if (options.enablePostProcessing) {
-    options.emit = (entry: JSONEdge|JSONFact) => void output.push(entry);
-  }
-
   const indexingContext =  new StandardIndexerContext(program, compilationUnit, options);
 
   for (const path of compilationUnit.srcs) {
@@ -2704,11 +2724,6 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
       plugin.index(indexingContext);
     } catch (err) {
       console.error(`Plugin ${plugin.name} errored: ${err}`);
-    }
-  }
-  if (options.enablePostProcessing) {
-    for (const entry of performPostProcessing(output, options.enableImportsEdgeReassignment ?? false)) {
-      originalEmit(entry);
     }
   }
 

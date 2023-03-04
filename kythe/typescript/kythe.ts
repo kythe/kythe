@@ -273,6 +273,3 @@ export interface JSONMarkedSource {
   add_final_list_token?: boolean;
   link?: JSONLink[];
 }
-
-/** Type representing output of indexer: all entries emitted during indexing. */
-export type KytheData = Array<JSONFact|JSONEdge>;

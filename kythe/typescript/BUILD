@@ -27,7 +27,6 @@ ts_project(
     name = "indexer",
     srcs = [
         "indexer.ts",
-        "post_processing.ts",
         "utf8.ts",
     ],
     declaration = True,
