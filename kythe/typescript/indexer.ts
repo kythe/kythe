@@ -807,14 +807,14 @@ class Visitor {
   /** Cached anchor nodes. Signature is used as key. */
   private readonly anchors = new Map<string, VName>();
 
-  /** 
+  /**
    * Mapping from imported values to their remote definitions. For cases like
-   * 
+   *
    * import {Foo} from './dep';
    * new Foo();
-   * 
+   *
    * We don't produce a defition to Foo symbol. Instead all refs ot it will
-   * point to the remote Foo from dep.ts. This map contains mapping from 
+   * point to the remote Foo from dep.ts. This map contains mapping from
    * VName of local Foo to the VName of the remote Foo.
    */
   private readonly localSymbolToRemoteReassignMap = new Map<string, VName>();
