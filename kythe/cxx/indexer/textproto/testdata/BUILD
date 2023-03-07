@@ -86,6 +86,20 @@ textproto_verifier_test(
     textprotos = ["schema_comments.pbtxt"],
 )
 
+textproto_verifier_test(
+    name = "recordio_basics_test",
+    protos = [":example_proto"],
+    textprotos = ["recordio_basics.recordiotxt"],
+    extractor_opts = ["--record_separator", "@@@@@@@@@@@@@@@@"],
+)
+
+textproto_verifier_test(
+    name = "recordio_emptyline_delimiter_test",
+    protos = [":example_proto"],
+    textprotos = ["recordio_emptyline_delimiter.recordiotxt"],
+    extractor_opts = ["--record_separator", "\n"],
+)
+
 bzl_library(
     name = "textproto_verifier_test_bzl",
     srcs = ["textproto_verifier_test.bzl"],

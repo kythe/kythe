@@ -29,6 +29,7 @@ cc_library(
     hdrs = ["analyzer.h"],
     deps = [
         ":plugin",
+        ":recordio_textparser",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/common:utf8_line_index",
@@ -73,5 +74,29 @@ cc_library(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "recordio_textparser",
+    srcs = ["recordio_textparser.cc"],
+    hdrs = ["recordio_textparser.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "recordio_textparser_test",
+    srcs = ["recordio_textparser_test.cc"],
+    deps = [
+        ":recordio_textparser",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
     ],
 )
