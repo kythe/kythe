@@ -48,8 +48,8 @@ ABSL_FLAG(std::vector<std::string>, proto_files, {},
           "A comma-separated list of proto files needed to fully define "
           "the textproto's schema.");
 ABSL_FLAG(std::string, record_separator, "",
-          "Delimitates each record within a recordio file. Presence of this"
-          "flag indicates this is a recordio formatted file.");
+          "Delimitates each record within a file. Presence of this"
+          "indicates this is a recordio textformat file.");
 
 namespace kythe {
 namespace lang_textproto {
