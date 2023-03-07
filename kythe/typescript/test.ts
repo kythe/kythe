@@ -109,6 +109,7 @@ function verify(
   for (const file of testFiles) {
     fileVNames.set(file, {...rootVName, path: file});
   }
+  const enableEdgeReassignment = testCase.name.includes('enable_edge_reassignment');
 
   try {
     const compilationUnit: indexer.CompilationUnit = {
@@ -124,6 +125,7 @@ function verify(
         verifier.stdin.write(JSON.stringify(obj) + '\n');
       },
       plugins,
+      enableImportsEdgeReassignment: enableEdgeReassignment,
     });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
