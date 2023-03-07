@@ -28,7 +28,7 @@ using ::testing::Pair;
 std::vector<std::pair<int, std::string>> ParsedChunks(std::string content,
                                                       std::string separator) {
   std::vector<std::pair<int, std::string>> chunks;
-  lang_textproto::ParseRecordioTextChunks(
+  lang_textproto::ParseRecordTextChunks(
       content, separator, [&](absl::string_view chunk, int chunk_start_line) {
         chunks.emplace_back(chunk_start_line, std::string(chunk));
       });
@@ -40,7 +40,7 @@ TEST(RecordioTextparserTest, TwoRecordSeparated) {
   std::vector<std::pair<int, std::string>> chunks =
       ParsedChunks(content, "---");
 
-  EXPECT_THAT(chunks, ElementsAre(Pair(0, "item: 1\n"), Pair(2, "item: 2\n")));
+  EXPECT_THAT(chunks, ElementsAre(Pair(0, "item: 1\n"), Pair(2, "item: 2")));
 }
 
 TEST(RecordioTextparserTest, CommentsAlsoSeparatedByNewline) {
@@ -51,7 +51,7 @@ TEST(RecordioTextparserTest, CommentsAlsoSeparatedByNewline) {
 
   EXPECT_THAT(chunks,
               ElementsAre(Pair(0, "# Comment1\n\n# Comment2\nitem: 1\n"),
-                          Pair(5, "# Comment3\nitem: 2\n")));
+                          Pair(5, "# Comment3\nitem: 2")));
 }
 
 TEST(RecordioTextparserTest, SeparatorStartsWithComment) {
@@ -64,7 +64,7 @@ TEST(RecordioTextparserTest, SeparatorStartsWithComment) {
 
   EXPECT_THAT(chunks,
               ElementsAre(Pair(0, "# Comment1\n # --- \n# Comment2\nitem: 1\n"),
-                          Pair(5, "# Comment3\nitem: 2\n")));
+                          Pair(5, "# Comment3\nitem: 2")));
 }
 
 TEST(RecordioTextparserTest, EndsWithComment) {
@@ -73,7 +73,7 @@ TEST(RecordioTextparserTest, EndsWithComment) {
   std::vector<std::pair<int, std::string>> chunks = ParsedChunks(content, "\n");
 
   EXPECT_THAT(chunks, ElementsAre(Pair(0, "# Comment1\nitem: 1\n"),
-                                  Pair(3, "item: 2\n# Comment2\n")));
+                                  Pair(3, "item: 2\n# Comment2")));
 }
 
 }  // namespace

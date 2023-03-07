@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_INDEXER_TEXTPROTO_RECORDIO_TEXTPARSER_H_
 #define KYTHE_CXX_INDEXER_TEXTPROTO_RECORDIO_TEXTPARSER_H_
 
+#include "absl/functional/function_ref.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
@@ -44,9 +45,9 @@ namespace lang_textproto {
 // delimiter specified and the record ends at EOF.
 // Also, note that delimiter could start with '#' which is also for the
 // comment.
-void ParseRecordioTextChunks(
-    std::string content, std::string record_delimiter,
-    std::function<void(absl::string_view chunk, int chunk_start_line)>
+void ParseRecordTextChunks(
+    absl::string_view content, absl::string_view record_delimiter,
+    absl::FunctionRef<void(absl::string_view chunk, int chunk_start_line)>
         callback);
 
 }  // namespace lang_textproto

@@ -99,7 +99,7 @@ proto::VName LookupVNameForFullPath(absl::string_view full_path,
 // The TreeInfo contains the ParseInfoTree from proto2 textformat parser
 // and line offset of the textproto within a file.
 struct TreeInfo {
-  const TextFormat::ParseInfoTree* parse_tree;
+  const TextFormat::ParseInfoTree* parse_tree = nullptr;
   int line_offset = 0;
 };
 
@@ -944,7 +944,6 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   // Presense of record_separator flag indicates it's recordio file format.
   absl::optional<std::string> record_separator =
       FindArg(&args, "--record_separator");
-  bool is_recordio = record_separator.has_value();
   for (auto& [filepath, filecontent] : file_data_by_path) {
     // Use reflection to create an instance of the top-level proto message.
     // note: msg_factory must outlive any protos created from it.
@@ -980,37 +979,40 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     parser.AllowPartialMessage(true);
     parser.AllowUnknownExtension(true);
 
-    auto analyzeMessage = [&](absl::string_view chunk, int start_line) {
+    auto analyze_message = [&](absl::string_view chunk, int start_line) {
       LOG(INFO) << "Analyze chunk at line: " << start_line;
       // Parse textproto into @proto, recording input locations to @parse_tree.
       TextFormat::ParseInfoTree parse_tree;
       parser.WriteLocationsTo(&parse_tree);
 
-      if (!parser.ParseFromString(std::string(chunk), proto.get())) {
+      google::protobuf::io::ArrayInputStream stream(chunk.data(), chunk.size());
+      if (!parser.Parse(&stream, proto.get())) {
         return absl::UnknownError("Failed to parse text proto");
       }
 
       TreeInfo tree_info{&parse_tree, start_line};
-      auto s =
+      auto status =
           analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, tree_info);
-      if (!s.ok()) {
-        return s;
+      if (!status.ok()) {
+        return status;
       }
     };
 
-    if (is_recordio) {
+    if (record_separator.has_value()) {
       LOG(INFO) << "Analyzing recordio fileformat with delimiter: "
-                << record_separator.value_or("<none>");
-      kythe::lang_textproto::ParseRecordioTextChunks(
-          filecontent->content(), record_separator.value(),
+                << *record_separator;
+      kythe::lang_textproto::ParseRecordTextChunks(
+          filecontent->content(), *record_separator,
           [&](absl::string_view chunk, int line_offset) {
-            analyzeMessage(chunk, line_offset);
-            LOG(ERROR) << "Failed to parse record starting at line "
-                       << line_offset << ": " << status;
+            absl::Status status = analyze_message(chunk, line_offset);
+            if (!status.ok()) {
+              LOG(ERROR) << "Failed to parse record starting at line "
+                         << line_offset << ": " << status;
+            }
           });
       return absl::OkStatus();
     } else {
-      analyzeMessage(filecontent->content(), 0);
+      analyze_message(filecontent->content(), 0);
     }
   }
 
