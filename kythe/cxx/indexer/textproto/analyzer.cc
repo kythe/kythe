@@ -991,11 +991,8 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
       }
 
       TreeInfo tree_info{&parse_tree, start_line};
-      auto status =
-          analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, tree_info);
-      if (!status.ok()) {
-        return status;
-      }
+      return analyzer.AnalyzeMessage(file_vname, *proto, *descriptor,
+                                     tree_info);
     };
 
     if (record_separator.has_value()) {
@@ -1010,9 +1007,11 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                          << line_offset << ": " << status;
             }
           });
-      return absl::OkStatus();
     } else {
-      analyze_message(filecontent->content(), 0);
+      absl::Status status = analyze_message(filecontent->content(), 0);
+      if (!status.ok()) {
+        return status;
+      }
     }
   }
 

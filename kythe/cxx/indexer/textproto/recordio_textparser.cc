@@ -48,9 +48,46 @@ struct WithChar {
   absl::ByChar delimiter_;
 };
 
-void ExtendBy(absl::string_view& data, std::size_t count) {
-  data = absl::string_view(data.data(), data.size() + count);
-}
+class ProtoLineDelimiter {
+ public:
+  explicit ProtoLineDelimiter(absl::string_view delimiter,
+                              int* line_count = nullptr)
+      : delimiter_(delimiter), line_count_(line_count), current_line_(0) {}
+
+  /// \brief Finds the next occurrence of the configured delimiter
+  /// on a line by itself, after the first non-comment, non-empty line.
+  absl::string_view Find(absl::string_view text, size_t pos) {
+    // Store the start line of chunk.
+    if (line_count_) {
+      *line_count_ = current_line_;
+    }
+    for (absl::string_view line :
+         absl::StrSplit(text.substr(pos), WithChar('\n'))) {
+      current_line_++;
+      // Don't look for the delimiter until we've seen our first non-empty,
+      // non-comment line.
+      data_seen_ = data_seen_ || !(absl::StartsWith(line, "#") ||
+                                   absl::StripPrefix(line, "\n").empty());
+      bool is_delimiter =
+          // The line consists entirely of the delimiter and delimiter may
+          // start with a comment.
+          absl::StripPrefix(absl::StripPrefix(line, delimiter_), "\n").empty();
+      if (!data_seen_ && is_delimiter) continue;
+
+      if (is_delimiter) {
+        return line;
+      }
+    }
+    return text.substr(text.size());
+  }
+
+ private:
+  std::string delimiter_;
+  int* line_count_;
+  int current_line_;
+
+  bool data_seen_ = false;
+};
 
 }  // namespace
 
@@ -58,48 +95,10 @@ void ParseRecordTextChunks(
     absl::string_view content, absl::string_view record_delimiter,
     absl::FunctionRef<void(absl::string_view chunk, int chunk_start_line)>
         callback) {
-  int currentline = 0, chunk_begin_line = 0;
-  // Keep track of whether any lines in the chunk contains textproto data
-  // and not all the lines in the chunk are only comment/empty line.
-  bool seen_proto_chunk = false;
-  absl::string_view trimmed_delimiter =
-      absl::StripAsciiWhitespace(record_delimiter);
-  absl::string_view chunk;
-  for (absl::string_view line : absl::StrSplit(content, WithChar('\n'))) {
-    currentline++;
-
-    bool initial_chunk = false;
-    if (chunk.empty()) {
-      chunk = line;
-      initial_chunk = true;
-    }
-    absl::string_view trimmed = absl::StripAsciiWhitespace(line);
-    // So far, chunk has textproto data (not just comments or empty lines)
-    // and current line is the delimiter.
-    if (seen_proto_chunk && (trimmed == trimmed_delimiter)) {
-      callback(chunk, chunk_begin_line);
-
-      chunk.remove_prefix(chunk.size());
-      seen_proto_chunk = false;
-      chunk_begin_line = currentline;
-      continue;
-    }
-    // Empty lines and comments are part of the chunk.
-    if (trimmed.empty() || absl::StartsWith(trimmed, "#")) {
-      if (!initial_chunk) {
-        ExtendBy(chunk, line.size());
-      }
-      continue;
-    }
-    // Textproto data, so append it to chunk.
-    seen_proto_chunk = true;
-    if (!initial_chunk) {
-      ExtendBy(chunk, line.size());
-    }
-  }
-  // Last line might contains textproto data.
-  if (seen_proto_chunk) {
-    callback(chunk, chunk_begin_line);
+  int line_count = 0;
+  for (absl::string_view chunk : absl::StrSplit(
+           content, ProtoLineDelimiter(record_delimiter, &line_count))) {
+    callback(chunk, line_count);
   }
 }
 

@@ -34,10 +34,10 @@ namespace lang_textproto {
 // Empty lines can be record delimiter and they can also separate two chunks
 // of comments. Always gather chunk of comments into one big chunk along
 // with next message. For example:
-// 1.  // FooBar
-// 2.  // Bar
+// 1.  # FooBar
+// 2.  # Bar
 // 3.
-// 4.  // BarBar
+// 4.  # BarBar
 // 5.  name: "hello"
 //
 // In the above example, line 1-5 should be read as one chunk even if the

@@ -56,8 +56,8 @@ TEST(RecordioTextparserTest, CommentsAlsoSeparatedByNewline) {
 
 TEST(RecordioTextparserTest, SeparatorStartsWithComment) {
   std::string content =
-      absl::StrJoin({"# Comment1", " # --- ", "# Comment2", "item: 1",
-                     " # --- ", "# Comment3", "item: 2"},
+      absl::StrJoin({"# Comment1", " # --- ", "# Comment2", "item: 1", "# ---",
+                     "# Comment3", "item: 2"},
                     "\n");
   std::vector<std::pair<int, std::string>> chunks =
       ParsedChunks(content, "# ---");
