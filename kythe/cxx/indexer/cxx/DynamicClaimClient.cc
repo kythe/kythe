@@ -16,25 +16,27 @@
 #include "kythe/cxx/indexer/cxx/DynamicClaimClient.h"
 
 #include <libmemcached-1.0/memcached.h>
-#include <openssl/sha.h>
+
+#include <array>
+#include <cstddef>
 
 #include "absl/strings/str_format.h"
+#include "kythe/cxx/common/sha256_hasher.h"
 #include "kythe/cxx/common/vname_ordering.h"
 
 namespace kythe {
 namespace {
-using Hash = unsigned char[SHA256_DIGEST_LENGTH];
+using Hash = std::array<std::byte, SHA256_DIGEST_LENGTH>;
 
-void HashVName(const kythe::proto::VName& vname, size_t count, Hash* hash) {
-  ::SHA256_CTX sha;
-  ::SHA256_Init(&sha);
-  ::SHA256_Update(&sha, vname.signature().c_str(), vname.signature().size());
-  ::SHA256_Update(&sha, vname.path().c_str(), vname.path().size());
-  ::SHA256_Update(&sha, vname.language().c_str(), vname.language().size());
-  ::SHA256_Update(&sha, vname.root().c_str(), vname.root().size());
-  ::SHA256_Update(&sha, vname.corpus().c_str(), vname.corpus().size());
-  ::SHA256_Update(&sha, &count, sizeof(count));
-  ::SHA256_Final(reinterpret_cast<unsigned char*>(hash), &sha);
+Hash HashVName(const kythe::proto::VName& vname, size_t count) {
+  Sha256Hasher hash;
+  hash.Update(vname.signature());
+  hash.Update(vname.path());
+  hash.Update(vname.language());
+  hash.Update(vname.root());
+  hash.Update(vname.corpus());
+  hash.Update({reinterpret_cast<const char*>(&count), sizeof(count)});
+  return std::move(hash).Finish();
 }
 }  // namespace
 
@@ -43,10 +45,12 @@ DynamicClaimClient::~DynamicClaimClient() {
     memcached_free(cache_);
     cache_ = nullptr;
   }
-  absl::FPrintF(
-      stderr, "%8lu  %8lu claims approved/rejected (%f reject fraction)\n",
-      request_count_ - rejected_requests_, rejected_requests_,
-      request_count_ == 0 ? 0.0 : (double)rejected_requests_ / request_count_);
+  absl::FPrintF(stderr,
+                "%8lu  %8lu claims approved/rejected (%f reject fraction)\n",
+                request_count_ - rejected_requests_, rejected_requests_,
+                request_count_ == 0
+                    ? 0.0
+                    : static_cast<double>(rejected_requests_) / request_count_);
 }
 
 bool DynamicClaimClient::OpenMemcache(const std::string& spec) {
@@ -78,14 +82,14 @@ bool DynamicClaimClient::Claim(const kythe::proto::VName& claimant,
       // Fail open.
       return true;
     }
-    Hash claimant_hash, vname_hash;
-    HashVName(claimant, 0, &claimant_hash);
+    Hash claimant_hash = HashVName(claimant, 0);
     for (size_t tries = 0; tries < max_redundant_claims_; ++tries) {
-      HashVName(vname, tries, &vname_hash);
+      Hash vname_hash = HashVName(vname, tries);
       memcached_return_t add_result = memcached_add(
-          cache_, reinterpret_cast<const char*>(&vname_hash),
-          SHA256_DIGEST_LENGTH, reinterpret_cast<const char*>(&claimant_hash),
-          SHA256_DIGEST_LENGTH, 0, 0);
+          cache_, reinterpret_cast<const char*>(vname_hash.data()),
+          vname_hash.size(),
+          reinterpret_cast<const char*>(claimant_hash.data()),
+          claimant_hash.size(), 0, 0);
       if (!memcached_success(add_result) &&
           add_result != MEMCACHED_DATA_EXISTS) {
         // We'll also pass the check below and assume we claimed the vname.

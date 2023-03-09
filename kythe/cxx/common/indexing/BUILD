@@ -41,6 +41,7 @@ cc_library(
     deps = [
         ":output",
         "//external:libmemcached",
+        "//kythe/cxx/common:sha256_hasher",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
