@@ -409,6 +409,8 @@ func (f *corpusPathFilter) FilterGroup(grp *srvpb.PagedCrossReferences_Group) (f
 	var n int
 	grp.Anchor, n = f.filterAnchors(grp.GetAnchor())
 	filtered += n
+	grp.ScopedReference, n = f.filterReferences(grp.GetScopedReference())
+	filtered += n
 	grp.RelatedNode, n = f.filterRelatedNodes(grp.GetRelatedNode())
 	filtered += n
 	grp.Caller, n = f.filterCallers(grp.GetCaller())
@@ -426,6 +428,18 @@ func (f *corpusPathFilter) filterAnchors(as []*srvpb.ExpandedAnchor) ([]*srvpb.E
 		j++
 	}
 	return as[:j], len(as) - j
+}
+
+func (f *corpusPathFilter) filterReferences(rs []*srvpb.PagedCrossReferences_ScopedReference) ([]*srvpb.PagedCrossReferences_ScopedReference, int) {
+	var j int
+	for i, c := range rs {
+		if !f.AllowExpandedAnchor(c.GetScope()) {
+			continue
+		}
+		rs[j] = rs[i]
+		j++
+	}
+	return rs[:j], len(rs) - j
 }
 
 func (f *corpusPathFilter) filterCallers(cs []*srvpb.PagedCrossReferences_Caller) ([]*srvpb.PagedCrossReferences_Caller, int) {
