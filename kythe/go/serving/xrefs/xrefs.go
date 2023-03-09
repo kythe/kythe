@@ -892,6 +892,7 @@ readLoop:
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.Definitions += int64(len(grp.Anchor))
+				reply.Total.Definitions += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.Definitions += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp)
@@ -899,6 +900,7 @@ readLoop:
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.Declarations += int64(len(grp.Anchor))
+				reply.Total.Declarations += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.Declarations += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp)
@@ -906,6 +908,7 @@ readLoop:
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.References += int64(len(grp.Anchor))
+				reply.Total.References += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
@@ -1236,6 +1239,14 @@ func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mer
 	return allTickets
 }
 
+func countRefs(rs []*srvpb.PagedCrossReferences_ScopedReference) int {
+	var n int
+	for _, ref := range rs {
+		n += len(ref.GetReference())
+	}
+	return n
+}
+
 func nodeKind(n *srvpb.Node) string {
 	if n == nil {
 		return ""
@@ -1370,6 +1381,10 @@ func (s *refStats) addRelatedNodes(crs *xpb.CrossReferencesReply_CrossReferenceS
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group) bool {
 	kind := edges.Canonical(grp.Kind)
 	as := grp.Anchor
+	for _, refs := range grp.GetScopedReference() {
+		// TODO(schroederc): make scopes available in API
+		as = append(as, refs.GetReference()...)
+	}
 	fileInfos := makeFileInfoMap(grp.FileInfo)
 
 	if s.total == s.max {
