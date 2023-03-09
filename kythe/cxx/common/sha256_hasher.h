@@ -51,13 +51,15 @@ class Sha256Hasher {
     ByteView(T&& data)  // NOLINT
         : ByteView(Dest(data)) {}
 
-    ByteView(absl::string_view data) : ByteView(data.data(), data.size()) {}
-    ByteView(absl::Span<const std::byte> data)
+    ByteView(absl::string_view data)  // NOLINT
         : ByteView(data.data(), data.size()) {}
-    ByteView(absl::Span<const unsigned char> data)
+    ByteView(absl::Span<const std::byte> data)  // NOLINT
         : ByteView(data.data(), data.size()) {}
-    ByteView(absl::Span<const char> data)
+    ByteView(absl::Span<const unsigned char> data)  // NOLINT
         : ByteView(data.data(), data.size()) {}
+    ByteView(absl::Span<const char> data)  // NOLINT
+        : ByteView(data.data(), data.size()) {}
+
     ByteView(const std::byte* data, std::size_t size)
         : ByteView(reinterpret_cast<const unsigned char*>(data), size) {}
     ByteView(const char* data, std::size_t size)
