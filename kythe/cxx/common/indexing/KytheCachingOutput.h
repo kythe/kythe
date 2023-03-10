@@ -27,6 +27,7 @@
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/common/sha256_hasher.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -79,12 +80,11 @@ class BufferStack {
   /// in `hash`.
   void HashTop(HashCache::Hash* hash) const {
     assert(buffers_ != nullptr);
-    ::SHA256_CTX sha;
-    ::SHA256_Init(&sha);
+    Sha256Hasher hasher;
     for (Buffer* joined = buffers_; joined; joined = joined->joined) {
-      ::SHA256_Update(&sha, joined->slab.data(), joined->slab.size());
+      hasher.Update({joined->slab.data(), joined->slab.size()});
     }
-    ::SHA256_Final(reinterpret_cast<unsigned char*>(hash), &sha);
+    std::move(hasher).Finish(reinterpret_cast<std::byte*>(hash));
   }
   /// \brief Copies the buffer at the top of the stack to some `stream`.
   void CopyTopToStream(
