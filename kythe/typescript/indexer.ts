@@ -362,17 +362,11 @@ class StandardIndexerContext implements IndexerHost {
 
   private typeChecker: ts.TypeChecker;
 
-  public readonly emit: (obj: JSONFact|JSONEdge) => void;
-  public readonly paths: string[];
-
-
   constructor(
     public readonly program: ts.Program,
     public readonly compilationUnit: CompilationUnit,
     public readonly options: IndexingOptions,
   ) {
-    this.paths = compilationUnit.srcs;
-    this.emit = options.emit;
     this.sourceRoot = this.program.getCompilerOptions().rootDir || process.cwd();
     let rootDirs = this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
