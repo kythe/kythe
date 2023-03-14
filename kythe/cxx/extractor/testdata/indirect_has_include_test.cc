@@ -39,6 +39,7 @@ required_input {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
         source_context: "hash0"
+        always_process: true
         column {
           offset: 35
           linked_context: "hash1"
