@@ -168,21 +168,4 @@ const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
       return nullptr;
   }
 }
-
-const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head) {
-  if (head == nullptr) return nullptr;
-  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
-      expr != nullptr && expr->getFoundDecl() != nullptr &&
-      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
-    return expr->getFoundDecl();
-  }
-  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(head);
-      expr != nullptr) {
-    if (auto* member = expr->getMemberDecl(); member != nullptr) {
-      return member;
-    }
-  }
-  return nullptr;
-}
 }  // namespace kythe

@@ -740,6 +740,22 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver& Observer;
   clang::ASTContext& Context;
 
+  /// \return the `Decl` that is the target of influence by an lexpression with
+  /// head `head`, or null. For example, in `foo[x].bar(y).z`, the target of
+  /// influence is the member decl for `z`.
+  const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head);
+
+  /// \brief Eliminates the trivial introduction of aliasing.
+  ///
+  /// In some situations (and modulo undefined behavior), the expression
+  /// `*(&foo)` can be reduced to `foo`. `foo` may be a simple DeclRefExpr, but
+  /// it could also be a MemberExpr that has alias semantics tied to another
+  /// field or some piece of generated code.
+  ///
+  /// \return the head of a trivial alias/dealias operation or `stmt` if the
+  /// operation failed to find one.
+  const clang::Stmt* SkipTrivialAliasing(const clang::Stmt* stmt);
+
   /// \brief The result of calling into the lexer.
   enum class LexerResult {
     Failure,  ///< The operation failed.
@@ -990,14 +1006,17 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Marks that `stmt` was used as a write target.
   /// \return `stmt` as passed.
   const clang::Stmt* UsedAsWrite(const clang::Stmt* stmt) {
-    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kWrite;
+    if (stmt != nullptr)
+      use_kinds_[SkipTrivialAliasing(stmt)] = GraphObserver::UseKind::kWrite;
     return stmt;
   }
 
   /// \brief Marks that `stmt` was used as a read+write target.
   /// \return `stmt` as passed.
   const clang::Stmt* UsedAsReadWrite(const clang::Stmt* stmt) {
-    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kReadWrite;
+    if (stmt != nullptr)
+      use_kinds_[SkipTrivialAliasing(stmt)] =
+          GraphObserver::UseKind::kReadWrite;
     return stmt;
   }
 
