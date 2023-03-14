@@ -571,7 +571,7 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
 const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
     const clang::Stmt* head) {
   if (head == nullptr) return nullptr;
-  head = (head);
+  head = SkipTrivialAliasing(head);
   if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
       expr != nullptr && expr->getFoundDecl() != nullptr &&
       (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
