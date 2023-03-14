@@ -51,6 +51,13 @@ const clang::Stmt* FindLValueHead(const clang::Stmt* stmt);
 /// head `head`, or null. For example, in `foo[x].bar(y).z`, the target of
 /// influence is the member decl for `z`.
 const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head);
+
+/// \brief Given a non-null stmt, removes all surrounding parenthesis.
+///
+/// If the parenthesis ensconce a null, the original statement is returned.
+///
+/// \return stmt with all enclosing parens removed
+const clang::Stmt* Unparen(const clang::Stmt* stmt);
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_

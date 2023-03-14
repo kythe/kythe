@@ -571,7 +571,7 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
 const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
     const clang::Stmt* head) {
   if (head == nullptr) return nullptr;
-  head = SkipTrivialAliasing(head);
+  head = (head);
   if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
       expr != nullptr && expr->getFoundDecl() != nullptr &&
       (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
@@ -589,8 +589,24 @@ const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
 
 const clang::Stmt* IndexerASTVisitor::SkipTrivialAliasing(
     const clang::Stmt* stmt) {
-  // TODO(zarko): the actual implementation.
+  // TODO(zarko): calls with alternate semantics
   if (stmt == nullptr) return nullptr;
+  if (const auto* star =
+          llvm::dyn_cast_or_null<clang::UnaryOperator>(Unparen(stmt));
+      star != nullptr && star->getOpcode() == clang::UO_Deref &&
+      star->getSubExpr() != nullptr) {
+    // star := *body
+    const auto* body = Unparen(star->getSubExpr());
+    if (const auto* amp = llvm::dyn_cast_or_null<clang::UnaryOperator>(body);
+        amp != nullptr && amp->getOpcode() == clang::UO_AddrOf &&
+        amp->getSubExpr() != nullptr) {
+      // star := *&var
+      const auto* var = Unparen(amp->getSubExpr());
+      if (const auto* dre = llvm::dyn_cast_or_null<clang::DeclRefExpr>(var)) {
+        return dre;
+      }
+    }
+  }
   return stmt;
 }
 
