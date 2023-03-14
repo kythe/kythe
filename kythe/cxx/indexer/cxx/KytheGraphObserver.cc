@@ -816,9 +816,14 @@ void KytheGraphObserver::recordFullDefinitionRange(
 
 void KytheGraphObserver::recordDefinitionBindingRange(
     const GraphObserver::Range& binding_range, const NodeId& node_decl,
-    const absl::optional<NodeId>& node_def) {
-  RecordStampedAnchor(binding_range, node_decl, node_def,
-                      EdgeKindID::kDefinesBinding, node_decl);
+    const absl::optional<NodeId>& node_def, bool stamped) {
+  if (stamped) {
+    RecordStampedAnchor(binding_range, node_decl, node_def,
+                        EdgeKindID::kDefinesBinding, node_decl);
+    return;
+  }
+  RecordAnchor(binding_range, node_decl, EdgeKindID::kDefinesBinding,
+               Claimability::Unclaimable);
 }
 
 void KytheGraphObserver::recordDefinitionRangeWithBinding(

@@ -289,9 +289,10 @@ class KytheGraphObserver : public GraphObserver {
       const Range& source_range, const NodeId& node_decl,
       const absl::optional<NodeId>& node_def) override;
 
-  void recordDefinitionBindingRange(
-      const Range& binding_range, const NodeId& node_decl,
-      const absl::optional<NodeId>& node_def) override;
+  void recordDefinitionBindingRange(const Range& binding_range,
+                                    const NodeId& node_decl,
+                                    const absl::optional<NodeId>& node_def,
+                                    bool stamped = true) override;
 
   void recordDefinitionRangeWithBinding(
       const Range& source_range, const Range& binding_range,

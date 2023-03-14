@@ -676,7 +676,8 @@ class GraphObserver {
   /// we would `recordDefinitionBindingRange` on the range for `C`.
   virtual void recordDefinitionBindingRange(
       const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId = absl::nullopt) {}
+      const absl::optional<NodeId>& DefnId = absl::nullopt,
+      bool stamped = true) {}
 
   /// \brief Records that a particular `Range` contains the declaration
   /// of the node called `DeclId` (with possible full definition `DefnId`).
