@@ -568,6 +568,32 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
   return getAllParents()->DeclDominatesPrunableSubtree(Decl);
 }
 
+const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
+    const clang::Stmt* head) {
+  if (head == nullptr) return nullptr;
+  head = SkipTrivialAliasing(head);
+  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
+      expr != nullptr && expr->getFoundDecl() != nullptr &&
+      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
+       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
+    return expr->getFoundDecl();
+  }
+  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(head);
+      expr != nullptr) {
+    if (auto* member = expr->getMemberDecl(); member != nullptr) {
+      return member;
+    }
+  }
+  return nullptr;
+}
+
+const clang::Stmt* IndexerASTVisitor::SkipTrivialAliasing(
+    const clang::Stmt* stmt) {
+  // TODO(zarko): the actual implementation.
+  if (stmt == nullptr) return nullptr;
+  return stmt;
+}
+
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {
   if (const auto* PVD = dyn_cast<clang::ParmVarDecl>(VD)) {
     // For parameters, we want to report them as definitions iff they're
