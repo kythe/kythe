@@ -669,7 +669,7 @@ class GraphObserver {
       const absl::optional<NodeId>& DefnId = absl::nullopt) {}
 
   /// \brief Should an anchor be stamped
-  enum class Stamped { No, Yes };
+  enum class Stamping { Unstamped, Stamped };
 
   /// \brief Records that a particular `Range` contains the declaration
   /// of the node called `DeclId` (with possible full definition `DefnId`).
@@ -680,7 +680,7 @@ class GraphObserver {
   virtual void recordDefinitionBindingRange(
       const Range& BindingRange, const NodeId& DeclId,
       const absl::optional<NodeId>& DefnId = absl::nullopt,
-      Stamped stamped = Stamped::Yes) {}
+      Stamping stamping = Stamping::Stamped) {}
 
   /// \brief Records that a particular `Range` contains the declaration
   /// of the node called `DeclId` (with possible full definition `DefnId`).
