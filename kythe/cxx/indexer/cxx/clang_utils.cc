@@ -157,13 +157,19 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
   }
 }
 
-const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
-  if (stmt == nullptr) return nullptr;
-  switch (stmt->getStmtClass()) {
+const clang::Expr* FindLValueHead(const clang::Expr* expr) {
+  if (expr == nullptr) return nullptr;
+  expr = expr->IgnoreParens();
+  if (const auto* star = llvm::dyn_cast_or_null<clang::UnaryOperator>(expr);
+      star != nullptr && star->getOpcode() == clang::UO_Deref &&
+      star->getSubExpr() != nullptr) {
+    return expr;
+  }
+  switch (expr->getStmtClass()) {
     case clang::Stmt::StmtClass::DeclRefExprClass:
     case clang::Stmt::StmtClass::ObjCIvarRefExprClass:
     case clang::Stmt::StmtClass::MemberExprClass:
-      return stmt;
+      return expr;
     default:
       return nullptr;
   }
