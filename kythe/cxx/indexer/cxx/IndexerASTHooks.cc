@@ -569,7 +569,7 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
 }
 
 const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
-    const clang::Stmt* head) {
+    const clang::Expr* head) {
   if (head == nullptr) return nullptr;
   head = SkipTrivialAliasing(head);
   if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
@@ -587,12 +587,12 @@ const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
   return nullptr;
 }
 
-const clang::Stmt* IndexerASTVisitor::SkipTrivialAliasing(
-    const clang::Stmt* stmt) {
+const clang::Expr* IndexerASTVisitor::SkipTrivialAliasing(
+    const clang::Expr* expr) {
   // TODO(zarko): calls with alternate semantics
-  if (stmt == nullptr) return nullptr;
+  if (expr == nullptr) return nullptr;
   if (const auto* star =
-          llvm::dyn_cast_or_null<clang::UnaryOperator>(Unparen(stmt));
+          llvm::dyn_cast_or_null<clang::UnaryOperator>(Unparen(expr));
       star != nullptr && star->getOpcode() == clang::UO_Deref &&
       star->getSubExpr() != nullptr) {
     // star := *body
@@ -607,7 +607,7 @@ const clang::Stmt* IndexerASTVisitor::SkipTrivialAliasing(
       }
     }
   }
-  return stmt;
+  return expr;
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {

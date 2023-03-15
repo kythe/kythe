@@ -157,32 +157,32 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
   }
 }
 
-const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
-  if (stmt == nullptr) return nullptr;
-  stmt = Unparen(stmt);
-  if (const auto* star = llvm::dyn_cast_or_null<clang::UnaryOperator>(stmt);
+const clang::Expr* FindLValueHead(const clang::Expr* expr) {
+  if (expr == nullptr) return nullptr;
+  expr = Unparen(expr);
+  if (const auto* star = llvm::dyn_cast_or_null<clang::UnaryOperator>(expr);
       star != nullptr && star->getOpcode() == clang::UO_Deref &&
       star->getSubExpr() != nullptr) {
-    return stmt;
+    return expr;
   }
-  switch (stmt->getStmtClass()) {
+  switch (expr->getStmtClass()) {
     case clang::Stmt::StmtClass::DeclRefExprClass:
     case clang::Stmt::StmtClass::ObjCIvarRefExprClass:
     case clang::Stmt::StmtClass::MemberExprClass:
-      return stmt;
+      return expr;
     default:
       return nullptr;
   }
 }
 
-const clang::Stmt* Unparen(const clang::Stmt* stmt) {
-  const clang::Stmt* cs = stmt;
+const clang::Expr* Unparen(const clang::Expr* expr) {
+  const clang::Expr* cs = expr;
   for (;;) {
     const auto* parens = llvm::dyn_cast_or_null<clang::ParenExpr>(cs);
     if (parens == nullptr) return cs;
     cs = parens->getSubExpr();
     // Avoid introducing new nulls if we get an empty ParenExpr.
-    if (cs == nullptr) return stmt;
+    if (cs == nullptr) return expr;
   }
 }
 }  // namespace kythe
