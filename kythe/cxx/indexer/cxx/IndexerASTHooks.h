@@ -1020,13 +1020,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return stmt;
   }
 
-  /// \brief Marks that `stmt` was used as an alias target.
-  /// \return `stmt` as passed.
-  const clang::Stmt* UsedAsAlias(const clang::Stmt* stmt) {
-    if (stmt != nullptr)
-      use_kinds_[SkipTrivialAliasing(stmt)] =
+  /// \brief Marks that `expr` was used as an alias target.
+  /// \return `expr` as passed.
+  const clang::Expr* UsedAsAlias(const clang::Expr* expr) {
+    if (expr != nullptr)
+      use_kinds_[SkipTrivialAliasing(expr)] =
           GraphObserver::UseKind::kTakeAlias;
-    return stmt;
+    return expr;
   }
 
   /// \brief Maps known Decls to their NodeIds.
