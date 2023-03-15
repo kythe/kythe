@@ -159,7 +159,7 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
 
 const clang::Expr* FindLValueHead(const clang::Expr* expr) {
   if (expr == nullptr) return nullptr;
-  expr = Unparen(expr);
+  expr = expr->IgnoreParens();
   if (const auto* star = llvm::dyn_cast_or_null<clang::UnaryOperator>(expr);
       star != nullptr && star->getOpcode() == clang::UO_Deref &&
       star->getSubExpr() != nullptr) {
@@ -172,17 +172,6 @@ const clang::Expr* FindLValueHead(const clang::Expr* expr) {
       return expr;
     default:
       return nullptr;
-  }
-}
-
-const clang::Expr* Unparen(const clang::Expr* expr) {
-  const clang::Expr* cs = expr;
-  for (;;) {
-    const auto* parens = llvm::dyn_cast_or_null<clang::ParenExpr>(cs);
-    if (parens == nullptr) return cs;
-    cs = parens->getSubExpr();
-    // Avoid introducing new nulls if we get an empty ParenExpr.
-    if (cs == nullptr) return expr;
   }
 }
 }  // namespace kythe

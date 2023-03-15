@@ -592,16 +592,16 @@ const clang::Expr* IndexerASTVisitor::SkipTrivialAliasing(
   // TODO(zarko): calls with alternate semantics
   if (expr == nullptr) return nullptr;
   if (const auto* star =
-          llvm::dyn_cast_or_null<clang::UnaryOperator>(Unparen(expr));
+          llvm::dyn_cast_or_null<clang::UnaryOperator>(expr->IgnoreParens());
       star != nullptr && star->getOpcode() == clang::UO_Deref &&
       star->getSubExpr() != nullptr) {
     // star := *body
-    const auto* body = Unparen(star->getSubExpr());
+    const auto* body = star->getSubExpr()->IgnoreParens();
     if (const auto* amp = llvm::dyn_cast_or_null<clang::UnaryOperator>(body);
         amp != nullptr && amp->getOpcode() == clang::UO_AddrOf &&
         amp->getSubExpr() != nullptr) {
       // star := *&var
-      const auto* var = Unparen(amp->getSubExpr());
+      const auto* var = amp->getSubExpr()->IgnoreParens();
       if (const auto* dre = llvm::dyn_cast_or_null<clang::DeclRefExpr>(var)) {
         return dre;
       }

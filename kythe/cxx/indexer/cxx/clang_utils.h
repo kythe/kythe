@@ -51,13 +51,6 @@ const clang::Expr* FindLValueHead(const clang::Expr* expr);
 /// head `head`, or null. For example, in `foo[x].bar(y).z`, the target of
 /// influence is the member decl for `z`.
 const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Expr* head);
-
-/// \brief Given a non-null expr, removes all surrounding parenthesis.
-///
-/// If the parenthesis ensconce a null, the original statement is returned.
-///
-/// \return expr with all enclosing parens removed
-const clang::Expr* Unparen(const clang::Expr* expr);
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
