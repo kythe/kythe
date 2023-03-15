@@ -548,7 +548,7 @@ void ExtractorPPCallbacks::FileChanged(
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
       current_files_.push(FileState{std::string(GetMainFile()->getName()),
-                                    ClaimDirective::NoDirectivesFound});
+                                    ClaimDirective::AlwaysClaim});
     } else {
       CHECK(!current_files_.empty());
       current_files_.top().last_include_offset = last_inclusion_offset_;

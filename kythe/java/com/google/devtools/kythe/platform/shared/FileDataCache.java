@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -30,7 +29,7 @@ import java.util.Set;
  */
 public class FileDataCache implements FileDataProvider {
 
-  private final Map<String, byte[]> fileContents;
+  private final ImmutableMap<String, byte[]> fileContents;
 
   public FileDataCache(Iterable<FileData> fileData) {
     ImmutableMap.Builder<String, byte[]> builder = ImmutableMap.builder();
