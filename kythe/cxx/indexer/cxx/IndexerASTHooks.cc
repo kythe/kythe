@@ -5905,6 +5905,9 @@ void IndexerASTVisitor::PrepareAlternateSemanticCache() {
         case MetadataFile::Semantic::kReadWrite:
           kind = GraphObserver::UseKind::kReadWrite;
           break;
+        case MetadataFile::Semantic::kTakeAlias:
+          kind = GraphObserver::UseKind::kTakeAlias;
+          break;
         default:
           break;
       }

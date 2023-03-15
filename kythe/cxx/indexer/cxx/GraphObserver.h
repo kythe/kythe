@@ -313,6 +313,8 @@ class GraphObserver {
     kWrite,
     /// This use site is both a read and a write.
     kReadWrite,
+    /// This use site takes an alias.
+    kTakeAlias,
   };
 
   GraphObserver() {}
