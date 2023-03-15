@@ -100,6 +100,7 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
           absl::StartsWith(token, "release_")) {
         rule.semantic = kythe::MetadataFile::Semantic::kWrite;
       } else if (absl::StartsWith(token, "mutable_")) {
+        // TODO(zarko): kTakeAlias in a PR after #5538
         rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;
       }
     }

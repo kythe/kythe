@@ -1020,6 +1020,15 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return stmt;
   }
 
+  /// \brief Marks that `expr` was used as an alias target.
+  /// \return `expr` as passed.
+  const clang::Expr* UsedAsAlias(const clang::Expr* expr) {
+    if (expr != nullptr)
+      use_kinds_[SkipTrivialAliasing(expr)] =
+          GraphObserver::UseKind::kTakeAlias;
+    return expr;
+  }
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 
