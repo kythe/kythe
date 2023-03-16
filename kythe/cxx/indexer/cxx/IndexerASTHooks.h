@@ -745,6 +745,26 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// influence is the member decl for `z`.
   const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Expr* head);
 
+  /// \brief Describes a target (possibly sub-)expression resulting from some
+  /// operation.
+  ///
+  /// Often parts of an expression are especially interesting, like
+  /// lvalue heads (`z` in `x.y.z`) or the results of eliminating simple aliases
+  /// (`x` in `*&x`). The `head` field will contain that subexpression. If
+  /// the entire expression is relevant, or if no subexpression could be found,
+  /// `head` will contain the input expression.
+  ///
+  /// It may also be the case that the indexer has more information about
+  /// a particular target, e.g. that it should semantically refer to some
+  /// remote node rather than the one indicated by the (sub)expression. In this
+  /// case the `alt` field will contain that remote node's ID; this should be
+  /// preferred to `head`. For example, `alt` will be set to the ID of the
+  /// `foo` field in `*x->mutable_foo()`.
+  struct TargetExpr {
+    const clang::Expr* head;                   ///< The target (sub)expression.
+    std::optional<GraphObserver::NodeId> alt;  ///< The preferred target.
+  };
+
   /// \brief Eliminates the trivial introduction of aliasing.
   ///
   /// In some situations (and modulo undefined behavior), the expression
@@ -752,9 +772,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// it could also be a MemberExpr that has alias semantics tied to another
   /// field or some piece of generated code.
   ///
-  /// \return the head of a trivial alias/dealias operation or `expr` if the
-  /// operation failed to find one.
-  const clang::Expr* SkipTrivialAliasing(const clang::Expr* expr);
+  /// \return a TargetExpr with the alias eliminated, or with the original
+  /// `expr` set if no alias could be eliminated.
+  TargetExpr SkipTrivialAliasing(const clang::Expr* expr);
 
   /// \brief The result of calling into the lexer.
   enum class LexerResult {
@@ -998,35 +1018,44 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns whether `Decl` should be indexed.
   bool ShouldIndex(const clang::Decl* Decl);
 
-  GraphObserver::UseKind UseKindFor(const clang::Expr* expr) {
+  /// \brief Binds a particular `target` with a semantic `kind` (e.g., this
+  /// expr is a use that is a write to some node).
+  struct KindWithTarget {
+    GraphObserver::UseKind kind;   ///< The way `target` is being used.
+    GraphObserver::NodeId target;  ///< The node being used.
+  };
+
+  KindWithTarget UseKindFor(const clang::Expr* expr,
+                            const GraphObserver::NodeId& default_target) {
     auto i = use_kinds_.find(expr);
-    return i == use_kinds_.end() ? GraphObserver::UseKind::kUnknown : i->second;
+    return i == use_kinds_.end()
+               ? KindWithTarget{GraphObserver::UseKind::kUnknown,
+                                default_target}
+               : KindWithTarget{i->second.kind, i->second.target
+                                                    ? *i->second.target
+                                                    : default_target};
   }
 
   /// \brief Marks that `expr` was used as a write target.
-  /// \return `expr` as passed.
-  const clang::Expr* UsedAsWrite(const clang::Expr* expr) {
-    if (expr != nullptr)
-      use_kinds_[SkipTrivialAliasing(expr)] = GraphObserver::UseKind::kWrite;
-    return expr;
+  /// \return `expr` as passed, as well as an optional indirect target.
+  TargetExpr UsedAsWrite(const clang::Expr* expr) {
+    if (expr != nullptr) {
+      auto [head, alt] = SkipTrivialAliasing(expr);
+      use_kinds_[head] = {GraphObserver::UseKind::kWrite, alt};
+      return {expr, alt};
+    }
+    return {expr, std::nullopt};
   }
 
   /// \brief Marks that `expr` was used as a read+write target.
-  /// \return `expr` as passed.
-  const clang::Expr* UsedAsReadWrite(const clang::Expr* expr) {
-    if (expr != nullptr)
-      use_kinds_[SkipTrivialAliasing(expr)] =
-          GraphObserver::UseKind::kReadWrite;
-    return expr;
-  }
-
-  /// \brief Marks that `expr` was used as an alias target.
-  /// \return `expr` as passed.
-  const clang::Expr* UsedAsAlias(const clang::Expr* expr) {
-    if (expr != nullptr)
-      use_kinds_[SkipTrivialAliasing(expr)] =
-          GraphObserver::UseKind::kTakeAlias;
-    return expr;
+  /// \return `expr` as passed, as well as an optional indirect target.
+  TargetExpr UsedAsReadWrite(const clang::Expr* expr) {
+    if (expr != nullptr) {
+      auto [head, alt] = SkipTrivialAliasing(expr);
+      use_kinds_[head] = {GraphObserver::UseKind::kReadWrite, alt};
+      return {expr, alt};
+    }
+    return {expr, std::nullopt};
   }
 
   /// \brief Maps known Decls to their NodeIds.
@@ -1050,8 +1079,19 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Comments we've already visited.
   std::unordered_set<const clang::RawComment*> VisitedComments;
 
+  /// \brief Binds a particular implicit `expr` with a semantic `kind` (e.g.,
+  /// this expr is a use that is a write to some node). May provide an
+  /// overriding `target` if there is a more specific node than the one
+  /// implied by the `expr`.
+  struct KindWithOptionalTarget {
+    GraphObserver::UseKind kind;  ///< The way `target` is being used.
+    std::optional<GraphObserver::NodeId>
+        target;  ///< The node being used, if different from
+                 ///< the implicit `expr`.
+  };
+
   /// \brief AST nodes we know are used in specific ways.
-  absl::flat_hash_map<const clang::Expr*, GraphObserver::UseKind> use_kinds_;
+  absl::flat_hash_map<const clang::Expr*, KindWithOptionalTarget> use_kinds_;
 
   struct AlternateSemantic {
     GraphObserver::UseKind use_kind;
