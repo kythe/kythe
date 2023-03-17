@@ -17,7 +17,6 @@
 #include "cxx_extractor.h"
 
 #include <fcntl.h>
-#include <openssl/sha.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -47,6 +46,7 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/sha256_hasher.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
@@ -176,18 +176,6 @@ std::string FindStableRoot(
   return roots.GetStableRoot();
 }
 
-/// \brief Lowercase-string-hex-encodes the array sha_buf.
-/// \param sha_buf The bytes of the hash.
-std::string LowercaseStringHexEncodeSha(
-    const unsigned char (&sha_buf)[SHA256_DIGEST_LENGTH]) {
-  std::string sha_text(SHA256_DIGEST_LENGTH * 2, '\0');
-  for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-    sha_text[i * 2] = kHexDigits[(sha_buf[i] >> 4) & 0xF];
-    sha_text[i * 2 + 1] = kHexDigits[sha_buf[i] & 0xF];
-  }
-  return sha_text;
-}
-
 google::protobuf::Any* FindMutableContext(
     kythe::proto::CompilationUnit::FileInput* file_input,
     kythe::proto::ContextDependentVersion* context) {
@@ -269,17 +257,17 @@ class OrderFileInputByVName {
 /// \brief A SHA-256 hash accumulator.
 class RunningHash {
  public:
-  RunningHash() { ::SHA256_Init(&sha_context_); }
   /// \brief Update the hash.
   /// \param bytes Start of the memory to use to update.
   /// \param length Number of bytes to read.
   void Update(const void* bytes, size_t length) {
-    ::SHA256_Update(&sha_context_,
-                    reinterpret_cast<const unsigned char*>(bytes), length);
+    hasher_.Update({reinterpret_cast<const char*>(bytes), length});
   }
   /// \brief Update the hash with a string.
   /// \param string The string to include in the hash.
-  void Update(llvm::StringRef string) { Update(string.data(), string.size()); }
+  void Update(llvm::StringRef string) {
+    hasher_.Update({string.data(), string.size()});
+  }
   /// \brief Update the hash with a `ConditionValueKind`.
   /// \param cvk The enumerator to include in the hash.
   void Update(clang::PPCallbacks::ConditionValueKind cvk) {
@@ -307,23 +295,12 @@ class RunningHash {
   void Update(unsigned u) { Update(&u, sizeof(u)); }
   /// \brief Return the hash up to this point and reset internal state.
   std::string CompleteAndReset() {
-    unsigned char sha_buf[SHA256_DIGEST_LENGTH];
-    ::SHA256_Final(sha_buf, &sha_context_);
-    ::SHA256_Init(&sha_context_);
-    return LowercaseStringHexEncodeSha(sha_buf);
+    return std::exchange(hasher_, {}).FinishHexString();
   }
 
  private:
-  ::SHA256_CTX sha_context_;
+  Sha256Hasher hasher_;
 };
-
-/// \brief Returns the lowercase-string-hex-encoded sha256 digest of the first
-/// `length` bytes of `bytes`.
-static std::string Sha256(const void* bytes, size_t length) {
-  unsigned char sha_buf[SHA256_DIGEST_LENGTH];
-  ::SHA256(reinterpret_cast<const unsigned char*>(bytes), length, sha_buf);
-  return LowercaseStringHexEncodeSha(sha_buf);
-}
 
 /// \brief Returns a kzip-based IndexWriter or dies.
 IndexWriter OpenKzipWriterOrDie(const std::string& path) {
@@ -571,7 +548,7 @@ void ExtractorPPCallbacks::FileChanged(
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
       current_files_.push(FileState{std::string(GetMainFile()->getName()),
-                                    ClaimDirective::NoDirectivesFound});
+                                    ClaimDirective::AlwaysClaim});
     } else {
       CHECK(!current_files_.empty());
       current_files_.top().last_include_offset = last_inclusion_offset_;
@@ -630,8 +607,7 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
       const llvm::MemoryBufferRef buffer =
           source_manager_->getMemoryBufferForFileOrFake(file);
       std::string hashed_name =
-          Sha256(buffer.getBufferStart(),
-                 buffer.getBufferEnd() - buffer.getBufferStart());
+          Sha256Hasher(buffer.getBuffer()).FinishHexString();
       *main_source_file_stdin_alternate_ = "<stdin:" + hashed_name + ">";
     }
     return *main_source_file_stdin_alternate_;
@@ -1106,8 +1082,8 @@ void CompilationWriter::FillFileInput(
   // it. (clang also refers to standard input as <stdin>, so we're
   // consistent there.)
   file_info->set_path(clang_path == "-" ? "<stdin>" : clang_path);
-  file_info->set_digest(Sha256(source_file.file_content.c_str(),
-                               source_file.file_content.size()));
+  file_info->set_digest(
+      Sha256Hasher(source_file.file_content).FinishHexString());
   AddFileContext(source_file, file_input);
 }
 
@@ -1138,7 +1114,7 @@ void CompilationWriter::InsertExtraIncludes(
     required_input->mutable_v_name()->CopyFrom(VNameForPath(normalized));
     required_input->mutable_info()->set_path(path);
     required_input->mutable_info()->set_digest(
-        Sha256((*buffer)->getBufferStart(), (*buffer)->getBufferSize()));
+        Sha256Hasher((*buffer)->getBuffer()).FinishHexString());
     file_content->mutable_info()->CopyFrom(required_input->info());
     file_content->mutable_content()->assign((*buffer)->getBufferStart(),
                                             (*buffer)->getBufferEnd());
@@ -1241,7 +1217,7 @@ void CompilationWriter::WriteIndex(
   }
   identifying_blob.append(main_source_file);
   std::string identifying_blob_digest =
-      Sha256(identifying_blob.c_str(), identifying_blob.size());
+      Sha256Hasher(identifying_blob).FinishHexString();
   auto* unit_vname = unit.mutable_v_name();
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);

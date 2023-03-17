@@ -562,3 +562,14 @@ cc_test(
         "@com_googlesource_code_re2//:re2",
     ],
 )
+
+cc_library(
+    name = "sha256_hasher",
+    srcs = ["sha256_hasher.cc"],
+    hdrs = ["sha256_hasher.h"],
+    deps = [
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)

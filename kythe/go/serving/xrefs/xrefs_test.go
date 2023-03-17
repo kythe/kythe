@@ -359,35 +359,37 @@ var (
 			Group: []*srvpb.PagedCrossReferences_Group{{
 				BuildConfig: "testConfig",
 				Kind:        "%/kythe/edge/defines/binding",
-				Anchor: []*srvpb.ExpandedAnchor{{
-					Ticket:             "kythe://c?lang=otpl?path=/a/path#27-33",
-					BuildConfiguration: "testConfig",
+				ScopedReference: []*srvpb.PagedCrossReferences_ScopedReference{{
+					Reference: []*srvpb.ExpandedAnchor{{
+						Ticket:             "kythe://c?lang=otpl?path=/a/path#27-33",
+						BuildConfiguration: "testConfig",
 
-					Span: &cpb.Span{
-						Start: &cpb.Point{
-							ByteOffset:   27,
-							LineNumber:   2,
-							ColumnOffset: 10,
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   27,
+								LineNumber:   2,
+								ColumnOffset: 10,
+							},
+							End: &cpb.Point{
+								ByteOffset:   33,
+								LineNumber:   3,
+								ColumnOffset: 5,
+							},
 						},
-						End: &cpb.Point{
-							ByteOffset:   33,
-							LineNumber:   3,
-							ColumnOffset: 5,
-						},
-					},
 
-					SnippetSpan: &cpb.Span{
-						Start: &cpb.Point{
-							ByteOffset: 17,
-							LineNumber: 2,
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset: 17,
+								LineNumber: 2,
+							},
+							End: &cpb.Point{
+								ByteOffset:   27,
+								LineNumber:   2,
+								ColumnOffset: 10,
+							},
 						},
-						End: &cpb.Point{
-							ByteOffset:   27,
-							LineNumber:   2,
-							ColumnOffset: 10,
-						},
-					},
-					Snippet: "here and  ",
+						Snippet: "here and  ",
+					}},
 				}},
 			}},
 			PageIndex: []*srvpb.PagedCrossReferences_PageIndex{{

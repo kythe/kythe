@@ -141,6 +141,9 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
       case MappingRule::SEMA_READ_WRITE:
         sema = Semantic::kReadWrite;
         break;
+      case MappingRule::SEMA_TAKE_ALIAS:
+        sema = Semantic::kTakeAlias;
+        break;
       default:
         sema = Semantic::kNone;
     }

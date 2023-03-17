@@ -16,10 +16,9 @@
 
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
 
-#include <openssl/sha.h>  // for SHA256
-
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
+#include "kythe/cxx/common/sha256_hasher.h"
 
 namespace kythe {
 
@@ -53,21 +52,8 @@ FileHashRecorder::~FileHashRecorder() {
   CHECK(::fclose(out_file_) == 0) << "Couldn't close file for hash recording.";
 }
 
-namespace {
-std::string Sha256(absl::string_view in_string) {
-  ::SHA256_CTX sha;
-  ::SHA256_Init(&sha);
-  ::SHA256_Update(&sha,
-                  reinterpret_cast<const unsigned char*>(in_string.data()),
-                  in_string.size());
-  std::string hash(SHA256_DIGEST_LENGTH, '\0');
-  ::SHA256_Final(reinterpret_cast<unsigned char*>(&hash[0]), &sha);
-  return hash;
-}
-}  // anonymous namespace
-
 std::string GraphObserver::ForceEncodeString(absl::string_view InString) const {
-  auto hash = Sha256(InString);
+  auto hash = Sha256Hasher(InString).FinishBinString();
   std::string result;
   // Use web-safe escaping because vnames are frequently URI-encoded. This
   // doesn't include padding ('=') or the characters + or /, all of which will
@@ -84,10 +70,7 @@ std::string GraphObserver::CompressAnchorSignature(
   if (InSignature.size() <= kSha256DigestBase64MaxEncodingLength) {
     return std::string(InSignature);
   }
-  auto hash = Sha256(InSignature);
-  std::string result;
-  absl::WebSafeBase64Escape(hash, &result);
-  return result;
+  return absl::WebSafeBase64Escape(Sha256Hasher(InSignature).FinishBinString());
 }
 
 std::string GraphObserver::CompressString(absl::string_view InString) const {

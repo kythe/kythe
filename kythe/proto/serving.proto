@@ -276,6 +276,20 @@ message PagedCrossReferences {
     int32 ordinal = 2;
   }
 
+  // References to the source node with an associated semantic scope.
+  message ScopedReference {
+    // The definition anchor covering the semantic scope.
+    ExpandedAnchor scope = 1;
+    // The semantic ticket for the scope.
+    string semantic_scope = 2;
+
+    // MarkedSource for the scope.
+    kythe.proto.common.MarkedSource marked_source = 3;
+
+    // Specific locations within the scope that reference the source node.
+    repeated ExpandedAnchor reference = 4;
+  }
+
   // Caller of the source node with all associated callsites within the caller.
   message Caller {
     // The anchor covering the caller.
@@ -301,6 +315,7 @@ message PagedCrossReferences {
     repeated ExpandedAnchor anchor = 2;
     repeated RelatedNode related_node = 3;
     repeated Caller caller = 4;
+    repeated ScopedReference scoped_reference = 7;
 
     // List of files referenced in the group
     repeated FileInfo file_info = 6;
