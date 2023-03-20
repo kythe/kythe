@@ -33,6 +33,9 @@ void fn() {
 
   //- @mutable_nested_message ref/writes NestedMessageField
   *msg.mutable_nested_message() = nested;
+  //- @mutable_nested_message ref NestedMessageField
+  //- !{ @mutable_nested_message ref/writes NestedMessageField }
+  msg.mutable_nested_message();
   //- @nested_message ref CxxGetNestedMessageField
   msg.nested_message();
 

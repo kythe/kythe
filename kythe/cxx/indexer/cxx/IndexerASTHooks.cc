@@ -569,9 +569,9 @@ bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl* Decl) {
 }
 
 const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
-    const clang::Stmt* head) {
+    const clang::Expr* head) {
   if (head == nullptr) return nullptr;
-  head = SkipTrivialAliasing(head);
+  head = SkipTrivialAliasing(head).head;
   if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
       expr != nullptr && expr->getFoundDecl() != nullptr &&
       (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
@@ -587,11 +587,38 @@ const clang::Decl* IndexerASTVisitor::GetInfluencedDeclFromLValueHead(
   return nullptr;
 }
 
-const clang::Stmt* IndexerASTVisitor::SkipTrivialAliasing(
-    const clang::Stmt* stmt) {
-  // TODO(zarko): the actual implementation.
-  if (stmt == nullptr) return nullptr;
-  return stmt;
+IndexerASTVisitor::TargetExpr IndexerASTVisitor::SkipTrivialAliasing(
+    const clang::Expr* expr) {
+  // TODO(zarko): calls with alternate semantics
+  if (expr == nullptr) return {nullptr, std::nullopt};
+  if (const auto* star =
+          llvm::dyn_cast_or_null<clang::UnaryOperator>(expr->IgnoreParens());
+      star != nullptr && star->getOpcode() == clang::UO_Deref &&
+      star->getSubExpr() != nullptr) {
+    // star := *body
+    const auto* body = star->getSubExpr()->IgnoreParens();
+    if (const auto* amp = llvm::dyn_cast_or_null<clang::UnaryOperator>(body);
+        amp != nullptr && amp->getOpcode() == clang::UO_AddrOf &&
+        amp->getSubExpr() != nullptr) {
+      // star := *&var
+      const auto* var = amp->getSubExpr()->IgnoreParens();
+      if (const auto* dre = llvm::dyn_cast_or_null<clang::DeclRefExpr>(var)) {
+        return {dre, std::nullopt};
+      }
+    }
+    if (const auto* call = llvm::dyn_cast_or_null<clang::CallExpr>(body);
+        call != nullptr && call->getCallee() != nullptr &&
+        call->getCalleeDecl() != nullptr) {
+      // star := *foo() || *x->foo()
+      // TODO(zarko): here and above: trace down deref/call chains?
+      // we don't currently handle x.y.z->mutable_foo()
+      if (const auto* as = AlternateSemanticForDecl(call->getCalleeDecl());
+          as != nullptr && as->use_kind == GraphObserver::UseKind::kTakeAlias) {
+        return {call->getCallee(), as->node};
+      }
+    }
+  }
+  return {expr, std::nullopt};
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {
@@ -1419,9 +1446,11 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
+      auto [use_kind, target] =
+          UseKindFor(E, BuildNodeIdForRefToDecl(FieldDecl));
       Observer.recordSemanticDeclUseLocation(
-          *RCC, BuildNodeIdForRefToDecl(FieldDecl), UseKindFor(E),
-          GraphObserver::Claimability::Unclaimable, IsImplicit(*RCC));
+          *RCC, target, use_kind, GraphObserver::Claimability::Unclaimable,
+          IsImplicit(*RCC));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
@@ -1697,25 +1726,26 @@ bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
   auto arg_end = E->arg_end();
   if (arg_begin != arg_end && *arg_begin != nullptr) {
     // `this` is the first argument in the case of a member function.
-    auto* lvhead = FindLValueHead(*arg_begin);
-    if (E->getOperator() == clang::OO_Equal) {
-      UsedAsWrite(lvhead);
-    } else {
-      UsedAsReadWrite(lvhead);
-    }
+    auto* raw_lvhead = FindLValueHead(*arg_begin);
+    auto [lvhead, influenced] = (E->getOperator() == clang::OO_Equal)
+                                    ? UsedAsWrite(raw_lvhead)
+                                    : UsedAsReadWrite(raw_lvhead);
     if (!TraverseStmt(*arg_begin)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     for (++arg_begin; arg_begin != arg_end; ++arg_begin) {
       if (*arg_begin != nullptr && !TraverseStmt(*arg_begin)) return false;
     }
-    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+    if (!influenced) {
+      if (auto* from_expr = GetInfluencedDeclFromLValueHead(lvhead)) {
+        influenced = BuildNodeIdForDecl(from_expr);
+      }
+    }
+    if (influenced) {
       for (const auto* decl : Job->InfluenceSets.back()) {
-        Observer.recordInfluences(BuildNodeIdForDecl(decl),
-                                  BuildNodeIdForDecl(influenced));
+        Observer.recordInfluences(BuildNodeIdForDecl(decl), *influenced);
       }
       if (E->getOperator() != clang::OO_Equal) {
-        Observer.recordInfluences(BuildNodeIdForDecl(influenced),
-                                  BuildNodeIdForDecl(influenced));
+        Observer.recordInfluences(*influenced, *influenced);
       }
     }
     return true;
@@ -2338,16 +2368,20 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinaryOperator(BO)) return false;
-    auto* lvhead = UsedAsWrite(FindLValueHead(lhs));
+    auto [lvhead, influenced] = UsedAsWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
+    if (!influenced) {
+      if (auto* from_expr = GetInfluencedDeclFromLValueHead(lvhead)) {
+        influenced = BuildNodeIdForDecl(from_expr);
+      }
+    }
+    if (influenced) {
       for (const auto* decl : Job->InfluenceSets.back()) {
-        Observer.recordInfluences(BuildNodeIdForDecl(decl),
-                                  BuildNodeIdForDecl(influenced));
+        Observer.recordInfluences(BuildNodeIdForDecl(decl), *influenced);
       }
     }
     return true;
@@ -2363,19 +2397,22 @@ bool IndexerASTVisitor::TraverseCompoundAssignOperator(
   if (auto rhs = CAO->getRHS(), lhs = CAO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromCompoundAssignOperator(CAO)) return false;
-    auto* lvhead = UsedAsReadWrite(FindLValueHead(lhs));
+    auto [lvhead, influenced] = UsedAsReadWrite(FindLValueHead(lhs));
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
-    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
-      for (const auto* decl : Job->InfluenceSets.back()) {
-        Observer.recordInfluences(BuildNodeIdForDecl(decl),
-                                  BuildNodeIdForDecl(influenced));
+    if (!influenced) {
+      if (auto* from_expr = GetInfluencedDeclFromLValueHead(lvhead)) {
+        influenced = BuildNodeIdForDecl(from_expr);
       }
-      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
-                                BuildNodeIdForDecl(influenced));
+    }
+    if (influenced) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl), *influenced);
+      }
+      Observer.recordInfluences(*influenced, *influenced);
     }
     return true;
   }
@@ -2394,11 +2431,15 @@ bool IndexerASTVisitor::TraverseUnaryOperator(clang::UnaryOperator* UO) {
   }
   if (auto* lval = UO->getSubExpr(); lval != nullptr) {
     if (!WalkUpFromUnaryOperator(UO)) return false;
-    auto* lvhead = UsedAsReadWrite(FindLValueHead(lval));
+    auto [lvhead, influenced] = UsedAsReadWrite(FindLValueHead(lval));
     if (!TraverseStmt(lval)) return false;
-    if (auto* influenced = GetInfluencedDeclFromLValueHead(lvhead)) {
-      Observer.recordInfluences(BuildNodeIdForDecl(influenced),
-                                BuildNodeIdForDecl(influenced));
+    if (!influenced) {
+      if (auto* from_expr = GetInfluencedDeclFromLValueHead(lvhead)) {
+        influenced = BuildNodeIdForDecl(from_expr);
+      }
+    }
+    if (influenced) {
+      Observer.recordInfluences(*influenced, *influenced);
     }
     return true;
   }
@@ -2524,9 +2565,10 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
               this->IsImplicit(RCC.value()));
         }
       }
+      auto [use_kind, target] = UseKindFor(Expr, DeclId);
       Observer.recordSemanticDeclUseLocation(
-          *RCC, DeclId, UseKindFor(Expr),
-          GraphObserver::Claimability::Unclaimable, this->IsImplicit(*RCC));
+          *RCC, target, use_kind, GraphObserver::Claimability::Unclaimable,
+          this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
         S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
@@ -5902,6 +5944,9 @@ void IndexerASTVisitor::PrepareAlternateSemanticCache() {
           break;
         case MetadataFile::Semantic::kReadWrite:
           kind = GraphObserver::UseKind::kReadWrite;
+          break;
+        case MetadataFile::Semantic::kTakeAlias:
+          kind = GraphObserver::UseKind::kTakeAlias;
           break;
         default:
           break;

@@ -35,6 +35,7 @@ class MetadataFile {
     kNone,       ///< No special semantics.
     kWrite,      ///< Write semantics.
     kReadWrite,  ///< Read+write semantics.
+    kTakeAlias,  ///< Alias-taking semantics.
   };
 
   /// \brief A single metadata rule.
