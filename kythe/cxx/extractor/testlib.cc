@@ -44,7 +44,7 @@ namespace kythe {
 namespace {
 namespace gpb = ::google::protobuf;
 namespace kpb = ::kythe::proto;
-using HashMap = ::absl::flat_hash_map<gpb::string, std::size_t>;
+using HashMap = ::absl::flat_hash_map<std::string, std::size_t>;
 using ::bazel::tools::cpp::runfiles::Runfiles;
 
 // Path prefix joined to runfiles to form the workspace-relative path.
@@ -53,7 +53,7 @@ constexpr absl::string_view kWorkspaceRoot = "io_kythe";
 constexpr absl::string_view kExtractorPath =
     "kythe/cxx/extractor/cxx_extractor";
 
-void CanonicalizeHash(HashMap* hashes, gpb::string* hash) {
+void CanonicalizeHash(HashMap* hashes, std::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
   *hash = absl::StrCat("hash", inserted.first->second);
 }

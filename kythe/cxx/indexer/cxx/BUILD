@@ -83,7 +83,6 @@ cc_library(
     ],
     hdrs = [
         "clang_utils.h",
-        "proto_conversions.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",

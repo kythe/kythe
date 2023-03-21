@@ -33,7 +33,6 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/indexer/cxx/KytheClaimClient.h"
 #include "kythe/cxx/indexer/cxx/KytheVFS.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
@@ -193,7 +192,7 @@ std::string IndexCompilationUnit(
   if (DecodeDetails(Unit, Details)) {
     HSIValid = DecodeHeaderSearchInfo(Details, HSI);
     for (const auto& stat_path : Details.stat_path()) {
-      Dirs.push_back(ToStringRef(stat_path.path()));
+      Dirs.push_back(stat_path.path());
     }
   }
   std::string FixupArgument = ConfigureSystemHeaders(Unit, Files);
@@ -206,7 +205,7 @@ std::string IndexCompilationUnit(
     FSO.WorkingDir = absl::StrCat("/", FSO.WorkingDir);
   }
   for (auto& Path : HSI.paths) {
-    Dirs.push_back(ToStringRef(Path.path));
+    Dirs.push_back(Path.path);
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
       new IndexVFS(Options.EffectiveWorkingDirectory, Files, Dirs, Style));
