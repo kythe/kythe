@@ -138,7 +138,7 @@ class NodeStack {
   /// \brief Copy data from `annotations` and `formatted_range` to
   /// `dest_source`.
   /// \return the MarkedSource node covering an identifier, or null.
-  MarkedSource* ProcessAnnotations(const std::string& formatted_range,
+  MarkedSource* ProcessAnnotations(absl::string_view formatted_range,
                                    const std::vector<Annotation>& annotations,
                                    MarkedSource* dest_source) {
     /// For certain kinds of annotations, we'll substitute our own special
@@ -223,8 +223,9 @@ class NodeStack {
   /// \param at_end whether the span on the top of the stack is about to be
   /// popped because there are no other spans that get opened before the
   /// current span closes.
-  void AppendToTop(const std::string& formatted_range, size_t cancel_count,
+  void AppendToTop(absl::string_view formatted_range, size_t cancel_count,
                    size_t start, size_t end, bool at_end) {
+    absl::string_view text = formatted_range.substr(start, end - start);
     CHECK(!nodes_.empty());
     if (cancel_count != 0) {
       return;
@@ -233,19 +234,18 @@ class NodeStack {
     auto* node = nodes_.top().marked_source;
     if (at_end) {
       if (node->child().empty() && node->post_text().empty()) {
-        node->mutable_pre_text()->append(formatted_range, start, end - start);
+        node->mutable_pre_text()->append(text);
       } else {
-        node->mutable_post_text()->append(formatted_range, start, end - start);
+        node->mutable_post_text()->append(text);
       }
     } else {
       // If there are children before this node, we need to add a new BOX
       // to hold this token.
       if (node->child().empty()) {
-        node->mutable_pre_text()->append(formatted_range, start, end - start);
+        node->mutable_pre_text()->append(text);
       } else {
         auto* new_node = node->add_child();
-        new_node->mutable_pre_text()->append(formatted_range, start,
-                                             end - start);
+        new_node->mutable_pre_text()->append(text);
       }
     }
   }
