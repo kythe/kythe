@@ -22,7 +22,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "glog/logging.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -70,7 +69,7 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
                   working_directory_);
   }
   for (const auto& data : virtual_files) {
-    std::string path = FixupPath(ToStringRef(data.info().path()), style);
+    std::string path = FixupPath(data.info().path(), style);
     if (auto* record = FileRecordForPath(path, BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
       record->data =
