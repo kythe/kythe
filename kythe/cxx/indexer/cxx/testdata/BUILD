@@ -2788,6 +2788,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "ms_macro_fn",
+    srcs = ["marked_source/ms_macro_fn.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
     name = "ms_fn_namespace",
     srcs = ["marked_source/ms_fn_namespace.cc"],
     convert_marked_source = True,
