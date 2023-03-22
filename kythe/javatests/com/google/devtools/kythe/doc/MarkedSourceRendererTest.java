@@ -18,6 +18,7 @@ package com.google.devtools.kythe.doc;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrls;
@@ -28,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import junit.framework.TestCase;
 
 public class MarkedSourceRendererTest extends TestCase {
@@ -61,7 +61,7 @@ public class MarkedSourceRendererTest extends TestCase {
                     MarkedSourceRendererTest::makeLink, markedSource)
                 .getSafeHtmlString())
         .isEqualTo("<span>FunctionName</span>");
-    List<SafeHtml> params =
+    ImmutableList<SafeHtml> params =
         MarkedSourceRenderer.renderSimpleParams(MarkedSourceRendererTest::makeLink, markedSource);
     assertThat(params.size()).isEqualTo(2);
     assertThat(params.get(0).getSafeHtmlString()).isEqualTo("<span>param_name_one</span>");

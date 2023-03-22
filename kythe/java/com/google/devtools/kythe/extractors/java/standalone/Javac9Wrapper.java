@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java.standalone;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -50,7 +51,7 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     fileManager.handleOptions(args.getDeferredFileManagerOptions());
     Options options = Options.instance(context);
 
-    List<String> sources =
+    ImmutableList<String> sources =
         args.getFileObjects().stream().map(JavaFileObject::getName).collect(toImmutableList());
 
     // Retrieve the list of class paths provided by the -classpath argument.

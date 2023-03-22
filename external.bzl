@@ -20,7 +20,7 @@ load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
@@ -34,6 +34,20 @@ def _rule_dependencies():
     go_register_toolchains(version = "1.19.2")
     gazelle_dependencies()
     rules_java_dependencies()
+
+    # Using rule_java_toolchains() registers @rules_java//toolchains:all first, which
+    # causes toolchain resolution to select the wrong toolchain:
+    # https://github.com/bazelbuild/rules_java/issues/95
+    # Work around this by registering only the JDK toolchain we actually support.
+    remote_jdk19_repos()
+    native.register_toolchains("@local_jdk//:runtime_toolchain_definition")
+    for version in ("11", "17", "19"):
+        for platform in ("linux", "macos", "win"):
+            native.register_toolchains("@remotejdk{version}_{platform}_toolchain_config_repo//:toolchain".format(
+                version = version,
+                platform = platform,
+            ))
+
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()

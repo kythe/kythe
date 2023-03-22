@@ -28,14 +28,14 @@ import junit.framework.TestCase;
 /** Tests {@link CompilationUnitFileTree}. */
 public class CompilationUnitFileTreeTest extends TestCase {
   public void testRelPath() {
-    Iterable<CompilationUnit.FileInput> fi = createDummyFileInput("foo/bar/baz");
+    List<CompilationUnit.FileInput> fi = createDummyFileInput("foo/bar/baz");
     CompilationUnitFileTree cuft = new CompilationUnitFileTree(fi);
     assertThat(cuft.lookup("foo/bar/baz")).isEqualTo("dummy digest for foo/bar/baz");
     assertThat(cuft.lookup("foo/bar")).isEqualTo("<dir>");
   }
 
   public void testAbsPath() {
-    Iterable<CompilationUnit.FileInput> fi = createDummyFileInput("/foo/bar/baz");
+    List<CompilationUnit.FileInput> fi = createDummyFileInput("/foo/bar/baz");
     CompilationUnitFileTree cuft = new CompilationUnitFileTree(fi);
     assertThat(cuft.lookup("/foo/bar/baz")).isEqualTo("dummy digest for /foo/bar/baz");
     assertThat(cuft.lookup("/foo/bar")).isEqualTo("<dir>");
