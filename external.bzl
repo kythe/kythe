@@ -48,6 +48,9 @@ def _rule_dependencies():
                 platform = platform,
             ))
 
+    # Bazel does not yet provide a "default_java_toolchain" target for JDK19 so configure our own.
+    native.register_toolchains("//buildenv/java:all")
+
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()

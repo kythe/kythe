@@ -119,7 +119,7 @@ extract_java_aspect = aspect(
             allow_single_file = True,
         ),
         "_java_runtime": attr.label(
-            default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
+            default = Label("@rules_java//toolchains:current_java_runtime"),
             cfg = "exec",
             allow_files = True,
         ),

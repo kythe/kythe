@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-load("@bazel_tools//tools/jdk:remote_java_repository.bzl", _remote_java_repository = "remote_java_repository")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -18,11 +17,6 @@ def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **k
         ]],
         **kwargs
     )
-
-def remote_java_repository(**kwargs):
-    if native.bazel_version.startswith("5."):
-        kwargs["exec_compatible_with"] = kwargs.pop("target_compatible_with")
-    _remote_java_repository(**kwargs)
 
 def kythe_rule_repositories():
     """Defines external repositories for Kythe Bazel rules.
