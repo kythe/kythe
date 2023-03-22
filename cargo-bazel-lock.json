@@ -1,5 +1,5 @@
 {
-  "checksum": "0c0608db172c44663a628557b86636dcf058ee0d0cfcfc888bb80132af7e0860",
+  "checksum": "b682eb56a54dc149ea0be137088198c76eaed60a61681ed20372be472f2a93b7",
   "crates": {
     "adler 1.0.2": {
       "name": "adler",
@@ -767,7 +767,7 @@
               "target": "proc_macro_error"
             },
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -1350,7 +1350,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -3369,7 +3369,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -3458,7 +3458,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -3487,13 +3487,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "proc-macro2 1.0.52": {
+    "proc-macro2 1.0.53": {
       "name": "proc-macro2",
-      "version": "1.0.52",
+      "version": "1.0.53",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.52/download",
-          "sha256": "1d0e1ae9e836cc3beddd63db0df682593d7e2d3d891ae8c9083d2113e1744224"
+          "url": "https://crates.io/api/v1/crates/proc-macro2/1.0.53/download",
+          "sha256": "ba466839c78239c09faf015484e5cc04860f88242cff4d03eb038f04b4699b73"
         }
       },
       "targets": [
@@ -3534,7 +3534,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "build_script_build"
             },
             {
@@ -3545,7 +3545,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.52"
+        "version": "1.0.53"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3767,7 +3767,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -4596,7 +4596,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -4608,7 +4608,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "syn 2.0.4",
+              "id": "syn 2.0.6",
               "target": "syn"
             }
           ],
@@ -4792,7 +4792,7 @@
               "target": "proc_macro_error"
             },
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -4996,7 +4996,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -5024,13 +5024,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "syn 2.0.4": {
+    "syn 2.0.6": {
       "name": "syn",
-      "version": "2.0.4",
+      "version": "2.0.6",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/syn/2.0.4/download",
-          "sha256": "2c622ae390c9302e214c31013517c2061ecb2699935882c60a9b37f82f8625ae"
+          "url": "https://crates.io/api/v1/crates/syn/2.0.6/download",
+          "sha256": "ece519cfaf36269ea69d16c363fa1d59ceba8296bbfbfc003c3176d01f2816ee"
         }
       },
       "targets": [
@@ -5064,7 +5064,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -5079,7 +5079,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.0.4"
+        "version": "2.0.6"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -5324,7 +5324,7 @@
         "deps": {
           "common": [
             {
-              "id": "proc-macro2 1.0.52",
+              "id": "proc-macro2 1.0.53",
               "target": "proc_macro2"
             },
             {
@@ -5332,7 +5332,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.4",
+              "id": "syn 2.0.6",
               "target": "syn"
             }
           ],
