@@ -44,7 +44,7 @@ public class IndexInfoUtils {
 
   public static final String KZIP_FILE_EXT = ".kzip";
 
-  public static Collection<CompilationDescription> readKZip(String path)
+  public static List<CompilationDescription> readKZip(String path)
       throws IOException, KZipException {
     KZip.Reader reader = new KZipReader(new File(path));
     List<CompilationDescription> compilations = new ArrayList<>();

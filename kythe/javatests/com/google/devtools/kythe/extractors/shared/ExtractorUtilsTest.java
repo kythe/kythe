@@ -19,6 +19,7 @@ package com.google.devtools.kythe.extractors.shared;
 import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -82,7 +83,7 @@ public class ExtractorUtilsTest extends TestCase {
     final String digest = "DIGEST";
     final String content = "CONTENT";
     final String path = "a/b/c";
-    List<CompilationUnit.FileInput> cfis =
+    ImmutableList<CompilationUnit.FileInput> cfis =
         ExtractorUtils.toFileInputs(
             Lists.newArrayList(
                 FileData.newBuilder()
