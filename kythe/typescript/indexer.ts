@@ -179,11 +179,11 @@ function toArray<T>(it: Iterator<T>): T[] {
 }
 
 /**
- * stripExtension strips the .d.ts or .ts extension from a path.
+ * stripExtension strips the .d.ts, .ts or .tsx extension from a path.
  * It's used to map a file path to the module name.
  */
 function stripExtension(path: string): string {
-  return path.replace(/\.(d\.)?ts$/, '');
+  return path.replace(/\.(d\.)?tsx?$/, '');
 }
 
 /**
