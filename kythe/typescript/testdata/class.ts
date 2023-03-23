@@ -94,6 +94,7 @@ class SubSubclass extends Class implements IExtended {
 }
 
 //- @Class ref ClassValue
+//- @Class ref/id Class
 let instance = new Class(3, 'a');
 //- @otherMember ref OtherMember
 instance.otherMember;
@@ -101,3 +102,7 @@ instance.otherMember;
 // Using Class in type position should still create a link to the class.
 //- @Class ref Class
 let useAsType: Class = instance;
+
+//- @Class ref ClassValue
+//- @Class ref/id Class
+Class;
