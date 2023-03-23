@@ -31,7 +31,6 @@
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/common/schema/facts.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"

@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
@@ -413,7 +413,7 @@ public class JavaCompilationUnitExtractor {
             : runJavaAnalysisToExtractCompilationDetails(sources, searchPaths, processors, options);
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
-    List<FileInput> compilationFileInputs =
+    ImmutableList<FileInput> compilationFileInputs =
         ExtractorUtils.toFileInputs(fileVNames, results.relativePaths::get, fileContents).stream()
             .map(
                 input -> {
@@ -464,7 +464,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<? extends CompilationUnitTree> compilationUnits)
       throws ExtractionException {
     // Maps package names to source files that wildcard import them.
-    Multimap<String, String> pkgs = HashMultimap.create();
+    SetMultimap<String, String> pkgs = HashMultimap.create();
 
     // Javac synthesizes an "import java.lang.*" for every compilation unit.
     pkgs.put("java.lang", "*.java");
@@ -1084,7 +1084,7 @@ public class JavaCompilationUnitExtractor {
         : loadNamedProcessors(loader, names);
   }
 
-  private static Iterable<Processor> loadNamedProcessors(ClassLoader loader, Iterable<String> names)
+  private static List<Processor> loadNamedProcessors(ClassLoader loader, Iterable<String> names)
       throws ExtractionException {
     List<Processor> procs = new ArrayList<>();
     for (String processor : names) {

@@ -47,11 +47,14 @@ class ClangRangeFinderTest : public ::testing::Test {
   }
 
   absl::string_view GetSourceText(clang::SourceRange range) {
+    return GetSourceText(clang::CharSourceRange::getCharRange(range));
+  }
+
+  absl::string_view GetSourceText(clang::CharSourceRange range) {
     CHECK(range.isValid());
     bool invalid = false;
-    auto text =
-        clang::Lexer::getSourceText(clang::CharSourceRange::getCharRange(range),
-                                    source_manager(), lang_options(), &invalid);
+    auto text = clang::Lexer::getSourceText(range, source_manager(),
+                                            lang_options(), &invalid);
     CHECK(!invalid);
     return absl::string_view(text.data(), text.size());
   }
@@ -281,6 +284,44 @@ TEST_F(ClangRangeFinderTest, TerribleMacrosAreZeroWidth) {
                           Pair("b", "b"),
                           Pair("_status_or_value25", EmptyAt(expansion)),
                           Pair("_", EmptyAt(expansion)), Pair("r", "r")));
+}
+
+// Verifies that references to non-argument macro entities result in
+// the full range of the macro expansion when they are the only token.
+TEST_F(ClangRangeFinderTest, SingleTokenMacroRangesUsesFullRange) {
+  std::vector<NamedDeclTestCase> decls = {
+      {"#define NAMED(a) prefix_##a\n"
+       "void %s ();",
+       "NAMED(entity)"},
+      {"#define NAMED(a) prefix_##a\n"
+       "#define entity NAMED(entity)\n"
+       "void %s ();"},
+  };
+  for (const auto& test : decls) {
+    ASTUnit& ast = Parse(test.SourceText());
+    ClangRangeFinder finder(&source_manager(), &lang_options());
+
+    EXPECT_EQ(GetSourceText(finder.RangeForNameOf(test.FindDecl(ast))),
+              test.name());
+  }
+}
+
+// Verifies that references to non-argument macro entities result in
+// the full range of the macro expansion when they are all of the tokens.
+TEST_F(ClangRangeFinderTest, MultiTokenMacroRangesUsesFullRange) {
+  std::vector<NamedDeclTestCase> decls = {
+      {"#define CLASS(a) class prefix_##a { prefix_##a() = default; }\n"
+       "CLASS(%s);"},
+  };
+  for (const auto& test : decls) {
+    ASTUnit& ast = Parse(test.SourceText());
+
+    EXPECT_EQ(GetSourceText(range_finder().NormalizeRange(
+                  test.FindDecl(ast)->getSourceRange())),
+              absl::StrFormat("CLASS(%s)", test.name()))
+        << GetSourceText(source_manager().getExpansionRange(
+               test.FindDecl(ast)->getSourceRange()));
+  }
 }
 }  // namespace
 }  // namespace kythe

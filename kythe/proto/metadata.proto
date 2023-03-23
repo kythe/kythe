@@ -67,6 +67,7 @@ message MappingRule {
     SEMA_NONE = 0;
     SEMA_WRITE = 1;
     SEMA_READ_WRITE = 2;
+    SEMA_TAKE_ALIAS = 3;
   };
 
   Semantic semantic = 11;

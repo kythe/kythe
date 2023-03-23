@@ -20,7 +20,7 @@ load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
@@ -34,6 +34,23 @@ def _rule_dependencies():
     go_register_toolchains(version = "1.19.2")
     gazelle_dependencies()
     rules_java_dependencies()
+
+    # Using rule_java_toolchains() registers @rules_java//toolchains:all first, which
+    # causes toolchain resolution to select the wrong toolchain:
+    # https://github.com/bazelbuild/rules_java/issues/95
+    # Work around this by registering only the JDK toolchain we actually support.
+    remote_jdk19_repos()
+    native.register_toolchains("@local_jdk//:runtime_toolchain_definition")
+    for version in ("11", "17", "19"):
+        for platform in ("linux", "macos", "win"):
+            native.register_toolchains("@remotejdk{version}_{platform}_toolchain_config_repo//:toolchain".format(
+                version = version,
+                platform = platform,
+            ))
+
+    # Bazel does not yet provide a "default_java_toolchain" target for JDK19 so configure our own.
+    native.register_toolchains("//buildenv/java:all")
+
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()
@@ -107,11 +124,11 @@ def _cc_dependencies():
         http_archive,
         name = "net_zlib",
         build_file = "@io_kythe//third_party:zlib.BUILD",
-        sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
-        strip_prefix = "zlib-1.2.11",
+        sha256 = "d14c38e313afc35a9a8760dadf26042f51ea0f5d154b0630a31da0540107fb98",
+        strip_prefix = "zlib-1.2.13",
         urls = [
-            "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
-            "https://zlib.net/zlib-1.2.11.tar.gz",
+            "https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.xz",
+            "https://zlib.net/zlib-1.2.13.tar.xz",
         ],
     )
 
@@ -159,8 +176,7 @@ def _cc_dependencies():
         github_archive,
         name = "com_google_absl",
         repo_name = "abseil/abseil-cpp",
-        commit = "188138facb785e704e2107a3fee58cf9672a22cc",
-        sha256 = "6db2791c66a4b0cded7daca87cd7e1524f882a0463b54a336525f76f6ee629c2",
+        commit = "276f88cb77dd543ae9cc4ed55c08fb5f74f405ea",
     )
 
     maybe(
@@ -302,10 +318,10 @@ def _java_dependencies():
             "com.google.auto.value:auto-value-annotations:1.8",
             "com.google.auto:auto-common:1.0",
             "com.google.code.findbugs:jsr305:3.0.2",
-            "com.google.code.gson:gson:2.8.6",
+            "com.google.code.gson:gson:2.8.9",
             "com.google.common.html.types:types:1.0.8",
             "com.google.errorprone:error_prone_annotations:2.6.0",
-            "com.google.guava:guava:31.0.1-jre",
+            "com.google.guava:guava:31.1-jre",
             "com.google.jimfs:jimfs:1.2",
             "com.google.re2j:re2j:1.6",
             "com.google.truth:truth:1.1.2",

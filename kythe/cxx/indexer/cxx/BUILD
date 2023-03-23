@@ -83,7 +83,6 @@ cc_library(
     ],
     hdrs = [
         "clang_utils.h",
-        "proto_conversions.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -580,6 +579,7 @@ cc_library(
     srcs = ["clang_range_finder.cc"],
     hdrs = ["clang_range_finder.h"],
     deps = [
+        ":stream_adapter",
         "@com_github_google_glog//:glog",
         "@llvm-project//clang:ast",
         "@llvm-project//clang:basic",

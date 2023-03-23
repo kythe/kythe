@@ -319,7 +319,7 @@ public class KytheEntrySets {
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
   public EntrySet newFunctionTypeAndEmit(
       VName returnType, VName receiverType, List<VName> arguments, MarkedSource ms) {
-    List<VName> tArgs =
+    ImmutableList<VName> tArgs =
         ImmutableList.<VName>builderWithExpectedSize(2 + arguments.size())
             .add(returnType)
             .add(receiverType)

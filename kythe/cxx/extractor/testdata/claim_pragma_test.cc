@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
-#include <memory> 
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
@@ -21,8 +21,6 @@ using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::DefaultFieldComparator;
 using ::google::protobuf::util::MessageDifferencer;
 using ::testing::ElementsAre;
-
-using pbstring = ::google::protobuf::string;
 
 constexpr char kExpectedContents[] = R"(
 v_name {
@@ -113,7 +111,7 @@ entry_context: "hash0"
 //                                {"message", "inner", "field"});
 const FieldDescriptor* FindNestedFieldByLowercasePath(
     const google::protobuf::Descriptor* descriptor,
-    const std::vector<pbstring>& field_names) {
+    const std::vector<std::string>& field_names) {
   const FieldDescriptor* field = nullptr;
   for (const auto& name : field_names) {
     if (descriptor == nullptr) return nullptr;
@@ -147,7 +145,7 @@ class CanonicalHashComparator : public DefaultFieldComparator {
   }
 
  private:
-  using HashMap = std::unordered_map<pbstring, size_t>;
+  using HashMap = std::unordered_map<std::string, size_t>;
 
   ComparisonResult Compare(
       const Message& message_1, const Message& message_2,
@@ -163,8 +161,8 @@ class CanonicalHashComparator : public DefaultFieldComparator {
     if (field->is_repeated()) {
       // Allocate scratch strings to store the result if a conversion is
       // needed.
-      pbstring scratch1;
-      pbstring scratch2;
+      std::string scratch1;
+      std::string scratch2;
       return CompareCanonicalHash(reflection_1->GetRepeatedStringReference(
                                       message_1, field, index_1, &scratch1),
                                   reflection_2->GetRepeatedStringReference(
@@ -172,23 +170,23 @@ class CanonicalHashComparator : public DefaultFieldComparator {
     } else {
       // Allocate scratch strings to store the result if a conversion is
       // needed.
-      pbstring scratch1;
-      pbstring scratch2;
+      std::string scratch1;
+      std::string scratch2;
       return CompareCanonicalHash(
           reflection_1->GetStringReference(message_1, field, &scratch1),
           reflection_2->GetStringReference(message_2, field, &scratch2));
     }
   }
 
-  ComparisonResult CompareCanonicalHash(const pbstring& string_1,
-                                        const pbstring& string_2) {
+  ComparisonResult CompareCanonicalHash(const std::string& string_1,
+                                        const std::string& string_2) {
     return HashIndex(&left_message_hashes_, string_1) ==
                    HashIndex(&right_message_hashes_, string_2)
                ? SAME
                : DIFFERENT;
   }
 
-  static size_t HashIndex(HashMap* canonical_map, const pbstring& hash) {
+  static size_t HashIndex(HashMap* canonical_map, const std::string& hash) {
     size_t index = canonical_map->size();
     // We use an index equivalent to the visitation order of the hashes.
     // This is potentially fragile as we really only care if a protocol buffer

@@ -157,32 +157,21 @@ bool ShouldHaveBlameContext(const clang::Decl* decl) {
   }
 }
 
-const clang::Stmt* FindLValueHead(const clang::Stmt* stmt) {
-  if (stmt == nullptr) return nullptr;
-  switch (stmt->getStmtClass()) {
+const clang::Expr* FindLValueHead(const clang::Expr* expr) {
+  if (expr == nullptr) return nullptr;
+  expr = expr->IgnoreParens();
+  if (const auto* star = llvm::dyn_cast_or_null<clang::UnaryOperator>(expr);
+      star != nullptr && star->getOpcode() == clang::UO_Deref &&
+      star->getSubExpr() != nullptr) {
+    return expr;
+  }
+  switch (expr->getStmtClass()) {
     case clang::Stmt::StmtClass::DeclRefExprClass:
     case clang::Stmt::StmtClass::ObjCIvarRefExprClass:
     case clang::Stmt::StmtClass::MemberExprClass:
-      return stmt;
+      return expr;
     default:
       return nullptr;
   }
-}
-
-const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Stmt* head) {
-  if (head == nullptr) return nullptr;
-  if (auto* expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(head);
-      expr != nullptr && expr->getFoundDecl() != nullptr &&
-      (expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var ||
-       expr->getFoundDecl()->getKind() == clang::Decl::Kind::ParmVar)) {
-    return expr->getFoundDecl();
-  }
-  if (auto* expr = llvm::dyn_cast_or_null<clang::MemberExpr>(head);
-      expr != nullptr) {
-    if (auto* member = expr->getMemberDecl(); member != nullptr) {
-      return member;
-    }
-  }
-  return nullptr;
 }
 }  // namespace kythe

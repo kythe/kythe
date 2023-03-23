@@ -226,7 +226,7 @@ class Verifier {
   /// \return null if something went wrong; otherwise, an AstNode corresponding
   /// to a VName of a synthetic node for `code_data`.
   AstNode* ConvertCodeFact(const yy::location& loc,
-                           const google::protobuf::string& code_data);
+                           const std::string& code_data);
 
   /// \brief Converts an encoded /kythe/code/json fact to a form that's useful
   /// to the verifier.
@@ -234,7 +234,7 @@ class Verifier {
   /// \return null if something went wrong; otherwise, an AstNode corresponding
   /// to a VName of a synthetic node for `code_data`.
   AstNode* ConvertCodeJsonFact(const yy::location& loc,
-                               const google::protobuf::string& code_data);
+                               const std::string& code_data);
 
   /// \brief Converts a MarkedSource message to a form that's useful
   /// to the verifier.

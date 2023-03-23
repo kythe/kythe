@@ -680,7 +680,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return new JavaNode(lambdaNode);
   }
 
-  private static Iterable<Type> getTargets(JCFunctionalExpression node) {
+  private static ImmutableList<Type> getTargets(JCFunctionalExpression node) {
     if (node == null || node.target == null) {
       return ImmutableList.of();
     }
