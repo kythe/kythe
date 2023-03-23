@@ -81,6 +81,10 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   return compilerHost;
 }
 
+function isTsFile(filename: string): boolean {
+  return filename.endsWith('.ts') || filename.endsWith('.tsx');
+}
+
 /**
  * verify runs the indexer against a test case and passes it through the
  * Kythe verifier.  It returns a Promise because the node subprocess API must
@@ -155,7 +159,7 @@ function collectTSFilesInDirectoryRecursively(dir: string, result: string[]) {
   for (const file of fs.readdirSync(dir, {withFileTypes: true})) {
     if (file.isDirectory()) {
       collectTSFilesInDirectoryRecursively(`${dir}/${file.name}`, result);
-    } else if (file.name.endsWith('.ts')) {
+    } else if (isTsFile(file.name)) {
       result.push(path.resolve(`${dir}/${file.name}`));
     }
   }
@@ -188,7 +192,7 @@ function getTestCases(options: ts.CompilerOptions, dir: string): TestCase[] {
       } else {
         result.push(...getTestCases(options, relativeName));
       }
-    } else if (file.name.endsWith('.ts')) {
+    } else if (isTsFile(file.name)) {
       result.push({
         name: relativeName,
         files: [path.resolve(relativeName)],
