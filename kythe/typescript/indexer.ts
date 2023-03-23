@@ -2375,6 +2375,16 @@ class Visitor {
     if (refType == RefType.WRITE || refType == RefType.READ_WRITE) {
       this.emitEdge(anchor, EdgeKind.REF_WRITES, name);
     }
+    // For classes emit ref/id to the type node in addition to regular
+    // ref. When user check refs for a class - they usually check get
+    // refs of the class node, not the constructor node. That's why
+    // we need ref/id from all usages to the class node.
+    if (sym.flags & ts.SymbolFlags.Class) {
+      const className = this.host.getSymbolName(sym, TSNamespace.TYPE);
+      if (className != null) {
+        this.emitEdge(anchor, EdgeKind.REF_ID, className);
+      }
+    }
     this.addInfluencer(name);
   }
 
