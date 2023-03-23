@@ -35,8 +35,8 @@ import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -180,7 +180,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
     return fileDataProvider.startLookup(file.toString(), digest);
   }
 
-  public Collection<Path> list(Path dir) throws IOException {
+  public Set<Path> list(Path dir) throws IOException {
     final Path abs = getRootDirectory().resolve(dir).normalize();
     Map<String, String> entries = compilationFileTree.list(abs.toString());
     if (entries == null) {

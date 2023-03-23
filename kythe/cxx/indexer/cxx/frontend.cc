@@ -35,7 +35,6 @@
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/cxx/DynamicClaimClient.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"

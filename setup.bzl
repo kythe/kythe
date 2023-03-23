@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-load("@bazel_tools//tools/jdk:remote_java_repository.bzl", _remote_java_repository = "remote_java_repository")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -18,11 +17,6 @@ def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **k
         ]],
         **kwargs
     )
-
-def remote_java_repository(**kwargs):
-    if native.bazel_version.startswith("5."):
-        kwargs["exec_compatible_with"] = kwargs.pop("target_compatible_with")
-    _remote_java_repository(**kwargs)
 
 def kythe_rule_repositories():
     """Defines external repositories for Kythe Bazel rules.
@@ -52,20 +46,19 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_cc",
-        sha256 = "ff7876d80cd3f6b8c7a064bd9aa42a78e02096544cca2b22a9cf390a4397a53e",
-        strip_prefix = "rules_cc-081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_cc/archive/081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e.tar.gz",
-            "https://github.com/bazelbuild/rules_cc/archive/081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e.tar.gz",
-        ],
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.6/rules_cc-0.0.6.tar.gz"],
+        sha256 = "3d9e271e2876ba42e114c9b9bc51454e379cbf0ec9ef9d40e2ae4cec61a31b40",
+        strip_prefix = "rules_cc-0.0.6",
     )
 
     maybe(
         http_archive,
         name = "rules_java",
-        url = "https://github.com/bazelbuild/rules_java/archive/973a93dd2d698929264d1028836f6b9cc60ff817.zip",
-        sha256 = "a6cb0dbe343b67c7d4f3f11a68e327acdfc71fee1e17affa4e605129fc56bb15",
-        strip_prefix = "rules_java-973a93dd2d698929264d1028836f6b9cc60ff817",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
+            "https://github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
+        ],
+        sha256 = "bcfabfb407cb0c8820141310faa102f7fb92cc806b0f0e26a625196101b0b57e",
     )
 
     maybe(
@@ -96,9 +89,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_jvm_external",
-        sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
-        strip_prefix = "rules_jvm_external-4.0",
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.0.zip"],
+        sha256 = "8c3b207722e5f97f1c83311582a6c11df99226e65e2471086e296561e57cc954",
+        strip_prefix = "rules_jvm_external-5.1",
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/releases/download/5.1/rules_jvm_external-5.1.tar.gz"],
     )
 
     maybe(

@@ -46,7 +46,7 @@ bool CheckVName(const proto::VName& vname) {
 absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
                                                 size_t comment_slash_pos,
                                                 size_t data_start_pos) {
-  google::protobuf::string raw_data;
+  std::string raw_data;
   // Over-reserves--though we expect the comment to be the only thing in the
   // file or the last thing in the file, so this approximation is reasonable.
   raw_data.reserve(buf_string.size() - comment_slash_pos);
@@ -74,7 +74,7 @@ absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
     }
     break;
   }
-  google::protobuf::string decoded;
+  std::string decoded;
   return absl::Base64Unescape(raw_data, &decoded)
              ? absl::optional<std::string>(std::string(decoded))
              : absl::nullopt;

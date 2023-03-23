@@ -11,5 +11,5 @@ genrule(
     ],
     outs = ["test.entries"],
     cmd = "$(JAVA) -jar $(location //kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar) $(location test.kzip) > $@",
-    toolchains = ["@bazel_tools//tools/jdk:current_java_runtime"],
+    toolchains = ["@rules_java//toolchains:current_java_runtime"],
 )

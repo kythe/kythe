@@ -1,9 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load(
-    "@bazel_tools//tools/jdk:default_java_toolchain.bzl",
-    "BASE_JDK9_JVM_OPTS",
-    "default_java_toolchain",
-)
+load("@rules_java//toolchains:default_java_toolchain.bzl", "default_java_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 

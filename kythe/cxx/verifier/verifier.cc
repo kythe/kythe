@@ -1340,7 +1340,7 @@ AstNode* Verifier::NewUniqueVName(const yy::location& loc) {
 }
 
 AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
-                                   const google::protobuf::string& code_data) {
+                                   const std::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
     LOG(ERROR) << loc << ": can't parse code protobuf" << std::endl;
@@ -1349,8 +1349,8 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
   return ConvertMarkedSource(loc, marked_source);
 }
 
-AstNode* Verifier::ConvertCodeJsonFact(
-    const yy::location& loc, const google::protobuf::string& code_data) {
+AstNode* Verifier::ConvertCodeJsonFact(const yy::location& loc,
+                                       const std::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
            .ok()) {
