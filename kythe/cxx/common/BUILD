@@ -48,6 +48,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_github_google_glog//:glog",
@@ -55,8 +58,8 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 
@@ -136,6 +139,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":file_vname_generator",
@@ -150,8 +156,8 @@ cc_library(
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
-        "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -169,6 +175,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":json_proto",
         ":lib",
@@ -179,6 +188,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@se_haxx_curl//:curl",
     ],
 )
@@ -205,6 +215,9 @@ cc_test(
     srcs = [
         "file_vname_generator_test.cc",
     ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":file_vname_generator",
         "//third_party:gtest",
@@ -223,6 +236,9 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":json_proto",
@@ -254,6 +270,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":json_proto",
         ":net_client",
@@ -281,6 +300,9 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":kythe_uri",
@@ -334,6 +356,9 @@ cc_library(
     name = "kzip_reader",
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [
         "//visibility:public",
     ],
@@ -352,6 +377,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@org_libzip//:zip",
     ],
 )
@@ -384,6 +410,9 @@ cc_library(
     name = "kzip_writer",
     srcs = ["kzip_writer.cc"],
     hdrs = ["kzip_writer.h"],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [
         "//visibility:public",
     ],
@@ -430,6 +459,9 @@ cc_library(
     name = "kzip_writer_c_api",
     srcs = ["kzip_writer_c_api.cc"],
     hdrs = ["kzip_writer_c_api.h"],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [
         "//visibility:public",
     ],

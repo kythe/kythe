@@ -1,10 +1,11 @@
-package(
-    features = ["layering_check"],
-)
+package(features = ["layering_check"])
 
 cc_binary(
     name = "proto_extractor",
     srcs = ["proto_extractor_main.cc"],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":lib",
@@ -25,6 +26,9 @@ cc_library(
     name = "lib",
     srcs = ["proto_extractor.cc"],
     hdrs = ["proto_extractor.h"],
+    features = [
+        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
         "//kythe/cxx/common:file_utils",
@@ -37,5 +41,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
