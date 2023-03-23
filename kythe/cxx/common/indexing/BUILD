@@ -15,7 +15,7 @@ cc_library(
         "KytheOutputStream.h",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -41,7 +41,7 @@ cc_library(
         "MemcachedHashCache.h",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [

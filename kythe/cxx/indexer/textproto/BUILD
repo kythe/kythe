@@ -4,7 +4,7 @@ cc_binary(
     name = "textproto_indexer",
     srcs = ["textproto_indexer_main.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -32,7 +32,7 @@ cc_library(
     srcs = ["analyzer.cc"],
     hdrs = ["analyzer.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":plugin",
@@ -76,7 +76,7 @@ cc_library(
     srcs = ["plugin_registry.cc"],
     hdrs = ["plugin_registry.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":plugin",

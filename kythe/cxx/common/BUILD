@@ -49,7 +49,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
@@ -140,7 +140,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
@@ -176,7 +176,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":json_proto",
@@ -216,7 +216,7 @@ cc_test(
         "file_vname_generator_test.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":file_vname_generator",
@@ -238,7 +238,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":json_proto",
@@ -271,7 +271,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":json_proto",
@@ -302,7 +302,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":kythe_uri",
@@ -357,7 +357,7 @@ cc_library(
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [
         "//visibility:public",
@@ -411,7 +411,7 @@ cc_library(
     srcs = ["kzip_writer.cc"],
     hdrs = ["kzip_writer.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [
         "//visibility:public",
@@ -460,7 +460,7 @@ cc_library(
     srcs = ["kzip_writer_c_api.cc"],
     hdrs = ["kzip_writer_c_api.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [
         "//visibility:public",

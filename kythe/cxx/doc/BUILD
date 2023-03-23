@@ -31,7 +31,7 @@ cc_library(
         "markup_handler_test.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":markup_handler",
@@ -74,7 +74,7 @@ cc_library(
         "html_renderer_test.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":html_renderer",
@@ -100,7 +100,7 @@ cc_binary(
         "doc.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":html_renderer",

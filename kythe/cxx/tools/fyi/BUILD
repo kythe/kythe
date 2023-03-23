@@ -16,7 +16,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/common:init",

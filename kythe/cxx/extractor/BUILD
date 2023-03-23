@@ -101,7 +101,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":command_line_utils",
@@ -143,7 +143,7 @@ cc_binary(
     name = "cxx_extractor",
     srcs = ["cxx_extractor_main.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":lib",
@@ -186,7 +186,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -218,7 +218,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -252,7 +252,7 @@ cc_test(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":lib",
@@ -276,7 +276,7 @@ cc_library(
     hdrs = ["testlib.h"],
     data = [":cxx_extractor"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/common:kzip_reader",
@@ -299,7 +299,7 @@ cc_library(
     srcs = ["bazel_event_reader.cc"],
     hdrs = ["bazel_event_reader.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "@build_event_stream_proto//:build_event_stream_cc_proto",
@@ -314,7 +314,7 @@ cc_test(
     name = "bazel_event_reader_test",
     srcs = ["bazel_event_reader_test.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":bazel_event_reader",
@@ -337,7 +337,7 @@ cc_library(
     srcs = ["bazel_artifact_selector.cc"],
     hdrs = ["bazel_artifact_selector.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":bazel_artifact",
@@ -359,7 +359,7 @@ cc_test(
     name = "bazel_artifact_selector_test",
     srcs = ["bazel_artifact_selector_test.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":bazel_artifact",
@@ -401,7 +401,7 @@ cc_test(
     name = "bazel_artifact_reader_test",
     srcs = ["bazel_artifact_reader_test.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":bazel_artifact_reader",
@@ -419,7 +419,7 @@ cc_binary(
     name = "dump_bazel_artifacts",
     srcs = ["dump_bazel_artifacts.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":bazel_artifact_reader",

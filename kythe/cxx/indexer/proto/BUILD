@@ -5,7 +5,7 @@ cc_library(
     srcs = ["proto_graph_builder.cc"],
     hdrs = ["proto_graph_builder.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":comments",
@@ -41,7 +41,7 @@ cc_library(
         "-Wno-unused-variable",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":offset_util",
@@ -75,7 +75,7 @@ cc_library(
     name = "vname_util",
     hdrs = ["vname_util.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -89,7 +89,7 @@ cc_library(
     srcs = ["source_tree.cc"],
     hdrs = ["source_tree.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [
         "//kythe/cxx/indexer/textproto:__subpackages__",
@@ -109,7 +109,7 @@ cc_library(
     srcs = ["search_path.cc"],
     hdrs = ["search_path.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [
         "//kythe/cxx/extractor/proto:__subpackages__",
@@ -132,7 +132,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [

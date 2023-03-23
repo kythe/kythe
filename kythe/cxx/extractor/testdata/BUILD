@@ -105,7 +105,7 @@ cc_test(
         "claim_main.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/extractor:lib",
@@ -220,7 +220,7 @@ cc_test(
         "build_config.cc",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/extractor:testlib",

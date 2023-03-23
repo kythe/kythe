@@ -14,7 +14,7 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//external:zlib",
@@ -40,7 +40,7 @@ cc_binary(
     name = "proto_metadata_plugin",
     srcs = ["proto_metadata_plugin.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/common:init",

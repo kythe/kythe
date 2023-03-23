@@ -4,7 +4,7 @@ cc_binary(
     name = "proto_extractor",
     srcs = ["proto_extractor_main.cc"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -27,7 +27,7 @@ cc_library(
     srcs = ["proto_extractor.cc"],
     hdrs = ["proto_extractor.h"],
     features = [
-        "-layering_check",  # # TODO: protocolbuffers/protobuf#10889
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
