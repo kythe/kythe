@@ -320,8 +320,8 @@ public class JavacOptionsUtils {
 
       // We need to call removeArgumentPaths() even if we don't use the return value because it
       // strips out any existing command-line-specified values from 'arguments'.
-      List<String> argumentPaths = this.removeArgumentPaths(option);
-      List<String> detailsPaths =
+      ImmutableList<String> argumentPaths = this.removeArgumentPaths(option);
+      ImmutableList<String> detailsPaths =
           pathList.stream()
               .flatMap(pL -> PATH_SPLITTER.splitToList(pL).stream())
               .collect(toImmutableList());

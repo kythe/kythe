@@ -50,7 +50,6 @@
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
@@ -63,10 +62,6 @@
 
 namespace kythe {
 namespace {
-llvm::StringRef ToStringRef(absl::string_view sv) {
-  return {sv.data(), sv.size()};
-}
-
 using cxx_extractor::LookupFileForIncludePragma;
 using ::google::protobuf::RepeatedPtrField;
 
@@ -548,7 +543,7 @@ void ExtractorPPCallbacks::FileChanged(
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
       current_files_.push(FileState{std::string(GetMainFile()->getName()),
-                                    ClaimDirective::NoDirectivesFound});
+                                    ClaimDirective::AlwaysClaim});
     } else {
       CHECK(!current_files_.empty());
       current_files_.top().last_include_offset = last_inclusion_offset_;
@@ -690,11 +685,11 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     if (file_ref) {
       auto vname = index_writer_->VNameForPath(index_writer_->RelativizePath(
           FixStdinPath(file_ref, std::string(filename_ref))));
-      history()->Update(ToStringRef(vname.signature()));
-      history()->Update(ToStringRef(vname.corpus()));
-      history()->Update(ToStringRef(vname.root()));
-      history()->Update(ToStringRef(vname.path()));
-      history()->Update(ToStringRef(vname.language()));
+      history()->Update(vname.signature());
+      history()->Update(vname.corpus());
+      history()->Update(vname.root());
+      history()->Update(vname.path());
+      history()->Update(vname.language());
     } else {
       LOG(WARNING) << "No FileRef for " << filename_ref.str() << " (location "
                    << loc.printToString(*source_manager_) << ")";

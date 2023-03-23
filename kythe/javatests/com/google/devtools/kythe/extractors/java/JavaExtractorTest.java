@@ -635,7 +635,7 @@ public class JavaExtractorTest extends TestCase {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
     List<String> sources = testFiles("src_in_jar/C1.java");
-    List<String> classpath = ImmutableList.of(join(TEST_DATA_DIR, "src_in_jar/pack.jar"));
+    ImmutableList<String> classpath = ImmutableList.of(join(TEST_DATA_DIR, "src_in_jar/pack.jar"));
 
     CompilationDescription description =
         java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");

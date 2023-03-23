@@ -2788,6 +2788,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "ms_macro_fn",
+    srcs = ["marked_source/ms_macro_fn.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
     name = "ms_fn_namespace",
     srcs = ["marked_source/ms_fn_namespace.cc"],
     convert_marked_source = True,
@@ -3626,6 +3634,14 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_operatorplusplus",
     srcs = ["df/df_operatorplusplus.cc"],
+    experimental_record_dataflow_edges = True,
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_ta_var",
+    srcs = ["df/df_ta_var.cc"],
     experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],

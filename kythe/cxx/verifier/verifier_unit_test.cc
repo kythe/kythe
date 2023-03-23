@@ -2653,10 +2653,10 @@ fact_value: "//- A->node/kind file\n"
 TEST(VerifierUnitTest, DontConvertMarkedSource) {
   Verifier v;
   MarkedSource source;
-  google::protobuf::string source_string;
+  std::string source_string;
   ASSERT_TRUE(source.SerializeToString(&source_string));
   google::protobuf::TextFormat::FieldValuePrinter printer;
-  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  std::string enc_source = printer.PrintBytes(source_string);
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
   entries {
     source { signature:"test" }
@@ -2688,14 +2688,14 @@ class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
     return GetParam() ? "/kythe/code" : "/kythe/code/json";
   }
 
-  google::protobuf::string Encode(const MarkedSource& source) const {
+  std::string Encode(const MarkedSource& source) const {
     if (GetParam()) {
-      google::protobuf::string source_string;
+      std::string source_string;
       GTEST_CHECK_(source.SerializeToString(&source_string))
           << "Failure serializing MarkedSource";
       return source_string;
     } else {
-      google::protobuf::string source_string;
+      std::string source_string;
       GTEST_CHECK_(
           google::protobuf::util::MessageToJsonString(source, &source_string)
               .ok())

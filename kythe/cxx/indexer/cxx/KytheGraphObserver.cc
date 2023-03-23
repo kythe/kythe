@@ -816,9 +816,14 @@ void KytheGraphObserver::recordFullDefinitionRange(
 
 void KytheGraphObserver::recordDefinitionBindingRange(
     const GraphObserver::Range& binding_range, const NodeId& node_decl,
-    const absl::optional<NodeId>& node_def) {
-  RecordStampedAnchor(binding_range, node_decl, node_def,
-                      EdgeKindID::kDefinesBinding, node_decl);
+    const absl::optional<NodeId>& node_def, Stamping stamping) {
+  if (stamping == Stamping::Stamped) {
+    RecordStampedAnchor(binding_range, node_decl, node_def,
+                        EdgeKindID::kDefinesBinding, node_decl);
+    return;
+  }
+  RecordAnchor(binding_range, node_decl, EdgeKindID::kDefinesBinding,
+               Claimability::Unclaimable);
 }
 
 void KytheGraphObserver::recordDefinitionRangeWithBinding(
@@ -1114,7 +1119,8 @@ void KytheGraphObserver::recordSemanticDeclUseLocation(
     const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
     Claimability claimability, Implicit i) {
   if (kind == GraphObserver::UseKind::kUnknown ||
-      kind == GraphObserver::UseKind::kReadWrite) {
+      kind == GraphObserver::UseKind::kReadWrite ||
+      kind == GraphObserver::UseKind::kTakeAlias) {
     auto out_kind =
         (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
                                            : EdgeKindID::kRef);
