@@ -54,6 +54,7 @@ func (w *Writer) ensureFileHeader() error {
 			return err
 		}
 		metadata := rmpb.RecordsMetadata{}
+		// TODO(schroederc): add support for full RecordsMetadata
 		metadata.RecordWriterOptions = proto.String(opts)
 		if _, err := tw.PutProto(&metadata); err != nil {
 			return err
