@@ -52,10 +52,10 @@ func (w *Writer) ensureFileHeader() error {
 		tw := &talliedRecordWriter{recordWriter: rw}
 		if err != nil {
 			return err
-		} else if _, err := tw.PutProto(&rmpb.RecordsMetadata{
-			// TODO(schroederc): add support for full RecordsMetadata
-			RecordWriterOptions: proto.String(opts),
-		}); err != nil {
+		}
+		metadata := rmpb.RecordsMetadata{}
+		metadata.RecordWriterOptions = proto.String(opts)
+		if _, err := tw.PutProto(&metadata); err != nil {
 			return err
 		}
 		data, err := tw.Encode()
