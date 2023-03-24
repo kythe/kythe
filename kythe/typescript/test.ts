@@ -120,7 +120,7 @@ function verify(
       rootVName,
       fileVNames,
       srcs: testFiles,
-      allFiles: testFiles,
+      rootFiles: testFiles,
     };
     indexer.index(compilationUnit, {
       compilerOptions: options,

@@ -42,8 +42,12 @@ export interface CompilationUnit {
   /** Files to index. */
   srcs: string[];
 
-  /** List of all files, both srcs and deps. */
-  allFiles: string[];
+  /**
+   * List of files from which TS compiler will start type checking. It should include srcs files + file that provide
+   * global types, that are not imported from srcs files. All other dep files must be loaded following imports
+   * and by IndexingOptions.readFile function.
+   */
+  rootFiles: string[];
 }
 
 /**
@@ -133,21 +137,9 @@ export interface IndexerHost {
    */
   moduleName(path: string): string;
   /**
-   * Paths to index.
-   * TODO: Remove completely and instead pass paths explicitly
-   * as inputs to methods.
-   */
-  paths: string[];
-  /**
    * TypeScript program.
-   * TODO: migrate usages to options.program
    */
   program: ts.Program;
-  /**
-   * Strategy to emit Kythe entries by.
-   * TODO: migrate usages to options.emit
-   */
-  emit(obj: JSONFact|JSONEdge): void;
 }
 
 /**
@@ -370,17 +362,11 @@ class StandardIndexerContext implements IndexerHost {
 
   private typeChecker: ts.TypeChecker;
 
-  public readonly emit: (obj: JSONFact|JSONEdge) => void;
-  public readonly paths: string[];
-
-
   constructor(
     public readonly program: ts.Program,
     public readonly compilationUnit: CompilationUnit,
     public readonly options: IndexingOptions,
   ) {
-    this.paths = compilationUnit.srcs;
-    this.emit = options.emit;
     this.sourceRoot = this.program.getCompilerOptions().rootDir || process.cwd();
     let rootDirs = this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
@@ -2690,7 +2676,7 @@ class Visitor {
  */
 export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
   const program = ts.createProgram({
-    rootNames: compilationUnit.allFiles,
+    rootNames: compilationUnit.rootFiles,
     options: options.compilerOptions,
     host: options.compilerHost,
   });
@@ -2775,7 +2761,7 @@ function main(argv: string[]) {
   const compilationUnit: CompilationUnit = {
     srcs: inPaths,
     rootVName,
-    allFiles: inPaths,
+    rootFiles: inPaths,
     fileVNames: new Map(),
   };
   index(compilationUnit, {
