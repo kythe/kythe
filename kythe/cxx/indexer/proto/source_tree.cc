@@ -38,16 +38,6 @@ std::string StringReplaceFirst(absl::string_view s, absl::string_view oldsub,
   return absl::StrJoin(absl::StrSplit(s, absl::MaxSplits(oldsub, 1)), newsub);
 }
 
-template <typename T, typename U>
-auto FindOrNull(T&& container, U&& key)
-    -> decltype(&container.find(std::forward<U>(key))->second) {
-  auto iter = container.find(std::forward<U>(key));
-  if (iter != container.end()) {
-    return &iter->second;
-  }
-  return nullptr;
-}
-
 }  // namespace
 
 bool PreloadedProtoFileTree::AddFile(const std::string& filename,
