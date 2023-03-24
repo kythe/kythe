@@ -100,6 +100,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
         "@com_google_protobuf//src/google/protobuf/io",
     ],
 )

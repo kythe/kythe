@@ -131,6 +131,7 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io:gzip_stream",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:frontend",
         "@llvm-project//clang:lex",
