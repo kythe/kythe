@@ -4,6 +4,9 @@ cc_library(
     name = "proto_graph_builder",
     srcs = ["proto_graph_builder.cc"],
     hdrs = ["proto_graph_builder.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":comments",
         ":vname_util",
@@ -37,6 +40,9 @@ cc_library(
     copts = [
         "-Wno-unused-variable",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":offset_util",
         ":proto_graph_builder",
@@ -68,6 +74,9 @@ cc_library(
 cc_library(
     name = "vname_util",
     hdrs = ["vname_util.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//kythe/cxx/common:lib",
@@ -79,6 +88,9 @@ cc_library(
     name = "source_tree",
     srcs = ["source_tree.cc"],
     hdrs = ["source_tree.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [
         "//kythe/cxx/indexer/textproto:__subpackages__",
     ],
@@ -88,6 +100,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 
@@ -95,6 +108,9 @@ cc_library(
     name = "search_path",
     srcs = ["search_path.cc"],
     hdrs = ["search_path.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [
         "//kythe/cxx/extractor/proto:__subpackages__",
         "//kythe/cxx/extractor/textproto:__subpackages__",
@@ -114,6 +130,9 @@ cc_binary(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -135,6 +154,8 @@ cc_binary(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
+        "@com_google_protobuf//src/google/protobuf/io:gzip_stream",
     ],
 )
 

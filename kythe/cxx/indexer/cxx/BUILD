@@ -18,6 +18,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//external:libmemcached",
         "//kythe/cxx/common:json_proto",
@@ -48,6 +51,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":clang_utils",
         ":kythe_claim_client",
@@ -60,6 +66,8 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
+        "@com_google_protobuf//src/google/protobuf/io:gzip_stream",
         "@llvm-project//llvm:Support",
     ],
 )
@@ -350,6 +358,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":clang_range_finder",
         ":clang_utils",
@@ -382,6 +393,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":clang_utils",
         ":indexer_ast_hooks",
@@ -390,6 +404,8 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
+        "@com_google_protobuf//src/google/protobuf/io:tokenizer",
         "@llvm-project//clang:ast",
     ],
 )
@@ -406,6 +422,9 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":clang_utils",
@@ -498,6 +517,9 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":frontend",
         ":google_flags_library_support",
@@ -514,6 +536,7 @@ cc_binary(
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/strings:str_format",
+        #"@com_google_protobuf//:protobuf",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -537,6 +560,9 @@ cc_test(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     linkopts = select({
         "@platforms//os:osx": ["-headerpad_max_install_names"],

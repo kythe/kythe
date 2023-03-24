@@ -30,6 +30,9 @@ cc_library(
     srcs = [
         "markup_handler_test.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":markup_handler",
         "//third_party:gtest",
@@ -70,6 +73,9 @@ cc_library(
     srcs = [
         "html_renderer_test.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":html_renderer",
         ":markup_handler",
@@ -93,6 +99,9 @@ cc_binary(
     srcs = [
         "doc.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":html_renderer",
         ":markup_handler",
@@ -108,5 +117,6 @@ cc_binary(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )

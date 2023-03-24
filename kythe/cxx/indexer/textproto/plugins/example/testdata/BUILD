@@ -1,8 +1,6 @@
 load("//kythe/cxx/indexer/textproto/testdata:textproto_verifier_test.bzl", "textproto_verifier_test")
 
-package(
-    features = ["layering_check"],
-)
+package(features = ["layering_check"])
 
 textproto_verifier_test(
     name = "cross_file_test",

@@ -31,7 +31,6 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
-#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/RecordingOutputStream.h"
@@ -453,7 +452,6 @@ TEST(KytheIndexerUnitTest, PushFilePopFileTracking) {
 }  // namespace kythe
 
 int main(int argc, char** argv) {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   google::protobuf::ShutdownProtobufLibrary();

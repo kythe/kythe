@@ -42,7 +42,6 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "google/protobuf/message.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 ABSL_FLAG(std::string, parseprotohelper_full_name,

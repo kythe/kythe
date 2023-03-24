@@ -5,9 +5,8 @@
 //- EnumeratorProto generates EnumeratorCpp
 
 //- @Wrapper ref WrapperMessageCpp
-//- // TODO(shahms): Uncomment the below when the alias is annotated.
-//- //@EnumerationType ref EnumerationAliasCpp
-//- //EnumerationTypeProto generates EnumerationAliasCpp
+//- @EnumerationType ref EnumerationAliasCpp
+//- EnumerationTypeProto generates EnumerationAliasCpp
 ::pkg::proto::Wrapper::EnumerationType get_alias();
 //- @Wrapper_EnumerationType ref EnumerationTypeCpp
 ::pkg::proto::Wrapper_EnumerationType get_raw();

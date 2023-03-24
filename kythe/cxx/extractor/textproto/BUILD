@@ -1,6 +1,4 @@
-package(
-    features = ["layering_check"],
-)
+package(features = ["layering_check"])
 
 cc_binary(
     name = "textproto_extractor",
