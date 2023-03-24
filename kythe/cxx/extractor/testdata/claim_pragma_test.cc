@@ -18,8 +18,8 @@ namespace {
 using ::google::protobuf::FieldDescriptor;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::DefaultFieldComparator;
 using ::google::protobuf::util::MessageDifferencer;
+using ::google::protobuf::util::SimpleFieldComparator;
 using ::testing::ElementsAre;
 
 constexpr char kExpectedContents[] = R"(
@@ -135,7 +135,7 @@ std::vector<const FieldDescriptor*> CanonicalizedHashFields(
   };
 }
 
-class CanonicalHashComparator : public DefaultFieldComparator {
+class CanonicalHashComparator : public SimpleFieldComparator {
  public:
   bool CanonicalizeHashField(const FieldDescriptor* field) {
     CHECK(field && field->cpp_type() == FieldDescriptor::CPPTYPE_STRING)
@@ -153,8 +153,8 @@ class CanonicalHashComparator : public DefaultFieldComparator {
       const google::protobuf::util::FieldContext* field_context) override {
     // Fall back to the default if this isn't a canonicalized field.
     if (canonical_fields_.find(field) == canonical_fields_.end()) {
-      return DefaultFieldComparator::Compare(message_1, message_2, field,
-                                             index_1, index_2, field_context);
+      return SimpleCompare(message_1, message_2, field, index_1, index_2,
+                           field_context);
     }
     const auto* reflection_1 = message_1.GetReflection();
     const auto* reflection_2 = message_2.GetReflection();
@@ -229,7 +229,7 @@ class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
 
     kythe::proto::CompilationUnit expected;
     ASSERT_TRUE(TextFormat::ParseFromString(kExpectedContents, &expected));
-    google::protobuf::string diffs;
+    std::string diffs;
     diff.ReportDifferencesToString(&diffs);
     EXPECT_TRUE(diff.Compare(expected, unit)) << diffs;
 

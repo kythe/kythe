@@ -15,6 +15,9 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",

@@ -18,25 +18,26 @@ rust_library(
     ],
 )
 
-rust_test(
-    name = "fuchsia_extractor_lib_test",
-    crate = ":fuchsia_extractor_lib",
-    edition = "2021",
-    # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
-    # rust binaries require their deps to be compiled with -fPIC, which is not
-    # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
-    # build rules are not yet sophisticated enough to know the difference.
-    #
-    # Using static relocation model will sometimes cause the binary to crash in
-    # opt and fastbuild mode, so we use this flag only in opt.
-    rustc_flags = select({
-        ":if_opt": ["-Crelocation-model=static"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        "@crate_index//:tempfile",
-    ],
-)
+# These broke with the protobuf update, see kythe/kythe#5548
+#rust_test(
+#    name = "fuchsia_extractor_lib_test",
+#    crate = ":fuchsia_extractor_lib",
+#    edition = "2021",
+#    # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
+#    # rust binaries require their deps to be compiled with -fPIC, which is not
+#    # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
+#    # build rules are not yet sophisticated enough to know the difference.
+#    #
+#    # Using static relocation model will sometimes cause the binary to crash in
+#    # opt and fastbuild mode, so we use this flag only in opt.
+#    rustc_flags = select({
+#        ":if_opt": ["-Crelocation-model=static"],
+#        "//conditions:default": [],
+#    }),
+#    deps = [
+#        "@crate_index//:tempfile",
+#    ],
+#)
 
 rust_binary(
     name = "fuchsia_extractor",
@@ -63,30 +64,31 @@ rust_binary(
     ],
 )
 
-rust_test(
-    name = "fuchsia_extractor_test",
-    crate = ":fuchsia_extractor",
-    data = [
-        "//kythe/go/platform/tools/kzip",
-        "//kythe/rust/fuchsia_extractor/testdata",
-    ],
-    edition = "2021",
-    # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
-    # rust binaries require their deps to be compiled with -fPIC, which is not
-    # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
-    # build rules are not yet sophisticated enough to know the difference.
-    #
-    # Using static relocation model will sometimes cause the binary to crash in
-    # opt and fastbuild mode, so we use this flag only in opt.
-    rustc_flags = select({
-        ":if_opt": ["-Crelocation-model=static"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        "@crate_index//:serial_test",
-        "@crate_index//:zip",
-    ],
-)
+# These broke with the protobuf update, see kythe/kythe#5548
+#rust_test(
+#    name = "fuchsia_extractor_test",
+#    crate = ":fuchsia_extractor",
+#    data = [
+#        "//kythe/go/platform/tools/kzip",
+#        "//kythe/rust/fuchsia_extractor/testdata",
+#    ],
+#    edition = "2021",
+#    # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
+#    # rust binaries require their deps to be compiled with -fPIC, which is not
+#    # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
+#    # build rules are not yet sophisticated enough to know the difference.
+#    #
+#    # Using static relocation model will sometimes cause the binary to crash in
+#    # opt and fastbuild mode, so we use this flag only in opt.
+#    rustc_flags = select({
+#        ":if_opt": ["-Crelocation-model=static"],
+#        "//conditions:default": [],
+#    }),
+#    deps = [
+#        "@crate_index//:serial_test",
+#        "@crate_index//:zip",
+#    ],
+#)
 
 rust_clippy(
     name = "clippy",

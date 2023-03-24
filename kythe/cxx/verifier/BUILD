@@ -3,9 +3,7 @@ load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
 
 package(
     default_visibility = ["//kythe:default_visibility"],
-    features = [
-        "layering_check",
-    ],
+    features = ["layering_check"],
 )
 
 genyacc(
@@ -118,10 +116,14 @@ cc_library(
     srcs = [
         "souffle_entrysteam_support.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@souffle",
     ],
     alwayslink = True,
@@ -150,6 +152,9 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":lexparse",
@@ -180,6 +185,9 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":lexparse",
@@ -192,6 +200,7 @@ cc_binary(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 
@@ -205,6 +214,9 @@ cc_test(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":lib",

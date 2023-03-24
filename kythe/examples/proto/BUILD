@@ -42,6 +42,5 @@ cc_binary(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
-        "@com_google_protobuf//:cc_wkt_protos",
     ],
 )

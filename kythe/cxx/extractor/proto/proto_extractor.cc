@@ -54,7 +54,7 @@ class LoggingMultiFileErrorCollector
 class RecordingDiskSourceTree : public DiskSourceTree {
  public:
   google::protobuf::io::ZeroCopyInputStream* Open(
-      const std::string& filename) override {
+      absl::string_view filename) override {
     // Record resolved/canonical path because the same proto may be Open()'d via
     // multiple relative paths and we only want to record it once.
     std::string canonical_path;

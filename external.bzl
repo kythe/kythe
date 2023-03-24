@@ -28,6 +28,7 @@ load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencie
 load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -51,6 +52,7 @@ def _rule_dependencies():
     # Bazel does not yet provide a "default_java_toolchain" target for JDK19 so configure our own.
     native.register_toolchains("//buildenv/java:all")
 
+    protobuf_deps()
     rules_proto_dependencies()
     py_repositories()
     rules_rust_dependencies()
@@ -1206,20 +1208,6 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-
-    # proto_library, cc_proto_library, and java_proto_library rules implicitly
-    # depend on @com_google_protobuf for protoc and proto runtimes.
-    maybe(
-        http_archive,
-        name = "com_google_protobuf",
-        sha256 = "730d43c5460a4448398f06718da075c246eeb16483f2f279b5070f222dabc218",
-        strip_prefix = "protobuf-3.18.1",
-        urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.18.1.zip",
-            "https://github.com/protocolbuffers/protobuf/archive/v3.18.1.zip",
-        ],
-        repo_mapping = {"@zlib": "@net_zlib"},
-    )
 
     _bindings()
     _rule_dependencies()

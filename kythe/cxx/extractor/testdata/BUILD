@@ -104,6 +104,9 @@ cc_test(
         "claim_b.h",
         "claim_main.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/extractor:lib",
         "//kythe/cxx/extractor:supported_language",
@@ -215,6 +218,9 @@ cc_test(
     srcs = ["build_config_test.cc"],
     data = [
         "build_config.cc",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         "//kythe/cxx/extractor:testlib",

@@ -14,6 +14,9 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:analysis_cc_proto",
@@ -36,6 +39,9 @@ cc_library(
     hdrs = [
         "KytheCachingOutput.h",
         "MemcachedHashCache.h",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
