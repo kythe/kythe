@@ -47,6 +47,9 @@ ABSL_FLAG(std::string, proto_message, "",
 ABSL_FLAG(std::vector<std::string>, proto_files, {},
           "A comma-separated list of proto files needed to fully define "
           "the textproto's schema.");
+ABSL_FLAG(std::string, record_separator, "",
+          "Delimitates each record within a file. Presence of this"
+          "indicates this is a recordio textformat file.");
 
 namespace kythe {
 namespace lang_textproto {
@@ -80,7 +83,8 @@ Examples:
   export KYTHE_OUTPUT_FILE=foo.kzip
   textproto_extractor foo.pbtxt
   textproto_extractor foo.pbtxt --proto_message MyMessage --proto_files foo.proto,bar.proto
-  textproto_extractor foo.pbtxt --proto_message MyMessage --proto_files foo.proto -- --proto_path dir/with/my/deps")");
+  textproto_extractor foo.pbtxt --proto_message MyMessage --proto_files foo.proto -- --proto_path dir/with/my/deps
+  textproto_extractor foo.recordiotxt --proto_message MyMessage --proto_files foo.proto --record_separator @@@ -- --proto_path dir/with/my/deps")");
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   std::vector<std::string> final_args(remain.begin() + 1, remain.end());
 
@@ -150,6 +154,11 @@ Examples:
   compilation.mutable_unit()->add_argument(textproto_filename);
   compilation.mutable_unit()->add_argument("--proto_message");
   compilation.mutable_unit()->add_argument(std::string(schema.proto_message));
+  std::string record_separator = absl::GetFlag(FLAGS_record_separator);
+  if (!record_separator.empty()) {
+    compilation.mutable_unit()->add_argument("--record_separator");
+    compilation.mutable_unit()->add_argument(record_separator);
+  }
   // Add protoc args.
   if (!proto_extractor.path_substitutions.empty()) {
     compilation.mutable_unit()->add_argument("--");
