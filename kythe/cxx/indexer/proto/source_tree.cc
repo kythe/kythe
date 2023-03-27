@@ -47,7 +47,7 @@ bool PreloadedProtoFileTree::AddFile(const std::string& filename,
 }
 
 google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
-    const std::string& filename) {
+    absl::string_view filename) {
   last_error_ = "";
 
   if (auto iter = file_mapping_cache_->find(filename);

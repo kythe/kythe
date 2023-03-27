@@ -108,6 +108,9 @@ def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
         action_name = CPP_COMPILE_ACTION_NAME,
         variables = variables,
     ))
+
+    # TODO(shahms): For some reason this isn't being picked up from the toolchain.
+    args.add("-std=c++17")
     env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,

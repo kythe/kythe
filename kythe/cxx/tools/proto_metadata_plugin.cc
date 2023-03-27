@@ -27,7 +27,7 @@
 #include "absl/strings/strip.h"
 #include "glog/logging.h"
 #include "google/protobuf/compiler/code_generator.h"
-#include "google/protobuf/compiler/cpp/cpp_generator.h"
+#include "google/protobuf/compiler/cpp/generator.h"
 #include "google/protobuf/compiler/plugin.h"
 #include "google/protobuf/compiler/plugin.pb.h"
 #include "google/protobuf/io/gzip_stream.h"

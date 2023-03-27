@@ -59,6 +59,90 @@ ABSL_FLAG(bool, fail_on_unimplemented_builtin, false,
 namespace kythe {
 namespace {
 
+/// \brief Clang builtins whose name and token match.
+constexpr absl::string_view kUniformClangBuiltins[] = {
+    "void",
+    "bool",
+    "_Bool",
+    "signed char",
+    "char",
+    "char16_t",
+    "char32_t",
+    "wchar_t",
+    "short",
+    "int",
+    "long",
+    "long long",
+    "unsigned char",
+    "unsigned short",
+    "unsigned int",
+    "unsigned long",
+    "unsigned long long",
+    "float",
+    "double",
+    "long double",
+    "auto",
+    "__int128",
+    "unsigned __int128",
+    "SEL",
+    "id",
+    "TypeUnion",
+    "__float128",
+    // Additional aarch64 builtins.
+    "__SVInt8_t",
+    "__SVInt16_t",
+    "__SVInt32_t",
+    "__SVInt64_t",
+    "__SVUint8_t",
+    "__SVUint16_t",
+    "__SVUint32_t",
+    "__SVUint64_t",
+    "__SVFloat16_t",
+    "__SVFloat32_t",
+    "__SVFloat64_t",
+    "__SVBFloat16_t",
+    "__clang_svint8x2_t",
+    "__clang_svint16x2_t",
+    "__clang_svint32x2_t",
+    "__clang_svint64x2_t",
+    "__clang_svuint8x2_t",
+    "__clang_svuint16x2_t",
+    "__clang_svuint32x2_t",
+    "__clang_svuint64x2_t",
+    "__clang_svfloat16x2_t",
+    "__clang_svfloat32x2_t",
+    "__clang_svfloat64x2_t",
+    "__clang_svbfloat16x2_t",
+    "__clang_svint8x3_t",
+    "__clang_svint16x3_t",
+    "__clang_svint32x3_t",
+    "__clang_svint64x3_t",
+    "__clang_svuint8x3_t",
+    "__clang_svuint16x3_t",
+    "__clang_svuint32x3_t",
+    "__clang_svuint64x3_t",
+    "__clang_svfloat16x3_t",
+    "__clang_svfloat32x3_t",
+    "__clang_svfloat64x3_t",
+    "__clang_svbfloat16x3_t",
+    "__clang_svint8x4_t",
+    "__clang_svint16x4_t",
+    "__clang_svint32x4_t",
+    "__clang_svint64x4_t",
+    "__clang_svuint8x4_t",
+    "__clang_svuint16x4_t",
+    "__clang_svuint32x4_t",
+    "__clang_svuint64x4_t",
+    "__clang_svfloat16x4_t",
+    "__clang_svfloat32x4_t",
+    "__clang_svfloat64x4_t",
+    "__clang_svbfloat16x4_t",
+    "__SVBool_t",
+    "__clang_svboolx2_t",
+    "__clang_svboolx4_t",
+    "__SVCount_t",
+};
+
 struct ClaimedStringFormatter {
   void operator()(std::string* out, const GraphObserver::NodeId& id) {
     out->append(id.ToClaimedString());
@@ -1492,50 +1576,28 @@ KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
 }
 
 void KytheGraphObserver::RegisterBuiltins() {
-  auto RegisterBuiltin = [&](const std::string& name,
+  auto RegisterBuiltin = [&](absl::string_view name,
                              const MarkedSource& marked_source) {
-    builtins_.emplace(name,
-                      Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
-                                                         name + "#builtin"),
-                              marked_source, false});
+    builtins_.emplace(name, Builtin{NodeId::CreateUncompressed(
+                                        getDefaultClaimToken(),
+                                        absl::StrCat(name, "#builtin")),
+                                    marked_source, false});
   };
-  auto RegisterTokenBuiltin = [&](const std::string& name,
-                                  const std::string& token) {
+  auto RegisterTokenBuiltin = [&](absl::string_view name,
+                                  absl::string_view token) {
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
     sig.set_pre_text(token);
     RegisterBuiltin(name, sig);
   };
-  RegisterTokenBuiltin("void", "void");
-  RegisterTokenBuiltin("bool", "bool");
-  RegisterTokenBuiltin("_Bool", "_Bool");
-  RegisterTokenBuiltin("signed char", "signed char");
-  RegisterTokenBuiltin("char", "char");
-  RegisterTokenBuiltin("char16_t", "char16_t");
-  RegisterTokenBuiltin("char32_t", "char32_t");
-  RegisterTokenBuiltin("wchar_t", "wchar_t");
-  RegisterTokenBuiltin("short", "short");
-  RegisterTokenBuiltin("int", "int");
-  RegisterTokenBuiltin("long", "long");
-  RegisterTokenBuiltin("long long", "long long");
-  RegisterTokenBuiltin("unsigned char", "unsigned char");
-  RegisterTokenBuiltin("unsigned short", "unsigned short");
-  RegisterTokenBuiltin("unsigned int", "unsigned int");
-  RegisterTokenBuiltin("unsigned long", "unsigned long");
-  RegisterTokenBuiltin("unsigned long long", "unsigned long long");
-  RegisterTokenBuiltin("float", "float");
-  RegisterTokenBuiltin("double", "double");
-  RegisterTokenBuiltin("long double", "long double");
+
+  for (absl::string_view token : kUniformClangBuiltins) {
+    RegisterTokenBuiltin(token, token);
+  }
+
   RegisterTokenBuiltin("std::nullptr_t", "nullptr_t");
   RegisterTokenBuiltin("<dependent type>", "dependent");
-  RegisterTokenBuiltin("auto", "auto");
   RegisterTokenBuiltin("knrfn", "function");
-  RegisterTokenBuiltin("__int128", "__int128");
-  RegisterTokenBuiltin("unsigned __int128", "unsigned __int128");
-  RegisterTokenBuiltin("SEL", "SEL");
-  RegisterTokenBuiltin("id", "id");
-  RegisterTokenBuiltin("TypeUnion", "TypeUnion");
-  RegisterTokenBuiltin("__float128", "__float128");
 
   {
     MarkedSource lhs_tycon_builtin;

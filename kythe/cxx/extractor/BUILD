@@ -100,6 +100,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":command_line_utils",
         ":cxx_details",
@@ -128,6 +131,7 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io:gzip_stream",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:frontend",
         "@llvm-project//clang:lex",
@@ -139,6 +143,9 @@ cc_library(
 cc_binary(
     name = "cxx_extractor",
     srcs = ["cxx_extractor_main.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":lib",
         ":supported_language",
@@ -179,6 +186,9 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":lib",
@@ -193,6 +203,7 @@ cc_binary(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -206,6 +217,9 @@ cc_binary(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -222,6 +236,7 @@ cc_binary(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -236,6 +251,9 @@ cc_test(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
     ],
     deps = [
         ":lib",
@@ -258,6 +276,9 @@ cc_library(
     srcs = ["testlib.cc"],
     hdrs = ["testlib.h"],
     data = [":cxx_extractor"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common:path_utils",
@@ -278,6 +299,9 @@ cc_library(
     name = "bazel_event_reader",
     srcs = ["bazel_event_reader.cc"],
     hdrs = ["bazel_event_reader.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",
@@ -290,6 +314,9 @@ cc_library(
 cc_test(
     name = "bazel_event_reader_test",
     srcs = ["bazel_event_reader_test.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":bazel_event_reader",
         "//third_party:gtest",
@@ -297,6 +324,7 @@ cc_test(
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 
@@ -309,6 +337,9 @@ cc_library(
     name = "bazel_artifact_selector",
     srcs = ["bazel_artifact_selector.cc"],
     hdrs = ["bazel_artifact_selector.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":bazel_artifact",
         "//kythe/cxx/common:regex",
@@ -328,6 +359,9 @@ cc_library(
 cc_test(
     name = "bazel_artifact_selector_test",
     srcs = ["bazel_artifact_selector_test.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":bazel_artifact",
         ":bazel_artifact_selector",
@@ -341,6 +375,7 @@ cc_test(
         "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -366,6 +401,9 @@ cc_library(
 cc_test(
     name = "bazel_artifact_reader_test",
     srcs = ["bazel_artifact_reader_test.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":bazel_artifact_reader",
         ":bazel_event_reader",
@@ -374,12 +412,16 @@ cc_test(
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 
 cc_binary(
     name = "dump_bazel_artifacts",
     srcs = ["dump_bazel_artifacts.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":bazel_artifact_reader",
         "//kythe/cxx/common:init",
@@ -388,6 +430,7 @@ cc_binary(
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )
 

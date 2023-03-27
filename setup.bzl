@@ -171,3 +171,17 @@ def kythe_rule_repositories():
         commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
         sha256 = "0dfe793b5779855cf73b3ee9f430e00225f51f38c70555936d4dd6f1b3c65e66",
     )
+
+    # proto_library, cc_proto_library, and java_proto_library rules implicitly
+    # depend on @com_google_protobuf for protoc and proto runtimes.
+    maybe(
+        http_archive,
+        name = "com_google_protobuf",
+        sha256 = "1ff680568f8e537bb4be9813bac0c1d87848d5be9d000ebe30f0bc2d7aabe045",
+        strip_prefix = "protobuf-22.2",
+        urls = [
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+        ],
+        repo_mapping = {"@zlib": "@net_zlib"},
+    )

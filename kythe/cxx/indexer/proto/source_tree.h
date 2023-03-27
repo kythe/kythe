@@ -69,7 +69,7 @@ class PreloadedProtoFileTree : public google::protobuf::compiler::SourceTree {
   // as `filename`, leaving FileReaders to do any elaboration (e.g., in this
   // case, applying path substitutions).
   google::protobuf::io::ZeroCopyInputStream* Open(
-      const std::string& filename) override;
+      absl::string_view filename) override;
 
   // If Open() returns nullptr, calling this method immediately will return a
   // description of the error.
