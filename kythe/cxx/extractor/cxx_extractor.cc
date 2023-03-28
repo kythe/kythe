@@ -35,6 +35,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
+#include "clang/Basic/Module.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
@@ -82,6 +83,11 @@ constexpr absl::string_view kStableRootDirectories[] = {
     "/build",
     "/kythe_cxx_extractor_root",
 };
+
+bool IsSpecialBufferName(llvm::StringRef id) {
+  return id == clang::Module::getModuleInputBufferName() ||
+         id == "<built-in>" || id == "<command line>";
+}
 
 absl::string_view GetPathForProto(
     const proto::CxxCompilationUnitDetails::SystemHeaderPrefix& prefix) {
@@ -538,12 +544,32 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
 }
 
 void ExtractorPPCallbacks::FileChanged(
-    clang::SourceLocation /*Loc*/, FileChangeReason Reason,
+    clang::SourceLocation Loc, FileChangeReason Reason,
     clang::SrcMgr::CharacteristicKind /*FileType*/, clang::FileID /*PrevFID*/) {
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
-      current_files_.push(FileState{std::string(GetMainFile()->getName()),
-                                    ClaimDirective::AlwaysClaim});
+      if (auto* mfile = GetMainFile()) {
+        current_files_.push(FileState{std::string(mfile->getName()),
+                                      ClaimDirective::AlwaysClaim});
+      } else {
+        // For some compilations with modules enabled, there may be no main
+        // source file set. Previously we would segfault
+        // (`GetMainFile()->getName()`) above instead of `mfile`, so CHECK-
+        // failing below is no more unpleasant.
+        LOG(WARNING) << "unusual EnterFile @"
+                     << Loc.printToString(*source_manager_);
+        auto fid = source_manager_->getFileID(Loc);
+        CHECK(fid.isValid());
+        auto buffer = source_manager_->getBufferOrNone(fid);
+        CHECK(buffer.has_value());
+        auto id = buffer->getBufferIdentifier();
+        CHECK(IsSpecialBufferName(id)) << "unknown buffer " << id.str();
+        // TODO(zarko): we need a more appropriate path for the synthesized
+        // <module-includes> buffer.
+        current_files_.push(
+            FileState{std::string(buffer->getBufferIdentifier()),
+                      ClaimDirective::AlwaysClaim});
+      }
     } else {
       CHECK(!current_files_.empty());
       current_files_.top().last_include_offset = last_inclusion_offset_;
@@ -591,8 +617,10 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
 }
 
 void ExtractorPPCallbacks::EndOfMainFile() {
-  AddFile(GetMainFile(), std::string(GetMainFile()->getName()));
-  *main_source_file_transcript_ = PopFile();
+  if (auto* mfile = GetMainFile()) {
+    AddFile(GetMainFile(), std::string(GetMainFile()->getName()));
+    *main_source_file_transcript_ = PopFile();
+  }
 }
 
 std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
@@ -846,13 +874,13 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                           llvm::StringRef file_name,
                                           llvm::StringRef search_path,
                                           llvm::StringRef relative_path) {
-  CHECK(!current_files_.top().file_path.empty());
+  const auto& top_path = current_files_.top().file_path;
+  CHECK(!top_path.empty());
   const auto search_path_entry =
       source_manager_->getFileManager().getDirectory(search_path);
+  auto file_or = source_manager_->getFileManager().getFile(top_path.c_str());
   const auto current_file_parent_entry =
-      (*source_manager_->getFileManager().getFile(
-           current_files_.top().file_path.c_str()))
-          ->getDir();
+      file_or.getError() ? nullptr : (*file_or)->getDir();
   // If the include file was found relatively to the current file's parent
   // directory or a search path, we need to normalize it. This is necessary
   // because llvm internalizes the path by which an inode was first accessed,
@@ -861,9 +889,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   // file system is not aware of inodes.
   llvm::SmallString<1024> out_name;
   if (*search_path_entry == current_file_parent_entry) {
-    auto parent =
-        llvm::sys::path::parent_path(current_files_.top().file_path.c_str())
-            .str();
+    auto parent = llvm::sys::path::parent_path(top_path.c_str()).str();
 
     // If the file is a top level file ("file.cc"), we normalize to a path
     // relative to "./".
@@ -879,7 +905,9 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
     out_name = search_path;
     llvm::sys::path::append(out_name, relative_path);
   } else {
-    CHECK(llvm::sys::path::is_absolute(file_name)) << file_name.str();
+    CHECK(IsSpecialBufferName(top_path) ||
+          llvm::sys::path::is_absolute(file_name))
+        << file_name.str();
     out_name = file_name;
   }
   std::string out_name_string(out_name.str());
