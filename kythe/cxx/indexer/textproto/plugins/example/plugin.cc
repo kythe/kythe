@@ -48,8 +48,7 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   person_vname.set_corpus(file_vname.corpus());
 
   if (field.name() == "name") {
-    LOG(ERROR) << "[Example Plugin] Defined new person:\n"
-               << person_vname.DebugString();
+    LOG(ERROR) << "[Example Plugin] Defined new person:\n" << person_vname;
 
     api->recorder()->AddProperty(VNameRef(person_vname), NodeKindID::kVariable);
     api->recorder()->AddEdge(VNameRef(anchor_vname),
@@ -57,7 +56,7 @@ absl::Status ExamplePlugin::AnalyzeStringField(
                              VNameRef(person_vname));
   } else if (field.name() == "friend") {
     LOG(ERROR) << "[Example Plugin] Added ref for friend field:\n"
-               << person_vname.DebugString();
+               << person_vname;
     api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                              VNameRef(person_vname));
   }
