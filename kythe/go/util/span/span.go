@@ -61,7 +61,7 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 		}
 	}()
 	dmp := diffmatchpatch.New()
-	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))
+	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), false))
 	return &Patcher{mapToOffsets(diff)}, nil
 }
 
