@@ -573,6 +573,7 @@ cc_test(
         "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/common/indexing:testlib",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:ast",
         "@llvm-project//clang:frontend",

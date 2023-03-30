@@ -31,15 +31,18 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/RecordingOutputStream.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#include "protobuf-matchers/protocol-buffer-matchers.h"
 
 namespace kythe {
 namespace {
+using ::protobuf_matchers::EqualsProto;
 
 using clang::SourceLocation;
 
@@ -184,7 +187,7 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeKind) {
   ASSERT_TRUE(entry.edge_kind().empty());
   ASSERT_FALSE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
-  ASSERT_EQ(vname.DebugString(), entry.source().DebugString());
+  ASSERT_THAT(vname, EqualsProto(entry.source()));
 }
 
 TEST(KytheIndexerUnitTest, GraphRecorderNodeProperty) {
@@ -214,7 +217,7 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeProperty) {
     ASSERT_TRUE(entry.edge_kind().empty());
     ASSERT_FALSE(entry.has_target());
     ASSERT_TRUE(entry.has_source());
-    ASSERT_EQ(vname.DebugString(), entry.source().DebugString());
+    ASSERT_THAT(vname, EqualsProto(entry.source()));
   }
   ASSERT_TRUE(found_kind_fact);
   ASSERT_TRUE(found_property_fact);
@@ -244,8 +247,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdge) {
   ASSERT_EQ("/kythe/edge/defines/binding", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
-  ASSERT_EQ(vname_source.DebugString(), entry.source().DebugString());
-  ASSERT_EQ(vname_target.DebugString(), entry.target().DebugString());
+  ASSERT_THAT(vname_source, EqualsProto(entry.source()));
+  ASSERT_THAT(vname_target, EqualsProto(entry.target()));
 }
 
 TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
@@ -271,8 +274,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
   EXPECT_EQ("/kythe/edge/defines/binding.42", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
-  EXPECT_EQ(vname_source.DebugString(), entry.source().DebugString());
-  EXPECT_EQ(vname_target.DebugString(), entry.target().DebugString());
+  EXPECT_THAT(vname_source, EqualsProto(entry.source()));
+  EXPECT_THAT(vname_target, EqualsProto(entry.target()));
 }
 
 static void WriteStringToStackAndBuffer(const std::string& value,

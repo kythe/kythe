@@ -292,6 +292,13 @@ def _cc_dependencies():
         ],
     )
 
+    maybe(
+        github_archive,
+        name = "com_github_inazarenko_protobuf_matchers",
+        repo_name = "inazarenko/protobuf-matchers",
+        commit = "8edcd4f7cad4f35e9bd304ff9d45a035c50c9290",
+    )
+
     lexyacc_configure()
     cxx_extractor_register_toolchains()
 

@@ -28,6 +28,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
@@ -42,6 +43,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -57,6 +59,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -73,6 +76,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -91,6 +95,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -158,6 +163,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -175,6 +181,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -191,6 +198,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -208,6 +216,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -228,6 +237,7 @@ cc_test(
         "//kythe/proto:buildinfo_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -248,6 +258,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
