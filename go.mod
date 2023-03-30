@@ -18,7 +18,7 @@ require (
 	github.com/jmhodges/levigo v1.0.0
 	github.com/minio/highwayhash v1.0.2
 	github.com/pkg/errors v0.9.1
-	github.com/sergi/go-diff v1.2.0
+	github.com/sergi/go-diff v1.3.1
 	github.com/sourcegraph/go-langserver v2.0.0+incompatible
 	github.com/sourcegraph/jsonrpc2 v0.1.0
 	github.com/syndtr/goleveldb v1.0.0
