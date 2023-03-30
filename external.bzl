@@ -778,8 +778,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=",
-        version = "v1.2.0",
+        sum = "h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=",
+        version = "v1.3.1",
     )
     go_repository(
         name = "com_github_sourcegraph_go_langserver",
