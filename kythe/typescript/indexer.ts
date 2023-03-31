@@ -80,12 +80,6 @@ export interface IndexingOptions {
    * is used.
    */
   readFile?: (path: string) => Buffer;
-
-  /**
-   * Enables post processing that "inlines" refs to imported symbols to point instead
-   * to the original definition.
-   */
-  enableImportsEdgeReassignment?: boolean;
 }
 
 /**
@@ -1457,7 +1451,6 @@ class Visitor {
     const importTextAnchor =
         this.newAnchor(decl, importTextSpan.start, importTextSpan.end);
 
-    const enableReassignment = this.host.options.enableImportsEdgeReassignment;
     if (ts.isImportEqualsDeclaration(decl)) {
       // This is an equals import, e.g.:
       //   import foo = require('./bar');
@@ -1465,7 +1458,7 @@ class Visitor {
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       const refAnchor = this.newAnchor(decl.name);
-      this.visitImport(decl.name, enableReassignment ? null : importTextAnchor, refAnchor);
+      this.visitImport(decl.name, /* bindingAnchor= */ null, refAnchor);
       return;
     }
 
@@ -1483,8 +1476,7 @@ class Visitor {
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       const refAnchor = this.newAnchor(clause.name);
-      this.visitImport(
-          clause.name, enableReassignment ? null : importTextAnchor, refAnchor);
+      this.visitImport(clause.name, /* bindingAnchor= */ null, refAnchor);
       return;
     }
 
@@ -1530,7 +1522,7 @@ class Visitor {
             refAnchor = this.newAnchor(imp.propertyName);
           } else {
             refAnchor = this.newAnchor(imp.name);
-            bindingAnchor = enableReassignment ? null : importTextAnchor;
+            bindingAnchor = null;
           }
           this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
@@ -1760,7 +1752,7 @@ class Visitor {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
           ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
           ts.isShorthandPropertyAssignment(decl) ||
-          ts.isPropertySignature(decl)) {
+          ts.isPropertySignature(decl) || ts.isJsxAttribute(decl)) {
         this.emitDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
@@ -1800,7 +1792,7 @@ class Visitor {
   emitDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
       ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment|
-      ts.PropertySignature,
+      ts.PropertySignature|ts.JsxAttribute,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
