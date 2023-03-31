@@ -11,10 +11,6 @@ import * as mod_imp from './module';
 // Importing from a module gets a VName that refers into the other module.
 //- @value ref/imports Val
 //- @"'./module'" ref/imports Mod
-//- @import defines/binding LocalValue
-//- LocalValue.node/kind variable
-//- LocalValue.subkind import
-//- LocalValue aliases Val
 import {value} from './module';
 
 // Importing from a module gets a VName that refers into the other module,.
@@ -27,7 +23,7 @@ import {value as renamedValue} from './module';
 
 // Ensure the various names of the imported value link together.
 
-//- @value ref LocalValue
+//- @value ref Val
 value;
 
 //- @mod_imp ref ModLocal
@@ -46,10 +42,6 @@ import {aliasedLocal} from './export';
 
 // Importing a type from another module.
 //- @MyType ref/imports MyType
-//- @import defines/binding LocalMyType
-//- LocalMyType.node/kind talias
-//- LocalMyType.subkind import
-//- LocalMyType aliases MyType
 import {MyType} from './module';
-//- @MyType ref LocalMyType
+//- @MyType ref MyType
 let x: MyType;

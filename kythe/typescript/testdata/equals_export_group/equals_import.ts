@@ -2,11 +2,7 @@
 // export equals syntax.
 
 //- @obj ref/imports Def
-//- @import defines/binding LocalObj
-//- LocalObj.node/kind variable
-//- LocalObj.subkind import
-//- LocalObj aliases Def
 import obj = require('./equals_export');
 
-//- @obj ref LocalObj
+//- @obj ref Def
 obj.key;
