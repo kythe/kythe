@@ -1752,7 +1752,7 @@ class Visitor {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
           ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
           ts.isShorthandPropertyAssignment(decl) ||
-          ts.isPropertySignature(decl)) {
+          ts.isPropertySignature(decl) || ts.isJsxAttribute(decl)) {
         this.emitDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
@@ -1792,7 +1792,7 @@ class Visitor {
   emitDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
       ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment|
-      ts.PropertySignature,
+      ts.PropertySignature|ts.JsxAttribute,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
