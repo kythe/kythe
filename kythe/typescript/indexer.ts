@@ -1458,7 +1458,7 @@ class Visitor {
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       const refAnchor = this.newAnchor(decl.name);
-      this.visitImport(decl.name, null, refAnchor);
+      this.visitImport(decl.name, /* bindingAnchor= */ null, refAnchor);
       return;
     }
 
@@ -1476,8 +1476,7 @@ class Visitor {
       // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       const refAnchor = this.newAnchor(clause.name);
-      this.visitImport(
-          clause.name, null, refAnchor);
+      this.visitImport(clause.name, /* bindingAnchor= */ null, refAnchor);
       return;
     }
 
