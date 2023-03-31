@@ -221,6 +221,7 @@ cc_test(
     deps = [
         ":file_vname_generator",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
@@ -309,6 +310,7 @@ cc_library(
         ":vname_ordering",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_protobuf//:protobuf",
     ],
 )
