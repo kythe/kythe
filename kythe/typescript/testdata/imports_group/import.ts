@@ -30,7 +30,7 @@ value;
 //- @value ref Val
 mod_imp.value;
 
-//- @renamedValue ref RenamedValue
+//- @renamedValue ref Val
 renamedValue;
 
 //- @value ref/imports Val
@@ -39,6 +39,11 @@ import {value as exportedValue} from './export';
 import {local} from './export';
 //- @aliasedLocal ref/imports Local
 import {aliasedLocal} from './export';
+
+import * as allExport from './export';
+
+// - @value ref Val
+allExport.value;
 
 // Importing a type from another module.
 //- @MyType ref/imports MyType
