@@ -80,6 +80,13 @@ export interface IndexingOptions {
    * is used.
    */
   readFile?: (path: string) => Buffer;
+
+  /**
+   * When enabled getSymbolAtLocationFollowingAliases() will actually follow aliases. This
+   * flag is needed to ensure it doesn't crash indexing. It is intended to be removed after
+   * launch.
+   */
+  enableAliasFollowing?: boolean;
 }
 
 /**
@@ -106,6 +113,23 @@ export interface IndexerHost {
    * not yet null-safe, so it hasn't been annotated with full types.)
    */
   getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined;
+
+  /**
+   * Similar to getSymbolAtLocation() if returned symbol is an alias. One
+   * example is imports:
+   *
+   * // a.ts
+   * export value = 42;  // #1
+   *
+   * // b.ts
+   * import {value} from './a'; // #2
+   * console.log(value);  // #3
+   *
+   * getSymbolAtLocationFollowingAliases for #3 will return #1 while regular
+   * getSymbolAtLocation returns #2.
+   */
+  getSymbolAtLocationFollowingAliases(node: ts.Node): ts.Symbol|undefined;
+
   /**
    * Computes the VName (and signature) of a ts.Symbol. A Context can be
    * optionally specified to help disambiguate nodes with multiple declarations.
@@ -383,6 +407,27 @@ class StandardIndexerContext implements IndexerHost {
     return this.typeChecker.getSymbolAtLocation(node);
   }
 
+  getSymbolAtLocationFollowingAliases(node: ts.Node): ts.Symbol|undefined {
+    let sym = this.typeChecker.getSymbolAtLocation(node);
+    if (!this.options.enableAliasFollowing) {
+      return sym;
+    }
+    while (sym && (sym.flags & ts.SymbolFlags.Alias) > 0) {
+      // a hack to prevent following aliases in cases like:
+      // import * as fooNamespace from './foo';
+      // here fooNamespace is an alias for the 'foo' module.
+      // We don't want to follow it so that users can easier usages
+      // of fooNamespace in the file.
+      const decl = sym.declarations?.[0];
+      if (decl && ts.isNamespaceImport(decl)) {
+        break;
+      }
+
+      sym = this.typeChecker.getAliasedSymbol(sym);
+    }
+    return sym;
+  }
+
   /**
    * anonName assigns a freshly generated name to a Node.
    * It's used to give stable names to e.g. anonymous objects.
@@ -504,7 +549,7 @@ class StandardIndexerContext implements IndexerHost {
               case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 let part;
                 if (ts.isComputedPropertyName(decl.name)) {
-                  const sym = this.getSymbolAtLocation(decl.name);
+                  const sym = this.getSymbolAtLocationFollowingAliases(decl.name);
                   part = sym ? sym.name : this.anonName(decl.name);
                 } else {
                   part = decl.name.text;
@@ -866,7 +911,9 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
-    target = this.localSymbolToRemoteReassignMap.get(vnameToString(target)) ?? target;
+    if (!this.host.options.enableAliasFollowing) {
+      target = this.localSymbolToRemoteReassignMap.get(vnameToString(target)) ?? target;
+    }
     this.host.options.emit({
       source,
       edge_kind: kind,
@@ -906,7 +953,7 @@ class Visitor {
       params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (var ordinal = 0; ordinal < params.length; ++ordinal) {
       const param = params[ordinal];
-      const sym = this.host.getSymbolAtLocation(param.name);
+      const sym = this.host.getSymbolAtLocationFollowingAliases(param.name);
       if (!sym) {
         todo(
             this.sourceRoot, param,
@@ -981,7 +1028,7 @@ class Visitor {
       return;
     }
     const callAnchor = this.newAnchor(node);
-    const symbol = this.host.getSymbolAtLocation(node.expression);
+    const symbol = this.host.getSymbolAtLocationFollowingAliases(node.expression);
     if (!symbol) {
       return;
     }
@@ -1074,7 +1121,7 @@ class Visitor {
   }
 
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
-    const sym = this.host.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocationFollowingAliases(decl.name);
     if (!sym) {
       todo(
           this.sourceRoot, decl.name,
@@ -1097,7 +1144,7 @@ class Visitor {
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
-    const sym = this.host.getSymbolAtLocation(decl.name);
+    const sym = this.host.getSymbolAtLocationFollowingAliases(decl.name);
     if (!sym) {
       todo(
           this.sourceRoot, decl.name,
@@ -1145,7 +1192,7 @@ class Visitor {
         }
         return kType;
       case ts.SyntaxKind.Identifier:
-        const sym = this.host.getSymbolAtLocation(node);
+        const sym = this.host.getSymbolAtLocationFollowingAliases(node);
         if (!sym) {
           todo(this.sourceRoot, node, `type ${node.getText()} has no symbol`);
           return;
@@ -1223,7 +1270,7 @@ class Visitor {
    */
   getCtorSymbol(klass: ts.ClassDeclaration): ts.Symbol|undefined {
     if (klass.name) {
-      const sym = this.host.getSymbolAtLocation(klass.name);
+      const sym = this.host.getSymbolAtLocationFollowingAliases(klass.name);
       if (sym && sym.members) {
         return sym.members.get(ts.InternalSymbolName.Constructor);
       }
@@ -1240,7 +1287,7 @@ class Visitor {
       context = Context.Setter;
     }
     if (node.name) {
-      const sym = this.host.getSymbolAtLocation(node.name);
+      const sym = this.host.getSymbolAtLocationFollowingAliases(node.name);
       if (!sym) {
         return {};
       }
@@ -2087,7 +2134,7 @@ class Visitor {
           ts.isInterfaceDeclaration(decl.parent)) {
         const parentName = decl.parent.name;
         if (parentName !== undefined) {
-          const parentSym = this.host.getSymbolAtLocation(parentName);
+          const parentSym = this.host.getSymbolAtLocationFollowingAliases(parentName);
           if (!parentSym) {
             todo(
                 this.sourceRoot, parentName,
@@ -2137,7 +2184,7 @@ class Visitor {
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
-              const sym = this.host.getSymbolAtLocation(param.name);
+              const sym = this.host.getSymbolAtLocationFollowingAliases(param.name);
               if (!sym) {
                 todo(
                     this.sourceRoot, param.name,
@@ -2157,7 +2204,7 @@ class Visitor {
                 // children of the class type.
                 const parentName = param.parent.parent.name;
                 if (parentName !== undefined) {
-                  const parentSym = this.host.getSymbolAtLocation(parentName);
+                  const parentSym = this.host.getSymbolAtLocationFollowingAliases(parentName);
                   if (parentSym !== undefined) {
                     const kClass =
                         this.host.getSymbolName(parentSym, TSNamespace.TYPE);
@@ -2333,7 +2380,7 @@ class Visitor {
   }
 
   visitExpressionMember(node: ts.Node) {
-    const sym = this.host.getSymbolAtLocation(node);
+    const sym = this.host.getSymbolAtLocationFollowingAliases(node);
     if (!sym) {
       // E.g. a field of an "any".
       return;
