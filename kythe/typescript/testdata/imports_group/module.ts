@@ -12,7 +12,7 @@
 //- ModAnchor defines/binding Mod
 
 //- @value defines/binding Val
-export let value = 3;
+export const value = 3;
 
 //- @MyType defines/binding MyType
 export type MyType = string;
