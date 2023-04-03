@@ -5651,6 +5651,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
         }
       }
     }
+    AssignUSR(Node, Decl);
     return true;
   }
 
@@ -5691,6 +5692,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   }
   Observer.recordFunctionNode(Node, GraphObserver::Completeness::Definition,
                               Subkind, Marks.GenerateMarkedSource(Node));
+  AssignUSR(Node, Decl);
   return true;
 }
 
