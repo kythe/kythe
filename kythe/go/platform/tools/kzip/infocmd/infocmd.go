@@ -74,7 +74,7 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	s, err := os.Stat(c.input)
+	s, err := vfs.Stat(ctx, c.input)
 	if err != nil {
 		return c.Fail("Couldn't stat kzip file: %v", err)
 	}
