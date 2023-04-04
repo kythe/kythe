@@ -3,6 +3,7 @@ package dependent
 import (
 	"fmt"
 
+	dep "kythe/go/indexer/dep.v2"
 	types "kythe/go/indexer/types_test"
 )
 
@@ -24,4 +25,9 @@ func f(
 	e2.String()
 	//- @String ref String
 	a.String()
+}
+
+func g() {
+	//- @F ref F
+	dep.F()
 }
