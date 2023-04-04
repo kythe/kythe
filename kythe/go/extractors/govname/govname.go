@@ -22,6 +22,7 @@ import (
 	"go/build"
 	"log"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"golang.org/x/tools/go/vcs"
@@ -212,6 +213,8 @@ func IsStandardLibrary(v *spb.VName) bool {
 	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == GolangCorpus
 }
 
+var archiveExt = regexp.MustCompile(`\.[xa]$`)
+
 // ImportPath returns the putative Go import path corresponding to v.  The
 // resulting string corresponds to the string literal appearing in source at the
 // import site for the package so named.
@@ -220,14 +223,14 @@ func ImportPath(v *spb.VName, goRoot string) string {
 		return v.Path
 	}
 
-	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
+	trimmed := archiveExt.ReplaceAllString(v.Path, "")
 	if tail, ok := rootRelative(goRoot, trimmed); ok {
 		// Paths under a nonempty GOROOT are treated as if they were standard
 		// library packages even if they are not labelled as "golang.org", so
 		// that nonstandard install locations will work sensibly.
 		return tail
 	}
-	return filepath.Join(v.Corpus, v.Path)
+	return filepath.Join(v.Corpus, trimmed)
 }
 
 // rootRelative reports whether path has the form
