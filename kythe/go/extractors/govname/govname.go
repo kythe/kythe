@@ -227,7 +227,7 @@ func ImportPath(v *spb.VName, goRoot string) string {
 		// that nonstandard install locations will work sensibly.
 		return tail
 	}
-	return filepath.Join(v.Corpus, trimmed)
+	return filepath.Join(v.Corpus, v.Path)
 }
 
 // rootRelative reports whether path has the form

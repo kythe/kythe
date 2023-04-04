@@ -265,10 +265,18 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "dep.v2",
+    srcs = ["testdata/dep.v2.go"],
+)
+
+go_indexer_test(
     name = "dependent_test",
     srcs = ["testdata/dependent.go"],
     has_marked_source = True,
-    deps = [":types_test"],
+    deps = [
+        ":dep.v2",
+        ":types_test",
+    ],
 )
 
 go_indexer_test(
