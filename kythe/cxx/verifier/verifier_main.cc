@@ -137,7 +137,7 @@ Example:
   std::string dbname = "database";
   size_t facts = 0;
   kythe::proto::Entry entry;
-  google::protobuf::uint32 byte_size;
+  uint32_t byte_size;
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
   for (;;) {
     google::protobuf::io::CodedInputStream coded_input(&raw_input);
