@@ -51,6 +51,7 @@
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
+#include "kythe/cxx/indexer/cxx/stream_adapter.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
@@ -563,7 +564,8 @@ void ExtractorPPCallbacks::FileChanged(
         auto buffer = source_manager_->getBufferOrNone(fid);
         CHECK(buffer.has_value());
         auto id = buffer->getBufferIdentifier();
-        CHECK(IsSpecialBufferName(id)) << "unknown buffer " << id.str();
+        CHECK(IsSpecialBufferName(id))
+            << "unknown buffer " << StreamAdapter::Stream(id);
         // TODO(zarko): we need a more appropriate path for the synthesized
         // <module-includes> buffer.
         current_files_.push(
@@ -878,7 +880,8 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   CHECK(!top_path.empty());
   const auto search_path_entry =
       source_manager_->getFileManager().getDirectory(search_path);
-  auto file_or = source_manager_->getFileManager().getFile(top_path.c_str());
+  llvm::ErrorOr<const clang::FileEntry*> file_or =
+      source_manager_->getFileManager().getFile(top_path);
   const auto current_file_parent_entry =
       file_or.getError() ? nullptr : (*file_or)->getDir();
   // If the include file was found relatively to the current file's parent
@@ -889,7 +892,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   // file system is not aware of inodes.
   llvm::SmallString<1024> out_name;
   if (*search_path_entry == current_file_parent_entry) {
-    auto parent = llvm::sys::path::parent_path(top_path.c_str()).str();
+    auto parent = llvm::sys::path::parent_path(top_path).str();
 
     // If the file is a top level file ("file.cc"), we normalize to a path
     // relative to "./".
@@ -907,7 +910,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   } else {
     CHECK(IsSpecialBufferName(top_path) ||
           llvm::sys::path::is_absolute(file_name))
-        << file_name.str();
+        << StreamAdapter::Stream(file_name);
     out_name = file_name;
   }
   std::string out_name_string(out_name.str());
