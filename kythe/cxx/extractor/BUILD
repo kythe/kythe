@@ -117,6 +117,7 @@ cc_library(
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/common:sha256_hasher",
         "//kythe/cxx/indexer/cxx:clang_utils",
+        "//kythe/cxx/indexer/cxx:stream_adapter",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:cxx_cc_proto",
