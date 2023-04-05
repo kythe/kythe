@@ -620,7 +620,7 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
 
 void ExtractorPPCallbacks::EndOfMainFile() {
   if (auto* mfile = GetMainFile()) {
-    AddFile(GetMainFile(), std::string(GetMainFile()->getName()));
+    AddFile(mfile, std::string(mfile->getName()));
     *main_source_file_transcript_ = PopFile();
   }
 }
