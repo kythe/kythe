@@ -891,7 +891,8 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   // we will get an error when we replay the compilation, as the virtual
   // file system is not aware of inodes.
   llvm::SmallString<1024> out_name;
-  if (*search_path_entry == current_file_parent_entry) {
+  if (!search_path_entry.getError() &&
+      *search_path_entry == current_file_parent_entry) {
     auto parent = llvm::sys::path::parent_path(top_path).str();
 
     // If the file is a top level file ("file.cc"), we normalize to a path

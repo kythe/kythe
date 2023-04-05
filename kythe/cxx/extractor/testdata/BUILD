@@ -83,6 +83,24 @@ cc_test(
 )
 
 cc_test(
+    name = "header_only_module_test",
+    srcs = ["header_only_module_test.cc"],
+    data = [
+        "header_only_module.cppmap",
+        "header_only_module.h",
+    ],
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
     name = "extract_transcript_test",
     srcs = ["extract_transcript_test.cc"],
     data = [
