@@ -1,5 +1,6 @@
 export {}
 
+//- @shortProperty defines/binding ShortPropertyVariable
 const shortProperty = 0;
 
 //- @#0"computed" defines/binding Computed
@@ -14,6 +15,7 @@ const Object = {
   //- @shortProperty defines/binding ShortProperty
   //- ShortProperty.node/kind variable
   //- ShortProperty.subkind field
+  //- @shortProperty ref/id ShortPropertyVariable
   shortProperty,
 
   //- !{@"[computed]" defines/binding _}

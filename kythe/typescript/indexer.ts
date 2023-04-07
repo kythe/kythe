@@ -1795,35 +1795,45 @@ class Visitor {
         break;
     }
 
-    if (vname) {
-      if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
-          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
-          ts.isShorthandPropertyAssignment(decl) ||
-          ts.isPropertySignature(decl) || ts.isJsxAttribute(decl)) {
-        this.emitDeclarationCode(decl, vname);
-      } else {
-        todo(this.sourceRoot, decl, 'Emit variable delaration code');
-      }
-    }
-
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
     if (decl.type && decl.initializer &&
         ts.isObjectLiteralExpression(decl.initializer)) {
       this.connectObjectLiteralToType(decl.initializer, decl.type);
     }
-    if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
+    if (!vname) {
+      return undefined;
+    }
+
+    if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
+        ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
+        ts.isShorthandPropertyAssignment(decl) ||
+        ts.isPropertySignature(decl) || ts.isJsxAttribute(decl)) {
+      this.emitDeclarationCode(decl, vname);
+    } else {
+      todo(this.sourceRoot, decl, 'Emit variable delaration code');
+    }
+
+    if (decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       const declNode = decl as ts.PropertyDeclaration;
       if (isStaticMember(declNode, declNode.parent)) {
         this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
-    if (vname &&
-        (decl.kind === ts.SyntaxKind.PropertySignature ||
-         decl.kind === ts.SyntaxKind.PropertyDeclaration ||
-         decl.kind === ts.SyntaxKind.PropertyAssignment ||
-         decl.kind === ts.SyntaxKind.ShorthandPropertyAssignment)) {
+    if (decl.kind === ts.SyntaxKind.PropertySignature ||
+        decl.kind === ts.SyntaxKind.PropertyDeclaration ||
+        decl.kind === ts.SyntaxKind.PropertyAssignment ||
+        decl.kind === ts.SyntaxKind.ShorthandPropertyAssignment) {
       this.emitSubkind(vname, Subkind.FIELD);
+    }
+    if (ts.isShorthandPropertyAssignment(decl)) {
+      const origSym = this.typeChecker.getShorthandAssignmentValueSymbol(decl);
+      if (origSym) {
+        const origVName = this.host.getSymbolName(origSym, TSNamespace.VALUE);
+        if (origVName) {
+          this.emitEdge(this.newAnchor(decl.name), EdgeKind.REF_ID, origVName);
+        }
+      }
     }
     return vname;
   }
