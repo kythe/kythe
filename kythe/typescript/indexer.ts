@@ -1814,16 +1814,16 @@ class Visitor {
       todo(this.sourceRoot, decl, 'Emit variable delaration code');
     }
 
-    if (decl.kind === ts.SyntaxKind.PropertyDeclaration) {
+    if (ts.isPropertyDeclaration(decl)) {
       const declNode = decl as ts.PropertyDeclaration;
       if (isStaticMember(declNode, declNode.parent)) {
         this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
-    if (decl.kind === ts.SyntaxKind.PropertySignature ||
-        decl.kind === ts.SyntaxKind.PropertyDeclaration ||
-        decl.kind === ts.SyntaxKind.PropertyAssignment ||
-        decl.kind === ts.SyntaxKind.ShorthandPropertyAssignment) {
+    if (ts.isPropertySignature(decl) ||
+        ts.isPropertyDeclaration(decl) ||
+        ts.isPropertyAssignment(decl) ||
+        ts.isShorthandPropertyAssignment(decl)) {
       this.emitSubkind(vname, Subkind.FIELD);
     }
     if (ts.isShorthandPropertyAssignment(decl)) {
