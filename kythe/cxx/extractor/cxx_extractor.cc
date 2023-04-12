@@ -994,6 +994,13 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
               getCompilerInstance().getDiagnostics().hasErrorOccurred());
   }
 
+ protected:
+  bool PrepareToExecuteAction(clang::CompilerInstance& CI) override {
+    CI.getPreprocessorOpts().DisablePCHOrModuleValidation =
+        clang::DisableValidationForModuleKind::All;
+    return clang::PreprocessorFrontendAction::PrepareToExecuteAction(CI);
+  }
+
  private:
   ExtractorCallback callback_;
   /// The main source file for the compilation (assuming only one).
