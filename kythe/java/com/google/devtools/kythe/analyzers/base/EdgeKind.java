@@ -22,6 +22,7 @@ import com.google.devtools.kythe.util.schema.Schema;
 public enum EdgeKind {
   DEFINES(true, "defines"),
   DEFINES_BINDING(true, "defines/binding"),
+  DEFINES_IMPLICIT(true, "defines/implicit"),
   DOCUMENTS(true, "documents"),
   TAGGED(true, "tagged"),
   UNDEFINES(true, "undefines"),
