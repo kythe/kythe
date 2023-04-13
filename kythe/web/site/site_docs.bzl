@@ -116,7 +116,8 @@ def _jekyll_impl(ctx):
     input_root = ctx.label.name + ".staging.d"
     symlinks = []
     for src in ctx.files.srcs:
-        symlink = ctx.actions.declare_file(paths.join(input_root, _package_path(src)))
+        declare_output = ctx.actions.declare_directory if src.is_directory else ctx.actions.declare_file
+        symlink = declare_output(paths.join(input_root, _package_path(src)))
         ctx.actions.symlink(output = symlink, target_file = src)
         symlinks.append(symlink)
     input_dir = paths.join(symlinks[0].root.path, symlinks[0].owner.package, input_root)
