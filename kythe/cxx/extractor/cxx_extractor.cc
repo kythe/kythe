@@ -41,6 +41,7 @@
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
