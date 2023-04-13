@@ -32,7 +32,7 @@ TAG_RE="\\b($(join_by '|' "${OMIT_TAGS[@]}"))\\b"
 readarray -t TARGETS < <(bazel query \
   --keep_going \
   --noshow_progress \
-  "rdeps(//..., set($*)) except attr('tags', '$TAG_RE', //...)")
+  "let exclude = attr('tags', '$TAG_RE', //...) in rdeps(//... except \$exclude, set($*)) except \$exclude")
 
 if [[ "${#TARGETS[@]}" -gt 0 ]]; then
   echo "Building targets"
