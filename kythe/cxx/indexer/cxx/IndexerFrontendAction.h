@@ -37,6 +37,7 @@
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
@@ -78,6 +79,13 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }
+  }
+
+ protected:
+  bool PrepareToExecuteAction(clang::CompilerInstance& CI) override {
+    CI.getPreprocessorOpts().DisablePCHOrModuleValidation =
+        clang::DisableValidationForModuleKind::All;
+    return clang::ASTFrontendAction::PrepareToExecuteAction(CI);
   }
 
  private:
