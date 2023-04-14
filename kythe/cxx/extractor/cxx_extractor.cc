@@ -1356,10 +1356,7 @@ llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> GetRootFileSystem(
 
 void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
   if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
-    absl::FPrintF(stderr,
-                  "Couldn't configure "
-                  "vnames from %s\n",
-                  path);
+    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
     exit(1);
   }
 }
@@ -1375,8 +1372,7 @@ bool IsCuda(const std::vector<std::string>& args) {
 
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   final_args_ = args;
-  // Only compile CUDA for the host.
-  // Otherwise we end up getting more than a
+  // Only compile CUDA for the host. Otherwise we end up getting more than a
   // single clang invocation.
   if (IsCuda(final_args_)) {
     final_args_.push_back("--cuda-host-only");
@@ -1385,29 +1381,22 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
     executable = final_args_[2];
     final_args_.erase(final_args_.begin() + 1, final_args_.begin() + 3);
-    // Clang tooling infrastructure expects
-    // that CommandLine[0] is a tool path
-    // relative to which the builtin headers
-    // can be found, so ensure these two
-    // paths are consistent. We also need to
-    // ensure that the executable path seen
-    // here is the one provided to the
-    // indexer.
+    // Clang tooling infrastructure expects that CommandLine[0] is a tool path
+    // relative to which the builtin headers can be found, so ensure these
+    // two paths are consistent.
+    // We also need to ensure that the executable path seen here is the one
+    // provided to the indexer.
     final_args_[0] = executable;
   }
-  // TODO(zarko): Does this really need to be
-  // InitializeAllTargets()? We may have made
-  // the precondition too strict.
+  // TODO(zarko): Does this really need to be InitializeAllTargets()?
+  // We may have made the precondition too strict.
   llvm::InitializeAllTargetInfos();
   clang::tooling::addTargetAndModeForProgramName(final_args_, executable);
   final_args_ = common::GCCArgsToClangSyntaxOnlyArgs(final_args_);
-  // Check to see if an alternate
-  // resource-dir was specified; otherwise,
-  // invent one. We need this to find
-  // stddef.h and friends.
+  // Check to see if an alternate resource-dir was specified; otherwise,
+  // invent one. We need this to find stddef.h and friends.
   for (const auto& arg : final_args_) {
-    // Handle both -resource-dir=foo and
-    // -resource-dir foo.
+    // Handle both -resource-dir=foo and -resource-dir foo.
     if (llvm::StringRef(arg).startswith("-resource-dir")) {
       map_builtin_resources_ = false;
       break;
@@ -1418,12 +1407,10 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
     final_args_.insert(final_args_.begin() + 1, "-resource-dir");
   }
   final_args_.insert(final_args_.begin() + 1, "-DKYTHE_IS_RUNNING=1");
-  // Store the arguments in the compilation
-  // unit post-filtering.
+  // Store the arguments in the compilation unit post-filtering.
   index_writer_.set_args(final_args_);
-  // Disable all warnings when running the
-  // extractor, but don't propagate this to
-  // the indexer.
+  // Disable all warnings when running the extractor, but don't propagate this
+  // to the indexer.
   final_args_.push_back("--no-warnings");
 }
 
@@ -1447,9 +1434,7 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
     index_writer_.set_exclude_empty_dirs(true);
   }
   if (const char* env_exclude_autoconfiguration_files =
-          getenv("KYTHE_EXCLUDE_"
-                 "AUTOCONFIGURATION_"
-                 "FILES")) {
+          getenv("KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES")) {
     index_writer_.set_exclude_autoconfiguration_files(true);
   }
   if (const char* env_kythe_build_config = getenv("KYTHE_BUILD_CONFIG")) {
@@ -1458,8 +1443,7 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   if (const char* env_kythe_build_target = getenv("KYTHE_ANALYSIS_TARGET")) {
     SetTargetName(env_kythe_build_target);
   }
-  if (const char* env_path_policy = getenv("KYTHE_CANONICALIZE_VNAME_"
-                                           "PATHS")) {
+  if (const char* env_path_policy = getenv("KYTHE_CANONICALIZE_VNAME_PATHS")) {
     index_writer_.set_path_canonicalization_policy(
         ParseCanonicalizationPolicy(env_path_policy)
             .value_or(PathCanonicalizer::Policy::kCleanOnly));
@@ -1487,8 +1471,7 @@ class RecordingFS : public llvm::vfs::FileSystem {
       const llvm::Twine& path) override {
     auto nested_result = base_file_system_->openFileForRead(path);
     if (nested_result) {
-      // We expect to be able to open this
-      // file at this path in the future.
+      // We expect to be able to open this file at this path in the future.
       index_writer_->OpenedForRead(path.str());
     }
     return nested_result;
@@ -1540,8 +1523,7 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<CompilationWriterSink> sink;
   if (!output_file_.empty()) {
     CHECK(absl::EndsWith(output_file_, ".kzip"))
-        << "Output file must have '.kzip' "
-           "extension";
+        << "Output file must have '.kzip' extension";
     sink = std::make_unique<KzipWriterSink>(
         output_file_, KzipWriterSink::OutputPathType::SingleFile);
   } else {
