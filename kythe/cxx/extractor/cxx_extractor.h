@@ -196,8 +196,7 @@ class CompilationWriter {
       std::unique_ptr<CompilationWriterSink> sink,
       const std::string& main_source_file, const std::string& entry_context,
       const std::unordered_map<std::string, SourceFile>& source_files,
-      const HeaderSearchInfo* header_search_info, bool had_errors,
-      const std::string& clang_working_dir);
+      const HeaderSearchInfo* header_search_info, bool had_errors);
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
@@ -324,8 +323,6 @@ class ExtractorConfiguration {
  private:
   /// The argument list to pass to Clang.
   std::vector<std::string> final_args_;
-  /// The FileSystemOptions to use during extraction.
-  clang::FileSystemOptions file_system_options_;
   /// The CompilationWriter to use.
   CompilationWriter index_writer_;
   /// True if we should use our internal system headers; false if not.
