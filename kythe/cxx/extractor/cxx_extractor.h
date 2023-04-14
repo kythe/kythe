@@ -226,7 +226,9 @@ class CompilationWriter {
   kythe::proto::VName VNameForPath(const std::string& path);
 
   /// \brief Attempts to generate a root-relative path.
-  std::string RelativizePath(absl::string_view path);
+  /// This is a path relative to KYTHE_ROOT_DIRECTORY, not the working directory
+  /// and should only be used for doing VName mapping a lookups.
+  std::string RootRelativePath(absl::string_view path);
 
  private:
   /// Called to read and insert content for extra include files.

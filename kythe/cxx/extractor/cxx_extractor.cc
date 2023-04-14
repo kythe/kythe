@@ -651,7 +651,7 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
     contents.first->second.file_content.assign(buffer.getBufferStart(),
                                                buffer.getBufferEnd());
     contents.first->second.vname.CopyFrom(
-        index_writer_->VNameForPath(index_writer_->RelativizePath(path)));
+        index_writer_->VNameForPath(index_writer_->RootRelativePath(path)));
     VLOG(1) << "added content for " << path << ": mapped to "
             << contents.first->second.vname.DebugString() << "\n";
   }
@@ -714,7 +714,7 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     const auto* file_ref =
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
-      auto vname = index_writer_->VNameForPath(index_writer_->RelativizePath(
+      auto vname = index_writer_->VNameForPath(index_writer_->RootRelativePath(
           FixStdinPath(file_ref, std::string(filename_ref))));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
@@ -1078,7 +1078,7 @@ kythe::proto::VName CompilationWriter::VNameForPath(const std::string& path) {
   return out;
 }
 
-std::string CompilationWriter::RelativizePath(absl::string_view path) {
+std::string CompilationWriter::RootRelativePath(absl::string_view path) {
   // Don't attempt to relativize builtin resource paths.
   if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
     return std::string(path);
@@ -1128,11 +1128,11 @@ void CompilationWriter::InsertExtraIncludes(
   auto fs = llvm::vfs::getRealFileSystem();
   std::set<std::string> normalized_clang_paths;
   for (const auto& input : unit->required_input()) {
-    normalized_clang_paths.insert(RelativizePath(input.info().path()));
+    normalized_clang_paths.insert(RootRelativePath(input.info().path()));
   }
   for (const auto& path : extra_includes_) {
     status_checked_paths_.erase(path);
-    auto normalized = RelativizePath(path);
+    auto normalized = RootRelativePath(path);
     status_checked_paths_.erase(normalized);
     if (normalized_clang_paths.count(normalized) != 0) {
       // This file is redundant with a required input after normalization.
@@ -1196,7 +1196,7 @@ void CompilationWriter::OpenedForRead(const std::string& path) {
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
-    status_checked_paths_.insert(RelativizePath(path));
+    status_checked_paths_.insert(RootRelativePath(path));
   }
 }
 
