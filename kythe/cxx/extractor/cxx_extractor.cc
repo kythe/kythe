@@ -375,7 +375,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
 
   /// \brief Records the content of `file` (with spelled path `path`)
   /// if it has not already been recorded.
-  void AddFile(const clang::FileEntry* file, const std::string& path);
+  std::string AddFile(const clang::FileEntry* file, llvm::StringRef path);
 
   /// \brief Records the content of `file` if it has not already been recorded.
   std::string AddFile(const clang::FileEntry* file, llvm::StringRef file_name,
@@ -515,6 +515,8 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   unsigned last_inclusion_offset_;
   /// The stack of files we've entered. top() gives the current file.
   std::stack<FileState> current_files_;
+  /// The main source file path.
+  std::string* main_source_file_;
   /// The transcript of the main source file.
   std::string* main_source_file_transcript_;
   /// Contents of the files we've used, indexed by normalized path.
@@ -529,6 +531,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
 ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
     : source_manager_(state.source_manager),
       preprocessor_(state.preprocessor),
+      main_source_file_(state.main_source_file),
       main_source_file_transcript_(state.main_source_file_transcript),
       source_files_(state.source_files),
       index_writer_(state.index_writer),
@@ -645,7 +648,7 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
 
 void ExtractorPPCallbacks::EndOfMainFile() {
   if (auto* mfile = GetMainFile()) {
-    AddFile(mfile, std::string(mfile->getName()));
+    *main_source_file_ = AddFile(mfile, mfile->getName());
     *main_source_file_transcript_ = PopFile();
   }
 }
@@ -665,19 +668,20 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
   return std::string(path);
 }
 
-void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
-                                   const std::string& in_path) {
-  std::string path = FixStdinPath(file, in_path);
-  auto contents = source_files_->insert({in_path, SourceFile{""}});
-  if (contents.second) {
+std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
+                                          llvm::StringRef path) {
+  auto [iter, inserted] =
+      source_files_->insert({std::string(path), SourceFile{""}});
+  if (inserted) {
     const llvm::MemoryBufferRef buffer =
         source_manager_->getMemoryBufferForFileOrFake(file);
-    contents.first->second.file_content.assign(buffer.getBufferStart(),
-                                               buffer.getBufferEnd());
-    contents.first->second.vname = index_writer_->VNameForPath(path);
-    VLOG(1) << "added content for " << path << ": mapped to "
-            << contents.first->second.vname.DebugString() << "\n";
+    iter->second.file_content.assign(buffer.getBufferStart(),
+                                     buffer.getBufferEnd());
+    iter->second.vname = index_writer_->VNameForPath(FixStdinPath(file, path));
+    VLOG(1) << "added content for " << StreamAdapter::Stream(path)
+            << ": mapped to " << iter->second.vname.DebugString() << "\n";
   }
+  return iter->first;
 }
 
 void ExtractorPPCallbacks::RecordMacroExpansion(
@@ -938,9 +942,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
         << StreamAdapter::Stream(file_name);
     out_name = file_name;
   }
-  std::string out_name_string(out_name.str());
-  AddFile(file, out_name_string);
-  return out_name_string;
+  return AddFile(file, out_name);
 }
 
 const clang::FileEntry* ExtractorPPCallbacks::GetMainFile() {
