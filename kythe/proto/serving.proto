@@ -113,6 +113,9 @@ message FileDirectory {
 
     // True if this entry is generated.
     bool generated = 4;
+
+    // Whether the FILE Entry did not have an associated text fact.
+    bool missing_text = 5;
   }
   enum Kind {
     UNKNOWN = 0;
@@ -140,7 +143,7 @@ message CorpusRoots {
 // A File is a specialized Node structure for file nodes.
 message File {
   string ticket = 1;
-  bytes text = 2;
+  optional bytes text = 2;
   string encoding = 3;
 
   FileInfo info = 4;
