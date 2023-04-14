@@ -26,7 +26,7 @@ java_binary(
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
-        "@io_bazel//src/java_tools/buildjar/java/com/google/devtools/build/buildjar:javac_options",
+        "@io_bazel_files//src/java_tools/buildjar/java/com/google/devtools/build/buildjar:javac_options",
     ],
 )
 
