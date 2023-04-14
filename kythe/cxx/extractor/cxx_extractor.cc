@@ -91,6 +91,10 @@ bool IsSpecialBufferName(llvm::StringRef id) {
          id == "<built-in>" || id == "<command line>";
 }
 
+bool IsSdtinPath(absl::string_view path) {
+  return path == "-" || path == "<stdin>" || absl::StartsWith(path, "<stdin:");
+}
+
 absl::string_view GetPathForProto(
     const proto::CxxCompilationUnitDetails::SystemHeaderPrefix& prefix) {
   return prefix.prefix();
@@ -109,6 +113,27 @@ absl::string_view GetPathForProto(
 absl::string_view GetPathForProto(
     const proto::CxxCompilationUnitDetails::HeaderSearchDir& dir) {
   return dir.path();
+}
+
+// Returns a normalized, lexically-cleaned path.
+std::string RelativizePath(absl::string_view path) {
+  if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
+    return std::string(path);
+  }
+  if (IsSdtinPath(path)) {
+    return std::string(path);
+  }
+  absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(".");
+  if (!cleaner.ok()) {
+    LOG(WARNING) << "Unable to create PathCleaner:" << cleaner.status();
+    return std::string(path);
+  }
+  absl::StatusOr<std::string> relative = cleaner->Relativize(path);
+  if (!relative.ok()) {
+    LOG(WARNING) << "Unable to relativize path:" << relative.status();
+    return std::string(path);
+  }
+  return *std::move(relative);
 }
 
 class RequiredRoots {
@@ -476,8 +501,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// \param file The file entry of the main source file.
   /// \param path The path as known to Clang.
   /// \return The path that should be used to generate VNames.
-  std::string FixStdinPath(const clang::FileEntry* file,
-                           const std::string& path);
+  std::string FixStdinPath(const clang::FileEntry* file, llvm::StringRef path);
 
   /// The `SourceManager` used for the compilation.
   clang::SourceManager* source_manager_;
@@ -627,8 +651,8 @@ void ExtractorPPCallbacks::EndOfMainFile() {
 }
 
 std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
-                                               const std::string& in_path) {
-  if (in_path == "-" || in_path == "<stdin>") {
+                                               llvm::StringRef path) {
+  if (path == "-" || path == "<stdin>") {
     if (main_source_file_stdin_alternate_->empty()) {
       const llvm::MemoryBufferRef buffer =
           source_manager_->getMemoryBufferForFileOrFake(file);
@@ -638,7 +662,7 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
     }
     return *main_source_file_stdin_alternate_;
   }
-  return in_path;
+  return std::string(path);
 }
 
 void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
@@ -713,8 +737,8 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     const auto* file_ref =
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
-      auto vname = index_writer_->VNameForPath(
-          FixStdinPath(file_ref, std::string(filename_ref)));
+      auto vname =
+          index_writer_->VNameForPath(FixStdinPath(file_ref, filename_ref));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
       history()->Update(vname.root());
@@ -1069,19 +1093,23 @@ bool CompilationWriter::SetVNameConfiguration(const std::string& json) {
   return true;
 }
 
-kythe::proto::VName CompilationWriter::VNameForPath(absl::string_view path) {
-  kythe::proto::VName out =
-      vname_generator_.LookupVName(RootRelativePath(path));
+kythe::proto::VName CompilationWriter::VNameForPath(const RootPath& path) {
+  kythe::proto::VName out = vname_generator_.LookupVName(path.value());
   if (out.corpus().empty()) {
     out.set_corpus(corpus_);
   }
   return out;
 }
 
-std::string CompilationWriter::RootRelativePath(absl::string_view path) {
+kythe::proto::VName CompilationWriter::VNameForPath(absl::string_view path) {
+  return VNameForPath(RootRelativePath(path));
+}
+
+CompilationWriter::RootPath CompilationWriter::RootRelativePath(
+    absl::string_view path) {
   // Don't attempt to relativize builtin resource paths.
   if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
-    return std::string(path);
+    return RootPath{std::string(path)};
   }
 
   if (!canonicalizer_.has_value()) {
@@ -1092,15 +1120,15 @@ std::string CompilationWriter::RootRelativePath(absl::string_view path) {
     } else {
       LOG(INFO) << "Error making root relative path: "
                 << canonicalizer.status();
-      return std::string(path);
+      return RootPath{std::string(path)};
     }
   }
   if (absl::StatusOr<std::string> relative = canonicalizer_->Relativize(path);
       relative.ok()) {
-    return *std::move(relative);
+    return RootPath{*std::move(relative)};
   } else {
     LOG(INFO) << "Error making root relative path: " << relative.status();
-    return std::string(path);
+    return RootPath{std::string(path)};
   }
 }
 
@@ -1129,11 +1157,11 @@ void CompilationWriter::InsertExtraIncludes(
   auto fs = llvm::vfs::getRealFileSystem();
   std::set<std::string> normalized_clang_paths;
   for (const auto& input : unit->required_input()) {
-    normalized_clang_paths.insert(RootRelativePath(input.info().path()));
+    normalized_clang_paths.insert(RelativizePath(input.info().path()));
   }
   for (const auto& path : extra_includes_) {
     status_checked_paths_.erase(path);
-    auto normalized = RootRelativePath(path);
+    auto normalized = RelativizePath(path);
     status_checked_paths_.erase(normalized);
     if (normalized_clang_paths.count(normalized) != 0) {
       // This file is redundant with a required input after normalization.
@@ -1197,7 +1225,7 @@ void CompilationWriter::OpenedForRead(const std::string& path) {
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
-    status_checked_paths_.insert(RootRelativePath(path));
+    status_checked_paths_.insert(path);
   }
 }
 

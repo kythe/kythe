@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 
 #include "absl/types/optional.h"
@@ -220,14 +221,21 @@ class CompilationWriter {
   /// \brief Records that a directory path was successfully opened for status.
   void DirectoryOpenedForStatus(const std::string& clang_path);
 
-  /// \brief Attempts to generate a VName for the file at some path.
-  /// \param path The path (likely from Clang) to the file.
-  kythe::proto::VName VNameForPath(absl::string_view path);
-
+  // A "strong" alias to differentiate filesystem paths from "root" paths.
+  struct RootPath : std::tuple<std::string> {
+    const std::string& value() const& { return std::get<0>(*this); }
+    std::string& value() & { return std::get<0>(*this); }
+    std::string&& value() && { return std::move(std::get<0>(*this)); }
+  };
   /// \brief Attempts to generate a root-relative path.
   /// This is a path relative to KYTHE_ROOT_DIRECTORY, not the working directory
   /// and should only be used for doing VName mapping a lookups.
-  std::string RootRelativePath(absl::string_view path);
+  RootPath RootRelativePath(absl::string_view path);
+
+  /// \brief Attempts to generate a VName for the file at some path.
+  /// \param path The path (likely from Clang) to the file.
+  kythe::proto::VName VNameForPath(absl::string_view path);
+  kythe::proto::VName VNameForPath(const RootPath& path);
 
  private:
   /// Called to read and insert content for extra include files.
