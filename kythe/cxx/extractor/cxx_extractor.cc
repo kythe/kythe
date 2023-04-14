@@ -1090,7 +1090,8 @@ std::string CompilationWriter::RootRelativePath(absl::string_view path) {
         canonicalizer.ok()) {
       canonicalizer_ = *std::move(canonicalizer);
     } else {
-      LOG(INFO) << "Error making relative path: " << canonicalizer.status();
+      LOG(INFO) << "Error making root relative path: "
+                << canonicalizer.status();
       return std::string(path);
     }
   }
@@ -1098,7 +1099,7 @@ std::string CompilationWriter::RootRelativePath(absl::string_view path) {
       relative.ok()) {
     return *std::move(relative);
   } else {
-    LOG(INFO) << "Error making relative path: " << relative.status();
+    LOG(INFO) << "Error making root relative path: " << relative.status();
     return std::string(path);
   }
 }
