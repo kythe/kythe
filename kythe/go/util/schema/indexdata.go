@@ -106,6 +106,7 @@ var (
 		"/kythe/edge/completes/uniquely":       9,
 		"/kythe/edge/defines":                  10,
 		"/kythe/edge/defines/binding":          11,
+		"/kythe/edge/defines/implicit":         50,
 		"/kythe/edge/depends":                  12,
 		"/kythe/edge/documents":                13,
 		"/kythe/edge/exports":                  14,
@@ -266,6 +267,7 @@ var (
 		47: "/kythe/edge/ref/writes",
 		48: "/kythe/edge/tparam",
 		49: "/kythe/edge/completedby",
+		50: "/kythe/edge/defines/implicit",
 	}
 )
 

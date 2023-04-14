@@ -33,7 +33,7 @@ repos:
         # Use a verbose Python regex and YAML single-quoted string to make this more legible.
         exclude: '(?x)
             ^(AUTHORS|CONTRIBUTORS|WORKSPACE|LICENSE)$
-            |(^|/)BUILD([^/*]*\.bazel)?$
+            |(^|/)BUILD([^*/]*\.bazel)?$
             |(^|/)requirements\.[^.]+$
             |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|kzip|tex|tac|bazelproject)$
             |(^|/)(\.[^/]*|go\.mod|go\.sum)$
