@@ -650,8 +650,7 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
         source_manager_->getMemoryBufferForFileOrFake(file);
     contents.first->second.file_content.assign(buffer.getBufferStart(),
                                                buffer.getBufferEnd());
-    contents.first->second.vname.CopyFrom(
-        index_writer_->VNameForPath(index_writer_->RootRelativePath(path)));
+    contents.first->second.vname = index_writer_->VNameForPath(path);
     VLOG(1) << "added content for " << path << ": mapped to "
             << contents.first->second.vname.DebugString() << "\n";
   }
@@ -714,8 +713,8 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     const auto* file_ref =
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
-      auto vname = index_writer_->VNameForPath(index_writer_->RootRelativePath(
-          FixStdinPath(file_ref, std::string(filename_ref))));
+      auto vname = index_writer_->VNameForPath(
+          FixStdinPath(file_ref, std::string(filename_ref)));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
       history()->Update(vname.root());
@@ -1070,8 +1069,9 @@ bool CompilationWriter::SetVNameConfiguration(const std::string& json) {
   return true;
 }
 
-kythe::proto::VName CompilationWriter::VNameForPath(const std::string& path) {
-  kythe::proto::VName out = vname_generator_.LookupVName(path);
+kythe::proto::VName CompilationWriter::VNameForPath(absl::string_view path) {
+  kythe::proto::VName out =
+      vname_generator_.LookupVName(RootRelativePath(path));
   if (out.corpus().empty()) {
     out.set_corpus(corpus_);
   }
@@ -1146,11 +1146,11 @@ void CompilationWriter::InsertExtraIncludes(
     extra_data_.emplace_back();
     auto* file_content = &extra_data_.back();
     auto* required_input = unit->add_required_input();
-    required_input->mutable_v_name()->CopyFrom(VNameForPath(normalized));
+    *required_input->mutable_v_name() = VNameForPath(path);
     required_input->mutable_info()->set_path(path);
     required_input->mutable_info()->set_digest(
         Sha256Hasher((*buffer)->getBuffer()).FinishHexString());
-    file_content->mutable_info()->CopyFrom(required_input->info());
+    *file_content->mutable_info() = required_input->info();
     file_content->mutable_content()->assign((*buffer)->getBufferStart(),
                                             (*buffer)->getBufferEnd());
   }

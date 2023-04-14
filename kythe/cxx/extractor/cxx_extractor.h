@@ -222,7 +222,7 @@ class CompilationWriter {
 
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
-  kythe::proto::VName VNameForPath(const std::string& path);
+  kythe::proto::VName VNameForPath(absl::string_view path);
 
   /// \brief Attempts to generate a root-relative path.
   /// This is a path relative to KYTHE_ROOT_DIRECTORY, not the working directory
