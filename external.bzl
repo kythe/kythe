@@ -305,7 +305,7 @@ def _cc_dependencies():
 def _java_dependencies():
     maybe(
         bazel_repository_files,
-        name = "io_bazel",
+        name = "io_bazel_files",
         commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
         files = [
             "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/JavacOptions.java",
