@@ -31,7 +31,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/installed_dir.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/installed_dir.cc"
+        path: "kythe/cxx/extractor/testdata/installed_dir.cc"
         digest: "fb21e5e71e3b8f54ebf5a84fc2955fb4f893111fdfa0d7fe8be936b32add3f56"
       }
       details {
@@ -47,6 +47,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/include/c++/v1/dummy" }
       info {
+        # TODO(b/278254885): Properly normalize file paths.
         path: "kythe/cxx/extractor/testdata/bin/../include/c++/v1/dummy"
         digest: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
@@ -67,7 +68,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-v"
     argument: "./kythe/cxx/extractor/testdata/installed_dir.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/installed_dir.cc"
+    source_file: "kythe/cxx/extractor/testdata/installed_dir.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");

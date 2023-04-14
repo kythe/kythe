@@ -33,7 +33,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/modules.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/modules.cc"
+        path: "kythe/cxx/extractor/testdata/modules.cc"
         digest: "65f89e233c735e33c51ab2445b0586b102d03430d3ed177e021a33b1fffeac9f"
       }
       details {
@@ -45,7 +45,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/modfoo.h" }
       info {
-        path: "./kythe/cxx/extractor/testdata/modfoo.h"
+        path: "kythe/cxx/extractor/testdata/modfoo.h"
         digest: "cd8c82152d321ecfa60a7ab3ccec78ad7168abf22dd93150ccee7fea420ad432"
       }
     }
@@ -68,7 +68,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-I./kythe/cxx/extractor"
     argument: "./kythe/cxx/extractor/testdata/modules.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/modules.cc"
+    source_file: "kythe/cxx/extractor/testdata/modules.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");

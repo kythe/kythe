@@ -136,6 +136,13 @@ std::string RelativizePath(absl::string_view path) {
   return *std::move(relative);
 }
 
+// Returns a trivially normalized path, removing the leading "./" if any.
+std::string NormalizePath(absl::string_view path) {
+  // TODO(b/278254885): Properly normalize these paths against the unit
+  // "virtual" paths.
+  return std::string(absl::StripPrefix(path, "./"));
+}
+
 class RequiredRoots {
  public:
   explicit RequiredRoots(absl::string_view working_directory)
@@ -578,7 +585,7 @@ void ExtractorPPCallbacks::FileChanged(
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
       if (auto* mfile = GetMainFile()) {
-        current_files_.push(FileState{std::string(mfile->getName()),
+        current_files_.push(FileState{NormalizePath(mfile->getName()),
                                       ClaimDirective::AlwaysClaim});
       } else {
         // For some compilations with modules enabled, there may be no main
@@ -597,8 +604,7 @@ void ExtractorPPCallbacks::FileChanged(
         // TODO(zarko): we need a more appropriate path for the synthesized
         // <module-includes> buffer.
         current_files_.push(
-            FileState{std::string(buffer->getBufferIdentifier()),
-                      ClaimDirective::AlwaysClaim});
+            FileState{NormalizePath(id), ClaimDirective::AlwaysClaim});
       }
     } else {
       CHECK(!current_files_.empty());
@@ -671,7 +677,7 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
 std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                           llvm::StringRef path) {
   auto [iter, inserted] =
-      source_files_->insert({std::string(path), SourceFile{""}});
+      source_files_->insert({NormalizePath(path), SourceFile{""}});
   if (inserted) {
     const llvm::MemoryBufferRef buffer =
         source_manager_->getMemoryBufferForFileOrFake(file);
@@ -933,10 +939,10 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
     // Otherwise we take the literal path as we stored it for the current
     // file, and append the relative path.
     out_name = parent;
-    llvm::sys::path::append(out_name, relative_path);
+    llvm::sys::path::append(out_name, NormalizePath(relative_path));
   } else if (!search_path.empty()) {
     out_name = search_path;
-    llvm::sys::path::append(out_name, relative_path);
+    llvm::sys::path::append(out_name, NormalizePath(relative_path));
   } else {
     CHECK(IsSpecialBufferName(top_path) ||
           llvm::sys::path::is_absolute(file_name))
@@ -985,7 +991,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     const auto inputs = getCompilerInstance().getFrontendOpts().Inputs;
     CHECK_EQ(1, inputs.size())
         << "Expected to see only one TU; instead saw " << inputs.size() << ".";
-    main_source_file_ = std::string(inputs[0].getFile());
+    main_source_file_ = NormalizePath(std::string(inputs[0].getFile()));
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
     preprocessor->addPPCallbacks(
         std::make_unique<ExtractorPPCallbacks>(ExtractorState{
@@ -1222,13 +1228,13 @@ void CompilationWriter::CancelPreviouslyOpenedFiles() {
 
 void CompilationWriter::OpenedForRead(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
-    extra_includes_.insert(path);
+    extra_includes_.insert(NormalizePath(path));
   }
 }
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
-    status_checked_paths_.insert(path);
+    status_checked_paths_.insert(NormalizePath(path));
   }
 }
 

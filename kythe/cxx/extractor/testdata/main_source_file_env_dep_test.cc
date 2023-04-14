@@ -35,7 +35,7 @@ proto::CompilationUnit ExpectedCompilation() {
         path: "kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
       }
       info {
-        path: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+        path: "kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
         digest: "7fc8bce46febc9e8c660fdaa7caa9e27e64a9f85769d69ca9ecfc8a2ca751335"
       }
       details {
@@ -55,7 +55,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-DMACRO"
     argument: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+    source_file: "kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");
