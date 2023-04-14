@@ -91,7 +91,7 @@ bool IsSpecialBufferName(llvm::StringRef id) {
          id == "<built-in>" || id == "<command line>";
 }
 
-bool IsSdtinPath(absl::string_view path) {
+bool IsStdinPath(absl::string_view path) {
   return path == "-" || path == "<stdin>" || absl::StartsWith(path, "<stdin:");
 }
 
@@ -120,7 +120,7 @@ std::string RelativizePath(absl::string_view path) {
   if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
     return std::string(path);
   }
-  if (IsSdtinPath(path)) {
+  if (IsStdinPath(path)) {
     return std::string(path);
   }
   absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(".");
@@ -677,9 +677,10 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
         source_manager_->getMemoryBufferForFileOrFake(file);
     iter->second.file_content.assign(buffer.getBufferStart(),
                                      buffer.getBufferEnd());
-    iter->second.vname = index_writer_->VNameForPath(FixStdinPath(file, path));
-    VLOG(1) << "added content for " << StreamAdapter::Stream(path)
-            << ": mapped to " << iter->second.vname.DebugString() << "\n";
+    iter->second.vname =
+        index_writer_->VNameForPath(FixStdinPath(file, iter->first));
+    VLOG(1) << "added content for " << iter->first << ": mapped to "
+            << iter->second.vname.DebugString() << "\n";
   }
   return iter->first;
 }
@@ -1147,7 +1148,7 @@ void CompilationWriter::FillFileInput(
   // We need to use something other than "-", since clang special-cases
   // it. (clang also refers to standard input as <stdin>, so we're
   // consistent there.)
-  file_info->set_path(clang_path == "-" ? "<stdin>" : clang_path);
+  file_info->set_path(IsStdinPath(clang_path) ? "<stdin>" : clang_path);
   file_info->set_digest(
       Sha256Hasher(source_file.file_content).FinishHexString());
   AddFileContext(source_file, file_input);
