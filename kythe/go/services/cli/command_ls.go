@@ -31,9 +31,10 @@ import (
 
 type lsCommand struct {
 	baseKytheCommand
-	lsURIs    bool
-	filesOnly bool
-	dirsOnly  bool
+	lsURIs         bool
+	filesOnly      bool
+	dirsOnly       bool
+	includeMissing bool
 }
 
 func (lsCommand) Name() string     { return "ls" }
@@ -42,6 +43,7 @@ func (c *lsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.lsURIs, "uris", false, "Display files/directories as Kythe URIs")
 	flag.BoolVar(&c.filesOnly, "files", false, "Display only files")
 	flag.BoolVar(&c.dirsOnly, "dirs", false, "Display only directories")
+	flag.BoolVar(&c.includeMissing, "include_files_missing_text", false, "Include files missing text")
 }
 func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	if c.filesOnly && c.dirsOnly {
@@ -75,6 +77,8 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 		Corpus: corpus,
 		Root:   root,
 		Path:   path,
+
+		IncludeFilesMissingText: c.includeMissing,
 	}
 	LogRequest(req)
 	dir, err := api.FileTreeService.Directory(ctx, req)
