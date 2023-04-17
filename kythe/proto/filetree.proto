@@ -50,6 +50,9 @@ message DirectoryRequest {
   string corpus = 1;
   string root = 2;
   string path = 3;
+
+  // Whether to return files that are missing text.
+  bool include_files_missing_text = 4;
 }
 
 message DirectoryReply {
@@ -77,6 +80,9 @@ message DirectoryReply {
 
     // True if the entry is generated.
     bool generated = 4;
+
+    // Whether the FILE entry is missing text.
+    bool missing_text = 5;
   }
   enum Kind {
     UNKNOWN = 0;
