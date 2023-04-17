@@ -82,10 +82,14 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 			Name:        e.Name,
 			BuildConfig: e.BuildConfig,
 			Generated:   e.GetGenerated(),
+			MissingText: e.GetMissingText(),
 		}
 		switch e.Kind {
 		case srvpb.FileDirectory_FILE:
 			re.Kind = ftpb.DirectoryReply_FILE
+			if !req.GetIncludeFilesMissingText() && e.GetMissingText() {
+				continue
+			}
 		case srvpb.FileDirectory_DIRECTORY:
 			re.Kind = ftpb.DirectoryReply_DIRECTORY
 		default:
