@@ -1108,6 +1108,7 @@ class Visitor {
       this.emitNode(kType, NodeKind.INTERFACE);
       this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
       this.visitJSDoc(decl, kType);
+      this.emitMarkedSourceForClasslikeDeclaration(decl, kType);
     }
 
     if (decl.typeParameters)
@@ -1780,7 +1781,7 @@ class Visitor {
         ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl) ||
         ts.isShorthandPropertyAssignment(decl) ||
         ts.isPropertySignature(decl) || ts.isJsxAttribute(decl)) {
-      this.emitDeclarationCode(decl, vname);
+      this.emitMarkedSourceForVariable(decl, vname);
     } else {
       todo(this.sourceRoot, decl, 'Emit variable delaration code');
     }
@@ -1817,10 +1818,10 @@ class Visitor {
    *     ((property)|(local var)|const|let) <name>: <type>( = <initializer>)?
    * where `(local var)` is the declaration of a variable in a catch clause.
    */
-  emitDeclarationCode(
+  emitMarkedSourceForVariable(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
       ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment|
-      ts.PropertySignature|ts.JsxAttribute,
+      ts.PropertySignature|ts.JsxAttribute|ts.ParameterDeclaration|ts.EnumMember,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     const initializerList = decl.parent;
@@ -1854,17 +1855,24 @@ class Visitor {
                                                        '(local var)' :
           initializerList.flags & ts.NodeFlags.Const ? 'const' :
                                                        'let';
+    } else if (ts.isParameter(varDecl)) {
+      declKw = '(parameter)';
+    } else if (ts.isEnumMember(varDecl)) {
+      declKw = '(enum member)';
     } else {
       declKw = '(property)';
     }
-    const ty = this.typeChecker.getTypeAtLocation(decl);
-    const tyStr = this.typeChecker.typeToString(ty, decl);
     codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(declKw)});
     codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
     codeParts.push(
       {kind: MarkedSourceKind.IDENTIFIER, pre_text: fmtMarkedSource(decl.name.getText())});
-    codeParts.push(
-      {kind: MarkedSourceKind.TYPE, pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
+    if (!ts.isEnumMember(varDecl)) {
+      const ty = this.typeChecker.getTypeAtLocation(decl);
+      const tyStr = this.typeChecker.typeToString(ty, decl);
+      codeParts.push(
+        {kind: MarkedSourceKind.TYPE, pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
+
+    }
     if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
 
@@ -1880,7 +1888,49 @@ class Visitor {
         {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
     }
 
-    const markedSource = ({kind: MarkedSourceKind.BOX, child: codeParts});
+    const markedSource = {kind: MarkedSourceKind.BOX, child: codeParts};
+    this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
+  }
+
+  /**
+   * Emits a code fact for a class specifying how the declaration should be presented to users.
+   */
+  emitMarkedSourceForClasslikeDeclaration(
+    decl: ts.ClassLikeDeclaration|ts.InterfaceDeclaration|ts.EnumDeclaration, declVName: VName) {
+    const markedSource: JSONMarkedSource =
+      {kind: MarkedSourceKind.IDENTIFIER, pre_text: decl.name?.getText() ?? 'anonymous'};
+    this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
+  }
+
+  /**
+   * Emits a code fact for a function specifying how the declaration should be presented to users.
+   */
+  emitMarkedSourceForFunction(decl: ts.FunctionLikeDeclaration, declVName: VName) {
+    const codeParts: JSONMarkedSource[] = [];
+    const context = ts.isMethodDeclaration(decl) ? '(method)' : 'function';
+    codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: context});
+    codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
+    codeParts.push({
+      kind: MarkedSourceKind.IDENTIFIER,
+      pre_text: fmtMarkedSource(decl.name?.getText() ?? 'anonymous'),
+    });
+    codeParts.push({
+      kind: MarkedSourceKind.PARAMETER_LOOKUP_BY_PARAM,
+      pre_text: '(',
+      post_child_text: ', ',
+      post_text: ')'
+    });
+    const signature = this.typeChecker.getTypeAtLocation(decl).getCallSignatures()[0];
+    if (signature) {
+      const returnType = signature.getReturnType();
+      const returnTypeStr = this.typeChecker.typeToString(returnType, decl);
+      codeParts.push({
+        kind: MarkedSourceKind.TYPE,
+        pre_text: ': ',
+        post_text: fmtMarkedSource(returnTypeStr),
+      });
+    }
+    const markedSource = {kind: MarkedSourceKind.BOX, child: codeParts};
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
@@ -2147,6 +2197,7 @@ class Visitor {
     } else {
       this.emitFact(vname, FactName.COMPLETE, 'incomplete');
     }
+    this.emitMarkedSourceForFunction(decl, vname);
   }
 
   /**
@@ -2199,6 +2250,7 @@ class Visitor {
 
               this.emitEdge(
                   this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kParam);
+              this.emitMarkedSourceForVariable(param, kParam);
               break;
             case ts.SyntaxKind.ObjectBindingPattern:
             case ts.SyntaxKind.ArrayBindingPattern:
@@ -2324,6 +2376,7 @@ class Visitor {
       }
 
       this.visitJSDoc(decl, kClass);
+      this.emitMarkedSourceForClasslikeDeclaration(decl, kClass);
     }
     if (decl.typeParameters)
       this.visitTypeParameters(kClass, decl.typeParameters);
@@ -2349,6 +2402,7 @@ class Visitor {
     for (const member of decl.members) {
       this.visit(member);
     }
+    this.emitMarkedSourceForClasslikeDeclaration(decl, kValue);
   }
 
   visitEnumMember(decl: ts.EnumMember) {
@@ -2358,6 +2412,7 @@ class Visitor {
     if (!kMember) return;
     this.emitNode(kMember, NodeKind.CONSTANT);
     this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kMember);
+    this.emitMarkedSourceForVariable(decl, kMember);
   }
 
   visitExpressionMember(node: ts.Node) {
