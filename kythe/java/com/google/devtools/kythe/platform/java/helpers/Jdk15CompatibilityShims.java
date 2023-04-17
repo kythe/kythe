@@ -17,7 +17,9 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.auto.service.AutoService;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import java.util.List;
 
@@ -42,5 +44,10 @@ public final class Jdk15CompatibilityShims implements JdkCompatibilityShims {
   @Override
   public List<JCExpression> getCaseExpressions(JCCase tree) {
     return tree.getExpressions();
+  }
+
+  @Override
+  public JCTree getForLoopVar(JCEnhancedForLoop tree) {
+    return tree.var;
   }
 }

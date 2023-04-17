@@ -17,25 +17,24 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.auto.service.AutoService;
-import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
-public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
-  private static final Runtime.Version minVersion = Runtime.Version.parse("9");
-  private static final Runtime.Version maxVersion = Runtime.Version.parse("15");
+public final class Jdk20CompatibilityShims implements JdkCompatibilityShims {
+  private static final Runtime.Version minVersion = Runtime.Version.parse("20");
 
-  public Jdk9CompatibilityShims() {}
+  public Jdk20CompatibilityShims() {}
 
   @Override
   public CompatibilityClass getCompatibility() {
     Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0
-        && version.compareToIgnoreOptional(maxVersion) < 0) {
+    if (version.compareToIgnoreOptional(minVersion) >= 0) {
+      // We don't know when this class will cease being compatible.
       return CompatibilityClass.COMPATIBLE;
     }
     return CompatibilityClass.INCOMPATIBLE;
@@ -43,16 +42,12 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
 
   /** Return the list of expressions from a JCCase object */
   @Override
-  public ImmutableList<JCExpression> getCaseExpressions(JCCase tree) {
-    JCExpression expr = tree.getExpression();
-    if (expr == null) {
-      return ImmutableList.of();
-    }
-    return ImmutableList.of(tree.getExpression());
+  public List<JCExpression> getCaseExpressions(JCCase tree) {
+    return tree.getExpressions();
   }
 
   @Override
   public JCTree getForLoopVar(JCEnhancedForLoop tree) {
-    return tree.var;
+    return tree.varOrRecordPattern;
   }
 }
