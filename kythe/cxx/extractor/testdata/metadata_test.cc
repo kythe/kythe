@@ -31,7 +31,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/metadata.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/metadata.cc"
+        path: "kythe/cxx/extractor/testdata/metadata.cc"
         digest: "72269be69625ca9015a59bf7342dce1a30e96ddda51196c9f6ae6c4cbdefb7ea"
       }
       details {
@@ -43,7 +43,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/metadata.cc.meta" }
       info {
-        path: "./kythe/cxx/extractor/testdata/metadata.cc.meta"
+        path: "kythe/cxx/extractor/testdata/metadata.cc.meta"
         digest: "1d6faa9e1a76d13f3ab8558a3640158b1f0a54f624a4e37ddc3ef41ed4191058"
       }
     }
@@ -57,7 +57,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-I./kythe/cxx/extractor"
     argument: "./kythe/cxx/extractor/testdata/metadata.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/metadata.cc"
+    source_file: "kythe/cxx/extractor/testdata/metadata.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");

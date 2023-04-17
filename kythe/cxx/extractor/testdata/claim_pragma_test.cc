@@ -31,7 +31,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_main.cc"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_main.cc"
+    path: "kythe/cxx/extractor/testdata/claim_main.cc"
     digest: "4b19bb44ad66bc14a2b29694604420990d94e2b27bb55d10ce9ad5a93f6a6bde"
   }
   details {
@@ -56,7 +56,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_b.h"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_b.h"
+    path: "kythe/cxx/extractor/testdata/claim_b.h"
     digest: "a3d03965930673eced0d8ad50753f1933013a27a06b8be57443781275f1f937f"
   }
   details {
@@ -73,7 +73,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_a.h"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_a.h"
+    path: "kythe/cxx/extractor/testdata/claim_a.h"
     digest: "2c339c36aa02459955c6d5be9e73ebe030baf3b74dc1123439af8613844d0b1f"
   }
   details {
@@ -94,7 +94,7 @@ argument: "--driver-mode=g++"
 argument: "-I./kythe/cxx/extractor/testdata"
 argument: "./kythe/cxx/extractor/testdata/claim_main.cc"
 argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/claim_main.cc"
+source_file: "kythe/cxx/extractor/testdata/claim_main.cc"
 entry_context: "hash0"
 )";
 

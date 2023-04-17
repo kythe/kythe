@@ -128,7 +128,6 @@ function verify(
         verifier.stdin.write(JSON.stringify(obj) + '\n');
       },
       plugins,
-      enableAliasFollowing: true,
     });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise

@@ -80,13 +80,6 @@ export interface IndexingOptions {
    * is used.
    */
   readFile?: (path: string) => Buffer;
-
-  /**
-   * When enabled getSymbolAtLocationFollowingAliases() will actually follow aliases. This
-   * flag is needed to ensure it doesn't crash indexing. It is intended to be removed after
-   * launch.
-   */
-  enableAliasFollowing?: boolean;
 }
 
 /**
@@ -409,9 +402,6 @@ class StandardIndexerContext implements IndexerHost {
 
   getSymbolAtLocationFollowingAliases(node: ts.Node): ts.Symbol|undefined {
     let sym = this.typeChecker.getSymbolAtLocation(node);
-    if (!this.options.enableAliasFollowing) {
-      return sym;
-    }
     while (sym && (sym.flags & ts.SymbolFlags.Alias) > 0) {
       // a hack to prevent following aliases in cases like:
       // import * as fooNamespace from './foo';
@@ -832,18 +822,6 @@ class Visitor {
   /** Cached anchor nodes. Signature is used as key. */
   private readonly anchors = new Map<string, VName>();
 
-  /**
-   * Mapping from imported values to their remote definitions. For cases like
-   *
-   * import {Foo} from './dep';
-   * new Foo();
-   *
-   * We don't produce a defition to Foo symbol. Instead all refs ot it will
-   * point to the remote Foo from dep.ts. This map contains mapping from
-   * VName of local Foo to the VName of the remote Foo.
-   */
-  private readonly localSymbolToRemoteReassignMap = new Map<string, VName>();
-
   constructor(
       private readonly host: IndexerHost,
       private file: ts.SourceFile,
@@ -911,9 +889,6 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
-    if (!this.host.options.enableAliasFollowing) {
-      target = this.localSymbolToRemoteReassignMap.get(vnameToString(target)) ?? target;
-    }
     this.host.options.emit({
       source,
       edge_kind: kind,
@@ -1382,9 +1357,7 @@ class Visitor {
       const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
       if (!kRemoteValue || !kLocalValue) return;
 
-      if (bindingAnchor == null) {
-        this.localSymbolToRemoteReassignMap.set(vnameToString(kLocalValue), kRemoteValue);
-      } else {
+      if (bindingAnchor) {
         // The local import value is a "variable" with an "import" subkind, and
         // aliases its remote definition.
         this.emitNode(kLocalValue, NodeKind.VARIABLE);
@@ -1400,9 +1373,7 @@ class Visitor {
       const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
       if (!kRemoteType || !kLocalType) return;
 
-      if (bindingAnchor == null) {
-        this.localSymbolToRemoteReassignMap.set(vnameToString(kLocalType), kRemoteType);
-      } else {
+      if (bindingAnchor) {
         // The local import value is a "talias" (type alias) with an "import"
         // subkind, and aliases its remote definition.
         this.emitNode(kLocalType, NodeKind.TALIAS);

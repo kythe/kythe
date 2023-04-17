@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 
 #include "absl/types/optional.h"
@@ -196,8 +197,7 @@ class CompilationWriter {
       std::unique_ptr<CompilationWriterSink> sink,
       const std::string& main_source_file, const std::string& entry_context,
       const std::unordered_map<std::string, SourceFile>& source_files,
-      const HeaderSearchInfo* header_search_info, bool had_errors,
-      const std::string& clang_working_dir);
+      const HeaderSearchInfo* header_search_info, bool had_errors);
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
@@ -221,12 +221,21 @@ class CompilationWriter {
   /// \brief Records that a directory path was successfully opened for status.
   void DirectoryOpenedForStatus(const std::string& clang_path);
 
+  // A "strong" alias to differentiate filesystem paths from "root" paths.
+  struct RootPath : std::tuple<std::string> {
+    const std::string& value() const& { return std::get<0>(*this); }
+    std::string& value() & { return std::get<0>(*this); }
+    std::string&& value() && { return std::move(std::get<0>(*this)); }
+  };
+  /// \brief Attempts to generate a root-relative path.
+  /// This is a path relative to KYTHE_ROOT_DIRECTORY, not the working directory
+  /// and should only be used for doing VName mapping a lookups.
+  RootPath RootRelativePath(absl::string_view path);
+
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
-  kythe::proto::VName VNameForPath(const std::string& path);
-
-  /// \brief Attempts to generate a root-relative path.
-  std::string RelativizePath(absl::string_view path);
+  kythe::proto::VName VNameForPath(absl::string_view path);
+  kythe::proto::VName VNameForPath(const RootPath& path);
 
  private:
   /// Called to read and insert content for extra include files.
@@ -322,8 +331,6 @@ class ExtractorConfiguration {
  private:
   /// The argument list to pass to Clang.
   std::vector<std::string> final_args_;
-  /// The FileSystemOptions to use during extraction.
-  clang::FileSystemOptions file_system_options_;
   /// The CompilationWriter to use.
   CompilationWriter index_writer_;
   /// True if we should use our internal system headers; false if not.

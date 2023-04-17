@@ -31,7 +31,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/indirect_has_include.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+        path: "kythe/cxx/extractor/testdata/indirect_has_include.cc"
         digest: "6b406c26560e435ba485a141440055fc21c55492b41653003e13715292b7d76d"
       }
       details {
@@ -47,7 +47,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/has_include.h" }
       info {
-        path: "./kythe/cxx/extractor/testdata/./has_include.h"
+        path: "kythe/cxx/extractor/testdata/has_include.h"
         digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
       }
       details {
@@ -59,7 +59,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/indirect_has_include.h" }
       info {
-        path: "./kythe/cxx/extractor/testdata/indirect_has_include.h"
+        path: "kythe/cxx/extractor/testdata/indirect_has_include.h"
         digest: "e92d9e48bed6844a99ebc827f38300af75762c2c2516b98dc560e680568a677a"
       }
       details {
@@ -81,7 +81,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-I./kythe/cxx/extractor"
     argument: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+    source_file: "kythe/cxx/extractor/testdata/indirect_has_include.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");
