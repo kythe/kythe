@@ -81,7 +81,8 @@ message DirectoryReply {
     // True if the entry is generated.
     bool generated = 4;
 
-    // Whether the FILE entry is missing text.
+    // Whether the FILE entry is missing text or the DIRECTORY entry contains
+    // only entries with missing_text.
     bool missing_text = 5;
   }
   enum Kind {
