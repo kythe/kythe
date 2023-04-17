@@ -659,7 +659,7 @@ void ExtractorPPCallbacks::EndOfMainFile() {
 
 std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
                                                llvm::StringRef path) {
-  if (path == "-" || path == "<stdin>") {
+  if (IsStdinPath(path)) {
     if (main_source_file_stdin_alternate_->empty()) {
       const llvm::MemoryBufferRef buffer =
           source_manager_->getMemoryBufferForFileOrFake(file);
