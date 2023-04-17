@@ -136,11 +136,9 @@ std::string RelativizePath(absl::string_view path) {
   return *std::move(relative);
 }
 
-// Returns a trivially normalized path, removing the leading "./" if any.
+// Returns a normalized path, removing the leading "./" if any.
 std::string NormalizePath(absl::string_view path) {
-  // TODO(b/278254885): Properly normalize these paths against the unit
-  // "virtual" paths.
-  return std::string(absl::StripPrefix(path, "./"));
+  return RelativizePath(path);
 }
 
 class RequiredRoots {

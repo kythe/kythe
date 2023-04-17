@@ -48,7 +48,7 @@ proto::CompilationUnit ExpectedCompilation() {
       v_name { path: "kythe/cxx/extractor/testdata/include/c++/v1/dummy" }
       info {
         # TODO(b/278254885): Properly normalize file paths.
-        path: "kythe/cxx/extractor/testdata/bin/../include/c++/v1/dummy"
+        path: "kythe/cxx/extractor/testdata/include/c++/v1/dummy"
         digest: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
       details {
