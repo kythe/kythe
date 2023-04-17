@@ -1463,6 +1463,40 @@ Ordinals are used::
 #endif
 --------------------------------------------------------------------------------
 
+[[refwrites]]
+ref/writes
+~~~~~~~~~~
+
+Brief description::
+  A *ref/writes* B if A refers to B in an expression that is likely to update
+  the value of B.
+Commonly arises from::
+  assignment, accessor functions
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  This is an experimental definition and is expected to undergo refinement.
+
+[kythe,C++,"Various assignment expressions are writes"]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  int x = 0;
+  //- @x ref/writes VarX
+  x = 1;
+  // Some special forms may be supported.
+  //- @x ref/writes VarX
+  *(&x) = 1;
+  // Not all forms are supported.
+  //- @x ref VarX
+  *(&x + 1) = 1;
+}
+--------------------------------------------------------------------------------
+
 [[satisfies]]
 satisfies
 ~~~~~~~~~
