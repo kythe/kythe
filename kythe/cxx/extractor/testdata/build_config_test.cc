@@ -33,7 +33,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/build_config.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/build_config.cc"
+        path: "kythe/cxx/extractor/testdata/build_config.cc"
         digest: "49e4a60bd04c5ec2070a81f53d7a19db4a3538db6764e5804047c219be5f9309"
       }
       details {
@@ -52,7 +52,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-I./kythe/cxx/extractor"
     argument: "./kythe/cxx/extractor/testdata/build_config.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/build_config.cc"
+    source_file: "kythe/cxx/extractor/testdata/build_config.cc"
     working_directory: "/root"
     entry_context: "hash0"
     details {

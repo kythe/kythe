@@ -32,7 +32,7 @@ CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/arm.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/arm.cc"
+        path: "kythe/cxx/extractor/testdata/arm.cc"
         digest: "122b0dc24be3e4d4360ceffdbc00bdd2d6c4ea0600befbad7fbeac1946a9c677"
       }
       details {
@@ -52,7 +52,7 @@ CompilationUnit ExpectedCompilation() {
     argument: "-Ikythe/cxx/extractor"
     argument: "./kythe/cxx/extractor/testdata/arm.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/arm.cc"
+    source_file: "kythe/cxx/extractor/testdata/arm.cc"
     working_directory: "/root"
     entry_context: "hash0")pb");
 }

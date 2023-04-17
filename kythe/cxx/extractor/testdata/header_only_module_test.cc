@@ -67,7 +67,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-o"
     argument: "header_only_module.pic.pcm"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/header_only_module.cppmap"
+    source_file: "kythe/cxx/extractor/testdata/header_only_module.cppmap"
     working_directory: "/root"
     entry_context: "hash0"
     output_key: "header_only_module.pic.pcm"

@@ -31,7 +31,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/transcript_main.cc" }
       info {
-        path: "./kythe/cxx/extractor/testdata/transcript_main.cc"
+        path: "kythe/cxx/extractor/testdata/transcript_main.cc"
         digest: "a719ebca696362eb639992c5afd3b08ab6c1938bc5639fdfe1fde06fd86bd622"
       }
       details {
@@ -50,7 +50,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/transcript_a.h" }
       info {
-        path: "./kythe/cxx/extractor/testdata/transcript_a.h"
+        path: "kythe/cxx/extractor/testdata/transcript_a.h"
         digest: "15d3490610af31dff6f1be9948ef61e66db48a84fc8fd93a81a5433abab04309"
       }
       details {
@@ -63,7 +63,7 @@ proto::CompilationUnit ExpectedCompilation() {
     required_input {
       v_name { path: "kythe/cxx/extractor/testdata/transcript_b.h" }
       info {
-        path: "./kythe/cxx/extractor/testdata/transcript_b.h"
+        path: "kythe/cxx/extractor/testdata/transcript_b.h"
         digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
       }
       details {
@@ -82,7 +82,7 @@ proto::CompilationUnit ExpectedCompilation() {
     argument: "-I./kythe/cxx/extractor/testdata"
     argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
     argument: "-fsyntax-only"
-    source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
+    source_file: "kythe/cxx/extractor/testdata/transcript_main.cc"
     working_directory: "/root"
     entry_context: "hash0"
   )pb");

@@ -213,7 +213,7 @@ class CxxExtractorTest : public testing::Test {
               supported_language::Language::kCpp,
               std::make_unique<ForwardingCompilationWriterSink>(sink),
               main_source_file, transcript, source_files, header_search_info,
-              had_errors, ".");
+              had_errors);
         });
     clang::tooling::ToolInvocation invocation(
         final_arguments, std::move(extractor), file_manager.get());
