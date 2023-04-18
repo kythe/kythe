@@ -57,7 +57,7 @@ build:java20 --java_runtime_version=remotejdk_20
 build:java20 --tool_java_runtime_version=remotejdk_20
 
 # TODO(https://github.com/bazelbuild/bazel/issues/14502): remove this when
-# Bazel 6.2 is released and out .bazelminversion updated.
+# Bazel 6.2 is released and our .bazelminversion updated.
 test:java19 --jvmopt=-Djava.security.manager=allow
 test:java20 --jvmopt=-Djava.security.manager=allow
 
