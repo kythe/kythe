@@ -100,6 +100,7 @@ java_library(
     target_compatible_with = select({
         "//buildenv/java:language_version_17": [],
         "//buildenv/java:language_version_19": [],
+        "//buildenv/java:language_version_20": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
