@@ -1,5 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+load("//tools:build_rules/selects.bzl", select_with_or = "with_or")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -40,10 +41,13 @@ java_library(
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
-    ] + select({
+    ] + select_with_or({
         "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
-        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
-        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
+        (
+            "//buildenv/java:language_version_17",
+            "//buildenv/java:language_version_19",
+            "//buildenv/java:language_version_20",
+        ): [":jdk15_compatibility_shims"],
     }),
     deps = [
         ":jdk_compatibility_shims",
@@ -74,8 +78,8 @@ java_library(
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
-    target_compatible_with = select({
-        "//buildenv/java:language_version_11": [],
+    target_compatible_with = select_with_or({
+        ("//buildenv/java:language_version_11",): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
@@ -96,9 +100,12 @@ java_library(
     # This is incompatible with the default test configuration and
     # bazel cquery doesn't work with objc_library targets.
     tags = ["manual"],
-    target_compatible_with = select({
-        "//buildenv/java:language_version_17": [],
-        "//buildenv/java:language_version_19": [],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_17",
+            "//buildenv/java:language_version_19",
+            "//buildenv/java:language_version_20",
+        ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],

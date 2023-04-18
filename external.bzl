@@ -21,6 +21,7 @@ load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
 load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
+load("@io_kythe//:setup.bzl", "remote_jdk20_repos")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
@@ -41,6 +42,7 @@ def _rule_dependencies():
     # https://github.com/bazelbuild/rules_java/issues/95
     # Work around this by registering only the JDK toolchain we actually support.
     remote_jdk19_repos()
+    remote_jdk20_repos()
     native.register_toolchains("@local_jdk//:runtime_toolchain_definition")
     for version in ("11", "17", "19"):
         for platform in ("linux", "macos", "win"):

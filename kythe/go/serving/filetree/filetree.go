@@ -78,6 +78,9 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 	}
 	entries := make([]*ftpb.DirectoryReply_Entry, 0, len(d.Entry))
 	for _, e := range d.Entry {
+		if !req.GetIncludeFilesMissingText() && e.GetMissingText() {
+			continue
+		}
 		re := &ftpb.DirectoryReply_Entry{
 			Name:        e.Name,
 			BuildConfig: e.BuildConfig,
@@ -87,9 +90,6 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 		switch e.Kind {
 		case srvpb.FileDirectory_FILE:
 			re.Kind = ftpb.DirectoryReply_FILE
-			if !req.GetIncludeFilesMissingText() && e.GetMissingText() {
-				continue
-			}
 		case srvpb.FileDirectory_DIRECTORY:
 			re.Kind = ftpb.DirectoryReply_DIRECTORY
 		default:

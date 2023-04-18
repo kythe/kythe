@@ -13,6 +13,14 @@ default_java_toolchain(
     target_version = "19",
 )
 
+default_java_toolchain(
+    name = "toolchain_jdk_20",
+    configuration = dict(),
+    java_runtime = "@remotejdk20_linux//:jdk",
+    source_version = "20",
+    target_version = "20",
+)
+
 config_setting(
     name = "runtime_version_default",
     values = {
@@ -57,6 +65,10 @@ config_setting(
             "remotejdk_19",
             "19",
         ],
+        "20": [
+            "remotejdk_20",
+            "20",
+        ],
     }.items()
 ]
 
@@ -76,5 +88,6 @@ config_setting(
         "11",
         "17",
         "19",
+        "20",
     )
 ]

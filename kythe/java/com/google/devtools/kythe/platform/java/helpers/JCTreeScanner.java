@@ -321,7 +321,7 @@ public class JCTreeScanner<R, P> extends SimpleTreeVisitor<R, P> {
   }
 
   public R visitForeachLoop(JCEnhancedForLoop tree, P p) {
-    R r = scan(tree.var, p);
+    R r = scan(shims.getForLoopVar(tree), p);
     r = scanAndReduce(tree.expr, p, r);
     return scanAndReduce(tree.body, p, r);
   }

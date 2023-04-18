@@ -1880,7 +1880,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
     } else if (e instanceof JCFieldAccess) {
       JCFieldAccess fieldAccess = (JCFieldAccess) e;
-      if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
+      if (((fieldAccess.sym == null && sym == null)
+              || (fieldAccess.sym != null && fieldAccess.sym.equals(sym)))
+          && fieldAccess.pos == position) {
         return true;
       }
     }
