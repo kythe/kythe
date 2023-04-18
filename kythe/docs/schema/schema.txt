@@ -1489,8 +1489,9 @@ void f() {
   //- @x ref/writes VarX
   x = 1;
   // Some special forms may be supported.
-  //- @x ref/writes VarX
-  *(&x) = 1;
+  //- @#0x ref/writes VarX
+  //- @#1x ref VarX
+  *(&x) = x;
   // Not all forms are supported.
   //- @x ref VarX
   *(&x + 1) = 1;
