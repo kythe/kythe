@@ -25,6 +25,7 @@ java_library(
         "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
         "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
         "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
+        "//buildenv/java:language_version_20": [":jdk20_compatibility_shims"],
     }),
     deps = [
         ":jdk_compatibility_shims",
@@ -80,6 +81,27 @@ java_library(
     target_compatible_with = select({
         "//buildenv/java:language_version_17": [],
         "//buildenv/java:language_version_19": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
+)
+
+java_library(
+    name = "jdk20_compatibility_shims",
+    srcs = ["Jdk20CompatibilityShims.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+    ],
+    # This is incompatible with the default test configuration and
+    # bazel cquery doesn't work with objc_library targets.
+    tags = ["manual"],
+    target_compatible_with = select({
+        "//buildenv/java:language_version_20": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],

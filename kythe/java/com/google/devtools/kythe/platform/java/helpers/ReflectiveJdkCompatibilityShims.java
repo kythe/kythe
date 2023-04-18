@@ -18,7 +18,9 @@ package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -57,6 +59,19 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
         | IllegalAccessException
         | NoSuchMethodException
         | ClassCastException ex) {
+      throw new LinkageError(ex.getMessage(), ex);
+    }
+  }
+
+  @Override
+  public JCTree getForLoopVar(JCEnhancedForLoop tree) {
+    try {
+      try {
+        return (JCTree) tree.getClass().getField("varOrRecordPattern").get(tree);
+      } catch (NoSuchFieldException e) {
+        return (JCTree) tree.getClass().getField("var").get(tree);
+      }
+    } catch (IllegalAccessException | NoSuchFieldException | ClassCastException ex) {
       throw new LinkageError(ex.getMessage(), ex);
     }
   }

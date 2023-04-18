@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -184,4 +185,69 @@ def kythe_rule_repositories():
             "https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
+    )
+
+def remote_jdk20_repos():
+    """Imports OpenJDK 20 repositories."""
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_linux",
+        target_compatible_with = [
+            "@platforms//os:linux",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "0386418db7f23ae677d05045d30224094fc13423593ce9cd087d455069893bac",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-linux_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-linux_x64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-linux_x64.tar.gz",
+        ],
+        version = "20",
+    )
+
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_macos",
+        target_compatible_with = [
+            "@platforms//os:macos",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "fde6cc17a194ea0d9b0c6c0cb6178199d8edfc282d649eec2c86a9796e843f86",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-macosx_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_x64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_x64.tar.gz",
+        ],
+        version = "20",
+    )
+
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_macos_aarch64",
+        target_compatible_with = [
+            "@platforms//os:macos",
+            "@platforms//cpu:aarch64",
+        ],
+        sha256 = "a2eff6a940c2df3a2352278027e83f5959f34dcfc8663034fe92be0f1b91ce6f",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-macosx_aarch64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_aarch64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_aarch64.tar.gz",
+        ],
+        version = "20",
+    )
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_win",
+        target_compatible_with = [
+            "@platforms//os:windows",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "ac5f6a7d84dbbb0bb4d376feb331cc4c49a9920562f2a5e85b7a6b4863b10e1e",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-win_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-win_x64.zip",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-win_x64.zip",
+        ],
+        version = "20",
     )

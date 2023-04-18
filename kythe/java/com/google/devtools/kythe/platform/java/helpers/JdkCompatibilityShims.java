@@ -17,7 +17,9 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.devtools.kythe.util.OrderedCompatibilityService;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import java.util.List;
 import java.util.Optional;
@@ -31,4 +33,7 @@ public interface JdkCompatibilityShims extends OrderedCompatibilityService {
 
   /** Return the list of expressions from a JCCase object */
   List<JCExpression> getCaseExpressions(JCCase tree);
+
+  /** Return var in a for loop */
+  JCTree getForLoopVar(JCEnhancedForLoop tree);
 }
