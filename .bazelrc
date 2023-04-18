@@ -36,6 +36,31 @@ build --tool_java_language_version=11
 build --java_runtime_version=remotejdk_11
 build --tool_java_runtime_version=remotejdk_11
 
+build:java11 --java_language_version=11
+build:java11 --tool_java_language_version=11
+build:java11 --java_runtime_version=remotejdk_11
+build:java11 --tool_java_runtime_version=remotejdk_11
+
+build:java17 --java_language_version=17
+build:java17 --tool_java_language_version=17
+build:java17 --java_runtime_version=remotejdk_17
+build:java17 --tool_java_runtime_version=remotejdk_17
+
+build:java19 --java_language_version=19
+build:java19 --tool_java_language_version=19
+build:java19 --java_runtime_version=remotejdk_19
+build:java19 --tool_java_runtime_version=remotejdk_19
+
+build:java20 --java_language_version=20
+build:java20 --tool_java_language_version=20
+build:java20 --java_runtime_version=remotejdk_20
+build:java20 --tool_java_runtime_version=remotejdk_20
+
+# TODO(https://github.com/bazelbuild/bazel/issues/14502): remove this when
+# Bazel 6.2 is released and out .bazelminversion updated.
+test:java19 --jvmopt=-Djava.security.manager=allow
+test:java20 --jvmopt=-Djava.security.manager=allow
+
 # Import default javacopts
 import %workspace%/tools/javacopts.bazelrc
 
