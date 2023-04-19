@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include <memory>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -91,8 +92,8 @@ bool IsSpecialBufferName(llvm::StringRef id) {
          id == "<built-in>" || id == "<command line>";
 }
 
-bool IsStdinPath(absl::string_view path) {
-  return path == "-" || path == "<stdin>" || absl::StartsWith(path, "<stdin:");
+bool IsStdinPath(llvm::StringRef path) {
+  return path == "-" || path == "<stdin>" || path.starts_with("<stdin:");
 }
 
 absl::string_view GetPathForProto(
@@ -116,8 +117,8 @@ absl::string_view GetPathForProto(
 }
 
 // Returns a normalized, lexically-cleaned path.
-std::string RelativizePath(absl::string_view path) {
-  if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
+std::string RelativizePath(llvm::StringRef path) {
+  if (path.starts_with(kBuiltinResourceDirectory)) {
     return std::string(path);
   }
   if (IsStdinPath(path)) {
@@ -128,7 +129,8 @@ std::string RelativizePath(absl::string_view path) {
     LOG(WARNING) << "Unable to create PathCleaner:" << cleaner.status();
     return std::string(path);
   }
-  absl::StatusOr<std::string> relative = cleaner->Relativize(path);
+  absl::StatusOr<std::string> relative =
+      cleaner->Relativize({path.data(), path.size()});
   if (!relative.ok()) {
     LOG(WARNING) << "Unable to relativize path:" << relative.status();
     return std::string(path);
@@ -137,9 +139,7 @@ std::string RelativizePath(absl::string_view path) {
 }
 
 // Returns a normalized path, removing the leading "./" if any.
-std::string NormalizePath(absl::string_view path) {
-  return RelativizePath(path);
-}
+std::string NormalizePath(llvm::StringRef path) { return RelativizePath(path); }
 
 class RequiredRoots {
  public:
