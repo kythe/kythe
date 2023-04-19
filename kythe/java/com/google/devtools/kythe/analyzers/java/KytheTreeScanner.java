@@ -483,7 +483,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTree member : classDef.getMembers()) {
       if (member instanceof JCMethodDecl) {
         JCMethodDecl method = (JCMethodDecl) member;
-        if (method.sym.isConstructor()) {
+        if (method.sym != null && method.sym.isConstructor()) {
           // Already handled above.
           continue;
         }
