@@ -27,17 +27,13 @@ import java.util.List;
 @AutoService(JdkCompatibilityShims.class)
 public final class Jdk15CompatibilityShims implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("15");
+  private static final Runtime.Version maxVersion = Runtime.Version.parse("20");
 
   public Jdk15CompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0) {
-      // We don't know when this class will cease being compatible.
-      return CompatibilityClass.COMPATIBLE;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibileRange() {
+    return new CompatibilityRange(minVersion, maxVersion);
   }
 
   /** Return the list of expressions from a JCCase object */

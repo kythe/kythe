@@ -32,13 +32,8 @@ public final class Jdk15CompatibilityShims implements JdkCompatibilityShims {
   public Jdk15CompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0) {
-      // We don't know when this class will cease being compatible.
-      return CompatibilityClass.COMPATIBLE;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibileRange() {
+    return new CompatibilityRange(minVersion);
   }
 
   @Override

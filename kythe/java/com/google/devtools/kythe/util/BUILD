@@ -83,6 +83,9 @@ java_library(
 java_library(
     name = "ordered_compatibility_service",
     srcs = ["OrderedCompatibilityService.java"],
+    deps = [
+        "//third_party/guava",
+    ],
 )
 
 # Sources used to test Java extraction in //kythe/release:release_test.

@@ -32,13 +32,8 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
   public Jdk9CompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0
-        && version.compareToIgnoreOptional(maxVersion) < 0) {
-      return CompatibilityClass.COMPATIBLE;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibileRange() {
+    return new CompatibilityRange(minVersion, maxVersion);
   }
 
   /** Return the list of expressions from a JCCase object */

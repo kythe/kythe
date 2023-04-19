@@ -31,13 +31,8 @@ public final class Jdk20CompatibilityShims implements JdkCompatibilityShims {
   public Jdk20CompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0) {
-      // We don't know when this class will cease being compatible.
-      return CompatibilityClass.COMPATIBLE;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibileRange() {
+    return new CompatibilityRange(minVersion);
   }
 
   /** Return the list of expressions from a JCCase object */
