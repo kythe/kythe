@@ -8,9 +8,9 @@ index 6a61b99f9..5cce43bb1 100644
 
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
  load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
+ load("//:workspace_root.bzl", "workspace_root")
  load("//llvm:tblgen.bzl", "gentbl")
- load("//llvm:binary_alias.bzl", "binary_alias")
-@@ -17,7 +18,7 @@
+@@ -18,7 +19,7 @@
 
  package(
      default_visibility = ["//visibility:public"],
