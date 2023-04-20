@@ -16,9 +16,9 @@ load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repositor
 load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
-load("@llvm-project-raw//utils/bazel:configure.bzl", "llvm_configure")
-load("@llvm-project-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
-load("@llvm-project-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
+load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
+load("@llvm-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
+load("@llvm-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
 load("@io_kythe//:setup.bzl", "remote_jdk20_repos")
@@ -86,6 +86,17 @@ def _proto_dependencies():
     )
 
 def _cc_dependencies():
+    maybe(
+        http_archive,
+        name = "llvm_zstd",
+        build_file = "@llvm-raw//utils/bazel/third_party_build:zstd.BUILD",
+        sha256 = "7c42d56fac126929a6a85dbc73ff1db2411d04f104fae9bdea51305663a83fd0",
+        strip_prefix = "zstd-1.5.2",
+        urls = [
+            "https://github.com/facebook/zstd/releases/download/v1.5.2/zstd-1.5.2.tar.gz",
+        ],
+    )
+
     maybe(
         llvm_terminfo_disable,
         name = "llvm_terminfo",

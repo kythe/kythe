@@ -2214,7 +2214,7 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
     const clang::DesignatedInitExpr* DIE) {
   for (const auto& D : DIE->designators()) {
     if (!D.isFieldDesignator()) continue;
-    if (const auto* F = D.getField()) {
+    if (const auto* F = D.getFieldDecl()) {
       if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false)) {
         return false;
       }
