@@ -24,6 +24,7 @@ import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Optional;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
@@ -33,15 +34,8 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   public ReflectiveJdkCompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0) {
-      // We don't know when this class will cease being compatible,
-      // but should not be the first choice if there is a better implementation
-      // available.
-      return CompatibilityClass.FALLBACK;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibileRange() {
+    return new CompatibilityRange(minVersion, Optional.empty(), CompatibilityLevel.FALLBACK);
   }
 
   /** Return the list of expressions from a JCCase object */
