@@ -1270,8 +1270,7 @@ class Visitor {
       const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
       return {sym, vname};
     } else {
-      // TODO: choose VName for anonymous functions and return symbol
-      return {vname: this.newVName('TODO', 'TODOPath')};
+      return {vname: this.host.scopedSignature(node)};
     }
   }
 
@@ -2156,6 +2155,7 @@ class Visitor {
       }
 
       this.visitJSDoc(decl, vname, false);
+      this.emitMarkedSourceForFunction(decl, vname);
     }
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
 
@@ -2197,7 +2197,6 @@ class Visitor {
     } else {
       this.emitFact(vname, FactName.COMPLETE, 'incomplete');
     }
-    this.emitMarkedSourceForFunction(decl, vname);
   }
 
   /**
@@ -2666,6 +2665,7 @@ class Visitor {
       case ts.SyntaxKind.ArrowFunction:
       case ts.SyntaxKind.Constructor:
       case ts.SyntaxKind.FunctionDeclaration:
+      case ts.SyntaxKind.FunctionExpression:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:
       case ts.SyntaxKind.GetAccessor:
