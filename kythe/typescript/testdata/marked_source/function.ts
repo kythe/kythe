@@ -54,3 +54,4 @@
 function myFunction(arg: string = '0'): number {
     return 0;
 }
+
