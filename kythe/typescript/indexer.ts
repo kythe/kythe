@@ -2155,7 +2155,6 @@ class Visitor {
       }
 
       this.visitJSDoc(decl, vname, false);
-      this.emitMarkedSourceForFunction(decl, vname);
     }
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
 
@@ -2197,6 +2196,7 @@ class Visitor {
     } else {
       this.emitFact(vname, FactName.COMPLETE, 'incomplete');
     }
+    this.emitMarkedSourceForFunction(decl, vname);
   }
 
   /**

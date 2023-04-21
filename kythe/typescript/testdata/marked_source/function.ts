@@ -55,16 +55,3 @@ function myFunction(arg: string = '0'): number {
     return 0;
 }
 
-function takeAnything(a: any) {}
-
-takeAnything(
-    //- @"() => {}" defines ArrowFunction
-    //- !{ArrowFunction code _}
-    () => {}
-);
-
-takeAnything(
-    //- @"function() {}" defines FunctionExpression
-    //- !{FunctionExpression code _}
-    function() {}
-);
