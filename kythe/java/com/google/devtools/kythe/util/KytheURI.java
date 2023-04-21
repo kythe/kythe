@@ -118,6 +118,15 @@ public class KytheURI implements Serializable {
     return vName;
   }
 
+  /** Returns the {@link CorpusPath} components of the uri. */
+  public CorpusPath toCorpusPath() {
+    return CorpusPath.newBuilder()
+        .setCorpus(vName.getCorpus())
+        .setRoot(vName.getRoot())
+        .setPath(vName.getPath())
+        .build();
+  }
+
   @Override
   public String toString() {
     StringBuilder b =

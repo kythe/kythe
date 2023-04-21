@@ -170,6 +170,18 @@ public class KytheURITest extends TestCase {
     assertThat(vname.getLanguage()).isEqualTo(lang);
   }
 
+  public void testToCorpusPath() throws URISyntaxException {
+    String signature = "magic school truck";
+    String corpus = "crazyTown";
+    String path = "usa/2.0";
+    String root = null;
+    String lang = "c++";
+    CorpusPath cp = new KytheURI(signature, corpus, root, path, lang).toCorpusPath();
+    assertThat(cp.getCorpus()).isEqualTo(corpus);
+    assertThat(cp.getRoot()).isEmpty(); // Proto fields are never null
+    assertThat(cp.getPath()).isEqualTo(path);
+  }
+
   public void testParseErrors() {
     String[] tests =
         new String[] {
