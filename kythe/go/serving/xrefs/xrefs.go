@@ -720,7 +720,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		max: int(req.PageSize),
 
 		refOptions: refOptions{
-			anchorText: req.AnchorText,
+			anchorText:    req.AnchorText,
+			includeScopes: req.SemanticScopes,
 		},
 	}
 	if stats.max < 0 {
@@ -1268,8 +1269,9 @@ func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
 }
 
 type refOptions struct {
-	patcherFunc patcherFunc
-	anchorText  bool
+	patcherFunc   patcherFunc
+	anchorText    bool
+	includeScopes bool
 }
 
 type refStats struct {
@@ -1379,35 +1381,79 @@ func (s *refStats) addRelatedNodes(crs *xpb.CrossReferencesReply_CrossReferenceS
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group) bool {
-	kind := edges.Canonical(grp.Kind)
-	as := grp.Anchor
-	for _, refs := range grp.GetScopedReference() {
-		// TODO(schroederc): make scopes available in API
-		as = append(as, refs.GetReference()...)
-	}
-	fileInfos := makeFileInfoMap(grp.FileInfo)
-
 	if s.total == s.max {
 		return true
-	} else if s.skip > len(as) {
-		s.skip -= len(as)
-		return false
-	} else if s.skip > 0 {
-		as = as[s.skip:]
-		s.skip = 0
 	}
 
-	if s.total+len(as) > s.max {
-		as = as[:(s.max - s.total)]
+	scopedRefs := grp.GetScopedReference()[:len(grp.GetScopedReference()):len(grp.GetScopedReference())]
+	// Convert legacy unscoped references to simple ScopedReference containers
+	for _, a := range grp.Anchor {
+		scopedRefs = append(scopedRefs, &srvpb.PagedCrossReferences_ScopedReference{
+			Reference: []*srvpb.ExpandedAnchor{a},
+		})
 	}
-	s.total += len(as)
+	totalRefs := countRefs(scopedRefs)
+
+	if s.skip > totalRefs {
+		s.skip -= totalRefs
+		return false
+	}
+
+	if s.skip > 0 {
+		firstNonEmpty := len(scopedRefs)
+		for i := 0; i < len(scopedRefs) && s.skip > 0; i++ {
+			sr := scopedRefs[i]
+			if len(sr.GetReference()) > s.skip {
+				s.skip -= len(sr.GetReference())
+				continue
+			}
+			sr.Reference = sr.GetReference()[:s.skip]
+			s.skip = 0
+			firstNonEmpty = i
+		}
+		scopedRefs = scopedRefs[firstNonEmpty:]
+	}
+
+	kind := edges.Canonical(grp.Kind)
+	fileInfos := makeFileInfoMap(grp.FileInfo)
 	c := &anchorConverter{fileInfos: fileInfos, anchorText: s.anchorText, patcherFunc: s.patcherFunc}
-	for _, a := range as {
-		ra := c.Convert(a)
-		ra.Anchor.Kind = kind
+	for _, sr := range scopedRefs {
+		if !s.includeScopes || sr.Scope == nil {
+			for _, a := range sr.Reference {
+				ra := c.Convert(a)
+				ra.Anchor.Kind = kind
+				*to = append(*to, ra)
+				s.total++
+				if s.total >= s.max {
+					return true
+				}
+			}
+			continue
+		}
+		scope := c.Convert(sr.Scope).Anchor
+		scope.Kind = sr.Scope.Kind
+		ra := &xpb.CrossReferencesReply_RelatedAnchor{
+			Anchor: scope,
+			Ticket: sr.SemanticScope,
+			Site:   make([]*xpb.Anchor, 0, len(sr.Reference)),
+		}
+		ra.MarkedSource = sr.MarkedSource
+		refs := sr.GetReference()
+		if s.total+len(refs) > s.max {
+			refs = refs[:(s.max - s.total)]
+		}
+		for _, site := range refs {
+			a := c.Convert(site).Anchor
+			a.Kind = kind
+			ra.Site = append(ra.Site, a)
+		}
 		*to = append(*to, ra)
+		s.total += len(ra.Site)
+		if s.total >= s.max {
+			return true
+		}
 	}
-	return s.total == s.max
+	return false
 }
 
 type patcherFunc func(f *srvpb.FileInfo)

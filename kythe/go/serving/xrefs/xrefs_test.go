@@ -360,6 +360,42 @@ var (
 				BuildConfig: "testConfig",
 				Kind:        "%/kythe/edge/defines/binding",
 				ScopedReference: []*srvpb.PagedCrossReferences_ScopedReference{{
+					SemanticScope: "kythe://someCorpus?lang=otpl#scope",
+					Scope: &srvpb.ExpandedAnchor{
+						Ticket:             "kythe://c?lang=otpl?path=/a/path#scope",
+						BuildConfiguration: "testConfig",
+						Kind:               "/kythe/edge/defines/binding",
+
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   27,
+								LineNumber:   2,
+								ColumnOffset: 10,
+							},
+							End: &cpb.Point{
+								ByteOffset:   33,
+								LineNumber:   3,
+								ColumnOffset: 5,
+							},
+						},
+
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset: 17,
+								LineNumber: 2,
+							},
+							End: &cpb.Point{
+								ByteOffset:   27,
+								LineNumber:   2,
+								ColumnOffset: 10,
+							},
+						},
+						Snippet: "here and  ",
+					},
+					MarkedSource: &cpb.MarkedSource{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
+						PreText: "Scope",
+					},
 					Reference: []*srvpb.ExpandedAnchor{{
 						Ticket:             "kythe://c?lang=otpl?path=/a/path#27-33",
 						BuildConfiguration: "testConfig",
@@ -1286,6 +1322,169 @@ func TestCrossReferences(t *testing.T) {
 			},
 			Snippet: "here and  ",
 		}}},
+	}
+
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Definitions: 1,
+		References:  2,
+	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+		t.Error(err)
+	}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
+	}
+	sort.Sort(byOffset(xr.Reference))
+
+	if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrossReferencesScoped(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
+		SemanticScopes: true,
+	})
+	testutil.Fatalf(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+			Ticket: "kythe:?path=some/utf16/file#0-4",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe:?path=some/utf16/file",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   1,
+					ColumnOffset: 28,
+				},
+			},
+			Snippet: "これはいくつかのテキストです",
+		}}, {Anchor: &xpb.Anchor{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://c?path=/a/path",
+
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   51,
+					LineNumber:   4,
+					ColumnOffset: 15,
+				},
+				End: &cpb.Point{
+					ByteOffset:   55,
+					LineNumber:   5,
+					ColumnOffset: 2,
+				},
+			},
+
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 36,
+					LineNumber: 4,
+				},
+				End: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   4,
+					ColumnOffset: 16,
+				},
+			},
+			Snippet: "some random text",
+		}}},
+
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{
+			Ticket: "kythe://someCorpus?lang=otpl#scope",
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "Scope",
+			},
+			Anchor: &xpb.Anchor{
+				Ticket:      "kythe://c?lang=otpl?path=/a/path#scope",
+				Kind:        "/kythe/edge/defines/binding",
+				Parent:      "kythe://c?path=/a/path",
+				BuildConfig: "testConfig",
+
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   27,
+						LineNumber:   2,
+						ColumnOffset: 10,
+					},
+					End: &cpb.Point{
+						ByteOffset:   33,
+						LineNumber:   3,
+						ColumnOffset: 5,
+					},
+				},
+
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset: 17,
+						LineNumber: 2,
+					},
+					End: &cpb.Point{
+						ByteOffset:   27,
+						LineNumber:   2,
+						ColumnOffset: 10,
+					},
+				},
+				Snippet: "here and  ",
+			},
+			Site: []*xpb.Anchor{{
+				Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+				Kind:        "/kythe/edge/defines/binding",
+				Parent:      "kythe://c?path=/a/path",
+				BuildConfig: "testConfig",
+
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   27,
+						LineNumber:   2,
+						ColumnOffset: 10,
+					},
+					End: &cpb.Point{
+						ByteOffset:   33,
+						LineNumber:   3,
+						ColumnOffset: 5,
+					},
+				},
+
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset: 17,
+						LineNumber: 2,
+					},
+					End: &cpb.Point{
+						ByteOffset:   27,
+						LineNumber:   2,
+						ColumnOffset: 10,
+					},
+				},
+				Snippet: "here and  ",
+			}},
+		}},
 	}
 
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
