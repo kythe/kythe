@@ -90,6 +90,21 @@ class LibrarySupport {
                                const clang::CallExpr* CallExpr,
                                const GraphObserver::Range& Range,
                                GraphObserver::NodeId& CalleeId) {}
+
+  /// \brief Called on any FunctionDecl.
+  /// \param V The active IndexerASTVisitor.
+  /// \param DeclNodeId If `Decl` is under a template, the `NodeId` of the
+  /// surrounding `Abs`; otherwise, the `NodeId` of the `Decl`.
+  /// \param DeclBodyNodeId The function's NodeId (not its surrounding Abs)
+  /// \param FunctionDecl The call expr.
+  /// \param Compl Whether the Decl was complete.
+  /// \param Compls If the Decl is complete, the decls that it completes.
+  virtual void InspectFunctionDecl(IndexerASTVisitor& V,
+                                   GraphObserver::NodeId& DeclNodeId,
+                                   GraphObserver::NodeId& DeclBodyNodeId,
+                                   const clang::FunctionDecl* FunctionDecl,
+                                   GraphObserver::Completeness Compl,
+                                   const std::vector<Completion>& Compls) {}
 };
 
 /// \brief A collection of library support implementations.
