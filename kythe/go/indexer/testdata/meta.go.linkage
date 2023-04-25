@@ -26,6 +26,20 @@
         "language": "glang",
         "path": "gpath"
       }
+    },
+    {
+      "type": "anchor_defines",
+      "begin": 137,
+      "end": 143,
+      "edge": "%/kythe/edge/generates",
+      "semantic": "SET",
+      "vname": {
+        "signature": "foo",
+        "corpus": "gcorp",
+        "root": "groot",
+        "language": "glang",
+        "path": "gpath"
+      }
     }
   ]
 }

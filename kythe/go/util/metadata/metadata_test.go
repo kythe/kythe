@@ -27,7 +27,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	protopb "google.golang.org/protobuf/types/descriptorpb"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -42,12 +42,16 @@ func TestParse(t *testing.T) {
 		// NOP values, multiple rules.
 		{`{"type":"kythe0","meta":[
              {"type":"nop"},
-             {"type":"nop","begin":42,"end":99}
+						 {"type":"nop","begin":42,"end":99},
+						 {"type":"nop","semantic":"SET"}
           ]}`, Rules{
 			{},
 			{
 				Begin: 42,
 				End:   99,
+			},
+			{
+				Semantic: SemanticSet.Enum(),
 			},
 		}},
 
@@ -104,11 +108,12 @@ func TestRoundTrip(t *testing.T) {
 				Language:  "glang",
 				Root:      "groot",
 			},
-			Reverse: true,
-			EdgeIn:  edges.DefinesBinding,
-			EdgeOut: edges.Generates,
-			Begin:   179,
-			End:     182,
+			Reverse:  true,
+			EdgeIn:   edges.DefinesBinding,
+			EdgeOut:  edges.Generates,
+			Begin:    179,
+			End:      182,
+			Semantic: SemanticSet.Enum(),
 		}},
 	}
 	for _, test := range tests {
@@ -137,6 +142,7 @@ func TestGeneratedCodeInfo(t *testing.T) {
 			SourceFile: proto.String("a"),
 			Begin:      proto.Int32(1),
 			End:        proto.Int32(100),
+			Semantic:   SemanticSet.Enum(),
 		}},
 	}
 	want := Rules{{
@@ -145,11 +151,12 @@ func TestGeneratedCodeInfo(t *testing.T) {
 			Language:  "protobuf",
 			Path:      "a",
 		},
-		Reverse: true,
-		EdgeIn:  edges.DefinesBinding,
-		EdgeOut: edges.Generates,
-		Begin:   1,
-		End:     100,
+		Reverse:  true,
+		EdgeIn:   edges.DefinesBinding,
+		EdgeOut:  edges.Generates,
+		Begin:    1,
+		End:      100,
+		Semantic: SemanticSet.Enum(),
 	}}
 	{
 		got := FromGeneratedCodeInfo(in, nil)
