@@ -70,7 +70,7 @@ var tests = []testCase{
 	},
 	{
 		findRequest("com.java.package.Interface", []string{"corpus"}, nil),
-		[]*ipb.FindReply_Match{},
+		nil,
 	},
 }
 
