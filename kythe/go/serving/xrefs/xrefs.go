@@ -1403,7 +1403,7 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 		firstNonEmpty := len(scopedRefs)
 		for i := 0; i < len(scopedRefs) && s.skip > 0; i++ {
 			sr := scopedRefs[i]
-			if len(sr.GetReference()) > s.skip {
+			if len(sr.GetReference()) < s.skip {
 				s.skip -= len(sr.GetReference())
 				continue
 			}
