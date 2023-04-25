@@ -37,7 +37,7 @@ import (
 // DeepEqual determines if expected is deeply equal to got, returning a
 // detailed error if not. It is okay for expected and got to be protobuf
 // message values.
-func DeepEqual(expected, got interface{}, opts ...cmp.Option) error {
+func DeepEqual[T any](expected, got T, opts ...cmp.Option) error {
 	if diff := compare.ProtoDiff(expected, got, opts...); diff != "" {
 		return fmt.Errorf("(-expected; +found)\n%s", diff)
 	}
@@ -79,7 +79,7 @@ func YAMLEqual(expected, got []byte) error {
 // JSONEqual compares two bytes assuming they are json, using encoding/json
 // and DeepEqual.
 func JSONEqual(expected, got []byte) error {
-	var e, g interface{}
+	var e, g any
 	if err := json.Unmarshal(expected, &e); err != nil {
 		return fmt.Errorf("decoding expected json: %v", err)
 	}
@@ -98,18 +98,18 @@ func caller(up int) (file string, line int) {
 }
 
 // Errorf is equivalent to t.Errorf(msg, err, args...) if err != nil.
-func Errorf(t testing.TB, msg string, err error, args ...interface{}) {
+func Errorf(t testing.TB, msg string, err error, args ...any) {
 	if err != nil {
 		t.Helper()
-		t.Errorf(msg, append([]interface{}{err}, args...)...)
+		t.Errorf(msg, append([]any{err}, args...)...)
 	}
 }
 
 // Fatalf is equivalent to t.Fatalf(msg, err, args...) if err != nil.
-func Fatalf(t testing.TB, msg string, err error, args ...interface{}) {
+func Fatalf(t testing.TB, msg string, err error, args ...any) {
 	if err != nil {
 		t.Helper()
-		t.Fatalf(msg, append([]interface{}{err}, args...)...)
+		t.Fatalf(msg, append([]any{err}, args...)...)
 	}
 }
 
