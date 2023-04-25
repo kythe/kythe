@@ -1381,7 +1381,7 @@ func (s *refStats) addRelatedNodes(crs *xpb.CrossReferencesReply_CrossReferenceS
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group) bool {
-	if s.total == s.max {
+	if s.total >= s.max {
 		return true
 	}
 
@@ -1394,22 +1394,22 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 	}
 	totalRefs := countRefs(scopedRefs)
 
-	if s.skip > totalRefs {
+	if s.skip >= totalRefs {
 		s.skip -= totalRefs
 		return false
 	}
 
 	if s.skip > 0 {
-		firstNonEmpty := len(scopedRefs)
+		var firstNonEmpty int
 		for i := 0; i < len(scopedRefs) && s.skip > 0; i++ {
 			sr := scopedRefs[i]
-			if len(sr.GetReference()) < s.skip {
+			if len(sr.GetReference()) <= s.skip {
 				s.skip -= len(sr.GetReference())
+				firstNonEmpty++
 				continue
 			}
-			sr.Reference = sr.GetReference()[:s.skip]
+			sr.Reference = sr.GetReference()[s.skip:]
 			s.skip = 0
-			firstNonEmpty = i
 		}
 		scopedRefs = scopedRefs[firstNonEmpty:]
 	}
