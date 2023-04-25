@@ -3589,6 +3589,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   } else if (const auto* CD = dyn_cast<clang::CXXDestructorDecl>(Decl)) {
     Subkind = GraphObserver::FunctionSubkind::Destructor;
   }
+  std::vector<LibrarySupport::Completion> Completions;
   if (!IsFunctionDefinition && Decl->getBuiltinID() == 0) {
     Observer.recordFunctionNode(InnerNode,
                                 GraphObserver::Completeness::Incomplete,
@@ -3597,6 +3598,11 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                                 Marks.GenerateMarkedSource(OuterNode));
     Observer.recordVisibility(OuterNode, Decl->getAccess());
     AssignUSR(OuterNode, Decl);
+    for (const auto& S : Supports) {
+      S->InspectFunctionDecl(*this, InnerNode, OuterNode, Decl,
+                             GraphObserver::Completeness::Incomplete,
+                             Completions);
+    }
     return true;
   }
   if (NameRangeInContext) {
@@ -3613,6 +3619,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
 
         Observer.recordCompletionRange(NameRangeInContext.value(), TargetDecl,
                                        OuterNode);
+        Completions.push_back(LibrarySupport::Completion{NextDecl, TargetDecl});
 
         if (options_.DataflowEdges) {
           Observer.recordInfluences(OuterNode, TargetDecl);
@@ -3637,6 +3644,11 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   Observer.recordMarkedSource(OuterNode, Marks.GenerateMarkedSource(OuterNode));
   Observer.recordVisibility(OuterNode, Decl->getAccess());
   AssignUSR(OuterNode, Decl);
+  for (const auto& S : Supports) {
+    S->InspectFunctionDecl(*this, InnerNode, OuterNode, Decl,
+                           GraphObserver::Completeness::Definition,
+                           Completions);
+  }
   return true;
 }
 
