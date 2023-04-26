@@ -182,9 +182,9 @@ public class BlockAnonymousSignatureGenerator
       if (classDecl.sym != null) {
         anonymousClassSignature.append(getBlockSignature(classDecl.sym));
       } else {
-        String name = classDecl == null ? "" : classDecl.name.toString();
+        String name = classDecl.name == null ? "" : classDecl.name.toString();
         logger.atWarning().log(
-            "BlockAnonymous class symbol was null: %s#%s", name, blockData.anonymousNumber);
+            "BlockAnonymous class symbol was null: %s#%d", name, blockData.anonymousNumber);
       }
       anonymousClassSignature.append(SignatureGenerator.ANONYMOUS);
       anonymousClassSignature.append("#");
