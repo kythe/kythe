@@ -484,7 +484,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (member instanceof JCMethodDecl) {
         JCMethodDecl method = (JCMethodDecl) member;
         if (method.sym == null) {
-          emitDiagnostic(ctx, "missing method symbol", null, null);
+          String name = method.name == null ? "" : method.name.toString();
+          logger.atWarning().log(
+              "Missing method symbol: %s at %s:%s", name, ctx.getSourcePath(), ctx.getTreeSpan());
+          var unused = emitDiagnostic(ctx, "missing method symbol: " + name, null, null);
         } else if (method.sym.isConstructor()) {
           // Already handled above.
           continue;
@@ -1884,7 +1887,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else if (e instanceof JCFieldAccess) {
       JCFieldAccess fieldAccess = (JCFieldAccess) e;
       if (fieldAccess.sym == null) {
-        emitDiagnostic(ctx, "missing field access symbol", null, null);
+        String name = fieldAccess.name == null ? "" : fieldAccess.name.toString();
+        logger.atWarning().log(
+            "Missing field access symbol: %s at %s:%s",
+            name, ctx.getSourcePath(), ctx.getTreeSpan());
+        var unused = emitDiagnostic(ctx, "missing field access symbol: " + name, null, null);
       } else if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
         return true;
       }
