@@ -35,7 +35,7 @@ var Struct = struct {
 	//- V.subkind field
 	V int
 }{
-	//- @V ref V
+	//- @V ref/writes V
 	V: 25,
 }
 
@@ -64,7 +64,7 @@ var y struct {
 	Y int
 	// TODO(schroederc): investigate joining the duplicate anon types
 }{
-	//- @Y ref Y2
+	//- @Y ref/writes Y2
 	Y: 25,
 }
 

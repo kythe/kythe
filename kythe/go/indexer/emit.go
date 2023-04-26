@@ -234,6 +234,10 @@ func exprRefKind(tgt ast.Expr, stack stackFunc, depth int) refKind {
 		if id, ok := tgt.(*ast.Ident); ok && id == parent.Sel {
 			return exprRefKind(parent, stack, depth+1)
 		}
+	case *ast.KeyValueExpr:
+		if tgt == parent.Key {
+			return writeRef
+		}
 	}
 	return readRef
 }
