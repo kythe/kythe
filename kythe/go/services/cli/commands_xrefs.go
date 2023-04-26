@@ -48,6 +48,7 @@ type xrefsCommand struct {
 	refKind    string
 	callerKind string
 
+	semanticScopes  bool
 	relatedNodes    bool
 	nodeDefinitions bool
 	anchorText      bool
@@ -72,6 +73,7 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
+	flag.BoolVar(&c.semanticScopes, "semantic_scopes", false, "Whether to include semantic scopes")
 	flag.BoolVar(&c.excludeGenerated, "exclude_generated", false, "Whether to exclude anchors with non-empty roots")
 
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
@@ -84,6 +86,7 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		PageSize:  int32(c.pageSize),
 		Snippets:  xpb.SnippetsKind_DEFAULT,
 
+		SemanticScopes:  c.semanticScopes,
 		AnchorText:      c.anchorText,
 		NodeDefinitions: c.nodeDefinitions,
 
@@ -226,37 +229,39 @@ func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 }
 
 func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_RelatedAnchor) error {
-	if len(anchors) > 0 {
-		if _, err := fmt.Fprintf(out, "  %s:\n", kind); err != nil {
+	if len(anchors) == 0 {
+		return nil
+	}
+
+	if _, err := fmt.Fprintf(out, "  %s:\n", kind); err != nil {
+		return err
+	}
+
+	for _, a := range anchors {
+		pURI, err := kytheuri.Parse(a.Anchor.Parent)
+		if err != nil {
 			return err
 		}
-
-		for _, a := range anchors {
-			pURI, err := kytheuri.Parse(a.Anchor.Parent)
-			if err != nil {
+		if _, err := fmt.Fprintf(out, "    %s\t", pURI.Path); err != nil {
+			return err
+		}
+		if a.MarkedSource != nil {
+			if _, err := fmt.Fprintf(out, "%s\t", showSignature(a.MarkedSource)); err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintf(out, "    %s\t", pURI.Path); err != nil {
+		}
+		if _, err := fmt.Fprintf(out, "    [%d:%d-%d:%d %s)\n      %q\n",
+			a.Anchor.Span.Start.LineNumber, a.Anchor.Span.Start.ColumnOffset,
+			a.Anchor.Span.End.LineNumber, a.Anchor.Span.End.ColumnOffset,
+			a.Anchor.GetKind(), string(a.Anchor.Snippet)); err != nil {
+			return err
+		}
+		for _, site := range a.Site {
+			if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
+				site.Span.Start.LineNumber, site.Span.Start.ColumnOffset,
+				site.Span.End.LineNumber, site.Span.End.ColumnOffset,
+				string(site.Snippet)); err != nil {
 				return err
-			}
-			if a.MarkedSource != nil {
-				if _, err := fmt.Fprintf(out, "%s\t", showSignature(a.MarkedSource)); err != nil {
-					return err
-				}
-			}
-			if _, err := fmt.Fprintf(out, "    [%d:%d-%d:%d %s)\n      %q\n",
-				a.Anchor.Span.Start.LineNumber, a.Anchor.Span.Start.ColumnOffset,
-				a.Anchor.Span.End.LineNumber, a.Anchor.Span.End.ColumnOffset,
-				a.Anchor.GetKind(), string(a.Anchor.Snippet)); err != nil {
-				return err
-			}
-			for _, site := range a.Site {
-				if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
-					site.Span.Start.LineNumber, site.Span.Start.ColumnOffset,
-					site.Span.End.LineNumber, site.Span.End.ColumnOffset,
-					string(site.Snippet)); err != nil {
-					return err
-				}
 			}
 		}
 	}
