@@ -1406,7 +1406,7 @@ type S struct {
 var _ = S{17}
 
 // Key-value
-//- @F ref Field
+//- @F ref/writes Field
 //- @"101" ref/init Field
 var _ = S{F: 101}
 --------------------------------------------------------------------------------
