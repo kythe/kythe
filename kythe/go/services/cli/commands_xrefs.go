@@ -257,10 +257,10 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 			return err
 		}
 		for _, site := range a.Site {
-			if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
+			if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d %s)\n        %q\n",
 				site.Span.Start.LineNumber, site.Span.Start.ColumnOffset,
 				site.Span.End.LineNumber, site.Span.End.ColumnOffset,
-				string(site.Snippet)); err != nil {
+				site.GetKind(), string(site.Snippet)); err != nil {
 				return err
 			}
 		}
