@@ -251,16 +251,16 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 			}
 		}
 		if _, err := fmt.Fprintf(out, "    [%d:%d-%d:%d %s)\n      %q\n",
-			a.Anchor.Span.Start.LineNumber, a.Anchor.Span.Start.ColumnOffset,
-			a.Anchor.Span.End.LineNumber, a.Anchor.Span.End.ColumnOffset,
-			a.Anchor.GetKind(), string(a.Anchor.Snippet)); err != nil {
+			a.GetAnchor().GetSpan().GetStart().GetLineNumber(), a.GetAnchor().GetSpan().GetStart().GetColumnOffset(),
+			a.GetAnchor().GetSpan().GetEnd().GetLineNumber(), a.GetAnchor().GetSpan().GetEnd().GetColumnOffset(),
+			a.GetAnchor().GetKind(), string(a.GetAnchor().GetSnippet())); err != nil {
 			return err
 		}
 		for _, site := range a.Site {
-			if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
-				site.Span.Start.LineNumber, site.Span.Start.ColumnOffset,
-				site.Span.End.LineNumber, site.Span.End.ColumnOffset,
-				string(site.Snippet)); err != nil {
+			if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d %s)\n        %q\n",
+				site.GetSpan().GetStart().GetLineNumber(), site.GetSpan().GetStart().GetColumnOffset(),
+				site.GetSpan().GetEnd().GetLineNumber(), site.GetSpan().GetEnd().GetColumnOffset(),
+				site.GetKind(), string(site.GetSnippet())); err != nil {
 				return err
 			}
 		}
