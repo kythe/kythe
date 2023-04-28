@@ -147,8 +147,10 @@ func RenderQualifiedName(ms *cpb.MarkedSource) *cpb.SymbolInfo {
 		}
 		var quals []string
 		for _, kid := range ctx.Child {
-			if kid.Kind == cpb.MarkedSource_IDENTIFIER && kid.PreText != "" {
-				quals = append(quals, kid.PreText)
+			if kid.Kind == cpb.MarkedSource_IDENTIFIER || kid.Kind == cpb.MarkedSource_BOX {
+				if namespace := Render(kid); namespace != "" {
+					quals = append(quals, namespace)
+				}
 			}
 		}
 		if pkg := strings.Join(quals, delim); pkg != "" {
@@ -160,10 +162,13 @@ func RenderQualifiedName(ms *cpb.MarkedSource) *cpb.SymbolInfo {
 }
 
 // firstMatching returns the first node in a breadth-first traversal of the
-// children of ms for which f reports true, or nil.
+// children of ms, or ms itself, for which f reports true, or nil.
 func firstMatching(ms *cpb.MarkedSource, f func(*cpb.MarkedSource) bool) *cpb.MarkedSource {
-	if ms == nil || len(ms.Child) == 0 {
+	if ms == nil {
 		return nil
+	}
+	if f(ms) {
+		return ms
 	}
 	for _, kid := range ms.Child {
 		if f(kid) {

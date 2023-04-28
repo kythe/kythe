@@ -253,6 +253,14 @@ func TestQName(t *testing.T) {
 		// Verify that the default separator is correctly used.
 		{input: `child { kind: CONTEXT child { kind: IDENTIFIER pre_text: "a" } child { kind: IDENTIFIER pre_text: "b" } } child { kind: IDENTIFIER pre_text: "-tail" }`,
 			want: &cpb.SymbolInfo{BaseName: "-tail", QualifiedName: "a.b-tail"}},
+
+		// Verify that template names in context can be correctly rendered.
+		{input: `child { kind: CONTEXT child { kind: IDENTIFIER pre_text: "a" } child { child { kind: IDENTIFIER pre_text: "b" } child: { pre_text: "<" child: { pre_text: "c" } post_text: ">"} } post_child_text: "::" } child { kind: IDENTIFIER pre_text: "d" }`,
+			want: &cpb.SymbolInfo{BaseName: "d", QualifiedName: "a::b<c>::d"}},
+
+		// Verify that a standalone identifier can work.
+		{input: `kind: IDENTIFIER pre_text: "hello"`,
+			want: &cpb.SymbolInfo{BaseName: "hello", QualifiedName: ""}},
 	}
 
 	for _, test := range tests {
