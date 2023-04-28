@@ -13,7 +13,7 @@ type silly struct {
 }
 
 var s = silly{
-	//- @Q ref SField
+	//- @Q ref/writes SField
 	//- Call=@"fmt.Sprint(\"silly\")" ref/init SField
 	//- Call ref/call Sprint=vname("func Sprint","golang.org",_,"fmt","go")
 	//- @Sprint ref Sprint

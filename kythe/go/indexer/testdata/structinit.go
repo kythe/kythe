@@ -21,13 +21,13 @@ func msPacMan() {
 	// Verify that named initializers ref/init their fields, and that the names
 	// ref the fields.
 	a := &Inky{
-		//- @Pinky ref Pinky
+		//- @Pinky ref/writes Pinky
 		//- @"\"pink\"" ref/init Pinky
 		Pinky: "pink",
-		//- @Blinky ref Blinky
+		//- @Blinky ref/writes Blinky
 		//- @"[]byte{255, 0, 0}" ref/init Blinky
 		Blinky: []byte{255, 0, 0},
-		//- @Sue ref Sue
+		//- @Sue ref/writes Sue
 		//- @"0x84077e" ref/init Sue
 		Sue: 0x84077e,
 	}
@@ -70,20 +70,20 @@ func realNames() {
 		//- @"\"blinky\"" ref/init Nick
 		{"shadow", "blinky"},
 
-		//- @name ref Name
+		//- @name ref/writes Name
 		//- @"\"pokey\"" ref/init Name
-		//- @nick ref Nick
+		//- @nick ref/writes Nick
 		//- @"\"clyde\"" ref/init Nick
 		{name: "pokey", nick: "clyde"},
 
 		// Order and missing fields should not cause problems.
-		//- @nick ref Nick
+		//- @nick ref/writes Nick
 		//- @"\"sue\"" ref/init Nick
-		//- @name ref Name
+		//- @name ref/writes Name
 		//- @"\"Susannah\"" ref/init Name
 		{nick: "sue", name: "Susannah"},
 
-		//- @nick ref Nick
+		//- @nick ref/writes Nick
 		//- @"\"kyle\"" ref/init Nick
 		{nick: "kyle"},
 	}

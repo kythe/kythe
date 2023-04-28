@@ -35,6 +35,8 @@ func f() {
 	}
 
 	//- @z defines/binding Z
+	//- @Nested ref/writes Nested
+	//- !{ @Nested ref Nested }
 	z := S{Nested: &S{}}
 	//- @z ref Z
 	//- @F ref/writes F
