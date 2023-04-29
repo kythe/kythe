@@ -17,7 +17,6 @@ export default NspI;
 
 // ClassDeclaration
 //- @C defines/binding VName("C#type", _, _, "testdata/schema", "typescript")
-//- @C defines/binding VName("C", _, _, "testdata/schema", "typescript")
 class C {
   // PropertyDeclaration instance member
   //- @property defines/binding VName("C#type.property", _, _, "testdata/schema", "typescript")
@@ -36,7 +35,7 @@ class C {
   method() {}
 
   // Constructor, ParameterPropertyDeclaration
-  //- @constructor defines/binding VName("C#type.constructor", _, _, "testdata/schema", "typescript")
+  //- @constructor defines/binding VName("C", _, _, "testdata/schema", "typescript")
   //- @cprop defines/binding VName("C#type.cprop", _, _, "testdata/schema", "typescript")
   constructor(private cprop: number) {}
 

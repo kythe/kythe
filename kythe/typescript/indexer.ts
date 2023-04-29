@@ -331,16 +331,6 @@ class SymbolVNameStore {
 }
 
 /**
- * isParameterPropertyDeclaration wraps ts.isParameterPropertyDeclaration and
- * exposes an API that's compatible across TypeScript 3.5 & 3.6.
- */
-function isParameterPropertyDeclaration(
-    node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
-  // TODO: remove/inline once fully on TypeScript 3.6+
-  return (ts.isParameterPropertyDeclaration as any)(node, parent);
-}
-
-/**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
@@ -559,7 +549,11 @@ class StandardIndexerContext implements IndexerHost {
                 // class.
                 if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
                     ts.isClassElement(lastNode) &&
-                    !isStaticMember(lastNode, decl)) {
+                    !isStaticMember(lastNode, decl) &&
+                    // special case constructor. We want it to no have
+                    // #type modifier as constructor will have the same name
+                    // as class.
+                    !ts.isConstructorDeclaration(startNode)) {
                   part += '#type';
                 }
                 // Getters and setters semantically refer to the same entities
@@ -583,7 +577,8 @@ class StandardIndexerContext implements IndexerHost {
         case ts.SyntaxKind.Constructor:
           // Class members declared with a shorthand in the constructor should
           // be scoped to the class, not the constructor.
-          if (!isParameterPropertyDeclaration(startNode, startNode.parent)) {
+          if (!ts.isParameterPropertyDeclaration(startNode, startNode.parent) &&
+              startNode !== node) {
             parts.push('constructor');
           }
           break;
@@ -2230,7 +2225,7 @@ class Visitor {
                   kFunc, makeOrdinalEdge(EdgeKind.PARAM, paramNum), kParam);
               ++paramNum;
 
-              if (isParameterPropertyDeclaration(param, param.parent)) {
+              if (ts.isParameterPropertyDeclaration(param, param.parent)) {
                 // Class members defined in the parameters of a constructor are
                 // children of the class type.
                 const parentName = param.parent.parent.name;
@@ -2350,29 +2345,24 @@ class Visitor {
       kClass = this.host.getSymbolName(sym, TSNamespace.TYPE);
       if (!kClass) return;
       this.emitNode(kClass, NodeKind.RECORD);
-      const kClassCtor = this.host.getSymbolName(sym, TSNamespace.VALUE);
-      if (!kClassCtor) return;
-      this.emitNode(kClassCtor, NodeKind.FUNCTION);
-
       const anchor = this.newAnchor(decl.name);
       this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClass);
-      this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClassCtor);
 
-      // If the class has a constructor, emit an entry for it.
+      // Emit constructor.
+      const kCtor = this.host.getSymbolName(sym, TSNamespace.VALUE);
+      if (!kCtor) return;
+      let ctorAnchor = anchor;
+      // If the class has an explicit constructor method - use it as an anchor.
       const ctorSymbol = this.getCtorSymbol(decl);
       if (ctorSymbol && ctorSymbol.declarations) {
+        console.error('Hey ho!');
         const ctorDecl = ctorSymbol.declarations[0];
         const span = this.getTextSpan(ctorDecl, 'constructor');
-        const classCtorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
-
-        const ctorVName =
-            this.host.getSymbolName(ctorSymbol, TSNamespace.VALUE);
-        if (!ctorVName) return;
-
-        this.emitNode(ctorVName, NodeKind.FUNCTION);
-        this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
-        this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
+        ctorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
       }
+      this.emitNode(kCtor, NodeKind.FUNCTION);
+      this.emitSubkind(kCtor, Subkind.CONSTRUCTOR);
+      this.emitEdge(ctorAnchor, EdgeKind.DEFINES_BINDING, kCtor);
 
       this.visitJSDoc(decl, kClass);
       this.emitMarkedSourceForClasslikeDeclaration(decl, kClass);
@@ -2424,7 +2414,10 @@ class Visitor {
       // An undeclared symbol, e.g. "undefined".
       return;
     }
-    const name = this.host.getSymbolName(sym, TSNamespace.VALUE);
+    const isClass = (sym.flags & ts.SymbolFlags.Class) > 0;
+    const isConstructorCall = ts.isNewExpression(node.parent);
+    const ns = isClass && !isConstructorCall ? TSNamespace.TYPE : TSNamespace.VALUE;
+    const name = this.host.getSymbolName(sym, ns);
     if (!name) return;
     const anchor = this.newAnchor(node);
 
@@ -2439,7 +2432,7 @@ class Visitor {
     // ref. When user check refs for a class - they usually check get
     // refs of the class node, not the constructor node. That's why
     // we need ref/id from all usages to the class node.
-    if (sym.flags & ts.SymbolFlags.Class) {
+    if (isConstructorCall) {
       const className = this.host.getSymbolName(sym, TSNamespace.TYPE);
       if (className != null) {
         this.emitEdge(anchor, EdgeKind.REF_ID, className);
