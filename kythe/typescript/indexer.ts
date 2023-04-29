@@ -2355,7 +2355,6 @@ class Visitor {
       // If the class has an explicit constructor method - use it as an anchor.
       const ctorSymbol = this.getCtorSymbol(decl);
       if (ctorSymbol && ctorSymbol.declarations) {
-        console.error('Hey ho!');
         const ctorDecl = ctorSymbol.declarations[0];
         const span = this.getTextSpan(ctorDecl, 'constructor');
         ctorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
