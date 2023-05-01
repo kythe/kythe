@@ -1532,6 +1532,18 @@ const KytheClaimToken* KytheGraphObserver::getClaimTokenForLocation(
     return &default_token_;
   }
   auto token = claim_checked_files_.find(file);
+  if (token == claim_checked_files_.end()) {
+    if (SourceManager->isLoadedFileID(file)) {
+      // This is the first time we've encountered a file loaded from a pch/pcm.
+      if (auto* entry = SourceManager->getFileEntryForID(file)) {
+        auto vname = VNameFromFileEntry(entry);
+        KytheClaimToken new_token;
+        new_token.set_vname(VNameFromFileEntry(entry));
+        new_token.set_rough_claimed(false);
+        token = claim_checked_files_.emplace(file, new_token).first;
+      }
+    }
+  }
   return token != claim_checked_files_.end() ? &token->second : &default_token_;
 }
 
