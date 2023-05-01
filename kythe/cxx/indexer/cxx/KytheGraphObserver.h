@@ -143,6 +143,8 @@ struct KytheGraphObserverOptions {
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
 /// discovered during indexing to the provided `KytheGraphRecorder`.
+///
+/// \warning This class should not be used by multiple threads.
 class KytheGraphObserver : public GraphObserver {
  public:
   using Options = KytheGraphObserverOptions;
@@ -497,7 +499,8 @@ class KytheGraphObserver : public GraphObserver {
                                          llvm::raw_ostream& Ostream);
 
   VNameRef VNameRefFromNodeId(const GraphObserver::NodeId& node_id) const;
-  kythe::proto::VName VNameFromFileEntry(const clang::FileEntry* file_entry);
+  kythe::proto::VName VNameFromFileEntry(
+      const clang::FileEntry* file_entry) const;
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID& file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range& range);
   kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range& range,
@@ -610,7 +613,7 @@ class KytheGraphObserver : public GraphObserver {
   /// given include position. There will therefore be many FileIDs that map to
   /// one context + header pair; then, many context + header pairs may
   /// map to a single file's VName.
-  std::map<clang::FileID, KytheClaimToken> claim_checked_files_;
+  mutable std::map<clang::FileID, KytheClaimToken> claim_checked_files_;
   /// Tokens for files (independent of language) that we've claimed.
   std::map<clang::FileID, KytheClaimToken> claimed_file_specific_tokens_;
   /// Maps from claim tokens to claim tokens with path and root dropped.

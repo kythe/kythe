@@ -205,7 +205,7 @@ static const char* FunctionSubkindToString(
 }
 
 kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
-    const clang::FileEntry* file_entry) {
+    const clang::FileEntry* file_entry) const {
   kythe::proto::VName out_name;
   if (!vfs_->get_vname(file_entry, &out_name)) {
     llvm::StringRef working_directory = vfs_->working_directory();
