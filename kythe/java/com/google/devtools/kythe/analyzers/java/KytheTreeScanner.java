@@ -906,7 +906,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "error analyzing method", null, null);
     }
 
-    emitAnchor(ctx, EdgeKind.REF_CALL, method.getVName());
+    emitAnchor(
+        ctx,
+        Optional.ofNullable(method.getSymbol()).map(Symbol::isConstructor).orElse(false)
+            ? EdgeKind.REF_CALL_DIRECT
+            : EdgeKind.REF_CALL,
+        method.getVName());
     return method;
   }
 
@@ -1199,7 +1204,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private @Nullable JavaNode getJavaNode(Symbol sym) {
     if (sym.getKind() == ElementKind.PACKAGE) {
-      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
+      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName())
+          .setSymbol(sym);
     }
 
     VName jvmNode = getJvmNode(sym);
@@ -1207,7 +1213,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode node =
         signatureGenerator
             .getSignature(sym)
-            .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+            .map(
+                sig ->
+                    new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null))
+                        .setSymbol(sym))
             .orElse(null);
     if (node != null && jvmNode != null) {
       entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
@@ -1400,7 +1409,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // This usually indicates a problem with the compilation's bootclasspath.
       return emitDiagnostic(null, "failed to resolve " + sym, null, null);
     }
-    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
+    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null))
+        .setSymbol(sym);
   }
 
   private void emitMetadata(Span span, VName node) {
