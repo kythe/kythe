@@ -1519,7 +1519,7 @@ void KytheGraphObserver::AddContextInformation(
 }
 
 const KytheClaimToken* KytheGraphObserver::getClaimTokenForLocation(
-    clang::SourceLocation source_location) const {
+    clang::SourceLocation source_location) {
   if (!source_location.isValid()) {
     return &default_token_;
   }
@@ -1532,16 +1532,28 @@ const KytheClaimToken* KytheGraphObserver::getClaimTokenForLocation(
     return &default_token_;
   }
   auto token = claim_checked_files_.find(file);
+  if (token == claim_checked_files_.end()) {
+    if (SourceManager->isLoadedFileID(file)) {
+      // This is the first time we've encountered a file loaded from a pch/pcm.
+      if (auto* entry = SourceManager->getFileEntryForID(file)) {
+        auto vname = VNameFromFileEntry(entry);
+        KytheClaimToken new_token;
+        new_token.set_vname(VNameFromFileEntry(entry));
+        new_token.set_rough_claimed(false);
+        token = claim_checked_files_.emplace(file, new_token).first;
+      }
+    }
+  }
   return token != claim_checked_files_.end() ? &token->second : &default_token_;
 }
 
 const KytheClaimToken* KytheGraphObserver::getClaimTokenForRange(
-    const clang::SourceRange& range) const {
+    const clang::SourceRange& range) {
   return getClaimTokenForLocation(range.getBegin());
 }
 
 const KytheClaimToken* KytheGraphObserver::getAnonymousNamespaceClaimToken(
-    clang::SourceLocation loc) const {
+    clang::SourceLocation loc) {
   if (isMainSourceFileRelatedLocation(loc)) {
     CHECK(main_source_file_token_ != nullptr);
     return main_source_file_token_;
@@ -1550,12 +1562,12 @@ const KytheClaimToken* KytheGraphObserver::getAnonymousNamespaceClaimToken(
 }
 
 const KytheClaimToken* KytheGraphObserver::getNamespaceClaimToken(
-    clang::SourceLocation loc) const {
+    clang::SourceLocation loc) {
   return &getNamespaceTokens(loc).named;
 }
 
 const KytheGraphObserver::NamespaceTokens&
-KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
+KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) {
   auto* file_token = getClaimTokenForLocation(loc);
   auto [iter, inserted] =
       namespace_tokens_.emplace(file_token, NamespaceTokens{});
