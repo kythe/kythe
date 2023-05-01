@@ -230,6 +230,7 @@ go_entries = rule(
 def go_verifier_test(
         name,
         entries,
+        srcs = [],
         deps = [],
         size = "small",
         tags = [],
@@ -242,6 +243,8 @@ def go_verifier_test(
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
         opts.append("--ignore_dups")
+    if len(srcs) > 0:
+        opts.append("--nofile_vnames")
 
     # If the test wants marked source, enable support for it in the verifier.
     if has_marked_source:
@@ -252,6 +255,7 @@ def go_verifier_test(
         opts = opts,
         tags = tags,
         resolve_code_facts = resolve_code_facts,
+        srcs = srcs,
         deps = [entries] + deps,
     )
 
@@ -320,6 +324,7 @@ def go_indexer_test(
         use_file_as_top_level_scope = False,
         override_stdlib_corpus = "",
         metadata_suffix = "",
+        extra_goals = [],
         extra_indexer_args = [],
         extra_extractor_args = []):
     entries = _go_indexer(
@@ -339,6 +344,7 @@ def go_indexer_test(
     )
     go_verifier_test(
         name = name,
+        srcs = extra_goals,
         size = size,
         allow_duplicates = allow_duplicates,
         entries = ":" + entries,
