@@ -428,16 +428,16 @@ class KytheGraphObserver : public GraphObserver {
   }
 
   const KytheClaimToken* getClaimTokenForLocation(
-      const clang::SourceLocation source_location) const override;
+      const clang::SourceLocation source_location) override;
 
   const KytheClaimToken* getClaimTokenForRange(
-      const clang::SourceRange& source_range) const override;
+      const clang::SourceRange& source_range) override;
 
   const KytheClaimToken* getNamespaceClaimToken(
-      clang::SourceLocation loc) const override;
+      clang::SourceLocation loc) override;
 
   const KytheClaimToken* getAnonymousNamespaceClaimToken(
-      clang::SourceLocation loc) const override;
+      clang::SourceLocation loc) override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
   void AppendRangeToStream(llvm::raw_ostream& ostream,
@@ -470,7 +470,7 @@ class KytheGraphObserver : public GraphObserver {
     KytheClaimToken anonymous;  ///< Token to use for anonymous namespaces.
   };
 
-  const NamespaceTokens& getNamespaceTokens(clang::SourceLocation loc) const;
+  const NamespaceTokens& getNamespaceTokens(clang::SourceLocation loc);
 
   void AddMarkedSource(const VNameRef& vname,
                        const absl::optional<MarkedSource>& signature) {
