@@ -952,7 +952,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(anchor, EdgeKind.REF, ctorNode, getScope(ctx));
 
     EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
-    emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode, getCallScope(ctx));
+    emitAnchor(callAnchor, EdgeKind.REF_CALL_DIRECT, ctorNode, getCallScope(ctx));
 
     scanList(newClass.getTypeArguments(), ctx);
     scanList(newClass.getArguments(), ctx);
@@ -1292,7 +1292,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           edgeKind,
           node.getVName(),
           ctx.getSnippet(),
-          edgeKind == EdgeKind.REF_CALL ? getCallScope(ctx) : getScope(ctx));
+          edgeKind.isVariant(EdgeKind.REF_CALL) ? getCallScope(ctx) : getScope(ctx));
       statistics.incrementCounter("name-usages-emitted");
     }
     return node;
@@ -1441,7 +1441,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
         kind,
         node,
-        kind == EdgeKind.REF_CALL ? getCallScope(anchorContext) : getScope(anchorContext));
+        kind.isVariant(EdgeKind.REF_CALL) ? getCallScope(anchorContext) : getScope(anchorContext));
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
@@ -1463,7 +1463,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return null;
     }
     entrySets.emitEdge(anchor.getVName(), kind, node);
-    if (kind == EdgeKind.REF_CALL || config.getEmitAnchorScopes()) {
+    if (kind.isVariant(EdgeKind.REF_CALL) || config.getEmitAnchorScopes()) {
       scope.forEach(s -> entrySets.emitEdge(anchor.getVName(), EdgeKind.CHILDOF, s));
     }
     return anchor;

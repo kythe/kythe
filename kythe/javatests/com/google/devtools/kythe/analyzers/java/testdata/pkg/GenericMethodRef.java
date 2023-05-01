@@ -37,12 +37,12 @@ public final class GenericMethodRef {
     //- @Optional ref OptionalConstructor
     //- @Optional ref/id OClass
     //- @GenericMethodRef ref GClass
-    //- @"new Optional<GenericMethodRef>()" ref/call OptionalConstructor
+    //- @"new Optional<GenericMethodRef>()" ref/call/direct OptionalConstructor
     Object o = new Optional<GenericMethodRef>();
 
     //- @Optional ref OptionalConstructor
     //- @Optional ref/id OClass
-    //- @"new Optional<T>()" ref/call OptionalConstructor
+    //- @"new Optional<T>()" ref/call/direct OptionalConstructor
     //- @T ref AbsT
     Object o2 = new Optional<T>();
   }
