@@ -351,14 +351,15 @@ class GraphObserver {
 
   /// \brief Returns a claim token for namespaces declared at `Loc`.
   /// \param Loc The declaration site of the namespace.
-  virtual const ClaimToken* getNamespaceClaimToken(clang::SourceLocation Loc) {
+  virtual const ClaimToken* getNamespaceClaimToken(
+      clang::SourceLocation Loc) const {
     return getDefaultClaimToken();
   }
 
   /// \brief Returns a claim token for anonymous namespaces declared at `Loc`.
   /// \param Loc The declaration site of the anonymous namespace.
   virtual const ClaimToken* getAnonymousNamespaceClaimToken(
-      clang::SourceLocation Loc) {
+      clang::SourceLocation Loc) const {
     return getDefaultClaimToken();
   }
 
@@ -1075,13 +1076,13 @@ class GraphObserver {
   /// map from the FileId inside a SourceLocation to a (file, transcript)
   /// pair.
   virtual const ClaimToken* getClaimTokenForLocation(
-      const clang::SourceLocation L) {
+      const clang::SourceLocation L) const {
     return getDefaultClaimToken();
   }
 
   /// \brief Returns a `ClaimToken` covering a given source range.
   virtual const ClaimToken* getClaimTokenForRange(
-      const clang::SourceRange& SR) {
+      const clang::SourceRange& SR) const {
     return getDefaultClaimToken();
   }
 
