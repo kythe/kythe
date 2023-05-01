@@ -59,7 +59,7 @@ public class Callgraph {
 
   //- CtorCall.loc/start @^"new Callgraph()"
   //- CtorCall.loc/end @$"new Callgraph()"
-  //- CtorCall ref/call ECtor
+  //- CtorCall ref/call/direct ECtor
   //- CtorRef.loc/start @^"Callgraph"
   //- CtorRef.loc/end @$"Callgraph"
   //- CtorRef ref ECtor
@@ -94,9 +94,9 @@ public class Callgraph {
     //- SCtorCall.loc/end @$"new Callgraph(null)"
     cg = new Callgraph(null);
 
-    //- ECtorCall ref/call ECtor
+    //- ECtorCall ref/call/direct ECtor
     //- ECtorCall childof F
-    //- SCtorCall ref/call SCtor
+    //- SCtorCall ref/call/direct SCtor
     //- SCtorCall childof F
   }
 
