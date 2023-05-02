@@ -31,7 +31,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	protopb "google.golang.org/protobuf/types/descriptorpb"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -64,15 +64,26 @@ func (rs Rules) MarshalJSON() ([]byte, error) {
 			}
 		}
 		f.Meta[i] = rule{
-			Type:  rtype,
-			Begin: r.Begin,
-			End:   r.End,
-			VName: v,
-			Edge:  kind,
+			Type:     rtype,
+			Begin:    r.Begin,
+			End:      r.End,
+			VName:    v,
+			Edge:     kind,
+			Semantic: r.Semantic,
 		}
 	}
 	return json.Marshal(f)
 }
+
+// Semantic is a reexport of protopb.GeneratedCodeInfo_Annotation_Semantic
+type Semantic = protopb.GeneratedCodeInfo_Annotation_Semantic
+
+// Reexport of the Semantic enum values
+var (
+	SemanticNone  Semantic = protopb.GeneratedCodeInfo_Annotation_NONE
+	SemanticSet   Semantic = protopb.GeneratedCodeInfo_Annotation_SET
+	SemanticAlias Semantic = protopb.GeneratedCodeInfo_Annotation_ALIAS
+)
 
 // A Rule denotes a single metadata rule, associating type linkage information
 // for an anchor spanning a given range of text.
@@ -85,6 +96,8 @@ type Rule struct {
 	EdgeOut string     // outbound edge kind to emit
 	VName   *spb.VName // the vname to create an edge to or from
 	Reverse bool       // whether to draw to vname (false) or from it (true)
+
+	Semantic *Semantic // whether to apply special semantics.
 }
 
 // The types below are intermediate structures used for JSON marshaling.
@@ -104,6 +117,8 @@ type rule struct {
 	End   int             `json:"end"`
 	Edge  string          `json:"edge,omitempty"`
 	VName json.RawMessage `json:"vname,omitempty"`
+
+	Semantic *Semantic `json:"semantic,omitempty"`
 }
 
 // Parse parses a single JSON metadata object from r and returns the
@@ -132,11 +147,12 @@ func Parse(r io.Reader) (Rules, error) {
 			v = &msg
 		}
 		rs[i] = Rule{
-			Begin:   meta.Begin,
-			End:     meta.End,
-			EdgeOut: edges.Canonical(meta.Edge),
-			Reverse: edges.IsReverse(meta.Edge),
-			VName:   v,
+			Begin:    meta.Begin,
+			End:      meta.End,
+			EdgeOut:  edges.Canonical(meta.Edge),
+			Reverse:  edges.IsReverse(meta.Edge),
+			VName:    v,
+			Semantic: meta.Semantic,
 		}
 		switch t := meta.Type; t {
 		case "nop":
@@ -182,12 +198,13 @@ func FromGeneratedCodeInfo(msg *protopb.GeneratedCodeInfo, vname *spb.VName) Rul
 			Signature: strings.Join(sig, "."),
 		}
 		rs[i] = Rule{
-			EdgeIn:  edges.DefinesBinding,
-			EdgeOut: edges.Generates,
-			Reverse: true,
-			Begin:   int(anno.GetBegin()),
-			End:     int(anno.GetEnd()),
-			VName:   vname,
+			EdgeIn:   edges.DefinesBinding,
+			EdgeOut:  edges.Generates,
+			Reverse:  true,
+			Begin:    int(anno.GetBegin()),
+			End:      int(anno.GetEnd()),
+			VName:    vname,
+			Semantic: anno.Semantic,
 		}
 	}
 	return rs

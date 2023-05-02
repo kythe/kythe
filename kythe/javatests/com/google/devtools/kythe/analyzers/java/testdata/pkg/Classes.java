@@ -20,12 +20,22 @@ public class Classes {
 
   //- @Subclass defines/binding SubclassOne
   private static class Subclass extends Classes {
-    //- ImplicitSuperCall ref/call DefaultCtor
+    //- ImplicitSuperCall ref/call/direct DefaultCtor
     //- ImplicitSuperCall.loc/start @^"{}"
     //- ImplicitSuperCall.loc/end @^"{}"
     //- ImplicitSuperCall childof SubclassCtor
     //- @Subclass defines/binding SubclassCtor
     Subclass() {}
+
+    Subclass(String s) {
+      //- @"this()" ref/call/direct SubclassCtor
+      this();
+    }
+
+    Subclass(int i) {
+      //- @"super()" ref/call/direct DefaultCtor
+      super();
+    }
   }
 
   //- @Subclass2 defines/binding SubclassTwo
@@ -42,7 +52,7 @@ public class Classes {
     //- ImplicitSubclassTwoCtor.node/kind function
     //- ImplicitSubclassTwoCtor.subkind constructor
     //- ImplicitSubclassTwoCtor childof SubclassTwo
-    //- ExtraImplicitSuperCall ref/call DefaultCtor
+    //- ExtraImplicitSuperCall ref/call/direct DefaultCtor
     //- ExtraImplicitSuperCall childof ImplicitSubclassTwoCtor
   }
 
@@ -77,7 +87,6 @@ public class Classes {
     //- @LocalClass defines/binding LC
     //- LC childof LF
     class LocalClass {}
-    ;
   }
 
   //- ClassInit.node/kind function
@@ -88,7 +97,6 @@ public class Classes {
     //- @LocalClassInStaticInitializer defines/binding LCISI
     //- LCISI childof ClassInit
     class LocalClassInStaticInitializer {}
-    ;
   }
 }
 

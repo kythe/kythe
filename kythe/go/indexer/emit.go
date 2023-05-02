@@ -234,6 +234,10 @@ func exprRefKind(tgt ast.Expr, stack stackFunc, depth int) refKind {
 		if id, ok := tgt.(*ast.Ident); ok && id == parent.Sel {
 			return exprRefKind(parent, stack, depth+1)
 		}
+	case *ast.KeyValueExpr:
+		if tgt == parent.Key {
+			return writeRef
+		}
 	}
 	return readRef
 }
@@ -1110,25 +1114,28 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
+		if rule.Semantic != nil {
+			e.writeFact(target, facts.SemanticGenerated, strings.ToLower(rule.Semantic.String()))
+		}
 		if rule.EdgeOut == edges.Generates && !e.fmeta[file] {
 			e.fmeta[file] = true
 			if rule.VName.Path != "" && target.Path != "" {
-				ruleVName := *rule.VName
-				ruleVName.Signature = ""
-				ruleVName.Language = ""
-				fileTarget := *anchor
-				fileTarget.Signature = ""
-				fileTarget.Language = ""
+				ruleVName := narrowToFileVName(rule.VName)
+				fileTarget := narrowToFileVName(anchor)
 				if rule.Reverse {
-					e.writeEdge(&ruleVName, &fileTarget, rule.EdgeOut)
+					e.writeEdge(ruleVName, fileTarget, rule.EdgeOut)
 				} else {
-					e.writeEdge(&fileTarget, &ruleVName, rule.EdgeOut)
+					e.writeEdge(fileTarget, ruleVName, rule.EdgeOut)
 				}
 			}
 		}
 	})
 
 	return anchor
+}
+
+func narrowToFileVName(v *spb.VName) *spb.VName {
+	return &spb.VName{Corpus: v.GetCorpus(), Root: v.GetRoot(), Path: v.GetPath()}
 }
 
 // mustWriteBinding is as writeBinding, but panics if id does not resolve.  Use

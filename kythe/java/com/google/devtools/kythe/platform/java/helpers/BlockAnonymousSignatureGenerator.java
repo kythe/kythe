@@ -179,7 +179,13 @@ public class BlockAnonymousSignatureGenerator
     JCClassDecl classDecl = (JCClassDecl) classTree;
     if (classTree.getSimpleName().contentEquals("")) {
       StringBuilder anonymousClassSignature = new StringBuilder();
-      anonymousClassSignature.append(getBlockSignature(classDecl.sym));
+      if (classDecl.sym != null) {
+        anonymousClassSignature.append(getBlockSignature(classDecl.sym));
+      } else {
+        String name = classDecl.name == null ? "" : classDecl.name.toString();
+        logger.atWarning().log(
+            "BlockAnonymous class symbol was null: %s#%d", name, blockData.anonymousNumber);
+      }
       anonymousClassSignature.append(SignatureGenerator.ANONYMOUS);
       anonymousClassSignature.append("#");
       anonymousClassSignature.append(blockData.anonymousNumber);

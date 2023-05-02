@@ -10,6 +10,11 @@ func Barfoo() {}
 //   ^     ^ offset 84
 //   \ offset 78
 
+func SetFoo() {}
+
+//   ^     ^ offset 143
+//   \ offset 137
+
 // Note: The locations in this file are connected to the offsets defined in the
 // associated meta file. If you move anything above this comment without
 // updating the metadata, the test may break.
@@ -27,3 +32,9 @@ func Barfoo() {}
 //- Barfoo.node/kind function
 //- _AltB=vname(gsig2, gcorp, groot, gpath, glang) generates Barfoo
 //- vname("", gcorp, groot, gpath, "") generates vname("", kythe, _, "go/indexer/metadata_test/meta.go", "")
+
+//- SA.node/kind anchor
+//- SA.loc/start 137
+//- SA.loc/end 143
+//- SA defines/binding SetFoo
+//- SetFoo.semantic/generated set

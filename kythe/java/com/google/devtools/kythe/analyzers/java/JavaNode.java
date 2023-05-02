@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.sun.tools.javac.code.Symbol;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +29,7 @@ class JavaNode {
   // (i.e. types and abstractions)
   private final VName vName;
   private JavaNode type;
+  private Symbol sym;
 
   private ImmutableList<VName> classConstructors = ImmutableList.of();
   private Optional<VName> classInit = Optional.empty();
@@ -69,6 +71,15 @@ class JavaNode {
 
   JavaNode getType() {
     return type;
+  }
+
+  JavaNode setSymbol(Symbol sym) {
+    this.sym = sym;
+    return this;
+  }
+
+  Symbol getSymbol() {
+    return sym;
   }
 
   JavaNode setClassConstructors(List<VName> constructors) {
