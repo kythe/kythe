@@ -105,7 +105,7 @@ func extractorArgs(args []string, jar string) []string {
 			}
 			isJavac = true
 			result = append(result,
-				"--add-modules", "java.logging,java.sql",
+				"--add-modules=java.logging,java.sql",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.main=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.util=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.file=ALL-UNNAMED",
@@ -120,6 +120,13 @@ func extractorArgs(args []string, jar string) []string {
 			case strings.HasPrefix(a, "-Xplugin:depend"), strings.HasPrefix(a, "-Xlint:"), strings.HasPrefix(a, "-Xdoclint"):
 			case strings.HasPrefix(a, "-Xmx"):
 				result = append(result, "-Xmx3G")
+			case !isJavac && strings.HasPrefix(a, "--") && len(args) > 0 && !strings.HasPrefix(args[0], "-"):
+				// Add an = separator between "--arg" and its value for JVM arguments
+				// in order to be friendlier to Bazel Java "launchers".
+				// The JVM generally accepts either form, but the generic argument processing
+				// in many launchers requires the "=" separator.
+				v, args = shift(args)
+				result = append(result, a+"="+v)
 			default:
 				result = append(result, a)
 			}
