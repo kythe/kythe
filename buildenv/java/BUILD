@@ -3,23 +3,21 @@ load("@rules_java//toolchains:default_java_toolchain.bzl", "default_java_toolcha
 
 package(default_visibility = ["//visibility:public"])
 
-# Bazel does not yet ship with a JDK-19 compatible JDK, so
-# fetch and install our own.
-default_java_toolchain(
-    name = "toolchain_jdk_19",
-    configuration = dict(),
-    java_runtime = "@remotejdk19_linux//:jdk",
-    source_version = "19",
-    target_version = "19",
-)
-
-default_java_toolchain(
-    name = "toolchain_jdk_20",
-    configuration = dict(),
-    java_runtime = "@remotejdk20_linux//:jdk",
-    source_version = "20",
-    target_version = "20",
-)
+# We need to have consistent JDK dependencies, which Bazel often doesn't provide out-of-the-box.
+# In particular, when a target requires a particular JDK version it generally depends on
+# internal class peculiar to that JDK, thus all of `source_version`, `target_version`,
+# and (critically) `java_runtime` must match. Some of the upstream toolchains use a `java_runtime`
+# which differs from the source and target version.
+[
+    default_java_toolchain(
+        name = "toolchain_jdk_{version}".format(version = version),
+        configuration = dict(),
+        java_runtime = "@remotejdk{version}_linux//:jdk".format(version = version),
+        source_version = version,
+        target_version = version,
+    )
+    for version in ("11", "17", "19", "20")
+]
 
 config_setting(
     name = "runtime_version_default",
