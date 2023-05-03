@@ -1926,6 +1926,12 @@ cc_indexer_test(
     tags = ["rec"],
 )
 
+cc_indexer_test(
+    name = "rec_write_designated_initializer",
+    srcs = ["rec/rec_write_designated_initializer.cc"],
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],

@@ -2212,6 +2212,7 @@ bool IndexerASTVisitor::TraverseMemberPointerTypeLoc(
 
 bool IndexerASTVisitor::VisitDesignatedInitExpr(
     const clang::DesignatedInitExpr* DIE) {
+  UsedAsWrite(DIE);
   for (const auto& D : DIE->designators()) {
     if (!D.isFieldDesignator()) continue;
     if (const auto* F = D.getFieldDecl()) {
@@ -2263,6 +2264,8 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
         Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
                                     GraphObserver::Claimability::Unclaimable,
                                     this->IsImplicit(*RCC));
+        // TODO(zarko): traverse the initializing expression under a new
+        // influence context.
       }
     }
   }
