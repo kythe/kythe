@@ -22,6 +22,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
