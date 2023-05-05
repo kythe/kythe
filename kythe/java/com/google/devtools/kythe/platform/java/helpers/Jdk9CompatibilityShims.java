@@ -38,6 +38,7 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
   }
 
   /** Return the list of expressions from a JCCase object */
+  @SuppressWarnings("PreferredInterfaceType")
   @Override
   public List<JCExpression> getCaseExpressions(JCCase tree) {
     JCExpression expr = tree.getExpression();
