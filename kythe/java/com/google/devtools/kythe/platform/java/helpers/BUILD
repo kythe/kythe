@@ -49,15 +49,18 @@ java_library(
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
     ],
     visibility = ["//visibility:private"],
-    deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
 )
 
 java_library(
     name = "jdk9_compatibility_shims",
-    srcs = ["Jdk9CompatibilityShims.java"],
+    srcs = ["9/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     target_compatible_with = select_with_or({
         "//buildenv/java:language_version_11": [],
@@ -74,9 +77,10 @@ java_library(
 
 java_library(
     name = "jdk15_compatibility_shims",
-    srcs = ["Jdk15CompatibilityShims.java"],
+    srcs = ["15/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
     # bazel cquery doesn't work with objc_library targets.
@@ -98,9 +102,10 @@ java_library(
 
 java_library(
     name = "jdk20_compatibility_shims",
-    srcs = ["Jdk20CompatibilityShims.java"],
+    srcs = ["20/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     tags = ["manual"],
     target_compatible_with = select_with_or({
@@ -117,7 +122,7 @@ java_library(
 
 java_library(
     name = "reflective_jdk_compatibility_shims",
-    srcs = ["ReflectiveJdkCompatibilityShims.java"],
+    srcs = ["ReflectiveJdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",

@@ -17,56 +17,33 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.auto.service.AutoService;
-import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Optional;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
-public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilityShims {
-  private static final Runtime.Version minVersion = Runtime.Version.parse("9");
+public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
+  private static final Runtime.Version minVersion = Runtime.Version.parse("15");
+  private static final Runtime.Version maxVersion = Runtime.Version.parse("20");
 
-  public ReflectiveJdkCompatibilityShims() {}
+  public JdkCompatibilityShimsImpl() {}
 
   @Override
   public CompatibilityRange getCompatibileRange() {
-    return new CompatibilityRange(minVersion, Optional.empty(), CompatibilityLevel.FALLBACK);
+    return new CompatibilityRange(minVersion, maxVersion);
   }
 
   /** Return the list of expressions from a JCCase object */
   @Override
-  @SuppressWarnings("unchecked") // Safe by specification.
   public List<JCExpression> getCaseExpressions(JCCase tree) {
-    try {
-      try {
-        return (List<JCExpression>) tree.getClass().getMethod("getExpressions").invoke(tree);
-      } catch (NoSuchMethodException nsme) {
-        return ImmutableList.of(
-            (JCExpression) tree.getClass().getMethod("getExpression").invoke(tree));
-      }
-    } catch (InvocationTargetException
-        | IllegalAccessException
-        | NoSuchMethodException
-        | ClassCastException ex) {
-      throw new LinkageError(ex.getMessage(), ex);
-    }
+    return tree.getExpressions();
   }
 
   @Override
   public JCTree getForLoopVar(JCEnhancedForLoop tree) {
-    try {
-      try {
-        return (JCTree) tree.getClass().getField("varOrRecordPattern").get(tree);
-      } catch (NoSuchFieldException e) {
-        return (JCTree) tree.getClass().getField("var").get(tree);
-      }
-    } catch (IllegalAccessException | NoSuchFieldException | ClassCastException ex) {
-      throw new LinkageError(ex.getMessage(), ex);
-    }
+    return tree.var;
   }
 }
