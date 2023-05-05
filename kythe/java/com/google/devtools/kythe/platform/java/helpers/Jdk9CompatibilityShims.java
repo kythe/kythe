@@ -38,7 +38,7 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
 
   /** Return the list of expressions from a JCCase object */
   @Override
-  public ImmutableList<JCExpression> getCaseExpressions(JCCase tree) {
+  public List<JCExpression> getCaseExpressions(JCCase tree) {
     JCExpression expr = tree.getExpression();
     if (expr == null) {
       return ImmutableList.of();
