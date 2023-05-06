@@ -88,8 +88,8 @@ js_test(
     ] + glob(
         ["testdata/**/*"],
     ) + [
-        "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
+        "//kythe/go/platform/tools/entrystream",
     ],
     entry_point = ":test.js",
 )
