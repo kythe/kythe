@@ -22,6 +22,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
@@ -37,8 +38,9 @@ public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
   }
 
   /** Return the list of expressions from a JCCase object */
+  @SuppressWarnings("PreferredInterfaceType")
   @Override
-  public ImmutableList<JCExpression> getCaseExpressions(JCCase tree) {
+  public List<JCExpression> getCaseExpressions(JCCase tree) {
     JCExpression expr = tree.getExpression();
     if (expr == null) {
       return ImmutableList.of();
