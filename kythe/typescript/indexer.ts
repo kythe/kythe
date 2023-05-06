@@ -1978,7 +1978,6 @@ class Visitor {
       });
     }
     const markedSource = {kind: MarkedSourceKind.BOX, child: codeParts};
-    console.log(markedSource);
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
