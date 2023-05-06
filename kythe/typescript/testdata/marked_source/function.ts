@@ -2,24 +2,17 @@
 //- @myFunction defines/binding MyFunction
 //- MyFunction code MyFunctionCode
 //- 
-//- MyFunctionCode child.0 MyFunctionContext
-//- MyFunctionContext.kind "CONTEXT"
-//- MyFunctionContext.pre_text "function"
-//-
-//- MyFunctionCode child.1 MyFunctionSpace
-//- MyFunctionSpace.pre_text " "
-//- 
-//- MyFunctionCode child.2 MyFunctionName
+//- MyFunctionCode child.0 MyFunctionName
 //- MyFunctionName.kind "IDENTIFIER"
 //- MyFunctionName.pre_text "myFunction"
 //-
-//- MyFunctionCode child.3 MyFunctionParams
+//- MyFunctionCode child.1 MyFunctionParams
 //- MyFunctionParams.kind "PARAMETER_LOOKUP_BY_PARAM"
 //- MyFunctionParams.pre_text "("
 //- MyFunctionParams.post_text ")"
 //- MyFunctionParams.post_child_text ", "
 //- 
-//- MyFunctionCode child.4 MyFunctionReturnType
+//- MyFunctionCode child.2 MyFunctionReturnType
 //- MyFunctionReturnType.kind "TYPE"
 //- MyFunctionReturnType.pre_text ": "
 //- MyFunctionReturnType.post_text "number"
@@ -30,7 +23,7 @@
 //- 
 //- ArgCode child.0 ArgCodeContext
 //- ArgCodeContext.kind "CONTEXT"
-//- ArgCodeContext.pre_text "(parameter)"
+//- ArgCodeContext.pre_text "myFunction"
 //-
 //- ArgCode child.1 ArgCodeSpace
 //- ArgCodeSpace.pre_text " "

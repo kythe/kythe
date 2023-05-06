@@ -1804,6 +1804,67 @@ class Visitor {
     return vname;
   }
 
+  getIdentifierForMarkedSourceNode(node: ts.Node): string {
+    if (ts.isConstructorDeclaration(node)) {
+      return 'constructor';
+    }
+    if ('name' in node) {
+      return (node as ts.DeclarationStatement).name?.getText() ?? 'anonymous';
+    }
+    return 'anonymous';
+  }
+
+  /**
+   * This function calculates a context string for a node when building marked source.
+   * Context is what the given node belongs to. For example for class method context
+   * is the name of the class.
+   *
+   * When provided node shouldn't have a context, e.g. variable, then this method
+   * return undefined.
+   *
+   * Compared to other languages (Java, Go) context calculation here is simpler. We
+   * don't produce full qualified class name (as TS doesn't have a concept of qualified name).
+   * Though we could add filename as namespace.
+   *
+   * We also don't handle nesting. In TS you can have class within a method within a class
+   * within a method. We should probably fully calculate (similar to what we do in scopedSignature)
+   * but given that it's user-visible string - keep it simple. Even though it's incomplete.
+   * @param
+   * @returns
+   */
+  getContextForNodeForMarkedSource(node: ts.Node): string|undefined {
+    switch (node.kind) {
+      case ts.SyntaxKind.PropertyDeclaration:
+      case ts.SyntaxKind.PropertySignature:
+      case ts.SyntaxKind.EnumMember:
+      case ts.SyntaxKind.MethodDeclaration:
+      case ts.SyntaxKind.MethodSignature:
+      case ts.SyntaxKind.Constructor:
+        // Parent is a class/interface/enum. Use their name as context.
+        return this.getIdentifierForMarkedSourceNode(node.parent);
+      case ts.SyntaxKind.Parameter:
+        const method = node.parent;
+        if (!ts.isMethodSignature(method)
+            && !ts.isMethodDeclaration(method)
+            && !ts.isConstructorDeclaration(method)
+            && !ts.isFunctionDeclaration(method)) {
+          // We expect that parent of parameter is always a method. If it is not
+          // then return undefined so no context will be emitted.
+          return undefined;
+        }
+        // If method has parent (class) then add it to context. So it looks like
+        // 'ClassName.methodName'. Otherwise if it's a standalone function - just
+        // return function name.
+        const methodContext = this.getContextForNodeForMarkedSource(method);
+        return (methodContext == null ? '' : methodContext + '.')
+          + this.getIdentifierForMarkedSourceNode(method);
+    }
+    // For all other nodes like variables, functions, classes don't use context
+    // for now. Other languages use namespace or filename as context for those but
+    // it doesn't provide much information.
+    return undefined;
+  }
+
   /**
    * Emits a code fact for a variable or property declaration, specifying how
    * the declaration should be presented to users.
@@ -1818,7 +1879,6 @@ class Visitor {
       ts.PropertySignature|ts.JsxAttribute|ts.ParameterDeclaration|ts.EnumMember,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
-    const initializerList = decl.parent;
     let varDecl;
     const bindingPath: Array<string|number|undefined> = [];
     if (ts.isBindingElement(decl)) {
@@ -1842,24 +1902,15 @@ class Visitor {
     } else {
       varDecl = decl;
     }
-
-    let declKw;
-    if (ts.isVariableDeclaration(varDecl)) {
-      declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-                                                       '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' :
-                                                       'let';
-    } else if (ts.isParameter(varDecl)) {
-      declKw = '(parameter)';
-    } else if (ts.isEnumMember(varDecl)) {
-      declKw = '(enum member)';
-    } else {
-      declKw = '(property)';
+    const context = this.getContextForNodeForMarkedSource(decl);
+    if (context != null) {
+      codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(context)});
+      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
     }
-    codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(declKw)});
-    codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
-    codeParts.push(
-      {kind: MarkedSourceKind.IDENTIFIER, pre_text: fmtMarkedSource(decl.name.getText())});
+    codeParts.push({
+      kind: MarkedSourceKind.IDENTIFIER,
+      pre_text: fmtMarkedSource(this.getIdentifierForMarkedSourceNode(decl)),
+    });
     if (!ts.isEnumMember(varDecl)) {
       const ty = this.typeChecker.getTypeAtLocation(decl);
       const tyStr = this.typeChecker.typeToString(ty, decl);
@@ -1892,7 +1943,7 @@ class Visitor {
   emitMarkedSourceForClasslikeDeclaration(
     decl: ts.ClassLikeDeclaration|ts.InterfaceDeclaration|ts.EnumDeclaration, declVName: VName) {
     const markedSource: JSONMarkedSource =
-      {kind: MarkedSourceKind.IDENTIFIER, pre_text: decl.name?.getText() ?? 'anonymous'};
+      {kind: MarkedSourceKind.IDENTIFIER, pre_text: this.getIdentifierForMarkedSourceNode(decl)};
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
@@ -1901,12 +1952,14 @@ class Visitor {
    */
   emitMarkedSourceForFunction(decl: ts.FunctionLikeDeclaration, declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
-    const context = ts.isMethodDeclaration(decl) ? '(method)' : 'function';
-    codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: context});
-    codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
+    const context = this.getContextForNodeForMarkedSource(decl);
+    if (context) {
+      codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: context});
+      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
+    }
     codeParts.push({
       kind: MarkedSourceKind.IDENTIFIER,
-      pre_text: fmtMarkedSource(decl.name?.getText() ?? 'anonymous'),
+      pre_text: this.getIdentifierForMarkedSourceNode(decl),
     });
     codeParts.push({
       kind: MarkedSourceKind.PARAMETER_LOOKUP_BY_PARAM,
@@ -1925,6 +1978,7 @@ class Visitor {
       });
     }
     const markedSource = {kind: MarkedSourceKind.BOX, child: codeParts};
+    console.log(markedSource);
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 

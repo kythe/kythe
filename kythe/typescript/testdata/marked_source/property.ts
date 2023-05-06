@@ -2,7 +2,7 @@ class A {
   //- @#0member defines/binding Member
   //- Member code MemberCode
   //- MemberCode child.0 MemberContext
-  //- MemberContext.pre_text "(property)"
+  //- MemberContext.pre_text "A"
   //- MemberCode child.1 MemberSpace
   //- MemberSpace.pre_text " "
   //- MemberCode child.2 MemberName
@@ -18,7 +18,7 @@ class A {
   //- @#0staticmember defines/binding StaticMember
   //- StaticMember code StaticMemberCode
   //- StaticMemberCode child.0 StaticMemberContext
-  //- StaticMemberContext.pre_text "(property)"
+  //- StaticMemberContext.pre_text "A"
   //- StaticMemberCode child.1 StaticMemberSpace
   //- StaticMemberSpace.pre_text " "
   //- StaticMemberCode child.2 StaticMemberName
@@ -35,17 +35,13 @@ class A {
 let b = {
   //- @bprop defines/binding BProp
   //- BProp code BPropCode
-  //- BPropCode child.0 BPropContext
-  //- BPropContext.pre_text "(property)"
-  //- BPropCode child.1 BPropSpace
-  //- BPropSpace.pre_text " "
-  //- BPropCode child.2 BPropName
+  //- BPropCode child.0 BPropName
   //- BPropName.pre_text "bprop"
-  //- BPropCode child.3 BPropTy
+  //- BPropCode child.1 BPropTy
   //- BPropTy.post_text "number"
-  //- BPropCode child.4 BPropEq
+  //- BPropCode child.2 BPropEq
   //- BPropEq.pre_text " = "
-  //- BPropCode child.5 BPropInit
+  //- BPropCode child.3 BPropInit
   //- BPropInit.pre_text "1"
   bprop: 1,
 };
@@ -54,7 +50,7 @@ interface C {
   //- @cprop defines/binding CProp
   //- CProp code CPropCode
   //- CPropCode child.0 CPropContext
-  //- CPropContext.pre_text "(property)"
+  //- CPropContext.pre_text "C"
   //- CPropCode child.1 CPropSpace
   //- CPropSpace.pre_text " "
   //- CPropCode child.2 CPropName

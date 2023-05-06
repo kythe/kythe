@@ -5,6 +5,27 @@
 //- MyClassCode.kind "IDENTIFIER"
 //- MyClassCode.pre_text "MyClass"
 class MyClass {
+    //- @constructor defines/binding Constructor
+    //-
+    //- Constructor code ConstructorCode
+    //- ConstructorCode.kind "BOX"
+    //-
+    //- ConstructorCode child.0 ConstructorContext
+    //- ConstructorContext.kind "CONTEXT"
+    //- ConstructorContext.pre_text "MyClass"
+    //-
+    //- ConstructorCode child.1 ConstructorSpace
+    //- ConstructorSpace.pre_text " "
+    //-
+    //- ConstructorCode child.2 ConstructorId
+    //- ConstructorId.kind "IDENTIFIER"
+    //- ConstructorId.pre_text "constructor"
+    //-
+    //- ConstructorCode child.3 ConstructorParams
+    //- ConstructorParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+    //- ConstructorParams.pre_text "("
+    //- ConstructorParams.post_text ")"
+    //- ConstructorParams.post_child_text ", "
     constructor(arg: string) {}
 
     //- @myMethod defines/binding MyMethod
@@ -14,7 +35,7 @@ class MyClass {
     //-
     //- MyMethodCode child.0 MyMethodContext
     //- MyMethodContext.kind "CONTEXT"
-    //- MyMethodContext.pre_text "(method)"
+    //- MyMethodContext.pre_text "MyClass"
     //-
     //- MyMethodCode child.1 MyMethodSpace
     //- MyMethodSpace.pre_text " "
@@ -40,7 +61,7 @@ class MyClass {
     //- 
     //- ArgCode child.0 ArgCodeContext
     //- ArgCodeContext.kind "CONTEXT"
-    //- ArgCodeContext.pre_text "(parameter)"
+    //- ArgCodeContext.pre_text "MyClass.myMethod"
     //- 
     //- ArgCode child.1 ArgCodeSpace
     //- ArgCodeSpace.pre_text " "

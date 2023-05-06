@@ -13,7 +13,7 @@ enum MyEnum {
     //- 
     //- MyValueCode child.0 MyValueContext
     //- MyValueContext.kind "CONTEXT"
-    //- MyValueContext.pre_text "(enum member)"
+    //- MyValueContext.pre_text "MyEnum"
     //-
     //- MyValueCode child.1 MyValueSpace
     //- MyValueSpace.pre_text " "
