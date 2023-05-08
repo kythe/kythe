@@ -175,11 +175,11 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "1ff680568f8e537bb4be9813bac0c1d87848d5be9d000ebe30f0bc2d7aabe045",
-        strip_prefix = "protobuf-22.2",
+        sha256 = "ddf8c9c1ffccb7e80afd183b3bd32b3b62f7cc54b106be190bf49f2bc09daab5",
+        strip_prefix = "protobuf-23.2",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v23.2/protobuf-23.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v23.2/protobuf-23.2.tar.gz",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
