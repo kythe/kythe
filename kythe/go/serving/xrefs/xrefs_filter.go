@@ -261,6 +261,9 @@ func postingAnd(idx postings, list []uint32, trigram uint32) []uint32 {
 }
 
 func mergeOr(l1, l2 []uint32) []uint32 {
+	if isAllPages(l1) || isAllPages(l2) {
+		return allPages
+	}
 	var l []uint32
 	var i, j int
 	for i < len(l1) || j < len(l2) {
