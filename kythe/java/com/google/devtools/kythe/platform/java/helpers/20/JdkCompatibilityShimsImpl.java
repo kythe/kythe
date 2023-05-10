@@ -25,10 +25,10 @@ import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
-public final class Jdk20CompatibilityShims implements JdkCompatibilityShims {
+public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("20");
 
-  public Jdk20CompatibilityShims() {}
+  public JdkCompatibilityShimsImpl() {}
 
   @Override
   public CompatibilityRange getCompatibileRange() {
