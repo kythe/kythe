@@ -283,9 +283,9 @@ class KytheGraphObserver : public GraphObserver {
       const NodeId& decl_node,
       const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordUserDefinedNode(const NodeId& node,
-                             const llvm::StringRef& node_kind,
-                             absl::optional<Completeness> completeness) override;
+  void recordUserDefinedNode(
+      const NodeId& node, const llvm::StringRef& node_kind,
+      absl::optional<Completeness> completeness) override;
 
   void recordFullDefinitionRange(
       const Range& source_range, const NodeId& node_decl,
