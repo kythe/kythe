@@ -25,11 +25,11 @@ import java.util.List;
 
 /** JdkCompatibilityShims implementation for JDK9-compatible releases. */
 @AutoService(JdkCompatibilityShims.class)
-public final class Jdk9CompatibilityShims implements JdkCompatibilityShims {
+public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("9");
   private static final Runtime.Version maxVersion = Runtime.Version.parse("15");
 
-  public Jdk9CompatibilityShims() {}
+  public JdkCompatibilityShimsImpl() {}
 
   @Override
   public CompatibilityRange getCompatibileRange() {
