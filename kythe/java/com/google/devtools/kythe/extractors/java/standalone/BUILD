@@ -74,9 +74,10 @@ java_library(
 
 java_library(
     name = "jdk9_compatibility_shims",
-    srcs = ["Jdk9CompatibilityShims.java"],
+    srcs = ["9/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     target_compatible_with = select_with_or({
         ("//buildenv/java:language_version_11",): [],
@@ -93,9 +94,10 @@ java_library(
 
 java_library(
     name = "jdk15_compatibility_shims",
-    srcs = ["Jdk15CompatibilityShims.java"],
+    srcs = ["15/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
     # bazel cquery doesn't work with objc_library targets.
