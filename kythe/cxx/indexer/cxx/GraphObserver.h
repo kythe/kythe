@@ -861,7 +861,8 @@ class GraphObserver {
   /// \param Compl Whether this node is complete.
   virtual void recordUserDefinedNode(const NodeId& Id,
                                      const llvm::StringRef& NodeKind,
-                                     Completeness Compl) {}
+                                     const absl::optional<Completeness> Compl) {
+  }
 
   /// \brief Records a use site for some decl.
   virtual void recordDeclUseLocation(const Range& SourceRange,
