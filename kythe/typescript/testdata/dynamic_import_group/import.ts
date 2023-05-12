@@ -1,6 +1,7 @@
 
 function regularFunction() {
     //- @"'./module'" ref/imports Mod
+    //- @StuffDoer ref/id StuffDoer
     import('./module').then(({StuffDoer}) => {
         new StuffDoer().doStuff();
     })
@@ -13,8 +14,17 @@ function regularFunction() {
 }
 
 async function asyncFunction() {
+    const {
+        //- @StuffDoer ref/id StuffDoer
+        StuffDoer,
+        //- @CONSTANT ref/id Constant
+        CONSTANT,
+        //- @doStuff ref/id DoStuff
+        doStuff,
+        //- @Enum ref/id Enum
+        Enum,
     //- @"'./module'" ref/imports Mod
-    const {StuffDoer} = await import('./module');
+    } = await import('./module');
     new StuffDoer().doStuff();
 }
 

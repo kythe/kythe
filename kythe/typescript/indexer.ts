@@ -2061,7 +2061,12 @@ class Visitor {
     if (propName == null) return;
     const propertyOnType = type.getProperty(propName);
     if (propertyOnType == null) return;
-    const vname = this.host.getSymbolName(propertyOnType, TSNamespace.VALUE);
+    const propFlags = propertyOnType.flags;
+    const isType = (propFlags &
+                    (ts.SymbolFlags.Class | ts.SymbolFlags.Interface |
+                     ts.SymbolFlags.RegularEnum | ts.SymbolFlags.TypeAlias)) > 0;
+    const vname = this.host.getSymbolName(
+        propertyOnType, isType ? TSNamespace.TYPE : TSNamespace.VALUE);
     if (vname == null) return;
     const anchor = this.newAnchor(prop);
     this.emitEdge(anchor, EdgeKind.REF_ID, vname);
