@@ -34,8 +34,10 @@ import java.util.List;
 public class Metadata {
   /** An additional semantic to apply to the given (java) node. */
   public enum Semantic {
-    NONE, /// < No special semantics.
-    WRITE, /// < Write semantics.
+    /** No special semantics. */
+    NONE,
+    /** Write semantics */
+    WRITE,
   };
 
   /**
