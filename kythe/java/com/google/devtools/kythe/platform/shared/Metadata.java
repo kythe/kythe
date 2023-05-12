@@ -32,6 +32,12 @@ import java.util.List;
  * path to a loadable metadata file.
  */
 public class Metadata {
+  /** An additional semantic to apply to the given (java) node. */
+  public enum Semantic {
+    NONE, /// < No special semantics.
+    WRITE, /// < Write semantics.
+  };
+
   /**
    * A Rule can generate one additional edge based on input conditions.
    *
@@ -53,6 +59,8 @@ public class Metadata {
      * we will emit {@code Node edgeOut vname}.
      */
     public boolean reverseEdge;
+
+    public Semantic semantic = Semantic.NONE;
   }
 
   /** Applies a new {@link Rule} to the file to which this metadata pertains. */

@@ -1422,6 +1422,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           } else {
             entrySets.emitEdge(node, rule.edgeOut, rule.vname);
           }
+
+          if (rule.semantic != Metadata.Semantic.NONE) {
+            if (rule.semantic == Metadata.Semantic.WRITE) {
+              VName genFuncVName = rule.reverseEdge ? node : rule.vname;
+              entrySets.getEmitter().emitFact(genFuncVName, "/kythe/semantic/generated", "set");
+            }
+          }
         }
       }
     }
