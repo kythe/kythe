@@ -21,6 +21,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo.Annotation.Semantic;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,14 +33,6 @@ import java.util.List;
  * path to a loadable metadata file.
  */
 public class Metadata {
-  /** An additional semantic to apply to the given (java) node. */
-  public enum Semantic {
-    /** No special semantics. */
-    NONE,
-    /** Write semantics */
-    WRITE,
-  };
-
   /**
    * A Rule can generate one additional edge based on input conditions.
    *
@@ -62,7 +55,7 @@ public class Metadata {
      */
     public boolean reverseEdge;
 
-    public Semantic semantic = Semantic.NONE;
+    public Semantic semantic;
   }
 
   /** Applies a new {@link Rule} to the file to which this metadata pertains. */

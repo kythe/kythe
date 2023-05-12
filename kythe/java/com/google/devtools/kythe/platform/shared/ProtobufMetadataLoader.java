@@ -145,19 +145,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
               .build();
       rule.edgeOut = EdgeKind.GENERATES;
       rule.reverseEdge = true;
-
-      switch (annotation.getSemantic()) {
-        case NONE:
-          break;
-        case SET:
-          rule.semantic = Metadata.Semantic.WRITE;
-          break;
-        case ALIAS:
-          logger.atWarning().log(
-              "Metadata contains annotation with semantic=ALIAS, which shouldn't be used in java");
-          break;
-      }
-
+      rule.semantic = annotation.getSemantic();
       metadata.addRule(rule);
     }
     for (VName vname : fileVNames) {
