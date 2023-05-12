@@ -81,6 +81,11 @@ export interface IndexingOptions {
    */
   readFile?: (path: string) => Buffer;
 
+  /**
+   * When enabled emits 0-0 spans at the beginning of each file that represent current module.
+   * By default 0-1 spans are emitted. Also this flag changes it to emit `defines/implicit`
+   * edtes instead of `defines/binding`.
+   */
   emitZeroWidthSpansForModuleNodes?: boolean;
 }
 
