@@ -1424,7 +1424,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             entrySets.emitEdge(node, rule.edgeOut, rule.vname);
           }
 
-          if (rule.semantic == Semantic.WRITE) {
+          if (rule.semantic == Semantic.SET) {
             VName genFuncVName = rule.reverseEdge ? node : rule.vname;
             entrySets.getEmitter().emitFact(genFuncVName, "/kythe/semantic/generated", "set");
           }
