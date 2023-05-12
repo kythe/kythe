@@ -46,6 +46,7 @@ import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
+import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo.Annotation.Semantic;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree.Kind;
@@ -1423,7 +1424,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             entrySets.emitEdge(node, rule.edgeOut, rule.vname);
           }
 
-          if (rule.semantic == Metadata.Semantic.WRITE) {
+          if (rule.semantic == Semantic.WRITE) {
             VName genFuncVName = rule.reverseEdge ? node : rule.vname;
             entrySets.getEmitter().emitFact(genFuncVName, "/kythe/semantic/generated", "set");
           }
