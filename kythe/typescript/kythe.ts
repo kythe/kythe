@@ -51,6 +51,7 @@ export enum EdgeKind {
   COMPLETES_UNIQUELY = '/kythe/edge/completes/uniquely',
   DEFINES = '/kythe/edge/defines',
   DEFINES_BINDING = '/kythe/edge/defines/binding',
+  DEFINES_IMPLICIT = '/kythe/edge/defines/implicit',
   DEPENDS = '/kythe/edge/depends',
   DOCUMENTS = '/kythe/edge/documents',
   EXPORTS = '/kythe/edge/exports',

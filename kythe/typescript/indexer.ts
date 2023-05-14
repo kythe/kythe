@@ -80,6 +80,13 @@ export interface IndexingOptions {
    * is used.
    */
   readFile?: (path: string) => Buffer;
+
+  /**
+   * When enabled emits 0-0 spans at the beginning of each file that represent current module.
+   * By default 0-1 spans are emitted. Also this flag changes it to emit `defines/implicit`
+   * edges instead of `defines/binding`.
+   */
+  emitZeroWidthSpansForModuleNodes?: boolean;
 }
 
 /**
@@ -1571,8 +1578,14 @@ class Visitor {
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
-    const anchor = this.newAnchor(this.file, 0, 1);
-    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kMod);
+    const anchor = this.newAnchor(
+        this.file, 0, this.host.options.emitZeroWidthSpansForModuleNodes ? 0 : 1);
+    this.emitEdge(
+        anchor,
+        this.host.options.emitZeroWidthSpansForModuleNodes ?
+            EdgeKind.DEFINES_IMPLICIT :
+            EdgeKind.DEFINES_BINDING,
+        kMod);
   }
 
   /**
