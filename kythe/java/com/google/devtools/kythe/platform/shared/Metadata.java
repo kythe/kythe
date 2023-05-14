@@ -21,6 +21,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo.Annotation.Semantic;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +54,8 @@ public class Metadata {
      * we will emit {@code Node edgeOut vname}.
      */
     public boolean reverseEdge;
+
+    public Semantic semantic;
   }
 
   /** Applies a new {@link Rule} to the file to which this metadata pertains. */
