@@ -6,8 +6,6 @@ package(features = ["layering_check"])
 
 licenses(["notice"])  # Apache 2.0
 
-exports_files(["LICENSE"])
-
 proto_verifier_test(
     name = "file_node_existence",
     srcs = [":basic_file_node_proto"],

@@ -1137,13 +1137,14 @@ def _go_dependencies():
     )
     http_archive(
         name = "org_golang_x_tools",
-        # v0.1.12, latest as of 2022-09-10
+        # Must be kept in sync with rules_go or the patches may fail.
+        # v0.7.0, latest as of 2023-03-27
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
-            "https://github.com/golang/tools/archive/refs/tags/v0.1.12.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
+            "https://github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
         ],
-        sha256 = "4e3d94e7bf8dde5dad681c5ddddda6e634f8c8c500683fdf3d2f77a9c086702d",
-        strip_prefix = "tools-0.1.12",
+        sha256 = "9f20a20f29f4008d797a8be882ef82b69cf8f7f2b96dbdfe3814c57d8280fa4b",
+        strip_prefix = "tools-0.7.0",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested
