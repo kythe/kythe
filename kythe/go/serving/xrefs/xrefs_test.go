@@ -21,11 +21,15 @@ import (
 	"context"
 	"flag"
 	"math"
+	"math/rand"
+	"reflect"
 	"sort"
 	"strconv"
 	"testing"
+	"testing/quick"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/google/codesearch/index"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
@@ -3338,6 +3342,107 @@ func TestCorpusPathFilters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func postingValues(args []reflect.Value, rand *rand.Rand) {
+	for i := 0; i < len(args); i++ {
+		numPages := rand.Intn(24) + 1
+		p := &srvpb.PagedCrossReferences_PageSearchIndex_Postings{
+			Index: make(map[uint32]*srvpb.PagedCrossReferences_PageSearchIndex_Pages, numPages),
+		}
+		n := rand.Intn(32) + 1
+		for j := 0; j < n; j++ {
+			s := randTrigram(rand)
+			t := tri(s)
+			ps := make([]uint32, rand.Intn(numPages))
+			if len(ps) == 0 {
+				ps = append([]uint32{}, allPages...)
+			} else {
+				for k := 0; k < len(ps); k++ {
+					ps[k] = uint32(rand.Intn(numPages))
+				}
+
+				// Sort and dedup the pages
+				sort.Slice(ps, func(i, j int) bool { return ps[i] < ps[j] })
+				var k int
+				for l := 1; l < len(ps); l++ {
+					if ps[l-1] == ps[l] {
+						continue
+					}
+					ps[k] = ps[l]
+					k++
+				}
+				ps = ps[:k]
+			}
+			p.Index[t] = pages(ps...)
+		}
+		args[i] = reflect.ValueOf(p)
+	}
+}
+
+func queryValue(rand *rand.Rand) []*index.Query {
+	qs := make([]*index.Query, rand.Intn(4)+1)
+	if rand.Intn(1000) == 0 {
+		return nil
+	}
+	for j := 0; j < len(qs); j++ {
+		q := &index.Query{}
+		o := rand.Intn(100)
+		switch {
+		case o == 0:
+			q.Op = index.QAll
+		case o == 99:
+			q.Op = index.QNone
+		case o < 50:
+			q.Op = index.QAnd
+		default:
+			q.Op = index.QOr
+		}
+		if q.Op == index.QAll || q.Op == index.QOr {
+			n := rand.Intn(4) + 1
+			for k := 0; k < n; k++ {
+				q.Trigram = append(q.Trigram, randTrigram(rand))
+			}
+		}
+		if rand.Intn(10) == 0 {
+			q.Sub = queryValue(rand)
+		}
+		qs[j] = q
+	}
+	return qs
+}
+
+func queryValues(args []reflect.Value, rand *rand.Rand) {
+	for i := 0; i < len(args); i++ {
+		args[i] = reflect.ValueOf(queryValue(rand))
+	}
+}
+
+func TestApplyQueries(t *testing.T) {
+	testutil.Fatalf(t, "Error: %v", quick.Check(func(p *srvpb.PagedCrossReferences_PageSearchIndex_Postings) bool {
+		if err := quick.Check(func(qs []*index.Query) bool {
+			res := applyQueries(p, qs, nil)
+			if len(res) > 1 {
+				for _, x := range res {
+					// Make sure the result doesn't include the allPages marker.
+					if x == math.MaxUint32 {
+						t.Logf("Postings: %s", p)
+						t.Logf("Query: %s", qs)
+						t.Logf("Result: %v", res)
+						return false
+					}
+				}
+			}
+			return true
+		}, &quick.Config{Values: queryValues}); err != nil {
+			panic(err)
+		}
+		return true
+	}, &quick.Config{Values: postingValues}))
+}
+
+func randTrigram(rand *rand.Rand) string {
+	return string([]rune{rune(rand.Intn(8)) + 'a', rune(rand.Intn(8)) + 'a', rune(rand.Intn(8)) + 'a'})
 }
 
 func cps(corpus, root, path string) string {
