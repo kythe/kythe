@@ -234,6 +234,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     loadImplicitAnnotationsFile();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
+    JavaNode node = ctx.setNode(new JavaNode(fileNode));
 
     List<JavaNode> decls = scanList(compilation.getTypeDecls(), ctx);
     decls.removeAll(Collections.singleton(null));
@@ -249,7 +250,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     emitFileScopeMetadata(fileNode.getVName());
 
-    return new JavaNode(fileNode);
+    return node;
   }
 
   private void emitFileScopeMetadata(VName file) {
