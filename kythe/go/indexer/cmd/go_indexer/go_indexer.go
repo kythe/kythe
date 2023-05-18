@@ -52,6 +52,7 @@ var (
 	verbose                        = flag.Bool("verbose", false, "Emit verbose log information")
 	contOnErr                      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 	useCompilationCorpusForAll     = flag.Bool("use_compilation_corpus_for_all", false, "If enabled, all Entry VNames are given the corpus of the compilation unit being indexed. This includes items in the go std library and builtin types.")
+	useFileAsTopLevelScope         = flag.Bool("use_file_as_top_level_scope", false, "If enabled, use the file node for top-level callsite scopes")
 	overrideStdlibCorpus           = flag.String("override_stdlib_corpus", "", "If set, all stdlib nodes are assigned this corpus. Note that this takes precedence over --use_compilation_corpus_for_all")
 
 	writeEntry func(context.Context, *spb.Entry) error
@@ -161,6 +162,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		DocBase:                        docURL,
 		OnlyEmitDocURIsForStandardLibs: *onlyEmitDocURIsForStandardLibs,
 		UseCompilationCorpusForAll:     *useCompilationCorpusForAll,
+		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
 		OverrideStdlibCorpus:           *overrideStdlibCorpus,
 	})
 }

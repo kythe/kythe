@@ -259,6 +259,13 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "packageinit_file_test",
+    srcs = ["testdata/basic/packageinit_file.go"],
+    import_path = "test/pkginit",
+    use_file_as_top_level_scope = True,
+)
+
+go_indexer_test(
     name = "types_test",
     srcs = ["testdata/types.go"],
     has_marked_source = True,
