@@ -50,6 +50,13 @@ std::string AsLocalPath(const build_event_stream::File& file) {
   return absl::StrJoin(parts, "/");
 }
 
+BazelArtifactFile ToBazelArtifactFile(const build_event_stream::File& file) {
+  return {
+      .local_path = AsLocalPath(file),
+      .uri = AsUri(file),
+  };
+}
+
 template <typename T>
 struct FromRange {
   template <typename U>
@@ -131,8 +138,8 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
     auto& entry = (*raw.mutable_filesets())[key];
     for (const auto& file : fileset.files) {
       auto* file_entry = entry.add_files();
-      file_entry->set_name(file.local_path);
-      file_entry->set_uri(file.uri);
+      file_entry->set_name(file->local_path);
+      file_entry->set_uri(file->uri);
     }
     for (const auto& id : fileset.children) {
       entry.add_file_sets()->set_id(id);
@@ -142,6 +149,21 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
 
   state.PackFrom(std::move(raw));
   return true;
+}
+
+AspectArtifactSelector::AspectArtifactSelector(
+    const AspectArtifactSelector& other) {
+  *this = other;
+}
+
+AspectArtifactSelector& AspectArtifactSelector::operator=(
+    const AspectArtifactSelector& other) {
+  // Not particular efficient, but avoids false-sharing with the internal
+  // shared_ptr.
+  google::protobuf::Any state;
+  (void)other.SerializeInto(state);
+  (void)DeserializeFrom(state);
+  return *this;
 }
 
 absl::Status AspectArtifactSelector::DeserializeFrom(
@@ -154,19 +176,7 @@ absl::Status AspectArtifactSelector::DeserializeFrom(
         .pending = FromRange{raw.pending()},
     };
     for (auto& [key, fileset] : *raw.mutable_filesets()) {
-      auto& entry = state_.filesets[key];
-      for (auto& file : *fileset.mutable_files()) {
-        entry.files.insert({
-            .local_path = AsLocalPath(file),
-            .uri = AsUri(file),
-        });
-        file.Clear();
-      }
-      for (auto& child : *fileset.mutable_file_sets()) {
-        entry.children.insert(child.id());
-        child.Clear();
-      }
-      fileset.Clear();
+      InsertFileSet(key, fileset);
     }
     return absl::OkStatus();
   }
@@ -181,7 +191,8 @@ absl::Status AspectArtifactSelector::DeserializeFrom(
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
   bool kept = InsertFileSet(id, fileset);
-  // TODO(shahms): check pending *before* doing all of the insertion.
+
+  // TODO(shahms): check pending *before* the insertion.
   if (auto node = state_.pending.extract(id); !node.empty()) {
     BazelArtifact result = {.label = std::string(node.mapped())};
     ReadFilesInto(id, result.label, result.files);
@@ -190,6 +201,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     }
     return result;
   }
+
   if (!kept) {
     // There were no files, no children and no previous references, skip it.
     state_.disposed.insert(std::string(id));
@@ -229,9 +241,16 @@ void AspectArtifactSelector::ReadFilesInto(
   if (auto node = state_.filesets.extract(id); !node.empty()) {
     state_.disposed.insert(std::string(id));
     const FileSet& fileset = node.mapped();
-    files.insert(files.end(),  //
-                 std::make_move_iterator(fileset.files.begin()),
-                 std::make_move_iterator(fileset.files.end()));
+    files.reserve(files.size() + fileset.files.size());
+    for (const auto* file : fileset.files) {
+      auto iter = state_.files.find(*file);
+      CHECK(iter != state_.files.end()) << "Attempt to remove a missing file!";
+      if (--iter->second == 0) {
+        files.push_back(std::move(state_.files.extract(iter).key()));
+      } else {
+        files.push_back(iter->first);
+      }
+    }
 
     for (const auto& child : fileset.children) {
       ReadFilesInto(child, target, files);
@@ -255,15 +274,10 @@ bool AspectArtifactSelector::InsertFileSet(
   bool kept = false;
   for (const auto& file : fileset.files()) {
     if (options_.file_name_allowlist.Match(file.name())) {
-      if (state_.filesets[id]
-              .files
-              .insert({
-                  .local_path = AsLocalPath(file),
-                  .uri = AsUri(file),
-              })
-              .second) {
-        kept = true;
-      }
+      auto iter = state_.files.try_emplace(ToBazelArtifactFile(file), 0).first;
+      iter->second++;
+      state_.filesets[id].files.push_back(&iter->first);
+      kept = true;
     }
   }
   for (const auto& child : fileset.file_sets()) {
