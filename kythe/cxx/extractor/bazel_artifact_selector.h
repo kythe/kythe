@@ -22,6 +22,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/node_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/types/optional.h"
@@ -153,6 +154,11 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   explicit AspectArtifactSelector(Options options)
       : options_(std::move(options)) {}
 
+  AspectArtifactSelector(const AspectArtifactSelector& other);
+  AspectArtifactSelector& operator=(const AspectArtifactSelector& other);
+  AspectArtifactSelector(AspectArtifactSelector&&) = default;
+  AspectArtifactSelector& operator=(AspectArtifactSelector&&) = default;
+
   /// \brief Selects an artifact if the event matches an expected
   /// aspect-produced compilation unit.
   absl::optional<BazelArtifact> Select(
@@ -168,13 +174,19 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   absl::Status DeserializeFrom(const google::protobuf::Any& state) final;
 
  private:
+  struct FileSet {
+    std::vector<const BazelArtifactFile*> files;
+    absl::flat_hash_set<std::string> children;
+  };
+
   struct State {
     // A record of all of the NamedSetOfFiles events which have been processed.
     absl::flat_hash_set<std::string> disposed;
-    // Mapping from fileset id to NamedSetOfFiles whose file names matched the
-    // allowlist, but have not yet been consumed by an event.
-    absl::flat_hash_map<std::string, build_event_stream::NamedSetOfFiles>
-        filesets;
+    // Map of active files to count of filesets which contain it.
+    absl::node_hash_map<BazelArtifactFile, int> files;
+    // Mapping from fileset id to NamedSetOfFiles whose file names matched
+    // the allowlist, but have not yet been consumed by an event.
+    absl::flat_hash_map<std::string, FileSet> filesets;
     // Mapping from fileset id to target name which required that
     // file set when it had not yet been seen.
     absl::flat_hash_map<std::string, std::string> pending;
@@ -188,6 +200,8 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
   void ReadFilesInto(absl::string_view id, absl::string_view target,
                      std::vector<BazelArtifactFile>& files);
+  bool InsertFileSet(absl::string_view id,
+                     const build_event_stream::NamedSetOfFiles& fileset);
 
   Options options_;
   State state_;
