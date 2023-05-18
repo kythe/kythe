@@ -58,6 +58,9 @@ type EmitOptions struct {
 	// If true, emit childof edges for an anchor's semantic scope.
 	EmitAnchorScopes bool
 
+	// If true, use the enclosing file for top-level callsite scopes.
+	UseFileAsTopLevelScope bool
+
 	// If set, use this as the base URL for links to godoc.  The import path is
 	// appended to the path of this URL to obtain the target URL to link to.
 	DocBase *url.URL
@@ -86,6 +89,13 @@ func (e *EmitOptions) emitAnchorScopes() bool {
 		return false
 	}
 	return e.EmitAnchorScopes
+}
+
+func (e *EmitOptions) useFileAsTopLevelScope() bool {
+	if e == nil {
+		return false
+	}
+	return e.UseFileAsTopLevelScope
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -1258,6 +1268,9 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 		case *ast.FuncDecl, *ast.FuncLit:
 			return e.pi.function[p]
 		case *ast.File:
+			if e.opts.useFileAsTopLevelScope() {
+				return &funcInfo{vname: e.pi.FileVName(p)}
+			}
 			fi := e.pi.packageInit[p]
 			if fi == nil {
 				// Lazily emit a virtual node to represent the static
