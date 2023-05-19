@@ -270,7 +270,7 @@ class AssertionParser {
   Verifier& verifier_;
 
   /// The arena from the verifier; needed by the parser implementation.
-  Arena* arena_;
+  Arena* arena_ = nullptr;
 
   std::vector<GoalGroup> groups_;
   bool inside_goal_group_ = false;
@@ -313,7 +313,7 @@ class AssertionParser {
   bool had_errors_ = false;
   /// Save the end-of-file location from the lexer.
   yy::location last_eof_;
-  size_t last_eof_ofs_;
+  size_t last_eof_ofs_ = 0;
   /// Inspections to be performed after the verifier stops.
   std::vector<Inspection> inspections_;
   /// Context mapping symbols to AST nodes.
@@ -321,9 +321,9 @@ class AssertionParser {
   std::unordered_map<Symbol, EVar*> evar_context_;
   std::unordered_map<EVar*, Symbol> singleton_evars_;
   /// Are we dumping lexer trace information?
-  bool trace_lex_;
+  bool trace_lex_ = false;
   /// Are we dumping parser trace information?
-  bool trace_parse_;
+  bool trace_parse_ = false;
   /// Should we inspect every user-provided EVar?
   bool default_inspect_ = false;
   /// The current file's path.
