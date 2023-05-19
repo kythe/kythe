@@ -135,6 +135,7 @@ class TreeContext {
     while (parent != null
         && !(parent.getTree() instanceof JCMethodDecl
             || parent.getTree() instanceof JCClassDecl
+            || parent.getTree() instanceof JCCompilationUnit // top-level refs
             || (parent.getTree() instanceof JCVariableDecl // static fields
                 && parent.getNode() != null)
             || parent.getTree() instanceof JCBlock)) {

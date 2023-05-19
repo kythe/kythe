@@ -1,21 +1,23 @@
 package com.google.devtools.kythe.analyzers.java.testdata.pkg;
 
 @SuppressWarnings("unused")
-//- @Scopes defines/binding ScopesClass
+//- CA=@Scopes defines/binding ScopesClass
+//- CA childof File
+//- File.node/kind file
 public class Scopes {
 
   //- @Scopes childof ScopesClass
   public Scopes() {}
 
-  //- @Inner defines/binding InnerClass
-  //- @Inner childof ScopesClass
+  //- IA=@Inner defines/binding InnerClass
+  //- IA childof ScopesClass
   static class Inner {
     //- @innerMethod childof InnerClass
     static void innerMethod() {}
   }
 
-  //- @method defines/binding Method
-  //- @method childof ScopesClass
+  //- MA=@method defines/binding Method
+  //- MA childof ScopesClass
   static Object method(int param) {
     //- @var childof Method
     int var = 1;
@@ -24,16 +26,16 @@ public class Scopes {
     //- @param childof Method
     var += param;
 
-    //- @LocalClass defines/binding LocalClass
-    //- @LocalClass childof Method
+    //- LA=@LocalClass defines/binding LocalClass
+    //- LA childof Method
     //- LocalClass childof Method
     class LocalClass {
       //- @field childof LocalClass
       int field;
     }
 
-    //- @LocalClass childof Method
-    //- @LocalClass ref/id LocalClass
+    //- L2A=@LocalClass childof Method
+    //- L2A ref/id LocalClass
     return new LocalClass();
   }
 }
