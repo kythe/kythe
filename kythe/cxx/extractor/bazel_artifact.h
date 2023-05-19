@@ -38,6 +38,11 @@ struct BazelArtifactFile {
   bool operator!=(const BazelArtifactFile& other) const {
     return !(*this == other);
   }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BazelArtifactFile& file) {
+    return H::combine(std::move(h), file.local_path, file.uri);
+  }
 };
 
 /// \brief A list of extracted compilation units and the target which owns them.
