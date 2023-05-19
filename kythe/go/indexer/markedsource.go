@@ -19,10 +19,10 @@ package indexer
 import (
 	"fmt"
 	"go/types"
-	"log"
 	"strings"
 
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/golang/protobuf/proto"
@@ -250,7 +250,7 @@ func rewriteMarkedSourceCorpus(ms *cpb.MarkedSource, corpus string) {
 		for i, def := range link.Definition {
 			v, err := kytheuri.ToVName(def)
 			if err != nil {
-				log.Printf("Error parsing ticket %q: %v", def, err)
+				log.Errorf("parsing ticket %q: %v", def, err)
 				continue
 			}
 			v.Corpus = corpus
@@ -271,7 +271,7 @@ func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
 		}
 		bits, err := proto.Marshal(ms)
 		if err != nil {
-			log.Printf("ERROR: Unable to marshal marked source: %v", err)
+			log.Errorf("Unable to marshal marked source: %v", err)
 			return
 		}
 		e.writeFact(target, facts.Code, string(bits))

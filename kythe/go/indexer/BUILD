@@ -16,6 +16,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/metadata",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/schema/edges",
