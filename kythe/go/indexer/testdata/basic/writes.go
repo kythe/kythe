@@ -50,3 +50,14 @@ func f() {
 	//- @y ref Y
 	fmt.Println(x, y)
 }
+
+func g() any {
+	//- @val defines/binding Val
+	var val int
+
+	return map[int]bool{
+		//- @val ref Val
+		//- !{ @val ref/writes Val }
+		val: true,
+	}
+}
