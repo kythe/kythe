@@ -95,10 +95,24 @@ TEST(VerifierUnitTest, UnescapeStringLiterals) {
   EXPECT_EQ("\\", tmp);
 }
 
-TEST(VerifierUnitTest, TrivialHappyCase) {
+enum class Solver { Old, New };
+
+class VerifierTest : public testing::TestWithParam<Solver> {
+ protected:
+  void SetUp() override {
+    v.UseFastSolver(GetParam() == Solver::Old ? false : true);
+  }
+
   Verifier v;
-  ASSERT_TRUE(v.VerifyAllGoals());
-}
+};
+
+INSTANTIATE_TEST_SUITE_P(Solvers, VerifierTest,
+                         testing::Values(Solver::Old, Solver::New),
+                         [](const auto& p) {
+                           return p.param == Solver::Old ? "old" : "new";
+                         });
+
+TEST_P(VerifierTest, TrivialHappyCase) { ASSERT_TRUE(v.VerifyAllGoals()); }
 
 TEST(VerifierUnitTest, EmptyProtoIsNotWellFormed) {
   Verifier v;
