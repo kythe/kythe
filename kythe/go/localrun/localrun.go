@@ -295,7 +295,7 @@ func (r *Runner) Extract(ctx context.Context) error {
 		"--",
 	},
 		r.Targets...)
-	log.Info("Building with event file at: %s", r.besFile)
+	log.Infof("Building with event file at: %s", r.besFile)
 
 	cmd := exec.CommandContext(ctx,
 		"bazel",
