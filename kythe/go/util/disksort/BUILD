@@ -11,6 +11,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/util/log",
         "//kythe/go/util/sortutil",
         "@com_github_golang_snappy//:go_default_library",
     ],

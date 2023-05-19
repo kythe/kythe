@@ -26,13 +26,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
-
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 
@@ -86,7 +85,7 @@ func NewServer(xrefs xrefs.Service, opts *Options) Server {
 // Initialize is invoked before any other methods, and allows the Server to
 // receive configuration info (such as the project root) and announce its capabilities.
 func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult, error) {
-	log.Println("Server Initializing...")
+	log.Info("Server Initializing...")
 
 	fullSync := lsp.TDSKFull
 	return &lsp.InitializeResult{
@@ -106,7 +105,7 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 // been opened. The Kythe Language Server uses this time to fetch file
 // decorations.
 func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) error {
-	log.Printf("Opened file: %q", params.TextDocument.URI)
+	log.Infof("Opened file: %q", params.TextDocument.URI)
 
 	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
@@ -114,7 +113,7 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 
 	}
 
-	log.Printf("Found %q in workspace %q", local.RelativePath, local.Workspace.Root())
+	log.Infof("Found %q in workspace %q", local.RelativePath, local.Workspace.Root())
 
 	ticket, err := local.KytheURI()
 	if err != nil {
@@ -134,7 +133,7 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 		return fmt.Errorf("failed to find xrefs for %q:\n%v", local, err)
 	}
 
-	log.Printf("Server returned %d refs in file %q", len(dec.Reference), local)
+	log.Infof("Server returned %d refs in file %q", len(dec.Reference), local)
 
 	var refs []*RefResolution
 	for _, r := range dec.Reference {
@@ -155,10 +154,10 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 	}
 
 	defLocs := ls.defLocations(local.Workspace, dec.DefinitionLocations)
-	log.Printf("Found %d defs in file %q", len(defLocs), ticket.String())
-	log.Printf("Found %d refs in file %q", len(refs), ticket.String())
+	log.Infof("Found %d defs in file %q", len(defLocs), ticket.String())
+	log.Infof("Found %d refs in file %q", len(refs), ticket.String())
 	ls.docs[local] = newDocument(refs, string(dec.SourceText), params.TextDocument.Text, defLocs)
-	log.Printf("Currently opened: %d files", len(ls.docs))
+	log.Infof("Currently opened: %d files", len(ls.docs))
 
 	return nil
 }
@@ -187,7 +186,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 	// opened.  That might be true, or it might be that the server restarted
 	// and lost its context. Give the caller the benefit of the doubt and
 	// attempt to open the file.
-	log.Printf("No matching open document found for %q; attempting to open instead", params.TextDocument.URI)
+	log.Infof("No matching open document found for %q; attempting to open instead", params.TextDocument.URI)
 	if err := ls.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{URI: params.TextDocument.URI},
 	}); err != nil {
@@ -206,7 +205,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 // all information extracted from documents are stored internally to the document object,
 // this removal shouldn't leak memory
 func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) error {
-	log.Printf("Document close notification received: %v", params)
+	log.Infof("Document close notification received: %v", params)
 	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
@@ -223,7 +222,7 @@ func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) er
 // NOTE: As per the lsp spec, references must return an error or a valid array.
 // Therefore, if no error is returned, a non-nil location slice must be returned
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
-	log.Printf("Searching for references at %v", params.TextDocumentPositionParams)
+	log.Infof("Searching for references at %v", params.TextDocumentPositionParams)
 
 	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
@@ -233,7 +232,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 	// If we don't have decorations we can't find references
 	doc, exists := ls.docs[local]
 	if !exists {
-		log.Printf("References requested from unknown file %q", local)
+		log.Warningf("References requested from unknown file %q", local)
 		return []lsp.Location{}, nil
 	}
 
@@ -255,7 +254,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 
 	refs := xrefs.CrossReferences[ref.ticket]
 	if refs == nil {
-		log.Printf("XRef service provided no xrefs for ticket %q", ref.ticket)
+		log.Warningf("XRef service provided no xrefs for ticket %q", ref.ticket)
 		return []lsp.Location{}, nil
 	}
 
@@ -269,7 +268,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 // NOTE: As per the lsp spec, definition must return an error or a non-null result.
 // Therefore, if no error is returned, a non-nil location slice must be returned
 func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
-	log.Printf("Searching for definition at %v", params)
+	log.Infof("Searching for definition at %v", params)
 	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return []lsp.Location{}, err
@@ -278,21 +277,21 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 	// If we don't have decorations we can't find definitions
 	doc, exists := ls.docs[local]
 	if !exists {
-		log.Printf("References requested from unknown file %q", local)
+		log.Infof("References requested from unknown file %q", local)
 		return []lsp.Location{}, nil
 	}
 
 	// If there's no ref at the location we don't have definitions
 	ref := doc.xrefs(params.Position)
 	if ref == nil {
-		log.Printf("No ref found at %v", params.Position)
+		log.Warningf("No ref found at %v", params.Position)
 		return []lsp.Location{}, nil
 	}
 
 	// If the ref's target definition is in the document's definition locations
 	// we can return the loc without a service request
 	if l, ok := doc.defLocs[ref.def]; ok {
-		log.Printf("Found target definition for %q locally: %q at %v", ref.ticket, ref.def, *l)
+		log.Infof("Found target definition for %q locally: %q at %v", ref.ticket, ref.def, *l)
 		defLocal, err := local.Workspace.LocalFromURI(l.URI)
 
 		if err != nil {
@@ -330,7 +329,7 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 
 	refs := xrefs.CrossReferences[ref.ticket]
 	if refs == nil {
-		log.Printf("XRef service provided no xrefs for ticket %q", ref.ticket)
+		log.Warningf("XRef service provided no xrefs for ticket %q", ref.ticket)
 		return []lsp.Location{}, nil
 	}
 
@@ -347,14 +346,14 @@ func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.
 	// If we don't have decorations we can't find documentation
 	doc, exists := ls.docs[local]
 	if !exists {
-		log.Printf("References requested from unknown file %q", local)
+		log.Warningf("References requested from unknown file %q", local)
 		return lsp.Hover{}, nil
 	}
 
 	// If there's no ref at the location we don't have documentation
 	ref := doc.xrefs(params.Position)
 	if ref == nil {
-		log.Printf("No ref found at %v", params.Position)
+		log.Warningf("No ref found at %v", params.Position)
 		return lsp.Hover{}, nil
 	}
 
@@ -364,18 +363,18 @@ func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.
 			Ticket: []string{ref.ticket},
 		})
 		if err != nil {
-			log.Printf("Error fetching documentation for %q: %v", ref.ticket, err)
+			log.Errorf("Error fetching documentation for %q: %v", ref.ticket, err)
 			return lsp.Hover{}, nil
 		}
 
 		if len(docReply.Document) < 1 || docReply.Document[0].MarkedSource == nil {
-			log.Printf("No Documentation found for %q", ref.ticket)
+			log.Warningf("No Documentation found for %q", ref.ticket)
 			return lsp.Hover{}, nil
 		}
 
 		kuri, err := kytheuri.Parse(docReply.Document[0].Ticket)
 		if err != nil {
-			log.Printf("Invalid ticket returned from documentation request: %v", err)
+			log.Errorf("Invalid ticket returned from documentation request: %v", err)
 			return lsp.Hover{}, nil
 		}
 		ref.markup = markedsource.Render(docReply.Document[0].MarkedSource)

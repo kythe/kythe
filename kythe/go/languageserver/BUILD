@@ -27,6 +27,7 @@ go_library(
         "//kythe/go/languageserver/pathmap",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",

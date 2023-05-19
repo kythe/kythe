@@ -7,6 +7,7 @@ go_library(
     srcs = ["graph.go"],
     deps = [
         "//kythe/go/services/web",
+        "//kythe/go/util/log",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
     ],

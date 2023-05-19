@@ -7,6 +7,7 @@ go_library(
     srcs = ["link.go"],
     deps = [
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",

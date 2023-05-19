@@ -21,7 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"math"
 	"regexp"
 	"strconv"
@@ -34,7 +33,7 @@ type sizeFlag struct{ Size }
 func Flag(name, value, description string) *Size {
 	sz, err := Parse(value)
 	if err != nil {
-		log.Panicf("Invalid default Size value for flag --%q: %q", name, value)
+		panic(fmt.Sprintf("Invalid default Size value for flag --%q: %q", name, value))
 	}
 	f := &sizeFlag{sz}
 	flag.Var(f, name, description)

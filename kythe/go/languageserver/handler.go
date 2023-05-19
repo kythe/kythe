@@ -19,8 +19,9 @@ package languageserver
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"os"
+
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/sourcegraph/go-langserver/pkg/lsp"
 	"github.com/sourcegraph/jsonrpc2"
@@ -80,10 +81,10 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 				}
 				ret, err = ls.TextDocumentHover(p)
 			case "shutdown":
-				log.Println("shutdown command received...")
+				log.Info("shutdown command received...")
 				shutdownIssued = true
 			case "exit":
-				log.Println("exiting...")
+				log.Info("exiting...")
 				if shutdownIssued {
 					os.Exit(0)
 				} else {
@@ -91,7 +92,7 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 				}
 			}
 			if err != nil {
-				log.Println(err)
+				log.Info(err)
 			}
 
 			// Because we're already logging errors, returning them to the client

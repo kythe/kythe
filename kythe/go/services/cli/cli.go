@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/identifiers"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/subcommands"
 	"google.golang.org/protobuf/proto"
@@ -108,7 +108,7 @@ func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...i
 		return subcommands.ExitUsageError
 	}
 	if err := w.Run(ctx, f, api); err != nil {
-		log.Printf("ERROR: %v", err)
+		log.Errorf("%v", err)
 		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess
@@ -137,7 +137,7 @@ func LogRequest(req proto.Message) {
 		if err != nil {
 			log.Fatalf("Failed to encode request for logging %v: %v", req, err)
 		}
-		log.Printf("%s: %s", baseTypeName(req), string(str))
+		log.Infof("%s: %s", baseTypeName(req), string(str))
 	}
 }
 

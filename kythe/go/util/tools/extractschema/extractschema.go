@@ -27,11 +27,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 )
@@ -181,7 +182,7 @@ func main() {
 
 	enc := json.NewEncoder(os.Stdout)
 	if err := enc.Encode(&schema); err != nil {
-		log.Printf("Error encoding schema: %v", err)
+		log.Errorf("encoding schema: %v", err)
 	}
 }
 
@@ -240,7 +241,7 @@ func extractNodeKinds(s string) []*Node {
 			case "signature":
 				node.VName.Signature = clean
 			default:
-				log.Printf("WARNING: Ignoring unknown name rule %q", name)
+				log.Warningf("Ignoring unknown name rule %q", name)
 				continue
 			}
 			nodeKinds.Add(relatedKinds(clean)...)
@@ -269,7 +270,7 @@ func extractFacts(s string) []*Fact {
 		case "semantic nodes":
 			fact.AttachTo = "semantic"
 		default:
-			log.Printf("WARNING: Unknown attachment kind: %q", t)
+			log.Warningf("Unknown attachment kind: %q", t)
 		}
 		out = append(out, fact)
 	}

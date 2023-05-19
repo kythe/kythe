@@ -20,7 +20,6 @@ package metadatacmd // import "kythe.io/kythe/go/platform/tools/kzip/metadatacmd
 import (
 	"context"
 	"flag"
-	"log"
 	"time"
 
 	"kythe.io/kythe/go/platform/kzip"
@@ -28,6 +27,7 @@ import (
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/subcommands"
 )
@@ -74,7 +74,7 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...in
 		return c.Fail("Required --commit_timestamp missing")
 	}
 	if c.corpus == "" {
-		log.Printf("WARNING: No --corpus provided")
+		log.Warningf("No --corpus provided")
 	}
 
 	t, err := time.Parse(c.timestampFormat, c.commitTimestamp)

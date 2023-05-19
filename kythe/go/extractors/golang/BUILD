@@ -13,6 +13,7 @@ go_library(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:go_go_proto",

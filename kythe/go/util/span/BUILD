@@ -6,6 +6,7 @@ go_library(
     name = "span",
     srcs = ["span.go"],
     deps = [
+        "//kythe/go/util/log",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:xref_go_proto",

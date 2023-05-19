@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"github.com/google/subcommands"
@@ -130,6 +130,6 @@ func (f rulesFormat) writeRules(rules vnameutil.Rules, w io.Writer) error {
 }
 
 func cmdErrorf(msg string, args ...interface{}) subcommands.ExitStatus {
-	log.Printf("ERROR: "+msg, args...)
+	log.Errorf(msg, args...)
 	return subcommands.ExitFailure
 }

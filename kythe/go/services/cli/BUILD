@@ -15,6 +15,7 @@ go_library(
         "//kythe/go/util/build",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",

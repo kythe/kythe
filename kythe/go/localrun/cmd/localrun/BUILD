@@ -9,5 +9,6 @@ go_binary(
         "//kythe/go/localrun",
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/datasize",
+        "//kythe/go/util/log",
     ],
 )

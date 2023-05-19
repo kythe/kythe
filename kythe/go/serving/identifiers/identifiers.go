@@ -23,13 +23,13 @@ package identifiers // import "kythe.io/kythe/go/serving/identifiers"
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 
 	ipb "kythe.io/kythe/proto/identifier_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -119,7 +119,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 	mux.HandleFunc("/find_identifier", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("identifiers.Find:\t%s", time.Since(start))
+			log.Infof("identifiers.Find:\t%s", time.Since(start))
 		}()
 		var req ipb.FindRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -133,7 +133,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 }

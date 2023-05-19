@@ -21,13 +21,13 @@ package graph // import "kythe.io/kythe/go/services/graph"
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"sort"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/log"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	gpb "kythe.io/kythe/proto/graph_go_proto"
@@ -160,7 +160,7 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("graph.Nodes:\t%s", time.Since(start))
+			log.Infof("graph.Nodes:\t%s", time.Since(start))
 		}()
 
 		var req gpb.NodesRequest
@@ -174,13 +174,13 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 	mux.HandleFunc("/edges", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("graph.Edges:\t%s", time.Since(start))
+			log.Infof("graph.Edges:\t%s", time.Since(start))
 		}()
 
 		var req gpb.EdgesRequest
@@ -194,7 +194,7 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 }

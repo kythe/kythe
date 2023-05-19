@@ -7,6 +7,7 @@ go_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )

@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//kythe/go/services/web",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/edges",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:xref_go_proto",
