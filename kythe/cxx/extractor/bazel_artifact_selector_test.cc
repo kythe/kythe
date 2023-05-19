@@ -131,6 +131,39 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
               Eq(absl::nullopt));
 }
 
+// Verify that we can find artifacts even if the target failed to build.
+TEST(AspectArtifactSelectorTest, SelectsFailedTargets) {
+  AspectArtifactSelector selector(DefaultOptions());
+
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      success: false
+      output_group {
+        name: "kythe_compilation_unit"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(absl::nullopt));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(BazelArtifact{
+                  .label = "//path/to/target:name",
+                  .files = {{
+                      .local_path = "path/to/file.kzip",
+                      .uri = "file:///path/to/file.kzip",
+                  }},
+              }));
+}
+
 TEST(AspectArtifactSelectorTest, CompatibleWithAny) {
   // Just ensures that AspectArtifactSelector can be assigned to an Any.
   AnyArtifactSelector unused = AspectArtifactSelector(DefaultOptions());
