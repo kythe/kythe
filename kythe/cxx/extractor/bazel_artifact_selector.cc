@@ -212,8 +212,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
-  if (payload.success() &&
-      options_.target_aspect_allowlist.Match(id.aspect())) {
+  if (options_.target_aspect_allowlist.Match(id.aspect())) {
     BazelArtifact result = {
         .label = id.label(),
     };

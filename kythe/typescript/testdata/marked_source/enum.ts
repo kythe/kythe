@@ -13,20 +13,22 @@ enum MyEnum {
     //- 
     //- MyValueCode child.0 MyValueContext
     //- MyValueContext.kind "CONTEXT"
-    //- MyValueContext.pre_text "MyEnum"
+    //- MyValueContext.post_child_text "."
+    //- MyValueContext.add_final_list_token true
     //-
-    //- MyValueCode child.1 MyValueSpace
-    //- MyValueSpace.pre_text " "
+    //- MyValueContext child.0 MyValueContextId
+    //- MyValueContextId.kind "IDENTIFIER"
+    //- MyValueContextId.pre_text "MyEnum"
     //-
-    //- MyValueCode child.2 MyValueId
+    //- MyValueCode child.1 MyValueId
     //- MyValueId.kind "IDENTIFIER"
     //- MyValueId.pre_text "MY_VALUE"
     //- 
-    //- MyValueCode child.3 MyValueEqual
+    //- MyValueCode child.2 MyValueEqual
     //- MyValueEqual.kind "BOX"
     //- MyValueEqual.pre_text " = "
     //-
-    //- MyValueCode child.4 MyValueInitializer
+    //- MyValueCode child.3 MyValueInitializer
     //- MyValueInitializer.kind "INITIALIZER"
     //- MyValueInitializer.pre_text "123"
     MY_VALUE = 123,
