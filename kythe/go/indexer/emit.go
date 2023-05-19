@@ -246,7 +246,11 @@ func exprRefKind(tgt ast.Expr, stack stackFunc, depth int) refKind {
 		}
 	case *ast.KeyValueExpr:
 		if tgt == parent.Key {
-			return writeRef
+			if c, ok := stack(depth + 2).(*ast.CompositeLit); ok {
+				if _, isMap := c.Type.(*ast.MapType); !isMap {
+					return writeRef
+				}
+			}
 		}
 	}
 	return readRef
