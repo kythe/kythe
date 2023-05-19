@@ -22,13 +22,13 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"log"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
@@ -197,7 +197,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 
 	// TODO(fromberger): Add diagnostics for type-checker errors.
 	for _, err := range pi.Errors {
-		log.Printf("WARNING: Type resolution error: %v", err)
+		log.Warningf("Type resolution error: %v", err)
 	}
 	return e.firstErr
 }
@@ -533,7 +533,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	case *types.TypeParam:
 		v = e.pi.ObjectVName(typ.Obj())
 	default:
-		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
+		log.Warningf("unknown type %T: %+v", typ, typ)
 	}
 
 	e.pi.typeVName[typ] = v
@@ -557,7 +557,7 @@ func (e *emitter) visitTuple(t *types.Tuple) []*spb.VName {
 func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	fi := e.callContext(stack)
 	if fi == nil {
-		log.Panic("Function literal without a context: ", flit)
+		panic(fmt.Sprintf("Function literal without a context: %v", flit))
 	}
 
 	fi.numAnons++
@@ -701,7 +701,7 @@ func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
 	pkg := e.pi.Dependencies[ipath]
 	target := e.pi.PackageVName[pkg]
 	if target == nil {
-		log.Printf("Unable to resolve import path %q", ipath)
+		log.Warningf("Unable to resolve import path %q", ipath)
 		return
 	}
 
@@ -761,7 +761,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 
 	tv, ok := e.pi.Info.Types[expr]
 	if !ok {
-		log.Printf("WARNING: Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
+		log.Warningf("Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
 		return
 	}
 	sv, ok := deref(tv.Type.Underlying()).(*types.Struct)
@@ -775,7 +775,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 		// such cases, don't try to read into the fields of a struct type if
 		// the counts don't line up. The information we emit will still be
 		// correct, we'll just miss some initializers.
-		log.Printf("ERROR: Struct has %d fields but %d initializers (skipping)", n, len(expr.Elts))
+		log.Errorf("Struct has %d fields but %d initializers (skipping)", n, len(expr.Elts))
 		return
 	}
 	for i, elt := range expr.Elts {
@@ -787,7 +787,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 		case *ast.KeyValueExpr:
 			f, ok := fieldIndex(t.Key, sv)
 			if !ok {
-				log.Printf("ERROR: Found no field index for %v (skipping)", t.Key)
+				log.Errorf("Found no field index for %v (skipping)", t.Key)
 				continue
 			}
 			e.emitPosRef(t.Value, sv.Field(f), edges.RefInit)
@@ -1046,7 +1046,7 @@ func isInterface(typ types.Type) bool { _, ok := typ.Underlying().(*types.Interf
 func (e *emitter) check(err error) {
 	if err != nil && e.firstErr == nil {
 		e.firstErr = err
-		log.Printf("ERROR indexing %q: %v", e.pi.ImportPath, err)
+		log.Errorf("indexing %q: %v", e.pi.ImportPath, err)
 	}
 }
 
@@ -1179,7 +1179,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 	obj := e.pi.Info.Defs[id]
 	if obj == nil {
 		loc := e.pi.FileSet.Position(id.Pos())
-		log.Printf("ERROR: Missing definition for id %q at %s", id.Name, loc)
+		log.Errorf("Missing definition for id %q at %s", id.Name, loc)
 		return nil
 	}
 	target := e.pi.ObjectVName(obj)
@@ -1488,7 +1488,7 @@ func assignableTo(tctx *types.Context, V, T types.Type) bool {
 
 	vinst, err := types.Instantiate(tctx, V, targs, true)
 	if err != nil {
-		log.Printf("ERROR: type parameters should satisfy their own constraints: %v", err)
+		log.Errorf("type parameters should satisfy their own constraints: %v", err)
 		return false
 	}
 
