@@ -24,17 +24,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
+
+	"github.com/golang/protobuf/proto"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -107,7 +108,7 @@ func main() {
 		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 			err := indexGo(ctx, unit, f)
 			if err != nil && *contOnErr {
-				log.Printf("Continuing after error: %v", err)
+				log.Errorf("Continuing after error: %v", err)
 				return nil
 			}
 			return err
@@ -152,7 +153,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		return err
 	}
 	if *verbose {
-		log.Printf("Finished resolving compilation: %s", pi.String())
+		log.Infof("Finished resolving compilation: %s", pi.String())
 	}
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs:               *doLibNodes,
