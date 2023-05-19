@@ -26,12 +26,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/golang/snappy"
@@ -223,7 +223,7 @@ func (m *mergeSorter) Iterator() (iter Iterator, err error) {
 		// Try to cleanup on errors
 		if err != nil {
 			if cErr := it.Close(); cErr != nil {
-				log.Printf("WARNING: error closing Iterator after error: %v", cErr)
+				log.Warningf("error closing Iterator after error: %v", cErr)
 			}
 		}
 	}()
@@ -345,7 +345,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 			if err == nil {
 				err = cErr
 			} else {
-				log.Println("WARNING: error closing Iterator:", cErr)
+				log.Warningf("error closing Iterator: %v", cErr)
 			}
 		}
 	}()

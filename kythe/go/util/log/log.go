@@ -22,14 +22,26 @@ import "log"
 // Infof logs to the informational log.
 func Infof(msg string, args ...any) { log.Printf(msg, args...) }
 
+// Info logs to the informational log.
+func Info(args ...any) { log.Println(args...) }
+
 // Warningf logs to the warning log.
 func Warningf(msg string, args ...any) { log.Printf("WARNING: "+msg, args...) }
 
+// Warning logs to the warning log.
+func Warning(args ...any) { log.Print(append([]any{"WARNING:"}, args...)) }
+
 // Errorf logs to the error log.
 func Errorf(msg string, args ...any) { log.Printf("ERROR: "+msg, args...) }
+
+// Error logs to the warning log.
+func Error(args ...any) { log.Print(append([]any{"ERROR:"}, args...)) }
 
 // Fatalf logs to the error log and panics.
 func Fatalf(msg string, args ...any) { log.Fatalf(msg, args...) }
 
 // Fatal logs to the error log and panics.
-func Fatal(v any) { log.Fatal(v) }
+func Fatal(args ...any) { log.Fatal(args...) }
+
+// Fatalln logs to the error log and panics.
+func Fatalln(args ...any) { log.Fatalln(args...) }

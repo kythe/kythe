@@ -23,7 +23,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -32,6 +31,7 @@ import (
 
 	"kythe.io/kythe/go/localrun"
 	"kythe.io/kythe/go/util/datasize"
+	"kythe.io/kythe/go/util/log"
 
 	// Side effect import used to register the handler for gsutil
 	_ "kythe.io/kythe/go/storage/leveldb"
@@ -129,7 +129,7 @@ func main() {
 		log.Fatalf("Error invoking localrun: %v", err)
 	}
 
-	log.Printf("Building %v for targets: %s\n",
+	log.Infof("Building %v for targets: %s\n",
 		languages.LanguageSet.String(), strings.Join(targets, " "))
 
 	if *workerPoolSize <= 0 {
@@ -174,7 +174,7 @@ func main() {
 		log.Fatalf("Error starting server: %v\n", err)
 	}
 
-	log.Println("Finished successfully.")
+	log.Info("Finished successfully.")
 }
 
 // languageFlag is a flag.Value that accepts either a list of languages or repeated

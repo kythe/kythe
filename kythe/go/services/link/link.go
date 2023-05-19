@@ -20,12 +20,12 @@ package link // import "kythe.io/kythe/go/services/link"
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"time"
 
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -91,7 +91,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		return nil, status.Errorf(codes.OutOfRange, "too many identifier matches (%d > %d)",
 			len(idMatches), maxMatches/2) // a comforting deceit
 	}
-	log.Printf("Found %d of %d matches for identifier %q",
+	log.Infof("Found %d of %d matches for identifier %q",
 		len(idMatches), len(ids.Matches), req.Identifier)
 
 	// Stage 2: Find definitions of the matching nodes.
@@ -109,14 +109,14 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		xreq.DefinitionKind = xpb.CrossReferencesRequest_ALL_DEFINITIONS
 	case linkpb.LinkRequest_BINDING:
 	default:
-		log.Printf("WARNING: Unknown definition kind %v (ignored)", req.DefinitionKind)
+		log.Warningf("Unknown definition kind %v (ignored)", req.DefinitionKind)
 	}
-	log.Print("Cross-references request:\n", prototext.Format(xreq))
+	log.Info("Cross-references request:\n", prototext.Format(xreq))
 	defs, err := s.crossRefs(ctx, xreq)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Found %d result sets", len(defs.CrossReferences))
+	log.Infof("Found %d result sets", len(defs.CrossReferences))
 
 	// Gather all the anchors matching each definition. Also check whether any
 	// of the tickets is a complete definition, since that is preferred.
@@ -125,7 +125,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	complete := stringset.New()
 	pref := false
 	for ticket, xrefs := range defs.CrossReferences {
-		log.Printf("Checking node %q...", ticket)
+		log.Infof("Checking node %q...", ticket)
 
 		if req.Params != nil {
 			// Count parameters, and filter based on that.
@@ -138,9 +138,9 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 					}
 				}
 			}
-			log.Printf("+ Node has %d parameters", nparams)
+			log.Infof("+ Node has %d parameters", nparams)
 			if n := int(req.Params.GetCount()); n != nparams {
-				log.Printf("- Wrong number of parameters (have %d, want %d)", nparams, n)
+				log.Infof("- Wrong number of parameters (have %d, want %d)", nparams, n)
 				continue
 			}
 		}
@@ -154,11 +154,11 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 					pref = true
 				}
 				complete.Add(ticket)
-				log.Print("+ Node is a preferred complete definition")
+				log.Info("+ Node is a preferred complete definition")
 			case "complete":
 				if !pref {
 					complete.Add(ticket)
-					log.Print("+ Node is a complete definition")
+					log.Info("+ Node is a complete definition")
 				}
 			}
 		}
@@ -170,7 +170,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	if len(complete) != 0 {
 		for ticket := range anchors {
 			if !complete.Contains(ticket) {
-				log.Printf("- Discarding incomplete definition %q", ticket)
+				log.Infof("- Discarding incomplete definition %q", ticket)
 				delete(anchors, ticket)
 			}
 		}
@@ -213,7 +213,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		}
 	}
 
-	log.Printf("After filtering %d anchor locations there are %d unique results",
+	log.Infof("After filtering %d anchor locations there are %d unique results",
 		numAnchors, len(seen))
 	if len(seen) == 0 {
 		return nil, status.Error(codes.NotFound, "no matching definitions")
@@ -233,7 +233,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 			}
 		}
 		rsp.Links = append(rsp.Links, res.link)
-		log.Printf("Result: %+v", res.link)
+		log.Infof("Result: %+v", res.link)
 	}
 	sort.Slice(rsp.Links, func(i, j int) bool {
 		return rsp.Links[i].FileTicket < rsp.Links[j].FileTicket
@@ -261,7 +261,7 @@ func kindMatches(m *ipb.FindReply_Match, kinds []string) bool {
 // tickets. The results are merged locally, which is safe.
 func (s *Resolver) crossRefs(ctx context.Context, req *xpb.CrossReferencesRequest) (_ *xpb.CrossReferencesReply, err error) {
 	start := time.Now()
-	defer func() { log.Printf("CrossReferences complete err=%v [%v elapsed]", err, time.Since(start)) }()
+	defer func() { log.Infof("CrossReferences complete err=%v [%v elapsed]", err, time.Since(start)) }()
 
 	reqs := make([]*xpb.CrossReferencesRequest, 0, len(req.Ticket))
 	for _, ticket := range req.Ticket {
@@ -334,16 +334,16 @@ func compileLocation(locs []*linkpb.LinkRequest_Location, keep bool) (matcher, e
 func findAnchors(ticket string, rsp *xpb.CrossReferencesReply, include, exclude matcher) []*xpb.Anchor {
 	t, err := kytheuri.Parse(ticket)
 	if err != nil {
-		log.Printf("ERROR: Invalid ticket %q: %v", ticket, err)
+		log.Errorf("Invalid ticket %q: %v", ticket, err)
 		return nil
 	}
 	check := func(ticket string) bool {
 		if a, err := kytheuri.Parse(ticket); err != nil {
-			log.Printf("- Invalid ticket %s: %v", ticket, err)
+			log.Infof("- Invalid ticket %s: %v", ticket, err)
 		} else if t.Language != "" && a.Language != t.Language {
-			log.Printf("- Language mismatch (%q ≠ %q)", a.Language, t.Language)
+			log.Infof("- Language mismatch (%q ≠ %q)", a.Language, t.Language)
 		} else if !include(a) || exclude(a) {
-			log.Printf("- Filter mismatch %s", ticket)
+			log.Infof("- Filter mismatch %s", ticket)
 		} else {
 			return true
 		}
@@ -354,7 +354,7 @@ func findAnchors(ticket string, rsp *xpb.CrossReferencesReply, include, exclude 
 	if node, ok := rsp.Nodes[ticket]; ok && node.Definition != "" {
 		if anchor, ok := rsp.DefinitionLocations[node.Definition]; ok {
 			if check(anchor.Ticket) {
-				log.Printf("+ Found matching definition anchor: %s", anchor.Ticket)
+				log.Infof("+ Found matching definition anchor: %s", anchor.Ticket)
 				return []*xpb.Anchor{anchor}
 			}
 		}
@@ -368,7 +368,7 @@ func findAnchors(ticket string, rsp *xpb.CrossReferencesReply, include, exclude 
 			continue // not a definition
 		}
 		if check(anchor.Ticket) {
-			log.Printf("+ Found matching anchor: %s", anchor.Ticket)
+			log.Infof("+ Found matching anchor: %s", anchor.Ticket)
 			result = append(result, anchor)
 		}
 	}

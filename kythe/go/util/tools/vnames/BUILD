@@ -12,6 +12,7 @@ go_binary(
     deps = [
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
         "@com_github_google_subcommands//:go_default_library",

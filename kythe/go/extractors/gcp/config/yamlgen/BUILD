@@ -7,5 +7,6 @@ go_binary(
     srcs = ["yamlgen.go"],
     deps = [
         "//kythe/go/extractors/gcp/config",
+        "//kythe/go/util/log",
     ],
 )

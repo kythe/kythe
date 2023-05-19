@@ -26,12 +26,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -93,7 +93,7 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 		case srvpb.FileDirectory_DIRECTORY:
 			re.Kind = ftpb.DirectoryReply_DIRECTORY
 		default:
-			log.Printf("WARNING: unknown directory entry type: %T", e)
+			log.Warningf("unknown directory entry type: %T", e)
 			continue
 		}
 		entries = append(entries, re)

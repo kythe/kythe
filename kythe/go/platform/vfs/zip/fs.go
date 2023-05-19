@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -91,7 +90,7 @@ func (z FS) Glob(_ context.Context, glob string) ([]string, error) {
 	var names []string
 	for _, f := range z.Archive.File {
 		if ok, err := filepath.Match(glob, f.Name); err != nil {
-			log.Panicf("Invalid glob pattern %q: %v", glob, err)
+			panic(fmt.Sprintf("Invalid glob pattern %q: %v", glob, err))
 		} else if ok {
 			names = append(names, f.Name)
 		}

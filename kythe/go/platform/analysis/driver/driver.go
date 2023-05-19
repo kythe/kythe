@@ -21,10 +21,10 @@ package driver // import "kythe.io/kythe/go/platform/analysis/driver"
 import (
 	"context"
 	goerrors "errors"
-	"log"
 	"time"
 
 	"kythe.io/kythe/go/platform/analysis"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/pkg/errors"
 
@@ -146,7 +146,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 				if err == nil {
 					return errors.WithMessage(terr, "driver: analysis teardown")
 				}
-				log.Printf("WARNING: analysis teardown failed: %v (analysis error: %v)", terr, err)
+				log.Warningf("analysis teardown failed: %v (analysis error: %v)", terr, err)
 			}
 			return err
 		}); err == ErrEndOfQueue {

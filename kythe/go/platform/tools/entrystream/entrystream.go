@@ -36,7 +36,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -46,6 +45,7 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/riegeli"
 
 	"google.golang.org/protobuf/proto"
@@ -103,11 +103,11 @@ func main() {
 	*writeFormat = strings.ToLower(*writeFormat)
 
 	if *readJSON {
-		log.Printf("WARNING: --read_json is deprecated; use --read_format=json")
+		log.Warningf("--read_json is deprecated; use --read_format=json")
 		*readFormat = jsonFormat
 	}
 	if *writeJSON {
-		log.Printf("WARNING: --write_json is deprecated; use --write_format=json")
+		log.Warningf("--write_json is deprecated; use --write_format=json")
 		*writeFormat = jsonFormat
 	}
 

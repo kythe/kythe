@@ -18,10 +18,11 @@ package pipeline
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"reflect"
 	"sort"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/serving/pipeline/nodes"
@@ -254,7 +255,7 @@ func (combineDirectories) ExtractOutput(dir *srvpb.FileDirectory) *srvpb.FileDir
 				subdirs[e.Name] = stringset.New(e.BuildConfig...)
 			}
 		default:
-			log.Printf("WARNING: unknown FileDirectory kind: %v", e.Kind)
+			log.Warningf("unknown FileDirectory kind: %v", e.Kind)
 		}
 	}
 	entries := make([]*srvpb.FileDirectory_Entry, 0, len(files)+len(subdirs))

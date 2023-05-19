@@ -15,6 +15,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/bazel/treeset",
         "//kythe/go/platform/kzip",
+        "//kythe/go/util/log",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",

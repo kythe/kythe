@@ -17,10 +17,11 @@
 package xrefs
 
 import (
-	"log"
 	"math"
 	"regexp"
 	"regexp/syntax"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -93,7 +94,7 @@ func (f *corpusPathFilter) PageSet(set *srvpb.PagedCrossReferences) *pageSet {
 	}
 
 	if len(set.GetPageIndex()) >= math.MaxUint32 {
-		log.Printf("WARNING: too many pages to perform index search: %d", len(set.GetPageIndex()))
+		log.Warningf("too many pages to perform index search: %d", len(set.GetPageIndex()))
 		return nil
 	}
 

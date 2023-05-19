@@ -95,8 +95,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -348,7 +348,7 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 		}
 		e, err := rewriteEntry(e)
 		if err != nil {
-			log.Printf("ERROR: could not rewrite entry: %v", err)
+			log.Errorf("could not rewrite entry: %v", err)
 			continue
 		}
 		entries[i] = e
@@ -369,7 +369,7 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 		}
 		e, err := rewriteEntry(e)
 		if err != nil {
-			log.Printf("ERROR: could not rewrite entry: %v", err)
+			log.Errorf("could not rewrite entry: %v", err)
 			continue
 		}
 		entries[i] = e
