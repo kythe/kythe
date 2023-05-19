@@ -9,6 +9,7 @@ go_binary(
         "//kythe/go/indexer",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/kzip",
+        "//kythe/go/util/log",
         "//kythe/go/util/metadata",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
