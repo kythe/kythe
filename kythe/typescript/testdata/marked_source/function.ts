@@ -23,25 +23,27 @@
 //- 
 //- ArgCode child.0 ArgCodeContext
 //- ArgCodeContext.kind "CONTEXT"
-//- ArgCodeContext.pre_text "myFunction"
+//- ArgCodeContext.post_child_text "."
+//- ArgCodeContext.add_final_list_token true
 //-
-//- ArgCode child.1 ArgCodeSpace
-//- ArgCodeSpace.pre_text " "
+//- ArgCodeContext child.0 ArgCodeContextId
+//- ArgCodeContextId.kind "IDENTIFIER"
+//- ArgCodeContextId.pre_text "myFunction"
 //-
-//- ArgCode child.2 ArgCodeId
+//- ArgCode child.1 ArgCodeId
 //- ArgCodeId.kind "IDENTIFIER"
 //- ArgCodeId.pre_text "arg"
 //-
-//- ArgCode child.3 ArgCodeType
+//- ArgCode child.2 ArgCodeType
 //- ArgCodeType.kind "TYPE"
 //- ArgCodeType.pre_text ": "
 //- ArgCodeType.post_text "string"
 //-
-//- ArgCode child.4 ArgCodeEqual
+//- ArgCode child.3 ArgCodeEqual
 //- ArgCodeEqual.kind "BOX"
 //- ArgCodeEqual.pre_text " = "
 //-
-//- ArgCode child.5 ArgCodeDefaultValue
+//- ArgCode child.4 ArgCodeDefaultValue
 //- ArgCodeDefaultValue.kind "INITIALIZER"
 //- ArgCodeDefaultValue.pre_text "'0'"
 function myFunction(arg: string = '0'): number {

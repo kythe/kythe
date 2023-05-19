@@ -12,16 +12,18 @@ class MyClass {
     //-
     //- ConstructorCode child.0 ConstructorContext
     //- ConstructorContext.kind "CONTEXT"
-    //- ConstructorContext.pre_text "MyClass"
+    //- ConstructorContext.post_child_text "."
+    //- ConstructorContext.add_final_list_token true
     //-
-    //- ConstructorCode child.1 ConstructorSpace
-    //- ConstructorSpace.pre_text " "
+    //- ConstructorContext child.0 ConstructorContextId
+    //- ConstructorContextId.kind "IDENTIFIER"
+    //- ConstructorContextId.pre_text "MyClass"
     //-
-    //- ConstructorCode child.2 ConstructorId
+    //- ConstructorCode child.1 ConstructorId
     //- ConstructorId.kind "IDENTIFIER"
     //- ConstructorId.pre_text "constructor"
     //-
-    //- ConstructorCode child.3 ConstructorParams
+    //- ConstructorCode child.2 ConstructorParams
     //- ConstructorParams.kind "PARAMETER_LOOKUP_BY_PARAM"
     //- ConstructorParams.pre_text "("
     //- ConstructorParams.post_text ")"
@@ -35,22 +37,24 @@ class MyClass {
     //-
     //- MyMethodCode child.0 MyMethodContext
     //- MyMethodContext.kind "CONTEXT"
-    //- MyMethodContext.pre_text "MyClass"
+    //- MyMethodContext.post_child_text "."
+    //- MyMethodContext.add_final_list_token true
     //-
-    //- MyMethodCode child.1 MyMethodSpace
-    //- MyMethodSpace.pre_text " "
-    //- 
-    //- MyMethodCode child.2 MyMethodCodeId
+    //- MyMethodContext child.0 MyMethodContextId
+    //- MyMethodContextId.kind "IDENTIFIER"
+    //- MyMethodContextId.pre_text "MyClass"
+    //-
+    //- MyMethodCode child.1 MyMethodCodeId
     //- MyMethodCodeId.kind "IDENTIFIER"
     //- MyMethodCodeId.pre_text "myMethod"
     //- 
-    //- MyMethodCode child.3 MyMethodParams
+    //- MyMethodCode child.2 MyMethodParams
     //- MyMethodParams.kind "PARAMETER_LOOKUP_BY_PARAM"
     //- MyMethodParams.pre_text "("
     //- MyMethodParams.post_text ")"
     //- MyMethodParams.post_child_text ", "
     //-
-    //- MyMethodCode child.4 MyMethodReturnType
+    //- MyMethodCode child.3 MyMethodReturnType
     //- MyMethodReturnType.kind "TYPE"
     //- MyMethodReturnType.pre_text ": "
     //- MyMethodReturnType.post_text "MyClass"
@@ -61,16 +65,22 @@ class MyClass {
     //- 
     //- ArgCode child.0 ArgCodeContext
     //- ArgCodeContext.kind "CONTEXT"
-    //- ArgCodeContext.pre_text "MyClass.myMethod"
+    //- ArgCodeContext.post_child_text "."
+    //- ArgCodeContext.add_final_list_token true
+    //-
+    //- ArgCodeContext child.0 ArgCodeContextClassId
+    //- ArgCodeContextClassId.kind "IDENTIFIER"
+    //- ArgCodeContextClassId.pre_text "MyClass"
+    //-
+    //- ArgCodeContext child.1 ArgCodeContextMethodId
+    //- ArgCodeContextMethodId.kind "IDENTIFIER"
+    //- ArgCodeContextMethodId.pre_text "myMethod"
     //- 
-    //- ArgCode child.1 ArgCodeSpace
-    //- ArgCodeSpace.pre_text " "
-    //- 
-    //- ArgCode child.2 ArgCodeId
+    //- ArgCode child.1 ArgCodeId
     //- ArgCodeId.kind "IDENTIFIER"
     //- ArgCodeId.pre_text "arg"
     //-
-    //- ArgCode child.3 ArgCodeType
+    //- ArgCode child.2 ArgCodeType
     //- ArgCodeType.kind "TYPE"
     //- ArgCodeType.pre_text ": "
     //- ArgCodeType.post_text "number"
@@ -81,7 +91,7 @@ class MyClass {
     // Test that return type is inferred.
     //- @returnNumber defines/binding ReturnNumber
     //- ReturnNumber code ReturnNumberCode
-    //- ReturnNumberCode child.4 ReturnNumberType
+    //- ReturnNumberCode child.3 ReturnNumberType
     //- ReturnNumberType.kind "TYPE"
     //- ReturnNumberType.pre_text ": "
     //- ReturnNumberType.post_text "number"
