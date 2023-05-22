@@ -26,10 +26,11 @@ import (
 	"fmt"
 	"go/format"
 	"io/ioutil"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -96,7 +97,7 @@ func main() {
 				case "Subkind":
 					index.Subkinds[md.Label] = scpb.Subkind(val.GetNumber())
 				default:
-					log.Printf("Unknown Kythe enum %s with Metadata: %+v", enum.GetName(), md)
+					log.Errorf("unknown Kythe enum %s with Metadata: %+v", enum.GetName(), md)
 				}
 			}
 		}

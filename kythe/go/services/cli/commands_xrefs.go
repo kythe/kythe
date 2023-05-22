@@ -20,15 +20,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
-
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
@@ -163,7 +162,7 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		return err
 	}
 	if reply.NextPageToken != "" {
-		defer log.Printf("Next page token: %s", reply.NextPageToken)
+		defer log.Infof("Next page token: %s", reply.NextPageToken)
 	}
 	return c.displayXRefs(reply)
 }

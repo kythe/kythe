@@ -19,13 +19,13 @@ package info // import "kythe.io/kythe/go/platform/kzip/info"
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/creachadair/stringset"
-
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
+
+	"bitbucket.org/creachadair/stringset"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -118,7 +118,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	}
 	if srcCorpora.Len() != 1 {
 		// This is a warning for now, but may become an error.
-		log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
+		log.Infof("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
 	}
 
 	a.KzipInfo.AbsolutePaths = absPaths.Elements()

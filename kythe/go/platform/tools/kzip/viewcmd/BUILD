@@ -12,6 +12,7 @@ go_library(
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
+        "//kythe/go/util/log",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:cxx_go_proto",
         "//kythe/proto:go_go_proto",

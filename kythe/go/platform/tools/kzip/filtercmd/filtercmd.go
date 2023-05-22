@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/kzip"
@@ -30,6 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
@@ -123,7 +123,7 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, filter
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Printf("Skipping empty .kzip: %s", input)
+		log.Infof("Skipping empty .kzip: %s", input)
 		return nil
 	}
 

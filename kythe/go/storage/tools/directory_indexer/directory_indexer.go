@@ -53,7 +53,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -62,8 +61,8 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
-
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -111,7 +110,7 @@ func emitPath(path string, info os.FileInfo, err error) error {
 	}
 
 	if *verbose {
-		log.Printf("Reading/emitting %s", path)
+		log.Infof("Reading/emitting %s", path)
 	}
 	contents, err := vfs.ReadFile(context.Background(), path)
 	if err != nil {

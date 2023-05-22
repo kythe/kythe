@@ -8,5 +8,6 @@ go_library(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/inmemory",
+        "//kythe/go/util/log",
     ],
 )

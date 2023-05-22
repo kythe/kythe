@@ -20,13 +20,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
-
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
@@ -131,7 +130,7 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 		return nil, nil, fmt.Errorf("loading extra action: %v", err)
 	}
 	pkg := PackageName(info.GetOwner())
-	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
+	log.Infof("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
 	rules, err := vnameutil.LoadRules(s.VNameRules)
 	if err != nil {

@@ -5,7 +5,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "html",
     srcs = ["html.go"],
-    deps = ["@org_golang_x_net//html:go_default_library"],
+    deps = [
+        "//kythe/go/util/log",
+        "@org_golang_x_net//html:go_default_library",
+    ],
 )
 
 go_test(

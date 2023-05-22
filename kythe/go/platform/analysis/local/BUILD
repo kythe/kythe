@@ -10,6 +10,7 @@ go_library(
         "//kythe/go/platform/analysis/driver",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
         "//kythe/proto:analysis_go_proto",
     ],
 )

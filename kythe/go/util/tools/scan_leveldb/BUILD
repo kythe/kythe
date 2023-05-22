@@ -8,6 +8,7 @@ go_binary(
     deps = [
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
         "@org_golang_google_protobuf//proto:go_default_library",

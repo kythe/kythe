@@ -26,10 +26,10 @@ package main
 import (
 	"bufio"
 	"flag"
-	"log"
 	"os"
 
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
 
 	"google.golang.org/protobuf/encoding/protojson"

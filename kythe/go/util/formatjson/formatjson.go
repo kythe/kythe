@@ -19,8 +19,9 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 func main() {

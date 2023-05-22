@@ -18,7 +18,6 @@ package pipeline
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -27,6 +26,7 @@ import (
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
@@ -863,7 +863,7 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		}
 		a, err := assemble.ExpandAnchor(raw, file, norm, "")
 		if err != nil {
-			log.Printf("error expanding anchor {%+v}: %v", raw, err)
+			log.Errorf("expanding anchor {%+v}: %v", raw, err)
 			break
 		}
 

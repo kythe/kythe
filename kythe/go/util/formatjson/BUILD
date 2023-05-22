@@ -5,4 +5,5 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "formatjson",
     srcs = ["formatjson.go"],
+    deps = ["//kythe/go/util/log"],
 )

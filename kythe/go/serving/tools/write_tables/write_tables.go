@@ -22,10 +22,8 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"log"
 	"time"
 
-	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
@@ -35,12 +33,14 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/profile"
 
-	spb "kythe.io/kythe/proto/storage_go_proto"
-
 	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/stats"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
+
+	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 	_ "kythe.io/third_party/beam/sdks/go/pkg/beam/runners/disksort"
@@ -146,7 +146,7 @@ func main() {
 }
 
 func compactLevelDB(path string) error {
-	defer func(start time.Time) { log.Printf("Compaction completed in %s", time.Since(start)) }(time.Now())
+	defer func(start time.Time) { log.Infof("Compaction completed in %s", time.Since(start)) }(time.Now())
 	return leveldb.CompactRange(*tablePath, nil)
 }
 

@@ -22,7 +22,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -30,6 +29,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
@@ -91,7 +91,7 @@ func main() {
 
 			fields, err := getTagFields(gs, r.TargetTicket)
 			if err != nil {
-				log.Printf("Failed to get tagfields for %q: %v", r.TargetTicket, err)
+				log.Errorf("Failed to get tagfields for %q: %v", r.TargetTicket, err)
 			}
 
 			fmt.Printf("%s\t%s\t%d;\"\t%s\n",

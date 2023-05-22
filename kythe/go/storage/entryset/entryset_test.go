@@ -17,13 +17,13 @@
 package entryset
 
 import (
-	"log"
 	"sort"
 	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"

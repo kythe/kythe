@@ -11,6 +11,7 @@ go_library(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
         "@org_golang_x_tools//go/vcs:go_default_library",

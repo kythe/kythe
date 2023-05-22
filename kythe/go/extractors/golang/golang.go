@@ -27,7 +27,7 @@
 //	c.Extract()
 //	for _, pkg := range c.Packages {
 //	  if pkg.Err != nil {
-//	    log.Printf("Error extracting %q: %v", pkg.Path, pkg.Err)
+//	    log.Errorf("extracting %q: %v", pkg.Path, pkg.Err)
 //	  } else {
 //	    writeOutput(pkg)
 //	  }

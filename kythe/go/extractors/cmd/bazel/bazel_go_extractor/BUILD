@@ -8,6 +8,7 @@ go_binary(
     deps = [
         "//kythe/go/extractors/bazel",
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/log",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",

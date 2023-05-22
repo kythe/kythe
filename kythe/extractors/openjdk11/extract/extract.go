@@ -23,7 +23,6 @@ import (
 	"errors"
 	"flag"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"os/user"
@@ -32,6 +31,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 )
@@ -294,9 +294,9 @@ func collectExtractionErrors(stderr io.Reader) ([]string, error) {
 func logCollectedErrors(stderr io.Reader) {
 	errors, err := collectExtractionErrors(stderr)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 	if len(errors) > 0 {
-		log.Println("Error extracting modules:\n\t", strings.Join(errors, "\n\t"))
+		log.Error("Error extracting modules:\n\t", strings.Join(errors, "\n\t"))
 	}
 }
