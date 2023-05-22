@@ -125,10 +125,10 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "souffle",
-        urls = ["https://github.com/souffle-lang/souffle/archive/fbb4c4b967bf58cccb7aca58e3d200a799218d98.zip"],
+        urls = ["https://github.com/souffle-lang/souffle/archive/cc8ea091721fcfb60bed45a0edf571ad9d0c58a5.zip"],
         build_file = "@io_kythe//third_party:souffle.BUILD",
-        sha256 = "654c1b33b2b3f20fdc1f0983dfed562c24a0baa230fd431401cc0004464c6b4d",
-        strip_prefix = "souffle-fbb4c4b967bf58cccb7aca58e3d200a799218d98",
+        sha256 = "8e914fc7ccd7d846d9e3073ecfb185fcb4a85ada51cd8ab04283052e48ebfd62",
+        strip_prefix = "souffle-cc8ea091721fcfb60bed45a0edf571ad9d0c58a5",
         patch_args = ["-p0"],
         patches = [
             "@io_kythe//third_party:souffle_remove_config.patch",

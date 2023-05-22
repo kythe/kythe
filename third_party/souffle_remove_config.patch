@@ -1,11 +1,11 @@
 --- src/main.cpp
 +++ src/main.cpp
-@@ -60,7 +60,7 @@
- #include "ast/transform/SimplifyAggregateTargetExpression.h"
- #include "ast/transform/UniqueAggregationVariables.h"
- #include "ast2ram/AstToRamTranslator.h"
+@@ -64,7 +64,7 @@
+ #include "ast2ram/seminaive/TranslationStrategy.h"
+ #include "ast2ram/seminaive/UnitTranslator.h"
+ #include "ast2ram/utility/TranslatorContext.h"
 -#include "config.h"
-+#define PACKAGE_VERSION "2.0.2-352-gfbb4c4b96"
++namespace souffle { constexpr char const* PACKAGE_VERSION = "2.3"; }
  #include "interpreter/Engine.h"
  #include "interpreter/ProgInterface.h"
  #include "parser/ParserDriver.h"
