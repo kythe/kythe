@@ -29,13 +29,13 @@ import (
 )
 
 // A Head signals the start of a new Set.
-type Head interface{}
+type Head any
 
 // A Group is part of a Set.
-type Group interface{}
+type Group any
 
 // A Set is a set of Groups.
-type Set interface{}
+type Set any
 
 // SetPager constructs a set of Sets and Pages from a sequence of Heads and
 // Groups.  For each set of Groups with the same Head, a call to StartSet must
@@ -97,7 +97,7 @@ func (p *SetPager) StartSet(ctx context.Context, hd Head) error {
 
 	p.curSet = p.NewSet(hd)
 	p.groups = &sortutil.ByLesser{
-		Lesser: sortutil.LesserFunc(func(a, b interface{}) bool {
+		Lesser: sortutil.LesserFunc(func(a, b any) bool {
 			// Sort larger Groups first.
 			return p.Size(a) > p.Size(b)
 		}),

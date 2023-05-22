@@ -70,7 +70,7 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and merges the provided files.
-func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("Required --output path missing")
 	}

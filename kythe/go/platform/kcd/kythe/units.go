@@ -177,7 +177,7 @@ func (u Unit) pathKey(inputPath string) string {
 
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if
 // so returns the appropriate implementation.
-func ConvertUnit(v interface{}) (kcd.Unit, bool) {
+func ConvertUnit(v any) (kcd.Unit, bool) {
 	if u, ok := v.(*apb.CompilationUnit); ok {
 		return Unit{u}, true
 	}

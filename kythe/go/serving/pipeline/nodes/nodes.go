@@ -188,7 +188,7 @@ func compareEdges(a, b *scpb.Edge) compare.Order {
 		AndThen(a.GetGenericKind(), b.GetGenericKind()).
 		AndThen(int(a.Ordinal), int(b.Ordinal)).
 		AndThen(a.Target, b.Target,
-			compare.With(func(a, b interface{}) compare.Order {
+			compare.With(func(a, b any) compare.Order {
 				return compare.VNames(a.(*spb.VName), b.(*spb.VName))
 			}))
 }

@@ -68,7 +68,7 @@ func (c *compdbCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs compdb extraction.
-func (c *compdbCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *compdbCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := c.checkFlags(); err != nil {
 		return c.Fail("Incorrect flags: %v", err)
 	}

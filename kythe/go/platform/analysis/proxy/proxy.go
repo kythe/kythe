@@ -124,8 +124,8 @@ type request struct {
 
 // A response represents a response from the proxy to the indexer.
 type response struct {
-	Status string      `json:"rsp"` // status message
-	Args   interface{} `json:"args,omitempty"`
+	Status string `json:"rsp"` // status message
+	Args   any    `json:"args,omitempty"`
 }
 
 // A unit represents a compilation unit (in JSON form) to be analyzed.
@@ -377,7 +377,7 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	return entries, nil
 }
 
-func (p *Proxy) reply(status string, args interface{}) {
+func (p *Proxy) reply(status string, args any) {
 	p.err = p.out.Encode(&response{
 		Status: status,
 		Args:   args,

@@ -70,7 +70,7 @@ func (g gradleCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs gradle extraction.
-func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := g.checkFlags(); err != nil {
 		return g.Fail("incorrect flags: %v", err)
 	}

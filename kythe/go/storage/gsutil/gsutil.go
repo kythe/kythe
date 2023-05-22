@@ -76,7 +76,7 @@ func (f *gsFlag) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *gsFlag) Get() interface{} {
+func (f *gsFlag) Get() any {
 	return *f.gs
 }
 

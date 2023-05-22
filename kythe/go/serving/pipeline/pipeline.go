@@ -132,7 +132,7 @@ func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Optio
 		}
 	}()
 
-	err := sortedEdges.Read(func(x interface{}) error {
+	err := sortedEdges.Read(func(x any) error {
 		e := x.(*srvpb.Edge)
 		pesIn <- e
 		dIn <- e
@@ -189,7 +189,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 	}
 
 	var n *srvpb.Node
-	if err := partialSorter.Read(func(i interface{}) error {
+	if err := partialSorter.Read(func(i any) error {
 		e := i.(*srvpb.Edge)
 		if n == nil || n.Ticket != e.Source.Ticket {
 			n = e.Source
@@ -362,7 +362,7 @@ type decorationFragment struct {
 
 type fragmentLesser struct{}
 
-func (fragmentLesser) Less(a, b interface{}) bool {
+func (fragmentLesser) Less(a, b any) bool {
 	x, y := a.(*decorationFragment), b.(*decorationFragment)
 	if x.fileTicket == y.fileTicket {
 		if len(x.decoration.Decoration) == 0 || len(y.decoration.Decoration) == 0 {
@@ -418,7 +418,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		decor   *srvpb.FileDecorations
 		targets map[string]*srvpb.Node
 	)
-	if err := fragments.Read(func(x interface{}) error {
+	if err := fragments.Read(func(x any) error {
 		df := x.(*decorationFragment)
 		fileTicket := df.fileTicket
 		fragment := df.decoration
@@ -494,7 +494,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		},
 	}
 	var curTicket string
-	if err := refSorter.Read(func(i interface{}) error {
+	if err := refSorter.Read(func(i any) error {
 		cr := i.(*ipb.CrossReference)
 
 		if curTicket != cr.Referent.Ticket {
@@ -536,7 +536,7 @@ func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDec
 
 type edgeLesser struct{}
 
-func (edgeLesser) Less(a, b interface{}) bool {
+func (edgeLesser) Less(a, b any) bool {
 	x, y := a.(*srvpb.Edge), b.(*srvpb.Edge)
 	if x.Source.Ticket == y.Source.Ticket {
 		if x.Target == nil || y.Target == nil {
@@ -555,16 +555,16 @@ func (edgeLesser) Less(a, b interface{}) bool {
 
 type edgeMarshaler struct{}
 
-func (edgeMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+func (edgeMarshaler) Marshal(x any) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
 
-func (edgeMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (edgeMarshaler) Unmarshal(rec []byte) (any, error) {
 	var e srvpb.Edge
 	return &e, proto.Unmarshal(rec, &e)
 }
 
 type fragmentMarshaler struct{}
 
-func (fragmentMarshaler) Marshal(x interface{}) ([]byte, error) {
+func (fragmentMarshaler) Marshal(x any) ([]byte, error) {
 	f := x.(*decorationFragment)
 	rec, err := proto.Marshal(f.decoration)
 	if err != nil {
@@ -573,7 +573,7 @@ func (fragmentMarshaler) Marshal(x interface{}) ([]byte, error) {
 	return bytes.Join([][]byte{[]byte(f.fileTicket), rec}, []byte("\000")), nil
 }
 
-func (fragmentMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (fragmentMarshaler) Unmarshal(rec []byte) (any, error) {
 	ss := bytes.SplitN(rec, []byte("\000"), 2)
 	if len(ss) != 2 {
 		return nil, errors.New("invalid decorationFragment encoding")
@@ -590,16 +590,16 @@ func (fragmentMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 
 type refMarshaler struct{}
 
-func (refMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+func (refMarshaler) Marshal(x any) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
 
-func (refMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (refMarshaler) Unmarshal(rec []byte) (any, error) {
 	var e ipb.CrossReference
 	return &e, proto.Unmarshal(rec, &e)
 }
 
 type refLesser struct{}
 
-func (refLesser) Less(a, b interface{}) bool {
+func (refLesser) Less(a, b any) bool {
 	x, y := a.(*ipb.CrossReference), b.(*ipb.CrossReference)
 	if x.Referent.Ticket == y.Referent.Ticket {
 		if x.TargetAnchor == nil || y.TargetAnchor == nil {

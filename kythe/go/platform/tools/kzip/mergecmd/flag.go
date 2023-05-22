@@ -49,6 +49,6 @@ func (f *vnameRules) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *vnameRules) Get() interface{} {
+func (f *vnameRules) Get() any {
 	return f
 }

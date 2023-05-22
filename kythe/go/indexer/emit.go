@@ -393,7 +393,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 			e.emitBuiltinMarkedSource(ctor)
 		}
 	}
-	components := []interface{}{ctor}
+	components := []any{ctor}
 	for _, p := range params {
 		components = append(components, p)
 	}

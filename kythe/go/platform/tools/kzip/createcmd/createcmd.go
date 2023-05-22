@@ -92,7 +92,7 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and creates the requested file.
-func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	switch {
 	case c.uri.Corpus == "":
 		return c.Fail("Missing required -uri")

@@ -49,12 +49,12 @@ func (r Func) Reduce(ctx context.Context, io IO) error { return r(ctx, io) }
 
 // A Input yields input to a Reducer.
 type Input interface {
-	Next() (interface{}, error)
+	Next() (any, error)
 }
 
 // A Output allows a Reducer to emit values.
 type Output interface {
-	Emit(context.Context, interface{}) error
+	Emit(context.Context, any) error
 }
 
 // IO composes Input and Output.
@@ -64,16 +64,16 @@ type IO interface {
 }
 
 // An OutFunc implements the Output interface.
-type OutFunc func(context.Context, interface{}) error
+type OutFunc func(context.Context, any) error
 
 // Emit implements the Output interface.
-func (o OutFunc) Emit(ctx context.Context, i interface{}) error { return o(ctx, i) }
+func (o OutFunc) Emit(ctx context.Context, i any) error { return o(ctx, i) }
 
 // An InFunc implements the Input interface.
-type InFunc func(context.Context) (interface{}, error)
+type InFunc func(context.Context) (any, error)
 
 // Next implements the Input interface.
-func (f InFunc) Next(ctx context.Context) (interface{}, error) { return f(ctx) }
+func (f InFunc) Next(ctx context.Context) (any, error) { return f(ctx) }
 
 // ChannelInput implements the Input interface, yielding each channel
 // value when Next is called.
@@ -81,12 +81,12 @@ type ChannelInput <-chan ChannelInputValue
 
 // ChannelInputValue represents the return value of Input#Next.
 type ChannelInputValue struct {
-	Value interface{}
+	Value any
 	Err   error
 }
 
 // Next implements the Input interface.
-func (c ChannelInput) Next() (interface{}, error) {
+func (c ChannelInput) Next() (any, error) {
 	v, ok := <-c
 	if !ok {
 		return nil, io.EOF

@@ -41,7 +41,7 @@ func (and) isOption() {}
 // With is an Option that provides a custom comparison function for the final
 // values being compared.  Only the last With Option passed to Compare will be
 // honored.
-type With func(a, b interface{}) Order
+type With func(a, b any) Order
 
 func (With) isOption() {}
 
@@ -55,7 +55,7 @@ func Reversed() Option { return reverseOrder{} }
 
 // By is an Option that transforms a value before performing a comparison.  It
 // should work on both sides of the comparison equivalently.
-type By func(interface{}) interface{}
+type By func(any) any
 
 func (By) isOption() {}
 
@@ -70,7 +70,7 @@ func (By) isOption() {}
 // a supported type or a With Option is provided for the types given.
 //
 // Note: this function panics if a and b are different types
-func Compare(a, b interface{}, opts ...Option) (o Order) {
+func Compare(a, b any, opts ...Option) (o Order) {
 	var reversed bool
 	defer func() {
 		if reversed {
@@ -126,7 +126,7 @@ func Compare(a, b interface{}, opts ...Option) (o Order) {
 //	Compare(a, b, By(someField)).AndThen(a, b, By(someOtherField))
 //
 //	Entries(e1, e2).AndThen(e1.FactValue, e2.FactValue)
-func (o Order) AndThen(a, b interface{}, opts ...Option) Order {
+func (o Order) AndThen(a, b any, opts ...Option) Order {
 	if o != EQ {
 		return o
 	}
@@ -137,7 +137,7 @@ func (o Order) AndThen(a, b interface{}, opts ...Option) Order {
 // Options.  If len(opts) == 0, Seq merely returns Compare(a, b).
 // For len(opts) > 0, Seq returns
 // Compare(a, b, opts[0]).AndThen(a, b, opts[1])....AndThen(a, b, opts[len(opts)-1]).
-func Seq(a, b interface{}, opts ...Option) Order {
+func Seq(a, b any, opts ...Option) Order {
 	if len(opts) == 0 {
 		return Compare(a, b)
 	}
@@ -209,19 +209,19 @@ func Bools(a, b bool) Order {
 
 // Options for comparing components of *spb.VName protobuf messages.
 var (
-	ByVNameSignature = By(func(x interface{}) interface{} {
+	ByVNameSignature = By(func(x any) any {
 		return x.(*spb.VName).GetSignature()
 	})
-	ByVNameCorpus = By(func(x interface{}) interface{} {
+	ByVNameCorpus = By(func(x any) any {
 		return x.(*spb.VName).GetCorpus()
 	})
-	ByVNameRoot = By(func(x interface{}) interface{} {
+	ByVNameRoot = By(func(x any) any {
 		return x.(*spb.VName).GetRoot()
 	})
-	ByVNamePath = By(func(x interface{}) interface{} {
+	ByVNamePath = By(func(x any) any {
 		return x.(*spb.VName).GetPath()
 	})
-	ByVNameLanguage = By(func(x interface{}) interface{} {
+	ByVNameLanguage = By(func(x any) any {
 		return x.(*spb.VName).GetLanguage()
 	})
 )
@@ -239,14 +239,14 @@ func VNamesEqual(v1, v2 *spb.VName) bool { return VNames(v1, v2) == EQ }
 
 // Options for comparing components of *spb.Entry protobuf messages.
 var (
-	ByEntrySource = And(By(func(x interface{}) interface{} {
+	ByEntrySource = And(By(func(x any) any {
 		return x.(*spb.Entry).GetSource()
-	}), With(func(a, b interface{}) Order { return VNames(a.(*spb.VName), b.(*spb.VName)) }))
-	ByEntryEdgeKind = By(func(x interface{}) interface{} { return x.(*spb.Entry).GetEdgeKind() })
-	ByEntryFactName = By(func(x interface{}) interface{} { return x.(*spb.Entry).GetFactName() })
-	ByEntryTarget   = And(By(func(x interface{}) interface{} {
+	}), With(func(a, b any) Order { return VNames(a.(*spb.VName), b.(*spb.VName)) }))
+	ByEntryEdgeKind = By(func(x any) any { return x.(*spb.Entry).GetEdgeKind() })
+	ByEntryFactName = By(func(x any) any { return x.(*spb.Entry).GetFactName() })
+	ByEntryTarget   = And(By(func(x any) any {
 		return x.(*spb.Entry).GetTarget()
-	}), With(func(a, b interface{}) Order { return VNames(a.(*spb.VName), b.(*spb.VName)) }))
+	}), With(func(a, b any) Order { return VNames(a.(*spb.VName), b.(*spb.VName)) }))
 )
 
 // Entries reports whether e1 is LT, GT, or EQ to e2 in entry order, ignoring
@@ -268,10 +268,10 @@ func (s ByEntries) Less(i, j int) bool { return Entries(s[i], s[j]) == LT }
 func (s ByEntries) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // Push implements part of the heap.Interface
-func (s *ByEntries) Push(v interface{}) { *s = append(*s, v.(*spb.Entry)) }
+func (s *ByEntries) Push(v any) { *s = append(*s, v.(*spb.Entry)) }
 
 // Pop implements part of the heap.Interface
-func (s *ByEntries) Pop() interface{} {
+func (s *ByEntries) Pop() any {
 	old := *s
 	n := len(old) - 1
 	out := old[n]
@@ -294,7 +294,7 @@ func EntriesEqual(e1, e2 *spb.Entry) bool { return ValueEntries(e1, e2) == EQ }
 // proto.Equal.
 //
 // See github.com/google/go-cmp/cmp for more details.
-func ProtoDiff(x, y interface{}, opts ...cmp.Option) string {
+func ProtoDiff(x, y any, opts ...cmp.Option) string {
 	return cmp.Diff(x, y, makeProtoOpts(opts)...)
 }
 

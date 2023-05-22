@@ -54,7 +54,7 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 //	a.Accumulate(unit) // call for each compilation unit
 //	info := a.Get()    // get the resulting KzipInfo
 type Accumulator struct {
-	*apb.KzipInfo
+	KzipInfo *apb.KzipInfo
 }
 
 // NewAccumulator creates a new Accumulator instance given the kzip fileSize (in
@@ -142,8 +142,8 @@ func requiredInputCorpus(u *kzip.Unit, ri *apb.CompilationUnit_FileInput) string
 }
 
 // KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
-func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
-	totals := apb.KzipInfo_CorpusInfo{
+func KzipInfoTotalCount(infos []*apb.KzipInfo) *apb.KzipInfo_CorpusInfo {
+	totals := &apb.KzipInfo_CorpusInfo{
 		LanguageRequiredInputs: make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 		LanguageSources:        make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 	}

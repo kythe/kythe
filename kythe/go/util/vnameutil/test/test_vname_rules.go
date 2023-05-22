@@ -59,7 +59,7 @@ func (t test) vname() *spb.VName {
 	}
 }
 
-func errorf(msg string, args ...interface{}) {
+func errorf(msg string, args ...any) {
 	numErrs++
 	log.Errorf(msg, args...)
 }

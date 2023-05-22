@@ -256,7 +256,7 @@ func sortEntries(rd stream.EntryReader) (stream.EntryReader, error) {
 	}
 
 	return func(f func(*spb.Entry) error) error {
-		return sorter.Read(func(i interface{}) error {
+		return sorter.Read(func(i any) error {
 			return f(i.(*spb.Entry))
 		})
 	}, nil
@@ -264,15 +264,15 @@ func sortEntries(rd stream.EntryReader) (stream.EntryReader, error) {
 
 type entryLesser struct{}
 
-func (entryLesser) Less(a, b interface{}) bool {
+func (entryLesser) Less(a, b any) bool {
 	return compare.Entries(a.(*spb.Entry), b.(*spb.Entry)) == compare.LT
 }
 
 type entryMarshaler struct{}
 
-func (entryMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+func (entryMarshaler) Marshal(x any) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
 
-func (entryMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (entryMarshaler) Unmarshal(rec []byte) (any, error) {
 	var e spb.Entry
 	return &e, proto.Unmarshal(rec, &e)
 }
