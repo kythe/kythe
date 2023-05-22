@@ -25,7 +25,6 @@ import (
 	"go/build"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -34,6 +33,7 @@ import (
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"

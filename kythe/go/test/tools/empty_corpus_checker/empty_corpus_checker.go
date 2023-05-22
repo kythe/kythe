@@ -23,16 +23,17 @@ package main
 import (
 	"bufio"
 	"flag"
-	"log"
 	"os"
 
-	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/storage/entryset"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 
-	intpb "kythe.io/kythe/proto/internal_go_proto"
+	"bitbucket.org/creachadair/stringset"
+
+	ipb "kythe.io/kythe/proto/internal_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -62,7 +63,7 @@ func main() {
 	allCorpora := stringset.New()
 
 	emptyCorpusCount := 0
-	set.Sources(func(src *intpb.Source) bool {
+	set.Sources(func(src *ipb.Source) bool {
 		r, err := kytheuri.ParseRaw(src.GetTicket())
 		if err != nil {
 			log.Fatalf("Error parsing ticket: %q, %v", src.GetTicket(), err)
@@ -77,13 +78,13 @@ func main() {
 		allCorpora.Add(r.URI.Corpus)
 
 		if r.URI.Corpus == "" {
-			log.Printf("Found source with empty corpus: %v", src)
+			log.Infof("Found source with empty corpus: %v", src)
 			emptyCorpusCount++
 		}
 
 		return true
 	})
-	log.Printf("Found the following corpora: %v", allCorpora)
+	log.Infof("Found the following corpora: %v", allCorpora)
 	if emptyCorpusCount != 0 {
 		log.Fatalf("FAILURE: found %d sources with empty corpus", emptyCorpusCount)
 	}
@@ -95,5 +96,5 @@ func main() {
 		}
 	}
 
-	log.Printf("Success! All vnames have a non-empty corpus.")
+	log.Infof("Success! All vnames have a non-empty corpus.")
 }

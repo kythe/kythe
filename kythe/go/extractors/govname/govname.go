@@ -20,14 +20,14 @@ package govname // import "kythe.io/kythe/go/extractors/govname"
 
 import (
 	"go/build"
-	"log"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"golang.org/x/tools/go/vcs"
-
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
+
+	"golang.org/x/tools/go/vcs"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )

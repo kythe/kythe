@@ -22,12 +22,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
@@ -166,11 +167,11 @@ func main() {
 	jar := extractorJar()
 	if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
 		if excludeModules.Contains(moduleName()) {
-			log.Printf("*** Skipping: %s", moduleName())
+			log.Infof("*** Skipping: %s", moduleName())
 		} else {
 			cmd := exec.Command(java, args...)
 			cmd.Env = extractorEnv()
-			log.Printf("*** Extracting: %s", moduleName())
+			log.Infof("*** Extracting: %s", moduleName())
 			if output, err := cmd.CombinedOutput(); err != nil {
 				w, err := os.Create(filepath.Join(outputDir(), moduleName()+".err"))
 				if err != nil {
@@ -181,7 +182,7 @@ func main() {
 				w.Close()
 
 				// Log, but don't abort, on extraction failures.
-				log.Printf("ERROR: extractor failure for module %s: %v", moduleName(), err)
+				log.Errorf("extractor failure for module %s: %v", moduleName(), err)
 			}
 		}
 	}

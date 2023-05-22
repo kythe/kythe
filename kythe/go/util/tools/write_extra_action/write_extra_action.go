@@ -27,11 +27,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"

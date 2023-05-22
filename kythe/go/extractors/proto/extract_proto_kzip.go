@@ -23,15 +23,16 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/extractors/bazel"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
+
+	"bitbucket.org/creachadair/stringset"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -81,7 +82,7 @@ func main() {
 		log.Fatalf("Loading extra action: %v", err)
 	}
 	pkg := bazel.PackageName(info.GetOwner())
-	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
+	log.Infof("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
 	rules, err := vnameutil.LoadRules(*vnameRules)
 	if err != nil {
@@ -164,7 +165,7 @@ func main() {
 	if err := config.ExtractToKzip(ctx, ai, *outputPath); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
-	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
+	log.Infof("Finished extracting [%v elapsed]", time.Since(start))
 }
 
 // expandParams expands any parameter files occurring in args into their

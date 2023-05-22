@@ -13,4 +13,5 @@ go_test(
     srcs = ["reader_test.go"],
     library = "archive",
     visibility = ["//visibility:private"],
+    deps = ["//kythe/go/util/log"],
 )

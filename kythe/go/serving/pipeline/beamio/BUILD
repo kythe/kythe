@@ -12,6 +12,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/storage/stream",
+        "//kythe/go/util/log",
         "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",

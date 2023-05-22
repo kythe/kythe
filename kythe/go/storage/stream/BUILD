@@ -7,6 +7,7 @@ go_library(
     srcs = ["stream.go"],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",

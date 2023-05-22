@@ -35,6 +35,7 @@ go_test(
     deps = [
         ":riegeli_test_go_proto",
         "//kythe/go/util/compare",
+        "//kythe/go/util/log",
     ],
 )
 

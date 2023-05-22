@@ -18,10 +18,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 const (
@@ -56,7 +57,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := r.URL.Query()["go-get"]; ok {
 			if _, err := w.Write([]byte(goGetHTML)); err != nil {
-				log.Println("Error writing ?go-get=1 response:", err)
+				log.Error("Error writing ?go-get=1 response:", err)
 			}
 		} else {
 			http.ServeFile(w, r, filepath.Join(staticRoot, r.URL.Path))
@@ -65,9 +66,9 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("Defaulting to port %s", port)
+		log.Infof("Defaulting to port %s", port)
 	}
 
-	log.Printf("Listening on port %s", port)
+	log.Infof("Listening on port %s", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }

@@ -24,12 +24,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/util/datasize"
+	"kythe.io/kythe/go/util/log"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -212,7 +212,7 @@ func (p *WritePool) Flush() error {
 		return nil
 	}
 	if debug {
-		log.Printf("Flushing (%d) %s", p.writes, datasize.Size(p.size))
+		log.Infof("Flushing (%d) %s", p.writes, datasize.Size(p.size))
 	}
 	err := p.wr.Close()
 	p.wr = nil

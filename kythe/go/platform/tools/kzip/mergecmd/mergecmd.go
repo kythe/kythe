@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
@@ -149,7 +149,7 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Printf("Skipping empty .kzip: %s", path)
+		log.Infof("Skipping empty .kzip: %s", path)
 		return nil
 	}
 
@@ -191,7 +191,7 @@ func (c *mergeCommand) mergeUnitsInto(ctx context.Context, wr *kzip.Writer, rd *
 		// TODO(schroederc): duplicate compilations with different revisions
 		_, err := wr.AddUnit(u.Proto, u.Index)
 		if c.ignoreDuplicateCUs && err == kzip.ErrUnitExists {
-			log.Printf("Found duplicate CU: %v", u.Proto.GetDetails())
+			log.Infof("Found duplicate CU: %v", u.Proto.GetDetails())
 			return nil
 		}
 		return err

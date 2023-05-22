@@ -29,9 +29,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 func main() {

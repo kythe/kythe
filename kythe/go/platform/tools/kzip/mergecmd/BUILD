@@ -13,6 +13,7 @@ go_library(
         "//kythe/go/platform/tools/kzip/flags",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "@com_github_google_subcommands//:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",

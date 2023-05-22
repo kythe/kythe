@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 
@@ -32,13 +31,13 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/pager"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 	"kythe.io/kythe/go/util/schema/tickets"
 	"kythe.io/kythe/go/util/span"
-
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ipb "kythe.io/kythe/proto/internal_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -253,20 +252,20 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 			}
 			anchorStart, err := strconv.Atoi(string(srcFacts[facts.AnchorStart]))
 			if err != nil {
-				log.Printf("Error parsing anchor start offset %q: %v",
+				log.Errorf("parsing anchor start offset %q: %v",
 					string(srcFacts[facts.AnchorStart]), err)
 				return nil
 			}
 			anchorEnd, err := strconv.Atoi(string(srcFacts[facts.AnchorEnd]))
 			if err != nil {
-				log.Printf("Error parsing anchor end offset %q: %v",
+				log.Errorf("parsing anchor end offset %q: %v",
 					string(srcFacts[facts.AnchorEnd]), err)
 				return nil
 			}
 			// Record the parent file for the anchor.
 			parentFile, err := tickets.AnchorFile(e.Source.Ticket)
 			if err != nil {
-				log.Printf("Error deriving anchor ticket for %q: %v", e.Source.Ticket, err)
+				log.Errorf("deriving anchor ticket for %q: %v", e.Source.Ticket, err)
 			} else {
 				b.parents = append(b.parents, parentFile)
 			}

@@ -11,6 +11,7 @@ go_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )

@@ -24,10 +24,10 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/proto"
 

@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/compare"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"

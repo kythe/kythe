@@ -25,6 +25,7 @@ go_test(
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "@org_golang_google_protobuf//encoding/prototext:go_default_library",
     ],
 )
