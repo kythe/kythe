@@ -14,6 +14,7 @@ build --workspace_status_command tools/buildstamp/get_workspace_status
 build --client_env=CC=clang
 # We require C++17, but bazel defaults to C++0x (pre-C++11).
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
+build:remote --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
 # Don't warn on deprecations when compiling protobufs.
 # This generates a lot of spurious warnings when compiling the definitions of proto fields
 # which are marked deprecated.
