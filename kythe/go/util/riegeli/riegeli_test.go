@@ -388,7 +388,8 @@ func TestRecordsMetadata(t *testing.T) {
 		Transpose:   true,
 		Compression: BrotliCompression(4),
 	}
-	expected := &rmpb.RecordsMetadata{RecordWriterOptions: proto.String(opts.String())}
+	expected := &rmpb.RecordsMetadata{}
+	expected.RecordWriterOptions = proto.String(opts.String())
 
 	buf := writeStrings(t, opts, 128)
 	rd := NewReader(bytes.NewReader(buf.Bytes()))
