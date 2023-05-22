@@ -1667,7 +1667,7 @@ func clearSnippet(anchor *xpb.Anchor) {
 	anchor.SnippetSpan = nil
 }
 
-func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
+func tracePrintf(ctx context.Context, msg string, args ...any) {
 	if t, ok := trace.FromContext(ctx); ok {
 		t.LazyPrintf(msg, args...)
 	}

@@ -31,9 +31,9 @@ import (
 func ServerHandler(ls *Server) jsonrpc2.Handler {
 	shutdownIssued := false
 	return jsonrpc2.HandlerWithError(
-		func(c context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (interface{}, error) {
+		func(c context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (any, error) {
 			var (
-				ret interface{}
+				ret any
 				err error
 			)
 

@@ -45,7 +45,7 @@ func (c *convertRulesCmd) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.toFormat, "to", "", "Target format of VName rewrite rules")
 	flag.StringVar(&c.outputPath, "output", "", "Output path to write converted VName rewrite rules (default: write to stdout)")
 }
-func (c *convertRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *convertRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if c.fromFormat == "" {
 		return cmdErrorf("--from <format> must be specified")
 	} else if c.toFormat == "" {

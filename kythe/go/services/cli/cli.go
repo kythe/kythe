@@ -99,7 +99,7 @@ func RegisterCommand(c KytheCommand, group string) {
 
 type commandWrapper struct{ KytheCommand }
 
-func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if len(args) != 1 {
 		return subcommands.ExitUsageError
 	}
@@ -148,9 +148,9 @@ func PrintJSONMessage(resp proto.Message) error { return jsonMarshaler.Marshal(o
 // PrintJSON prints the given value to the console.  This should be called
 // whenever the DisplayJSON flag is true.  PrintJSONMessage should be preferred
 // when possible.
-func PrintJSON(val interface{}) error { return json.NewEncoder(out).Encode(val) }
+func PrintJSON(val any) error { return json.NewEncoder(out).Encode(val) }
 
-func baseTypeName(x interface{}) string {
+func baseTypeName(x any) string {
 	ss := strings.SplitN(fmt.Sprintf("%T", x), ".", 2)
 	if len(ss) == 2 {
 		return ss[1]

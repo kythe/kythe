@@ -81,14 +81,14 @@ Options:
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
 
-func maybeFatal(msg string, args ...interface{}) {
+func maybeFatal(msg string, args ...any) {
 	log.Errorf(msg, args...)
 	if !*keepGoing {
 		os.Exit(1)
 	}
 }
 
-func maybeLog(msg string, args ...interface{}) {
+func maybeLog(msg string, args ...any) {
 	if *verbose {
 		log.Infof(msg, args...)
 	}

@@ -60,13 +60,13 @@ func (i Info) SetFlags(*flag.FlagSet) {}
 
 // Execute implements part of subcommands.Command.
 // It prints the usage string to stdout and returns success.
-func (i Info) Execute(context.Context, *flag.FlagSet, ...interface{}) subcommands.ExitStatus {
+func (i Info) Execute(context.Context, *flag.FlagSet, ...any) subcommands.ExitStatus {
 	fmt.Print(i.usage) // the undecorated usage string
 	return subcommands.ExitSuccess
 }
 
 // Fail logs an error message and returns subcommands.ExitFailure.
-func (i Info) Fail(msg string, args ...interface{}) subcommands.ExitStatus {
+func (i Info) Fail(msg string, args ...any) subcommands.ExitStatus {
 	log.Output(1, fmt.Sprintf(msg, args...))
 	return subcommands.ExitFailure
 }

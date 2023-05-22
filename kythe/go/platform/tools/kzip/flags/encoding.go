@@ -32,7 +32,7 @@ func (e *EncodingFlag) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (e *EncodingFlag) Get() interface{} {
+func (e *EncodingFlag) Get() any {
 	return e.Encoding
 }
 

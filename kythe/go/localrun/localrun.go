@@ -476,7 +476,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 
 	// TODO: Dedup the kzips instead of keeping them all around.
 	for i, k := range kzips {
-		log := func(i int, m string, v ...interface{}) {
+		log := func(i int, m string, v ...any) {
 			den := len(kzips)
 			log.Infof("[%d/%d] %v", i, den, fmt.Sprintf(m, v...))
 		}

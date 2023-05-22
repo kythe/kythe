@@ -26,17 +26,17 @@ import (
 type numLesser struct{}
 
 // Less implements the Lesser interface.
-func (numLesser) Less(a, b interface{}) bool { return a.(int) < b.(int) }
+func (numLesser) Less(a, b any) bool { return a.(int) < b.(int) }
 
 type numMarshaler struct{}
 
 // Marshal implements part of the Marshaler interface.
-func (numMarshaler) Marshal(x interface{}) ([]byte, error) {
+func (numMarshaler) Marshal(x any) ([]byte, error) {
 	return []byte(strconv.Itoa(x.(int))), nil
 }
 
 // Unmarshal implements part of the Marshaler interface.
-func (numMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (numMarshaler) Unmarshal(rec []byte) (any, error) {
 	return strconv.Atoi(string(rec))
 }
 
@@ -74,7 +74,7 @@ func TestMergeSorter(t *testing.T) {
 	}
 
 	var expected int
-	if err := sorter.Read(func(i interface{}) error {
+	if err := sorter.Read(func(i any) error {
 		x, ok := i.(int)
 		if !ok {
 			return fmt.Errorf("expected int; found %T", i)

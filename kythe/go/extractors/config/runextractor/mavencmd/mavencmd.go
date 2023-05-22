@@ -74,7 +74,7 @@ func (m mavenCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs maven extraction.
-func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := m.checkFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}

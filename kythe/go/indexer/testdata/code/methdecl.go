@@ -67,7 +67,7 @@ func (rec *w) LessThan(x int) bool {
 }
 
 type decorCommand struct{}
-type Context interface{}
+type Context any
 type FlagSet struct{}
 type API struct{}
 

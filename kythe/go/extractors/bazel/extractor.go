@@ -149,7 +149,7 @@ func (c *Config) openRead(ctx context.Context, path string) (io.ReadCloser, erro
 	return os.Open(path)
 }
 
-func (c *Config) logPrintf(msg string, args ...interface{}) {
+func (c *Config) logPrintf(msg string, args ...any) {
 	if c.Verbose {
 		log.Infof(msg, args...)
 	}

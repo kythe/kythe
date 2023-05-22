@@ -66,7 +66,7 @@ func (c *cmd) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements part of subcommands.Command.
-func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	var hasErrors bool
 	for _, path := range fs.Args() {
 		ext := filepath.Ext(path)

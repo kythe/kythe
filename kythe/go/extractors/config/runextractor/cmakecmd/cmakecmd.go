@@ -75,7 +75,7 @@ func (c *cmakeCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs cmake extraction.
-func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := c.checkFlags(); err != nil {
 		return c.Fail("Incorrect flags: %v", err)
 	}

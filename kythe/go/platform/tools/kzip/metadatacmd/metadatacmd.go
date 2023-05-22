@@ -66,7 +66,7 @@ func (c *metadataCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and creates a metadata kzip file.
-func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) (exitcode subcommands.ExitStatus) {
+func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) (exitcode subcommands.ExitStatus) {
 	if c.output == "" {
 		return c.Fail("Required --output path missing")
 	}

@@ -44,7 +44,7 @@ import (
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
-func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
+func tracePrintf(ctx context.Context, msg string, args ...any) {
 	if t, ok := trace.FromContext(ctx); ok {
 		t.LazyPrintf(msg, args...)
 	}

@@ -41,7 +41,7 @@ func Flag(name, value, description string) *Size {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *sizeFlag) Get() interface{} {
+func (f *sizeFlag) Get() any {
 	return f.Size
 }
 
