@@ -211,9 +211,19 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
     auto end() const { return id_map_.end(); }
 
    private:
+    struct Entry {
+      FileId id;
+      int count = 0;
+    };
+    using FileMap = absl::node_hash_map<BazelArtifactFile, Entry>;
+    using IdMap = absl::flat_hash_map<FileId, const BazelArtifactFile*>;
+
+    BazelArtifactFile ExtractIterators(IdMap::iterator id_iter,
+                                       FileMap::iterator file_iter);
+
     uint64_t next_id_ = 0;
-    absl::node_hash_map<BazelArtifactFile, FileId> file_map_;
-    absl::flat_hash_map<FileId, const BazelArtifactFile*> id_map_;
+    FileMap file_map_;
+    IdMap id_map_;
   };
 
   struct FileSet {

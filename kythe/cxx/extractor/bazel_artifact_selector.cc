@@ -494,8 +494,8 @@ AspectArtifactSelector::FileTable::FileTable(const FileTable& other)
     : next_id_(other.next_id_),
       file_map_(other.file_map_),
       id_map_(file_map_.size()) {
-  for (const auto& [file, id] : file_map_) {
-    id_map_.insert_or_assign(id, &file);
+  for (const auto& [file, entry] : file_map_) {
+    id_map_.insert_or_assign(entry.id, &file);
   }
 }
 
@@ -504,41 +504,58 @@ AspectArtifactSelector::FileTable& AspectArtifactSelector::FileTable::operator=(
   next_id_ = other.next_id_;
   file_map_ = other.file_map_;
   id_map_.clear();
-  for (const auto& [file, id] : file_map_) {
-    id_map_.insert_or_assign(id, &file);
+  for (const auto& [file, entry] : file_map_) {
+    id_map_.insert_or_assign(entry.id, &file);
   }
   return *this;
 }
 
 AspectArtifactSelector::FileId AspectArtifactSelector::FileTable::Insert(
     BazelArtifactFile file) {
-  auto [iter, inserted] =
-      file_map_.emplace(std::move(file), std::make_tuple(next_id_));
+  auto [iter, inserted] = file_map_.emplace(
+      std::move(file), Entry{.id = FileId(next_id_), .count = 1});
   if (inserted) {
     next_id_++;
-    id_map_[iter->second] = &iter->first;
+    id_map_[iter->second.id] = &iter->first;
+  } else {
+    iter->second.count++;
   }
-  return iter->second;
+  return iter->second.id;
+}
+
+BazelArtifactFile AspectArtifactSelector::FileTable::ExtractIterators(
+    IdMap::iterator id_iter, FileMap::iterator file_iter) {
+  CHECK(id_iter != id_map_.end());
+  CHECK(file_iter != file_map_.end());
+  if (--file_iter->second.count == 0) {
+    // Only remove the file once it's been extracted for each FileSet which
+    // references it.
+    id_map_.erase(id_iter);
+    return std::move(file_map_.extract(file_iter).key());
+  }
+  return file_iter->first;
 }
 
 std::optional<BazelArtifactFile> AspectArtifactSelector::FileTable::Extract(
     FileId id) {
-  if (auto id_node = id_map_.extract(id); !id_node.empty()) {
-    auto file_node = file_map_.extract(*id_node.mapped());
-    // file_map_ owns the memory underlying the pointer we dereferenced here.
-    // If it's missing from the map, we're well into UB trouble.
-    CHECK(!file_node.empty());
-    return std::move(file_node.key());
+  auto id_iter = id_map_.find(id);
+  if (id_iter == id_map_.end()) {
+    return std::nullopt;
   }
-  return std::nullopt;
+  // file_map_ owns the memory underlying the pointer we dereferenced here.
+  // If it's missing from the map, we're well into UB trouble.
+  return ExtractIterators(id_iter, file_map_.find(*id_iter->second));
 }
 
 BazelArtifactFile AspectArtifactSelector::FileTable::ExtractFile(
     BazelArtifactFile file) {
-  if (auto file_node = file_map_.extract(file); !file_node.empty()) {
-    id_map_.erase(file_node.mapped());
+  auto file_iter = file_map_.find(file);
+  if (file_iter == file_map_.end()) {
+    return file;
   }
-  return file;
+  // If the file id is missing from id_map_, something has gone horribly wrong
+  // with our invariants.
+  return ExtractIterators(id_map_.find(file_iter->second.id), file_iter);
 }
 
 const BazelArtifactFile* AspectArtifactSelector::FileTable::Find(
