@@ -17,8 +17,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <string>
 #include <filesystem>  // XXX testing build flags XXX
+#include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
