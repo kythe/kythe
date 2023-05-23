@@ -27,6 +27,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
@@ -439,12 +440,12 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 
   while (true) {
     // Match the enum value, which may be an identifier or an integer.
-    re2::StringPiece match;
+    absl::string_view match;
     if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
       return absl::UnknownError("Failed to find text span for enum value: " +
                                 field.full_name());
     }
-    const std::string value_str = match.ToString();
+    const std::string value_str(match);
     input = input.substr(value_str.size());
 
     // Lookup EnumValueDescriptor based on the matched value.

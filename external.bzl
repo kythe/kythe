@@ -268,8 +268,7 @@ def _cc_dependencies():
         github_archive,
         name = "com_googlesource_code_re2",
         repo_name = "google/re2",
-        sha256 = "b6d299a2e91ebe78a222e45228449f3ba569f83c6bd59d582fcb3cd425656c38",
-        commit = "2020-10-01",
+        commit = "1e44e72d31ddc66b783a545e9d9fcaa876a146b7",
     )
 
     maybe(
