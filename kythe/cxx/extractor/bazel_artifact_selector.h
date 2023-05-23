@@ -212,10 +212,6 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
    private:
     uint64_t next_id_ = 0;
-    // TODO(shahms): DO NOT SUBMIT:
-    //  This currently emits a file on the first extraction only,
-    //  rather than tracking the use-count. This is intentional, but maybe
-    //  undesirable.
     absl::node_hash_map<BazelArtifactFile, FileId> file_map_;
     absl::flat_hash_map<FileId, const BazelArtifactFile*> id_map_;
   };
