@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 	"kythe.io/kythe/go/extractors/config/runextractor/compdb"
 	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/subcommands"
 )
@@ -75,7 +75,7 @@ func (c *cmakeCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs cmake extraction.
-func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := c.checkFlags(); err != nil {
 		return c.Fail("Incorrect flags: %v", err)
 	}
@@ -130,7 +130,7 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 // cleanBuild removes dir and all files beneath it, logging an error if it fails.
 func cleanBuild(dir string) {
 	if err := os.RemoveAll(dir); err != nil {
-		log.Printf("unable to remove build directory: %v", err)
+		log.Errorf("unable to remove build directory: %v", err)
 	}
 }
 
@@ -139,6 +139,6 @@ func cleanBuild(dir string) {
 func runIn(cmd *exec.Cmd, dir string) error {
 	cmd.Dir = dir
 	cmd.Stderr = os.Stderr
-	log.Printf("Running: %q in %q", cmd, cmd.Dir)
+	log.Infof("Running: %q in %q", cmd, cmd.Dir)
 	return cmd.Run()
 }

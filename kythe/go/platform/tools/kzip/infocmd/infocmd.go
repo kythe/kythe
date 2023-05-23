@@ -59,7 +59,7 @@ func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
-func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	if c.input == "" {
 		return c.Fail("Required --input path missing")
 	}

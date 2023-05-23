@@ -7,6 +7,7 @@ go_library(
     srcs = ["driver.go"],
     deps = [
         "//kythe/go/platform/analysis",
+        "//kythe/go/util/log",
         "//kythe/proto:analysis_go_proto",
         "@com_github_pkg_errors//:go_default_library",
     ],

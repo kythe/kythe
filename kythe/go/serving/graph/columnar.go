@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 
 	"kythe.io/kythe/go/services/graph"
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/keys"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -52,7 +52,7 @@ const ColumnarTableKeyMarker = "kythe:columnar"
 func NewService(ctx context.Context, t keyvalue.DB) graph.Service {
 	_, err := t.Get(ctx, []byte(ColumnarTableKeyMarker), nil)
 	if err == nil {
-		log.Println("WARNING: detected a experimental columnar graph table")
+		log.Info("WARNING: detected a experimental columnar graph table")
 		return NewColumnarTable(t)
 	}
 	return NewCombinedTable(&table.KVProto{t})

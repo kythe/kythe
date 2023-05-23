@@ -22,13 +22,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
@@ -52,7 +52,7 @@ func Write(w io.WriterTo, path string) error {
 	} else if err := f.Close(); err != nil {
 		return fmt.Errorf("closing output file: %v", err)
 	}
-	log.Printf("Finished writing output [%v elapsed]", time.Since(start))
+	log.Infof("Finished writing output [%v elapsed]", time.Since(start))
 	return nil
 }
 
@@ -82,7 +82,7 @@ func LoadAction(path string) (*xapb.ExtraActionInfo, error) {
 	if err := proto.Unmarshal(xa, &info); err != nil {
 		return nil, fmt.Errorf("parsing extra action info: %v", err)
 	}
-	log.Printf("Read %d bytes from extra action file %q", len(xa), path)
+	log.Infof("Read %d bytes from extra action file %q", len(xa), path)
 	return &info, nil
 }
 

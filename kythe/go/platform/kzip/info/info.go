@@ -19,13 +19,13 @@ package info // import "kythe.io/kythe/go/platform/kzip/info"
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/creachadair/stringset"
-
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
+
+	"bitbucket.org/creachadair/stringset"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -54,7 +54,7 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 //	a.Accumulate(unit) // call for each compilation unit
 //	info := a.Get()    // get the resulting KzipInfo
 type Accumulator struct {
-	*apb.KzipInfo
+	KzipInfo *apb.KzipInfo
 }
 
 // NewAccumulator creates a new Accumulator instance given the kzip fileSize (in
@@ -118,7 +118,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	}
 	if srcCorpora.Len() != 1 {
 		// This is a warning for now, but may become an error.
-		log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
+		log.Infof("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
 	}
 
 	a.KzipInfo.AbsolutePaths = absPaths.Elements()
@@ -142,8 +142,8 @@ func requiredInputCorpus(u *kzip.Unit, ri *apb.CompilationUnit_FileInput) string
 }
 
 // KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
-func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
-	totals := apb.KzipInfo_CorpusInfo{
+func KzipInfoTotalCount(infos []*apb.KzipInfo) *apb.KzipInfo_CorpusInfo {
+	totals := &apb.KzipInfo_CorpusInfo{
 		LanguageRequiredInputs: make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 		LanguageSources:        make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 	}

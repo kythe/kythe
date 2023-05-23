@@ -22,12 +22,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
+
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/proto"
 
 	"kythe.io/kythe/go/util/vnameutil"
-
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -59,9 +59,9 @@ func (t test) vname() *spb.VName {
 	}
 }
 
-func errorf(msg string, args ...interface{}) {
+func errorf(msg string, args ...any) {
 	numErrs++
-	log.Printf("FAILED: "+msg, args...)
+	log.Errorf(msg, args...)
 }
 
 func main() {

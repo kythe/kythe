@@ -97,7 +97,7 @@ func TestCanonicalization(t *testing.T) {
 	unit.Canonicalize()
 	tests := []struct {
 		name  string
-		value interface{}
+		value any
 	}{
 		{"required inputs", unit.Proto.RequiredInput},
 		{"source files", unit.Proto.SourceFile},
@@ -156,7 +156,7 @@ func TestLookupVName(t *testing.T) {
 	}
 }
 
-func keys(v interface{}) (keys []string) {
+func keys(v any) (keys []string) {
 	switch t := v.(type) {
 	case []*apb.CompilationUnit_FileInput:
 		for _, input := range t {

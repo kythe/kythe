@@ -7,6 +7,7 @@ go_binary(
     srcs = ["markedsource.go"],
     deps = [
         "//kythe/go/storage/stream",
+        "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/proto:storage_go_proto",
         "@org_golang_google_protobuf//encoding/protojson:go_default_library",

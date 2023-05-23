@@ -1827,25 +1827,7 @@ class Visitor {
     return 'anonymous';
   }
 
-  /**
-   * This function calculates a context string for a node when building marked source.
-   * Context is what the given node belongs to. For example for class method context
-   * is the name of the class.
-   *
-   * When provided node shouldn't have a context, e.g. variable, then this method
-   * return undefined.
-   *
-   * Compared to other languages (Java, Go) context calculation here is simpler. We
-   * don't produce full qualified class name (as TS doesn't have a concept of qualified name).
-   * Though we could add filename as namespace.
-   *
-   * We also don't handle nesting. In TS you can have class within a method within a class
-   * within a method. We should probably fully calculate (similar to what we do in scopedSignature)
-   * but given that it's user-visible string - keep it simple. Even though it's incomplete.
-   * @param
-   * @returns
-   */
-  getContextForNodeForMarkedSource(node: ts.Node): string|undefined {
+  collectContextPartsForMarkedSource(node: ts.Node): string[] {
     switch (node.kind) {
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
@@ -1854,7 +1836,7 @@ class Visitor {
       case ts.SyntaxKind.MethodSignature:
       case ts.SyntaxKind.Constructor:
         // Parent is a class/interface/enum. Use their name as context.
-        return this.getIdentifierForMarkedSourceNode(node.parent);
+        return [this.getIdentifierForMarkedSourceNode(node.parent)];
       case ts.SyntaxKind.Parameter:
         const method = node.parent;
         if (!ts.isMethodSignature(method)
@@ -1863,19 +1845,48 @@ class Visitor {
             && !ts.isFunctionDeclaration(method)) {
           // We expect that parent of parameter is always a method. If it is not
           // then return undefined so no context will be emitted.
-          return undefined;
+          return [];
         }
         // If method has parent (class) then add it to context. So it looks like
         // 'ClassName.methodName'. Otherwise if it's a standalone function - just
         // return function name.
-        const methodContext = this.getContextForNodeForMarkedSource(method);
-        return (methodContext == null ? '' : methodContext + '.')
-          + this.getIdentifierForMarkedSourceNode(method);
+        const methodContext = this.collectContextPartsForMarkedSource(method);
+        methodContext.push(this.getIdentifierForMarkedSourceNode(method));
+        return methodContext;
     }
     // For all other nodes like variables, functions, classes don't use context
     // for now. Other languages use namespace or filename as context for those but
     // it doesn't provide much information.
-    return undefined;
+    return [];
+  }
+
+  /**
+   * This function builds CONTEXT node for marked source for a node. Context is what
+   * the given node belongs to. For example for class method context is the name of the class.
+   *
+   * When the provided node doesn't have a context, e.g. variable, then this method returns null.
+   *
+   * Compared to other languages (Java, Go) context calculation here is simpler. We
+   * don't produce fully qualified class name including package (as TS doesn't have a concept of
+   * qualified name). Though we could add filename as namespace in future.
+   *
+   * We also don't handle nesting. In TS one can have class within a method within a class
+   * within a method. It is possible to fully calculate such name (similar to what we do in
+   * scopedSignature) but given that it's user-visible string - keep it simple.
+   * Even though it's incomplete.
+   */
+  buildMarkedSourceContextNode(node: ts.Node): JSONMarkedSource|null {
+    const parts = this.collectContextPartsForMarkedSource(node);
+    if (parts.length === 0) {
+      return null;
+    } else {
+      return {
+        kind: MarkedSourceKind.CONTEXT,
+        post_child_text: '.',
+        add_final_list_token: true,
+        child: parts.map(c => ({kind: MarkedSourceKind.IDENTIFIER, pre_text: c})),
+      };
+    }
   }
 
   /**
@@ -1915,10 +1926,9 @@ class Visitor {
     } else {
       varDecl = decl;
     }
-    const context = this.getContextForNodeForMarkedSource(decl);
+    const context = this.buildMarkedSourceContextNode(decl);
     if (context != null) {
-      codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: fmtMarkedSource(context)});
-      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
+      codeParts.push(context);
     }
     codeParts.push({
       kind: MarkedSourceKind.IDENTIFIER,
@@ -1965,10 +1975,9 @@ class Visitor {
    */
   emitMarkedSourceForFunction(decl: ts.FunctionLikeDeclaration, declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
-    const context = this.getContextForNodeForMarkedSource(decl);
-    if (context) {
-      codeParts.push({kind: MarkedSourceKind.CONTEXT, pre_text: context});
-      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' '});
+    const context = this.buildMarkedSourceContextNode(decl);
+    if (context != null) {
+      codeParts.push(context);
     }
     codeParts.push({
       kind: MarkedSourceKind.IDENTIFIER,

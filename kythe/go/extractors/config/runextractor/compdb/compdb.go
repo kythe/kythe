@@ -24,13 +24,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/shell"
 	"golang.org/x/sync/semaphore"
@@ -84,7 +85,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string, opts *Extr
 			defer wg.Done()
 			if err := sem.Acquire(ctx, 1); err != nil {
 				atomic.AddUint64(&failCount, 1)
-				log.Print(err)
+				log.Error(err)
 				return
 			}
 			defer sem.Release(1)
@@ -92,7 +93,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string, opts *Extr
 			if err := extractOne(ctx, extractor, entry, env, opts); err != nil {
 				// Log error, but continue processing other compilations.
 				atomic.AddUint64(&failCount, 1)
-				log.Printf("Error extracting compilation with command '%s': %v", entry.asCommand(), err)
+				log.Errorf("extracting compilation with command '%s': %v", entry.asCommand(), err)
 			}
 		}(entry)
 	}

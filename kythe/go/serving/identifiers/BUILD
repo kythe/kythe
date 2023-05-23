@@ -10,6 +10,7 @@ go_library(
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/tickets",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:identifier_go_proto",

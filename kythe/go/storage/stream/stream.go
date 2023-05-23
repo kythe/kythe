@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"

@@ -21,13 +21,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 	"time"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/log"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -69,7 +69,7 @@ const buildID = "aabbcc"
 // Analyze implements the analysis.CompilationAnalyzer interface.
 func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) (*apb.AnalysisResult, error) {
 	if m.AnalysisDuration != 0 {
-		log.Printf("Waiting %s for analysis request", m.AnalysisDuration)
+		log.Infof("Waiting %s for analysis request", m.AnalysisDuration)
 		time.Sleep(m.AnalysisDuration)
 	}
 	m.OutputIndex = 0

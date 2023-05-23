@@ -126,7 +126,7 @@ func TestMergeKzipInfo(t *testing.T) {
 		CriticalKzipErrors: []string{"foo.py doesn't have a required_input", "foo2.py doesn't have a required_input"},
 		Size:               40,
 	}
-	wantTotal := apb.KzipInfo_CorpusInfo{
+	wantTotal := &apb.KzipInfo_CorpusInfo{
 		LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
 			"python": {
 				Count: 12,
@@ -153,7 +153,7 @@ func TestMergeKzipInfo(t *testing.T) {
 	if diff := compare.ProtoDiff(got, want); diff != "" {
 		t.Errorf("Merged kzips don't match: (-: found, +: expected)\n%s", diff)
 	}
-	if diff := compare.ProtoDiff(&gotTotal, &wantTotal); diff != "" {
+	if diff := compare.ProtoDiff(gotTotal, wantTotal); diff != "" {
 		t.Errorf("got %v, want %v", gotTotal, wantTotal)
 		t.Errorf("Merged kzips don't match: (-: found, +: expected)\n%s", diff)
 	}

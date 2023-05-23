@@ -95,8 +95,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -124,8 +124,8 @@ type request struct {
 
 // A response represents a response from the proxy to the indexer.
 type response struct {
-	Status string      `json:"rsp"` // status message
-	Args   interface{} `json:"args,omitempty"`
+	Status string `json:"rsp"` // status message
+	Args   any    `json:"args,omitempty"`
 }
 
 // A unit represents a compilation unit (in JSON form) to be analyzed.
@@ -348,7 +348,7 @@ func decodeEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 		}
 		e, err := rewriteEntry(e)
 		if err != nil {
-			log.Printf("ERROR: could not rewrite entry: %v", err)
+			log.Errorf("could not rewrite entry: %v", err)
 			continue
 		}
 		entries[i] = e
@@ -369,7 +369,7 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 		}
 		e, err := rewriteEntry(e)
 		if err != nil {
-			log.Printf("ERROR: could not rewrite entry: %v", err)
+			log.Errorf("could not rewrite entry: %v", err)
 			continue
 		}
 		entries[i] = e
@@ -377,7 +377,7 @@ func decodeWireEntries(jsonArray json.RawMessage) ([]*spb.Entry, error) {
 	return entries, nil
 }
 
-func (p *Proxy) reply(status string, args interface{}) {
+func (p *Proxy) reply(status string, args any) {
 	p.err = p.out.Encode(&response{
 		Status: status,
 		Args:   args,

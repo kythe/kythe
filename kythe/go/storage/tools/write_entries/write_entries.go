@@ -36,7 +36,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -45,6 +44,7 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/profile"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -67,8 +67,6 @@ func init() {
 }
 
 func main() {
-	log.SetPrefix("write_entries: ")
-
 	flag.Parse()
 	if *numWorkers < 1 {
 		flagutil.UsageErrorf("Invalid number of --workers %d (must be ≥ 1)", *numWorkers)
@@ -108,7 +106,7 @@ func main() {
 	}
 	wg.Wait()
 
-	log.Printf("Wrote %d entries", numEntries)
+	log.Infof("Wrote %d entries", numEntries)
 }
 
 func writeEntries(ctx context.Context, s graphstore.Service, reqs <-chan *spb.WriteRequest) (uint64, error) {

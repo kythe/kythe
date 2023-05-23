@@ -30,7 +30,7 @@ func init() {
 	beam.RegisterFunction(computeShard)
 	beam.RegisterFunction(assignKeyWeights)
 	beam.RegisterType(reflect.TypeOf((*computeMinKvSize)(nil)).Elem())
-	reflectx.RegisterFunc(reflect.ValueOf(bytesLessFn).Type(), func(_ interface{}) reflectx.Func {
+	reflectx.RegisterFunc(reflect.ValueOf(bytesLessFn).Type(), func(_ any) reflectx.Func {
 		return newBytesLess()
 	})
 }
@@ -58,8 +58,8 @@ func (i *bytesLess) Name() string {
 func (i *bytesLess) Type() reflect.Type {
 	return i.t
 }
-func (i *bytesLess) Call(args []interface{}) []interface{} {
-	return []interface{}{bytesLessFn(args[0].([]byte), args[1].([]byte))}
+func (i *bytesLess) Call(args []any) []any {
+	return []any{bytesLessFn(args[0].([]byte), args[1].([]byte))}
 }
 
 // Input is PCollection of beamio.KeyValue<[]byte, []byte>, output is PCollection of *ppb.KeyWeights.

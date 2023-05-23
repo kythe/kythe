@@ -16,6 +16,7 @@ go_library(
         "//kythe/go/storage/table",
         "//kythe/go/util/keys",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",

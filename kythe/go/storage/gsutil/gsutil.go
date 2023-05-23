@@ -21,7 +21,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -29,6 +28,7 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/inmemory"
+	"kythe.io/kythe/go/util/log"
 )
 
 // Handler returns a graphstore.Service based on the given specification.
@@ -76,7 +76,7 @@ func (f *gsFlag) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *gsFlag) Get() interface{} {
+func (f *gsFlag) Get() any {
 	return *f.gs
 }
 
@@ -133,7 +133,7 @@ func EnsureGracefulExit(gs ...graphstore.Service) {
 	signal.Notify(c, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		log.Printf("graphstore: signal %v", sig)
+		log.Infof("graphstore: signal %v", sig)
 		for _, g := range gs {
 			LogClose(context.Background(), g)
 		}
@@ -144,6 +144,6 @@ func EnsureGracefulExit(gs ...graphstore.Service) {
 // LogClose closes gs and logs any resulting error.
 func LogClose(ctx context.Context, gs graphstore.Service) {
 	if err := gs.Close(ctx); err != nil {
-		log.Printf("GraphStore failed to close: %v", err)
+		log.Infof("GraphStore failed to close: %v", err)
 	}
 }

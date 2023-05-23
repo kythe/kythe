@@ -101,7 +101,7 @@ func (s Sink) writeDiagnostic(ctx context.Context, src *spb.VName, d diagnostic)
 	return s.writeEdge(ctx, src, dname, edges.Tagged)
 }
 
-func hashSignature(s ...interface{}) string {
+func hashSignature(s ...any) string {
 	hash := sha256.New()
 	fmt.Fprintln(hash, s...)
 	return base64.URLEncoding.EncodeToString(hash.Sum(nil)[:])

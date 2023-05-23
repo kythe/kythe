@@ -29,7 +29,7 @@ import (
 
 var ctx = context.Background()
 
-func testSplitInput(splits ...[]interface{}) SplitInput {
+func testSplitInput(splits ...[]any) SplitInput {
 	ch := make(chan ChannelSplitInputValue, len(splits))
 	for _, s := range splits {
 		in := make(chan ChannelInputValue, len(s))
@@ -43,8 +43,8 @@ func testSplitInput(splits ...[]interface{}) SplitInput {
 	return ChannelSplitInput(ch)
 }
 
-func testReadInput(splits SplitInput) [][]interface{} {
-	var ss [][]interface{}
+func testReadInput(splits SplitInput) [][]any {
+	var ss [][]any
 	for {
 		ri, err := splits.NextSplit()
 		if err == io.EOF {
@@ -53,7 +53,7 @@ func testReadInput(splits SplitInput) [][]interface{} {
 			panic(err)
 		}
 
-		var s []interface{}
+		var s []any
 		for {
 			i, err := ri.Next()
 			if err == io.EOF {
@@ -69,7 +69,7 @@ func testReadInput(splits SplitInput) [][]interface{} {
 }
 
 func TestSort(t *testing.T) {
-	sorted, err := Sort(ctx, testSplitInput([]interface{}{1, 2, 3}, []interface{}{1, 5, 6}), Func(func(ctx context.Context, rio IO) error {
+	sorted, err := Sort(ctx, testSplitInput([]any{1, 2, 3}, []any{1, 5, 6}), Func(func(ctx context.Context, rio IO) error {
 		var sum int
 		for {
 			i, err := rio.Next()
@@ -91,7 +91,7 @@ func TestSort(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := [][]interface{}{
+	expected := [][]any{
 		{&ipb.SortedKeyValue{
 			Key:   "12",
 			Value: []byte("12"),

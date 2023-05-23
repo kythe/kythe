@@ -22,11 +22,11 @@ import "sort"
 // Lesser is an interface to a comparison function.
 type Lesser interface {
 	// Less returns true if a < b.
-	Less(a, b interface{}) bool
+	Less(a, b any) bool
 }
 
 // Sort uses l to sort the given slice.
-func Sort(l Lesser, a []interface{}) {
+func Sort(l Lesser, a []any) {
 	sort.Sort(&ByLesser{
 		Lesser: l,
 		Slice:  a,
@@ -36,7 +36,7 @@ func Sort(l Lesser, a []interface{}) {
 // ByLesser implements the heap.Interface using a Lesser over a slice.
 type ByLesser struct {
 	Lesser Lesser
-	Slice  []interface{}
+	Slice  []any
 }
 
 // Clear removes all elements from the underlying slice.
@@ -52,10 +52,10 @@ func (s ByLesser) Swap(i, j int) { s.Slice[i], s.Slice[j] = s.Slice[j], s.Slice[
 func (s ByLesser) Less(i, j int) bool { return s.Lesser.Less(s.Slice[i], s.Slice[j]) }
 
 // Push implements part of the heap.Interface
-func (s *ByLesser) Push(v interface{}) { s.Slice = append(s.Slice, v) }
+func (s *ByLesser) Push(v any) { s.Slice = append(s.Slice, v) }
 
 // Pop implements part of the heap.Interface
-func (s *ByLesser) Pop() interface{} {
+func (s *ByLesser) Pop() any {
 	n := len(s.Slice) - 1
 	out := s.Slice[n]
 	s.Slice = s.Slice[:n]
@@ -64,7 +64,7 @@ func (s *ByLesser) Pop() interface{} {
 
 // Peek returns the least element in the heap.  nil is returned if the heap is
 // empty.
-func (s ByLesser) Peek() interface{} {
+func (s ByLesser) Peek() any {
 	if len(s.Slice) == 0 {
 		return nil
 	}
@@ -72,7 +72,7 @@ func (s ByLesser) Peek() interface{} {
 }
 
 // LesserFunc implements the Lesser interface using a function.
-type LesserFunc func(a, b interface{}) bool
+type LesserFunc func(a, b any) bool
 
 // Less implements the Lesser interface.
-func (f LesserFunc) Less(a, b interface{}) bool { return f(a, b) }
+func (f LesserFunc) Less(a, b any) bool { return f(a, b) }

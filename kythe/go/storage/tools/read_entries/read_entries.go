@@ -22,7 +22,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
@@ -32,6 +31,7 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 

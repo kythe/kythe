@@ -20,9 +20,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 
+	"kythe.io/kythe/go/util/log"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
@@ -85,7 +85,7 @@ func findLinkText(rawText string) []string {
 		}
 	}
 	if invalid {
-		log.Printf("WARNING: invalid document raw text: %q", rawText)
+		log.Warningf("invalid document raw text: %q", rawText)
 	}
 	return linkText
 }
@@ -97,7 +97,7 @@ func displayDoc(indent string, doc *xpb.DocumentationReply_Document) {
 		linkText := findLinkText(doc.Text.RawText)
 		for i, link := range doc.Text.Link {
 			if i >= len(linkText) {
-				log.Printf("WARNING: mismatch between raw text and number of links: %v", doc)
+				log.Warningf("mismatch between raw text and number of links: %v", doc)
 				break
 			}
 			if len(link.Definition) > 0 {

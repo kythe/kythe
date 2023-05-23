@@ -17,6 +17,7 @@ go_library(
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/stream",
         "//kythe/go/util/datasize",
+        "//kythe/go/util/log",
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:build_event_stream_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",

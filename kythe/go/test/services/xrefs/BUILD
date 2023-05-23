@@ -7,6 +7,7 @@ go_library(
     srcs = ["xrefs.go"],
     deps = [
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",

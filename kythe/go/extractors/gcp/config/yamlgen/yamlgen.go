@@ -21,9 +21,9 @@ package main
 import (
 	"flag"
 	"io/ioutil"
-	"log"
 
 	"kythe.io/kythe/go/extractors/gcp/config"
+	"kythe.io/kythe/go/util/log"
 )
 
 var (
@@ -48,11 +48,11 @@ func main() {
 func checkFlags() {
 	failed := false
 	if *input == "" {
-		log.Println("Must specify --input on commandline")
+		log.Info("Must specify --input on commandline")
 		failed = true
 	}
 	if *output == "" {
-		log.Println("Must specify --output on commandline")
+		log.Info("Must specify --output on commandline")
 		failed = true
 	}
 	if failed {

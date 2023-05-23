@@ -24,10 +24,10 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/golang/protobuf/proto"
 
@@ -61,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	obj := make(map[string]interface{})
+	obj := make(map[string]any)
 	obj["extra_action_info"] = &xa
 
 	xs, err := proto.GetExtensions(&xa, knownExtensions)
@@ -69,7 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var extensions []interface{}
+	var extensions []any
 	for _, e := range xs {
 		if e != nil {
 			extensions = append(extensions, e)

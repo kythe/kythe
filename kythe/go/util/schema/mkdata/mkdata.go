@@ -26,10 +26,11 @@ import (
 	"fmt"
 	"go/format"
 	"io/ioutil"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -96,7 +97,7 @@ func main() {
 				case "Subkind":
 					index.Subkinds[md.Label] = scpb.Subkind(val.GetNumber())
 				default:
-					log.Printf("Unknown Kythe enum %s with Metadata: %+v", enum.GetName(), md)
+					log.Errorf("unknown Kythe enum %s with Metadata: %+v", enum.GetName(), md)
 				}
 			}
 		}
@@ -253,14 +254,14 @@ var u32 = reflect.TypeOf(uint32(0))
 // a type convertible to uint32 (e.g., a proto enumeration).  This function
 // will panic if v does not have an appropriate concrete type.  The concrete
 // type of each returned element remains X (not uint32).
-func sortedKeys(v interface{}) []interface{} {
+func sortedKeys(v any) []any {
 	keys := reflect.ValueOf(v).MapKeys()
 	sort.Slice(keys, func(i, j int) bool {
 		a := keys[i].Convert(u32).Interface().(uint32)
 		b := keys[j].Convert(u32).Interface().(uint32)
 		return a < b
 	})
-	vals := make([]interface{}, len(keys))
+	vals := make([]any, len(keys))
 	for i, key := range keys {
 		vals[i] = key.Interface()
 	}

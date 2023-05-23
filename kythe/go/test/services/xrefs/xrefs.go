@@ -28,11 +28,11 @@ package xrefs // import "kythe.io/kythe/go/test/services/xrefs"
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
@@ -63,7 +63,7 @@ func (a Atomizer) catchErrors(ret *error) {
 	if err := recover(); err != nil {
 		if pe, ok := err.(atomizerPanic); ok {
 			if *ret != nil {
-				log.Printf("WARNING: %v", *ret)
+				log.Warningf("%v", *ret)
 			}
 			*ret = pe.error
 		} else {

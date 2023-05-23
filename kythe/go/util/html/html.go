@@ -20,7 +20,8 @@ package html // import "kythe.io/kythe/go/util/html"
 import (
 	"bytes"
 	"fmt"
-	"log"
+
+	"kythe.io/kythe/go/util/log"
 
 	"golang.org/x/net/html"
 )

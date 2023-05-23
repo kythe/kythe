@@ -7,6 +7,7 @@ go_library(
     srcs = ["proxy.go"],
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:common_go_proto",

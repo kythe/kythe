@@ -19,9 +19,10 @@ package netutil // import "kythe.io/kythe/go/util/netutil"
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strconv"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 // PickUnusedPort returns a port that is likely unused by temporarily binding a
@@ -33,7 +34,7 @@ func PickUnusedPort() (int, error) {
 		return 0, err
 	}
 	if err := l.Close(); err != nil {
-		log.Printf("failed to close temporary Listener: %v", err)
+		log.Errorf("failed to close temporary Listener: %v", err)
 	}
 	_, port, err := net.SplitHostPort(l.Addr().String())
 	if err != nil {

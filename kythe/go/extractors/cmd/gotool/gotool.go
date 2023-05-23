@@ -25,7 +25,6 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,8 +34,8 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
-
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
@@ -82,16 +81,16 @@ Options:
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
 
-func maybeFatal(msg string, args ...interface{}) {
-	log.Printf(msg, args...)
+func maybeFatal(msg string, args ...any) {
+	log.Errorf(msg, args...)
 	if !*keepGoing {
 		os.Exit(1)
 	}
 }
 
-func maybeLog(msg string, args ...interface{}) {
+func maybeLog(msg string, args ...any) {
 	if *verbose {
-		log.Printf(msg, args...)
+		log.Infof(msg, args...)
 	}
 }
 

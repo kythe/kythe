@@ -26,13 +26,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -102,7 +102,7 @@ func main() {
 					log.Fatalf("Error during scan of %q: %v", path, err)
 				}
 
-				var k, v interface{}
+				var k, v any
 
 				if protoValueType == nil {
 					if *stringKey {
@@ -138,6 +138,6 @@ func main() {
 }
 
 type keyValue struct {
-	Key   interface{} `json:"key"`
-	Value interface{} `json:"value"`
+	Key   any `json:"key"`
+	Value any `json:"value"`
 }

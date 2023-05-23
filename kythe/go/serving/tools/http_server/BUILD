@@ -18,6 +18,7 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "@org_golang_x_net//http2:go_default_library",
     ],
 )

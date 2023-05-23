@@ -11,6 +11,7 @@ go_binary(
         "//kythe/go/storage/stream",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:storage_go_proto",

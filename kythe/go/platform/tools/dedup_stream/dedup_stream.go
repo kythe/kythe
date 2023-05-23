@@ -21,13 +21,13 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/delimited/dedup"
 	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 )
 
 func init() {
@@ -50,5 +50,5 @@ func main() {
 	if err := delimited.Copy(wr, rd); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("dedup_stream: skipped %d records", rd.Skipped())
+	log.Infof("dedup_stream: skipped %d records", rd.Skipped())
 }

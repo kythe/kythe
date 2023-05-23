@@ -33,15 +33,14 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/api"
 	txrefs "kythe.io/kythe/go/test/services/xrefs"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
-
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
@@ -60,12 +59,12 @@ func main() {
 	})
 
 	for _, ticket := range flag.Args() {
-		log.Printf("Atomizing: %q", ticket)
+		log.Infof("Atomizing: %q", ticket)
 		if err := atomizeFileDecorations(ctx, *xs, ticket, atomizer); err != nil {
 			log.Fatalf("Error atomizing file %q: %v", ticket, err)
 		}
 	}
-	log.Printf("Emitted %d entries for %d files", count, flag.NArg())
+	log.Infof("Emitted %d entries for %d files", count, flag.NArg())
 }
 
 var defaultFilters = []string{facts.NodeKind, facts.Subkind}

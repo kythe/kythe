@@ -1,33 +1,41 @@
 class A {
   //- @#0member defines/binding Member
   //- Member code MemberCode
+  //-
   //- MemberCode child.0 MemberContext
-  //- MemberContext.pre_text "A"
-  //- MemberCode child.1 MemberSpace
-  //- MemberSpace.pre_text " "
-  //- MemberCode child.2 MemberName
+  //- MemberContext.post_child_text "."
+  //- MemberContext.add_final_list_token true
+  //-
+  //- MemberContext child.0 MemberContextId
+  //- MemberContextId.pre_text "A"
+  //-
+  //- MemberCode child.1 MemberName
   //- MemberName.pre_text "member"
-  //- MemberCode child.3 MemberTy
+  //- MemberCode child.2 MemberTy
   //- MemberTy.post_text "string"
-  //- MemberCode child.4 MemberEq
+  //- MemberCode child.3 MemberEq
   //- MemberEq.pre_text " = "
-  //- MemberCode child.5 MemberInit
+  //- MemberCode child.4 MemberInit
   //- MemberInit.pre_text "'member'"
   member = 'member';
 
   //- @#0staticmember defines/binding StaticMember
   //- StaticMember code StaticMemberCode
+  //-
   //- StaticMemberCode child.0 StaticMemberContext
-  //- StaticMemberContext.pre_text "A"
-  //- StaticMemberCode child.1 StaticMemberSpace
-  //- StaticMemberSpace.pre_text " "
-  //- StaticMemberCode child.2 StaticMemberName
+  //- StaticMemberContext.post_child_text "."
+  //- StaticMemberContext.add_final_list_token true
+  //-
+  //- StaticMemberContext child.0 StaticMemberContextId
+  //- StaticMemberContextId.pre_text "A"
+  //-
+  //- StaticMemberCode child.1 StaticMemberName
   //- StaticMemberName.pre_text "staticmember"
-  //- StaticMemberCode child.3 StaticMemberTy
+  //- StaticMemberCode child.2 StaticMemberTy
   //- StaticMemberTy.post_text "string"
-  //- StaticMemberCode child.4 StaticMemberEq
+  //- StaticMemberCode child.3 StaticMemberEq
   //- StaticMemberEq.pre_text " = "
-  //- StaticMemberCode child.5 StaticMemberInit
+  //- StaticMemberCode child.4 StaticMemberInit
   //- StaticMemberInit.pre_text "'staticmember'"
   static staticmember = 'staticmember';
 }
@@ -49,13 +57,17 @@ let b = {
 interface C {
   //- @cprop defines/binding CProp
   //- CProp code CPropCode
+  //-
   //- CPropCode child.0 CPropContext
-  //- CPropContext.pre_text "C"
-  //- CPropCode child.1 CPropSpace
-  //- CPropSpace.pre_text " "
-  //- CPropCode child.2 CPropName
+  //- CPropContext.post_child_text "."
+  //- CPropContext.add_final_list_token true
+  //-
+  //- CPropContext child.0 CPropContextId
+  //- CPropContextId.pre_text "C"
+  //-
+  //- CPropCode child.1 CPropName
   //- CPropName.pre_text "cprop"
-  //- CPropCode child.3 CPropTy
+  //- CPropCode child.2 CPropTy
   //- CPropTy.post_text "string"
   cprop: string;
 }

@@ -70,7 +70,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"sort"
@@ -80,6 +79,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd/kythe"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
@@ -162,7 +162,7 @@ func DefaultEncoding() Encoding {
 		if err == nil {
 			return enc
 		}
-		log.Printf("Unknown kzip encoding: %s", e)
+		log.Errorf("unknown kzip encoding: %s", e)
 	}
 	return EncodingProto
 }

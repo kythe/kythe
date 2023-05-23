@@ -7,6 +7,7 @@ go_library(
     srcs = ["kzip.go"],
     deps = [
         "//kythe/go/platform/kcd/kythe",
+        "//kythe/go/util/log",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",

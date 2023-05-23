@@ -9,6 +9,7 @@ go_binary(
     deps = [
         "//kythe/go/extractors/config/preprocessor/modifier",
         "//kythe/go/extractors/constants",
+        "//kythe/go/util/log",
     ],
 )
 

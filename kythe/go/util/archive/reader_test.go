@@ -24,10 +24,11 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"testing"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 func newTar(files map[string]string) *bytes.Buffer {

@@ -177,7 +177,7 @@ func (h countHeap) Swap(i, j int) {
 }
 
 // Push implements a method of heap.Interface.
-func (h *countHeap) Push(item interface{}) {
+func (h *countHeap) Push(item any) {
 	if e, ok := item.(*entry); ok {
 		n := len(*h)
 		e.index = n
@@ -186,7 +186,7 @@ func (h *countHeap) Push(item interface{}) {
 }
 
 // Pop implements a method of heap.Interface.
-func (h *countHeap) Pop() interface{} {
+func (h *countHeap) Pop() any {
 	if n := len(*h) - 1; n >= 0 {
 		e := (*h)[n]
 		e.index = -1
@@ -211,7 +211,7 @@ type ByteSize int
 func (b *ByteSize) String() string { return fmt.Sprintf("%d", *b) }
 
 // Get implements a method of the flag.Value interface.
-func (b *ByteSize) Get() interface{} { return *b }
+func (b *ByteSize) Get() any { return *b }
 
 // Set implements a method of the flag.Value interface.
 func (b *ByteSize) Set(s string) error {

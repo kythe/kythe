@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -30,6 +29,7 @@ import (
 
 	"kythe.io/kythe/go/extractors/bazel/treeset"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/stringset"
@@ -149,9 +149,9 @@ func (c *Config) openRead(ctx context.Context, path string) (io.ReadCloser, erro
 	return os.Open(path)
 }
 
-func (c *Config) logPrintf(msg string, args ...interface{}) {
+func (c *Config) logPrintf(msg string, args ...any) {
 	if c.Verbose {
-		log.Printf(msg, args...)
+		log.Infof(msg, args...)
 	}
 }
 
@@ -196,7 +196,7 @@ type fileReader func(*apb.CompilationUnit_FileInput, io.Reader) error
 
 // extract extracts a compilation from the specified extra action info.
 func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader) (*apb.CompilationUnit, error) {
-	log.Printf("Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
+	log.Infof("Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
 	if err := c.checkAction(ctx, info); err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 
 	// Capture the build system details.
 	if err := SetTarget(info.Target, info.Rule, cu); err != nil {
-		log.Printf("ERROR: Adding build details: %v", err)
+		log.Errorf("Adding build details: %v", err)
 	}
 
 	// Load and populate file contents and required inputs. First scan the
@@ -248,11 +248,11 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 	}); err != nil {
 		return nil, fmt.Errorf("reading input files failed: %v", err)
 	}
-	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
+	log.Infof("Finished reading required inputs [%v elapsed]", time.Since(start))
 	if err := c.fixup(cu); err != nil {
 		return nil, err
 	}
-	log.Printf("Found %d required inputs, %d source files", len(cu.RequiredInput), len(cu.SourceFile))
+	log.Infof("Found %d required inputs, %d source files", len(cu.RequiredInput), len(cu.SourceFile))
 	return cu, nil
 }
 
@@ -295,7 +295,7 @@ func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int,
 			defer func() { <-throttle }()
 			rc, err := c.openRead(gCtx, path)
 			if err != nil {
-				log.Printf("ERROR: Reading input file: %v", err)
+				log.Errorf("Reading input file: %v", err)
 				return err
 			}
 			select {
@@ -326,7 +326,7 @@ func (c *Config) inferCorpus(info *ActionInfo) string {
 
 	corpora := sourceCorpora.Elements()
 	if len(sourceCorpora) != 1 {
-		log.Printf("WARNING: could not infer compilation corpus from source files: %v", corpora)
+		log.Warningf("could not infer compilation corpus from source files: %v", corpora)
 		return ""
 	}
 

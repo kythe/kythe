@@ -9,6 +9,7 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
     ],

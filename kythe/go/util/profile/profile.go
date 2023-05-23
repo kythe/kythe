@@ -25,7 +25,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -33,6 +32,7 @@ import (
 	"sync"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	_ "net/http/pprof" // for /debug/pprof/... handlers
 )
@@ -101,7 +101,7 @@ func Stop() error {
 			}
 		}
 
-		log.Printf("Profile data written: go tool pprof %s %s", binPath, profPath)
+		log.Infof("Profile data written: go tool pprof %s %s", binPath, profPath)
 	}
 	return nil
 }

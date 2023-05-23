@@ -12,6 +12,7 @@ go_library(
         "//kythe/go/util/compare",
         "//kythe/go/util/encoding/text",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/pager",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",

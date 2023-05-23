@@ -9,6 +9,7 @@ go_library(
         "//kythe/go/extractors/config/runextractor/compdb",
         "//kythe/go/util/cmdutil",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "@com_github_google_subcommands//:go_default_library",
     ],
 )
