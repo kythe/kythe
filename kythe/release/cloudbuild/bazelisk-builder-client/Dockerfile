@@ -20,7 +20,7 @@ FROM ubuntu:focal
 RUN apt-get update \
         && apt-get upgrade -y \
         && apt-get install -y --no-install-recommends \
-                curl ca-certificates \
+                curl ca-certificates libstdc++-10-dev \
                 # Bazel's fallback @local_jdk and needed by rules_jvm_external
                 openjdk-11-jdk-headless \
                 # Used to build the website; rules_ruby doesn't support alternate toolchains well.
