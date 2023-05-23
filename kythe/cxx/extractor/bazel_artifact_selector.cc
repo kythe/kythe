@@ -123,7 +123,8 @@ absl::Status DeserializeInternal(T& selector, const U& container) {
 }
 bool StrictAtoI(absl::string_view value, int64_t* out) {
   if (value == "0") {
-    return 0;
+    *out = 0;
+    return true;
   }
   if (value.empty() || value.front() == '0') {
     // We need to ignore leading zeros as they don't contribute to the integral
