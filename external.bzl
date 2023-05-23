@@ -132,7 +132,7 @@ def _cc_dependencies():
         patch_args = ["-p0"],
         patches = [
             "@io_kythe//third_party:souffle_remove_config.patch",
-            # "@io_kythe//third_party:souffle_filesystem.patch",
+            "@io_kythe//third_party:souffle_filesystem.patch",
         ],
     )
 

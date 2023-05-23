@@ -1,0 +1,334 @@
+--- src/parser/ParserDriver.h
++++ src/parser/ParserDriver.h
+@@ -33,7 +33,6 @@
+ #include "reports/DebugReport.h"
+
+ #include <cstdio>
+-#include <filesystem>
+ #include <memory>
+ #include <set>
+ #include <string>
+@@ -79,8 +78,8 @@
+     void error(const SrcLocation& loc, const std::string& msg);
+     void error(const std::string& msg);
+
+-    std::optional<std::filesystem::path> searchIncludePath(
+-            const std::string& IncludeString, const SrcLocation& IncludeLoc);
++    // std::optional<std::filesystem::path> searchIncludePath(
++    //         const std::string& IncludeString, const SrcLocation& IncludeLoc);
+
+     bool canEnterOnce(const SrcLocation& onceLoc);
+
+@@ -90,7 +89,7 @@
+
+     bool trace_scanning = false;
+
+-    std::set<std::pair<std::filesystem::path, int>> VisitedLocations;
++    // std::set<std::pair<std::filesystem::path, int>> VisitedLocations;
+
+     std::deque<std::pair<SrcLocation, std::string>> ScannedComments;
+ };
+
+--- src/parser/scanner.ll
++++ src/parser/scanner.ll
+@@ -365,17 +365,10 @@
+ {WS}+                                 { }
+ \"(\\.|[^"\\])*\"                     { /* include file name */
+                                         std::string path = lexString(driver, yylloc, yytext);
+-                                        std::optional<std::filesystem::path> maybePath = driver.searchIncludePath(path, yylloc);
+                                         yyin = nullptr;
+-                                        if (maybePath) {
+-                                          yyin = fopen(maybePath->string().c_str(), "r");
+-                                        }
+                                         if (!yyin) {
+                                           driver.error(yylloc, std::string("cannot find include file ") + yytext);
+                                           return yy::parser::make_END(yylloc);
+-                                        } else {
+-                                          yyinfo.push(maybePath->string(), yyinfo.LastIncludeDirectiveLoc);
+-                                          yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE, yyscanner), yyscanner);
+                                         }
+                                         BEGIN(INITIAL);
+                                       }
+
+--- src/parser/SrcLocation.cpp
++++ src/parser/SrcLocation.cpp
+@@ -34,7 +34,7 @@
+ std::string SrcLocation::getReportedFilename() const {
+     static const std::string emptyFilename("");
+     if (file) {
+-        return std::filesystem::path(file->Reported).filename().string();
++        return file->Reported;
+     } else {
+         return emptyFilename;
+     }
+
+--- src/parser/ParserDriver.cpp
++++ src/parser/ParserDriver.cpp
+@@ -55,7 +55,7 @@
+     yyscan_t scanner;
+     ScannerInfo data;
+     SrcLocation emptyLoc;
+-    data.push(std::filesystem::weakly_canonical(filename).string(), emptyLoc);
++    data.push(filename, emptyLoc);
+     yylex_init_extra(&data, &scanner);
+     yyset_debug(0, scanner);
+     yyset_in(in, scanner);
+@@ -260,6 +260,7 @@
+             Diagnostic(Diagnostic::Type::ERROR, DiagnosticMessage(msg)));
+ }
+
++#if 0
+ std::optional<std::filesystem::path> ParserDriver::searchIncludePath(
+         const std::string& IncludeString, const SrcLocation& Loc) {
+     std::filesystem::path Candidate(IncludeString);
+@@ -282,10 +283,10 @@
+
+     return std::nullopt;
+ }
++#endif
+
+ bool ParserDriver::canEnterOnce(const SrcLocation& onceLoc) {
+-    const auto Inserted = VisitedLocations.emplace(onceLoc.file->Physical, onceLoc.start.line);
+-    return Inserted.second;
++    return false;
+ }
+
+ void ParserDriver::addComment(const SrcLocation& Loc, const std::stringstream& Content) {
+
+--- src/include/souffle/io/ReadStreamCSV.h
++++ src/include/souffle/io/ReadStreamCSV.h
+@@ -347,7 +347,7 @@
+      */
+     static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
+         auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".facts");
+-        if (!isAbsolute(name)) {
++        if (true /*!isAbsolute(name)*/) {
+             name = getOr(rwOperation, "fact-dir", ".") + pathSeparator + name;
+         }
+         return name;
+
+--- src/include/souffle/utility/FileUtil.h
++++ src/include/souffle/utility/FileUtil.h
+@@ -20,23 +20,16 @@
+ #include <climits>
+ #include <cstdio>
+ #include <cstdlib>
+-#include <filesystem>
+ #include <fstream>
+ #include <map>
+-#include <optional>
+ #include <sstream>
+ #include <string>
+ #include <utility>
+ #include <sys/stat.h>
+
+-// -------------------------------------------------------------------------------
+-//                               File Utils
+-// -------------------------------------------------------------------------------
+-
+ #ifndef _WIN32
+ #include <unistd.h>
+ #else
+-#define NOMINMAX
+ #define NOGDI
+ #include <fcntl.h>
+ #include <io.h>
+@@ -44,11 +37,21 @@
+ #include <windows.h>
+
+ // -------------------------------------------------------------------------------
+-//                               Windows
++//                               File Utils
+ // -------------------------------------------------------------------------------
+
++#define X_OK 1 /* execute permission - unsupported in windows*/
++
+ #define PATH_MAX 260
+
++/**
++ * access and realpath are missing on windows, we use their windows equivalents
++ * as work-arounds.
++ */
++inline int access(const char* path, int mode) {
++    return _access(path, mode);
++}
++
+ inline char* realpath(const char* path, char* resolved_path) {
+     return _fullpath(resolved_path, path, PATH_MAX);
+ }
+@@ -60,16 +63,12 @@
+ #define pclose _pclose
+ #endif
+
+-// -------------------------------------------------------------------------------
+-//                               All systems
+-// -------------------------------------------------------------------------------
+-
+ namespace souffle {
+
+ // The separator in the PATH variable
+ #ifdef _MSC_VER
+ const char PATHdelimiter = ';';
+-const char pathSeparator = '/';
++const char pathSeparator = '\\';
+ #else
+ const char PATHdelimiter = ':';
+ const char pathSeparator = '/';
+@@ -77,15 +76,10 @@
+
+ inline std::string& makePreferred(std::string& name) {
+     std::replace(name.begin(), name.end(), '\\', '/');
+-    // std::replace(name.begin(), name.end(), '/', pathSeparator);
++    std::replace(name.begin(), name.end(), '/', pathSeparator);
+     return name;
+ }
+
+-inline bool isAbsolute(const std::string& path) {
+-    std::filesystem::path P(path);
+-    return P.is_absolute();
+-}
+-
+ /**
+  *  Check whether a file exists in the file system
+  */
+@@ -95,15 +89,14 @@
+     if (it != existFileCache.end()) {
+         return it->second;
+     }
+-    std::filesystem::path P(name);
+-    bool result = std::filesystem::exists(P);
+-    /*bool result = false;
++
++    bool result = false;
+     struct stat buffer = {};
+-    if (stat(P.native().c_str(), &buffer) == 0) {
++    if (stat(name.c_str(), &buffer) == 0) {
+         if ((buffer.st_mode & S_IFMT) != 0) {
+             result = true;
+         }
+-    }*/
++    }
+     existFileCache[name] = result;
+     return result;
+ }
+@@ -124,24 +117,16 @@
+ /**
+  * Check whether a given file exists and it is an executable
+  */
+-#ifdef _WIN32
+-inline bool isExecutable(const std::string& name) {
+-    return existFile(
+-            name);  // there is no EXECUTABLE bit on Windows, so theoretically any file may be executable
+-}
+-#else
+ inline bool isExecutable(const std::string& name) {
+     return existFile(name) && (access(name.c_str(), X_OK) == 0);
+ }
+-#endif
+
+ /**
+  * Simple implementation of a which tool
+  */
+ inline std::string which(const std::string& name) {
+     // Check if name has path components in it and if so return it immediately
+-    std::filesystem::path P(name);
+-    if (P.has_parent_path()) {
++    if (name.find(pathSeparator) != std::string::npos) {
+         return name;
+     }
+     // Get PATH from environment, if it exists.
+@@ -171,14 +156,6 @@
+     if (name.empty()) {
+         return ".";
+     }
+-
+-    std::filesystem::path P(name);
+-    if (P.has_parent_path()) {
+-        return P.parent_path().string();
+-    } else {
+-        return ".";
+-    }
+-
+     std::size_t lastNotSlash = name.find_last_not_of(pathSeparator);
+     // All '/'
+     if (lastNotSlash == std::string::npos) {
+@@ -209,9 +186,7 @@
+  *  Join two paths together; note that this does not resolve overlaps or relative paths.
+  */
+ inline std::string pathJoin(const std::string& first, const std::string& second) {
+-    return (std::filesystem::path(first) / std::filesystem::path(second)).string();
+-
+-    /*unsigned firstPos = static_cast<unsigned>(first.size()) - 1;
++    unsigned firstPos = static_cast<unsigned>(first.size()) - 1;
+     while (first.at(firstPos) == pathSeparator) {
+         firstPos--;
+     }
+@@ -219,7 +194,7 @@
+     while (second.at(secondPos) == pathSeparator) {
+         secondPos++;
+     }
+-    return first.substr(0, firstPos + 1) + pathSeparator + second.substr(secondPos);*/
++    return first.substr(0, firstPos + 1) + pathSeparator + second.substr(secondPos);
+ }
+
+ /*
+@@ -227,19 +202,18 @@
+  * relative to the directory given by @ base. A path here refers a
+  * colon-separated list of directories.
+  */
+-inline std::optional<std::string> findTool(
+-        const std::string& tool, const std::string& base, const std::string& path) {
+-    std::filesystem::path dir(dirName(base));
++inline std::string findTool(const std::string& tool, const std::string& base, const std::string& path) {
++    std::string dir = dirName(base);
+     std::stringstream sstr(path);
+     std::string sub;
+
+     while (std::getline(sstr, sub, ':')) {
+-        auto subpath = (dir / sub / tool);
+-        if (std::filesystem::exists(subpath)) {
+-            return absPath(subpath.string());
++        std::string subpath = dir + pathSeparator + sub + pathSeparator + tool;
++        if (isExecutable(subpath)) {
++            return absPath(subpath);
+         }
+     }
+-    return {};
++    return "";
+ }
+
+ /*
+@@ -305,11 +279,10 @@
+  */
+ inline std::string tempFile() {
+ #ifdef _WIN32
+-    char ctempl[L_tmpnam];
+     std::string templ;
+     std::FILE* f = nullptr;
+     while (f == nullptr) {
+-        templ = std::tmpnam(ctempl);
++        templ = std::tmpnam(nullptr);
+         f = fopen(templ.c_str(), "wx");
+     }
+     fclose(f);
+@@ -324,16 +297,13 @@
+ inline std::stringstream execStdOut(char const* cmd) {
+     FILE* in = popen(cmd, "r");
+     std::stringstream data;
+-
+-    if (in == nullptr) {
+-        return data;
+-    }
+-
+-    while (!feof(in)) {
++    while (in != nullptr) {
+         int c = fgetc(in);
++        if (feof(in) != 0) {
++            break;
++        }
+         data << static_cast<char>(c);
+     }
+-
+     pclose(in);
+     return data;
+ }
