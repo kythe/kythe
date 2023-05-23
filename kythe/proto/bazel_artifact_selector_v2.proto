@@ -1,0 +1,62 @@
+/*
+ * Copyright 2023 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+option java_multiple_files = true;
+
+message BazelAspectArtifactSelectorStateV2 {
+  message File {
+    string local_path = 1;
+    string uri = 2;
+  }
+  // All potentially selectable files.
+  repeated File files = 1;
+
+  message FileSet {
+    // All of the files which are part of this set.
+    // The values in this list are indexes into the `files` field.
+    repeated uint64 files = 2;
+    // All of the filesets which are children of this one.
+    // The values in this list are either integral representations
+    // of the NamedSetOfFilesId (if >=0) or the negative index within
+    // the `file_set_ids` field.
+    repeated int64 file_sets = 3;
+  }
+  // Mapping between file_set_id and FileSet.
+  // Either integral representations of the NamedSetOfFilesId (if >=0)
+  // or the negative index within the `file_set_ids` field.
+  map<int64, FileSet> file_sets = 2;
+
+  // All file set ids which have been selected and removed.
+  // The values in this list are either integral representations
+  // of the NamedSetOfFilesId (if >=0) or the negative index within
+  // the `file_set_ids` field.
+  repeated int64 disposed = 3;
+
+  // Mapping between file_set_id and the target for which the
+  // file set was requested.
+  // The keys in this map are either integral representations
+  // of the NamedSetOfFilesId (if >=0) or the negative index within
+  // the `file_set_ids` field.
+  map<int64, string> pending = 4;
+
+  // Mapping between the numerical ids used elsewhere and the string
+  // value for non-integral NamedSetOfFilesId.
+  repeated string file_set_ids = 5;
+}

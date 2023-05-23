@@ -332,6 +332,9 @@ cc_test(
 cc_library(
     name = "bazel_artifact",
     hdrs = ["bazel_artifact.h"],
+    deps = [
+        "@com_google_absl//absl/strings:str_format",
+    ],
 )
 
 cc_library(
@@ -345,10 +348,13 @@ cc_library(
         ":bazel_artifact",
         "//kythe/cxx/common:regex",
         "//kythe/proto:bazel_artifact_selector_cc_proto",
+        "//kythe/proto:bazel_artifact_selector_v2_cc_proto",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/hash",
         "@com_google_absl//absl/status",
@@ -373,6 +379,9 @@ cc_test(
         "//third_party:gtest_main",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_github_google_glog//:glog",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/functional:any_invocable",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",

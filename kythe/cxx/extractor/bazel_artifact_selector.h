@@ -16,12 +16,16 @@
 #ifndef KYTHE_CXX_EXTRACTOR_BAZEL_ARTIFACT_SELECTOR_H_
 #define KYTHE_CXX_EXTRACTOR_BAZEL_ARTIFACT_SELECTOR_H_
 
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <tuple>
 #include <type_traits>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
@@ -130,6 +134,12 @@ class AnyArtifactSelector final : public BazelArtifactSelector {
   std::function<BazelArtifactSelector&()> get_;
 };
 
+/// \brief Known serialization format versions.
+enum class AspectArtifactSelectorSerializationFormat {
+  kV1,  // The initial, bulky-but-simple format.
+  kV2,  // The newer, flatter, smaller format.
+};
+
 /// \brief Options class used for constructing an AspectArtifactSelector.
 struct AspectArtifactSelectorOptions {
   // A set of patterns used to filter file names from NamedSetOfFiles events.
@@ -140,6 +150,9 @@ struct AspectArtifactSelectorOptions {
   RegexSet output_group_allowlist;
   // A set of patterns used to filter aspect names from TargetComplete events.
   RegexSet target_aspect_allowlist = RegexSet::Build({".*"}).value();
+  // Which serialization format version to use.
+  AspectArtifactSelectorSerializationFormat serialization_format =
+      AspectArtifactSelectorSerializationFormat::kV2;
 };
 
 /// \brief A BazelArtifactSelector implementation which tracks state from
@@ -154,8 +167,8 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   explicit AspectArtifactSelector(Options options)
       : options_(std::move(options)) {}
 
-  AspectArtifactSelector(const AspectArtifactSelector& other);
-  AspectArtifactSelector& operator=(const AspectArtifactSelector& other);
+  AspectArtifactSelector(const AspectArtifactSelector&) = default;
+  AspectArtifactSelector& operator=(const AspectArtifactSelector&) = default;
   AspectArtifactSelector(AspectArtifactSelector&&) = default;
   AspectArtifactSelector& operator=(AspectArtifactSelector&&) = default;
 
@@ -174,22 +187,86 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
   absl::Status DeserializeFrom(const google::protobuf::Any& state) final;
 
  private:
+  friend class AspectArtifactSelectorSerializationHelper;
+
+  using FileId = std::tuple<uint64_t>;
+  using FileSetId = std::tuple<int64_t>;
+
+  class FileTable {
+   public:
+    FileTable() = default;
+    FileTable(const FileTable& other);
+    FileTable& operator=(const FileTable& other);
+    FileTable(FileTable&&) = default;
+    FileTable& operator=(FileTable&&) = default;
+
+    FileId Insert(BazelArtifactFile file);
+    std::optional<BazelArtifactFile> Extract(FileId id);
+    // Extract the equivalent file, if present, returning the argument.
+    BazelArtifactFile ExtractFile(BazelArtifactFile file);
+
+    const BazelArtifactFile* Find(FileId) const;
+
+    auto begin() const { return id_map_.begin(); }
+    auto end() const { return id_map_.end(); }
+
+   private:
+    uint64_t next_id_ = 0;
+    // TODO(shahms): DO NOT SUBMIT:
+    //  This currently emits a file on the first extraction only,
+    //  rather than tracking the use-count. This is intentional, but maybe
+    //  undesirable.
+    absl::node_hash_map<BazelArtifactFile, FileId> file_map_;
+    absl::flat_hash_map<FileId, const BazelArtifactFile*> id_map_;
+  };
+
   struct FileSet {
-    std::vector<const BazelArtifactFile*> files;
-    absl::flat_hash_set<std::string> children;
+    absl::InlinedVector<FileId, 1> files;
+    absl::InlinedVector<FileSetId, 1> file_sets;
+  };
+
+  class FileSetTable {
+   public:
+    std::optional<FileSetId> InternUnlessDisposed(absl::string_view id);
+    bool InsertUnlessDisposed(FileSetId id, FileSet file_set);
+    // Extracts the FileSet and, if previously present, marks it disposed.
+    std::optional<FileSet> ExtractAndDispose(FileSetId id);
+    // Unconditionally marks a FileSet as disposed.
+    // Erases it if present in the map.
+    void Dispose(FileSetId id);
+    [[nodiscard]] bool Disposed(FileSetId id);
+
+    std::string ToString(FileSetId id) const;
+
+    const absl::flat_hash_map<FileSetId, FileSet>& file_sets() const {
+      return file_sets_;
+    }
+    const absl::flat_hash_set<FileSetId>& disposed() const { return disposed_; }
+
+   private:
+    std::pair<FileSetId, bool> InternOrCreate(absl::string_view id);
+
+    // A record of all pending FileSets.
+    absl::flat_hash_map<FileSetId, FileSet> file_sets_;
+    // A record of all of the NamedSetOfFiles events which have been processed.
+    absl::flat_hash_set<FileSetId> disposed_;
+
+    // The next integral id to use.
+    // Non-integral file set ids are mapped to negative values.
+    int64_t next_id_ = -1;
+    // For non-integral file set ids coming from Bazel.
+    absl::flat_hash_map<std::string, FileSetId> id_map_;
+    absl::flat_hash_map<FileSetId, std::string> inverse_id_map_;
   };
 
   struct State {
-    // A record of all of the NamedSetOfFiles events which have been processed.
-    absl::flat_hash_set<std::string> disposed;
-    // Map of active files to count of filesets which contain it.
-    absl::node_hash_map<BazelArtifactFile, int> files;
-    // Mapping from fileset id to NamedSetOfFiles whose file names matched
-    // the allowlist, but have not yet been consumed by an event.
-    absl::flat_hash_map<std::string, FileSet> filesets;
+    // A record of all of the potentially-selectable files encountered.
+    FileTable files;
+    // A record of all of the potentially-selectable NamedSetOfFiles.
+    FileSetTable file_sets;
     // Mapping from fileset id to target name which required that
     // file set when it had not yet been seen.
-    absl::flat_hash_map<std::string, std::string> pending;
+    absl::flat_hash_map<FileSetId, std::string> pending;
   };
   absl::optional<BazelArtifact> SelectFileSet(
       absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset);
@@ -198,10 +275,14 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
       const build_event_stream::BuildEventId::TargetCompletedId& id,
       const build_event_stream::TargetComplete& payload);
 
-  void ReadFilesInto(absl::string_view id, absl::string_view target,
-                     std::vector<BazelArtifactFile>& files);
-  bool InsertFileSet(absl::string_view id,
+  void ExtractFilesInto(FileSetId id, absl::string_view target,
+                        std::vector<BazelArtifactFile>& files);
+  void InsertFileSet(FileSetId id,
                      const build_event_stream::NamedSetOfFiles& fileset);
+
+  std::optional<FileSetId> InternUnlessDisposed(absl::string_view id) {
+    return state_.file_sets.InternUnlessDisposed(id);
+  }
 
   Options options_;
   State state_;

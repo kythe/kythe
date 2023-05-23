@@ -711,6 +711,18 @@ cc_proto_library(
     ],
 )
 
+proto_library(
+    name = "bazel_artifact_selector_v2_proto",
+    srcs = ["bazel_artifact_selector_v2.proto"],
+)
+
+cc_proto_library(
+    name = "bazel_artifact_selector_v2_cc_proto",
+    deps = [
+        ":bazel_artifact_selector_v2_proto",
+    ],
+)
+
 # Public GeneratedProtoInfo file option
 proto_library(
     name = "generated_message_info_proto",
