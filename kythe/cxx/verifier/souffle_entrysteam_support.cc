@@ -18,7 +18,11 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/proto/storage.pb.h"
+// clang-format off
+// IOSystem.h depends on ContainerUtil.h without transitively including it.
+#include "souffle/utility/ContainerUtil.h"
 #include "souffle/io/IOSystem.h"
+// clang-format on
 
 namespace kythe {
 namespace {
@@ -77,7 +81,7 @@ class KytheEntryStreamReadStream : public souffle::ReadStream {
 Note that this is an experimental feature and this declaration may change.
 )");
     }
-    empty_symbol_ = symbolTable.unsafeLookup("");
+    empty_symbol_ = symbolTable.unsafeEncode("");
     std::array<souffle::RamDomain, 5> fields = {empty_symbol_, empty_symbol_,
                                                 empty_symbol_, empty_symbol_,
                                                 empty_symbol_};
@@ -106,14 +110,14 @@ Note that this is an experimental feature and this declaration may change.
     CopyVName(entry.source(), vname);
     tuple[kSourceEntry] = recordTable.pack(vname, kVNameElements);
     if (entry.has_target()) {
-      tuple[kKindEntry] = symbolTable.unsafeLookup(entry.edge_kind());
+      tuple[kKindEntry] = symbolTable.unsafeEncode(entry.edge_kind());
       CopyVName(entry.target(), vname);
       tuple[kTargetEntry] = recordTable.pack(vname, kVNameElements);
       tuple[kValueEntry] = empty_symbol_;
     } else {
-      tuple[kKindEntry] = symbolTable.unsafeLookup(entry.fact_name());
+      tuple[kKindEntry] = symbolTable.unsafeEncode(entry.fact_name());
       tuple[kTargetEntry] = empty_vname_;
-      tuple[kValueEntry] = symbolTable.unsafeLookup(entry.fact_value());
+      tuple[kValueEntry] = symbolTable.unsafeEncode(entry.fact_value());
     }
 
     return tuple;
@@ -122,11 +126,11 @@ Note that this is an experimental feature and this declaration may change.
  private:
   /// Copies the fields from `vname` to `target`.
   void CopyVName(const kythe::proto::VName& vname, souffle::RamDomain* target) {
-    target[kSignatureEntry] = symbolTable.unsafeLookup(vname.signature());
-    target[kCorpusEntry] = symbolTable.unsafeLookup(vname.corpus());
-    target[kPathEntry] = symbolTable.unsafeLookup(vname.path());
-    target[kRootEntry] = symbolTable.unsafeLookup(vname.root());
-    target[kLanguageEntry] = symbolTable.unsafeLookup(vname.language());
+    target[kSignatureEntry] = symbolTable.unsafeEncode(vname.signature());
+    target[kCorpusEntry] = symbolTable.unsafeEncode(vname.corpus());
+    target[kPathEntry] = symbolTable.unsafeEncode(vname.path());
+    target[kRootEntry] = symbolTable.unsafeEncode(vname.root());
+    target[kLanguageEntry] = symbolTable.unsafeEncode(vname.language());
   }
   /// This `FileInputStream` reads from stdin.
   google::protobuf::io::FileInputStream raw_input_;
