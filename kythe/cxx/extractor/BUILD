@@ -375,6 +375,7 @@ cc_test(
         ":bazel_artifact",
         ":bazel_artifact_selector",
         "//kythe/cxx/common:regex",
+        "//kythe/proto:bazel_artifact_selector_v2_cc_proto",
         "//third_party:gtest",
         "//third_party:gtest_main",
         "@build_event_stream_proto//:build_event_stream_cc_proto",

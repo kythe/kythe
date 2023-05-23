@@ -32,6 +32,7 @@
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
+#include "kythe/proto/bazel_artifact_selector_v2.pb.h"
 #include "protobuf-matchers/protocol-buffer-matchers.h"
 #include "re2/re2.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
@@ -42,7 +43,6 @@ using ::protobuf_matchers::EqualsProto;
 using ::testing::Eq;
 using ::testing::FieldsAre;
 using ::testing::IsEmpty;
-using ::testing::Not;
 using ::testing::Optional;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
@@ -83,6 +83,11 @@ absl::flat_hash_map<std::string, FileSet> GenerateFileSets(
   return result;
 }
 
+absl::flat_hash_map<std::string, FileSet> GenerateFileSets(
+    int count, IdGenerator&& next_id) {
+  return GenerateFileSets(count, next_id);
+}
+
 void ToNamedSetOfFilesEvents(
     const absl::flat_hash_map<std::string, FileSet>& file_sets,
     std::vector<build_event_stream::BuildEvent>& result) {
@@ -99,6 +104,13 @@ void ToNamedSetOfFilesEvents(
       event.mutable_named_set_of_files()->add_file_sets()->set_id(child_id);
     }
   }
+}
+
+std::vector<build_event_stream::BuildEvent> ToNamedSetOfFilesEvents(
+    const absl::flat_hash_map<std::string, FileSet>& file_sets) {
+  std::vector<build_event_stream::BuildEvent> result;
+  ToNamedSetOfFilesEvents(file_sets, result);
+  return result;
 }
 
 // The TargetCompleted event will always come after the NamedSetOfFiles events.
@@ -274,6 +286,23 @@ TEST(AspectArtifactSelectorTest, SelectsFailedTargets) {
                       .uri = "file:///path/to/file.kzip",
                   }},
               }));
+}
+
+// Verifies that serializing integral ids in V2 format
+// doesn't use the file_set_ids field.
+TEST(AspectArtifactSelectorTest, SerializationOptimizesIntegers) {
+  AspectArtifactSelector selector(DefaultOptions());
+
+  std::vector<build_event_stream::BuildEvent> events =
+      ToNamedSetOfFilesEvents(GenerateFileSets(5, NumericIdGenerator()));
+  for (const auto& event : events) {
+    ASSERT_EQ(selector.Select(event), std::nullopt);
+  }
+  google::protobuf::Any any;
+  ASSERT_TRUE(selector.SerializeInto(any));
+  kythe::proto::BazelAspectArtifactSelectorStateV2 state;
+  ASSERT_TRUE(any.UnpackTo(&state));
+  EXPECT_THAT(state.file_set_ids(), IsEmpty());
 }
 
 struct StressTestCase {
