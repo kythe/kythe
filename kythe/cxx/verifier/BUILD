@@ -129,7 +129,8 @@ cc_library(
     alwayslink = True,
 )
 
-# TODO(zarko): Re-enable this target once we can build with c++17 on RBP.
+# TODO(zarko): Re-enable this target once we can build with c++17 on RBE
+# (we're currently missing support for <filesystem>).
 # cc_binary(
 #     name = "souffle_with_kythe",
 #     deps = [

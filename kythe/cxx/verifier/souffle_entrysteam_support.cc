@@ -19,6 +19,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/proto/storage.pb.h"
 // clang-format off
+// IOSystem.h depends on ContainerUtil.h without transitively including it.
 #include "souffle/utility/ContainerUtil.h"
 #include "souffle/io/IOSystem.h"
 // clang-format on
