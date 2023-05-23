@@ -113,7 +113,7 @@ cc_toolchain_config(
     "-ffunction-sections",
     "-fdata-sections"],
     dbg_compile_flags = ["-g"],
-    cxx_flags = ["-std=c++0x"],
+    cxx_flags = ["-std=c++17"],
     link_flags = ["-fuse-ld=/usr/bin/ld.gold",
     "-Wl,-no-as-needed",
     "-Wl,-z,relro,-z,now",

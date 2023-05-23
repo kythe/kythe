@@ -44,7 +44,6 @@ cc_library(
         ":parser",
     ],
     hdrs = glob(["src/**/*.h"]) + [":parser"],
-    copts = ["-std=c++17"],
     includes = [
         "src",
         "src/include",
