@@ -8,6 +8,7 @@ steps:
       - bazel
       - test
       - '--config=remote'
+      - '--action_env=BAZEL_CXXOPTS="-std=c++17"'
       - //...
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel
