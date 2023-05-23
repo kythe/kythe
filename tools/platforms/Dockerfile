@@ -19,7 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update -y && \
     apt-get install -y \
       # Kythe C++ dependencies
-      uuid-dev flex bison make \
+      uuid-dev flex bison make libstdc++-12-dev \
       # Kythe misc dependencies
       asciidoc ruby-dev source-highlight graphviz && \
     apt-get clean
