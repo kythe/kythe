@@ -42,8 +42,6 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/aliases/root"),
-    new std::string("/kythe/edge/completes/uniquely"),
-    new std::string("/kythe/edge/completes"),
     new std::string("/kythe/edge/childof"),
     new std::string("/kythe/edge/specializes"),
     new std::string("/kythe/edge/ref/call"),

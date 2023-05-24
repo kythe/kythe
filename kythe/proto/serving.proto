@@ -346,7 +346,7 @@ message PagedCrossReferences {
 
   // Whether the source node is incomplete.  This changes whether
   // /kythe/edge/defines edges are considered declarations or definitions.
-  // /kythe/edge/completes edges are always grouped as definitions.
+  // /kythe/edge/completedby edges are always grouped as definitions.
   bool incomplete = 5;
 
   // The source node's MarkedSource.

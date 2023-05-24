@@ -28,8 +28,6 @@ public enum EdgeKind {
   UNDEFINES(true, "undefines"),
 
   // Edges from an anchor.
-  COMPLETES(true, "completes"),
-  COMPLETES_UNIQUELY(true, "completes/uniquely"),
   IMPUTES(true, "imputes"),
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),

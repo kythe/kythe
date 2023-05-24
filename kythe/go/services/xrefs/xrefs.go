@@ -91,7 +91,6 @@ func FixTickets(tickets []string) ([]string, error) {
 // IsDefKind reports whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
-	// TODO(schroederc): handle full vs. binding CompletesEdge
 	edgeKind = edges.Canonical(edgeKind)
 	if IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, edgeKind, incomplete) {
 		return false
@@ -100,11 +99,11 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
 	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
-		return edgeKind == edges.Defines || edges.IsVariant(edgeKind, edges.Completes)
+		return edgeKind == edges.Defines
 	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
-		return edgeKind == edges.DefinesBinding || edges.IsVariant(edgeKind, edges.Completes)
+		return edgeKind == edges.DefinesBinding
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
-		return edges.IsVariant(edgeKind, edges.Defines) || edges.IsVariant(edgeKind, edges.Completes)
+		return edges.IsVariant(edgeKind, edges.Defines)
 	default:
 		log.Errorf("unhandled CrossReferencesRequest_DefinitionKind: %v", requestedKind)
 		return false

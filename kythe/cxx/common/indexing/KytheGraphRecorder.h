@@ -84,8 +84,6 @@ enum class EdgeKindID {
   kParam,
   kAliases,
   kAliasesRoot,
-  kUniquelyCompletes,
-  kCompletes,
   kChildOf,
   kSpecializes,
   kRefCall,

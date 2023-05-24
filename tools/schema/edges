@@ -5,9 +5,6 @@ upper
 lower
 childof
 context
-completedby
-completes
-uniquely
 defines
 binding
 depends

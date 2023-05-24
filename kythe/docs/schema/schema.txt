@@ -333,44 +333,6 @@ class C;
 class C;
 --------------------------------------------------------------------------------
 
-[[completes]]
-completes
-~~~~~~~~~
-
-Brief description::
-  Definition A *completes* declaration B if A fully specifies B, but
-  there may exist other definitions that may also fully specify B.
-Commonly arises from::
-  definitions of forward declarations
-Points from::
-  anchors
-Points toward::
-  semantic nodes with `complete` facts set to `incomplete` or `complete`
-See also::
-  <<record>>, <<sum>>, <<completesuniquely,[completes/uniquely]>>
-
-WARNING: *completes* edges are deprecated.  Their structure should be replaced
-with the one documented for <<completedby>>.
-
-[[completesuniquely]]
-completes/uniquely
-~~~~~~~~~~~~~~~~~~
-
-Brief description::
-  Definition A *completes/uniquely* declaration B if A fully specifies B
-  and there is no other definition that could possibly do so.
-Commonly arises from::
-  definitions of forward declarations
-Points from::
-  anchors
-Points toward::
-  semantic nodes with `complete` facts set to `incomplete` or `complete`
-See also::
-  <<completes>>, <<record>>, <<sum>>
-
-WARNING: *completes/uniquely* edges are deprecated.  Their structure should be
-replaced with the one documented for <<completedby>>.
-
 [[defines]]
 defines
 ~~~~~~~
