@@ -47,8 +47,6 @@ export enum EdgeKind {
   BOUNDED_UPPER = '/kythe/edge/bounded/upper',
   CHILD_OF = '/kythe/edge/childof',
   CHILD_OF_CONTEXT = '/kythe/edge/childof/context',
-  COMPLETES = '/kythe/edge/completes',
-  COMPLETES_UNIQUELY = '/kythe/edge/completes/uniquely',
   DEFINES = '/kythe/edge/defines',
   DEFINES_BINDING = '/kythe/edge/defines/binding',
   DEFINES_IMPLICIT = '/kythe/edge/defines/implicit',

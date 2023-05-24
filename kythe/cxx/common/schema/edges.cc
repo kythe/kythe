@@ -40,8 +40,6 @@ const char kSatisfies[] = "/kythe/edge/satisfies";
 const char kTyped[] = "/kythe/edge/typed";
 
 // Edge kinds associated with anchors
-const char kCompletes[] = "/kythe/edge/completes";
-const char kCompletesUniquely[] = "/kythe/edge/completes/uniquely";
 const char kDefines[] = "/kythe/edge/defines";
 const char kDefinesBinding[] = "/kythe/edge/defines/binding";
 const char kDocuments[] = "/kythe/edge/documents";

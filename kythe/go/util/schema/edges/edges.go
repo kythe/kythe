@@ -51,20 +51,18 @@ const (
 
 // Edge kinds associated with anchors
 const (
-	Completes         = Prefix + "completes"
-	CompletesUniquely = Prefix + "completes/uniquely"
-	Defines           = Prefix + "defines"
-	DefinesBinding    = Prefix + "defines/binding"
-	Documents         = Prefix + "documents"
-	Ref               = Prefix + "ref"
-	RefCall           = Prefix + "ref/call"
-	RefImplicit       = Prefix + "ref/implicit"
-	RefCallImplicit   = Prefix + "ref/call/implicit"
-	RefImports        = Prefix + "ref/imports"
-	RefInit           = Prefix + "ref/init"
-	RefInitImplicit   = Prefix + "ref/init/implicit"
-	RefWrites         = Prefix + "ref/writes"
-	Tagged            = Prefix + "tagged"
+	Defines         = Prefix + "defines"
+	DefinesBinding  = Prefix + "defines/binding"
+	Documents       = Prefix + "documents"
+	Ref             = Prefix + "ref"
+	RefCall         = Prefix + "ref/call"
+	RefImplicit     = Prefix + "ref/implicit"
+	RefCallImplicit = Prefix + "ref/call/implicit"
+	RefImports      = Prefix + "ref/imports"
+	RefInit         = Prefix + "ref/init"
+	RefInitImplicit = Prefix + "ref/init/implicit"
+	RefWrites       = Prefix + "ref/writes"
+	Tagged          = Prefix + "tagged"
 )
 
 // ParamIndex returns an edge label of the form "param.i" for the i given.
@@ -105,8 +103,7 @@ func IsVariant(x, y string) bool { return x == y || strings.HasPrefix(x, y+"/") 
 // IsAnchorEdge reports whether kind is one associated with anchors.
 func IsAnchorEdge(kind string) bool {
 	canon := Canonical(kind)
-	return IsVariant(canon, Completes) || IsVariant(canon, CompletesUniquely) ||
-		IsVariant(canon, Defines) || IsVariant(canon, DefinesBinding) ||
+	return IsVariant(canon, Defines) || IsVariant(canon, DefinesBinding) ||
 		IsVariant(canon, Documents) ||
 		IsVariant(canon, Ref) || IsVariant(canon, RefCall)
 }

@@ -41,8 +41,6 @@ extern const char kSatisfies[];
 extern const char kTyped[];
 
 // Edge kinds associated with anchors
-extern const char kCompletes[];
-extern const char kCompletesUniquely[];
 extern const char kDefines[];
 extern const char kDefinesBinding[];
 extern const char kDocuments[];
