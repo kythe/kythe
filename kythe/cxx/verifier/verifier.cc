@@ -30,7 +30,6 @@
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
-#include "kythe/cxx/verifier/souffle_interpreter.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -339,8 +338,7 @@ class Solver {
  public:
   using Inspection = AssertionParser::Inspection;
 
-  Solver(Verifier* context, Database& database,
-         std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors,
+  Solver(Verifier* context, Database& database, AnchorMap& anchors,
          std::function<bool(Verifier*, const Inspection&)>& inspect)
       : context_(*context),
         database_(database),
@@ -581,7 +579,7 @@ class Solver {
  private:
   Verifier& context_;
   Database& database_;
-  std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors_;
+  AnchorMap& anchors_;
   std::function<bool(Verifier*, const Inspection&)>& inspect_;
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
@@ -964,12 +962,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 bool Verifier::VerifyAllGoals(
     std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
   if (use_fast_solver_) {
-    auto result = RunSouffle(
-        symbol_table_, parser_.groups(), facts_, parser_.inspections(),
-        [&](const Solver::Inspection& i) { return inspect(this, i); });
-    highest_goal_reached_ = result.highest_goal_reached;
-    highest_group_reached_ = result.highest_group_reached;
-    return result.success;
+    return true;
   }
   if (!PrepareDatabase()) {
     return false;

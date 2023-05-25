@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/strings/match.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
@@ -27,6 +28,8 @@ namespace {
 /// \brief a test fixture that makes it easy to manipulate verifier ASTs.
 class AstTest : public ::testing::Test {
  protected:
+  AstTest() { p_.set_emit_prelude(false); }
+
   /// \return an `Identifier` node with value `string`.
   Identifier* Id(const std::string& string) {
     auto symbol = symbol_table_.intern(string);
@@ -61,9 +64,18 @@ class AstTest : public ::testing::Test {
     return printer.str();
   }
 
+  /// \return the generated program without boilerplate
+  absl::string_view MustGenerateProgram() {
+    CHECK(p_.Lower(symbol_table_, {}));
+    auto code = p_.code();
+    CHECK(absl::EndsWith(code, ".\n"));
+    return code.substr(0, code.size() - 2);
+  }
+
  private:
   Arena arena_;
   SymbolTable symbol_table_;
+  SouffleProgram p_;
 };
 
 TEST_F(AstTest, SelfTest) {
@@ -73,5 +85,6 @@ TEST_F(AstTest, SelfTest) {
   EXPECT_EQ("Range(c,r,p,0,1)", Dump(Range(0, 1, "p", "r", "c")));
 }
 
+TEST_F(AstTest, EmptyProgramTest) { EXPECT_EQ("", MustGenerateProgram()); }
 }  // anonymous namespace
 }  // namespace kythe::verifier

@@ -271,8 +271,8 @@ class Verifier {
   /// All known facts.
   Database facts_;
 
-  /// Multimap from anchor offsets to anchor VName tuples.
-  std::multimap<std::pair<size_t, size_t>, AstNode*> anchors_;
+  /// Maps anchor offsets to anchor VName tuples.
+  AnchorMap anchors_;
 
   /// Has the database been prepared?
   bool database_prepared_ = false;

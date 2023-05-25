@@ -16,14 +16,31 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/strings/string_view.h"
+
 namespace kythe::verifier {
-
-/// \brief Turns `goal_groups` into a Souffle program.
-/// \param symbol_table the symbol table used by `goal_groups`.
-/// \param goal_groups the goal groups to lower.
-std::string LowerGoalsToSouffle(const SymbolTable& symbol_table,
-                                const std::vector<GoalGroup>& goal_groups) {
-  return "(unimplemented)";
+namespace {
+constexpr absl::string_view kGlobalDecls = R"(
+.type vname = [
+  signature:number,
+  corpus:number,
+  path:number,
+  root:number,
+  language:number
+]
+.decl entry(source:vname, kind:number, target:vname, name:number, value:number)
+.input entry(IO=kythe)
+.decl anchor(begin:number, end:number, vname:vname)
+.input anchor(IO=kythe, anchors=1)
+.decl result()
+result() :- true
+)";
 }
-
+bool SouffleProgram::Lower(const SymbolTable& symbol_table,
+                           const std::vector<GoalGroup>& goal_groups) {
+  code_ = emit_prelude_ ? std::string(kGlobalDecls) : "";
+  CHECK_EQ(0, goal_groups.size()) << "(unimplemented)";
+  absl::StrAppend(&code_, ".\n");
+  return true;
+}
 }  // namespace kythe::verifier

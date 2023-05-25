@@ -334,6 +334,8 @@ class AssertionParser {
   Symbol corpus_;
 };
 
+/// Multimap from anchor offsets to anchor VName tuples.
+using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
 }  // namespace verifier
 }  // namespace kythe
 
