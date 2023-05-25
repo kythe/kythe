@@ -16,8 +16,6 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
-#include "absl/strings/string_view.h"
-
 namespace kythe::verifier {
 namespace {
 constexpr absl::string_view kGlobalDecls = R"(
