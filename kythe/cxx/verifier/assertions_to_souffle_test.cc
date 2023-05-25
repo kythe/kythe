@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
-#include "absl/strings/match.h"
+#include "absl/strings/strip.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
@@ -68,8 +68,8 @@ class AstTest : public ::testing::Test {
   absl::string_view MustGenerateProgram() {
     CHECK(p_.Lower(symbol_table_, {}));
     auto code = p_.code();
-    CHECK(absl::EndsWith(code, ".\n"));
-    return code.substr(0, code.size() - 2);
+    CHECK(absl::ConsumeSuffix(&code, ".\n"));
+    return code;
   }
 
  private:

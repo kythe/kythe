@@ -26,7 +26,6 @@ namespace kythe::verifier {
 /// \brief Packages together for a possibly multistage Souffle program.
 class SouffleProgram {
  public:
-  SouffleProgram() {}
   /// \brief Turns `goal_groups` into a Souffle program.
   /// \param symbol_table the symbol table used by `goal_groups`.
   /// \param goal_groups the goal groups to lower.

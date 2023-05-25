@@ -80,10 +80,12 @@ class KytheReadStream : public souffle::ReadStream {
       ++anchor_it_;
       return tuple;
     }
+    return nullptr;
   }
 
  private:
-  void CopyVName(kythe::verifier::Tuple* vname, souffle::RamDomain* target) {
+  void CopyVName(kythe::verifier::Tuple* vname,
+                 souffle::RamDomain (&target)[5]) {
     // output: sig, corp, path, root, lang
     // input: sig, corp, root, path, lang
     target[0] = vname->element(0)->AsIdentifier()->symbol();
