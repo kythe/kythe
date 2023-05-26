@@ -42,6 +42,7 @@ public final class AutoValues {
     public abstract static class Builder {
       //- @setFirst defines/binding FirstSetter
       //- FirstSetter property/writes FirstProp
+      //- FirstSetter.semantic/generated set
       public abstract Builder setFirst(String first);
 
       //- FirstSetterImpl overrides FirstSetter
@@ -50,6 +51,7 @@ public final class AutoValues {
 
       //- @setSecond defines/binding SecondSetter
       //- SecondSetter property/writes SecondProp
+      //- SecondSetter.semantic/generated set
       public abstract Builder setSecond(String second);
 
       public abstract StringPair build();
@@ -75,10 +77,12 @@ public final class AutoValues {
     public abstract static class Builder {
       //- @setString defines/binding SetString
       //- SetString property/writes StringProp
+      //- SetString.semantic/generated set
       public abstract Builder setString(String s);
 
       //- @setBool defines/binding SetBool
       //- SetBool property/writes BoolProp
+      //- SetBool.semantic/generated set
       public abstract Builder setBool(boolean b);
 
       public abstract WithPrefixes build();
@@ -99,6 +103,7 @@ public final class AutoValues {
     interface Builder {
       //- @object defines/binding SetObject
       //- SetObject property/writes ObjectProp
+      //- SetObject.semantic/generated set
       public Builder object(Object o);
 
       //- SetObject generates SetObjectImpl
