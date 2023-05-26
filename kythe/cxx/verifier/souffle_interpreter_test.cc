@@ -25,10 +25,9 @@ TEST(SouffleInterpreterTest, SmokeTest) {
   Database db;
   AnchorMap anchors;
   std::vector<GoalGroup> groups;
-  std::vector<AssertionParser::Inspection> inspections;
-  auto result =
-      RunSouffle(symbols, groups, db, anchors, inspections,
-                 [](const AssertionParser::Inspection&) { return true; });
+  std::vector<Inspection> inspections;
+  auto result = RunSouffle(symbols, groups, db, anchors, inspections,
+                           [](const Inspection&) { return true; });
   ASSERT_TRUE(result.success);
 }
 }  // namespace kythe::verifier

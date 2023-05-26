@@ -30,6 +30,7 @@
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/verifier/souffle_interpreter.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -336,8 +337,6 @@ static bool FastLookupFactLessThan(AstNode* a, AstNode* b) {
 // look at deferring to a pre-existing system.
 class Solver {
  public:
-  using Inspection = AssertionParser::Inspection;
-
   Solver(Verifier* context, Database& database, AnchorMap& anchors,
          std::function<bool(Verifier*, const Inspection&)>& inspect)
       : context_(*context),
@@ -960,24 +959,31 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
+    std::function<bool(Verifier*, const Inspection&)> inspect) {
   if (use_fast_solver_) {
-    return true;
+    auto result = RunSouffle(symbol_table_, parser_.groups(), facts_, anchors_,
+                             parser_.inspections(), [&](const Inspection& i) {
+                               return inspect(this, i);
+                             });
+    highest_goal_reached_ = result.highest_goal_reached;
+    highest_group_reached_ = result.highest_group_reached;
+    return result.success;
+  } else {
+    if (!PrepareDatabase()) {
+      return false;
+    }
+    Solver solver(this, facts_, anchors_, inspect);
+    bool result = solver.Solve();
+    highest_goal_reached_ = solver.highest_goal_reached();
+    highest_group_reached_ = solver.highest_group_reached();
+    return result;
   }
-  if (!PrepareDatabase()) {
-    return false;
-  }
-  Solver solver(this, facts_, anchors_, inspect);
-  bool result = solver.Solve();
-  highest_goal_reached_ = solver.highest_goal_reached();
-  highest_group_reached_ = solver.highest_group_reached();
-  return result;
 }
 
 bool Verifier::VerifyAllGoals() {
   return VerifyAllGoals([this](Verifier* context,
-                               const Solver::Inspection& inspection) {
-    if (inspection.kind == Solver::Inspection::Kind::EXPLICIT) {
+                               const Inspection& inspection) {
+    if (inspection.kind == Inspection::Kind::EXPLICIT) {
       FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
       printer.Print(inspection.label);
       printer.Print(": ");

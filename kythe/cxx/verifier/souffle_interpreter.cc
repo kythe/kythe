@@ -24,7 +24,6 @@
 #include "glog/logging.h"
 #include "interpreter/Engine.h"
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
-#include "kythe/cxx/verifier/verifier.h"
 #include "souffle/RamTypes.h"
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
@@ -176,11 +175,11 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
 };
 }  // anonymous namespace
 
-SouffleResult RunSouffle(
-    const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database, const AnchorMap& anchors,
-    const std::vector<AssertionParser::Inspection>& inspections,
-    std::function<bool(const AssertionParser::Inspection&)> inspect) {
+SouffleResult RunSouffle(const SymbolTable& symbol_table,
+                         const std::vector<GoalGroup>& goal_groups,
+                         const Database& database, const AnchorMap& anchors,
+                         const std::vector<Inspection>& inspections,
+                         std::function<bool(const Inspection&)> inspect) {
   SouffleResult result{};
   SouffleProgram program;
   if (!program.Lower(symbol_table, goal_groups)) {

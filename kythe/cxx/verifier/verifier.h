@@ -89,8 +89,7 @@ class Verifier {
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
   bool VerifyAllGoals(
-      std::function<bool(Verifier* context, const AssertionParser::Inspection&)>
-          inspect);
+      std::function<bool(Verifier* context, const Inspection&)> inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.

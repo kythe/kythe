@@ -61,7 +61,6 @@ cc_library(
     deps = [
         ":assertions_to_souffle",
         ":lexparse",
-        ":lib",
         "//third_party/souffle:parse_transform",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -93,7 +92,6 @@ cc_library(
     ],
     deps = [
         ":lexparse",
-        ":lib",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -106,6 +104,7 @@ cc_test(
     deps = [
         ":assertions_to_souffle",
         ":lexparse",
+        ":lib",
         ":pretty_printer",
         "//third_party:gtest",
         "//third_party:gtest_main",
@@ -164,6 +163,7 @@ cc_library(
     deps = [
         ":lexparse",
         ":pretty_printer",
+        ":souffle_interpreter",
         "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:scope_guard",

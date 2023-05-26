@@ -352,6 +352,25 @@ struct GoalGroup {
   std::vector<AstNode*> goals;    ///< Grouped goals, implicitly conjoined.
 };
 
+/// \brief A database of fact-shaped AstNodes.
+using Database = std::vector<AstNode*>;
+
+/// \brief Multimap from anchor offsets to anchor VName tuples.
+using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
+
+/// An EVar whose assignment is interesting to display.
+struct Inspection {
+  enum class Kind {
+    EXPLICIT,  ///< The user requested this inspection (with "?").
+    IMPLICIT   ///< This inspection was added by default.
+  };
+  std::string label;  ///< A label for user reference.
+  EVar* evar;         ///< The EVar to inspect.
+  Kind kind;          ///< Whether this inspection was added by default.
+  Inspection(const std::string& label, EVar* evar, Kind kind)
+      : label(label), evar(evar), kind(kind) {}
+};
+
 }  // namespace verifier
 }  // namespace kythe
 

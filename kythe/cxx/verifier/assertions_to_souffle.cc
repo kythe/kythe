@@ -37,7 +37,7 @@ result() :- true
 bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                            const std::vector<GoalGroup>& goal_groups) {
   code_ = emit_prelude_ ? std::string(kGlobalDecls) : "";
-  CHECK_EQ(0, goal_groups.size()) << "(unimplemented)";
+  CHECK_LE(goal_groups.size(), 1) << "(unimplemented)";
   absl::StrAppend(&code_, ".\n");
   return true;
 }
