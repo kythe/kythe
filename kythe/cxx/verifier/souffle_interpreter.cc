@@ -23,50 +23,105 @@
 #include "absl/strings/str_cat.h"
 #include "glog/logging.h"
 #include "interpreter/Engine.h"
+#include "kythe/cxx/verifier/assertions_to_souffle.h"
+#include "kythe/cxx/verifier/verifier.h"
 #include "souffle/RamTypes.h"
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
 
 namespace kythe::verifier {
 namespace {
-constexpr std::array<int, 4> kInputData = {1, 2, 2, 3};
-
 class KytheReadStream : public souffle::ReadStream {
  public:
   explicit KytheReadStream(
       const std::map<std::string, std::string>& rw_operation,
-      souffle::SymbolTable& symbol_table, souffle::RecordTable& record_table)
-      : souffle::ReadStream(rw_operation, symbol_table, record_table) {}
+      souffle::SymbolTable& symbol_table, souffle::RecordTable& record_table,
+      const AnchorMap& anchors, const Database& database)
+      : souffle::ReadStream(rw_operation, symbol_table, record_table),
+        anchors_(anchors),
+        database_(database) {
+    if (auto op = rw_operation.find("anchors"); op != rw_operation.end()) {
+      anchor_it_ = anchors_.cbegin();
+      database_it_ = database_.cend();
+    } else {
+      database_it_ = database_.cbegin();
+      anchor_it_ = anchors_.cend();
+    }
+    std::array<souffle::RamDomain, 5> fields = {0, 0, 0, 0, 0};
+    empty_vname_ = record_table.pack(fields.data(), fields.size());
+  }
 
  protected:
   souffle::Own<souffle::RamDomain[]> readNextTuple() override {
-    if (pos_ >= kInputData.size()) {
-      return nullptr;
+    if (database_it_ != database_.end()) {
+      auto* t = (*database_it_)->AsApp()->rhs()->AsTuple();
+      auto tuple = std::make_unique<souffle::RamDomain[]>(5);
+      souffle::RamDomain vname[5];
+      CopyVName(t->element(0)->AsApp()->rhs()->AsTuple(), vname);
+      tuple[0] = recordTable.pack(vname, 5);
+      tuple[1] = t->element(1)->AsIdentifier()->symbol();
+      if (auto* id = t->element(2)->AsIdentifier(); id != nullptr) {
+        tuple[2] = id->symbol();
+      } else {
+        CopyVName(t->element(2)->AsApp()->rhs()->AsTuple(), vname);
+        tuple[2] = recordTable.pack(vname, 5);
+      }
+      tuple[3] = t->element(3)->AsIdentifier()->symbol();
+      tuple[4] = t->element(4)->AsIdentifier()->symbol();
+      ++database_it_;
+      return tuple;
+    } else if (anchor_it_ != anchors_.end()) {
+      auto tuple = std::make_unique<souffle::RamDomain[]>(3);
+      tuple[0] = anchor_it_->first.first;
+      tuple[1] = anchor_it_->first.second;
+      souffle::RamDomain vname[5];
+      CopyVName(anchor_it_->second->AsApp()->rhs()->AsTuple(), vname);
+      tuple[2] = recordTable.pack(vname, 5);
+      ++anchor_it_;
+      return tuple;
     }
-    auto tuple = std::make_unique<souffle::RamDomain[]>(2);
-    tuple[0] = kInputData[pos_++];
-    tuple[1] = kInputData[pos_++];
-    return tuple;
+    return nullptr;
   }
 
  private:
-  int pos_ = 0;
+  void CopyVName(kythe::verifier::Tuple* vname,
+                 souffle::RamDomain (&target)[5]) {
+    // output: sig, corp, path, root, lang
+    // input: sig, corp, root, path, lang
+    target[0] = vname->element(0)->AsIdentifier()->symbol();
+    target[1] = vname->element(1)->AsIdentifier()->symbol();
+    target[2] = vname->element(3)->AsIdentifier()->symbol();
+    target[3] = vname->element(2)->AsIdentifier()->symbol();
+    target[4] = vname->element(4)->AsIdentifier()->symbol();
+  }
+  const AnchorMap& anchors_;
+  const Database& database_;
+  AnchorMap::const_iterator anchor_it_;
+  Database::const_iterator database_it_;
+  souffle::RamDomain empty_vname_;
 };
 
 class KytheReadStreamFactory : public souffle::ReadStreamFactory {
  public:
+  KytheReadStreamFactory(const AnchorMap& anchors, const Database& database)
+      : anchors_(anchors), database_(database) {}
+
   souffle::Own<souffle::ReadStream> getReader(
       const std::map<std::string, std::string>& rw_operation,
       souffle::SymbolTable& symbol_table,
       souffle::RecordTable& record_table) override {
     return souffle::mk<KytheReadStream>(rw_operation, symbol_table,
-                                        record_table);
+                                        record_table, anchors_, database_);
   }
 
   const std::string& getName() const override {
     static const std::string name = "kythe";
     return name;
   }
+
+ private:
+  const AnchorMap& anchors_;
+  const Database& database_;
 };
 
 class KytheWriteStream : public souffle::WriteStream {
@@ -74,20 +129,19 @@ class KytheWriteStream : public souffle::WriteStream {
   explicit KytheWriteStream(
       const std::map<std::string, std::string>& rw_operation,
       const souffle::SymbolTable& symbol_table,
-      const souffle::RecordTable& record_table,
-      std::vector<std::pair<int, int>>* output)
+      const souffle::RecordTable& record_table, size_t* output)
       : souffle::WriteStream(rw_operation, symbol_table, record_table),
         output_(output) {}
 
  protected:
-  void writeNullary() override {}
+  void writeNullary() override { (*output_)++; }
 
   void writeNextTuple(const souffle::RamDomain* tuple) override {
-    output_->push_back({tuple[0], tuple[1]});
+    (*output_)++;
   }
 
  private:
-  std::vector<std::pair<int, int>>* output_;
+  size_t* output_;
 };
 
 class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
@@ -111,58 +165,43 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
   }
 
   size_t NewOutput() {
-    outputs_.push_back({});
+    outputs_.push_back(0);
     return outputs_.size() - 1;
   }
 
-  const std::vector<std::pair<int, int>>& GetOutput(size_t id) const {
-    return outputs_[id];
-  }
+  size_t GetOutput(size_t id) const { return outputs_[id]; }
 
  private:
-  std::vector<std::vector<std::pair<int, int>>> outputs_;
+  std::vector<size_t> outputs_;
 };
 }  // anonymous namespace
 
-// TODO(zarko): This is a temporary hack that only demonstrates that the
-// Souffle library is working. It bakes in the inputs and outputs for a
-// simple example program and checks that the interpreter calculates the
-// correct result. `Kythe{Write,Read}StreamFactory` will need to be moved
-// to separate files and updated to accept the Datalog relations that the
-// verifier -> datalog compiler produces.
 SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database,
+    const Database& database, const AnchorMap& anchors,
     const std::vector<AssertionParser::Inspection>& inspections,
     std::function<bool(const AssertionParser::Inspection&)> inspect) {
   SouffleResult result{};
+  SouffleProgram program;
+  if (!program.Lower(symbol_table, goal_groups)) {
+    return result;
+  }
   auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
   size_t output_id = write_stream_factory->NewOutput();
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
       write_stream_factory);
   souffle::IOSystem::getInstance().registerReadStreamFactory(
-      std::make_shared<KytheReadStreamFactory>());
-  auto ram_tu = souffle::ParseTransform(absl::StrCat(R"(
-        .decl edge(x:number, y:number)
-        .input edge(IO=kythe)
-
-        .decl path(x:number, y:number)
-        .output path(IO=kythe, id=)",
-                                                     output_id, R"()
-
-        path(x, y) :- edge(x, y).
-        path(x, y) :- path(x, z), edge(z, y).
-    )"));
+      std::make_shared<KytheReadStreamFactory>(anchors, database));
+  auto ram_tu = souffle::ParseTransform(absl::StrCat(
+      program.code(), ".output result(IO=kythe, id=", output_id, ")\n"));
   if (ram_tu == nullptr) {
     return result;
   }
   souffle::Own<souffle::interpreter::Engine> interpreter(
       souffle::mk<souffle::interpreter::Engine>(*ram_tu));
   interpreter->executeMain();
-  std::set<std::pair<int, int>> expected = {{1, 2}, {1, 3}, {2, 3}};
-  const auto& actual = write_stream_factory->GetOutput(output_id);
-  std::set<std::pair<int, int>> actual_set(actual.begin(), actual.end());
-  result.success = (expected == actual_set);
+  size_t actual = write_stream_factory->GetOutput(output_id);
+  result.success = (actual != 0);
   return result;
 }
 }  // namespace kythe::verifier

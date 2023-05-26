@@ -19,15 +19,32 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {
+/// \brief Packages together for a possibly multistage Souffle program.
+class SouffleProgram {
+ public:
+  /// \brief Turns `goal_groups` into a Souffle program.
+  /// \param symbol_table the symbol table used by `goal_groups`.
+  /// \param goal_groups the goal groups to lower.
+  bool Lower(const SymbolTable& symbol_table,
+             const std::vector<GoalGroup>& goal_groups);
 
-/// \brief Turns `goal_groups` into a Souffle program.
-/// \param symbol_table the symbol table used by `goal_groups`.
-/// \param goal_groups the goal groups to lower.
-std::string LowerGoalsToSouffle(const SymbolTable& symbol_table,
-                                const std::vector<GoalGroup>& goal_groups);
+  /// \return the lowered Souffle code.
+  absl::string_view code() { return code_; }
+
+  /// \brief Configures whether to emit initial definitions.
+  void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }
+
+ private:
+  /// The current finished code buffer.
+  std::string code_;
+
+  /// Whether to emit the prelude.
+  bool emit_prelude_ = true;
+};
 
 }  // namespace kythe::verifier
 

@@ -23,10 +23,11 @@ namespace kythe::verifier {
 TEST(SouffleInterpreterTest, SmokeTest) {
   SymbolTable symbols;
   Database db;
+  AnchorMap anchors;
   std::vector<GoalGroup> groups;
   std::vector<AssertionParser::Inspection> inspections;
   auto result =
-      RunSouffle(symbols, groups, db, inspections,
+      RunSouffle(symbols, groups, db, anchors, inspections,
                  [](const AssertionParser::Inspection&) { return true; });
   ASSERT_TRUE(result.success);
 }
