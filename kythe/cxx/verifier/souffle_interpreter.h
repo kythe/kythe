@@ -17,7 +17,7 @@
 #ifndef KYTHE_CXX_VERIFIER_SOUFFLE_INTERPRETER_H_
 #define KYTHE_CXX_VERIFIER_SOUFFLE_INTERPRETER_H_
 
-#include "kythe/cxx/verifier/assertions.h"
+#include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {
 struct SouffleResult {
@@ -37,11 +37,11 @@ struct SouffleResult {
 /// provided list of inspections; a false return value stops iterating through
 /// inspection results and fails the solution, while a true result continues.
 /// \return a `SouffleResult` describing how the run went.
-SouffleResult RunSouffle(
-    const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
-    const Database& database, const AnchorMap& anchors,
-    const std::vector<AssertionParser::Inspection>& inspections,
-    std::function<bool(const AssertionParser::Inspection&)> inspect);
+SouffleResult RunSouffle(const SymbolTable& symbol_table,
+                         const std::vector<GoalGroup>& goal_groups,
+                         const Database& database, const AnchorMap& anchors,
+                         const std::vector<Inspection>& inspections,
+                         std::function<bool(const Inspection&)> inspect);
 }  // namespace kythe::verifier
 
 #endif  // defined(KYTHE_CXX_VERIFIER_SOUFFLE_INTERPRETER_H_)

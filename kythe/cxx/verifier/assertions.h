@@ -32,9 +32,6 @@ class AssertionParserImpl;
 namespace kythe {
 namespace verifier {
 
-/// \brief A database of fact-shaped AstNodes.
-using Database = std::vector<AstNode*>;
-
 class Verifier;
 
 /// \brief Parses logic programs.
@@ -79,19 +76,6 @@ class AssertionParser {
 
   /// \brief All of the goal groups in this `AssertionParser`.
   std::vector<GoalGroup>& groups() { return groups_; }
-
-  /// An EVar whose assignment is interesting to display.
-  struct Inspection {
-    enum class Kind {
-      EXPLICIT,  ///< The user requested this inspection (with "?").
-      IMPLICIT   ///< This inspection was added by default.
-    };
-    std::string label;  ///< A label for user reference.
-    EVar* evar;         ///< The EVar to inspect.
-    Kind kind;          ///< Whether this inspection was added by default.
-    Inspection(const std::string& label, EVar* evar, Kind kind)
-        : label(label), evar(evar), kind(kind) {}
-  };
 
   /// \brief All of the inspections in this `AssertionParser`.
   std::vector<Inspection>& inspections() { return inspections_; }
@@ -333,9 +317,6 @@ class AssertionParser {
   /// The current file's corpus.
   Symbol corpus_;
 };
-
-/// Multimap from anchor offsets to anchor VName tuples.
-using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
 }  // namespace verifier
 }  // namespace kythe
 
