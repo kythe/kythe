@@ -139,7 +139,6 @@ proto_library(
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
-        ":filecontext_proto",
         ":storage_proto",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:timestamp_proto",
@@ -156,7 +155,6 @@ go_kythe_proto(
     proto = ":analysis_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
-        ":filecontext_go_proto",
         ":storage_go_proto",
     ],
 )
