@@ -191,17 +191,28 @@ message KzipInfo {
   message CorpusInfo {
     reserved 1, 2, 3;
 
-    message RequiredInputs {
+    message Inputs {
       // TODO(salguarnieri) Add count of unique inputs for this corpus?
       int32 count = 1;
     }
 
+    message CUInfo {
+      int32 count = 1;
+      // Map from java version to number of CUs that make use of that java
+      // version. Note that if no -source flag is specified for a CU, it will
+      // not impact this count.
+      map<int32, int32> java_version_count = 2;
+    }
+
     // Map from language to count of required inputs that have this corpus in
     // their VName.
-    map<string, RequiredInputs> language_required_inputs = 4;
+    map<string, Inputs> language_required_inputs = 4;
     // Map from language to count of sources that have this corpus in their
     // required_input VName.
-    map<string, RequiredInputs> language_sources = 5;
+    map<string, Inputs> language_sources = 5;
+    // Map from language to count of compilation units that have this corpus in
+    // their VName.
+    map<string, CUInfo> language_cu_info = 6;
   }
 
   // Map from corpus name to corpus info.
