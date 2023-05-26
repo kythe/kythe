@@ -29,7 +29,7 @@ version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
 dependencies = [
- "hermit-abi 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hermit-abi 0.1.19",
  "libc",
  "winapi",
 ]
@@ -133,7 +133,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 1.0.109 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -235,7 +235,7 @@ checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -410,9 +410,9 @@ version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09270fd4fa1111bc614ed2246c7ef56239a3063d5be0d1ec3b589c505d400aeb"
 dependencies = [
- "hermit-abi 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hermit-abi 0.3.1",
  "libc",
- "windows-sys 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -503,7 +503,7 @@ version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fac9e2da13b5eb447a6ce3d392f23a29d8694bff781bf03a16cd9ac8697593b"
 dependencies = [
- "hermit-abi 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hermit-abi 0.2.6",
  "libc",
 ]
 
@@ -565,7 +565,7 @@ dependencies = [
  "proc-macro-error-attr",
  "proc-macro2",
  "quote",
- "syn 1.0.109 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.109",
  "version_check",
 ]
 
@@ -717,7 +717,7 @@ dependencies = [
  "io-lifetimes",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.45.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -755,7 +755,7 @@ checksum = "e801c1712f48475582b7696ac71e0ca34ebb30e09338425384269d9717c62cad"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 2.0.6",
 ]
 
 [[package]]
@@ -790,7 +790,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 1.0.109 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -848,7 +848,7 @@ dependencies = [
  "fastrand",
  "redox_syscall",
  "rustix",
- "windows-sys 0.42.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]
@@ -883,7 +883,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 2.0.6",
 ]
 
 [[package]]

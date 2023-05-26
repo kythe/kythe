@@ -122,7 +122,6 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-#        sha256 = "05e15e536cc1e5fd7b395d044fc2dabf73d2b27622fbc10504b7e48219bb09bc",
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_rust/releases/download/0.22.0/rules_rust-v0.22.0.tar.gz",
             "https://github.com/bazelbuild/rules_rust/releases/download/0.22.0/rules_rust-v0.22.0.tar.gz",

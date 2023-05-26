@@ -67,7 +67,7 @@ rust_proto_toolchain(
     name = "rust_proto_toolchain_impl",
     edition = "2021",
     proto_compile_deps = ["@crate_index//:protobuf"],
-    proto_plugin = "@crate_index//:protobuf-codegen__protoc-gen-rust",
+    proto_plugin = "@crate_index//:protobuf-codegen",
 )
 
 toolchain(
