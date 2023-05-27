@@ -35,7 +35,8 @@ class KytheReadStream : public souffle::ReadStream {
   explicit KytheReadStream(
       const std::map<std::string, std::string>& rw_operation,
       souffle::SymbolTable& symbol_table, souffle::RecordTable& record_table,
-      const AnchorMap& anchors, const Database& database)
+      const AnchorMap& anchors, const Database& database,
+      const SymbolTable& dst)
       : souffle::ReadStream(rw_operation, symbol_table, record_table),
         anchors_(anchors),
         database_(database) {
@@ -46,6 +47,23 @@ class KytheReadStream : public souffle::ReadStream {
       database_it_ = database_.cbegin();
       anchor_it_ = anchors_.cend();
     }
+#ifdef DEBUG_LOWERING
+    FileHandlePrettyPrinter dprinter(stderr);
+    for (const auto& d : database) {
+      dprinter.Print("- ");
+      d->Dump(dst, &dprinter);
+      dprinter.Print("\n");
+    }
+    for (const auto& a : anchors) {
+      dprinter.Print("@ ");
+      dprinter.Print(std::to_string(a.first.first));
+      dprinter.Print(",");
+      dprinter.Print(std::to_string(a.first.second));
+      dprinter.Print(" ");
+      a.second->Dump(dst, &dprinter);
+      dprinter.Print("\n");
+    }
+#endif
     std::array<souffle::RamDomain, 5> fields = {0, 0, 0, 0, 0};
     empty_vname_ = record_table.pack(fields.data(), fields.size());
   }
@@ -60,6 +78,7 @@ class KytheReadStream : public souffle::ReadStream {
       tuple[0] = recordTable.pack(vname, 5);
       tuple[1] = t->element(1)->AsIdentifier()->symbol();
       if (auto* id = t->element(2)->AsIdentifier(); id != nullptr) {
+        // TODO(zarko): this should possibly be an explicit nil.
         tuple[2] = id->symbol();
       } else {
         CopyVName(t->element(2)->AsApp()->rhs()->AsTuple(), vname);
@@ -102,15 +121,16 @@ class KytheReadStream : public souffle::ReadStream {
 
 class KytheReadStreamFactory : public souffle::ReadStreamFactory {
  public:
-  KytheReadStreamFactory(const AnchorMap& anchors, const Database& database)
-      : anchors_(anchors), database_(database) {}
+  KytheReadStreamFactory(const AnchorMap& anchors, const Database& database,
+                         const SymbolTable& dst)
+      : anchors_(anchors), database_(database), dst_(dst) {}
 
   souffle::Own<souffle::ReadStream> getReader(
       const std::map<std::string, std::string>& rw_operation,
       souffle::SymbolTable& symbol_table,
       souffle::RecordTable& record_table) override {
-    return souffle::mk<KytheReadStream>(rw_operation, symbol_table,
-                                        record_table, anchors_, database_);
+    return souffle::mk<KytheReadStream>(
+        rw_operation, symbol_table, record_table, anchors_, database_, dst_);
   }
 
   const std::string& getName() const override {
@@ -121,6 +141,7 @@ class KytheReadStreamFactory : public souffle::ReadStreamFactory {
  private:
   const AnchorMap& anchors_;
   const Database& database_;
+  const SymbolTable& dst_;
 };
 
 class KytheWriteStream : public souffle::WriteStream {
@@ -190,10 +211,13 @@ SouffleResult RunSouffle(const SymbolTable& symbol_table,
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
       write_stream_factory);
   souffle::IOSystem::getInstance().registerReadStreamFactory(
-      std::make_shared<KytheReadStreamFactory>(anchors, database));
+      std::make_shared<KytheReadStreamFactory>(anchors, database,
+                                               symbol_table));
   auto ram_tu = souffle::ParseTransform(absl::StrCat(
       program.code(), ".output result(IO=kythe, id=", output_id, ")\n"));
   if (ram_tu == nullptr) {
+    fprintf(stderr, "no ram_tu for program <%s>\n",
+            std::string(program.code()).c_str());
     return result;
   }
   souffle::Own<souffle::interpreter::Engine> interpreter(

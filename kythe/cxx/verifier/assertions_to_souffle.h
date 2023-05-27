@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 
@@ -39,11 +40,28 @@ class SouffleProgram {
   void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }
 
  private:
+  /// \brief Lowers `node`.
+  bool LowerSubexpression(AstNode* node);
+
+  /// \brief Lowers `group`.
+  bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
+
+  /// \return a stable short name for `ev`.
+  size_t FindEVar(EVar* ev) {
+    auto found = evars_.find(ev);
+    if (found != evars_.end()) return found->second;
+    evars_[ev] = evars_.size();
+    return evars_.size() - 1;
+  }
+
   /// The current finished code buffer.
   std::string code_;
 
   /// Whether to emit the prelude.
   bool emit_prelude_ = true;
+
+  /// Known evars.
+  absl::flat_hash_map<EVar*, size_t> evars_;
 };
 
 }  // namespace kythe::verifier
