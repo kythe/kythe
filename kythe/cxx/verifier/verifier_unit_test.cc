@@ -132,8 +132,7 @@ TEST(VerifierUnitTest, EmptyVnameIsNotWellFormed) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, NoRulesIsOk) {
-  Verifier v;
+TEST_P(VerifierTest, NoRulesIsOk) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
   source { root: "1" }
   fact_name: "testname"
@@ -200,8 +199,7 @@ entries {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EdgesCanSupplyMultipleOrdinals) {
-  Verifier v;
+TEST_P(VerifierTest, EdgesCanSupplyMultipleOrdinals) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
   source { root: "1" }
   edge_kind: "somekind"
@@ -220,8 +218,7 @@ entries {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EdgesCanSupplyMultipleDotOrdinals) {
-  Verifier v;
+TEST_P(VerifierTest, EdgesCanSupplyMultipleDotOrdinals) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
   source { root: "1" }
   edge_kind: "somekind.42"
@@ -277,8 +274,7 @@ TEST(VerifierUnitTest, OnlyTargetIsWrongDotOrdinal) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, MissingAnchorTextFails) {
-  Verifier v;
+TEST_P(VerifierTest, MissingAnchorTextFails) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
   source { root: "1" }
@@ -287,8 +283,7 @@ TEST(VerifierUnitTest, MissingAnchorTextFails) {
 })"));
 }
 
-TEST(VerifierUnitTest, AmbiguousAnchorTextFails) {
-  Verifier v;
+TEST_P(VerifierTest, AmbiguousAnchorTextFails) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
 # text text
@@ -298,8 +293,7 @@ TEST(VerifierUnitTest, AmbiguousAnchorTextFails) {
 })"));
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarFailsOnEmptyDB) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarFailsOnEmptyDB) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @text defines SomeNode
 # text
@@ -308,8 +302,7 @@ TEST(VerifierUnitTest, GenerateAnchorEvarFailsOnEmptyDB) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, OffsetsVersusRuleBlocks) {
-  Verifier v;
+TEST_P(VerifierTest, OffsetsVersusRuleBlocks) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @text defines SomeNode
 #- @+2text defines SomeNode
@@ -320,16 +313,14 @@ TEST(VerifierUnitTest, OffsetsVersusRuleBlocks) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ZeroRelativeLineReferencesDontWork) {
-  Verifier v;
+TEST_P(VerifierTest, ZeroRelativeLineReferencesDontWork) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @+0text defines SomeNode
 # text
 )"));
 }
 
-TEST(VerifierUnitTest, NoMatchingInsideGoalComments) {
-  Verifier v;
+TEST_P(VerifierTest, NoMatchingInsideGoalComments) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @+1text defines SomeNode
 #- @text defines SomeNode
@@ -337,23 +328,21 @@ TEST(VerifierUnitTest, NoMatchingInsideGoalComments) {
 )"));
 }
 
-TEST(VerifierUnitTest, OutOfBoundsRelativeLineReferencesDontWork) {
-  Verifier v;
+TEST_P(VerifierTest, OutOfBoundsRelativeLineReferencesDontWork) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @+2text defines SomeNode
 # text
 )"));
 }
 
-TEST(VerifierUnitTest, EndOfFileAbsoluteLineReferencesWork) {
-  Verifier v;
+TEST_P(VerifierTest, EndOfFileAbsoluteLineReferencesWork) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @:3text defines SomeNode
 # text
 )"));
 }
 
-TEST(VerifierUnitTest, OutOfBoundsAbsoluteLineReferencesDontWork) {
+TEST_P(VerifierTest, OutOfBoundsAbsoluteLineReferencesDontWork) {
   Verifier v;
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @:4text defines SomeNode
@@ -361,24 +350,21 @@ TEST(VerifierUnitTest, OutOfBoundsAbsoluteLineReferencesDontWork) {
 )"));
 }
 
-TEST(VerifierUnitTest, ZeroAbsoluteLineReferencesDontWork) {
-  Verifier v;
+TEST_P(VerifierTest, ZeroAbsoluteLineReferencesDontWork) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @:0text defines SomeNode
 # text
 )"));
 }
 
-TEST(VerifierUnitTest, SameAbsoluteLineReferencesDontWork) {
-  Verifier v;
+TEST_P(VerifierTest, SameAbsoluteLineReferencesDontWork) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #- @:1text defines SomeNode
 # text
 )"));
 }
 
-TEST(VerifierUnitTest, HistoricalAbsoluteLineReferencesDontWork) {
-  Verifier v;
+TEST_P(VerifierTest, HistoricalAbsoluteLineReferencesDontWork) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(
 #
 #- @:1text defines SomeNode
@@ -386,8 +372,7 @@ TEST(VerifierUnitTest, HistoricalAbsoluteLineReferencesDontWork) {
 )"));
 }
 
-TEST(VerifierUnitTest, ParseLiteralString) {
-  Verifier v;
+TEST_P(VerifierTest, ParseLiteralString) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @"text" defines SomeNode
 # text
@@ -396,8 +381,7 @@ TEST(VerifierUnitTest, ParseLiteralString) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ParseLiteralStringWithSpace) {
-  Verifier v;
+TEST_P(VerifierTest, ParseLiteralStringWithSpace) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @"text txet" defines SomeNode
 # text txet
@@ -406,8 +390,7 @@ TEST(VerifierUnitTest, ParseLiteralStringWithSpace) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ParseLiteralStringWithEscape) {
-  Verifier v;
+TEST_P(VerifierTest, ParseLiteralStringWithEscape) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
 #- @"text \"txet\" ettx" defines SomeNode
 # text "txet" ettx
@@ -416,8 +399,7 @@ TEST(VerifierUnitTest, ParseLiteralStringWithEscape) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateStartOffsetEVar) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateStartOffsetEVar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- ANode.loc/start @^text
 ##text (line 3 column 2 offset 38-42)
@@ -446,8 +428,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateStartOffsetEVarRelativeLine) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateStartOffsetEVarRelativeLine) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- ANode.loc/start @^+22text
 source { root:"1" }
@@ -476,8 +457,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateEndOffsetEVarAbsoluteLine) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateEndOffsetEVarAbsoluteLine) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #-   ANode.loc/end @$:24text
 source { root:"1" }
@@ -506,8 +486,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateEndOffsetEVar) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateEndOffsetEVar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #-   ANode.loc/end @$text
 ##text (line 3 column 2 offset 38-42)
@@ -536,6 +515,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+// TODO(zarko): See comments in souffle_interpreter re: the anchor() relation.
 TEST(VerifierUnitTest, GenerateAnchorEvar) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
