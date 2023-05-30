@@ -725,7 +725,7 @@ func TestDecorationsRefs(t *testing.T) {
 	})
 	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
-	if len(reply.SourceText) != 0 {
+	if reply.SourceText != nil {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
 	}
 	if reply.Encoding != "" {
@@ -912,7 +912,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	})
 	testutil.Fatalf(t, "DecorationsRequest error: %v", err)
 
-	if len(reply.SourceText) != 0 {
+	if reply.SourceText != nil {
 		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
 	}
 	if reply.Encoding != "" {

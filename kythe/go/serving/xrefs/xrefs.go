@@ -388,7 +388,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		})
 	}
 
-	if req.SourceText {
+	if req.SourceText && text != nil {
 		reply.Encoding = decor.File.Encoding
 		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = text
