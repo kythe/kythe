@@ -7,6 +7,7 @@ java_test(
     size = "small",
     srcs = ["OptionsTest.java"],
     javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
     jvm_flags = [

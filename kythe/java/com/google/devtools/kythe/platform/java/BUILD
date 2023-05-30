@@ -33,11 +33,13 @@ java_library(
     srcs = ["JavacOptionsUtils.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//third_party/guava",
