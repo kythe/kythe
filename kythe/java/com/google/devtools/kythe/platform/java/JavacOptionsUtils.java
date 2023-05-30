@@ -32,6 +32,7 @@ import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.sun.tools.javac.api.JavacTool;
+import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
@@ -365,9 +366,6 @@ public class JavacOptionsUtils {
       return paths.build();
     }
 
-    private static final int MIN_SOURCE_VERSION = 8;
-    private static final String MIN_SOURCE_VERSION_STRING = "8";
-
     /**
      * Find any -source flags that specify a version of java that the JRE can't support and replace
      * them with the lowest version that the JRE does support.
@@ -377,30 +375,35 @@ public class JavacOptionsUtils {
      * flag to the underlying Java APIs to do the analysis.
      */
     public ModifiableOptions updateToMinimumSupportedSourceVersion() {
-      ArrayList<String> unsupportedVerions = new ArrayList<>();
-      ArrayList<String> supportedVerions = new ArrayList<>();
+      ArrayList<String> unsupportedVersions = new ArrayList<>();
+      ArrayList<String> supportedVersions = new ArrayList<>();
       List<String> replacements = new ArrayList<>(internal.size());
       Consumer<String> matched =
           (value) -> {
-            if (unsupportedJavaSourceVersion(value)) {
-              unsupportedVerions.add(value);
+            Source v = Source.lookup(value);
+            if (v == null) {
+              logger.atWarning().log("Could not parse source version number: %s", value);
+              // Don't mutate the flag if it can't be parsed.
+              supportedVersions.add(value);
+            } else if (v.compareTo(Source.MIN) < 0) {
+              unsupportedVersions.add(value);
             } else {
-              supportedVerions.add(value);
+              supportedVersions.add(value);
             }
           };
       Consumer<String> unmatched = replacements::add;
       acceptOptions(handleOpts(ImmutableList.of(Option.SOURCE)), x -> {}, unmatched, matched);
       internal = replacements;
 
-      if (!supportedVerions.isEmpty() || !unsupportedVerions.isEmpty()) {
-        if (supportedVerions.size() + unsupportedVerions.size() > 1) {
+      if (!supportedVersions.isEmpty() || !unsupportedVersions.isEmpty()) {
+        if (supportedVersions.size() + unsupportedVersions.size() > 1) {
           logger.atWarning().log("More than one -source flag passed, only using the last value");
         }
         internal.add(Option.SOURCE.getPrimaryName());
-        if (!supportedVerions.isEmpty()) {
-          internal.add(Iterables.getLast(supportedVerions));
-        } else if (!unsupportedVerions.isEmpty()) {
-          internal.add(MIN_SOURCE_VERSION_STRING);
+        if (!supportedVersions.isEmpty()) {
+          internal.add(Iterables.getLast(supportedVersions));
+        } else if (!unsupportedVersions.isEmpty()) {
+          internal.add(Source.MIN.name);
           // If we changed the source version, remove the target flag since the set of valid target
           // values depends on what source was set to. Since we are already changing the source
           // version, it shouldn't be any worse to change the explicit target version and instead
@@ -411,19 +414,6 @@ public class JavacOptionsUtils {
       }
 
       return this;
-    }
-
-    private static boolean unsupportedJavaSourceVersion(String version) {
-      if (version.startsWith("1.")) {
-        version = version.substring(2);
-      }
-      try {
-        int v = Integer.parseInt(version);
-        return v < MIN_SOURCE_VERSION;
-      } catch (NumberFormatException nfe) {
-        logger.atWarning().withCause(nfe).log("Unable to parse source version number");
-      }
-      return false;
     }
 
     /** Applies handler to the interal options and returns the result. */
