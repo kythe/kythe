@@ -94,8 +94,8 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
       }
       if (auto* range = tup->element(0)->AsRange()) {
         auto beginsym =
-            symbol_table.MaybeIntern(std::to_string(range->begin()));
-        auto endsym = symbol_table.MaybeIntern(std::to_string(range->end()));
+            symbol_table.FindInterned(std::to_string(range->begin()));
+        auto endsym = symbol_table.FindInterned(std::to_string(range->end()));
         if (!beginsym || !endsym) {
           // TODO(zarko): emit a warning here (if we're in a positive goal)?
           absl::StrAppend(&code_, ", false");

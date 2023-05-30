@@ -717,9 +717,9 @@ bool Verifier::SetGoalCommentRegex(const std::string& regex,
 }
 
 bool Verifier::LoadInlineProtoFile(const std::string& file_data,
-                                   const std::string& path,
-                                   const std::string& root,
-                                   const std::string& corpus) {
+                                   absl::string_view path,
+                                   absl::string_view root,
+                                   absl::string_view corpus) {
   kythe::proto::Entries entries;
   bool ok = google::protobuf::TextFormat::ParseFromString(file_data, &entries);
   if (!ok) {
@@ -734,9 +734,9 @@ bool Verifier::LoadInlineProtoFile(const std::string& file_data,
   }
   Symbol empty = symbol_table_.intern("");
   return parser_.ParseInlineRuleString(
-      file_data, *kStandardIn, symbol_table_.intern(path),
-      symbol_table_.intern(root), symbol_table_.intern(corpus),
-      "\\s*\\#\\-(.*)");
+      file_data, *kStandardIn, symbol_table_.intern(std::string(path)),
+      symbol_table_.intern(std::string(root)),
+      symbol_table_.intern(std::string(corpus)), "\\s*\\#\\-(.*)");
 }
 
 bool Verifier::LoadInlineRuleFile(const std::string& filename) {
