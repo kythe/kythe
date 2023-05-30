@@ -515,7 +515,6 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-// TODO(zarko): See comments in souffle_interpreter re: the anchor() relation.
 TEST_P(VerifierTest, GenerateAnchorEvar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
@@ -592,8 +591,7 @@ fact_name: "/kythe/loc/end"
 fact_value: "54"
 })";
 
-TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber0) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarMatchNumber0) {
   ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
 #- @#0text defines SomeNode
 ##text text text(40-44, 45-49, 50-54)
@@ -603,13 +601,13 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})") + kMatchAnchorSubgraph));
+})") + kMatchAnchorSubgraph,
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber1) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarMatchNumber1) {
   ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
 #- @#1text defines SomeNode
 ##text text text(40-44, 45-49, 50-54)
@@ -619,13 +617,13 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})") + kMatchAnchorSubgraph));
+})") + kMatchAnchorSubgraph,
+                                    "", "3"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber2) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarMatchNumber2) {
   ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
 #- @#2text defines SomeNode
 ##text text text(40-44, 45-49, 50-54)
@@ -635,29 +633,27 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})") + kMatchAnchorSubgraph));
+})") + kMatchAnchorSubgraph,
+                                    "", "4"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber3) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarMatchNumber3) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
 #- @#3text defines SomeNode
 ##text text text(40-44, 45-49, 50-54)
 })"));
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumberNegative1) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarMatchNumberNegative1) {
   ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
 #- @#-1text defines SomeNode
 ##text text text(40-44, 45-49, 50-54)
 })"));
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAbsoluteLine) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAbsoluteLine) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @:24text defines SomeNode
 source { root:"1" }
@@ -681,13 +677,13 @@ target { root:"2" }
 fact_name: "/"
 fact_value: ""
 }
-##text (line 24 column 2 offset 387-391))"));
+##text (line 24 column 2 offset 387-391))",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarRelativeLine) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarRelativeLine) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @+22text defines SomeNode
 source { root:"1" }
@@ -711,13 +707,13 @@ target { root:"2" }
 fact_name: "/"
 fact_value: ""
 }
-##text (line 24 column 2 offset 387-391))"));
+##text (line 24 column 2 offset 387-391))",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAtEndOfFile) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAtEndOfFile) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { root:"1" }
 fact_name: "/kythe/node/kind"
@@ -741,13 +737,13 @@ fact_name: "/"
 fact_value: ""
 }
 #- @text defines SomeNode
-##text (line 22 column 2 offset 384-388))"));
+##text (line 22 column 2 offset 384-388))",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAtEndOfFileWithSpaces) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAtEndOfFileWithSpaces) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { root:"1" }
 fact_name: "/kythe/node/kind"
@@ -771,13 +767,13 @@ fact_name: "/"
 fact_value: ""
 }
   #- @text defines SomeNode
-##text (line 22 column 2 offset 386-390))"));
+##text (line 22 column 2 offset 386-390))",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAtEndOfFileWithTrailingRule) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAtEndOfFileWithTrailingRule) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { root:"1" }
 fact_name: "/kythe/node/kind"
@@ -802,13 +798,13 @@ fact_value: ""
 }
 #- @text defines SomeNode
 ##text (line 22 column 2 offset 384-388))
-#- SomeAnchor defines SomeNode)"));
+#- SomeAnchor defines SomeNode)",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAcrossMultipleGoalLines) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAcrossMultipleGoalLines) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines
 #-
@@ -834,13 +830,13 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarAcrossMultipleGoalLinesWithSpaces) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarAcrossMultipleGoalLinesWithSpaces) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines
   #-
@@ -866,13 +862,13 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarWithBlankLines) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarWithBlankLines) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { root:"1" }
 fact_name: "/kythe/node/kind"
@@ -898,13 +894,13 @@ fact_value: ""
 #- @texx defines SomeNode
 ##texx (line 22 column 2 offset 384-388))
 
-#-  SomeAnchor defines SomeNode)"));
+#-  SomeAnchor defines SomeNode)",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GenerateAnchorEvarWithWhitespaceLines) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvarWithWhitespaceLines) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { root:"1" }
 fact_name: "/kythe/node/kind"
@@ -930,7 +926,8 @@ fact_value: ""
 #- @texx defines SomeNode
 ##texx (line 22 column 2 offset 384-388))
 
-#-  SomeAnchor defines SomeNode)"));
+#-  SomeAnchor defines SomeNode)",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
@@ -1099,8 +1096,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ContentFactPasses) {
-  Verifier v;
+TEST_P(VerifierTest, ContentFactPasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42
 source { root:"1" }
@@ -1111,8 +1107,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, BCPLCommentBlocksWrongRule) {
-  Verifier v;
+TEST_P(VerifierTest, BCPLCommentBlocksWrongRule) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- //SomeNode.content 43
 #- SomeNode.content 42
@@ -1124,8 +1119,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, BCPLCommentInStringLiteral) {
-  Verifier v;
+TEST_P(VerifierTest, BCPLCommentInStringLiteral) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content "4//2"
 source { root:"1" }
@@ -1136,8 +1130,7 @@ fact_value: "4//2"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, BCPLCommentTrailingValue) {
-  Verifier v;
+TEST_P(VerifierTest, BCPLCommentTrailingValue) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42//x
 source { root:"1" }
@@ -1148,8 +1141,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EmptyBCPLCommentTrailingValue) {
-  Verifier v;
+TEST_P(VerifierTest, EmptyBCPLCommentTrailingValue) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42//
 source { root:"1" }
@@ -1160,8 +1152,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EmptyBCPLComment) {
-  Verifier v;
+TEST_P(VerifierTest, EmptyBCPLComment) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #-//
 #- SomeNode.content 43
@@ -1380,8 +1371,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, PassWithoutCut) {
-  Verifier v;
+TEST_P(VerifierTest, PassWithoutCut) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content SomeValue
 #- SomeNode.content 43
@@ -1493,8 +1483,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, SpacesAreOkay) {
-  Verifier v;
+TEST_P(VerifierTest, SpacesAreOkay) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
    	 #- SomeNode.content 42
 source { root:"1" }
@@ -1505,8 +1494,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ContentFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, ContentFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42
 source { root:"1" }
@@ -1517,8 +1505,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, PercentContentFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, PercentContentFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.%content 42
 source { root:"1" }
@@ -1529,8 +1516,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, SpacesDontDisableRules) {
-  Verifier v;
+TEST_P(VerifierTest, SpacesDontDisableRules) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
    	 #- SomeNode.content 42
 source { root:"1" }
@@ -1541,8 +1527,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, DefinesEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, DefinesEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor defines SomeNode
 source { root:"1" }
@@ -1555,8 +1540,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, HashDefinesEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, HashDefinesEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor #defines SomeNode
 source { root:"1" }
@@ -1569,8 +1553,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, HashFullDefinesEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, HashFullDefinesEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor #/kythe/edge/defines SomeNode
 source { root:"1" }
@@ -1583,8 +1566,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, PercentDefinesEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, PercentDefinesEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor %defines SomeNode
 source { root:"1" }
@@ -1597,8 +1579,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, PercentFullDefinesEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, PercentFullDefinesEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor %/kythe/edge/defines SomeNode
 source { root:"1" }
@@ -1611,8 +1592,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgePasses) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgePasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1625,8 +1605,7 @@ fact_value: "1"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgePassesDotOrdinal) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgePassesDotOrdinal) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1638,8 +1617,7 @@ fact_name: "/"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalNoNumber) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeBadDotOrdinalNoNumber) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1651,8 +1629,7 @@ fact_name: "/"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalOnlyDot) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeBadDotOrdinalOnlyDot) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1664,8 +1641,7 @@ fact_name: "/"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalNoEdge) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeBadDotOrdinalNoEdge) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1677,8 +1653,7 @@ fact_name: "/"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeFailsOnWrongOrdinal) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeFailsOnWrongOrdinal) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1691,8 +1666,7 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeFailsOnWrongDotOrdinal) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeFailsOnWrongDotOrdinal) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.1 SomeNode
 source { root:"1" }
@@ -1704,8 +1678,7 @@ fact_name: "/"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeFailsOnMissingOrdinalInGoal) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeFailsOnMissingOrdinalInGoal) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param SomeNode
 source { root:"1" }
@@ -1718,8 +1691,7 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeFailsOnMissingDotOrdinalInGoal) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeFailsOnMissingDotOrdinalInGoal) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param SomeNode
 source { root:"1" }
@@ -1731,8 +1703,7 @@ fact_name: "/"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IsParamEdgeFailsOnMissingOrdinalInFact) {
-  Verifier v;
+TEST_P(VerifierTest, IsParamEdgeFailsOnMissingOrdinalInFact) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeParam is_param.42 SomeNode
 source { root:"1" }
@@ -1745,8 +1716,7 @@ fact_value: ""
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EvarsShareANamespace) {
-  Verifier v;
+TEST_P(VerifierTest, EvarsShareANamespace) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor defines SomeNode
 #- SomeNode defines SomeAnchor
@@ -1760,8 +1730,7 @@ fact_value: ""
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, DefinesEdgePassesSymmetry) {
-  Verifier v;
+TEST_P(VerifierTest, DefinesEdgePassesSymmetry) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor defines SomeNode
 source { root:"1" }
@@ -1783,8 +1752,7 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EvarsStillShareANamespace) {
-  Verifier v;
+TEST_P(VerifierTest, EvarsStillShareANamespace) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor defines SomeNode
 source { root:"1" }
@@ -2189,8 +2157,7 @@ fact_value: ""
 }
 
 // It's possible to match Tx against {root:7}:
-TEST(VerifierUnitTest, EqualityConstraintWorksOnAnchorsPossibleConstraint) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchorsPossibleConstraint) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
 ##text (line 3 column 2 offset 38-42)
@@ -2220,7 +2187,8 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
@@ -2290,8 +2258,7 @@ target { root:"3" }
   }));
 }
 
-TEST(VerifierUnitTest, EqualityConstraintFails) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two = "2",_,_)
 #- One is vname(_,_,Three = "3",_,_)
@@ -2312,8 +2279,7 @@ target { root:"3" }
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, IdentityEqualityConstraintSucceeds) {
-  Verifier v;
+TEST_P(VerifierTest, IdentityEqualityConstraintSucceeds) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two = Two,_,_)
 source { root:"1" }
@@ -2332,6 +2298,8 @@ target { root:"3" }
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+// TODO(zarko): this test fails with the new solver; fix and check the other
+// EqualityConstraint tests.
 TEST(VerifierUnitTest, TransitiveIdentityEqualityConstraintFails) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -2352,8 +2320,7 @@ target { root:"3" }
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GraphEqualityConstraintFails) {
-  Verifier v;
+TEST_P(VerifierTest, GraphEqualityConstraintFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is Two = vname(_,_,Two,_,_)
 source { root:"1" }
@@ -2592,8 +2559,7 @@ fact_value: "//- A.node/kind file\n//- A.notafact yes\n"
   ASSERT_EQ(1, v.highest_goal_reached());
 }
 
-TEST(VerifierUnitTest, ReadGoalsFromFileNodeSuccess) {
-  Verifier v;
+TEST_P(VerifierTest, ReadGoalsFromFileNodeSuccess) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { path:"test" }
 fact_name: "/kythe/node/kind"
