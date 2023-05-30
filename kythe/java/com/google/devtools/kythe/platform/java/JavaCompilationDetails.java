@@ -208,7 +208,8 @@ public class JavaCompilationDetails implements AutoCloseable {
     ModifiableOptions arguments =
         ModifiableOptions.of(compilationUnit.getArgumentList())
             .ensureEncodingSet(DEFAULT_ENCODING)
-            .updateWithJavaOptions(compilationUnit);
+            .updateWithJavaOptions(compilationUnit)
+            .updateToMinimumSupportedSourceVersion();
 
     if (processors.isEmpty()) {
       arguments.add("-proc:none");
