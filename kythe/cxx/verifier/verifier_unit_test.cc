@@ -138,7 +138,7 @@ TEST_P(VerifierTest, NoRulesIsOk) {
   fact_name: "testname"
   fact_value: "testvalue"
 })"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -214,7 +214,7 @@ entries {
   fact_name: "/kythe/ordinal"
   fact_value: "43"
 })"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -231,7 +231,7 @@ entries {
   target { root: "2" }
   fact_name: "/"
 })"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -298,7 +298,7 @@ TEST_P(VerifierTest, GenerateAnchorEvarFailsOnEmptyDB) {
 #- @text defines SomeNode
 # text
 )"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
@@ -309,7 +309,7 @@ TEST_P(VerifierTest, OffsetsVersusRuleBlocks) {
 #- @+1text defines SomeNode
 # text
 )"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
@@ -377,7 +377,7 @@ TEST_P(VerifierTest, ParseLiteralString) {
 #- @"text" defines SomeNode
 # text
 )"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
@@ -386,7 +386,7 @@ TEST_P(VerifierTest, ParseLiteralStringWithSpace) {
 #- @"text txet" defines SomeNode
 # text txet
 )"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
@@ -395,7 +395,7 @@ TEST_P(VerifierTest, ParseLiteralStringWithEscape) {
 #- @"text \"txet\" ettx" defines SomeNode
 # text "txet" ettx
 )"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
@@ -424,7 +424,7 @@ target { root:"2" }
 fact_name: "/"
 fact_value: ""
 })"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -453,7 +453,7 @@ fact_name: "/"
 fact_value: ""
 }
 ##text (line 24 column 2 offset 387-391))"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -482,7 +482,7 @@ fact_name: "/"
 fact_value: ""
 }
 ##text (line 24 column 2 offset 387-391))"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
@@ -511,7 +511,7 @@ target { root:"2" }
 fact_name: "/"
 fact_value: ""
 })"));
-  ASSERT_TRUE(GetParam() == Solver::New || v.PrepareDatabase());
+  ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 

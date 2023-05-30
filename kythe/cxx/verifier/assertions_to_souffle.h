@@ -48,10 +48,7 @@ class SouffleProgram {
 
   /// \return a stable short name for `ev`.
   size_t FindEVar(EVar* ev) {
-    auto found = evars_.find(ev);
-    if (found != evars_.end()) return found->second;
-    evars_[ev] = evars_.size();
-    return evars_.size() - 1;
+    return evars_.try_emplace(ev, evars_.size()).first->second;
   }
 
   /// The current finished code buffer.

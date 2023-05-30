@@ -59,7 +59,7 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
     absl::StrAppend(&code_, "v", FindEVar(evar));
     return true;
   } else {
-    fprintf(stderr, "unknown subexpression kind");
+    LOG(ERROR) << "unknown subexpression kind";
     return false;
   }
 }
@@ -83,7 +83,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
     if (app->lhs()->AsIdentifier()->symbol() == eq_sym) {
       auto* evar = tup->element(1)->AsEVar();
       if (evar == nullptr) {
-        fprintf(stderr, "expected evar on rhs of eq\n");
+        LOG(ERROR) << "expected evar on rhs of eq";
         return false;
       }
       if (auto* range = tup->element(0)->AsRange()) {
@@ -98,7 +98,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
       } else {
         auto* oevar = tup->element(0)->AsEVar();
         if (oevar == nullptr) {
-          fprintf(stderr, "expected evar or range on lhs of eq\n");
+          LOG(ERROR) << "expected evar or range on lhs of eq";
           return false;
         }
         absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));

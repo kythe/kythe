@@ -1152,11 +1152,10 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
 }
 
 bool Verifier::PrepareDatabase() {
-  if (database_prepared_) {
+  if (database_prepared_ || use_fast_solver_) {
+    LOG(WARNING) << "PrepareDatabase() called when fast solver was enabled";
     return true;
   }
-  CHECK(!use_fast_solver_)
-      << "This configuration is not supported when --use_fast_solver is on.";
   // TODO(zarko): Make this configurable.
   FileHandlePrettyPrinter printer(stderr);
   // First, sort the tuples. As an invariant, we know they will be of the form

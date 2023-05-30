@@ -28,6 +28,8 @@
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
 
+#define DEBUG_LOWERING
+
 namespace kythe::verifier {
 namespace {
 class KytheReadStream : public souffle::ReadStream {
@@ -55,11 +57,8 @@ class KytheReadStream : public souffle::ReadStream {
       dprinter.Print("\n");
     }
     for (const auto& a : anchors) {
-      dprinter.Print("@ ");
-      dprinter.Print(std::to_string(a.first.first));
-      dprinter.Print(",");
-      dprinter.Print(std::to_string(a.first.second));
-      dprinter.Print(" ");
+      dprinter.Print(
+          absl::StrCat("@ ", a.first.first, ", ", a.first.second, " "));
       a.second->Dump(dst, &dprinter);
       dprinter.Print("\n");
     }
@@ -216,8 +215,7 @@ SouffleResult RunSouffle(const SymbolTable& symbol_table,
   auto ram_tu = souffle::ParseTransform(absl::StrCat(
       program.code(), ".output result(IO=kythe, id=", output_id, ")\n"));
   if (ram_tu == nullptr) {
-    fprintf(stderr, "no ram_tu for program <%s>\n",
-            std::string(program.code()).c_str());
+    LOG(ERROR) << "no ram_tu for program <" << program.code() << ">";
     return result;
   }
   souffle::Own<souffle::interpreter::Engine> interpreter(
