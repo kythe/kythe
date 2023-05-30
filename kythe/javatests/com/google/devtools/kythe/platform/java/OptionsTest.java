@@ -208,4 +208,53 @@ public class OptionsTest {
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
         .matches(".*(\\.jar|lib/modules)");
   }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesSource() {
+    // We can't test the --source format of the flag because it is only supported by recent versions
+    // of java.
+    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of("-foo", "-source", "7"));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", "-source", "8")
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesSource1DotFormat() {
+    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of("-foo", "-source", "1.7"));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", "-source", "8")
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_removeTarget() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-foo", "-source", "7", "-target", "7"));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", "-source", "8")
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesMultipleSource() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-foo", "-source", "7", "-source", "6"));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", "-source", "8")
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_doesNotUpdateSupportedVersion() {
+    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of("-foo", "-source", "9"));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", "-source", "9")
+        .inOrder();
+  }
 }
