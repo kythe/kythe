@@ -16,6 +16,8 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/strings/substitute.h"
+
 namespace kythe::verifier {
 namespace {
 constexpr absl::string_view kGlobalDecls = R"(
@@ -30,6 +32,10 @@ constexpr absl::string_view kGlobalDecls = R"(
 .input entry(IO=kythe)
 .decl anchor(begin:number, end:number, vname:vname)
 .input anchor(IO=kythe, anchors=1)
+.decl at(startsym:number, endsym:number, vname:vname)
+at(s, e, v) :- entry(v, $0, nil, $1, $2),
+               entry(v, $0, nil, $3, s),
+               entry(v, $0, nil, $4, e).
 .decl result()
 result() :- true
 )";
@@ -66,8 +72,8 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
 
 bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
                                     const GoalGroup& group) {
-  auto eq_sym = const_cast<SymbolTable&>(symbol_table).intern("=");
-  auto empty_sym = const_cast<SymbolTable&>(symbol_table).intern("");
+  auto eq_sym = symbol_table.MustIntern("=");
+  auto empty_sym = symbol_table.MustIntern("");
 #ifdef DEBUG_LOWERING
   FileHandlePrettyPrinter dprinter(stderr);
 #endif
@@ -87,14 +93,19 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
         return false;
       }
       if (auto* range = tup->element(0)->AsRange()) {
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ", range->corpus(),
-                        ", ", range->path(), ", ", range->root(), ", _]");
-        // TODO(zarko): derive an anchor relation (will need to convert
-        // range->begin, end to symbols; also need to get the relevant symbols
-        // included in the prelude) or populate the anchor map (would require
-        // sorting input, which is a huge time sink).
-        absl::StrAppend(&code_, ", anchor(", range->begin(), ", ", range->end(),
-                        ", v", FindEVar(evar), ")");
+        auto beginsym =
+            symbol_table.MaybeIntern(std::to_string(range->begin()));
+        auto endsym = symbol_table.MaybeIntern(std::to_string(range->end()));
+        if (!beginsym || !endsym) {
+          // TODO(zarko): emit a warning here (if we're in a positive goal)?
+          absl::StrAppend(&code_, ", false");
+        } else {
+          absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ",
+                          range->corpus(), ", ", range->path(), ", ",
+                          range->root(), ", _]");
+          absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
+                          FindEVar(evar), ")");
+        }
       } else {
         auto* oevar = tup->element(0)->AsEVar();
         if (oevar == nullptr) {
@@ -134,7 +145,14 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
 
 bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                            const std::vector<GoalGroup>& goal_groups) {
-  code_ = emit_prelude_ ? std::string(kGlobalDecls) : "";
+  code_.clear();
+  if (emit_prelude_) {
+    code_ = absl::Substitute(kGlobalDecls, symbol_table.MustIntern(""),
+                             symbol_table.MustIntern("/kythe/node/kind"),
+                             symbol_table.MustIntern("anchor"),
+                             symbol_table.MustIntern("/kythe/loc/start"),
+                             symbol_table.MustIntern("/kythe/loc/end"));
+  }
   CHECK_LE(goal_groups.size(), 1) << "(unimplemented)";
   if (goal_groups.size() == 0) {
     absl::StrAppend(&code_, ".\n");

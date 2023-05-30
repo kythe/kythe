@@ -22,6 +22,12 @@
 namespace kythe::verifier {
 TEST(SouffleInterpreterTest, SmokeTest) {
   SymbolTable symbols;
+  // Intern the symbols required by the prelude.
+  symbols.intern("");
+  symbols.intern("/kythe/node/kind");
+  symbols.intern("anchor");
+  symbols.intern("/kythe/loc/start");
+  symbols.intern("/kythe/loc/end");
   Database db;
   AnchorMap anchors;
   std::vector<GoalGroup> groups;

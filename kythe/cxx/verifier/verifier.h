@@ -57,8 +57,14 @@ class Verifier {
   /// \brief Loads a text proto with goal comments indicating rules and data.
   /// The VName for the source file will be blank.
   /// \param file_data The data to load
+  /// \param path the path to use for anchors
+  /// \param root the root to use for anchors
+  /// \param corpus the corpus to use for anchors
   /// \return false if we failed
-  bool LoadInlineProtoFile(const std::string& file_data);
+  bool LoadInlineProtoFile(const std::string& file_data,
+                           const std::string& path = "",
+                           const std::string& root = "",
+                           const std::string& corpus = "");
 
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();
