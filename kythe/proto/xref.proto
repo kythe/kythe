@@ -187,7 +187,7 @@ message DecorationsReply {
   string revision = 18;
 
   // The encoded source text for the selected window.
-  bytes source_text = 2;
+  optional bytes source_text = 2;
   string encoding = 3;
 
   // Represents a reference edge source ---KIND---> target.  Each source is an
