@@ -25,6 +25,7 @@
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
@@ -41,6 +42,20 @@ typedef size_t Symbol;
 class SymbolTable {
  public:
   explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
+
+  /// \brief Returns the `Symbol` associated with `string` or `nullopt`.
+  absl::optional<Symbol> FindInterned(absl::string_view string) const {
+    const auto old = symbols_.find(std::string(string));
+    if (old == symbols_.end()) return absl::nullopt;
+    return old->second;
+  }
+
+  /// \brief Returns the `Symbol` associated with `string`, or aborts.
+  Symbol MustIntern(absl::string_view string) const {
+    auto sym = FindInterned(string);
+    CHECK(sym) << "no symbol for " << string;
+    return *sym;
+  }
 
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {

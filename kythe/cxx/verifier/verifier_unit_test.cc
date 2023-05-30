@@ -516,8 +516,7 @@ fact_value: ""
 }
 
 // TODO(zarko): See comments in souffle_interpreter re: the anchor() relation.
-TEST(VerifierUnitTest, GenerateAnchorEvar) {
-  Verifier v;
+TEST_P(VerifierTest, GenerateAnchorEvar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
 ##text (line 3 column 2 offset 38-42)
@@ -541,7 +540,8 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
