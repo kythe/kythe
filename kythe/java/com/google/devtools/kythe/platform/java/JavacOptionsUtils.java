@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
@@ -57,6 +58,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>To make modifications to javac commandline arguments, use {@code ModifiableOptions.of(args)}.
  */
 public class JavacOptionsUtils {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private JavacOptionsUtils() {}
 
   private static final Path JAVA_HOME = Paths.get(StandardSystemProperty.JAVA_HOME.value());
@@ -360,6 +363,67 @@ public class JavacOptionsUtils {
       acceptOptions(handleOpts(ImmutableList.of(option)), x -> {}, unmatched, matched);
       internal = replacements;
       return paths.build();
+    }
+
+    private static final int MIN_SOURCE_VERSION = 8;
+    private static final String MIN_SOURCE_VERSION_STRING = "8";
+
+    /**
+     * Find any -source flags that specify a version of java that the JRE can't support and replace
+     * them with the lowest version that the JRE does support.
+     *
+     * <p>There may be problems during analysis due to flags passed to javac or language features
+     * that changed, but the alternative is to have the analysis fail immediately when we send the
+     * flag to the underlying Java APIs to do the analysis.
+     */
+    public ModifiableOptions updateToMinimumSupportedSourceVersion() {
+      ArrayList<String> unsupportedVerions = new ArrayList<>();
+      ArrayList<String> supportedVerions = new ArrayList<>();
+      List<String> replacements = new ArrayList<>(internal.size());
+      Consumer<String> matched =
+          (value) -> {
+            if (unsupportedJavaSourceVersion(value)) {
+              unsupportedVerions.add(value);
+            } else {
+              supportedVerions.add(value);
+            }
+          };
+      Consumer<String> unmatched = replacements::add;
+      acceptOptions(handleOpts(ImmutableList.of(Option.SOURCE)), x -> {}, unmatched, matched);
+      internal = replacements;
+
+      if (!supportedVerions.isEmpty() || !unsupportedVerions.isEmpty()) {
+        if (supportedVerions.size() + unsupportedVerions.size() > 1) {
+          logger.atWarning().log("More than one -source flag passed, only using the last value");
+        }
+        internal.add(Option.SOURCE.getPrimaryName());
+        if (!supportedVerions.isEmpty()) {
+          internal.add(Iterables.getLast(supportedVerions));
+        } else if (!unsupportedVerions.isEmpty()) {
+          internal.add(MIN_SOURCE_VERSION_STRING);
+          // If we changed the source version, remove the target flag since the set of valid target
+          // values depends on what source was set to. Since we are already changing the source
+          // version, it shouldn't be any worse to change the explicit target version and instead
+          // use the default.
+          removeOptions(ImmutableSet.of(Option.TARGET));
+          // TODO(salguarnieri) increment a counter here.
+        }
+      }
+
+      return this;
+    }
+
+    private static boolean unsupportedJavaSourceVersion(String version) {
+      if (version.startsWith("1.")) {
+        version = version.substring(2);
+      }
+      try {
+        int v = Integer.parseInt(version);
+        return v < MIN_SOURCE_VERSION;
+      } catch (NumberFormatException nfe) {
+        logger.atWarning().withCause(nfe).log("Unable to parse source version number");
+      }
+      return false;
     }
 
     /** Applies handler to the interal options and returns the result. */
