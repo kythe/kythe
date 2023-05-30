@@ -28,8 +28,6 @@
 #include "souffle/io/IOSystem.h"
 #include "third_party/souffle/parse_transform.h"
 
-#define DEBUG_LOWERING
-
 namespace kythe::verifier {
 namespace {
 class KytheReadStream : public souffle::ReadStream {
