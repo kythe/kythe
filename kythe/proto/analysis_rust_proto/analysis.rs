@@ -2150,8 +2150,9 @@ impl ::protobuf::reflect::ProtobufValue for KzipInfo {
 #[derive(PartialEq,Clone,Default)]
 pub struct KzipInfo_CorpusInfo {
     // message fields
-    pub language_required_inputs: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs>,
-    pub language_sources: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs>,
+    pub language_required_inputs: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs>,
+    pub language_sources: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs>,
+    pub language_cu_info: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_CUInfo>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -2171,7 +2172,7 @@ impl KzipInfo_CorpusInfo {
     // repeated .kythe.proto.KzipInfo.CorpusInfo.LanguageRequiredInputsEntry language_required_inputs = 4;
 
 
-    pub fn get_language_required_inputs(&self) -> &::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn get_language_required_inputs(&self) -> &::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         &self.language_required_inputs
     }
     pub fn clear_language_required_inputs(&mut self) {
@@ -2179,24 +2180,24 @@ impl KzipInfo_CorpusInfo {
     }
 
     // Param is passed by value, moved
-    pub fn set_language_required_inputs(&mut self, v: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs>) {
+    pub fn set_language_required_inputs(&mut self, v: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs>) {
         self.language_required_inputs = v;
     }
 
     // Mutable pointer to the field.
-    pub fn mut_language_required_inputs(&mut self) -> &mut ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn mut_language_required_inputs(&mut self) -> &mut ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         &mut self.language_required_inputs
     }
 
     // Take field
-    pub fn take_language_required_inputs(&mut self) -> ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn take_language_required_inputs(&mut self) -> ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         ::std::mem::replace(&mut self.language_required_inputs, ::std::collections::HashMap::new())
     }
 
     // repeated .kythe.proto.KzipInfo.CorpusInfo.LanguageSourcesEntry language_sources = 5;
 
 
-    pub fn get_language_sources(&self) -> &::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn get_language_sources(&self) -> &::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         &self.language_sources
     }
     pub fn clear_language_sources(&mut self) {
@@ -2204,18 +2205,43 @@ impl KzipInfo_CorpusInfo {
     }
 
     // Param is passed by value, moved
-    pub fn set_language_sources(&mut self, v: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs>) {
+    pub fn set_language_sources(&mut self, v: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs>) {
         self.language_sources = v;
     }
 
     // Mutable pointer to the field.
-    pub fn mut_language_sources(&mut self) -> &mut ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn mut_language_sources(&mut self) -> &mut ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         &mut self.language_sources
     }
 
     // Take field
-    pub fn take_language_sources(&mut self) -> ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_RequiredInputs> {
+    pub fn take_language_sources(&mut self) -> ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_Inputs> {
         ::std::mem::replace(&mut self.language_sources, ::std::collections::HashMap::new())
+    }
+
+    // repeated .kythe.proto.KzipInfo.CorpusInfo.LanguageCuInfoEntry language_cu_info = 6;
+
+
+    pub fn get_language_cu_info(&self) -> &::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_CUInfo> {
+        &self.language_cu_info
+    }
+    pub fn clear_language_cu_info(&mut self) {
+        self.language_cu_info.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_language_cu_info(&mut self, v: ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_CUInfo>) {
+        self.language_cu_info = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_language_cu_info(&mut self) -> &mut ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_CUInfo> {
+        &mut self.language_cu_info
+    }
+
+    // Take field
+    pub fn take_language_cu_info(&mut self) -> ::std::collections::HashMap<::std::string::String, KzipInfo_CorpusInfo_CUInfo> {
+        ::std::mem::replace(&mut self.language_cu_info, ::std::collections::HashMap::new())
     }
 }
 
@@ -2229,10 +2255,13 @@ impl ::protobuf::Message for KzipInfo_CorpusInfo {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 4 => {
-                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(wire_type, is, &mut self.language_required_inputs)?;
+                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(wire_type, is, &mut self.language_required_inputs)?;
                 },
                 5 => {
-                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(wire_type, is, &mut self.language_sources)?;
+                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(wire_type, is, &mut self.language_sources)?;
+                },
+                6 => {
+                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_CUInfo>>(wire_type, is, &mut self.language_cu_info)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -2246,16 +2275,18 @@ impl ::protobuf::Message for KzipInfo_CorpusInfo {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(4, &self.language_required_inputs);
-        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(5, &self.language_sources);
+        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(4, &self.language_required_inputs);
+        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(5, &self.language_sources);
+        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_CUInfo>>(6, &self.language_cu_info);
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(4, &self.language_required_inputs, os)?;
-        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(5, &self.language_sources, os)?;
+        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(4, &self.language_required_inputs, os)?;
+        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(5, &self.language_sources, os)?;
+        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_CUInfo>>(6, &self.language_cu_info, os)?;
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -2294,15 +2325,20 @@ impl ::protobuf::Message for KzipInfo_CorpusInfo {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
-            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(
+            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(
                 "language_required_inputs",
                 |m: &KzipInfo_CorpusInfo| { &m.language_required_inputs },
                 |m: &mut KzipInfo_CorpusInfo| { &mut m.language_required_inputs },
             ));
-            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_RequiredInputs>>(
+            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_Inputs>>(
                 "language_sources",
                 |m: &KzipInfo_CorpusInfo| { &m.language_sources },
                 |m: &mut KzipInfo_CorpusInfo| { &mut m.language_sources },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeString, ::protobuf::types::ProtobufTypeMessage<KzipInfo_CorpusInfo_CUInfo>>(
+                "language_cu_info",
+                |m: &KzipInfo_CorpusInfo| { &m.language_cu_info },
+                |m: &mut KzipInfo_CorpusInfo| { &mut m.language_cu_info },
             ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<KzipInfo_CorpusInfo>(
                 "KzipInfo.CorpusInfo",
@@ -2322,6 +2358,7 @@ impl ::protobuf::Clear for KzipInfo_CorpusInfo {
     fn clear(&mut self) {
         self.language_required_inputs.clear();
         self.language_sources.clear();
+        self.language_cu_info.clear();
         self.unknown_fields.clear();
     }
 }
@@ -2339,7 +2376,7 @@ impl ::protobuf::reflect::ProtobufValue for KzipInfo_CorpusInfo {
 }
 
 #[derive(PartialEq,Clone,Default)]
-pub struct KzipInfo_CorpusInfo_RequiredInputs {
+pub struct KzipInfo_CorpusInfo_Inputs {
     // message fields
     pub count: i32,
     // special fields
@@ -2347,14 +2384,14 @@ pub struct KzipInfo_CorpusInfo_RequiredInputs {
     pub cached_size: ::protobuf::CachedSize,
 }
 
-impl<'a> ::std::default::Default for &'a KzipInfo_CorpusInfo_RequiredInputs {
-    fn default() -> &'a KzipInfo_CorpusInfo_RequiredInputs {
-        <KzipInfo_CorpusInfo_RequiredInputs as ::protobuf::Message>::default_instance()
+impl<'a> ::std::default::Default for &'a KzipInfo_CorpusInfo_Inputs {
+    fn default() -> &'a KzipInfo_CorpusInfo_Inputs {
+        <KzipInfo_CorpusInfo_Inputs as ::protobuf::Message>::default_instance()
     }
 }
 
-impl KzipInfo_CorpusInfo_RequiredInputs {
-    pub fn new() -> KzipInfo_CorpusInfo_RequiredInputs {
+impl KzipInfo_CorpusInfo_Inputs {
+    pub fn new() -> KzipInfo_CorpusInfo_Inputs {
         ::std::default::Default::default()
     }
 
@@ -2374,7 +2411,7 @@ impl KzipInfo_CorpusInfo_RequiredInputs {
     }
 }
 
-impl ::protobuf::Message for KzipInfo_CorpusInfo_RequiredInputs {
+impl ::protobuf::Message for KzipInfo_CorpusInfo_Inputs {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -2444,8 +2481,8 @@ impl ::protobuf::Message for KzipInfo_CorpusInfo_RequiredInputs {
         Self::descriptor_static()
     }
 
-    fn new() -> KzipInfo_CorpusInfo_RequiredInputs {
-        KzipInfo_CorpusInfo_RequiredInputs::new()
+    fn new() -> KzipInfo_CorpusInfo_Inputs {
+        KzipInfo_CorpusInfo_Inputs::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -2454,37 +2491,226 @@ impl ::protobuf::Message for KzipInfo_CorpusInfo_RequiredInputs {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
                 "count",
-                |m: &KzipInfo_CorpusInfo_RequiredInputs| { &m.count },
-                |m: &mut KzipInfo_CorpusInfo_RequiredInputs| { &mut m.count },
+                |m: &KzipInfo_CorpusInfo_Inputs| { &m.count },
+                |m: &mut KzipInfo_CorpusInfo_Inputs| { &mut m.count },
             ));
-            ::protobuf::reflect::MessageDescriptor::new_pb_name::<KzipInfo_CorpusInfo_RequiredInputs>(
-                "KzipInfo.CorpusInfo.RequiredInputs",
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<KzipInfo_CorpusInfo_Inputs>(
+                "KzipInfo.CorpusInfo.Inputs",
                 fields,
                 file_descriptor_proto()
             )
         })
     }
 
-    fn default_instance() -> &'static KzipInfo_CorpusInfo_RequiredInputs {
-        static instance: ::protobuf::rt::LazyV2<KzipInfo_CorpusInfo_RequiredInputs> = ::protobuf::rt::LazyV2::INIT;
-        instance.get(KzipInfo_CorpusInfo_RequiredInputs::new)
+    fn default_instance() -> &'static KzipInfo_CorpusInfo_Inputs {
+        static instance: ::protobuf::rt::LazyV2<KzipInfo_CorpusInfo_Inputs> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(KzipInfo_CorpusInfo_Inputs::new)
     }
 }
 
-impl ::protobuf::Clear for KzipInfo_CorpusInfo_RequiredInputs {
+impl ::protobuf::Clear for KzipInfo_CorpusInfo_Inputs {
     fn clear(&mut self) {
         self.count = 0;
         self.unknown_fields.clear();
     }
 }
 
-impl ::std::fmt::Debug for KzipInfo_CorpusInfo_RequiredInputs {
+impl ::std::fmt::Debug for KzipInfo_CorpusInfo_Inputs {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for KzipInfo_CorpusInfo_RequiredInputs {
+impl ::protobuf::reflect::ProtobufValue for KzipInfo_CorpusInfo_Inputs {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+pub struct KzipInfo_CorpusInfo_CUInfo {
+    // message fields
+    pub count: i32,
+    pub java_version_count: ::std::collections::HashMap<i32, i32>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a KzipInfo_CorpusInfo_CUInfo {
+    fn default() -> &'a KzipInfo_CorpusInfo_CUInfo {
+        <KzipInfo_CorpusInfo_CUInfo as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl KzipInfo_CorpusInfo_CUInfo {
+    pub fn new() -> KzipInfo_CorpusInfo_CUInfo {
+        ::std::default::Default::default()
+    }
+
+    // int32 count = 1;
+
+
+    pub fn get_count(&self) -> i32 {
+        self.count
+    }
+    pub fn clear_count(&mut self) {
+        self.count = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_count(&mut self, v: i32) {
+        self.count = v;
+    }
+
+    // repeated .kythe.proto.KzipInfo.CorpusInfo.CUInfo.JavaVersionCountEntry java_version_count = 2;
+
+
+    pub fn get_java_version_count(&self) -> &::std::collections::HashMap<i32, i32> {
+        &self.java_version_count
+    }
+    pub fn clear_java_version_count(&mut self) {
+        self.java_version_count.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_java_version_count(&mut self, v: ::std::collections::HashMap<i32, i32>) {
+        self.java_version_count = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_java_version_count(&mut self) -> &mut ::std::collections::HashMap<i32, i32> {
+        &mut self.java_version_count
+    }
+
+    // Take field
+    pub fn take_java_version_count(&mut self) -> ::std::collections::HashMap<i32, i32> {
+        ::std::mem::replace(&mut self.java_version_count, ::std::collections::HashMap::new())
+    }
+}
+
+impl ::protobuf::Message for KzipInfo_CorpusInfo_CUInfo {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int32()?;
+                    self.count = tmp;
+                },
+                2 => {
+                    ::protobuf::rt::read_map_into::<::protobuf::types::ProtobufTypeInt32, ::protobuf::types::ProtobufTypeInt32>(wire_type, is, &mut self.java_version_count)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.count != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.count, ::protobuf::wire_format::WireTypeVarint);
+        }
+        my_size += ::protobuf::rt::compute_map_size::<::protobuf::types::ProtobufTypeInt32, ::protobuf::types::ProtobufTypeInt32>(2, &self.java_version_count);
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.count != 0 {
+            os.write_int32(1, self.count)?;
+        }
+        ::protobuf::rt::write_map_with_cached_sizes::<::protobuf::types::ProtobufTypeInt32, ::protobuf::types::ProtobufTypeInt32>(2, &self.java_version_count, os)?;
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> KzipInfo_CorpusInfo_CUInfo {
+        KzipInfo_CorpusInfo_CUInfo::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt32>(
+                "count",
+                |m: &KzipInfo_CorpusInfo_CUInfo| { &m.count },
+                |m: &mut KzipInfo_CorpusInfo_CUInfo| { &mut m.count },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_map_accessor::<_, ::protobuf::types::ProtobufTypeInt32, ::protobuf::types::ProtobufTypeInt32>(
+                "java_version_count",
+                |m: &KzipInfo_CorpusInfo_CUInfo| { &m.java_version_count },
+                |m: &mut KzipInfo_CorpusInfo_CUInfo| { &mut m.java_version_count },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<KzipInfo_CorpusInfo_CUInfo>(
+                "KzipInfo.CorpusInfo.CUInfo",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static KzipInfo_CorpusInfo_CUInfo {
+        static instance: ::protobuf::rt::LazyV2<KzipInfo_CorpusInfo_CUInfo> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(KzipInfo_CorpusInfo_CUInfo::new)
+    }
+}
+
+impl ::protobuf::Clear for KzipInfo_CorpusInfo_CUInfo {
+    fn clear(&mut self) {
+        self.count = 0;
+        self.java_version_count.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for KzipInfo_CorpusInfo_CUInfo {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for KzipInfo_CorpusInfo_CUInfo {
     fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
         ::protobuf::reflect::ReflectValueRef::Message(self)
     }
@@ -3924,40 +4150,49 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     proto.FileInfoR\x04info\x12.\n\x07details\x18\x04\x20\x03(\x0b2\x14.goog\
     le.protobuf.AnyR\x07detailsJ\x04\x08\x03\x10\x04\x1a/\n\x03Env\x12\x12\n\
     \x04name\x18\x01\x20\x01(\tR\x04name\x12\x14\n\x05value\x18\x02\x20\x01(\
-    \tR\x05valueJ\x04\x08\x02\x10\x03\"\xb3\x06\n\x08KzipInfo\x12<\n\x07corp\
-    ora\x18\x01\x20\x03(\x0b2\".kythe.proto.KzipInfo.CorporaEntryR\x07corpor\
-    a\x12\x12\n\x04size\x18\x04\x20\x01(\x03R\x04size\x12%\n\x0eabsolute_pat\
-    hs\x18\x06\x20\x03(\tR\rabsolutePaths\x120\n\x14critical_kzip_errors\x18\
-    \x05\x20\x03(\tR\x12criticalKzipErrors\x1a\x91\x04\n\nCorpusInfo\x12v\n\
+    \tR\x05valueJ\x04\x08\x02\x10\x03\"\xba\t\n\x08KzipInfo\x12<\n\x07corpor\
+    a\x18\x01\x20\x03(\x0b2\".kythe.proto.KzipInfo.CorporaEntryR\x07corpora\
+    \x12\x12\n\x04size\x18\x04\x20\x01(\x03R\x04size\x12%\n\x0eabsolute_path\
+    s\x18\x06\x20\x03(\tR\rabsolutePaths\x120\n\x14critical_kzip_errors\x18\
+    \x05\x20\x03(\tR\x12criticalKzipErrors\x1a\x98\x07\n\nCorpusInfo\x12v\n\
     \x18language_required_inputs\x18\x04\x20\x03(\x0b2<.kythe.proto.KzipInfo\
     .CorpusInfo.LanguageRequiredInputsEntryR\x16languageRequiredInputs\x12`\
     \n\x10language_sources\x18\x05\x20\x03(\x0b25.kythe.proto.KzipInfo.Corpu\
-    sInfo.LanguageSourcesEntryR\x0flanguageSources\x1a&\n\x0eRequiredInputs\
-    \x12\x14\n\x05count\x18\x01\x20\x01(\x05R\x05count\x1az\n\x1bLanguageReq\
-    uiredInputsEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12E\n\x05v\
-    alue\x18\x02\x20\x01(\x0b2/.kythe.proto.KzipInfo.CorpusInfo.RequiredInpu\
-    tsR\x05value:\x028\x01\x1as\n\x14LanguageSourcesEntry\x12\x10\n\x03key\
-    \x18\x01\x20\x01(\tR\x03key\x12E\n\x05value\x18\x02\x20\x01(\x0b2/.kythe\
-    .proto.KzipInfo.CorpusInfo.RequiredInputsR\x05value:\x028\x01J\x04\x08\
-    \x01\x10\x02J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\x1a\\\n\x0cCorpor\
-    aEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x126\n\x05value\x18\
-    \x02\x20\x01(\x0b2\x20.kythe.proto.KzipInfo.CorpusInfoR\x05value:\x028\
-    \x01J\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\"V\n\rBuildMetadata\x12E\
-    \n\x10commit_timestamp\x18\x01\x20\x01(\x0b2\x1a.google.protobuf.Timesta\
-    mpR\x0fcommitTimestamp\";\n\x0cFilesRequest\x12+\n\x05files\x18\x01\x20\
-    \x03(\x0b2\x15.kythe.proto.FileInfoR\x05files\"6\n\x08FileInfo\x12\x12\n\
-    \x04path\x18\x01\x20\x01(\tR\x04path\x12\x16\n\x06digest\x18\x02\x20\x01\
-    (\tR\x06digest\"i\n\x08FileData\x12\x18\n\x07content\x18\x01\x20\x01(\
-    \x0cR\x07content\x12)\n\x04info\x18\x02\x20\x01(\x0b2\x15.kythe.proto.Fi\
-    leInfoR\x04info\x12\x18\n\x07missing\x18\x03\x20\x01(\x08R\x07missing\"r\
-    \n\x11CompilationBundle\x120\n\x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.p\
-    roto.CompilationUnitR\x04unit\x12+\n\x05files\x18\x02\x20\x03(\x0b2\x15.\
-    kythe.proto.FileDataR\x05files\"\xaa\x01\n\x12IndexedCompilation\x120\n\
-    \x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.proto.CompilationUnitR\x04unit\
-    \x12;\n\x05index\x18\x02\x20\x01(\x0b2%.kythe.proto.IndexedCompilation.I\
-    ndexR\x05index\x1a%\n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\x03(\tR\
-    \trevisionsB7\n\x1fcom.google.devtools.kythe.protoZ\x11analysis_go_proto\
-    \xf8\x01\x01b\x06proto3\
+    sInfo.LanguageSourcesEntryR\x0flanguageSources\x12^\n\x10language_cu_inf\
+    o\x18\x06\x20\x03(\x0b24.kythe.proto.KzipInfo.CorpusInfo.LanguageCuInfoE\
+    ntryR\x0elanguageCuInfo\x1a\x1e\n\x06Inputs\x12\x14\n\x05count\x18\x01\
+    \x20\x01(\x05R\x05count\x1a\xd0\x01\n\x06CUInfo\x12\x14\n\x05count\x18\
+    \x01\x20\x01(\x05R\x05count\x12k\n\x12java_version_count\x18\x02\x20\x03\
+    (\x0b2=.kythe.proto.KzipInfo.CorpusInfo.CUInfo.JavaVersionCountEntryR\
+    \x10javaVersionCount\x1aC\n\x15JavaVersionCountEntry\x12\x10\n\x03key\
+    \x18\x01\x20\x01(\x05R\x03key\x12\x14\n\x05value\x18\x02\x20\x01(\x05R\
+    \x05value:\x028\x01\x1ar\n\x1bLanguageRequiredInputsEntry\x12\x10\n\x03k\
+    ey\x18\x01\x20\x01(\tR\x03key\x12=\n\x05value\x18\x02\x20\x01(\x0b2'.kyt\
+    he.proto.KzipInfo.CorpusInfo.InputsR\x05value:\x028\x01\x1ak\n\x14Langua\
+    geSourcesEntry\x12\x10\n\x03key\x18\x01\x20\x01(\tR\x03key\x12=\n\x05val\
+    ue\x18\x02\x20\x01(\x0b2'.kythe.proto.KzipInfo.CorpusInfo.InputsR\x05val\
+    ue:\x028\x01\x1aj\n\x13LanguageCuInfoEntry\x12\x10\n\x03key\x18\x01\x20\
+    \x01(\tR\x03key\x12=\n\x05value\x18\x02\x20\x01(\x0b2'.kythe.proto.KzipI\
+    nfo.CorpusInfo.CUInfoR\x05value:\x028\x01J\x04\x08\x01\x10\x02J\x04\x08\
+    \x02\x10\x03J\x04\x08\x03\x10\x04\x1a\\\n\x0cCorporaEntry\x12\x10\n\x03k\
+    ey\x18\x01\x20\x01(\tR\x03key\x126\n\x05value\x18\x02\x20\x01(\x0b2\x20.\
+    kythe.proto.KzipInfo.CorpusInfoR\x05value:\x028\x01J\x04\x08\x02\x10\x03\
+    J\x04\x08\x03\x10\x04\"V\n\rBuildMetadata\x12E\n\x10commit_timestamp\x18\
+    \x01\x20\x01(\x0b2\x1a.google.protobuf.TimestampR\x0fcommitTimestamp\";\
+    \n\x0cFilesRequest\x12+\n\x05files\x18\x01\x20\x03(\x0b2\x15.kythe.proto\
+    .FileInfoR\x05files\"6\n\x08FileInfo\x12\x12\n\x04path\x18\x01\x20\x01(\
+    \tR\x04path\x12\x16\n\x06digest\x18\x02\x20\x01(\tR\x06digest\"i\n\x08Fi\
+    leData\x12\x18\n\x07content\x18\x01\x20\x01(\x0cR\x07content\x12)\n\x04i\
+    nfo\x18\x02\x20\x01(\x0b2\x15.kythe.proto.FileInfoR\x04info\x12\x18\n\
+    \x07missing\x18\x03\x20\x01(\x08R\x07missing\"r\n\x11CompilationBundle\
+    \x120\n\x04unit\x18\x01\x20\x01(\x0b2\x1c.kythe.proto.CompilationUnitR\
+    \x04unit\x12+\n\x05files\x18\x02\x20\x03(\x0b2\x15.kythe.proto.FileDataR\
+    \x05files\"\xaa\x01\n\x12IndexedCompilation\x120\n\x04unit\x18\x01\x20\
+    \x01(\x0b2\x1c.kythe.proto.CompilationUnitR\x04unit\x12;\n\x05index\x18\
+    \x02\x20\x01(\x0b2%.kythe.proto.IndexedCompilation.IndexR\x05index\x1a%\
+    \n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\x03(\tR\trevisionsB7\n\x1fc\
+    om.google.devtools.kythe.protoZ\x11analysis_go_proto\xf8\x01\x01b\x06pro\
+    to3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
