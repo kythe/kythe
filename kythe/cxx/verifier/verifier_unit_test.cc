@@ -1321,8 +1321,7 @@ fact_value: ""
   EXPECT_TRUE(evar_set);
 }
 
-TEST(VerifierUnitTest, GroupFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, GroupFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content 43 }
 source { root:"1" }
@@ -1334,8 +1333,11 @@ fact_value: "42"
 }
 
 // Slightly brittle in that it depends on the order we try facts.
-TEST(VerifierUnitTest, FailWithCutInGroups) {
-  Verifier v;
+TEST_P(VerifierTest, FailWithCutInGroups) {
+  if (GetParam() == Solver::New) {
+    // The new solver will pick the second entry.
+    GTEST_SKIP();
+  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content SomeValue }
 #- { SomeNode.content 43 }
@@ -1353,8 +1355,11 @@ fact_value: "43"
 }
 
 // Slightly brittle in that it depends on the order we try facts.
-TEST(VerifierUnitTest, FailWithCut) {
-  Verifier v;
+TEST_P(VerifierTest, FailWithCut) {
+  if (GetParam() == Solver::New) {
+    // The new solver will pick the second entry.
+    GTEST_SKIP();
+  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content SomeValue
 #- { SomeNode.content 43 }
@@ -1388,8 +1393,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GroupFactPasses) {
-  Verifier v;
+TEST_P(VerifierTest, GroupFactPasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content 42 }
 source { root:"1" }
@@ -1400,8 +1404,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, CompoundGroups) {
-  Verifier v;
+TEST_P(VerifierTest, CompoundGroups) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42
 #- !{ OtherNode.content 43
@@ -1421,8 +1424,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassFail) {
-  Verifier v;
+TEST_P(VerifierTest, ConjunctionInsideNegatedGroupPassFail) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42
 #-    OtherNode.content 44 }
@@ -1440,8 +1442,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassPass) {
-  Verifier v;
+TEST_P(VerifierTest, ConjunctionInsideNegatedGroupPassPass) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42
 #-    OtherNode.content 43 }
@@ -1459,8 +1460,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, AntiContentFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, AntiContentFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42 }
 source { root:"1" }
@@ -1471,8 +1471,7 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, AntiContentFactPasses) {
-  Verifier v;
+TEST_P(VerifierTest, AntiContentFactPasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 43 }
 source { root:"1" }
