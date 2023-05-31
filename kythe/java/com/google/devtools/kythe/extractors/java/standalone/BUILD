@@ -42,7 +42,10 @@ java_library(
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
     ] + select_with_or({
-        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
+        (
+            "//buildenv/java:language_version_default",
+            "//buildenv/java:language_version_11",
+        ): [":jdk9_compatibility_shims"],
         (
             "//buildenv/java:language_version_17",
             "//buildenv/java:language_version_19",
@@ -80,7 +83,10 @@ java_library(
         "-Xep:PackageLocation:OFF",
     ],
     target_compatible_with = select_with_or({
-        ("//buildenv/java:language_version_11",): [],
+        (
+            "//buildenv/java:language_version_default",
+            "//buildenv/java:language_version_11",
+        ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
