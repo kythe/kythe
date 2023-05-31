@@ -13,5 +13,13 @@
    "corpus": "openjdk11",
    "path": "@1@"
   }
+ },
+ {
+  "pattern": "/?(modules)/(.*[.]class)$",
+  "vname": {
+   "corpus": "openjdk11",
+   "root": "@1@",
+   "path": "@2@"
+  }
  }
 ]
