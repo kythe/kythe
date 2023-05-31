@@ -1442,7 +1442,6 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-#if 0
 TEST_P(VerifierTest, ConjunctionInsideNegatedGroupPassPass) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42
@@ -1460,7 +1459,6 @@ fact_value: "43"
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
 }
-#endif
 
 TEST_P(VerifierTest, AntiContentFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {

@@ -46,7 +46,7 @@ class SouffleProgram {
 
   struct EVarRecord {
     size_t index;        ///< The Souffle index for the evar.
-    bool only_negative;  ///< Whether this evar only appears negatively.
+    bool appears_negative;  ///< Whether this evar only appears negatively.
     EVarType type;
   };
 
@@ -54,6 +54,9 @@ class SouffleProgram {
   /// \param type expected subexpression type
   /// \param pos whether this is a positive context
   bool LowerSubexpression(bool pos, EVarType type, AstNode* node);
+
+  /// \brief Lowers a goal from `group`.
+  bool LowerGoal(const SymbolTable& symbol_table, bool pos, AstNode* node);
 
   /// \brief Lowers `group`.
   bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
@@ -71,7 +74,7 @@ class SouffleProgram {
     auto ev = evars_.try_emplace(
         evar, EVarRecord{evars_.size(), !positive_context, type});
     if (!ev.second) {
-      ev.first->second.only_negative &= !positive_context;
+      ev.first->second.appears_negative |= !positive_context;
       if (ev.first->second.type != EVarType::kUnknown) {
         CHECK(ev.first->second.type == type);
       } else if (type != EVarType::kUnknown) {
