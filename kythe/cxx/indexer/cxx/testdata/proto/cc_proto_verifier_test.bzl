@@ -84,7 +84,7 @@ def cc_proto_verifier_test(
             name = name + "_static_claim",
             outs = [claim_file],
             srcs = [cc_kzip],
-            exec_tools = ["//kythe/cxx/tools:static_claim"],
+            tools = ["//kythe/cxx/tools:static_claim"],
             cmd = " ".join([
                 "echo \"$<\" |",
                 "$(location //kythe/cxx/tools:static_claim)",
