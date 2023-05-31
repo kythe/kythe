@@ -17,7 +17,6 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 
-#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
