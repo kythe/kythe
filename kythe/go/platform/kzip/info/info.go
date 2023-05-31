@@ -69,10 +69,6 @@ func NewAccumulator(fileSize int64) *Accumulator {
 	}
 }
 
-func cuString(u *kzip.Unit) string {
-	return fmt.Sprintf("corpus: %q root: %q language: %q", u.Proto.GetVName().GetCorpus(), u.Proto.GetVName().GetRoot(), u.Proto.GetVName().GetLanguage())
-}
-
 // Accumulate should be called for each unit in the kzip so its counts can be
 // recorded.
 func (a *Accumulator) Accumulate(u *kzip.Unit) {
@@ -84,7 +80,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 
 	cuLang := u.Proto.GetVName().GetLanguage()
 	if cuLang == "" {
-		msg := fmt.Sprintf("CU(%s) does not specify a language", cuString(u))
+		msg := fmt.Sprintf("CU(%s) does not specify a language", u.Proto.GetVName())
 		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 		return
 	}
@@ -107,7 +103,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 		riCorpus := requiredInputCorpus(u, ri)
 		if riCorpus == "" {
 			// Trim spaces to work around the fact that log("%v", proto) is inconsistent about trailing spaces in google3 vs open-source go.
-			msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU(%s)", ri.Info.Path, cuString(u)))
+			msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU(%s)", ri.Info.Path, u.Proto.GetVName()))
 			a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 			return
 		}
@@ -125,7 +121,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	}
 	srcsWithoutRI := srcs.Diff(srcsWithRI)
 	for path := range srcsWithoutRI {
-		msg := fmt.Sprintf("source %q in CU(%s) doesn't have a required_input entry", path, cuString(u))
+		msg := fmt.Sprintf("source %q in CU(%s) doesn't have a required_input entry", path, u.Proto.GetVName())
 		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 	}
 	if srcCorpora.Len() != 1 {
