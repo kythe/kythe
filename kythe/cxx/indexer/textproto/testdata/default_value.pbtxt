@@ -4,5 +4,5 @@
 # proto3 does not have "has" bits that track whether a field is set or not.
 # Using a value of zero here ensures that even fields that are set equal to the
 # default value still get xrefs.
-#- @field2 ref Field2
+#- @field2 ref/writes Field2
 field2: 0
