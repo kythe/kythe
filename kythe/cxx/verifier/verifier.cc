@@ -1157,7 +1157,10 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
 }
 
 bool Verifier::PrepareDatabase() {
-  if (database_prepared_ || use_fast_solver_) {
+  if (database_prepared_) {
+    return true;
+  }
+  if (use_fast_solver_) {
     LOG(WARNING) << "PrepareDatabase() called when fast solver was enabled";
     return true;
   }
