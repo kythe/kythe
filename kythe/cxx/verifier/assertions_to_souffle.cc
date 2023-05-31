@@ -36,10 +36,6 @@ constexpr absl::string_view kGlobalDecls = R"(
 at(s, e, v) :- entry(v, $0, nil, $1, $2),
                entry(v, $0, nil, $3, s),
                entry(v, $0, nil, $4, e).
-.decl gvn(vname:vname)
-gvn(v) :- !(v = nil), (entry(v, _, _, _, _); entry(_, _, v, _, _)).
-.decl gsym(s:number)
-gsym(s) :- entry(_, s, _, _, _); entry(_, _, _, s, _); entry(_, _, _, _, s).
 .decl result()
 result() :- true
 )";
