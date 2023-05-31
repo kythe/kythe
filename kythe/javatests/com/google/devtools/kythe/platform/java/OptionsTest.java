@@ -212,13 +212,13 @@ public class OptionsTest {
 
   @Test
   public void updateToMinimumSupportedSourceVersion_updatesSource() {
-    // We can't test the --source format of the flag because it is only supported by recent versions
-    // of java.
+    // We can't test both --source and --source formats of the flag because it is only supported by
+    // recent versions of java.
     ModifiableOptions args =
         ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.JDK1_2.name));
 
     assertThat(args.updateToMinimumSupportedSourceVersion().build())
-        .containsExactly("-foo", "-source", Source.MIN.name)
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
         .inOrder();
   }
 
@@ -228,7 +228,7 @@ public class OptionsTest {
         ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.JDK1_2.name));
 
     assertThat(args.updateToMinimumSupportedSourceVersion().build())
-        .containsExactly("-foo", "-source", Source.MIN.name)
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
         .inOrder();
   }
 
@@ -239,7 +239,7 @@ public class OptionsTest {
             ImmutableList.of("-foo", "-source", Source.JDK1_2.name, "-target", Source.JDK1_2.name));
 
     assertThat(args.updateToMinimumSupportedSourceVersion().build())
-        .containsExactly("-foo", "-source", Source.MIN.name)
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
         .inOrder();
   }
 
@@ -250,7 +250,7 @@ public class OptionsTest {
             ImmutableList.of("-foo", "-source", Source.JDK1_2.name, "-source", Source.JDK1_3.name));
 
     assertThat(args.updateToMinimumSupportedSourceVersion().build())
-        .containsExactly("-foo", "-source", Source.MIN.name)
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
         .inOrder();
   }
 
@@ -260,7 +260,7 @@ public class OptionsTest {
         ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.DEFAULT.name));
 
     assertThat(args.updateToMinimumSupportedSourceVersion().build())
-        .containsExactly("-foo", "-source", Source.DEFAULT.name)
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.DEFAULT.name)
         .inOrder();
   }
 }
