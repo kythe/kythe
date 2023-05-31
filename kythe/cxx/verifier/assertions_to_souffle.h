@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 
+#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -40,16 +41,22 @@ class SouffleProgram {
   void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }
 
  private:
+  /// The type of an EVar.
+  enum class EVarType { kVName, kSymbol, kUnknown };
+
+  struct EVarRecord {
+    size_t index;        ///< The Souffle index for the evar.
+    bool only_negative;  ///< Whether this evar only appears negatively.
+    EVarType type;
+  };
+
   /// \brief Lowers `node`.
-  bool LowerSubexpression(AstNode* node);
+  /// \param type expected subexpression type
+  /// \param pos whether this is a positive context
+  bool LowerSubexpression(bool pos, EVarType type, AstNode* node);
 
   /// \brief Lowers `group`.
   bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
-
-  /// \return a stable short name for `ev`.
-  size_t FindEVar(EVar* ev) {
-    return evars_.try_emplace(ev, evars_.size()).first->second;
-  }
 
   /// The current finished code buffer.
   std::string code_;
@@ -57,8 +64,38 @@ class SouffleProgram {
   /// Whether to emit the prelude.
   bool emit_prelude_ = true;
 
+  /// \param positive_context whether `evar` is being used positively.
+  /// \param type the type used for `evar`.
+  /// \return a stable short name for `evar`.
+  size_t FindEVar(EVar* evar, bool positive_context, EVarType type) {
+    auto ev = evars_.try_emplace(
+        evar, EVarRecord{evars_.size(), !positive_context, type});
+    if (!ev.second) {
+      ev.first->second.only_negative &= !positive_context;
+      if (ev.first->second.type != EVarType::kUnknown) {
+        CHECK(ev.first->second.type == type);
+      } else if (type != EVarType::kUnknown) {
+        ev.first->second.type = type;
+      }
+    }
+    return ev.first->second.index;
+  }
+
+  void UnifyEVarTypes(EVar* v1, EVar* v2) {
+    auto ev1 = evars_.find(v1);
+    auto ev2 = evars_.find(v2);
+    CHECK(ev1 != evars_.end() && ev2 != evars_.end());
+    if (ev1->second.type == EVarType::kUnknown) {
+      ev1->second.type = ev2->second.type;
+    } else if (ev2->second.type == EVarType::kUnknown) {
+      ev2->second.type = ev1->second.type;
+    } else {
+      CHECK(ev1->second.type == ev2->second.type);
+    }
+  }
+
   /// Known evars.
-  absl::flat_hash_map<EVar*, size_t> evars_;
+  absl::flat_hash_map<EVar*, EVarRecord> evars_;
 };
 
 }  // namespace kythe::verifier

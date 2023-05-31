@@ -36,12 +36,17 @@ constexpr absl::string_view kGlobalDecls = R"(
 at(s, e, v) :- entry(v, $0, nil, $1, $2),
                entry(v, $0, nil, $3, s),
                entry(v, $0, nil, $4, e).
+.decl gvn(vname:vname)
+gvn(v) :- !(v = nil), (entry(v, _, _, _, _); entry(_, _, v, _, _)).
+.decl gsym(s:number)
+gsym(s) :- entry(_, s, _, _, _); entry(_, _, _, s, _); entry(_, _, _, _, s).
 .decl result()
 result() :- true
 )";
 }
 
-bool SouffleProgram::LowerSubexpression(AstNode* node) {
+bool SouffleProgram::LowerSubexpression(bool pos, EVarType type,
+                                        AstNode* node) {
   if (auto* app = node->AsApp()) {
     auto* tup = app->rhs()->AsTuple();
     absl::StrAppend(&code_, "[");
@@ -49,7 +54,7 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
       if (p != 0) {
         absl::StrAppend(&code_, ", ");
       }
-      if (!LowerSubexpression(tup->element(p))) {
+      if (!LowerSubexpression(pos, EVarType::kSymbol, tup->element(p))) {
         return false;
       }
     }
@@ -60,9 +65,9 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
     return true;
   } else if (auto* evar = node->AsEVar()) {
     if (auto* evc = evar->current()) {
-      return LowerSubexpression(evc);
+      return LowerSubexpression(pos, type, evc);
     }
-    absl::StrAppend(&code_, "v", FindEVar(evar));
+    absl::StrAppend(&code_, "v", FindEVar(evar, pos, type));
     return true;
   } else {
     LOG(ERROR) << "unknown subexpression kind";
@@ -77,6 +82,9 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
 #ifdef DEBUG_LOWERING
   FileHandlePrettyPrinter dprinter(stderr);
 #endif
+  if (group.goals.empty()) return true;
+  bool pos = group.accept_if != GoalGroup::AcceptanceCriterion::kSomeMustFail;
+  absl::StrAppend(&code_, pos ? ", (true" : ", !(true");
   for (const auto& goal : group.goals) {
 #ifdef DEBUG_LOWERING
     dprinter.Print("goal <");
@@ -100,11 +108,11 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
           // TODO(zarko): emit a warning here (if we're in a positive goal)?
           absl::StrAppend(&code_, ", false");
         } else {
-          absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ",
-                          range->corpus(), ", ", range->path(), ", ",
+          absl::StrAppend(&code_, ", v", FindEVar(evar, pos, EVarType::kVName),
+                          "=[_, ", range->corpus(), ", ", range->path(), ", ",
                           range->root(), ", _]");
           absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
-                          FindEVar(evar), ")");
+                          FindEVar(evar, pos, EVarType::kVName), ")");
         }
       } else {
         auto* oevar = tup->element(0)->AsEVar();
@@ -112,7 +120,9 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
           LOG(ERROR) << "expected evar or range on lhs of eq";
           return false;
         }
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));
+        absl::StrAppend(&code_, ", v", FindEVar(evar, pos, EVarType::kUnknown),
+                        "=v", FindEVar(oevar, pos, EVarType::kUnknown));
+        UnifyEVarTypes(evar, oevar);
       }
     } else {
       // This is an edge or fact pattern.
@@ -127,7 +137,9 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
           absl::StrAppend(&code_, "nil");
           continue;
         }
-        if (!LowerSubexpression(tup->element(p))) {
+        if (!LowerSubexpression(
+                pos, p == 0 || p == 2 ? EVarType::kVName : EVarType::kSymbol,
+                tup->element(p))) {
           return false;
         }
       }
@@ -139,7 +151,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
     dprinter.Print("> \n");
 #endif
   }
-  absl::StrAppend(&code_, ".\n");
+  absl::StrAppend(&code_, ")\n");
   return true;
 }
 
@@ -153,14 +165,18 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                              symbol_table.MustIntern("/kythe/loc/start"),
                              symbol_table.MustIntern("/kythe/loc/end"));
   }
-  CHECK_LE(goal_groups.size(), 1) << "(unimplemented)";
-  if (goal_groups.size() == 0) {
-    absl::StrAppend(&code_, ".\n");
-    return true;
-  }
   for (const auto& group : goal_groups) {
     if (!LowerGoalGroup(symbol_table, group)) return false;
   }
+  for (const auto& ev : evars_) {
+    if (ev.second.only_negative) {
+      CHECK(ev.second.type != EVarType::kUnknown);
+      absl::StrAppend(
+          &code_, ev.second.type == EVarType::kVName ? ", gvn(v" : ", gsym(v",
+          ev.second.index, ")");
+    }
+  }
+  absl::StrAppend(&code_, ".\n");
   return true;
 }
 }  // namespace kythe::verifier
