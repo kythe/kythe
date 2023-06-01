@@ -1,14 +1,14 @@
 # proto-file: kythe/cxx/indexer/textproto/testdata/repeated_extension.proto
 # proto-message: repeated_extension_test.Extendee
 
-#- @"repeated_extension_test.Extension.ext" ref Ext
+#- @"repeated_extension_test.Extension.ext" ref/writes Ext
 [repeated_extension_test.Extension.ext] {
-    #- @str_field ref ExtensionStrField
+    #- @str_field ref/writes ExtensionStrField
     str_field: "test"
 }
 
-#- @"repeated_extension_test.Extension.ext" ref Ext
+#- @"repeated_extension_test.Extension.ext" ref/writes Ext
 [repeated_extension_test.Extension.ext] {
-    #- @str_field ref ExtensionStrField
+    #- @str_field ref/writes ExtensionStrField
     str_field: "test2"
 }

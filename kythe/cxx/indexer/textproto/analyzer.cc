@@ -661,9 +661,9 @@ absl::Status TextprotoAnalyzer::AnalyzeField(const proto::VName& file_vname,
     const int end = begin + len;
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 
-    // Add ref to proto field.
+    // Add ref/writes to proto field.
     auto field_vname = VNameForDescriptor(&field);
-    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRefWrites,
                        VNameRef(field_vname));
 
     // Add refs for enum values.

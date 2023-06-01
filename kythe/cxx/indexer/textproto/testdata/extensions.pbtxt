@@ -1,11 +1,11 @@
 # proto-file: kythe/cxx/indexer/textproto/testdata/extensions.proto
 # proto-message: mypkg.ExtendableMessage
 
-#- @str_field1 ref ExtendableMessageStrField1
+#- @str_field1 ref/writes ExtendableMessageStrField1
 str_field1: "hello"
 
-#- @"mypkg.MyExtension.ext" ref Ext
+#- @"mypkg.MyExtension.ext" ref/writes Ext
 [mypkg.MyExtension.ext] {
-    #- @field1 ref MyExtensionField1
+    #- @field1 ref/writes MyExtensionField1
     field1: "hello"
 }
