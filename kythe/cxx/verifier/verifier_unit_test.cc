@@ -2848,14 +2848,10 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-using FSPair = std::tuple<MsFormat, Solver>;
-
 INSTANTIATE_TEST_SUITE_P(
     JsonAndProto, VerifierMarkedSourceUnitTest,
-    ::testing::Values(FSPair{MsFormat::kTextProto, Solver::Old},
-                      FSPair{MsFormat::kTextProto, Solver::New},
-                      FSPair{MsFormat::kJson, Solver::Old},
-                      FSPair{MsFormat::kJson, Solver::New}),
+    ::testing::Combine(::testing::Values(MsFormat::kTextProto, MsFormat::kJson),
+                       ::testing::Values(Solver::Old, Solver::New)),
     [](const auto& p) {
       if (std::get<0>(p.param) == MsFormat::kTextProto)
         return std::get<1>(p.param) == Solver::Old ? "textold" : "textnew";
