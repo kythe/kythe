@@ -43,8 +43,8 @@ class SouffleProgram {
   /// \brief Lowers `node`.
   bool LowerSubexpression(AstNode* node);
 
-  /// \brief Lowers a goal from `group`.
-  bool LowerGoal(const SymbolTable& symbol_table, AstNode* node);
+  /// \brief Lowers a goal from `goal`.
+  bool LowerGoal(const SymbolTable& symbol_table, AstNode* goal);
 
   /// \brief Lowers `group`.
   bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
