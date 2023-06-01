@@ -27,8 +27,10 @@ import (
 	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
+	"google.golang.org/protobuf/encoding/prototext"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // KzipInfo scans the kzip in f and counts contained files and units, giving a
@@ -80,7 +82,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 
 	cuLang := u.Proto.GetVName().GetLanguage()
 	if cuLang == "" {
-		msg := fmt.Sprintf("CU(%s) does not specify a language", u.Proto.GetVName())
+		msg := fmt.Sprintf("CU(%s) does not specify a language", formatVName(u.Proto.GetVName()))
 		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 		return
 	}
@@ -103,7 +105,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 		riCorpus := requiredInputCorpus(u, ri)
 		if riCorpus == "" {
 			// Trim spaces to work around the fact that log("%v", proto) is inconsistent about trailing spaces in google3 vs open-source go.
-			msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU(%s)", ri.Info.Path, u.Proto.GetVName()))
+			msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU(%s)", ri.Info.Path, formatVName(u.Proto.GetVName())))
 			a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 			return
 		}
@@ -121,7 +123,7 @@ func (a *Accumulator) Accumulate(u *kzip.Unit) {
 	}
 	srcsWithoutRI := srcs.Diff(srcsWithRI)
 	for path := range srcsWithoutRI {
-		msg := fmt.Sprintf("source %q in CU(%s) doesn't have a required_input entry", path, u.Proto.GetVName())
+		msg := fmt.Sprintf("source %q in CU(%s) doesn't have a required_input entry", path, formatVName(u.Proto.GetVName()))
 		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
 	}
 	if srcCorpora.Len() != 1 {
@@ -286,4 +288,8 @@ func corpusInfo(corpus string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo 
 		kzipInfo.Corpora[corpus] = i
 	}
 	return i
+}
+
+func formatVName(v *spb.VName) string {
+	return strings.ReplaceAll(prototext.MarshalOptions{}.Format(v), "  ", " ")
 }

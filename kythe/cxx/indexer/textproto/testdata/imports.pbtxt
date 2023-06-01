@@ -1,8 +1,8 @@
 # proto-message: example2.OuterMessage
 # proto-file: kythe/cxx/indexer/textproto/testdata/proto_with_imports.proto
 
-#- @inner_msg ref OuterMessageInnerMsg
+#- @inner_msg ref/writes OuterMessageInnerMsg
 inner_msg {
-    #- @field1 ref Field1
+    #- @field1 ref/writes Field1
     field1: "hello"
 }

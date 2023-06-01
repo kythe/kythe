@@ -5,20 +5,20 @@
 # syntax options for specifying field values. It is more a test of the plugin
 # system than of the example plugin.
 
-#- @name ref NameField
+#- @name ref/writes NameField
 #- @person1 defines/binding Person1
 name: "person1"
 
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- @"person\" \"1" ref Person1
 friend: "person" "1"
 
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- @person1 ref Person1
 #- @person2 ref Person2?
 friend: [ "person1",  "person2" ]
 
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- StrValue ref Person1
 friend:
 #- StrValue.loc/start @^per
@@ -26,11 +26,11 @@ friend:
 #- StrValue.loc/end @$son1
   "son1"
 
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- @"per\\n\\n\\nson3" ref Person3?
 friend: "per\n\n\nson3"
 
 # test that tabs are handled correctly
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- @"person1" ref Person1
     friend  :   "person1"
