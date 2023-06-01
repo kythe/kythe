@@ -8,5 +8,5 @@
 #- @"kythe/cxx/indexer/textproto/testdata/example.proto" ref/file vname(_,_,"","kythe/cxx/indexer/textproto/testdata/example.proto",_)
 # proto-import: kythe/cxx/indexer/textproto/testdata/example.proto
 
-#- @field1 ref Field1
+#- @field1 ref/writes Field1
 field1: "hello"

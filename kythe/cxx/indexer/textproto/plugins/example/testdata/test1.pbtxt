@@ -1,10 +1,10 @@
 # proto-file: kythe/cxx/indexer/textproto/plugins/example/testdata/example.proto
 # proto-message: kythe_plugin_example.Person
 
-#- @name ref NameField
+#- @name ref/writes NameField
 #- @person1 defines/binding Person1=vname("person1","kythe","","","textproto_plugin_example")
 name: "person1"
 
-#- @friend ref FriendField
+#- @friend ref/writes FriendField
 #- @person2 ref Person2
 friend: "person2"
