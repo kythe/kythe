@@ -43,19 +43,22 @@ class SouffleProgram {
   /// \brief Lowers `node`.
   bool LowerSubexpression(AstNode* node);
 
+  /// \brief Lowers a goal from `group`.
+  bool LowerGoal(const SymbolTable& symbol_table, AstNode* node);
+
   /// \brief Lowers `group`.
   bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
-
-  /// \return a stable short name for `ev`.
-  size_t FindEVar(EVar* ev) {
-    return evars_.try_emplace(ev, evars_.size()).first->second;
-  }
 
   /// The current finished code buffer.
   std::string code_;
 
   /// Whether to emit the prelude.
   bool emit_prelude_ = true;
+
+  /// \return a stable short name for `evar`.
+  size_t FindEVar(EVar* evar) {
+    return evars_.try_emplace(evar, evars_.size()).first->second;
+  }
 
   /// Known evars.
   absl::flat_hash_map<EVar*, size_t> evars_;
