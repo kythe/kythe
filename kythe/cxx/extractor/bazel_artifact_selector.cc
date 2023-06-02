@@ -40,7 +40,7 @@
 namespace kythe {
 namespace {
 
-std::string AsUri(const build_event_stream::File& file) {
+std::optional<std::string> ToUri(const build_event_stream::File& file) {
   switch (file.file_case()) {
     case build_event_stream::File::kUri:
       return file.uri();
@@ -50,23 +50,29 @@ std::string AsUri(const build_event_stream::File& file) {
           "data:base64,",
           // data URIs use regular base64, not "web safe" base64.
           absl::Base64Escape(file.contents()));
-    case build_event_stream::File::FILE_NOT_SET:
+    case build_event_stream::File::kSymlinkTargetPath:
+      return std::nullopt;
+    default:
       break;
   }
-  LOG(FATAL) << "Unexpected build_event_stream::File case!" << file.file_case();
+  LOG(ERROR) << "Unexpected build_event_stream::File case!" << file.file_case();
+  return std::nullopt;
 }
 
-std::string AsLocalPath(const build_event_stream::File& file) {
+std::string ToLocalPath(const build_event_stream::File& file) {
   std::vector<std::string> parts(file.path_prefix().begin(),
                                  file.path_prefix().end());
   parts.push_back(file.name());
   return absl::StrJoin(parts, "/");
 }
 
-BazelArtifactFile ToBazelArtifactFile(const build_event_stream::File& file) {
-  return {
-      .local_path = AsLocalPath(file),
-      .uri = AsUri(file),
+std::optional<BazelArtifactFile> ToBazelArtifactFile(
+    const build_event_stream::File& file) {
+  std::optional<std::string> uri = ToUri(file);
+  if (!uri.has_value()) return std::nullopt;
+  return BazelArtifactFile{
+      .local_path = ToLocalPath(file),
+      .uri = *std::move(uri),
   };
 }
 
@@ -638,8 +644,11 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     BazelArtifact result = {.label = node.mapped()};
     for (const auto& file : fileset.files()) {
       if (options_.file_name_allowlist.Match(file.name())) {
-        result.files.push_back(
-            state_.files.ExtractFile(ToBazelArtifactFile(file)));
+        if (std::optional<BazelArtifactFile> artifact_file =
+                ToBazelArtifactFile(file)) {
+          result.files.push_back(
+              state_.files.ExtractFile(*std::move(artifact_file)));
+        }
       }
     }
     for (const auto& child : fileset.file_sets()) {
@@ -711,8 +720,11 @@ void AspectArtifactSelector::InsertFileSet(
   std::optional<FileSet> file_set;
   for (const auto& file : fileset.files()) {
     if (options_.file_name_allowlist.Match(file.name())) {
-      FileId file_id = state_.files.Insert(ToBazelArtifactFile(file));
-      GetOrConstruct(file_set).files.push_back(file_id);
+      if (std::optional<BazelArtifactFile> artifact_file =
+              ToBazelArtifactFile(file)) {
+        FileId file_id = state_.files.Insert(*std::move(artifact_file));
+        GetOrConstruct(file_set).files.push_back(file_id);
+      }
     }
   }
   for (const auto& child : fileset.file_sets()) {
@@ -751,13 +763,16 @@ absl::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
   if (event.id().has_action_completed() && event.action().success() &&
       action_matches_(event.action().type())) {
-    return BazelArtifact{
-        .label = event.id().action_completed().label(),
-        .files = {{
-            .local_path = event.id().action_completed().primary_output(),
-            .uri = AsUri(event.action().primary_output()),
-        }},
-    };
+    if (std::optional<std::string> uri =
+            ToUri(event.action().primary_output())) {
+      return BazelArtifact{
+          .label = event.id().action_completed().label(),
+          .files = {{
+              .local_path = event.id().action_completed().primary_output(),
+              .uri = *std::move(uri),
+          }},
+      };
+    }
   }
   return absl::nullopt;
 }
