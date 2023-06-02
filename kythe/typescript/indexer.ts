@@ -2632,6 +2632,10 @@ class Visitor {
   }
 }
 
+/**
+ * Main plugin that runs over all srcs files in a compilation unit and emits
+ * Kythe data for all symbols in those files.
+ */
 class TypescriptIndexer implements Plugin {
   name = 'TypescriptIndexerPlugin';
 
