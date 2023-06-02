@@ -1321,8 +1321,7 @@ fact_value: ""
   EXPECT_TRUE(evar_set);
 }
 
-TEST(VerifierUnitTest, GroupFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, GroupFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content 43 }
 source { root:"1" }
@@ -1334,8 +1333,11 @@ fact_value: "42"
 }
 
 // Slightly brittle in that it depends on the order we try facts.
-TEST(VerifierUnitTest, FailWithCutInGroups) {
-  Verifier v;
+TEST_P(VerifierTest, FailWithCutInGroups) {
+  if (GetParam() == Solver::New) {
+    // The new solver will pick the second entry.
+    GTEST_SKIP();
+  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content SomeValue }
 #- { SomeNode.content 43 }
@@ -1353,8 +1355,11 @@ fact_value: "43"
 }
 
 // Slightly brittle in that it depends on the order we try facts.
-TEST(VerifierUnitTest, FailWithCut) {
-  Verifier v;
+TEST_P(VerifierTest, FailWithCut) {
+  if (GetParam() == Solver::New) {
+    // The new solver will pick the second entry.
+    GTEST_SKIP();
+  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content SomeValue
 #- { SomeNode.content 43 }
@@ -1388,8 +1393,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, GroupFactPasses) {
-  Verifier v;
+TEST_P(VerifierTest, GroupFactPasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- { SomeNode.content 42 }
 source { root:"1" }
@@ -1400,8 +1404,7 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, CompoundGroups) {
-  Verifier v;
+TEST_P(VerifierTest, CompoundGroups) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 42
 #- !{ OtherNode.content 43
@@ -1421,8 +1424,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassFail) {
-  Verifier v;
+TEST_P(VerifierTest, ConjunctionInsideNegatedGroupPassFail) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42
 #-    OtherNode.content 44 }
@@ -1440,8 +1442,7 @@ fact_value: "43"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ConjunctionInsideNegatedGroupPassPass) {
-  Verifier v;
+TEST_P(VerifierTest, ConjunctionInsideNegatedGroupPassPass) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42
 #-    OtherNode.content 43 }
@@ -1459,8 +1460,7 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, AntiContentFactFails) {
-  Verifier v;
+TEST_P(VerifierTest, AntiContentFactFails) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 42 }
 source { root:"1" }
@@ -1471,8 +1471,7 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, AntiContentFactPasses) {
-  Verifier v;
+TEST_P(VerifierTest, AntiContentFactPasses) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{ SomeNode.content 43 }
 source { root:"1" }
@@ -2613,7 +2612,10 @@ TEST(VerifierUnitTest, DontConvertMarkedSource) {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
+enum class MsFormat { kTextProto, kJson };
+
+class VerifierMarkedSourceUnitTest
+    : public ::testing::TestWithParam<std::tuple<MsFormat, Solver>> {
  protected:
   std::string Entries(const MarkedSource& source) const {
     kythe::proto::Entries entries;
@@ -2626,13 +2628,18 @@ class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
     return result;
   }
 
+  void ConfigureVerifier(Verifier& v) {
+    v.UseFastSolver(std::get<1>(GetParam()) == Solver::Old ? false : true);
+  }
+
  private:
   std::string FactName() const {
-    return GetParam() ? "/kythe/code" : "/kythe/code/json";
+    return std::get<0>(GetParam()) == MsFormat::kTextProto ? "/kythe/code"
+                                                           : "/kythe/code/json";
   }
 
   std::string Encode(const MarkedSource& source) const {
-    if (GetParam()) {
+    if (std::get<0>(GetParam()) == MsFormat::kTextProto) {
       std::string source_string;
       GTEST_CHECK_(source.SerializeToString(&source_string))
           << "Failure serializing MarkedSource";
@@ -2650,6 +2657,7 @@ class VerifierMarkedSourceUnitTest : public ::testing::TestWithParam<bool> {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSource) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   ASSERT_TRUE(v.LoadInlineProtoFile(Entries(source) + R"(
@@ -2675,6 +2683,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceKindEnums) {
     }
     auto kind_enum = static_cast<MarkedSource::Kind>(kind);
     Verifier v;
+    ConfigureVerifier(v);
     v.ConvertMarkedSource();
     MarkedSource source;
     source.set_kind(kind_enum);
@@ -2690,6 +2699,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceKindEnums) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinks) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   source.add_link()->add_definition("kythe://corpus#sig");
@@ -2703,6 +2713,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinks) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksBadUri) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   source.add_link()->add_definition("kythe:/&bad");
@@ -2711,6 +2722,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksBadUri) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksMissingUri) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   source.add_link();
@@ -2719,6 +2731,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksMissingUri) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksMultipleUri) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   auto* link = source.add_link();
@@ -2729,6 +2742,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceLinksMultipleUri) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceChildren) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   auto* child = source.add_child();
@@ -2748,6 +2762,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceChildren) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceBadChildren) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource parent;
   MarkedSource* child = parent.add_child();
@@ -2759,6 +2774,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceBadChildren) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceFields) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   source.set_pre_text("pre_text");
@@ -2783,6 +2799,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConvertMarkedSourceFields) {
 TEST_P(VerifierMarkedSourceUnitTest,
        DontConvertMarkedSourceDuplicateFactsWellFormed) {
   Verifier v;
+  ConfigureVerifier(v);
   MarkedSource source;
   v.IgnoreDuplicateFacts();
   ASSERT_TRUE(v.LoadInlineProtoFile(Entries(source) + "\n" + Entries(source)));
@@ -2793,6 +2810,7 @@ TEST_P(VerifierMarkedSourceUnitTest,
 TEST_P(VerifierMarkedSourceUnitTest,
        ConvertMarkedSourceDuplicateFactsWellFormed) {
   Verifier v;
+  ConfigureVerifier(v);
   v.ConvertMarkedSource();
   MarkedSource source;
   ASSERT_TRUE(v.LoadInlineProtoFile(Entries(source) + "\n" + Entries(source)));
@@ -2801,7 +2819,12 @@ TEST_P(VerifierMarkedSourceUnitTest,
 }
 
 TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsNotWellFormed) {
+  if (std::get<1>(GetParam()) == Solver::New) {
+    // The new solver doesn't currently perform conflict checks.
+    GTEST_SKIP();
+  }
   Verifier v;
+  ConfigureVerifier(v);
   MarkedSource source;
 
   MarkedSource source_conflict;
@@ -2814,6 +2837,7 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsNotWellFormed) {
 
 TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
   Verifier v;
+  ConfigureVerifier(v);
   v.IgnoreCodeConflicts();
   MarkedSource source;
   MarkedSource source_conflict;
@@ -2824,8 +2848,16 @@ TEST_P(VerifierMarkedSourceUnitTest, ConflictingCodeFactsIgnoreWellFormed) {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-INSTANTIATE_TEST_SUITE_P(JsonAndProto, VerifierMarkedSourceUnitTest,
-                         ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(
+    JsonAndProto, VerifierMarkedSourceUnitTest,
+    ::testing::Combine(::testing::Values(MsFormat::kTextProto, MsFormat::kJson),
+                       ::testing::Values(Solver::Old, Solver::New)),
+    [](const auto& p) {
+      if (std::get<0>(p.param) == MsFormat::kTextProto)
+        return std::get<1>(p.param) == Solver::Old ? "textold" : "textnew";
+      else
+        return std::get<1>(p.param) == Solver::Old ? "jsonold" : "jsonnew";
+    });
 
 }  // anonymous namespace
 }  // namespace verifier

@@ -1,42 +1,42 @@
 # proto-file: kythe/cxx/indexer/textproto/testdata/any_type.proto
 # proto-message: any_type_test.Message
 
-#- @str_field ref StrField
+#- @str_field ref/writes StrField
 str_field: "testing..."
 
-#- @details_field ref DetailsField
+#- @details_field ref/writes DetailsField
 details_field: {
     #- @"any_type_test.Message2" ref Message2
     [type.googleapis.com/any_type_test.Message2] {
-        #- @bool_field ref BoolField
+        #- @bool_field ref/writes BoolField
         bool_field: true
     }
 }
 
-#- @repeated_details_field ref RepeatedDetailsField
+#- @repeated_details_field ref/writes RepeatedDetailsField
 repeated_details_field: {
     #- @"any_type_test.Message2" ref Message2
     [type.googleapis.com/any_type_test.Message2] {
 
-        #- @bool_field ref BoolField
+        #- @bool_field ref/writes BoolField
         bool_field: true
     }
 }
 
-#- @repeated_details_field ref RepeatedDetailsField
+#- @repeated_details_field ref/writes RepeatedDetailsField
 repeated_details_field {
 
-  #- @type_url ref vname("4.0.2.0",_,_,"google/protobuf/any.proto",_)
+  #- @type_url ref/writes vname("4.0.2.0",_,_,"google/protobuf/any.proto",_)
   type_url: "type.googleapis.com/any_type_test.Message2"
-  #- @value ref vname("4.0.2.1",_,_,"google/protobuf/any.proto",_)
+  #- @value ref/writes vname("4.0.2.1",_,_,"google/protobuf/any.proto",_)
   value: ""
 }
 
-#- @repeated_details_field ref RepeatedDetailsField
+#- @repeated_details_field ref/writes RepeatedDetailsField
 repeated_details_field {
     #- @"any_type_test.Message2" ref Message2
     [  type.googleapis.com/any_type_test.Message2 ] {
-        #- @bool_field ref BoolField
+        #- @bool_field ref/writes BoolField
         bool_field: true
     }
 }

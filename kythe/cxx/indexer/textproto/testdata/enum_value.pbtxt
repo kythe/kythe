@@ -1,31 +1,31 @@
 # proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
 # proto-message: example.Message2
 
-#- @enum_field ref EnumField
+#- @enum_field ref/writes EnumField
 #- @ENUM_VALUE1 ref EnumValue1
 enum_field: ENUM_VALUE1
 
-#- @repeated_enum_field ref RepeatedEnumField
+#- @repeated_enum_field ref/writes RepeatedEnumField
 #- @ENUM_VALUE1 ref EnumValue1
 repeated_enum_field: ENUM_VALUE1
 
-#- @repeated_enum_field ref RepeatedEnumField
-repeated_enum_field 
+#- @repeated_enum_field ref/writes RepeatedEnumField
+repeated_enum_field
   :
 #- @ENUM_VALUE2 ref EnumValue2
   ENUM_VALUE2 # comment
 
-#- @repeated_enum_field ref RepeatedEnumField
+#- @repeated_enum_field ref/writes RepeatedEnumField
 #- @"2" ref EnumValue2
 repeated_enum_field: 2
 
-#- @repeated_enum_field ref RepeatedEnumField
+#- @repeated_enum_field ref/writes RepeatedEnumField
 #- @"2" ref EnumValue2
 #- @"1" ref EnumValue1
 repeated_enum_field: [2, 1]
 
-#- @repeated_enum_field ref RepeatedEnumField
+#- @repeated_enum_field ref/writes RepeatedEnumField
 #- @+3ENUM_VALUE1 ref EnumValue1
 #- @+2ENUM_VALUE2 ref EnumValue2
-repeated_enum_field 
+repeated_enum_field
   : [      ENUM_VALUE1   , ENUM_VALUE2   ]

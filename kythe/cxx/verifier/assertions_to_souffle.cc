@@ -72,74 +72,88 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
 
 bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
                                     const GoalGroup& group) {
-  auto eq_sym = symbol_table.MustIntern("=");
-  auto empty_sym = symbol_table.MustIntern("");
 #ifdef DEBUG_LOWERING
   FileHandlePrettyPrinter dprinter(stderr);
-#endif
   for (const auto& goal : group.goals) {
-#ifdef DEBUG_LOWERING
     dprinter.Print("goal <");
     goal->Dump(symbol_table, &dprinter);
     dprinter.Print(">\n");
-    size_t ccode = code_.size();
+  }
+  size_t ccode = code_.size();
 #endif
-    auto* app = goal->AsApp();
-    auto* tup = app->rhs()->AsTuple();
-    if (app->lhs()->AsIdentifier()->symbol() == eq_sym) {
-      auto* evar = tup->element(1)->AsEVar();
-      if (evar == nullptr) {
-        LOG(ERROR) << "expected evar on rhs of eq";
-        return false;
-      }
-      if (auto* range = tup->element(0)->AsRange()) {
-        auto beginsym =
-            symbol_table.FindInterned(std::to_string(range->begin()));
-        auto endsym = symbol_table.FindInterned(std::to_string(range->end()));
-        if (!beginsym || !endsym) {
-          // TODO(zarko): emit a warning here (if we're in a positive goal)?
-          absl::StrAppend(&code_, ", false");
-        } else {
-          absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ",
-                          range->corpus(), ", ", range->path(), ", ",
-                          range->root(), ", _]");
-          absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
-                          FindEVar(evar), ")");
-        }
+  if (group.goals.empty()) return true;
+  bool pos = group.accept_if != GoalGroup::AcceptanceCriterion::kSomeMustFail;
+  if (pos) {
+    absl::StrAppend(&code_, ", (true");
+    for (const auto& goal : group.goals) {
+      if (!LowerGoal(symbol_table, goal)) return false;
+    }
+    absl::StrAppend(&code_, ")\n");
+  } else {
+    absl::StrAppend(&code_, ", 0 = count:{true");
+    for (const auto& goal : group.goals) {
+      if (!LowerGoal(symbol_table, goal)) return false;
+    }
+    absl::StrAppend(&code_, "}\n");
+  }
+#ifdef DEBUG_LOWERING
+  dprinter.Print(" => <");
+  dprinter.Print(code_.substr(ccode, code_.size() - ccode));
+  dprinter.Print("> \n");
+#endif
+  return true;
+}
+
+bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
+  auto eq_sym = symbol_table.MustIntern("=");
+  auto empty_sym = symbol_table.MustIntern("");
+  auto* app = goal->AsApp();
+  auto* tup = app->rhs()->AsTuple();
+  if (app->lhs()->AsIdentifier()->symbol() == eq_sym) {
+    auto* evar = tup->element(1)->AsEVar();
+    if (evar == nullptr) {
+      LOG(ERROR) << "expected evar on rhs of eq";
+      return false;
+    }
+    if (auto* range = tup->element(0)->AsRange()) {
+      auto beginsym = symbol_table.FindInterned(std::to_string(range->begin()));
+      auto endsym = symbol_table.FindInterned(std::to_string(range->end()));
+      if (!beginsym || !endsym) {
+        // TODO(zarko): emit a warning here (if we're in a positive goal)?
+        absl::StrAppend(&code_, ", false");
       } else {
-        auto* oevar = tup->element(0)->AsEVar();
-        if (oevar == nullptr) {
-          LOG(ERROR) << "expected evar or range on lhs of eq";
-          return false;
-        }
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));
+        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ", range->corpus(),
+                        ", ", range->path(), ", ", range->root(), ", _]");
+        absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
+                        FindEVar(evar), ")");
       }
     } else {
-      // This is an edge or fact pattern.
-      absl::StrAppend(&code_, ", entry(");
-      for (size_t p = 0; p < 5; ++p) {
-        if (p != 0) {
-          absl::StrAppend(&code_, ", ");
-        }
-        if (p == 2 && tup->element(p)->AsIdentifier() &&
-            tup->element(p)->AsIdentifier()->symbol() == empty_sym) {
-          // Facts have nil vnames in the target position.
-          absl::StrAppend(&code_, "nil");
-          continue;
-        }
-        if (!LowerSubexpression(tup->element(p))) {
-          return false;
-        }
+      auto* oevar = tup->element(0)->AsEVar();
+      if (oevar == nullptr) {
+        LOG(ERROR) << "expected evar or range on lhs of eq";
+        return false;
       }
-      absl::StrAppend(&code_, ")");
+      absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));
     }
-#ifdef DEBUG_LOWERING
-    dprinter.Print(" => <");
-    dprinter.Print(code_.substr(ccode, code_.size() - ccode));
-    dprinter.Print("> \n");
-#endif
+  } else {
+    // This is an edge or fact pattern.
+    absl::StrAppend(&code_, ", entry(");
+    for (size_t p = 0; p < 5; ++p) {
+      if (p != 0) {
+        absl::StrAppend(&code_, ", ");
+      }
+      if (p == 2 && tup->element(p)->AsIdentifier() &&
+          tup->element(p)->AsIdentifier()->symbol() == empty_sym) {
+        // Facts have nil vnames in the target position.
+        absl::StrAppend(&code_, "nil");
+        continue;
+      }
+      if (!LowerSubexpression(tup->element(p))) {
+        return false;
+      }
+    }
+    absl::StrAppend(&code_, ")");
   }
-  absl::StrAppend(&code_, ".\n");
   return true;
 }
 
@@ -153,14 +167,13 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                              symbol_table.MustIntern("/kythe/loc/start"),
                              symbol_table.MustIntern("/kythe/loc/end"));
   }
-  CHECK_LE(goal_groups.size(), 1) << "(unimplemented)";
-  if (goal_groups.size() == 0) {
-    absl::StrAppend(&code_, ".\n");
-    return true;
-  }
   for (const auto& group : goal_groups) {
     if (!LowerGoalGroup(symbol_table, group)) return false;
   }
+  absl::StrAppend(&code_, ".\n");
+#ifdef DEBUG_LOWERING
+  fprintf(stderr, "<%s>\n", code_.c_str());
+#endif
   return true;
 }
 }  // namespace kythe::verifier
