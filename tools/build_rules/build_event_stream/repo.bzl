@@ -4,6 +4,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 
 _FILES = [
     "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto",
+    "src/main/java/com/google/devtools/build/lib/packages/metrics/package_load_metrics.proto",
     "src/main/protobuf/command_line.proto",
     "src/main/protobuf/failure_details.proto",
     "src/main/protobuf/invocation_policy.proto",
@@ -17,7 +18,11 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 
 proto_library(
     name = "build_event_stream_proto",
-    deps = ["@com_google_protobuf//:descriptor_proto"],
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+        "@com_google_protobuf//:duration_proto",
+        "@com_google_protobuf//:timestamp_proto",
+    ],
     srcs = [
         {filenames},
     ],

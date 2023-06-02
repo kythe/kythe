@@ -75,13 +75,14 @@ def _proto_dependencies():
     maybe(
         build_event_stream_repository,
         name = "build_event_stream_proto",
-        revision = "3.7.0",
+        revision = "7fa5796de6094ff529ceb17ee73c7eac9e42eb15",
         sha256s = {
-            "build_event_stream.proto": "0127da17b5cd40e61b0dcb9f18bebedd7a4851538fa39627c55ffdb01839bef2",
+            "build_event_stream.proto": "286464b08a271e7146a965c349d000ca2cf3dc2a054cf5355137ae3f31a0f70e",
             "command_line.proto": "a6fb6591aa50794431787169bc4fae16105ef5c401e7c30ecf0f775e0ab25c2c",
-            "invocation_policy.proto": "5312a440a5d16e9bd72cd8561ad2f5d2b29579f19df7e13af1517c6ad9e7fa64",
-            "option_filters.proto": "e3e8dfa9a4e05683bf1853a0be29fae46c753b18ad3d42b92bedcb412577f20f",
-            "failure_details.proto": "0dca56c2f749459d76094af2fb1844e65ff65d11208bcbe7302b0570b5a1d007",
+            "invocation_policy.proto": "7a1f9074d64aaea2c5fc01df093a25fbbd68d84db63fbfb355f5aa15683a75cd",
+            "option_filters.proto": "fc09a26d6a342d9866bc74985ec87c9fadda6fb12b8069383ddfefd91b98f373",
+            "failure_details.proto": "dafee3c11b245fcfad2c2251bb8ddf256edf2b0c403654872dd121e20b0fcf6c",
+            "package_load_metrics.proto": "9dfdd36b1bdb15e7e0b212cd15d2f31c1e21607e4ba25afd334e33dd46feaef5",
         },
     )
 
