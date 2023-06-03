@@ -22,7 +22,10 @@ import * as ts from 'typescript';
 
 import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
-import { CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace } from './plugin_api';
+import {CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace} from './plugin_api';
+
+// Temporarily re-export the plugin API from this file so that users can be migrated individually.
+export {CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace};
 
 const LANGUAGE = 'typescript';
 

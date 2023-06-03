@@ -31,7 +31,7 @@ import * as ts from 'typescript';
 
 import * as indexer from './indexer';
 import * as kythe from './kythe';
-import { CompilationUnit, IndexerHost, Plugin } from './plugin_api';
+import {CompilationUnit, IndexerHost, Plugin} from './plugin_api';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['TEST_SRCDIR'];
