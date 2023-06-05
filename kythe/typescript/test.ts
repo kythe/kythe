@@ -31,6 +31,7 @@ import * as ts from 'typescript';
 
 import * as indexer from './indexer';
 import * as kythe from './kythe';
+import {CompilationUnit, IndexerHost, Plugin} from './plugin_api';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['TEST_SRCDIR'];
@@ -92,7 +93,7 @@ function isTsFile(filename: string): boolean {
  */
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
-    plugins?: indexer.Plugin[]): Promise<void> {
+    plugins?: Plugin[]): Promise<void> {
   const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
@@ -115,7 +116,7 @@ function verify(
   }
 
   try {
-    const compilationUnit: indexer.CompilationUnit = {
+    const compilationUnit: CompilationUnit = {
       rootVName,
       fileVNames,
       srcs: testFiles,
@@ -216,7 +217,7 @@ function filterTestCases(testCases: TestCase[], filters: string[]): TestCase[] {
   });
 }
 
-async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
+async function testIndexer(filters: string[], plugins?: Plugin[]) {
   const config =
       indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
   let testCases = getTestCases(config.options, 'testdata');
@@ -245,9 +246,9 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
 }
 
 async function testPlugin() {
-  const plugin: indexer.Plugin = {
+  const plugin: Plugin = {
     name: 'TestPlugin',
-    index(context: indexer.IndexerHost) {
+    index(context: IndexerHost) {
       for (const testPath of context.compilationUnit.srcs) {
         const pluginMod = {
           ...context.pathToVName(context.moduleName(testPath)),
