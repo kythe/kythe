@@ -719,7 +719,13 @@ void AspectArtifactSelector::ExtractFilesInto(
     // Record this for future processing.
     LOG(INFO) << "NamedSetOfFiles " << state_.file_sets.ToString(id)
               << " requested by " << target << " but not yet disposed.";
-    state_.pending.emplace(id, target);
+    if (files != nullptr) {
+      // Only retain pending file sets if they would've been saved.
+      state_.pending.emplace(id, target);
+    } else if (state_.pending.find(id) == state_.pending.end()) {
+      // But still prefer to retain pending file sets.
+      state_.file_sets.Dispose(id);
+    }
     return;
   }
 
