@@ -67,7 +67,10 @@ std::string ToLocalPath(const build_event_stream::File& file) {
 }
 
 std::optional<BazelArtifactFile> ToBazelArtifactFile(
-    const build_event_stream::File& file) {
+    const build_event_stream::File& file, const RegexSet& allowlist) {
+  if (!allowlist.Match(file.name())) {
+    return std::nullopt;
+  }
   std::optional<std::string> uri = ToUri(file);
   if (!uri.has_value()) return std::nullopt;
   return BazelArtifactFile{
@@ -643,18 +646,16 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     state_.file_sets.Dispose(*file_set_id);
     BazelArtifact result = {.label = node.mapped()};
     for (const auto& file : fileset.files()) {
-      if (options_.file_name_allowlist.Match(file.name())) {
-        if (std::optional<BazelArtifactFile> artifact_file =
-                ToBazelArtifactFile(file)) {
-          result.files.push_back(
-              state_.files.ExtractFile(*std::move(artifact_file)));
-        }
+      if (std::optional<BazelArtifactFile> artifact_file =
+              ToBazelArtifactFile(file, options_.file_name_allowlist)) {
+        result.files.push_back(
+            state_.files.ExtractFile(*std::move(artifact_file)));
       }
     }
     for (const auto& child : fileset.file_sets()) {
       if (std::optional<FileSetId> child_id =
               InternUnlessDisposed(child.id())) {
-        ExtractFilesInto(*child_id, result.label, result.files);
+        ExtractFilesInto(*child_id, result.label, &result.files);
       }
     }
     return result;
@@ -666,31 +667,48 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
-  if (options_.target_aspect_allowlist.Match(id.aspect())) {
-    BazelArtifact result = {
-        .label = id.label(),
-    };
-    for (const auto& output_group : payload.output_group()) {
-      // TODO(shahms): optionally prune *all* output groups, matching first.
-      if (options_.output_group_allowlist.Match(output_group.name())) {
-        for (const auto& fileset : output_group.file_sets()) {
-          if (std::optional<FileSetId> file_set_id =
-                  InternUnlessDisposed(fileset.id())) {
-            ExtractFilesInto(*file_set_id, result.label, result.files);
-          }
-        }
-      }
+  BazelArtifact result = {
+      .label = id.label(),
+  };
+  const auto& [selected, unselected] = PartitionFileSets(id, payload);
+  for (FileSetId file_set_id : selected) {
+    ExtractFilesInto(file_set_id, result.label, &result.files);
+  }
+  if (options_.dispose_unselected_output_groups) {
+    for (FileSetId file_set_id : unselected) {
+      ExtractFilesInto(file_set_id, result.label, nullptr);
     }
-    if (!result.files.empty()) {
-      return result;
-    }
+  }
+  if (!result.files.empty()) {
+    return result;
   }
   return absl::nullopt;
 }
 
+AspectArtifactSelector::PartitionFileSetsResult
+AspectArtifactSelector::PartitionFileSets(
+    const build_event_stream::BuildEventId::TargetCompletedId& id,
+    const build_event_stream::TargetComplete& payload) {
+  PartitionFileSetsResult result;
+  bool id_match = options_.target_aspect_allowlist.Match(id.aspect());
+  for (const auto& output_group : payload.output_group()) {
+    auto& output =
+        (id_match && options_.output_group_allowlist.Match(output_group.name()))
+            ? result.selected
+            : result.unselected;
+    for (const auto& fileset : output_group.file_sets()) {
+      if (std::optional<FileSetId> file_set_id =
+              InternUnlessDisposed(fileset.id())) {
+        output.push_back(*file_set_id);
+      }
+    }
+  }
+  return result;
+}
+
 void AspectArtifactSelector::ExtractFilesInto(
     FileSetId id, absl::string_view target,
-    std::vector<BazelArtifactFile>& files) {
+    std::vector<BazelArtifactFile>* files) {
   if (state_.file_sets.Disposed(id)) {
     return;
   }
@@ -706,8 +724,9 @@ void AspectArtifactSelector::ExtractFilesInto(
   }
 
   for (FileId file_id : file_set->files) {
-    if (std::optional<BazelArtifactFile> file = state_.files.Extract(file_id)) {
-      files.push_back(*std::move(file));
+    if (std::optional<BazelArtifactFile> file = state_.files.Extract(file_id);
+        file.has_value() && files != nullptr) {
+      files->push_back(*std::move(file));
     }
   }
   for (FileSetId child_id : file_set->file_sets) {
@@ -719,12 +738,10 @@ void AspectArtifactSelector::InsertFileSet(
     FileSetId id, const build_event_stream::NamedSetOfFiles& fileset) {
   std::optional<FileSet> file_set;
   for (const auto& file : fileset.files()) {
-    if (options_.file_name_allowlist.Match(file.name())) {
-      if (std::optional<BazelArtifactFile> artifact_file =
-              ToBazelArtifactFile(file)) {
-        FileId file_id = state_.files.Insert(*std::move(artifact_file));
-        GetOrConstruct(file_set).files.push_back(file_id);
-      }
+    if (std::optional<BazelArtifactFile> artifact_file =
+            ToBazelArtifactFile(file, options_.file_name_allowlist)) {
+      FileId file_id = state_.files.Insert(*std::move(artifact_file));
+      GetOrConstruct(file_set).files.push_back(file_id);
     }
   }
   for (const auto& child : fileset.file_sets()) {

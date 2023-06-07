@@ -288,6 +288,204 @@ TEST(AspectArtifactSelectorTest, SelectsFailedTargets) {
               }));
 }
 
+// Verify that we can find artifacts even if they were part of an unselected
+// file group.
+TEST(AspectArtifactSelectorTest, SelectsDuplicatedFileSets) {
+  auto options = DefaultOptions();
+  options.output_group_allowlist =
+      RegexSet::Build({"kythe_compilation_unit"}).value();
+  AspectArtifactSelector selector(options);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(absl::nullopt));
+
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "unselected"
+        file_sets { id: "1" }
+      }
+      output_group {
+        name: "kythe_compilation_unit"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(BazelArtifact{
+                  .label = "//path/to/target:name",
+                  .files = {{
+                      .local_path = "path/to/file.kzip",
+                      .uri = "file:///path/to/file.kzip",
+                  }},
+              }));
+}
+
+// Verify that we can find artifacts even if they were part of an unselected
+// file group.
+TEST(AspectArtifactSelectorTest, SelectsDuplicatedFileSetsWhenPruned) {
+  auto options = DefaultOptions();
+  options.output_group_allowlist =
+      RegexSet::Build({"kythe_compilation_unit"}).value();
+  options.dispose_unselected_output_groups = true;
+  AspectArtifactSelector selector(options);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(absl::nullopt));
+
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "unselected"
+        file_sets { id: "1" }
+      }
+      output_group {
+        name: "kythe_compilation_unit"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(BazelArtifact{
+                  .label = "//path/to/target:name",
+                  .files = {{
+                      .local_path = "path/to/file.kzip",
+                      .uri = "file:///path/to/file.kzip",
+                  }},
+              }));
+}
+
+TEST(AspectArtifactSelectorTest, SelectsSubsequentDuplicatedFileSets) {
+  auto options = DefaultOptions();
+  options.output_group_allowlist =
+      RegexSet::Build({"kythe_compilation_unit"}).value();
+  AspectArtifactSelector selector(options);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(absl::nullopt));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/some/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "unselected"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(absl::nullopt));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "kythe_compilation_unit"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(BazelArtifact{
+                  .label = "//path/to/target:name",
+                  .files = {{
+                      .local_path = "path/to/file.kzip",
+                      .uri = "file:///path/to/file.kzip",
+                  }},
+              }));
+}
+
+TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedFileSets) {
+  auto options = DefaultOptions();
+  options.output_group_allowlist =
+      RegexSet::Build({"kythe_compilation_unit"}).value();
+  options.dispose_unselected_output_groups = true;
+  AspectArtifactSelector selector(options);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(absl::nullopt));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/some/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "unselected"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(absl::nullopt));
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "kythe_compilation_unit"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(absl::nullopt));
+}
+
+TEST(AspectArtifactSelectorTest, SkipsNonMatchingOutputGroups) {
+  auto options = DefaultOptions();
+  options.output_group_allowlist =
+      RegexSet::Build({"kythe_compilation_unit"}).value();
+  AspectArtifactSelector selector(options);
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id { named_set { id: "1" } }
+    named_set_of_files {
+      files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
+    })pb")),
+              Eq(absl::nullopt));
+
+  EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
+    id {
+      target_completed {
+        label: "//path/to/target:name"
+        aspect: "//aspect:file.bzl%name"
+      }
+    }
+    completed {
+      output_group {
+        name: "unselected"
+        file_sets { id: "1" }
+      }
+    })pb")),
+              Eq(absl::nullopt));
+}
+
 // Verifies that serializing integral ids in V2 format
 // doesn't use the file_set_ids field.
 TEST(AspectArtifactSelectorTest, SerializationOptimizesIntegers) {
