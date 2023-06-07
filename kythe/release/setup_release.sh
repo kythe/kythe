@@ -30,7 +30,7 @@
 #   4) "Draft a new release" at https://github.com/kythe/kythe/releases
 #   5) Set tag version / release title to the new $VERSION
 #   6) Set description to newest section of RELEASES.md
-#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
+#   7) Upload release outputs (locations printed by the build rule).
 #      These files were generated in step 1.
 #   8) Mark as "pre-release" and "Save draft"
 #   9) Add draft release URL to Pull Request
