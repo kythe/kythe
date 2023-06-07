@@ -153,6 +153,10 @@ struct AspectArtifactSelectorOptions {
   // Which serialization format version to use.
   AspectArtifactSelectorSerializationFormat serialization_format =
       AspectArtifactSelectorSerializationFormat::kV2;
+  // Whether to eagerly drop files and filesets from unselected output groups.
+  // As this can cause data loss when a file set would have been selected
+  // by a subsequent target's output group, it defaults to false.
+  bool dispose_unselected_output_groups = false;
 };
 
 /// \brief A BazelArtifactSelector implementation which tracks state from
@@ -281,8 +285,18 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
       const build_event_stream::BuildEventId::TargetCompletedId& id,
       const build_event_stream::TargetComplete& payload);
 
+  struct PartitionFileSetsResult {
+    std::vector<FileSetId> selected;
+    std::vector<FileSetId> unselected;
+  };
+  PartitionFileSetsResult PartitionFileSets(
+      const build_event_stream::BuildEventId::TargetCompletedId& id,
+      const build_event_stream::TargetComplete& payload);
+
+  // Extracts the selected files into the (optional) `files` output.
+  // If `files` is nullptr, extracted files will be dropped.
   void ExtractFilesInto(FileSetId id, absl::string_view target,
-                        std::vector<BazelArtifactFile>& files);
+                        std::vector<BazelArtifactFile>* files);
   void InsertFileSet(FileSetId id,
                      const build_event_stream::NamedSetOfFiles& fileset);
 
