@@ -921,8 +921,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       } else if (invoke.getMethodSelect() instanceof JCFieldAccess) {
         JCFieldAccess field = (JCFieldAccess) invoke.getMethodSelect();
         if (field.sym != null && field.name != null) {
-          emitNameUsage(methodCtx, field.sym, field.name, kind);
-          return method;
+          return emitNameUsage(methodCtx, field.sym, field.name, kind);
         }
       }
       // fall-through to handle non-identifier invocations
