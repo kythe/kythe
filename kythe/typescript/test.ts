@@ -93,7 +93,7 @@ function isTsFile(filename: string): boolean {
  */
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
-    plugins?: Plugin[]): Promise<void> {
+    plugins?: Plugin[], emitRefCallOverIdentifier?: boolean): Promise<void> {
   const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
@@ -129,6 +129,7 @@ function verify(
         verifier.stdin.write(JSON.stringify(obj) + '\n');
       },
       plugins,
+      emitRefCallOverIdentifier,
     });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
@@ -231,10 +232,11 @@ async function testIndexer(filters: string[], plugins?: Plugin[]) {
       // plugin.ts is tested by testPlugin() test.
       continue;
     }
+    const emitRefCallOverIdentifier = testCase.name.endsWith('_id.ts');
     const start = new Date().valueOf();
     process.stdout.write(`${testCase.name}: `);
     try {
-      await verify(host, config.options, testCase, plugins);
+      await verify(host, config.options, testCase, plugins, emitRefCallOverIdentifier);
     } catch (e) {
       console.log('FAIL');
       throw e;
