@@ -159,7 +159,7 @@ go_extract = rule(
 def _go_entries(ctx):
     kzip = ctx.attr.kzip.kzip
     indexer = ctx.files._indexer[-1]
-    iargs = [indexer.path]
+    iargs = [indexer.path] + ctx.attr.extra_indexer_args
     output = ctx.outputs.entries
 
     # If the test wants marked source, enable support for it in the indexer.
@@ -215,6 +215,7 @@ go_entries = rule(
         "use_compilation_corpus_for_all": attr.bool(default = False),
         "use_file_as_top_level_scope": attr.bool(default = False),
         "override_stdlib_corpus": attr.string(default = ""),
+        "extra_indexer_args": attr.string_list(),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -266,6 +267,7 @@ def _go_indexer(
         use_file_as_top_level_scope = False,
         override_stdlib_corpus = "",
         metadata_suffix = "",
+        extra_indexer_args = [],
         extra_extractor_args = []):
     if importpath == None:
         importpath = native.package_name() + "/" + name
@@ -291,6 +293,7 @@ def _go_indexer(
         use_compilation_corpus_for_all = use_compilation_corpus_for_all,
         use_file_as_top_level_scope = use_file_as_top_level_scope,
         override_stdlib_corpus = override_stdlib_corpus,
+        extra_indexer_args = extra_indexer_args,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -314,6 +317,7 @@ def go_indexer_test(
         use_file_as_top_level_scope = False,
         override_stdlib_corpus = "",
         metadata_suffix = "",
+        extra_indexer_args = [],
         extra_extractor_args = []):
     entries = _go_indexer(
         name = name,
@@ -327,6 +331,7 @@ def go_indexer_test(
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,
+        extra_indexer_args = extra_indexer_args,
         extra_extractor_args = extra_extractor_args,
     )
     go_verifier_test(

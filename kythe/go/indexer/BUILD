@@ -112,6 +112,13 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "funcallid_test",
+    srcs = ["testdata/basic/funcallid.go"],
+    extra_indexer_args = ["-emit_ref_call_over_identifier"],
+    import_path = "test/fun",
+)
+
+go_indexer_test(
     name = "functions_test",
     srcs = ["testdata/basic/functions.go"],
     import_path = "test/fun",

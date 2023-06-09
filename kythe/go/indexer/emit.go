@@ -75,6 +75,11 @@ type EmitOptions struct {
 	// If set, all stdlib nodes are assigned this corpus. This takes precedence
 	// over UseCompilationCorpusForAll for stdlib nodes.
 	OverrideStdlibCorpus string
+
+	// EmitRefCallOverIdentifier determines whether ref/call anchors are emitted
+	// over function identifiers (or the legacy behavior of over the entire
+	// callsite).
+	EmitRefCallOverIdentifier bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -89,6 +94,13 @@ func (e *EmitOptions) emitAnchorScopes() bool {
 		return false
 	}
 	return e.EmitAnchorScopes
+}
+
+func (e *EmitOptions) emitRefCallOverIdentifier() bool {
+	if e == nil {
+		return false
+	}
+	return e.EmitRefCallOverIdentifier
 }
 
 func (e *EmitOptions) useFileAsTopLevelScope() bool {
@@ -317,7 +329,12 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		}
 	}
 	if call, ok := isCall(id, obj, stack); ok {
-		callAnchor := e.writeRef(call, target, edges.RefCall)
+		var callAnchor *spb.VName
+		if e.opts.emitRefCallOverIdentifier() {
+			callAnchor = e.writeRef(id, target, edges.RefCall)
+		} else {
+			callAnchor = e.writeRef(call, target, edges.RefCall)
+		}
 
 		// Paint an edge to the function blamed for the call, or if there is
 		// none then to the package initializer.
