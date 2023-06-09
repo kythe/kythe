@@ -70,6 +70,16 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "callgraph_ident_tests",
+    size = "small",
+    srcs = ["CallgraphIdent.java"],
+    indexer_opts = [
+        "--verbose",
+        "--emit_ref_call_over_identifier",
+    ],
+)
+
+java_verifier_test(
     name = "definitions_tests",
     size = "small",
     srcs = ["Definitions.java"],
