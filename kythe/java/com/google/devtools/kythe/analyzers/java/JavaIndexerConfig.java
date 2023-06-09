@@ -73,6 +73,11 @@ public class JavaIndexerConfig extends IndexerConfig {
       description = "Use the CompilationUnit VName corpus as the default.")
   private boolean useCompilationCorpusAsDefault;
 
+  @Parameter(
+      names = "--emit_ref_call_over_identifier",
+      description = "If true, emit ref/call anchor spans over the function identifier")
+  private boolean emitRefCallOverIdentifier;
+
   public JavaIndexerConfig(String programName) {
     super(programName);
   }
@@ -107,6 +112,10 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getUseCompilationCorpusAsDefault() {
     return useCompilationCorpusAsDefault;
+  }
+
+  public boolean getEmitRefCallOverIdentifier() {
+    return emitRefCallOverIdentifier;
   }
 
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
@@ -146,6 +155,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setUseCompilationCorpusAsDefault(boolean useCompilationCorpusAsDefault) {
     this.useCompilationCorpusAsDefault = useCompilationCorpusAsDefault;
+    return this;
+  }
+
+  public JavaIndexerConfig setRefCallOverIdentifier(boolean emitRefCallOverIdentifier) {
+    this.emitRefCallOverIdentifier = emitRefCallOverIdentifier;
     return this;
   }
 }

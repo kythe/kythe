@@ -908,12 +908,27 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "error analyzing method", null, null);
     }
 
-    emitAnchor(
-        ctx,
+    EdgeKind kind =
         Optional.ofNullable(method.getSymbol()).map(Symbol::isConstructor).orElse(false)
             ? EdgeKind.REF_CALL_DIRECT
-            : EdgeKind.REF_CALL,
-        method.getVName());
+            : EdgeKind.REF_CALL;
+
+    if (config.getEmitRefCallOverIdentifier()) {
+      TreeContext methodCtx = ctx.down(invoke.getMethodSelect());
+      if (invoke.getMethodSelect() instanceof JCIdent) {
+        emitAnchor(methodCtx, kind, method.getVName());
+        return method;
+      } else if (invoke.getMethodSelect() instanceof JCFieldAccess) {
+        JCFieldAccess field = (JCFieldAccess) invoke.getMethodSelect();
+        if (field.sym != null && field.name != null) {
+          emitNameUsage(methodCtx, field.sym, field.name, kind);
+          return method;
+        }
+      }
+      // fall-through to handle non-identifier invocations
+    }
+
+    emitAnchor(ctx, kind, method.getVName());
     return method;
   }
 
@@ -943,6 +958,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Span over "new Class(...)"
     Span callSpan = new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
+    if (config.getEmitRefCallOverIdentifier()) {
+      // Span over "new Class"
+      callSpan =
+          new Span(
+              filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier()));
+      ;
+    }
 
     if (owner.getTree().getTag() == JCTree.Tag.VARDEF) {
       JCVariableDecl varDef = (JCVariableDecl) owner.getTree();
