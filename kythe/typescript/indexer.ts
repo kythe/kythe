@@ -813,6 +813,26 @@ class Visitor {
     this.popInfluencers();
   }
 
+  getCallAnchor(callee:any) {
+    if (!this.host.options.emitRefCallOverIdentifier) {
+      return undefined;
+    }
+    for (;;) {
+      if (ts.isIdentifier(callee)) {
+        return this.newAnchor(callee);
+      }
+      if (ts.isPropertyAccessExpression(callee)) {
+        callee = callee.name;
+        continue;
+      }
+      if (ts.isNewExpression(callee)) {
+        callee = callee.expression;
+        continue;
+      }
+      return undefined;
+    }
+  }
+
   /**
    * Emits `ref/call` edges required for call graph:
    * https://kythe.io/docs/schema/callgraph.html
@@ -829,7 +849,6 @@ class Visitor {
       this.visitDynamicImportCall(node);
       return;
     }
-    const callAnchor = this.newAnchor(node);
     const symbol = this.host.getSymbolAtLocationFollowingAliases(node.expression);
     if (!symbol) {
       return;
@@ -838,6 +857,7 @@ class Visitor {
     if (!name) {
       return;
     }
+    const callAnchor = this.getCallAnchor(node.expression) ?? this.newAnchor(node);
     this.emitEdge(callAnchor, EdgeKind.REF_CALL, name);
 
     // Each call should have a childof edge to its containing function

@@ -87,6 +87,12 @@ export interface IndexingOptions {
    * to emit `defines/implicit` edges instead of `defines/binding`.
    */
   emitZeroWidthSpansForModuleNodes?: boolean;
+
+  /**
+   * When enabled, ref/call source anchors span identifiers instead of full
+   * call expressions when possible.
+   */
+  emitRefCallOverIdentifier?: boolean;
 }
 
 
