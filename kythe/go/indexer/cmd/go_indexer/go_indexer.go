@@ -50,6 +50,7 @@ var (
 	metaSuffix                     = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 	docBase                        = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
 	onlyEmitDocURIsForStandardLibs = flag.Bool("only_emit_doc_uris_for_standard_libs", false, "If true, the doc/uri fact is only emitted for go std library packages")
+	emitRefCallOverIdentifier      = flag.Bool("emit_ref_call_over_identifier", false, "If true, emit ref/call anchor spans over the function identifier")
 	verbose                        = flag.Bool("verbose", false, "Emit verbose log information")
 	contOnErr                      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 	useCompilationCorpusForAll     = flag.Bool("use_compilation_corpus_for_all", false, "If enabled, all Entry VNames are given the corpus of the compilation unit being indexed. This includes items in the go std library and builtin types.")
@@ -165,6 +166,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		UseCompilationCorpusForAll:     *useCompilationCorpusForAll,
 		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
 		OverrideStdlibCorpus:           *overrideStdlibCorpus,
+		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
 	})
 }
 
