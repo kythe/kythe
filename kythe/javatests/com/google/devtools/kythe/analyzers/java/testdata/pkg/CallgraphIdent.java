@@ -39,7 +39,10 @@ public class CallgraphIdent {
       g();
     }
 
-    //- @n ref/call N
+    //- @h=HCall ref/call H
+    //- HCall childof ClassInit
+    //- @n=NestedCall ref/call N
+    //- NestedCall childof ClassInit
     h().n();
   }
 
@@ -94,6 +97,7 @@ public class CallgraphIdent {
     return 0;
   }
 
+  //- @h defines/binding H
   static Nested h() {
     return new Nested();
   }
