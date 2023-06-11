@@ -10,6 +10,11 @@ proto_library(
     srcs = ["testdata.proto"],
 )
 
+cc_proto_library(
+    name="testdata_cc_proto",
+    deps=[":testdata_proto"],
+)
+
 proto_library(
     name = "testdata2_proto",
     srcs = ["testdata2.proto"],
