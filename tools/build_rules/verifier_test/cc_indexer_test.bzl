@@ -371,12 +371,7 @@ cc_extract_kzip = rule(
             may be used for dependencies which are required for an eventual
             Kythe index, but should not be extracted here.
             """,
-            allow_files = [
-                ".cc",
-                ".c",
-                ".h",
-                ".meta",  # Cross language metadata files.
-            ],
+            allow_files = True,
             providers = [
                 [CcInfo],
                 [CxxCompilationUnits],
