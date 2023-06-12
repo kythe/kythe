@@ -53,7 +53,7 @@ public class CallgraphIdent {
     int zero = g();
   }
 
-  //- @"new CallgraphIdent" ref/call/direct ECtor
+  //- @CallgraphIdent ref/call/direct ECtor
   //- @CallgraphIdent ref ECtor
   //- CtorCall childof ECtor
   //- CtorCall childof SCtor
@@ -74,15 +74,15 @@ public class CallgraphIdent {
   //- F.node/kind function
   //- F typed _FType
   static void f(int n) {
-    //- @"CallgraphIdent" ref ECtor
-    //- @"CallgraphIdent" ref/id Class
-    //- @"new CallgraphIdent"=ECtorCall ref/call/direct ECtor
+    //- @CallgraphIdent ref ECtor
+    //- @CallgraphIdent ref/id Class
+    //- @CallgraphIdent=ECtorCall ref/call/direct ECtor
     //- ECtorCall childof F
     Object cg = new CallgraphIdent();
     //
-    //- @"CallgraphIdent" ref SCtor
-    //- @"CallgraphIdent" ref/id Class
-    //- @"new CallgraphIdent"=SCtorCall ref/call/direct SCtor
+    //- @CallgraphIdent ref SCtor
+    //- @CallgraphIdent ref/id Class
+    //- @CallgraphIdent=SCtorCall ref/call/direct SCtor
     //- SCtorCall childof F
     cg = new CallgraphIdent(null);
   }
