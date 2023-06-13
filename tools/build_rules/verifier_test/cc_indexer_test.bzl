@@ -215,13 +215,13 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
     if ctx.attr.enable_proto_static_reflection:
         headers = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.h", ".proto.h", ".proto.static_reflection.h"])
     else:
-        headers = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.h"])
+        headers = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.h", ".proto.h"])
     args = ctx.actions.args()
     args.add("--plugin=protoc-gen-PLUGIN=" + ctx.executable._plugin.path)
     if ctx.attr.enable_proto_static_reflection:
         args.add("--PLUGIN_out=proto_h,proto_static_reflection_h:" + ctx.bin_dir.path + "/")
     else:
-        args.add("--PLUGIN_out=:" + ctx.bin_dir.path + "/")
+        args.add("--PLUGIN_out=proto_h:" + ctx.bin_dir.path + "/")
     args.add_all(target[ProtoInfo].transitive_sources, map_each = _format_path_and_short_path)
     args.add_all(target[ProtoInfo].direct_sources, map_each = _get_short_path)
     ctx.actions.run(
