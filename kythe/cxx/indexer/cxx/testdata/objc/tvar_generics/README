@@ -1,5 +1,0 @@
-For a good write-up on generics in Objective C, read
-https://lists.gnu.org/archive/html/gnustep-dev/2015-07/msg00006.html.
-
-A possibly useful commit message about type arguments is here:
-http://lists.llvm.org/pipermail/cfe-commits/Week-of-Mon-20150706/132422.html
