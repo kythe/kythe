@@ -1,6 +1,6 @@
-#include "kythe/testdata/indexers/proto/testdata2.pb.h"
+#include "kythe/testdata/indexers/proto/testdata2.proto.h"
 
-//- vname("",_, "", "kythe/testdata/indexers/proto/testdata2.proto","") generates vname("", _, "bazel-out/bin", "kythe/testdata/indexers/proto/testdata2.pb.h", "")
+//- vname("",_, "", "kythe/testdata/indexers/proto/testdata2.proto","") generates vname("", _, "bazel-out/bin", "kythe/testdata/indexers/proto/testdata2.proto.h", "")
 void fn() {
     using namespace ::pkg::proto2;
 
