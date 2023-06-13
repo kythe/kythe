@@ -190,7 +190,7 @@ def _fix_path_for_generated_file(path):
     else:
         return path
 
-def _generate_files(ctx, files, extension):
+def _generate_files(ctx, files, extensions):
     return [
         ctx.actions.declare_file(
             paths.replace_extension(
@@ -199,6 +199,7 @@ def _generate_files(ctx, files, extension):
             ),
         )
         for f in files
+        for extension in extensions
     ]
 
 def _format_path_and_short_path(f):
@@ -210,11 +211,17 @@ def _get_short_path(f):
 _KytheProtoInfo = provider()
 
 def _cc_kythe_proto_library_aspect_impl(target, ctx):
-    sources = _generate_files(ctx, target[ProtoInfo].direct_sources, ".pb.cc")
-    headers = _generate_files(ctx, target[ProtoInfo].direct_sources, ".pb.h")
+    sources = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.cc"])
+    if ctx.attr.enable_proto_static_reflection:
+        headers = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.h", ".proto.h", ".proto.static_reflection.h"])
+    else:
+        headers = _generate_files(ctx, target[ProtoInfo].direct_sources, [".pb.h"])
     args = ctx.actions.args()
     args.add("--plugin=protoc-gen-PLUGIN=" + ctx.executable._plugin.path)
-    args.add("--PLUGIN_out=:" + ctx.bin_dir.path + "/")
+    if ctx.attr.enable_proto_static_reflection:
+        args.add("--PLUGIN_out=proto_h,proto_static_reflection_h:" + ctx.bin_dir.path + "/")
+    else:
+        args.add("--PLUGIN_out=:" + ctx.bin_dir.path + "/")
     args.add_all(target[ProtoInfo].transitive_sources, map_each = _format_path_and_short_path)
     args.add_all(target[ProtoInfo].direct_sources, map_each = _get_short_path)
     ctx.actions.run(
@@ -264,6 +271,10 @@ _cc_kythe_proto_library_aspect = aspect(
             cfg = "exec",
             default = Label("//tools/cpp:grep-includes"),
         ),
+        "enable_proto_static_reflection": attr.bool(
+            default = False,
+            doc = "Emit and capture generated code for proto static reflection",
+        ),
     },
     fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
@@ -282,6 +293,10 @@ cc_kythe_proto_library = rule(
         "deps": attr.label_list(
             providers = [ProtoInfo],
             aspects = [_cc_kythe_proto_library_aspect],
+        ),
+        "enable_proto_static_reflection": attr.bool(
+            default = False,
+            doc = "Emit and capture generated code for proto static reflection",
         ),
     },
     implementation = _cc_kythe_proto_library,
