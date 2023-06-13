@@ -15,7 +15,7 @@ constant<int, foo()> n;
 //- FooInit code FooCode
 //- FooCode.kind "IDENTIFIER"
 //- FooCode.pre_text
-//-     Path="kythe/cxx/indexer/cxx/testdata/tvar_template/template_file_call.cc"
+//-     Path="kythe/cxx/indexer/cxx/testdata/template/template_file_call.cc"
 //- FooInit.node/kind function
 //- FooInit.subkind initializer
 //- vname(_,_,_,Path,_) defines/binding FooInit

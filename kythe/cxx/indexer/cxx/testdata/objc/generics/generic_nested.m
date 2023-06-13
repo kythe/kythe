@@ -35,10 +35,9 @@
 
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
-//- @Box defines/binding BoxAbs
+//- @Box defines/binding BoxDecl
 //- TypeVar.node/kind tvar
-//- BoxAbs.node/kind record
-//- BoxAbs tparam.0 TypeVar
+//- BoxDecl tparam.0 TypeVar
 //- @Cup ref CupImpl
 //- @Drink ref DrinkImpl
 //- @Fizzy ref FizzyImpl

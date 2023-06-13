@@ -278,18 +278,6 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_auto_zoo",
-    srcs = ["basic/tvar_auto_zoo.cc"],
-    check_for_singletons = True,
-    ignore_dups = True,
-    std = "c++14",
-    tags = [
-        "basic",
-        "c++14",
-    ],
-)
-
-cc_indexer_test(
     name = "enum_fwd_ref",
     srcs = ["basic/enum_fwd_ref.cc"],
     tags = ["basic"],
@@ -1506,40 +1494,40 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_alias",
-    srcs = ["docs/tvar_docs_template_alias.cc"],
+    name = "docs_template_alias",
+    srcs = ["docs/docs_template_alias.cc"],
     ignore_dups = True,
     tags = ["docs"],
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_function",
-    srcs = ["docs/tvar_docs_template_function.cc"],
+    name = "docs_template_function",
+    srcs = ["docs/docs_template_function.cc"],
     tags = ["docs"],
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_record",
-    srcs = ["docs/tvar_docs_template_record.cc"],
+    name = "docs_template_record",
+    srcs = ["docs/docs_template_record.cc"],
     tags = ["docs"],
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_var",
-    srcs = ["docs/tvar_docs_template_var.cc"],
+    name = "docs_template_var",
+    srcs = ["docs/docs_template_var.cc"],
     tags = ["docs"],
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_partial_spec_record",
-    srcs = ["docs/tvar_docs_template_partial_spec_record.cc"],
+    name = "docs_template_partial_spec_record",
+    srcs = ["docs/docs_template_partial_spec_record.cc"],
     ignore_dups = True,
     tags = ["docs"],
 )
 
 cc_indexer_test(
-    name = "tvar_docs_template_partial_spec_var",
-    srcs = ["docs/tvar_docs_template_partial_spec_var.cc"],
+    name = "docs_template_partial_spec_var",
+    srcs = ["docs/docs_template_partial_spec_var.cc"],
     tags = ["docs"],
 )
 
@@ -1744,12 +1732,6 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_rec_class_base_dependent",
-    srcs = ["rec/tvar_rec_class_base_dependent.cc"],
-    tags = ["rec"],
-)
-
-cc_indexer_test(
     name = "rec_class_base_recurring",
     srcs = ["rec/rec_class_base_recurring.cc"],
     tags = ["rec"],
@@ -1937,17 +1919,12 @@ test_suite(
     tags = ["rec"],
 )
 
-test_suite(
-    name = "indexer_template",
-    tags = ["template"],
-)
-
 # implies the effects of experimental_alias_template_instantiations = True,
 # leading to more duplicate ("aliased") output.
 
 cc_indexer_test(
-    name = "tvar_template_alias_tvar",
-    srcs = ["tvar_template/template_alias_tvar.cc"],
+    name = "template_alias_tvar",
+    srcs = ["template/template_alias_tvar.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
@@ -1955,8 +1932,8 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_tvar_class",
-    srcs = ["tvar_template/template_alias_tvar_class.cc"],
+    name = "template_alias_tvar_class",
+    srcs = ["template/template_alias_tvar_class.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
@@ -1964,8 +1941,8 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_tvar_alias",
-    srcs = ["tvar_template/template_alias_tvar_alias.cc"],
+    name = "template_alias_tvar_alias",
+    srcs = ["template/template_alias_tvar_alias.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
@@ -1973,784 +1950,784 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias",
-    srcs = ["tvar_template/template_alias.cc"],
+    name = "template_alias",
+    srcs = ["template/template_alias.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_decl_arg",
-    srcs = ["tvar_template/template_decl_arg.cc"],
+    name = "template_decl_arg",
+    srcs = ["template/template_decl_arg.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_naming",
-    srcs = ["tvar_template/template_alias_naming.cc"],
+    name = "template_alias_naming",
+    srcs = ["template/template_alias_naming.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_type_alias_param",
-    srcs = ["tvar_template/template_type_alias_param.cc"],
+    name = "template_type_alias_param",
+    srcs = ["template/template_type_alias_param.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_implicit_instantiation",
-    srcs = ["tvar_template/template_alias_implicit_instantiation.cc"],
+    name = "template_alias_implicit_instantiation",
+    srcs = ["template/template_alias_implicit_instantiation.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_implicit_instantiation_decls",
-    srcs = ["tvar_template/template_alias_implicit_instantiation_decls.cc"],
+    name = "template_alias_implicit_instantiation_decls",
+    srcs = ["template/template_alias_implicit_instantiation_decls.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_alias_multilevel_abs",
-    srcs = ["tvar_template/template_alias_multilevel_abs.cc"],
+    name = "template_alias_multilevel_abs",
+    srcs = ["template/template_alias_multilevel_abs.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
     ignore_unimplemented = True,  # hash of SubstTemplateTemplateParm
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_arg_multiple_typename",
-    srcs = ["tvar_template/template_arg_multiple_typename.cc"],
+    name = "template_arg_multiple_typename",
+    srcs = ["template/template_arg_multiple_typename.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_arg_typename",
-    srcs = ["tvar_template/template_arg_typename.cc"],
+    name = "template_arg_typename",
+    srcs = ["template/template_arg_typename.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_blame_member",
-    srcs = ["tvar_template/template_blame_member.cc"],
+    name = "template_blame_member",
+    srcs = ["template/template_blame_member.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_blame_spec",
-    srcs = ["tvar_template/template_blame_spec.cc"],
+    name = "template_blame_spec",
+    srcs = ["template/template_blame_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_blame_pspec_member",
-    srcs = ["tvar_template/template_blame_pspec_member.cc"],
+    name = "template_blame_pspec_member",
+    srcs = ["template/template_blame_pspec_member.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_blame_spec_member",
-    srcs = ["tvar_template/template_blame_spec_member.cc"],
+    name = "template_blame_spec_member",
+    srcs = ["template/template_blame_spec_member.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_template_ctor",
-    srcs = ["tvar_template/template_class_template_ctor.cc"],
+    name = "template_class_template_ctor",
+    srcs = ["template/template_class_template_ctor.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_ctor_default_and_init",
-    srcs = ["tvar_template/template_class_ctor_default_and_init.cc"],
+    name = "template_class_ctor_default_and_init",
+    srcs = ["template/template_class_ctor_default_and_init.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_defn",
-    srcs = ["tvar_template/template_class_defn.cc"],
+    name = "template_class_defn",
+    srcs = ["template/template_class_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_fn_spec",
-    srcs = ["tvar_template/template_class_fn_spec.cc"],
+    name = "template_class_fn_spec",
+    srcs = ["template/template_class_fn_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_inner",
-    srcs = ["tvar_template/template_class_inner.cc"],
+    name = "template_class_inner",
+    srcs = ["template/template_class_inner.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_inst_explicit",
-    srcs = ["tvar_template/template_class_inst_explicit.cc"],
+    name = "template_class_inst_explicit",
+    srcs = ["template/template_class_inst_explicit.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_inst_implicit",
-    srcs = ["tvar_template/template_class_inst_implicit.cc"],
+    name = "template_class_inst_implicit",
+    srcs = ["template/template_class_inst_implicit.cc"],
     # Type alias alias inside a class template gets the same documentation text.
     # TODO(zarko): Should the two aliases be distinctly named?
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_inst_implicit_dependent",
-    srcs = ["tvar_template/template_class_inst_implicit_dependent.cc"],
+    name = "template_class_inst_implicit_dependent",
+    srcs = ["template/template_class_inst_implicit_dependent.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_inst_vs_spec",
-    srcs = ["tvar_template/template_class_inst_vs_spec.cc"],
+    name = "template_class_inst_vs_spec",
+    srcs = ["template/template_class_inst_vs_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_ref",
-    srcs = ["tvar_template/template_class_ref.cc"],
+    name = "template_class_ref",
+    srcs = ["template/template_class_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_ref_ps",
-    srcs = ["tvar_template/template_class_ref_ps.cc"],
+    name = "template_class_ref_ps",
+    srcs = ["template/template_class_ref_ps.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_skip_implicit_on",
-    srcs = ["tvar_template/template_class_skip_implicit_on.cc"],
+    name = "template_class_skip_implicit_on",
+    srcs = ["template/template_class_skip_implicit_on.cc"],
     ignore_dups = True,
     index_template_instantiations = False,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depbase_field_ref",
-    srcs = ["tvar_template/template_depbase_field_ref.cc"],
+    name = "template_depbase_field_ref",
+    srcs = ["template/template_depbase_field_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_dependent_ctor",
-    srcs = ["tvar_template/template_dependent_ctor.cc"],
+    name = "template_dependent_ctor",
+    srcs = ["template/template_dependent_ctor.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_dependent_ctor_small",
-    srcs = ["tvar_template/template_dependent_ctor_small.cc"],
+    name = "template_dependent_ctor_small",
+    srcs = ["template/template_dependent_ctor_small.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_dependent_dtor",
-    srcs = ["tvar_template/template_dependent_dtor.cc"],
+    name = "template_dependent_dtor",
+    srcs = ["template/template_dependent_dtor.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_dependent_dtor_qualified",
-    srcs = ["tvar_template/template_dependent_dtor_qualified.cc"],
+    name = "template_dependent_dtor_qualified",
+    srcs = ["template/template_dependent_dtor_qualified.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template/template_dependent_name_ref",
-    srcs = ["tvar_template/template_dependent_name_ref.cc"],
+    name = "template/template_dependent_name_ref",
+    srcs = ["template/template_dependent_name_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_dependent_sized_array",
-    srcs = ["tvar_template/template_dependent_sized_array.cc"],
+    name = "template_dependent_sized_array",
+    srcs = ["template/template_dependent_sized_array.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depexpr_field_ref",
-    srcs = ["tvar_template/template_depexpr_field_ref.cc"],
+    name = "template_depexpr_field_ref",
+    srcs = ["template/template_depexpr_field_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_field_ref",
-    srcs = ["tvar_template/template_depname_field_ref.cc"],
+    name = "template_depname_field_ref",
+    srcs = ["template/template_depname_field_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_template_field_ref",
-    srcs = ["tvar_template/template_depname_template_field_ref.cc"],
+    name = "template_depname_template_field_ref",
+    srcs = ["template/template_depname_template_field_ref.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_class",
-    srcs = ["tvar_template/template_depname_class.cc"],
+    name = "template_depname_class",
+    srcs = ["template/template_depname_class.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_implicit",
-    srcs = ["tvar_template/template_depname_implicit.cc"],
+    name = "template_depname_implicit",
+    srcs = ["template/template_depname_implicit.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_inst_class",
-    srcs = ["tvar_template/template_depname_inst_class.cc"],
+    name = "template_depname_inst_class",
+    srcs = ["template/template_depname_inst_class.cc"],
     ignore_dups = True,
     ignore_unimplemented = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_depname_path_graph",
-    srcs = ["tvar_template/template_depname_path_graph.cc"],
+    name = "template_depname_path_graph",
+    srcs = ["template/template_depname_path_graph.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_drop_redundant_wraiths_off",
-    srcs = ["tvar_template/template_drop_redundant_wraiths.cc"],
+    name = "template_drop_redundant_wraiths_off",
+    srcs = ["template/template_drop_redundant_wraiths.cc"],
     experimental_drop_instantiation_independent_data = False,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_drop_redundant_wraiths_on",
-    srcs = ["tvar_template/template_drop_redundant_wraiths.cc"],
+    name = "template_drop_redundant_wraiths_on",
+    srcs = ["template/template_drop_redundant_wraiths.cc"],
     experimental_drop_instantiation_independent_data = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_drop_redundant_wraiths_off_expect_fail",
-    srcs = ["tvar_template/template_drop_redundant_wraiths_expect_fail.cc"],
+    name = "template_drop_redundant_wraiths_off_expect_fail",
+    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
     experimental_drop_instantiation_independent_data = False,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_drop_redundant_wraiths_on_expect_fail",
-    srcs = ["tvar_template/template_drop_redundant_wraiths_expect_fail.cc"],
+    name = "template_drop_redundant_wraiths_on_expect_fail",
+    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
     expect_fail_verify = True,
     experimental_drop_instantiation_independent_data = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_exclude",
-    srcs = ["tvar_template/template_exclude.cc"],
+    name = "template_exclude",
+    srcs = ["template/template_exclude.cc"],
     check_for_singletons = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
     template_instance_exclude_path_pattern = ".*/exclude.*",
     deps = [
-        "tvar_template/exclude_this_file.h",
-        "tvar_template/include_this_file.h",
+        "template/exclude_this_file.h",
+        "template/include_this_file.h",
     ],
 )
 
 cc_indexer_test(
-    name = "tvar_template_field",
-    srcs = ["tvar_template/template_field.cc"],
+    name = "template_field",
+    srcs = ["template/template_field.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_file_call",
-    srcs = ["tvar_template/template_file_call.cc"],
+    name = "template_file_call",
+    srcs = ["template/template_file_call.cc"],
     check_for_singletons = True,
     convert_marked_source = True,
     ignore_dups = True,
     std = "c++17",
     tags = [
         "c++17",
-        "tvar_template",
+        "template",
     ],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_call",
-    srcs = ["tvar_template/template_fn_call.cc"],
+    name = "template_fn_call",
+    srcs = ["template/template_fn_call.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_decl",
-    srcs = ["tvar_template/template_fn_decl.cc"],
+    name = "template_fn_decl",
+    srcs = ["template/template_fn_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_decl_defn",
-    srcs = ["tvar_template/template_fn_decl_defn.cc"],
+    name = "template_fn_decl_defn",
+    srcs = ["template/template_fn_decl_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_defines",
-    srcs = ["tvar_template/template_fn_defines.cc"],
+    name = "template_fn_defines",
+    srcs = ["template/template_fn_defines.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_defn",
-    srcs = ["tvar_template/template_fn_defn.cc"],
+    name = "template_fn_defn",
+    srcs = ["template/template_fn_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_dependent_spec_defn",
-    srcs = ["tvar_template/template_fn_dependent_spec_defn.cc"],
+    name = "template_fn_dependent_spec_defn",
+    srcs = ["template/template_fn_dependent_spec_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_explicit_spec_completes",
-    srcs = ["tvar_template/template_fn_explicit_spec_completes.cc"],
+    name = "template_fn_explicit_spec_completes",
+    srcs = ["template/template_fn_explicit_spec_completes.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_explicit_spec_with_default_completes",
-    srcs = ["tvar_template/template_fn_explicit_spec_with_default_completes.cc"],
+    name = "template_fn_explicit_spec_with_default_completes",
+    srcs = ["template/template_fn_explicit_spec_with_default_completes.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_implicit_spec",
-    srcs = ["tvar_template/template_fn_implicit_spec.cc"],
+    name = "template_fn_implicit_spec",
+    srcs = ["template/template_fn_implicit_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_inst_vs_spec",
-    srcs = ["tvar_template/template_fn_inst_vs_spec.cc"],
+    name = "template_fn_inst_vs_spec",
+    srcs = ["template/template_fn_inst_vs_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_member_spec_defn",
-    srcs = ["tvar_template/template_fn_member_spec_defn.cc"],
+    name = "template_fn_member_spec_defn",
+    srcs = ["template/template_fn_member_spec_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_multi_decl_def",
-    srcs = ["tvar_template/template_fn_multi_decl_def.cc"],
+    name = "template_fn_multi_decl_def",
+    srcs = ["template/template_fn_multi_decl_def.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_multiple_implicit_spec",
-    srcs = ["tvar_template/template_fn_multiple_implicit_spec.cc"],
+    name = "template_fn_multiple_implicit_spec",
+    srcs = ["template/template_fn_multiple_implicit_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_overload",
-    srcs = ["tvar_template/template_fn_overload.cc"],
+    name = "template_fn_overload",
+    srcs = ["template/template_fn_overload.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_spec",
-    srcs = ["tvar_template/template_fn_spec.cc"],
+    name = "template_fn_spec",
+    srcs = ["template/template_fn_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_spec_decl",
-    srcs = ["tvar_template/template_fn_spec_decl.cc"],
+    name = "template_fn_spec_decl",
+    srcs = ["template/template_fn_spec_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_spec_defn_decl",
-    srcs = ["tvar_template/template_fn_spec_defn_decl.cc"],
+    name = "template_fn_spec_defn_decl",
+    srcs = ["template/template_fn_spec_defn_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_spec_defn_defn_decl_decl",
-    srcs = ["tvar_template/template_fn_spec_defn_defn_decl_decl.cc"],
+    name = "template_fn_spec_defn_defn_decl_decl",
+    srcs = ["template/template_fn_spec_defn_defn_decl_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fn_spec_overload",
-    srcs = ["tvar_template/template_fn_spec_overload.cc"],
+    name = "template_fn_spec_overload",
+    srcs = ["template/template_fn_spec_overload.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_incomplete_array",
-    srcs = ["tvar_template/template_incomplete_array.cc"],
+    name = "template_incomplete_array",
+    srcs = ["template/template_incomplete_array.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_instance_type_from_class",
-    srcs = ["tvar_template/template_instance_type_from_class.cc"],
+    name = "template_instance_type_from_class",
+    srcs = ["template/template_instance_type_from_class.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_nested_name",
-    srcs = ["tvar_template/template_nested_name.cc"],
+    name = "template_nested_name",
+    srcs = ["template/template_nested_name.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_multilevel_argument",
-    srcs = ["tvar_template/template_multilevel_argument.cc"],
+    name = "template_multilevel_argument",
+    srcs = ["template/template_multilevel_argument.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_pack_fn_decl",
-    srcs = ["tvar_template/template_pack_fn_decl.cc"],
+    name = "template_pack_fn_decl",
+    srcs = ["template/template_pack_fn_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_pack_fn_mono_call",
-    srcs = ["tvar_template/template_pack_fn_mono_call.cc"],
+    name = "template_pack_fn_mono_call",
+    srcs = ["template/template_pack_fn_mono_call.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_pack_fn_pack_call",
-    srcs = ["tvar_template/template_pack_fn_pack_call.cc"],
+    name = "template_pack_fn_pack_call",
+    srcs = ["template/template_pack_fn_pack_call.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_pack_rec_pack_call",
-    srcs = ["tvar_template/template_pack_rec_pack_call.cc"],
+    name = "template_pack_rec_pack_call",
+    srcs = ["template/template_pack_rec_pack_call.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ps_completes",
-    srcs = ["tvar_template/template_ps_completes.cc"],
+    name = "template_ps_completes",
+    srcs = ["template/template_ps_completes.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ps_decl",
-    srcs = ["tvar_template/template_ps_decl.cc"],
+    name = "template_ps_decl",
+    srcs = ["template/template_ps_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ps_defn",
-    srcs = ["tvar_template/template_ps_defn.cc"],
+    name = "template_ps_defn",
+    srcs = ["template/template_ps_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ps_multiple_decl",
-    srcs = ["tvar_template/template_ps_multiple_decl.cc"],
+    name = "template_ps_multiple_decl",
+    srcs = ["template/template_ps_multiple_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ps_twovar_decl",
-    srcs = ["tvar_template/template_ps_twovar_decl.cc"],
+    name = "template_ps_twovar_decl",
+    srcs = ["template/template_ps_twovar_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_rec_member_abs",
-    srcs = ["tvar_template/template_rec_member_abs.cc"],
+    name = "template_rec_member_abs",
+    srcs = ["template/template_rec_member_abs.cc"],
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_rec_inherit",
-    srcs = ["tvar_template/template_rec_inherit.cc"],
+    name = "template_rec_inherit",
+    srcs = ["template/template_rec_inherit.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_rec_override",
-    srcs = ["tvar_template/template_rec_override.cc"],
+    name = "template_rec_override",
+    srcs = ["template/template_rec_override.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_rec_override_root",
-    srcs = ["tvar_template/template_rec_override_root.cc"],
+    name = "template_rec_override_root",
+    srcs = ["template/template_rec_override_root.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_rec_override_root_aliasing",
-    srcs = ["tvar_template/template_rec_override_root_aliasing.cc"],
+    name = "template_rec_override_root_aliasing",
+    srcs = ["template/template_rec_override_root_aliasing.cc"],
     check_for_singletons = True,
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_redundant_constituents_anchored",
-    srcs = ["tvar_template/template_redundant_constituents_anchored.cc"],
+    name = "template_redundant_constituents_anchored",
+    srcs = ["template/template_redundant_constituents_anchored.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_static_member",
-    srcs = ["tvar_template/template_static_member.cc"],
+    name = "template_static_member",
+    srcs = ["template/template_static_member.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_two_arg_spec",
-    srcs = ["tvar_template/template_two_arg_spec.cc"],
+    name = "template_two_arg_spec",
+    srcs = ["template/template_two_arg_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_ty_typename",
-    srcs = ["tvar_template/template_ty_typename.cc"],
+    name = "template_ty_typename",
+    srcs = ["template/template_ty_typename.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_unresolved_ctor_expr",
-    srcs = ["tvar_template/template_unresolved_ctor_expr.cc"],
+    name = "template_unresolved_ctor_expr",
+    srcs = ["template/template_unresolved_ctor_expr.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_decl",
-    srcs = ["tvar_template/template_var_decl.cc"],
+    name = "template_var_decl",
+    srcs = ["template/template_var_decl.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_defn",
-    srcs = ["tvar_template/template_var_defn.cc"],
+    name = "template_var_defn",
+    srcs = ["template/template_var_defn.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_defn_completes",
-    srcs = ["tvar_template/template_var_defn_completes.cc"],
+    name = "template_var_defn_completes",
+    srcs = ["template/template_var_defn_completes.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_explicit_spec",
-    srcs = ["tvar_template/template_var_explicit_spec.cc"],
+    name = "template_var_explicit_spec",
+    srcs = ["template/template_var_explicit_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_implicit_spec",
-    srcs = ["tvar_template/template_var_implicit_spec.cc"],
+    name = "template_var_implicit_spec",
+    srcs = ["template/template_var_implicit_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_inst_total_spec",
-    srcs = ["tvar_template/template_var_inst_total_spec.cc"],
+    name = "template_var_inst_total_spec",
+    srcs = ["template/template_var_inst_total_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_ps",
-    srcs = ["tvar_template/template_var_ps.cc"],
+    name = "template_var_ps",
+    srcs = ["template/template_var_ps.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_ps_completes",
-    srcs = ["tvar_template/template_var_ps_completes.cc"],
+    name = "template_var_ps_completes",
+    srcs = ["template/template_var_ps_completes.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_ps_implicit_spec",
-    srcs = ["tvar_template/template_var_ps_implicit_spec.cc"],
+    name = "template_var_ps_implicit_spec",
+    srcs = ["template/template_var_ps_implicit_spec.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_ref_ps",
-    srcs = ["tvar_template/template_var_ref_ps.cc"],
+    name = "template_var_ref_ps",
+    srcs = ["template/template_var_ref_ps.cc"],
     ignore_dups = True,
-    tags = ["tvar_template"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_var_constexpr",
-    srcs = ["tvar_template/template_var_constexpr.cc"],
-    ignore_dups = True,
-    std = "c++14",
-    tags = ["tvar_template"],
-)
-
-cc_indexer_test(
-    name = "tvar_generic_lambda",
-    srcs = ["tvar_template/generic_lambda.cc"],
+    name = "template_var_constexpr",
+    srcs = ["template/template_var_constexpr.cc"],
     ignore_dups = True,
     std = "c++14",
-    tags = ["tvar_template, c++14"],
+    tags = ["template"],
 )
 
 cc_indexer_test(
-    name = "tvar_template_using_pack_expansion",
-    srcs = ["tvar_template/template_using_pack_expansion.cc"],
+    name = "generic_lambda",
+    srcs = ["template/generic_lambda.cc"],
+    ignore_dups = True,
+    std = "c++14",
+    tags = ["template, c++14"],
+)
+
+cc_indexer_test(
+    name = "template_using_pack_expansion",
+    srcs = ["template/template_using_pack_expansion.cc"],
     ignore_dups = True,
     std = "c++17",
     tags = [
         "c++17",
-        "tvar_template",
+        "template",
     ],
 )
 
 cc_indexer_test(
-    name = "tvar_template_auto_parameter",
-    srcs = ["tvar_template/template_auto_parameter.cc"],
+    name = "template_auto_parameter",
+    srcs = ["template/template_auto_parameter.cc"],
     ignore_dups = True,
     std = "c++17",
     tags = [
         "c++17",
-        "tvar_template",
+        "template",
     ],
 )
 
 cc_indexer_test(
-    name = "tvar_template_fold_expressions",
-    srcs = ["tvar_template/template_fold_expressions.cc"],
+    name = "template_fold_expressions",
+    srcs = ["template/template_fold_expressions.cc"],
     ignore_dups = True,
     std = "c++17",
     tags = [
         "c++17",
-        "tvar_template",
+        "template",
     ],
 )
 
 cc_indexer_test(
-    name = "tvar_template_class_ctor_deduction",
-    srcs = ["tvar_template/template_class_ctor_deduction.cc"],
+    name = "template_class_ctor_deduction",
+    srcs = ["template/template_class_ctor_deduction.cc"],
     ignore_dups = True,
     ignore_unimplemented = True,
     std = "c++17",
     tags = [
         "c++17",
-        "tvar_template",
+        "template",
     ],
 )
 
 test_suite(
-    name = "indexer_tvar_template",
-    tags = ["tvar_template"],
+    name = "indexer_template",
+    tags = ["template"],
 )
 
 cc_indexer_test(
@@ -3193,102 +3170,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "generic_unbound",
     srcs = ["objc/generics/generic_unbound.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_bound",
-    srcs = ["objc/tvar_generics/generic_bound.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_contravariant_decl",
-    srcs = ["objc/tvar_generics/generic_contravariant_decl.m"],
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_contravariant_restricted_super_class",
-    srcs = ["objc/tvar_generics/generic_contravariant_restricted_super_class.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_covariant_decl",
-    srcs = ["objc/tvar_generics/generic_covariant_decl.m"],
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_covariant_restricted_super_class",
-    srcs = ["objc/tvar_generics/generic_covariant_restricted_super_class.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_inherited",
-    srcs = ["objc/tvar_generics/generic_inherited.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_invariant",
-    srcs = ["objc/tvar_generics/generic_invariant.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_instantiation",
-    srcs = ["objc/tvar_generics/generic_instantiation.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_method_call",
-    srcs = ["objc/tvar_generics/generic_method_call.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_method_type",
-    srcs = ["objc/tvar_generics/generic_method_type.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_nested",
-    srcs = ["objc/tvar_generics/generic_nested.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_restricted_protocol",
-    srcs = ["objc/tvar_generics/generic_restricted_protocol.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_two_args",
-    srcs = ["objc/tvar_generics/generic_two_args.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
-objc_indexer_test(
-    name = "tvar_generic_unbound",
-    srcs = ["objc/tvar_generics/generic_unbound.m"],
     ignore_dups = True,
     tags = ["objc"],
 )
