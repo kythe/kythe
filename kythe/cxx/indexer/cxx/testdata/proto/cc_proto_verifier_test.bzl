@@ -26,7 +26,6 @@ def cc_proto_verifier_test(
         proto_libs,
         cc_deps = [],
         cc_indexer = "//kythe/cxx/indexer/cxx:indexer",
-        enable_proto_static_reflection = False,
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
@@ -44,7 +43,6 @@ def cc_proto_verifier_test(
       proto_libs: A list of proto_library targets
       cc_deps: Additional cc deps needed by the cc test file
       cc_indexer: The cc indexer to use
-      enable_proto_static_reflection: Emit and capture proto static reflection outputs
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
       experimental_guess_proto_semantics: guess proto semantics?
@@ -73,7 +71,7 @@ def cc_proto_verifier_test(
             cc_kythe_proto_library,
             name = name + "_cc_proto",
             deps = proto_libs,
-            enable_proto_static_reflection = enable_proto_static_reflection,
+            enable_proto_static_reflection = False,
         ),
     ]
 
