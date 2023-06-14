@@ -17,12 +17,12 @@ FROM debian:stable-slim
 # Install C++ compilers and other deps
 # note that openjdk-11-jdk-headless is a dependency of the java extractor
 RUN apt-get update && \
-    apt-get install -y git clang-11 build-essential zip python3 openjdk-11-jdk-headless && \
+    apt-get install -y git clang-15 build-essential zip python3 openjdk-17-jdk-headless && \
     apt-get clean
 
 # Create clang symlinks
-RUN ln -s /usr/bin/clang-11 /usr/bin/clang && \
-    ln -s /usr/bin/clang++-11 /usr/bin/clang++
+RUN ln -s /usr/bin/clang-15 /usr/bin/clang && \
+    ln -s /usr/bin/clang++-15 /usr/bin/clang++
 
 RUN echo 'build --client_env=CC=/usr/bin/clang' >> ~/.bazelrc
 RUN echo 'build --client_env=CXX=/usr/bin/clang++' >> ~/.bazelrc
