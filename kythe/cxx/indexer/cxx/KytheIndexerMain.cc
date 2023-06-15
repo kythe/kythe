@@ -47,8 +47,6 @@ ABSL_FLAG(bool, experimental_drop_instantiation_independent_data, false,
           "instantiation-independent.");
 ABSL_FLAG(bool, report_profiling_events, false,
           "Write profiling events to standard error.");
-ABSL_FLAG(bool, experimental_index_lite, false,
-          "Drop uncommonly-used data from the index.");
 ABSL_FLAG(bool, experimental_drop_objc_fwd_class_docs, false,
           "Drop comments for Objective-C forward class declarations.");
 ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
@@ -86,9 +84,6 @@ int main(int argc, char* argv[]) {
   options.IgnoreUnimplemented = context.ignore_unimplemented()
                                     ? kythe::BehaviorOnUnimplemented::Continue
                                     : kythe::BehaviorOnUnimplemented::Abort;
-  options.Verbosity = absl::GetFlag(FLAGS_experimental_index_lite)
-                          ? kythe::Verbosity::Lite
-                          : kythe::Verbosity::Classic;
   options.ObjCFwdDocs =
       absl::GetFlag(FLAGS_experimental_drop_objc_fwd_class_docs)
           ? kythe::BehaviorOnFwdDeclComments::Ignore

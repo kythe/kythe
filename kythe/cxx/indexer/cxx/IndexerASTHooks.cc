@@ -3846,11 +3846,6 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     const clang::Decl* Decl) {
   GraphObserver::NameId Id;
   Id.EqClass = BuildNameEqClassForDecl(Decl);
-  if (!options_.Verbosity &&
-      !const_cast<clang::Decl*>(Decl)->isLocalExternDecl() &&
-      Decl->getParentFunctionOrMethod() != nullptr) {
-    Id.Hidden = true;
-  }
   // Cons onto the end of the name instead of the beginning to optimize for
   // prefix search.
   llvm::raw_string_ostream Ostream(Id.Path);
@@ -3942,9 +3937,6 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt* Stmt) {
-  if (!options_.Verbosity) {
-    return absl::nullopt;
-  }
   // Do a quickish test to see if the Stmt is implicit.
   llvm::SmallVector<unsigned, 16> StmtPath;
   if (const clang::Decl* Decl =
@@ -4299,9 +4291,6 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
   if (!NNS) {
     return true;
   }
-  if (!options_.Verbosity) {
-    return Base::TraverseNestedNameSpecifierLoc(NNS);
-  }
   switch (NNS.getNestedNameSpecifier()->getKind()) {
     case clang::NestedNameSpecifier::TypeSpec:
       break;  // This is handled by VisitDependentNameTypeLoc.
@@ -4452,9 +4441,6 @@ IndexerASTVisitor::RecordEdgesForDependentName(
     const clang::NestedNameSpecifierLoc& NNSLoc,
     const clang::DeclarationName& Id, const SourceLocation IdLoc,
     const absl::optional<GraphObserver::NodeId>& Root) {
-  if (!options_.Verbosity) {
-    return absl::nullopt;
-  }
   if (auto IdOut = RecordParamEdgesForDependentName(
           BuildNodeIdForDependentName(NNSLoc.getNestedNameSpecifier(), Id),
           NNSLoc, Root)) {
@@ -4478,7 +4464,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     const clang::Expr* Expr) {
-  if (!options_.Verbosity || Expr == nullptr) {
+  if (Expr == nullptr) {
     return absl::nullopt;
   }
   clang::Expr::EvalResult Result;
