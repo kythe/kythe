@@ -47,9 +47,8 @@
 namespace kythe {
 
 IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
-                                       GraphObserver& GO, enum Verbosity V,
-                                       int UsrByteSize)
-    : Preprocessor(PP), Observer(GO), Verbosity(V), UsrByteSize(UsrByteSize) {
+                                       GraphObserver& GO, int UsrByteSize)
+    : Preprocessor(PP), Observer(GO), UsrByteSize(UsrByteSize) {
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
@@ -191,23 +190,21 @@ void IndexerPPCallbacks::MacroExpands(const clang::Token& Token,
   const clang::MacroInfo& Info = *Macro.getMacroInfo();
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
   if (!Range.getBegin().isFileID() || !Range.getEnd().isFileID()) {
-    if (Verbosity) {
-      auto NewBegin =
-          Observer.getSourceManager()->getExpansionLoc(Range.getBegin());
-      if (!NewBegin.isFileID()) {
-        return;
-      }
-      Range = clang::SourceRange(
-          NewBegin,
-          clang::Lexer::getLocForEndOfToken(
-              NewBegin, 0, /* offset from token end */
-              *Observer.getSourceManager(), *Observer.getLangOptions()));
-      if (Range.isInvalid()) {
-        return;
-      }
-      Observer.recordIndirectlyExpandsRange(RangeInCurrentContext(Range),
-                                            MacroId);
+    auto NewBegin =
+        Observer.getSourceManager()->getExpansionLoc(Range.getBegin());
+    if (!NewBegin.isFileID()) {
+      return;
     }
+    Range = clang::SourceRange(
+        NewBegin,
+        clang::Lexer::getLocForEndOfToken(
+            NewBegin, 0, /* offset from token end */
+            *Observer.getSourceManager(), *Observer.getLangOptions()));
+    if (Range.isInvalid()) {
+      return;
+    }
+    Observer.recordIndirectlyExpandsRange(RangeInCurrentContext(Range),
+                                          MacroId);
   } else {
     Observer.recordExpandsRange(RangeForTokenInCurrentContext(Token), MacroId);
   }

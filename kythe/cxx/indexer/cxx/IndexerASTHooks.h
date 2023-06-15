@@ -45,12 +45,6 @@
 
 namespace kythe {
 
-/// \brief Specifies whether uncommonly-used data should be dropped.
-enum Verbosity : bool {
-  Classic = true,  ///< Emit all data.
-  Lite = false     ///< Emit only common data.
-};
-
 /// \brief Specifies what the indexer should do if it encounters a case it
 /// doesn't understand.
 enum BehaviorOnUnimplemented : bool {
@@ -108,8 +102,6 @@ struct IndexerOptions {
   BehaviorOnUnimplemented IgnoreUnimplemented = BehaviorOnUnimplemented::Abort;
   /// \brief Whether we should visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
-  /// \brief Whether we should emit all data.
-  Verbosity Verbosity = kythe::Verbosity::Classic;
   /// \brief Should we emit documentation for forward class decls in ObjC?
   BehaviorOnFwdDeclComments ObjCFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Should we emit documentation for forward decls in C++?
