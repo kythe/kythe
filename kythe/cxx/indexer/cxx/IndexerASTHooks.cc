@@ -3839,7 +3839,8 @@ void IndexerASTVisitor::AssignUSR(const GraphObserver::NodeId& TargetNode,
   if (DC->isFunctionOrMethod()) return;
   llvm::SmallString<128> Usr;
   if (clang::index::generateUSRForDecl(ND, Usr)) return;
-  Observer.assignUsr(TargetNode, Usr, options_.UsrByteSize);
+  Observer.assignUsr(TargetNode, Usr, options_.UsrByteSize,
+                     options_.EmitUsrCorpus);
 }
 
 GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(

@@ -66,6 +66,8 @@ ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
 ABSL_FLAG(std::string, record_hashes_file, "", "Record hashes to this file.");
 ABSL_FLAG(bool, record_call_directness, false,
           "Record directness of function calls.");
+ABSL_FLAG(bool, emit_usr_corpus, false,
+          "Use the default corpus when emitting USR nodes.");
 
 namespace kythe {
 
@@ -94,6 +96,7 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.EmitUsrCorpus = absl::GetFlag(FLAGS_emit_usr_corpus);
   options.TemplateInstanceExcludePathPattern =
       absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
   options.DataflowEdges =

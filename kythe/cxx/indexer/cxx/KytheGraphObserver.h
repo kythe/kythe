@@ -213,8 +213,8 @@ class KytheGraphObserver : public GraphObserver {
       FunctionSubkind subkind,
       const absl::optional<MarkedSource>& marked_source) override;
 
-  void assignUsr(const NodeId& node, llvm::StringRef usr,
-                 int byte_size) override;
+  void assignUsr(const NodeId& node, llvm::StringRef usr, int byte_size,
+                 bool use_default_corpus) override;
 
   void recordTVarNode(
       const NodeId& node,

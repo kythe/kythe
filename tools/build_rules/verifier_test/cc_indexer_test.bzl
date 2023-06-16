@@ -71,6 +71,7 @@ _INDEXER_FLAGS = {
     "experimental_guess_proto_semantics": False,
     "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
+    "emit_usr_corpus": False,
     "template_instance_exclude_path_pattern": "",
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
@@ -827,6 +828,7 @@ def cc_indexer_test(
         an unimplemented construct.
       index_template_instantiations: Whether the indexer should index template
         instantiations.
+      emit_usr_corpus: Whether the indexer should emit corpora for USRs.
       experimental_alias_template_instantiations: Whether the indexer should alias
         template instantiations.
       experimental_drop_instantiation_independent_data: Whether the indexer should

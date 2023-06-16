@@ -32,7 +32,7 @@ namespace kythe {
 class IndexerPPCallbacks : public clang::PPCallbacks {
  public:
   IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO,
-                     int UsrByteSize);
+                     int UsrByteSize, bool UseDefaultUsrCorpus);
   ~IndexerPPCallbacks() override;
 
   void FileChanged(clang::SourceLocation Loc,
@@ -157,6 +157,8 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Whether to use the default corpus for USRs.
+  bool UseDefaultUsrCorpus = false;
 };
 
 }  // namespace kythe

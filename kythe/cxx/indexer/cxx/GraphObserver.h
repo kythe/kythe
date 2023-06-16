@@ -579,8 +579,9 @@ class GraphObserver {
   /// \param Node The target node.
   /// \param Usr The raw USR.
   /// \param ByteSize Number of significant bytes to use.
-  virtual void assignUsr(const NodeId& Node, llvm::StringRef Usr,
-                         int ByteSize) {}
+  /// \param UseDefaultCorpus Use the corpus from the default claim token?
+  virtual void assignUsr(const NodeId& Node, llvm::StringRef Usr, int ByteSize,
+                         bool UseDefaultCorpus) {}
 
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {

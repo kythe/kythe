@@ -47,8 +47,12 @@
 namespace kythe {
 
 IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
-                                       GraphObserver& GO, int UsrByteSize)
-    : Preprocessor(PP), Observer(GO), UsrByteSize(UsrByteSize) {
+                                       GraphObserver& GO, int UsrByteSize,
+                                       bool UseDefaultUsrCorpus)
+    : Preprocessor(PP),
+      Observer(GO),
+      UsrByteSize(UsrByteSize),
+      UseDefaultUsrCorpus(UseDefaultUsrCorpus) {
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
@@ -159,7 +163,7 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token& Token,
       if (!clang::index::generateUSRForMacro(
               Token.getIdentifierInfo()->getName(), Macro->getLocation(),
               *Observer.getSourceManager(), Usr)) {
-        Observer.assignUsr(MacroId, Usr, UsrByteSize);
+        Observer.assignUsr(MacroId, Usr, UsrByteSize, UseDefaultUsrCorpus);
       }
     }
   }

@@ -700,6 +700,25 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
+cc_extract_kzip(
+    name = "usr_macro_default_kzip",
+    srcs = ["basic/usr_macro_default.cc"],
+    corpus = "unit",
+    vnames_config = "basic/vname_corpus.json",
+)
+
+cc_indexer_test(
+    name = "usr_macro_default",
+    srcs = [":usr_macro_default_kzip"],
+    check_for_singletons = True,
+    emit_usr_corpus = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+    use_compilation_corpus_as_default = True,
+)
+
 cc_indexer_test(
     name = "usr_record",
     srcs = ["basic/usr_record.cc"],
@@ -718,6 +737,25 @@ cc_indexer_test(
     ignore_dups = True,
     ignore_unimplemented = True,
     tags = ["basic"],
+)
+
+cc_extract_kzip(
+    name = "usr_var_default_kzip",
+    srcs = ["basic/usr_var_default.cc"],
+    corpus = "unit",
+    vnames_config = "basic/vname_corpus.json",
+)
+
+cc_indexer_test(
+    name = "usr_var_default",
+    srcs = [":usr_var_default_kzip"],
+    check_for_singletons = True,
+    emit_usr_corpus = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+    use_compilation_corpus_as_default = True,
 )
 
 cc_indexer_test(
