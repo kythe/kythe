@@ -58,8 +58,10 @@ constexpr absl::string_view kBuildDetailsURI =
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+  using iterator =
+      decltype(std::declval<kythe::proto::ContextDependentVersion>()
+                   .row()
+                   .begin());
 
   explicit FileContextRows(
       const kythe::proto::CompilationUnit::FileInput& file_input) {
@@ -214,6 +216,7 @@ std::string IndexCompilationUnit(
   options.build_config = ExtractBuildConfig(Unit);
   options.default_corpus =
       Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
+  options.usr_default_corpus = Options.EmitUsrCorpus;
   options.hash_recorder = Options.HashRecorder;
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent, options);

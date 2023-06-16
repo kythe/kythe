@@ -131,8 +131,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
       CI.getPreprocessor().addPPCallbacks(std::make_unique<IndexerPPCallbacks>(
-          CI.getPreprocessor(), *Observer, options_.UsrByteSize,
-          options_.EmitUsrCorpus));
+          CI.getPreprocessor(), *Observer, options_.UsrByteSize));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
     CI.getLangOpts().RetainCommentsFromSystemHeaders = true;
