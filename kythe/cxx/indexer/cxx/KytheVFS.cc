@@ -65,8 +65,9 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
           style)) {
   if (!llvm::sys::path::is_absolute(working_directory_,
                                     llvm::sys::path::Style::posix)) {
-    absl::FPrintF(stderr, "warning: working directory %s is not absolute\n",
-                  working_directory_);
+    LOG(WARNING) << "working directory " << working_directory_
+                 << " is not absolute";
+    working_directory_ = absl::StrCat("/", working_directory_);
   }
   for (const auto& data : virtual_files) {
     std::string path = FixupPath(data.info().path(), style);
