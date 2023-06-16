@@ -67,6 +67,9 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
                                     llvm::sys::path::Style::posix)) {
     LOG(WARNING) << "working directory " << working_directory_
                  << " is not absolute";
+    // Various traversal routines assume that the working directory is absolute
+    // and will recurse infinitely if it is not, so ensure that we follow this
+    // invariant.
     working_directory_ = absl::StrCat("/", working_directory_);
   }
   for (const auto& data : virtual_files) {
