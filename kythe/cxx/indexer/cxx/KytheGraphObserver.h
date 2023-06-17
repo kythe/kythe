@@ -139,6 +139,8 @@ struct KytheGraphObserverOptions {
   std::string default_corpus = "";
   // Associates a hash to its semantic signature.
   HashRecorder* hash_recorder;
+  // Use the default corpus for USRs?
+  bool usr_default_corpus = false;
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -159,7 +161,8 @@ class KytheGraphObserver : public GraphObserver {
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs),
-        build_config_(options.build_config) {
+        build_config_(options.build_config),
+        usr_default_corpus_(options.usr_default_corpus) {
     default_token_.set_rough_claimed(true);
     set_default_corpus(options.default_corpus);
     type_token_.set_rough_claimed(true);
@@ -698,6 +701,8 @@ class KytheGraphObserver : public GraphObserver {
   /// Registered builtins.
   /// Modified lazily in const member functions.
   mutable std::map<std::string, Builtin> builtins_;
+  // Use the default corpus for USRs?
+  bool usr_default_corpus_ = false;
 };
 
 }  // namespace kythe

@@ -214,6 +214,7 @@ std::string IndexCompilationUnit(
   options.build_config = ExtractBuildConfig(Unit);
   options.default_corpus =
       Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
+  options.usr_default_corpus = Options.EmitUsrCorpus;
   options.hash_recorder = Options.HashRecorder;
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent, options);

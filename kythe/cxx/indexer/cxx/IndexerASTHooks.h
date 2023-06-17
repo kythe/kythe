@@ -111,6 +111,8 @@ struct IndexerOptions {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Whether to use the default corpus when emitting USRs.
+  bool EmitUsrCorpus = false;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
   /// \brief if nonempty, the pattern to match a path against to see whether
