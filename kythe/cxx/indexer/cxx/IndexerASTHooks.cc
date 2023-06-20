@@ -3928,13 +3928,6 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
   return Id;
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
-    const clang::Decl* Decl, unsigned Index) {
-  GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  return Observer.MakeNodeId(
-      BaseId.getToken(), BaseId.getRawIdentity() + "." + std::to_string(Index));
-}
-
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt* Stmt) {
   // Do a quickish test to see if the Stmt is implicit.

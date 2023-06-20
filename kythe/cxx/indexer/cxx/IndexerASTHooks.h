@@ -491,21 +491,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return absl::nullopt;
   }
 
-  /// \brief Builds a stable node ID for `Decl`.
-  ///
-  /// There is not a one-to-one correspondence between `Decl`s and nodes.
-  /// Certain `Decl`s, like `TemplateTemplateParmDecl`, are split into a
-  /// node representing the parameter and a node representing the kind of
-  /// the abstraction. The primary node is returned by the normal
-  /// `BuildNodeIdForDecl` function.
-  ///
-  /// \param Decl The declaration that is being identified.
-  /// \param Index The index of the sub-id to generate.
-  ///
-  /// \return A stable node ID for `Decl`'s `Index`th subnode.
-  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl,
-                                           unsigned Index);
-
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
   /// \param Decl The declaration that is being named.
