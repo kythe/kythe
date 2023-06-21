@@ -1001,7 +1001,7 @@ class GraphObserver {
   /// source file to the given stream.
   /// \pre Preprocessing is complete.
   virtual void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream& Ostream) {}
+      llvm::raw_ostream& Ostream) const {}
 
   /// \brief Checks whether this `GraphObserver` should emit data for some
   /// `NodeId` and its descendants.
@@ -1089,7 +1089,7 @@ class GraphObserver {
 
   /// \brief Append a string representation of `Range` to `Ostream`.
   virtual void AppendRangeToStream(llvm::raw_ostream& Ostream,
-                                   const Range& Range) {
+                                   const Range& Range) const {
     Range.PhysicalRange.getBegin().print(Ostream, *SourceManager);
     Ostream << "@";
     Range.PhysicalRange.getEnd().print(Ostream, *SourceManager);

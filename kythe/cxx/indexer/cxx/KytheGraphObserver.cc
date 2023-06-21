@@ -222,7 +222,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
 }
 
 void KytheGraphObserver::AppendFileBufferSliceHashToStream(
-    clang::SourceLocation loc, llvm::raw_ostream& Ostream) {
+    clang::SourceLocation loc, llvm::raw_ostream& Ostream) const {
   // TODO(zarko): Does this mechanism produce sufficiently unique
   // identifiers? Ideally, we would hash the full buffer segment into
   // which `loc` points, then record `loc`'s offset.
@@ -242,7 +242,7 @@ void KytheGraphObserver::AppendFileBufferSliceHashToStream(
 
 void KytheGraphObserver::AppendFullLocationToStream(
     std::vector<clang::FileID>* posted_fileids, clang::SourceLocation loc,
-    llvm::raw_ostream& Ostream) {
+    llvm::raw_ostream& Ostream) const {
   if (!loc.isValid()) {
     Ostream << "invalid";
     return;
@@ -290,7 +290,7 @@ void KytheGraphObserver::AppendFullLocationToStream(
 }
 
 void KytheGraphObserver::AppendRangeToStream(llvm::raw_ostream& Ostream,
-                                             const Range& Range) {
+                                             const Range& Range) const {
   std::vector<clang::FileID> posted_fileids;
   // We want to override this here so that the names we use are filtered
   // through the vname definitions we got from the compilation unit.
@@ -1307,7 +1307,7 @@ void KytheGraphObserver::applyMetadataFile(
 }
 
 void KytheGraphObserver::AppendMainSourceFileIdentifierToStream(
-    llvm::raw_ostream& ostream) {
+    llvm::raw_ostream& ostream) const {
   if (main_source_file_token_) {
     AppendRangeToStream(ostream,
                         Range(main_source_file_loc_, main_source_file_token_));
