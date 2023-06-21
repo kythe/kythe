@@ -1271,17 +1271,17 @@ inline bool operator!=(const GraphObserver::Range& L,
   return !(L == R);
 }
 
-// 64 characters that can appear in identifiers (plus $ from Java).
-static constexpr char kSafeEncodingCharacters[] =
-    "abcdefghijklmnopqrstuvwxyz012345"
-    "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-static constexpr size_t kBitsPerCharacter = 6;
-static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
-              "The alphabet is big enough");
-
 /// Returns a compact string representation of the `Hash`.
-static inline std::string HashToString(size_t Hash) {
+inline std::string HashToString(size_t Hash) {
+  // 64 characters that can appear in identifiers (plus $ from Java).
+  static constexpr char kSafeEncodingCharacters[] =
+      "abcdefghijklmnopqrstuvwxyz012345"
+      "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  static constexpr size_t kBitsPerCharacter = 6;
+  static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
+                "The alphabet is big enough");
+
   if (!Hash) {
     return "";
   }
