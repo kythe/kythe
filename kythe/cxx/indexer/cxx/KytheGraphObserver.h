@@ -391,7 +391,7 @@ class KytheGraphObserver : public GraphObserver {
       clang::SourceLocation location) const override;
 
   void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream& ostream) override;
+      llvm::raw_ostream& ostream) const override;
 
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName& vname) { claimant_ = vname; }
@@ -446,7 +446,7 @@ class KytheGraphObserver : public GraphObserver {
 
   /// \brief Appends a representation of `Range` to `Ostream`.
   void AppendRangeToStream(llvm::raw_ostream& ostream,
-                           const Range& range) override;
+                           const Range& range) const override;
 
   bool claimImplicitNode(const std::string& identifier) override;
 
@@ -494,12 +494,12 @@ class KytheGraphObserver : public GraphObserver {
   /// This function is used to generate a full serialization of this structure.
   void AppendFullLocationToStream(std::vector<clang::FileID>* posted_fileids,
                                   clang::SourceLocation loc,
-                                  llvm::raw_ostream& Ostream);
+                                  llvm::raw_ostream& Ostream) const;
 
   /// \brief Append a stable representation of `loc` to `Ostream`, even if
   /// `loc` is in a temporary buffer.
   void AppendFileBufferSliceHashToStream(clang::SourceLocation loc,
-                                         llvm::raw_ostream& Ostream);
+                                         llvm::raw_ostream& Ostream) const;
 
   VNameRef VNameRefFromNodeId(const GraphObserver::NodeId& node_id) const;
   kythe::proto::VName VNameFromFileEntry(
