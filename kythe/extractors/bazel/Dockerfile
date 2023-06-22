@@ -16,7 +16,8 @@ FROM debian:stable-slim
 
 # Install C++ compilers and other deps
 # note that openjdk-11-jdk-headless is a dependency of the java extractor
-RUN apt-get update && \
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
     apt-get install -y git clang-15 build-essential zip python3 openjdk-17-jdk-headless && \
     apt-get clean
 
