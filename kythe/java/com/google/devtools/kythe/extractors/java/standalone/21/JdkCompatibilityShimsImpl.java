@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Kythe Authors. All rights reserved.
+ * Copyright 2023 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,30 +19,30 @@ package com.google.devtools.kythe.extractors.java.standalone;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.Lists;
 import com.sun.tools.javac.main.Arguments;
-import com.sun.tools.javac.main.CommandLine;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import jdk.internal.opt.CommandLine;
 
-/** JdkCompatibilityShims implementation for JDK9-compatible releases. */
+/** JdkCompatibilityShims implementation for JDK21-compatible releases. */
 @AutoService(JdkCompatibilityShims.class)
 public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
-  private static final Runtime.Version minVersion = Runtime.Version.parse("9");
-  private static final Runtime.Version maxVersion = Runtime.Version.parse("15");
+  private static final Runtime.Version minVersion = Runtime.Version.parse("21");
 
   public JdkCompatibilityShimsImpl() {}
 
   @Override
   public CompatibilityRange getCompatibleRange() {
-    return new CompatibilityRange(minVersion, maxVersion);
+    return new CompatibilityRange(minVersion);
   }
 
   @Override
   public List<String> parseCompilerArguments(String[] args) throws IOException {
-    return Lists.newArrayList(CommandLine.parse(args));
+    return Lists.newArrayList(CommandLine.parse(Arrays.asList(args)));
   }
 
   @Override
   public void initializeArguments(Arguments arguments, String[] args) {
-    arguments.init("kythe_javac", args);
+    arguments.init("kythe_javac", Arrays.asList(args));
   }
 }
