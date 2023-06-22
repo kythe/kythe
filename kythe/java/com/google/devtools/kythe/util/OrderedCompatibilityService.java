@@ -83,13 +83,13 @@ public interface OrderedCompatibilityService {
   }
 
   /** Returns the compatibility level of the service provider. */
-  CompatibilityRange getCompatibileRange();
+  CompatibilityRange getCompatibleRange();
 
   public static <S extends OrderedCompatibilityService> Optional<S> loadBest(Class<S> klass) {
     Runtime.Version version = Runtime.version();
     return Streams.stream(ServiceLoader.load(klass))
         // Filter out incompatible providers.
-        .filter(p -> isCompatible(version, p.getCompatibileRange()))
+        .filter(p -> isCompatible(version, p.getCompatibleRange()))
         // Then find the best.
         .max(OrderedCompatibilityService::compareProviders);
   }
@@ -108,7 +108,7 @@ public interface OrderedCompatibilityService {
 
   private static <S extends OrderedCompatibilityService> int compareProviders(S lhs, S rhs) {
     return Comparator.comparing(
-            OrderedCompatibilityService::getCompatibileRange,
+            OrderedCompatibilityService::getCompatibleRange,
             OrderedCompatibilityService::compareCompatibilityRanges)
         .compare(lhs, rhs);
   }

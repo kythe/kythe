@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Kythe Authors. All rights reserved.
+ * Copyright 2023 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,13 @@ import java.util.List;
 /** Shims for providing source-level compatibility between JDK versions. */
 @AutoService(JdkCompatibilityShims.class)
 public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
-  private static final Runtime.Version minVersion = Runtime.Version.parse("20");
-  private static final Runtime.Version maxVersion = Runtime.Version.parse("21");
+  private static final Runtime.Version minVersion = Runtime.Version.parse("21");
 
   public JdkCompatibilityShimsImpl() {}
 
   @Override
   public CompatibilityRange getCompatibleRange() {
-    return new CompatibilityRange(minVersion, maxVersion);
+    return new CompatibilityRange(minVersion);
   }
 
   /** Return the list of expressions from a JCCase object */

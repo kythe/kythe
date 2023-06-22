@@ -22,6 +22,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCImport;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +35,7 @@ public final class ReflectiveJdkCompatibilityShimsImpl implements JdkCompatibili
   public ReflectiveJdkCompatibilityShimsImpl() {}
 
   @Override
-  public CompatibilityRange getCompatibileRange() {
+  public CompatibilityRange getCompatibleRange() {
     return new CompatibilityRange(minVersion, Optional.empty(), CompatibilityLevel.FALLBACK);
   }
 
@@ -66,6 +67,18 @@ public final class ReflectiveJdkCompatibilityShimsImpl implements JdkCompatibili
         return (JCTree) tree.getClass().getField("var").get(tree);
       }
     } catch (IllegalAccessException | NoSuchFieldException | ClassCastException ex) {
+      throw new LinkageError(ex.getMessage(), ex);
+    }
+  }
+
+  @Override
+  public JCTree getQualifiedIdentifier(JCImport tree) {
+    try {
+      return (JCTree) tree.getClass().getMethod("getQualifiedIdentifier").invoke(tree);
+    } catch (InvocationTargetException
+        | IllegalAccessException
+        | NoSuchMethodException
+        | ClassCastException ex) {
       throw new LinkageError(ex.getMessage(), ex);
     }
   }

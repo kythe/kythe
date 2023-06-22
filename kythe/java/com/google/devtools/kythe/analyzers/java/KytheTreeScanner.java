@@ -286,7 +286,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   @Override
   public JavaNode visitImport(JCImport imprt, TreeContext owner) {
-    return scan(imprt.qualid, owner.downAsSnippet(imprt));
+    return scan(shims.getQualifiedIdentifier(imprt), owner.downAsSnippet(imprt));
   }
 
   @Override

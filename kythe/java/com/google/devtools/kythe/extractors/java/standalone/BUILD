@@ -15,6 +15,7 @@ java_binary(
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
     ],
     jvm_flags = [
+        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
@@ -50,6 +51,7 @@ java_library(
             "//buildenv/java:language_version_17",
             "//buildenv/java:language_version_19",
             "//buildenv/java:language_version_20",
+            "//buildenv/java:language_version_21",
         ): [":jdk15_compatibility_shims"],
     }),
     deps = [
@@ -113,6 +115,33 @@ java_library(
             "//buildenv/java:language_version_17",
             "//buildenv/java:language_version_19",
             "//buildenv/java:language_version_20",
+        ): [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+        "//third_party/guava",
+    ],
+)
+
+java_library(
+    name = "jdk21_compatibility_shims",
+    srcs = ["21/JdkCompatibilityShimsImpl.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
+    ],
+    # This is incompatible with the default test configuration and
+    # bazel cquery doesn't work with objc_library targets.
+    tags = ["manual"],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_21",
         ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),

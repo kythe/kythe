@@ -28,12 +28,13 @@ import java.util.List;
 @AutoService(JdkCompatibilityShims.class)
 public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("15");
+  private static final Runtime.Version maxVersion = Runtime.Version.parse("21");
 
   public JdkCompatibilityShimsImpl() {}
 
   @Override
-  public CompatibilityRange getCompatibileRange() {
-    return new CompatibilityRange(minVersion);
+  public CompatibilityRange getCompatibleRange() {
+    return new CompatibilityRange(minVersion, maxVersion);
   }
 
   @Override
