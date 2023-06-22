@@ -44,7 +44,7 @@ public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
 
   @Override
   public JCTree getForLoopVar(JCEnhancedForLoop tree) {
-    return tree.varOrRecordPattern;
+    return tree.var;
   }
 
   @Override
