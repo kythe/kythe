@@ -33,7 +33,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   public ReflectiveJdkCompatibilityShims() {}
 
   @Override
-  public CompatibilityRange getCompatibileRange() {
+  public CompatibilityRange getCompatibleRange() {
     return new CompatibilityRange(minVersion, Optional.empty(), CompatibilityLevel.FALLBACK);
   }
 

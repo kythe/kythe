@@ -56,10 +56,18 @@ build:java20 --tool_java_language_version=20
 build:java20 --java_runtime_version=remotejdk_20
 build:java20 --tool_java_runtime_version=remotejdk_20
 
+# Note: Bazel won't work with JDK21 until
+# https://github.com/bazelbuild/bazel/pull/18742 is fixed
+build:java21 --java_language_version=21
+build:java21 --tool_java_language_version=21
+build:java21 --java_runtime_version=remotejdk_21
+build:java21 --tool_java_runtime_version=remotejdk_21
+
 # TODO(https://github.com/bazelbuild/bazel/issues/14502): remove this when
 # Bazel 6.2 is released and our .bazelminversion updated.
 test:java19 --jvmopt=-Djava.security.manager=allow
 test:java20 --jvmopt=-Djava.security.manager=allow
+test:java21 --jvmopt=-Djava.security.manager=allow
 
 # Import default javacopts
 import %workspace%/tools/javacopts.bazelrc

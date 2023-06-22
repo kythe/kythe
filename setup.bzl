@@ -248,3 +248,77 @@ def remote_jdk20_repos():
         ],
         version = "20",
     )
+
+def _remote_jdk_repository(name, version, os, cpu, sha256 = None):
+    jdk = version.split(".")[0]
+    jdk_cpu = {
+        "x86_64": "x64",
+    }.get(cpu, cpu)
+    jdk_os = {
+        "macos": "macosx",
+        "windows": "win",
+    }.get(os, os)
+
+    basename = "zulu{version}-{os}_{cpu}".format(
+        version = version,
+        jdk = jdk,
+        os = jdk_os,
+        cpu = jdk_cpu,
+    )
+
+    remote_java_repository(
+        name = name,
+        target_compatible_with = [
+            c.format(os = os, cpu = cpu)
+            for c in [
+                "@platforms//os:{os}",
+                "@platforms//cpu:{cpu}",
+            ]
+        ],
+        sha256 = sha256,
+        strip_prefix = basename,
+        urls = [
+            url.format(basename = basename)
+            for url in [
+                "https://mirror.bazel.build/cdn.azul.com/zulu/bin/{basename}.tar.gz",
+                "https://cdn.azul.com/zulu/bin/{basename}.tar.gz",
+            ]
+        ],
+        version = jdk,
+    )
+
+def remote_jdk21_repos():
+    """Imports OpenJDK 21 repositories."""
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_linux",
+        os = "linux",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        sha256 = "fb103e1a437c66b457e9d78facd1e2568b71e9f137f835d57263bf80fea8635a",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos",
+        os = "macos",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos_aarch64",
+        os = "macos",
+        cpu = "aarch64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_win",
+        os = "windows",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+    )

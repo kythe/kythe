@@ -21,6 +21,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCImport;
 import java.util.List;
 
 /** Shims for providing source-level compatibility between JDK versions. */
@@ -32,7 +33,7 @@ public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   public JdkCompatibilityShimsImpl() {}
 
   @Override
-  public CompatibilityRange getCompatibileRange() {
+  public CompatibilityRange getCompatibleRange() {
     return new CompatibilityRange(minVersion, maxVersion);
   }
 
@@ -45,5 +46,10 @@ public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   @Override
   public JCTree getForLoopVar(JCEnhancedForLoop tree) {
     return tree.var;
+  }
+
+  @Override
+  public JCTree getQualifiedIdentifier(JCImport tree) {
+    return tree.getQualifiedIdentifier();
   }
 }

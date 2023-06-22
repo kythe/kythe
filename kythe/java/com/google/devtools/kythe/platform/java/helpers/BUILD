@@ -31,7 +31,10 @@ java_library(
             "//buildenv/java:language_version_17",
             "//buildenv/java:language_version_19",
         ): [":jdk15_compatibility_shims"],
-        "//buildenv/java:language_version_20": [":jdk20_compatibility_shims"],
+        (
+            "//buildenv/java:language_version_20",
+            "//buildenv/java:language_version_21",
+        ): [":jdk20_compatibility_shims"],
     }),
     deps = [
         ":jdk_compatibility_shims",
@@ -115,7 +118,10 @@ java_library(
     ],
     tags = ["manual"],
     target_compatible_with = select_with_or({
-        "//buildenv/java:language_version_20": [],
+        (
+            "//buildenv/java:language_version_20",
+            "//buildenv/java:language_version_21",
+        ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],

@@ -21,6 +21,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCImport;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,4 +37,7 @@ public interface JdkCompatibilityShims extends OrderedCompatibilityService {
 
   /** Return var in a for loop */
   JCTree getForLoopVar(JCEnhancedForLoop tree);
+
+  /** Return the qualified identifier for an import. */
+  JCTree getQualifiedIdentifier(JCImport tree);
 }
