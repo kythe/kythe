@@ -1055,8 +1055,9 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
                       std::min(hash.size(), static_cast<size_t>(byte_size))));
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
-  usr_vname.set_corpus(usr_default_corpus_ ? default_token_.vname().corpus()
-                                           : "");
+  usr_vname.set_corpus(usr_default_corpus_
+                           ? absl::string_view(default_token_.vname().corpus())
+                           : "");
   usr_vname.set_signature(hex);
   usr_vname.set_language("usr");
   recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
