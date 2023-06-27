@@ -79,7 +79,6 @@ proto_library(
     srcs = ["storage.proto"],
     visibility = [
         "//kythe:proto_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
 )
 
@@ -109,7 +108,6 @@ proto_library(
     srcs = ["storage_service.proto"],
     visibility = [
         "//kythe:proto_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
     deps = [":storage_proto"],
 )
@@ -136,7 +134,6 @@ proto_library(
     srcs = ["analysis.proto"],
     visibility = [
         "//kythe:proto_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
     deps = [
         ":storage_proto",
@@ -177,7 +174,6 @@ proto_library(
     srcs = ["analysis_service.proto"],
     visibility = [
         "//kythe:proto_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
     deps = [
         ":analysis_proto",
