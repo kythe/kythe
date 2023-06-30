@@ -27,8 +27,9 @@
 
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/extractor/proto/proto_extractor.h"

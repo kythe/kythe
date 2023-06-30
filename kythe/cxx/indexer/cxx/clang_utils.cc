@@ -16,11 +16,11 @@
 
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
+#include "absl/log/log.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/Basic/CharInfo.h"
 #include "clang/Lex/Lexer.h"
-#include "glog/logging.h"
 
 namespace kythe {
 bool isObjCSelector(const clang::DeclarationName& DN) {

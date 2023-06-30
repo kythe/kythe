@@ -22,7 +22,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_set.h"
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "kythe/cxx/common/file_vname_generator.h"

@@ -24,9 +24,10 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"

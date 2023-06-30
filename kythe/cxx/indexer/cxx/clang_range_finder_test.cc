@@ -18,6 +18,8 @@
 #include <functional>
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -27,7 +29,6 @@
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -43,7 +44,7 @@ class ClangRangeFinderTest : public ::testing::Test {
   clang::ASTUnit& Parse(llvm::StringRef code,
                         llvm::StringRef filename = "input.cc") {
     ast_ = buildASTFromCode(code, filename);
-    return *CHECK_NOTNULL(ast_);
+    return *ABSL_DIE_IF_NULL(ast_);
   }
 
   absl::string_view GetSourceText(clang::SourceRange range) {
@@ -126,7 +127,7 @@ class NamedDeclTestCase {
   using DeclFinder = std::function<const clang::NamedDecl*(clang::ASTUnit&)>;
   NamedDeclTestCase(absl::string_view format, absl::string_view name = "entity",
                     DeclFinder find_decl = &FindLastDecl)
-      : format_(CHECK_NOTNULL(absl::ParsedFormat<'s'>::New(format))),
+      : format_(ABSL_DIE_IF_NULL(absl::ParsedFormat<'s'>::New(format))),
         name_(name),
         find_decl_(std::move(find_decl)) {}
   NamedDeclTestCase(absl::string_view format, DeclFinder find_decl)
@@ -135,7 +136,7 @@ class NamedDeclTestCase {
   std::string SourceText() const { return absl::StrFormat(*format_, name_); }
 
   const clang::NamedDecl* FindDecl(clang::ASTUnit& ast) const {
-    return CHECK_NOTNULL(find_decl_(ast));
+    return ABSL_DIE_IF_NULL(find_decl_(ast));
   }
 
   absl::string_view name() const { return name_; }

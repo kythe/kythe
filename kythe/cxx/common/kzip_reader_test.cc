@@ -19,12 +19,12 @@
 #include <functional>
 #include <string>
 
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"

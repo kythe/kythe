@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"

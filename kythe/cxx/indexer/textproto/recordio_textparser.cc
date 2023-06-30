@@ -19,13 +19,13 @@
 #include <sstream>
 
 #include "absl/functional/function_ref.h"
+#include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 
 namespace kythe {
 namespace lang_textproto {

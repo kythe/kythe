@@ -16,7 +16,8 @@
 
 #include "kythe/cxx/common/kythe_uri.h"
 
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/vname_ordering.h"
@@ -296,7 +297,7 @@ TEST(KytheUri, Strings) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

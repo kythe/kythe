@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/log/check.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"

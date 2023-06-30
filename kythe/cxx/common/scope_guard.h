@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "absl/base/attributes.h"
+#include "absl/log/check.h"
 
 namespace kythe {
 

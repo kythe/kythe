@@ -22,9 +22,9 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "absl/log/log.h"
 #include "absl/types/optional.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"

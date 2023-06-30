@@ -19,9 +19,9 @@
 #include <array>
 #include <memory>
 
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 #include "interpreter/Engine.h"
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 #include "souffle/RamTypes.h"

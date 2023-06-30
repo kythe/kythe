@@ -17,12 +17,12 @@
 #include "kythe/cxx/indexer/proto/source_tree.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "kythe/cxx/common/path_utils.h"
 
@@ -42,7 +42,7 @@ std::string StringReplaceFirst(absl::string_view s, absl::string_view oldsub,
 
 bool PreloadedProtoFileTree::AddFile(const std::string& filename,
                                      const std::string& contents) {
-  VLOG(1) << filename << " added to PreloadedProtoFileTree";
+  DLOG(LEVEL(-1)) << filename << " added to PreloadedProtoFileTree";
   return file_map_.try_emplace(filename, contents).second;
 }
 
@@ -75,8 +75,9 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
                                                 substitution.second));
     }
     if (auto iter = file_map_.find(found_path); iter != file_map_.end()) {
-      VLOG(1) << "Proto file Open(" << filename << ") under ["
-              << substitution.first << "->" << substitution.second << "]";
+      DLOG(LEVEL(-1)) << "Proto file Open(" << filename << ") under ["
+                      << substitution.first << "->" << substitution.second
+                      << "]";
       if (auto [mapped_iter, inserted] =
               file_mapping_cache_->emplace(filename, found_path);
           !inserted) {
@@ -91,7 +92,7 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
     }
   }
   if (auto iter = file_map_.find(filename); iter != file_map_.end()) {
-    VLOG(1) << "Proto file Open(" << filename << ") at root";
+    DLOG(LEVEL(-1)) << "Proto file Open(" << filename << ") at root";
     return new google::protobuf::io::ArrayInputStream(iter->second.data(),
                                                       iter->second.size());
   }

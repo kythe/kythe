@@ -33,13 +33,15 @@
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/cxx_details.h"
 #include "llvm/ADT/DenseMap.h"
@@ -72,9 +74,9 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
                         const LibrarySupports* LibrarySupports,
                         const IndexerOptions& options
                             ABSL_ATTRIBUTE_LIFETIME_BOUND)
-      : Observer(CHECK_NOTNULL(GO)),
+      : Observer(ABSL_DIE_IF_NULL(GO)),
         HeaderConfigValid(Info != nullptr),
-        Supports(*CHECK_NOTNULL(LibrarySupports)),
+        Supports(*ABSL_DIE_IF_NULL(LibrarySupports)),
         options_(options) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
