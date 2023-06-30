@@ -1037,6 +1037,11 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return {expr, std::nullopt};
   }
 
+  /// \brief Returns a bundle of nodes to blame for field initializers.
+  IndexJob::SomeNodes FindConstructorsForBlame(const clang::FieldDecl& field);
+  IndexJob::SomeNodes FindNodesForBlame(const clang::ObjCMethodDecl& decl);
+  IndexJob::SomeNodes FindNodesForBlame(const clang::FunctionDecl& decl);
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 

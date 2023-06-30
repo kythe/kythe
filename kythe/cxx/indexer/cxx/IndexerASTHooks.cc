@@ -1301,87 +1301,35 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
         return true;
       }
     }
-    auto Scope = std::make_tuple(RestoreStack(Job->BlameStack),
-                                 RestoreStack(Job->RangeContext));
+    auto Scope =
+        std::make_tuple(PushScope(Job->BlameStack, FindNodesForBlame(*FD)),
+                        RestoreStack(Job->RangeContext));
 
     if (FD->isTemplateInstantiation() &&
         FD->getTemplateSpecializationKind() !=
             clang::TSK_ExplicitSpecialization) {
       // Explicit specializations have ranges.
-      if (const auto RangeId = BuildNodeIdForRefToDeclContext(FD)) {
-        Job->RangeContext.push_back(RangeId.value());
-      } else {
-        Job->RangeContext.push_back(BuildNodeIdForDecl(FD));
-      }
+      Job->RangeContext.push_back([&] {
+        if (auto id = BuildNodeIdForRefToDeclContext(FD)) {
+          return *std::move(id);
+        }
+        return BuildNodeIdForDecl(FD);
+      }());
     }
-    if (const auto BlameId = BuildNodeIdForDeclContext(FD)) {
-      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BlameId.value()));
-    } else {
-      Job->BlameStack.push_back(
-          IndexJob::SomeNodes(1, BuildNodeIdForRefToDecl(FD)));
-    }
-
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
     return Base::TraverseDecl(FD);
   } else if (auto* ID = dyn_cast_or_null<clang::FieldDecl>(Decl)) {
     // This will also cover the case of clang::ObjCIVarDecl since it is a
     // subclass.
-    if (ID->hasInClassInitializer()) {
-      // Blame calls from in-class initializers I on all ctors C of the
-      // containing class so long as C does not have its own initializer for
-      // I's field.
-      auto R = RestoreStack(Job->BlameStack);
-      if (auto* CR = dyn_cast_or_null<clang::CXXRecordDecl>(ID->getParent())) {
-        if ((CR = CR->getDefinition())) {
-          IndexJob::SomeNodes Ctors;
-          auto TryCtor = [&](const clang::CXXConstructorDecl* Ctor) {
-            if (!ConstructorOverridesInitializer(Ctor, ID)) {
-              if (const auto BlameId = BuildNodeIdForRefToDeclContext(Ctor)) {
-                Ctors.push_back(BlameId.value());
-              }
-            }
-          };
-          for (const auto* SubDecl : CR->decls()) {
-            if (const auto* Ctor =
-                    dyn_cast_or_null<clang::CXXConstructorDecl>(SubDecl)) {
-              TryCtor(Ctor);
-            } else if (const auto* Templ =
-                           dyn_cast_or_null<clang::FunctionTemplateDecl>(
-                               SubDecl)) {
-              if (const auto* Ctor =
-                      dyn_cast_or_null<clang::CXXConstructorDecl>(
-                          Templ->getTemplatedDecl())) {
-                TryCtor(Ctor);
-              }
-              for (const auto* Spec : Templ->specializations()) {
-                if (const auto* Ctor =
-                        dyn_cast_or_null<clang::CXXConstructorDecl>(Spec)) {
-                  TryCtor(Ctor);
-                }
-              }
-            }
-          }
-          if (!Ctors.empty()) {
-            Job->BlameStack.push_back(Ctors);
-          }
-        }
-      }
-      return Base::TraverseDecl(ID);
+    auto R = RestoreStack(Job->BlameStack);
+    auto Ctors = FindConstructorsForBlame(*ID);
+    if (!Ctors.empty()) {
+      Job->BlameStack.push_back(Ctors);
     }
+    return Base::TraverseDecl(ID);
   } else if (auto* MD = dyn_cast_or_null<clang::ObjCMethodDecl>(Decl)) {
-    // These variables (R and S) clean up the stacks (Job->BlameStack and
-    // Job->RangeContext) when the local variables (R and S) are
-    // destructed.
-    auto Scope = std::make_tuple(RestoreStack(Job->BlameStack),
-                                 RestoreStack(Job->RangeContext));
-
-    if (const auto BlameId = BuildNodeIdForDeclContext(MD)) {
-      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BlameId.value()));
-    } else {
-      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BuildNodeIdForDecl(MD)));
-    }
-
+    auto Scope = PushScope(Job->BlameStack, FindNodesForBlame(*MD));
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
     return Base::TraverseDecl(MD);
@@ -5998,6 +5946,65 @@ IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
     }
   }
   return nullptr;
+}
+
+IndexJob::SomeNodes IndexerASTVisitor::FindConstructorsForBlame(
+    const clang::FieldDecl& field) {
+  if (!field.hasInClassInitializer()) {
+    return {};
+  }
+  const auto* record = dyn_cast<clang::CXXRecordDecl>(field.getParent());
+  if (record == nullptr || record != record->getDefinition()) {
+    return {};
+  }
+
+  // Blame calls from in-class initializers I on all ctors C of the
+  // containing class so long as C does not have its own initializer for
+  // I's field.
+  IndexJob::SomeNodes result;
+  auto TryCtor = [&](const clang::CXXConstructorDecl& ctor) {
+    if (!ConstructorOverridesInitializer(&ctor, &field)) {
+      if (const auto blame_id = BuildNodeIdForRefToDeclContext(&ctor)) {
+        result.push_back(*std::move(blame_id));
+      }
+    }
+  };
+  for (const auto* subdecl : record->decls()) {
+    if (subdecl == nullptr) continue;
+
+    if (const auto* ctor = dyn_cast<clang::CXXConstructorDecl>(subdecl)) {
+      TryCtor(*ctor);
+    } else if (const auto* templ =
+                   dyn_cast<clang::FunctionTemplateDecl>(subdecl)) {
+      if (const auto* ctor = dyn_cast_or_null<clang::CXXConstructorDecl>(
+              templ->getTemplatedDecl())) {
+        TryCtor(*ctor);
+      }
+      for (const auto* spec : templ->specializations()) {
+        if (spec == nullptr) continue;
+        if (const auto* ctor = dyn_cast<clang::CXXConstructorDecl>(spec)) {
+          TryCtor(*ctor);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+IndexJob::SomeNodes IndexerASTVisitor::FindNodesForBlame(
+    const clang::FunctionDecl& decl) {
+  if (auto blame_id = BuildNodeIdForDeclContext(&decl)) {
+    return IndexJob::SomeNodes(1, *std::move(blame_id));
+  }
+  return IndexJob::SomeNodes(1, BuildNodeIdForRefToDecl(&decl));
+}
+
+IndexJob::SomeNodes IndexerASTVisitor::FindNodesForBlame(
+    const clang::ObjCMethodDecl& decl) {
+  if (auto blame_id = BuildNodeIdForDeclContext(&decl)) {
+    return IndexJob::SomeNodes(1, *std::move(blame_id));
+  }
+  return IndexJob::SomeNodes(1, BuildNodeIdForDecl(&decl));
 }
 
 }  // namespace kythe
