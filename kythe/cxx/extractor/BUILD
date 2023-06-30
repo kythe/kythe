@@ -124,7 +124,6 @@ cc_library(
         "//kythe/proto:filecontext_cc_proto",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
-        "@boringssl//:crypto",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
