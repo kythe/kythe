@@ -26,7 +26,7 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -329,8 +329,7 @@ bool IndexDescriptorSet(const google::protobuf::FileDescriptorSet& fds,
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  FLAGS_logtostderr = true;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   std::vector<std::string> final_args(remain.begin() + 1, remain.end());
   google::protobuf::io::FileOutputStream out_stream(STDOUT_FILENO);

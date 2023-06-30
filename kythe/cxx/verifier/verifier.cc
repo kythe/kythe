@@ -29,6 +29,7 @@
 #include "absl/strings/strip.h"
 #include "assertions.h"
 #include "google/protobuf/text_format.h"
+#include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/verifier/souffle_interpreter.h"
