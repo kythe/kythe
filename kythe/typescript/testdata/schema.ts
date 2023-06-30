@@ -4,8 +4,8 @@
 //- FileModule=VName("module", _, _, "testdata/schema", "typescript").node/kind record
 //- FileModuleAnchor.node/kind anchor
 //- FileModuleAnchor./kythe/loc/start 0
-//- FileModuleAnchor./kythe/loc/end 1
-//- FileModuleAnchor defines/binding FileModule
+//- FileModuleAnchor./kythe/loc/end 0
+//- FileModuleAnchor defines/implicit FileModule
 
 // NamespaceImport
 //- @NspI defines/binding VName("NspI", _, _, "testdata/schema", "typescript")

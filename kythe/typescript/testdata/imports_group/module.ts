@@ -8,8 +8,8 @@
 // See discussion in emitModuleAnchor().
 //- ModAnchor.node/kind anchor
 //- ModAnchor./kythe/loc/start 0
-//- ModAnchor./kythe/loc/end 1
-//- ModAnchor defines/binding Mod
+//- ModAnchor./kythe/loc/end 0
+//- ModAnchor defines/implicit Mod
 
 //- @value defines/binding Val
 export const value = 3;
