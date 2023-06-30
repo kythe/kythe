@@ -81,6 +81,24 @@ class LibrarySupport {
                               GraphObserver::NodeId& RefId,
                               const clang::NamedDecl* TargetDecl) {}
 
+  /// \brief Called on any DeclRef. An overload of the above function that
+  /// provides access to the expression.
+  ///
+  /// \param V The active IndexerASTVisitor.
+  /// \param DeclRefLocation The location of the reference.
+  /// \param Ref The range of the reference.
+  /// \param RefId The NodeId of the referent (TargetDecl).
+  /// \param TargetDecl The NamedDecl being referenced.
+  /// \param Expr The Expr that references the NamedDecl
+  virtual void InspectDeclRef(IndexerASTVisitor& V,
+                              clang::SourceLocation DeclRefLocation,
+                              const GraphObserver::Range& Ref,
+                              GraphObserver::NodeId& RefId,
+                              const clang::NamedDecl* TargetDecl,
+                              const clang::Expr* Expr) {
+    InspectDeclRef(V, DeclRefLocation, Ref, RefId, TargetDecl);
+  }
+
   /// \brief Called on any CallExpr.
   /// \param V The active IndexerASTVisitor.
   /// \param CallExpr The call expr.
