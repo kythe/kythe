@@ -24,9 +24,6 @@ import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdg
 import * as utf8 from './utf8';
 import {CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace} from './plugin_api';
 
-// Temporarily re-export the plugin API from this file so that users can be migrated individually.
-export {CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace};
-
 const LANGUAGE = 'typescript';
 
 enum RefType {
@@ -1423,14 +1420,8 @@ class Visitor {
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
-    const anchor = this.newAnchor(
-        this.file, 0, this.host.options.emitZeroWidthSpansForModuleNodes ? 0 : 1);
-    this.emitEdge(
-        anchor,
-        this.host.options.emitZeroWidthSpansForModuleNodes ?
-            EdgeKind.DEFINES_IMPLICIT :
-            EdgeKind.DEFINES_BINDING,
-        kMod);
+    const anchor = this.newAnchor(this.file, 0, 0);
+    this.emitEdge(anchor, EdgeKind.DEFINES_IMPLICIT, kMod);
   }
 
   /**
