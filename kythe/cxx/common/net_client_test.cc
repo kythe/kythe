@@ -42,12 +42,11 @@ void TestNodeRequest() {
   request.add_ticket("kythe:?lang=c%2B%2B#SOMEFILE");
   std::string error;
   CHECK(client.Nodes(request, &response, &error)) << error;
-  CHECK_EQ(1, response.nodes().size()) << response.DebugString();
+  CHECK_EQ(1, response.nodes().size()) << response;
 
-  CHECK_EQ(request.ticket(0), response.nodes().begin()->first)
-      << response.DebugString();
+  CHECK_EQ(request.ticket(0), response.nodes().begin()->first) << response;
   kythe::proto::common::NodeInfo node = response.nodes().begin()->second;
-  CHECK_EQ(1, node.facts().size()) << response.DebugString();
+  CHECK_EQ(1, node.facts().size()) << response;
 
   CHECK_EQ("/kythe/node/kind", node.facts().begin()->first);
   CHECK_EQ("file", node.facts().begin()->second);
