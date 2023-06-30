@@ -82,18 +82,18 @@ class Class implements IFace {
 class Subclass extends Class {
     //- @method defines/binding OverridenMethod
     //- OverridenMethod overrides Method
-    method() {
+    override method() {
         //- @member ref Member
         this.member;
     }
 }
 
-class SubSubclass extends Class implements IExtended {
+class SubSubclass extends Subclass implements IExtended {
     //- @ifaceMethod defines/binding OverridenIFaceMethod
     //- OverridenIFaceMethod overrides ClassIFaceMethod
     //- OverridenIFaceMethod overrides ExtendedIFaceMethod
     //- !{ OverridenIFaceMethod overrides IFaceMethod }
-    ifaceMethod() {}
+    override ifaceMethod() {}
 }
 
 //- @Class ref ClassCtor
