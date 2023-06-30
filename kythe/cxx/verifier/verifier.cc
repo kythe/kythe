@@ -1293,7 +1293,7 @@ bool Verifier::PrepareDatabase() {
                       symbol_table_.text(ident->symbol()))) {
                 printer.Print("(failed to decode)\n");
               } else {
-                printer.Print(marked_source.DebugString());
+                printer.Print(absl::StrCat(marked_source));
                 printer.Print("\n");
               }
             } else {
