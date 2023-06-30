@@ -383,6 +383,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordDeprecated(const NodeId& NodeId,
                         const llvm::StringRef& advice) override;
 
+  void recordDiagnostic(const Range& Range, std::string_view Signature,
+                        std::string_view Message) override;
+
   void pushFile(clang::SourceLocation blame_location,
                 clang::SourceLocation location) override;
 

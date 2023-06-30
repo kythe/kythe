@@ -970,6 +970,13 @@ class GraphObserver {
   virtual void recordDeprecated(const NodeId& NodeId,
                                 const llvm::StringRef& Advice) {}
 
+  /// \brief Records a diagnostic at the given source range
+  /// \param Range The source range
+  /// \param Signature The signature to use for the diagnostic VName
+  /// \param Message The diagnostic message
+  virtual void recordDiagnostic(const Range& Range, std::string_view Signature,
+                                std::string_view Message) {}
+
   /// \brief Called when a new input file is entered.
   ///
   /// The file entered in the first `pushFile` is the compilation unit being
