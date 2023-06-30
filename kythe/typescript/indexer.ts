@@ -1420,14 +1420,8 @@ class Visitor {
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
-    const anchor = this.newAnchor(
-        this.file, 0, this.host.options.emitZeroWidthSpansForModuleNodes ? 0 : 1);
-    this.emitEdge(
-        anchor,
-        this.host.options.emitZeroWidthSpansForModuleNodes ?
-            EdgeKind.DEFINES_IMPLICIT :
-            EdgeKind.DEFINES_BINDING,
-        kMod);
+    const anchor = this.newAnchor(this.file, 0, 0);
+    this.emitEdge(anchor, EdgeKind.DEFINES_IMPLICIT, kMod);
   }
 
   /**
