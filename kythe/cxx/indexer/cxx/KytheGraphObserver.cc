@@ -1262,8 +1262,8 @@ void KytheGraphObserver::recordDiagnostic(const Range& Range,
   proto::VName anchor_vname = VNameFromRange(Range);
 
   proto::VName dn_vname;
-  dn_vname.set_signature(
-      absl::StrAppend(anchor_vname.signature(), "-", Signature));
+  dn_vname.set_signature(std::string(
+      absl::StrCat(anchor_vname.signature(), "-", Signature)));
   dn_vname.set_corpus(anchor_vname.corpus());
   dn_vname.set_root(anchor_vname.root());
   dn_vname.set_path(anchor_vname.path());
