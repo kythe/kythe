@@ -2521,7 +2521,7 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
           *RCC, target, use_kind, GraphObserver::Claimability::Unclaimable,
           this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
+        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl, Expr);
       }
     }
   }
@@ -5794,7 +5794,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
                                        GraphObserver::Claimability::Unclaimable,
                                        IsImplicit(RCC.value()));
         for (const auto& S : Supports) {
-          S->InspectDeclRef(*this, SL, RCC.value(), DeclId, PD);
+          S->InspectDeclRef(*this, SL, RCC.value(), DeclId, PD, Expr);
         }
       }
 
