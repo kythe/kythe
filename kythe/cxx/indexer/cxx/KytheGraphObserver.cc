@@ -1259,7 +1259,7 @@ void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
 void KytheGraphObserver::recordDiagnostic(const Range& Range,
                                           std::string_view Signature,
                                           std::string_view Message) {
-  proto::VName anchor_name = VNameFromRange(Range);
+  proto::VName anchor_vname = VNameFromRange(Range);
 
   proto::VName dn_vname;
   dn_vname.set_signature(
