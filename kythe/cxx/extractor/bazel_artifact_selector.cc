@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/ascii.h"
@@ -204,7 +205,7 @@ class AspectArtifactSelectorSerializationHelper {
     explicit Serializer(const State* state ABSL_ATTRIBUTE_LIFETIME_BOUND,
                         kythe::proto::BazelAspectArtifactSelectorStateV2& result
                             ABSL_ATTRIBUTE_LIFETIME_BOUND)
-        : state_(*CHECK_NOTNULL(state)), result_(result) {}
+        : state_(*ABSL_DIE_IF_NULL(state)), result_(result) {}
 
     bool Serialize() {
       for (const auto& [id, file_set] : state_.file_sets.file_sets()) {
@@ -291,7 +292,7 @@ class AspectArtifactSelectorSerializationHelper {
         const kythe::proto::BazelAspectArtifactSelectorStateV2* state
             ABSL_ATTRIBUTE_LIFETIME_BOUND,
         State& result ABSL_ATTRIBUTE_LIFETIME_BOUND)
-        : state_(*CHECK_NOTNULL(state)), result_(result) {}
+        : state_(*ABSL_DIE_IF_NULL(state)), result_(result) {}
 
     absl::Status Deserialize() {
       // First, deserialize all of the disposed sets to help check consistency
