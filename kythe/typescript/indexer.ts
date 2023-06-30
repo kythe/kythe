@@ -1640,6 +1640,7 @@ class Visitor {
         ts.isPropertyAssignment(decl) ||
         ts.isShorthandPropertyAssignment(decl)) {
       this.emitSubkind(vname, Subkind.FIELD);
+      this.emitChildofEdge(vname, decl.parent);
     }
     if (ts.isShorthandPropertyAssignment(decl)) {
       const origSym = this.typeChecker.getShorthandAssignmentValueSymbol(decl);
@@ -2075,26 +2076,11 @@ class Visitor {
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, vname);
 
     if (decl.parent) {
-      // Emit a "childof" edge on class/interface members.
-      if (ts.isClassLike(decl.parent) ||
-          ts.isInterfaceDeclaration(decl.parent)) {
-        const parentName = decl.parent.name;
-        if (parentName !== undefined) {
-          const parentSym = this.host.getSymbolAtLocationFollowingAliases(parentName);
-          if (!parentSym) {
-            todo(
-                this.sourceRoot, parentName,
-                `parent ${parentName} has no symbol`);
-            return;
-          }
-          const kParent = this.host.getSymbolName(parentSym, TSNamespace.TYPE);
-          if (kParent) {
-            this.emitEdge(vname, EdgeKind.CHILD_OF, kParent);
-          }
-        }
-        if (sym) {
-          this.emitOverridesEdgeForFunction(sym, vname, decl.parent);
-        }
+      this.emitChildofEdge(vname, decl.parent);
+      if ((ts.isClassLike(decl.parent) ||
+           ts.isInterfaceDeclaration(decl.parent)) &&
+          sym) {
+        this.emitOverridesEdgeForFunction(sym, vname, decl.parent);
       }
     }
 
@@ -2113,6 +2099,30 @@ class Visitor {
       this.emitFact(vname, FactName.COMPLETE, 'incomplete');
     }
     this.emitMarkedSourceForFunction(decl, vname);
+  }
+
+  /**
+   * Emits childof edge from member to their parents. Parent can be class/interface/enum.
+   * See https://kythe.io/docs/schema/#childof
+   */
+  emitChildofEdge(vname: VName, parent: ts.Node) {
+    if (!ts.isClassLike(parent) && !ts.isInterfaceDeclaration(parent) &&
+        !ts.isEnumDeclaration(parent)) {
+      return;
+    }
+    const parentName = parent.name;
+    if (parentName == null) {
+      return;
+    }
+    const parentSym = this.host.getSymbolAtLocationFollowingAliases(parentName);
+    if (!parentSym) {
+      todo(this.sourceRoot, parentName, `parent ${parentName} has no symbol`);
+      return;
+    }
+    const kParent = this.host.getSymbolName(parentSym, TSNamespace.TYPE);
+    if (kParent) {
+      this.emitEdge(vname, EdgeKind.CHILD_OF, kParent);
+    }
   }
 
   /**
@@ -2322,6 +2332,7 @@ class Visitor {
     this.emitNode(kMember, NodeKind.CONSTANT);
     this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kMember);
     this.emitMarkedSourceForVariable(decl, kMember);
+    this.emitChildofEdge(kMember, decl.parent);
   }
 
   visitExpressionMember(node: ts.Node) {

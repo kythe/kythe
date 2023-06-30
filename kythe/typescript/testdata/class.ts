@@ -12,6 +12,7 @@ interface IFace {
     //- @member defines/binding IFaceMember
     //- IFaceMember.node/kind variable
     //- IFaceMember.subkind field
+    //- IFaceMember childof IFace
     member: number;
 }
 
@@ -33,11 +34,13 @@ class Class implements IFace {
     //- Member.node/kind variable
     //- !{ Member.tag/static _ }
     //- Member.subkind field
+    //- Member childof Class
     member: number;
 
     //- @member defines/binding StaticMember
     //- StaticMember.tag/static _
     //- !{ @member defines/binding Member }
+    //- StaticMember childof Class
     static member: number;
 
     // This ctor declares a new member var named 'otherMember', and also
@@ -46,6 +49,7 @@ class Class implements IFace {
     //- @constructor defines/binding ClassCtor=vname("Class", _, _, _, _)
     //- ClassCtor.node/kind function
     //- ClassCtor.subkind constructor
+    //- ClassCtor childof Class
     //- @otherMember defines/binding OtherMember
     //- OtherMember.node/kind variable
     //- @member defines/binding FakeMember

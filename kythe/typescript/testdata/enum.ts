@@ -5,8 +5,9 @@ export {}
 //- @Fruit defines/binding FruitVal
 //- FruitVal.node/kind constant
 enum Fruit {
-  //- @APPLE defines/binding APPLE
-  //- APPLE.node/kind constant
+  //- @APPLE defines/binding Apple
+  //- Apple.node/kind constant
+  //- Apple childof FruitType
   APPLE,
   PEAR
 }
@@ -14,5 +15,5 @@ enum Fruit {
 //- @Fruit ref FruitType
 let x: Fruit;
 //- @Fruit ref FruitVal
-//- @APPLE ref APPLE
+//- @APPLE ref Apple
 x = Fruit.APPLE;
