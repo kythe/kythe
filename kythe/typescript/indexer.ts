@@ -2012,15 +2012,20 @@ class Visitor {
         const overriddenCondition = (sym: ts.Symbol) =>
             Boolean(sym.flags & funcFlags) && sym.name === funcName;
 
-        // TODO(b/181591179): Remove this alias and casts
-        type AnyDuringTs42Migration = any;
-        const overridden: AnyDuringTs42Migration =
-            toArray(type.symbol.members.values() as AnyDuringTs42Migration)
-                .find(overriddenCondition as AnyDuringTs42Migration);
+        const overridden = toArray<ts.Symbol>(type.symbol.members.values())
+            .find(overriddenCondition);
         if (overridden) {
           const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
           if (base) {
             this.emitEdge(funcVName, EdgeKind.OVERRIDES, base);
+          }
+        } else {
+          // If parent class or interface doesn't have this method - it's possible
+          // that parent's parent might. To check for that recurse to the parent's parent
+          // classes/interfaces.
+          const decl = type.symbol.declarations?.[0];
+          if (decl && (ts.isClassLike(decl) || ts.isInterfaceDeclaration(decl))) {
+            this.emitOverridesEdgeForFunction(funcSym, funcVName, decl);
           }
         }
       }
