@@ -81,7 +81,7 @@ class LibrarySupport {
                               GraphObserver::NodeId& RefId,
                               const clang::NamedDecl* TargetDecl) {}
 
-  /// \brief Called on any DeclRef. An overload of the above function, which
+  /// \brief Called on any DeclRef. An overload of the above function that
   /// provides access to the expression.
   ///
   /// \param V The active IndexerASTVisitor.
