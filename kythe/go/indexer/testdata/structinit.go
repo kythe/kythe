@@ -88,3 +88,25 @@ func realNames() {
 		{nick: "kyle"},
 	}
 }
+
+func anonSlice() {
+	type S = struct{ N string }
+	_ = []struct {
+		//- @F defines/binding F
+		F string
+
+		A []S
+	}{
+		{
+			//- @F ref/writes F
+			F: "",
+
+			//- @N defines/binding N
+			A: []struct{ N string }{
+				// TODO: tie anon field back to original def
+				//- @N ref/writes N
+				{N: ""},
+			},
+		},
+	}
+}
