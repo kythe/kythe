@@ -453,6 +453,19 @@ func (t protoTable) Lookup(_ context.Context, key []byte, msg proto.Message) err
 	return nil
 }
 
+func (t protoTable) LookupValues(_ context.Context, key []byte, m proto.Message, f func(proto.Message) error) error {
+	val, ok := t[string(key)]
+	if !ok {
+		return nil
+	}
+	msg := m.ProtoReflect().New().Interface()
+	proto.Merge(msg, val)
+	if err := f(msg); err != nil && err != table.ErrStopLookup {
+		return err
+	}
+	return nil
+}
+
 func construct(t *testing.T) *Tables {
 	return &Tables{
 		ParentToChildren:  parentToChildren,

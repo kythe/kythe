@@ -546,6 +546,19 @@ func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message)
 	return nil
 }
 
+func (t testProtoTable) LookupValues(_ context.Context, key []byte, m proto.Message, f func(proto.Message) error) error {
+	val, ok := t[string(key)]
+	if !ok {
+		return nil
+	}
+	msg := m.ProtoReflect().New().Interface()
+	proto.Merge(msg, val)
+	if err := f(msg); err != nil && err != table.ErrStopLookup {
+		return err
+	}
+	return nil
+}
+
 func (t testProtoTable) Buffered() table.BufferedProto { panic("UNIMPLEMENTED") }
 
 func (t testProtoTable) Close(_ context.Context) error { return nil }
