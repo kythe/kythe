@@ -97,8 +97,7 @@ class Plugin {
   // Optional entrypoint for integer fields. Plugin may override it to add
   // additional nodes for integer fields.
   virtual absl::Status AnalyzeIntegerField(
-      PluginApi* api,
-      const proto::VName& file_vname,
+      PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
       absl::string_view field_value) {
     return absl::OkStatus();
