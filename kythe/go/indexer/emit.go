@@ -198,6 +198,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				e.visitIndexExpr(n, stack)
 			case *ast.IndexListExpr:
 				e.visitIndexListExpr(n, stack)
+			case *ast.ArrayType:
+				e.visitArrayType(n, stack)
 			}
 			return true
 		}), file)
@@ -828,6 +830,11 @@ func (e *emitter) visitIndexListExpr(expr *ast.IndexListExpr, stack stackFunc) {
 	if n, ok := e.pi.Info.TypeOf(expr).(*types.Named); ok && n.TypeArgs().Len() > 0 {
 		e.writeRef(expr, e.emitType(n), edges.Ref)
 	}
+}
+
+// visitArrayType handles references to array types.
+func (e *emitter) visitArrayType(expr *ast.ArrayType, stack stackFunc) {
+	e.emitAnonMembers(expr.Elt)
 }
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.

@@ -51,6 +51,14 @@ type Range struct {
 	Start, End []byte
 }
 
+// KeyRange returns a Range that contains only the given key.
+func KeyRange(k []byte) *Range {
+	return &Range{
+		Start: k,
+		End:   append(k[0:len(k):len(k)], 0),
+	}
+}
+
 type shard struct {
 	Range
 	count int64
