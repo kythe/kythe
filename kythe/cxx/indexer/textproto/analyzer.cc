@@ -635,7 +635,6 @@ absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
                                 field.full_name());
     }
     input = input.substr(match.size());
-      
     for (auto& p : plugins_) {
       auto s = p->AnalyzeIntegerField(this, file_vname, field, match);
       if (!s.ok()) {
