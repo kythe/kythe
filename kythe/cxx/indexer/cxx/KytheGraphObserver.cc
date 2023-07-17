@@ -1256,6 +1256,27 @@ void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
                          ConvertRef(Advice));
 }
 
+void KytheGraphObserver::recordDiagnostic(const Range& Range,
+                                          llvm::StringRef Signature,
+                                          llvm::StringRef Message) {
+  proto::VName anchor_vname = VNameFromRange(Range);
+
+  proto::VName dn_vname;
+  dn_vname.set_signature(
+      absl::StrCat(anchor_vname.signature(), "-", ConvertRef(Signature)));
+  dn_vname.set_corpus(anchor_vname.corpus());
+  dn_vname.set_root(anchor_vname.root());
+  dn_vname.set_path(anchor_vname.path());
+  dn_vname.set_language(anchor_vname.language());
+
+  recorder_->AddProperty(VNameRef(dn_vname), NodeKindID::kDiagnostic);
+  recorder_->AddProperty(VNameRef(dn_vname), PropertyID::kDiagnosticMessage,
+                         ConvertRef(Message));
+
+  recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kTagged,
+                     VNameRef(dn_vname));
+}
+
 GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     const llvm::StringRef& spelling) const {
   const auto& info = builtins_.find(spelling.str());
