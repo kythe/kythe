@@ -154,6 +154,7 @@ export enum FactName {
   NODE_KIND = '/kythe/node/kind',
   PARAM_DEFAULT = '/kythe/param/default',
   RULE_CLASS = '/kythe/ruleclass',
+  SEMANTIC_GENERATED = '/kythe/semantic/generated',
   SNIPPET_END = '/kythe/snippet/end',
   SNIPPET_START = '/kythe/snippet/start',
   SUBKIND = '/kythe/subkind',

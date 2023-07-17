@@ -417,6 +417,68 @@ std::string ExpressionString(const clang::Expr* Expr,
   Expr->printPretty(Out, nullptr, Policy);
   return Text;
 }
+
+class DisambiguationParentVisitor
+    : public clang::ConstDeclVisitor<DisambiguationParentVisitor,
+                                     const clang::Decl*> {
+ public:
+  explicit DisambiguationParentVisitor(const clang::Decl* start)
+      : start_(start) {}
+
+  const clang::Decl* VisitClassTemplateSpecializationDecl(
+      const clang::ClassTemplateSpecializationDecl* decl) {
+    return decl;
+  }
+
+  const clang::Decl* VisitVarTemplateSpecializationDecl(
+      const clang::VarTemplateSpecializationDecl* decl) {
+    return decl->isImplicit() ? decl : nullptr;
+  }
+
+  const clang::Decl* VisitFunctionDecl(const clang::FunctionDecl* decl) {
+    if (decl != start_) {
+      return decl;
+    }
+
+    if (const auto* parent = dyn_cast<clang::Decl>(decl->getDeclContext());
+        parent != nullptr && decl->getMemberSpecializationInfo() != nullptr) {
+      return parent;
+    }
+    return nullptr;
+  }
+
+  const clang::Decl* VisitVarDecl(const clang::VarDecl* decl) {
+    if (decl->getMemberSpecializationInfo() == nullptr) {
+      return nullptr;
+    }
+    if (const auto* parent = dyn_cast<clang::Decl>(decl->getDeclContext())) {
+      return parent;
+    }
+    return nullptr;
+  }
+
+  const clang::Decl* start() const { return start_; }
+
+ private:
+  const clang::Decl* const start_;
+};
+
+const clang::Decl* FindDisambiguationParent(const IndexedParentMap& parents,
+                                            const clang::Decl* decl) {
+  // Find the first parent node which is an implicit template-related node.
+  DisambiguationParentVisitor visitor(decl);
+  for (const auto& parent : RootTraversal(&parents, decl)) {
+    // Skip non-declaration traversal parents.
+    if (parent.decl == nullptr) continue;
+
+    if (const auto* found = visitor.Visit(parent.decl);
+        found != nullptr && found != visitor.start()) {
+      return found;
+    }
+  }
+
+  return nullptr;
+}
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -3998,71 +4060,30 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   }
 
   // Disambiguate nodes underneath template instances.
-  for (const auto& Current : RootTraversal(getAllParents(), Decl)) {
-    if (!Current.decl) continue;
-    if (const auto* TD = dyn_cast<clang::TemplateDecl>(Current.decl)) {
-      // Disambiguate type abstraction IDs from abstracted type IDs.
-      if (Current.decl != Decl) {
-        Ostream << "#";
+  // TODO(shahms): While this is ostensibly about disambiguating nodes from
+  // within template instantiations, a fair number of non-template tests rely on
+  // it to avoid producing duplicate nodes.
+  if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
+    if (const auto* CTSD =
+            dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
+      Ostream << "#"
+              << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
+    } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
+      Ostream << "#"
+              << HashToString(Hash(clang::QualType(FD->getFunctionType(), 0)));
+      if (const auto* TemplateArgs = FD->getTemplateSpecializationArgs()) {
+        Ostream << "#" << HashToString(Hash(TemplateArgs));
+      }
+    } else if (const auto* VD =
+                   dyn_cast<clang::VarTemplateSpecializationDecl>(Decl)) {
+      if (VD->isImplicit()) {
+        Ostream << "#"
+                << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
       }
     }
-    if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
-      if (const auto* CTSD =
-              dyn_cast<clang::ClassTemplateSpecializationDecl>(Current.decl)) {
-        // Inductively, we can break after the first implicit instantiation*
-        // (since its NodeId will contain its parent's first implicit
-        // instantiation and so on). We still want to include hashes of
-        // instantiation types.
-        // * we assume that the first parent changing, if it does change, is not
-        //   semantically important; we're generating stable internal IDs.
-        if (Current.decl != Decl) {
-          Ostream << "#" << BuildNodeIdForDecl(CTSD);
-          if (CTSD->isImplicit()) {
-            break;
-          }
-        } else {
-          Ostream << "#"
-                  << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
-        }
-      } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Current.decl)) {
-        Ostream << "#"
-                << HashToString(
-                       Hash(clang::QualType(FD->getFunctionType(), 0)));
-        if (const auto* TemplateArgs = FD->getTemplateSpecializationArgs()) {
-          if (Current.decl != Decl) {
-            Ostream << "#" << BuildNodeIdForDecl(FD);
-            break;
-          } else {
-            Ostream << "#" << HashToString(Hash(TemplateArgs));
-          }
-        } else if (const auto* MSI = FD->getMemberSpecializationInfo()) {
-          if (const auto* DC =
-                  dyn_cast<const clang::Decl>(FD->getDeclContext())) {
-            Ostream << "#" << BuildNodeIdForDecl(DC);
-            break;
-          }
-        }
-      } else if (const auto* VD =
-                     dyn_cast<clang::VarTemplateSpecializationDecl>(
-                         Current.decl)) {
-        if (VD->isImplicit()) {
-          if (Current.decl != Decl) {
-            Ostream << "#" << BuildNodeIdForDecl(VD);
-            break;
-          } else {
-            Ostream << "#"
-                    << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
-          }
-        }
-      } else if (const auto* VD = dyn_cast<clang::VarDecl>(Current.decl)) {
-        if (const auto* MSI = VD->getMemberSpecializationInfo()) {
-          if (const auto* DC =
-                  dyn_cast<const clang::Decl>(VD->getDeclContext())) {
-            Ostream << "#" << BuildNodeIdForDecl(DC);
-            break;
-          }
-        }
-      }
+
+    if (const auto* parent = FindDisambiguationParent(*getAllParents(), Decl)) {
+      Ostream << "#" << BuildNodeIdForDecl(parent);
     }
   }
 
