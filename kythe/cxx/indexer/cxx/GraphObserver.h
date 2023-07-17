@@ -374,8 +374,7 @@ class GraphObserver {
   /// `clang::BuiltinType::getName(this->getLangOptions())` or the builtin
   /// type constructor.
   /// \return The `NodeId` for `Spelling`.
-  virtual NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef& Spelling) const = 0;
+  virtual NodeId getNodeIdForBuiltinType(llvm::StringRef Spelling) const = 0;
 
   /// \brief Returns the ID for a type node aliasing another type node.
   /// \param AliasName a `NameId` for the alias name.
@@ -602,8 +601,7 @@ class GraphObserver {
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.
   /// \param Name The `Name` for which resolution has been deferred
-  virtual void recordLookupNode(const NodeId& Node,
-                                const llvm::StringRef& Name) {}
+  virtual void recordLookupNode(const NodeId& Node, llvm::StringRef Name) {}
 
   /// \brief Records a parameter relationship.
   /// \param `ParamOfNode` The node this `ParamNode` is the parameter of.
@@ -859,8 +857,7 @@ class GraphObserver {
   /// \param Id The ID of the node to record.
   /// \param NodeKind The kind of the node ("google/protobuf")
   /// \param Compl Whether this node is complete.
-  virtual void recordUserDefinedNode(const NodeId& Id,
-                                     const llvm::StringRef& NodeKind,
+  virtual void recordUserDefinedNode(const NodeId& Id, llvm::StringRef NodeKind,
                                      const absl::optional<Completeness> Compl) {
   }
 
@@ -967,8 +964,7 @@ class GraphObserver {
   /// \brief Records that the specified node is deprecated.
   /// \param NodeId The `NodeId` of the deprecated node.
   /// \param Advice A user-readable message about the deprecation (or empty).
-  virtual void recordDeprecated(const NodeId& NodeId,
-                                const llvm::StringRef& Advice) {}
+  virtual void recordDeprecated(const NodeId& NodeId, llvm::StringRef Advice) {}
 
   /// \brief Records a diagnostic at the given source range
   /// \param Range The source range
@@ -1170,8 +1166,7 @@ class NullGraphObserver : public GraphObserver {
     static void* NullClaimTokenClass;
   };
 
-  NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef& Spelling) const override {
+  NodeId getNodeIdForBuiltinType(llvm::StringRef Spelling) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 

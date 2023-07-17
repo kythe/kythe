@@ -99,8 +99,7 @@ class CxxExtractorTest : public testing::Test {
   /// \param path Absolute path, beginning with / (or B:\ or \\, etc), to the
   /// file to create.
   /// \param code Code to write at the file named by `path`.
-  void AddAbsoluteSourceFile(const llvm::StringRef& path,
-                             const std::string& code) {
+  void AddAbsoluteSourceFile(llvm::StringRef path, const std::string& code) {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
