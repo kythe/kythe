@@ -152,7 +152,10 @@ class TextprotoAnalyzer : public PluginApi {
                                   const Message& proto,
                                   const FieldDescriptor& field,
                                   int start_offset);
-
+  absl::Status AnalyzeIntegerValue(const proto::VName& file_vname,
+                                   const Message& proto,
+                                   const FieldDescriptor& field,
+                                   int start_offset);
   absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
                                      const Descriptor& msg_descriptor);
 
@@ -605,6 +608,53 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
   return absl::OkStatus();
 }
 
+absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
+    const proto::VName& file_vname, const Message& proto,
+    const FieldDescriptor& field, int start_offset) {
+  // Start after the last character of the field name.
+  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  input = input.substr(start_offset);
+
+  // Consume whitespace and colon after field name.
+  ConsumeTextprotoWhitespace(&input);
+  if (!re2::RE2::Consume(&input, ":")) {
+    return absl::UnknownError(
+        "Failed to find ':' when analyzing integer value");
+  }
+  ConsumeTextprotoWhitespace(&input);
+
+  // Detect 'array format' for repeated fields and trim the leading '['.
+  const bool array_format = field.is_repeated() && RE2::Consume(&input, "\\[");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
+
+  while (true) {
+    // Match the integer value.
+    absl::string_view match;
+    if (!re2::RE2::PartialMatch(input, R"(^([\d]+))", &match)) {
+      return absl::UnknownError("Failed to find text span for enum value: " +
+                                field.full_name());
+    }
+    input = input.substr(match.size());
+    for (auto& p : plugins_) {
+      auto s = p->AnalyzeIntegerField(this, file_vname, field, match);
+      if (!s.ok()) {
+        LOG(ERROR) << "Plugin error: " << s;
+      }
+    }
+
+    if (!array_format) break;
+
+    // Consume trailing comma and whitespace; exit if there's no comma.
+    ConsumeTextprotoWhitespace(&input);
+    if (!re2::RE2::Consume(&input, ",")) {
+      break;
+    }
+    ConsumeTextprotoWhitespace(&input);
+  }
+
+  return absl::OkStatus();
+}
+
 // Analyzes the field and returns the number of values indexed. Typically this
 // is 1, but it could be 1+ when list syntax is used in the textproto.
 absl::Status TextprotoAnalyzer::AnalyzeField(const proto::VName& file_vname,
@@ -679,6 +729,17 @@ absl::Status TextprotoAnalyzer::AnalyzeField(const proto::VName& file_vname,
       auto s = AnalyzeStringValue(file_vname, proto, field, end);
       if (!s.ok()) {
         LOG(ERROR) << "Error analyzing string value: " << s;
+      }
+    } else if (!plugins_.empty() &&
+               (field.type() == FieldDescriptor::TYPE_FIXED32 ||
+                field.type() == FieldDescriptor::TYPE_FIXED64 ||
+                field.type() == FieldDescriptor::TYPE_UINT32 ||
+                field.type() == FieldDescriptor::TYPE_UINT64 ||
+                field.type() == FieldDescriptor::TYPE_INT32 ||
+                field.type() == FieldDescriptor::TYPE_INT64)) {
+      auto s = AnalyzeIntegerValue(file_vname, proto, field, end);
+      if (!s.ok()) {
+        LOG(ERROR) << "Error analyzing integer value: " << s;
       }
     }
   }

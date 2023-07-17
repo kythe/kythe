@@ -264,14 +264,6 @@ _cc_kythe_proto_library_aspect = aspect(
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
-        # Attribute to make importing easier as the internal API requires this parameter.
-        # Unused externally.
-        "_grep_includes": attr.label(
-            allow_single_file = True,
-            executable = True,
-            cfg = "exec",
-            default = Label("//tools/cpp:grep-includes"),
-        ),
         "enable_proto_static_reflection": attr.bool(
             default = False,
             doc = "Emit and capture generated code for proto static reflection",
