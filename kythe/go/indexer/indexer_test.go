@@ -19,6 +19,7 @@ package indexer
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"go/ast"
@@ -28,6 +29,7 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -36,6 +38,7 @@ import (
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
+	mpb "kythe.io/kythe/proto/metadata_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -172,8 +175,46 @@ func init() { println(foo.Foo()) }
 	}
 }
 
+func base64EncodeInfo(t testing.TB, msg string) string {
+	var gci mpb.GeneratedCodeInfo
+	if err := proto.UnmarshalText(msg, &gci); err != nil {
+		t.Fatal(err)
+	}
+	rec, err := proto.Marshal(&gci)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return base64.StdEncoding.EncodeToString(rec)
+}
+
 func TestResolveInlineMetadata(t *testing.T) {
-	const subject = "package subject\n\nvar Primary = struct {\n\tMyParam bool\n}{\n\tMyParam: true,\n}\n\n//gokythe-inline-metadata:ElISFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo1ChJJREVOVElGSUVSOlByaW1hcnkSB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgFSgcElsSFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo+ChtJREVOVElGSUVSOlByaW1hcnkubXlfcGFyYW0SB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgKSgw"
+	const gci = `
+meta: <
+  edge: "%/kythe/edge/generates"
+  vname: <
+    signature: "IDENTIFIER:Primary"
+    corpus: "default"
+    path: "test/example.txt"
+    language: "lang"
+  >
+  begin: 21
+  end: 28
+>
+meta: <
+  edge: "%/kythe/edge/generates"
+  vname: <
+    signature: "IDENTIFIER:Primary.my_param"
+    corpus: "default"
+    path: "test/example.txt"
+    language: "lang"
+  >
+  begin: 41
+  end: 48
+>
+	`
+	encoded := base64EncodeInfo(t, gci)
+	log.Infof("Encoded GeneratedCodeInfo: %s", encoded) // for testdata/basic/inline.go
+	subject := "package subject\n\nvar Primary = struct {\n\tMyParam bool\n}{\n\tMyParam: true,\n}\n\n//gokythe-inline-metadata:" + encoded
 	unit, digest := oneFileCompilation("testdata/subject.go", "subject", subject)
 	fetcher := memFetcher{
 		digest: subject,

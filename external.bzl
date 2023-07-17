@@ -33,7 +33,7 @@ load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.19.2")
+    go_register_toolchains(version = "1.20")
     gazelle_dependencies()
     rules_java_dependencies()
 
