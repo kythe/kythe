@@ -974,9 +974,8 @@ class GraphObserver {
   /// \param Range The source range
   /// \param Signature The signature to use for the diagnostic VName
   /// \param Message The diagnostic message
-  virtual void recordDiagnostic(const Range& Range,
-                                const llvm::StringRef& Signature,
-                                const llvm::StringRef& Message) {}
+  virtual void recordDiagnostic(const Range& Range, llvm::StringRef Signature,
+                                llvm::StringRef Message) {}
 
   /// \brief Called when a new input file is entered.
   ///

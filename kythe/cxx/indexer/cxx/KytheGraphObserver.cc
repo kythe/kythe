@@ -1257,13 +1257,13 @@ void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
 }
 
 void KytheGraphObserver::recordDiagnostic(const Range& Range,
-                                          const llvm::StringRef& Signature,
-                                          const llvm::StringRef& Message) {
+                                          llvm::StringRef Signature,
+                                          llvm::StringRef Message) {
   proto::VName anchor_vname = VNameFromRange(Range);
 
   proto::VName dn_vname;
-  dn_vname.set_signature(std::string(
-      absl::StrCat(anchor_vname.signature(), "-", ConvertRef(Signature))));
+  dn_vname.set_signature(
+      absl::StrCat(anchor_vname.signature(), "-", ConvertRef(Signature)));
   dn_vname.set_corpus(anchor_vname.corpus());
   dn_vname.set_root(anchor_vname.root());
   dn_vname.set_path(anchor_vname.path());
