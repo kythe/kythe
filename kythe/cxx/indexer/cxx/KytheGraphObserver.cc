@@ -438,7 +438,7 @@ void KytheGraphObserver::recordIncludesRange(const Range& source_range,
 }
 
 void KytheGraphObserver::recordUserDefinedNode(
-    const NodeId& node, const llvm::StringRef& kind,
+    const NodeId& node, llvm::StringRef kind,
     const absl::optional<Completeness> completeness) {
   VNameRef node_vname = VNameRefFromNodeId(node);
   recorder_->AddProperty(node_vname, PropertyID::kNodeKind, ConvertRef(kind));
@@ -1080,7 +1080,7 @@ void KytheGraphObserver::recordTVarNode(
 }
 
 void KytheGraphObserver::recordLookupNode(const NodeId& node_id,
-                                          const llvm::StringRef& text) {
+                                          llvm::StringRef text) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kLookup);
   recorder_->AddProperty(node_vname, PropertyID::kText, ConvertRef(text));
@@ -1250,14 +1250,35 @@ void KytheGraphObserver::recordVisibility(const NodeId& FieldNodeId,
 }
 
 void KytheGraphObserver::recordDeprecated(const NodeId& NodeId,
-                                          const llvm::StringRef& Advice) {
+                                          llvm::StringRef Advice) {
   const VNameRef node_vname = VNameRefFromNodeId(NodeId);
   recorder_->AddProperty(node_vname, PropertyID::kTagDeprecated,
                          ConvertRef(Advice));
 }
 
+void KytheGraphObserver::recordDiagnostic(const Range& Range,
+                                          llvm::StringRef Signature,
+                                          llvm::StringRef Message) {
+  proto::VName anchor_vname = VNameFromRange(Range);
+
+  proto::VName dn_vname;
+  dn_vname.set_signature(
+      absl::StrCat(anchor_vname.signature(), "-", ConvertRef(Signature)));
+  dn_vname.set_corpus(anchor_vname.corpus());
+  dn_vname.set_root(anchor_vname.root());
+  dn_vname.set_path(anchor_vname.path());
+  dn_vname.set_language(anchor_vname.language());
+
+  recorder_->AddProperty(VNameRef(dn_vname), NodeKindID::kDiagnostic);
+  recorder_->AddProperty(VNameRef(dn_vname), PropertyID::kDiagnosticMessage,
+                         ConvertRef(Message));
+
+  recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kTagged,
+                     VNameRef(dn_vname));
+}
+
 GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
-    const llvm::StringRef& spelling) const {
+    llvm::StringRef spelling) const {
   const auto& info = builtins_.find(spelling.str());
   if (info == builtins_.end()) {
     if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {

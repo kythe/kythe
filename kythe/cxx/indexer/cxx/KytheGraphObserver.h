@@ -174,8 +174,7 @@ class KytheGraphObserver : public GraphObserver {
     hash_recorder_ = options.hash_recorder;
   }
 
-  NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef& spelling) const override;
+  NodeId getNodeIdForBuiltinType(llvm::StringRef spelling) const override;
 
   const KytheClaimToken* getDefaultClaimToken() const override {
     return &default_token_;
@@ -228,8 +227,7 @@ class KytheGraphObserver : public GraphObserver {
       const NodeId& node,
       const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordLookupNode(const NodeId& node,
-                        const llvm::StringRef& text) override;
+  void recordLookupNode(const NodeId& node, llvm::StringRef text) override;
 
   void recordParamEdge(const NodeId& param_of_id, uint32_t ordinal,
                        const NodeId& param_id) override;
@@ -288,7 +286,7 @@ class KytheGraphObserver : public GraphObserver {
       const absl::optional<MarkedSource>& marked_source) override;
 
   void recordUserDefinedNode(
-      const NodeId& node, const llvm::StringRef& node_kind,
+      const NodeId& node, llvm::StringRef node_kind,
       absl::optional<Completeness> completeness) override;
 
   void recordFullDefinitionRange(
@@ -380,8 +378,10 @@ class KytheGraphObserver : public GraphObserver {
   void recordVisibility(const NodeId& FieldNodeId,
                         clang::AccessSpecifier access) override;
 
-  void recordDeprecated(const NodeId& NodeId,
-                        const llvm::StringRef& advice) override;
+  void recordDeprecated(const NodeId& NodeId, llvm::StringRef advice) override;
+
+  void recordDiagnostic(const Range& Range, llvm::StringRef Signature,
+                        llvm::StringRef Message) override;
 
   void pushFile(clang::SourceLocation blame_location,
                 clang::SourceLocation location) override;
