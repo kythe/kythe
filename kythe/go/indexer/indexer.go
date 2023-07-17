@@ -920,11 +920,12 @@ func loadInlineMetadata(fi *apb.CompilationUnit_FileInput, encodedMetadata strin
 
 	rules := make(metadata.Rules, 0, len(gci.GetMeta()))
 	for _, r := range gci.GetMeta() {
+		k, rev := strings.CutPrefix(r.Edge, "%")
 		rules = append(rules, metadata.Rule{
 			EdgeIn:  edges.DefinesBinding,
-			EdgeOut: edges.Generates,
+			EdgeOut: k,
 			VName:   r.GetVname(),
-			Reverse: true,
+			Reverse: rev,
 			Begin:   int(r.GetBegin()),
 			End:     int(r.GetEnd()),
 		})
