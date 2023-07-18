@@ -8,7 +8,7 @@ exports_files(["javac-wrapper.sh"])
 
 java_binary(
     name = "javac_extractor",
-    srcs = ["Javac9Wrapper.java"],
+    srcs = ["JavacWrapper.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
@@ -22,7 +22,7 @@ java_binary(
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
     ],
-    main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac9Wrapper",
+    main_class = "com.google.devtools.kythe.extractors.java.standalone.JavacWrapper",
     visibility = ["//visibility:public"],
     deps = [
         ":abstract_javac_wrapper",

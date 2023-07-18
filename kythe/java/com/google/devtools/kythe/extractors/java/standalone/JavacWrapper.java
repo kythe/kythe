@@ -36,8 +36,12 @@ import java.util.List;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
-/** A class that wraps javac to extract compilation information and write it to an index file. */
-public class Javac9Wrapper extends AbstractJavacWrapper {
+/**
+ * A class that wraps javac to extract compilation information and write it to an index file.
+ *
+ * <p>This class works for Java 9 and later.
+ */
+public class JavacWrapper extends AbstractJavacWrapper {
   @Override
   protected Collection<CompilationDescription> processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
@@ -141,6 +145,6 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
   }
 
   public static void main(String[] args) {
-    new Javac9Wrapper().process(args);
+    new JavacWrapper().process(args);
   }
 }
