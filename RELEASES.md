@@ -1,5 +1,35 @@
 # Release Notes
 
+## [v0.0.63] - 2023-07-18
+
+#### Bug Fixes
+
+* **cxx_indexer:**
+  *  don't create a temporary and use its address for usrs (#5720) ([aefac5c6](https://github.com/kythe/kythe/commit/aefac5c66aede4a1a877e7e2644374688331df6a))
+  *  ensure the working directory is absolute (#5709) ([df7353e3](https://github.com/kythe/kythe/commit/df7353e3230e97e9266b6f64b59b231503f9072c))
+  *  ensure the working directory is absolute (#5708) ([d73735b8](https://github.com/kythe/kythe/commit/d73735b813b12347ae23557b00271d409cd6e299))
+* **go_indexer:**  visit anon members in struct type (#5734) ([8bec7289](https://github.com/kythe/kythe/commit/8bec72890e315f5368276163ea5fb6c1e5da05f7))
+* **proto_verifier_test:**  remove proto static reflection option (#5702) ([ce9303db](https://github.com/kythe/kythe/commit/ce9303dbbb7aca6b842fdcf5ac8beccfcf70c358))
+* **serving:**  scan all identifier matches for reply (#5735) ([47b5f65c](https://github.com/kythe/kythe/commit/47b5f65c7da33fe68a88a86adf8a6ce63d5da231))
+* **typescript_indexer:**
+  *  emit  edges for methods that are 2+ levels away (#5725) ([580ced87](https://github.com/kythe/kythe/commit/580ced87085d90b07bcbc009aba1770528b7fc03))
+  *  improve childof coverage (#5727) ([1ad4c6dd](https://github.com/kythe/kythe/commit/1ad4c6dd42b84521558906f922ffe65a4f8b6c1a))
+  *  limit ref/call spans to identifiers (#5695) ([2eedf34f](https://github.com/kythe/kythe/commit/2eedf34f736b9135063cd20b3f7883519f0d2a5a))
+
+#### Features
+
+* **cc_proto_verifier_test:**  optionally enable proto static reflection (#5700) ([d352a0bc](https://github.com/kythe/kythe/commit/d352a0bc881ca1b2188587718f5353ecb08fadd8))
+* **cxx_indexer:**
+  *  add GraphObserver.recordDiagnostic() (#5730) ([49f57689](https://github.com/kythe/kythe/commit/49f576899d85adfbfe56228bed4ceb14e4c00291))
+  *  provide InspectDeclRef access to Expr (#5726) ([d2258d15](https://github.com/kythe/kythe/commit/d2258d15ae4737972fe32ed4cc0f1af9d9898813))
+  *  optionally use the compilation unit corpus for USRs (#5710) ([22798b44](https://github.com/kythe/kythe/commit/22798b444a2636cb4917487cd2e92d228d37898d))
+* **go_indexer:**
+  *  support custom GeneratedCodeInfo edges (#5740) ([79aba518](https://github.com/kythe/kythe/commit/79aba518600520def93a81ad61f663a680a894ab))
+  *  add --emit_ref_call_over_identifier flag (#5692) ([8cd5f34e](https://github.com/kythe/kythe/commit/8cd5f34e1c50846c1938f8c4810f2c50146db69e))
+* **java_indexer:**  add --emit_ref_call_over_identifier flag (#5693) ([7e74fea3](https://github.com/kythe/kythe/commit/7e74fea3067add289c844ec6bf36affbe9e69101))
+* **proto_verifier_test:**  add cc_deps and cc_indexer parameters ([133d3790](https://github.com/kythe/kythe/commit/133d3790d2b8002bbb2013c5d5660e804bcd67ca))
+* **typescript:**  add semantic/generated fact name (#5736) ([e1433ba3](https://github.com/kythe/kythe/commit/e1433ba322729830a91cfbd1f9d1c538e6e1034d))
+
 ## [v0.0.62] - 2023-06-07
 
 #### Features
@@ -1571,7 +1601,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.62...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.63...HEAD
+[v0.0.63] https://github.com/kythe/kythe/compare/v0.0.62...v0.0.63
 [v0.0.62] https://github.com/kythe/kythe/compare/v0.0.61...v0.0.62
 [v0.0.61] https://github.com/kythe/kythe/compare/v0.0.60...v0.0.61
 [v0.0.60] https://github.com/kythe/kythe/compare/v0.0.59...v0.0.60
