@@ -2,7 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load(":genproto.bzl", "go_proto_library", "rust_proto_library", "update_generated_protos")
+load(":genproto.bzl", "rust_proto_library", "update_generated_protos", go_kythe_proto = "go_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -39,7 +39,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":schema_proto",
     deps = [":storage_go_proto"],
 )
@@ -64,7 +64,7 @@ cc_proto_library(
     deps = [":common_proto"],
 )
 
-go_proto_library(proto = ":common_proto")
+go_kythe_proto(proto = ":common_proto")
 
 java_proto_library(
     name = "common_java_proto",
@@ -87,7 +87,7 @@ cc_proto_library(
     deps = [":storage_proto"],
 )
 
-go_proto_library(proto = ":storage_proto")
+go_kythe_proto(proto = ":storage_proto")
 
 java_proto_library(
     name = "storage_java_proto",
@@ -116,7 +116,7 @@ cc_proto_library(
     deps = [":storage_service_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":storage_service_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_go_proto"],
@@ -147,7 +147,7 @@ cc_proto_library(
     deps = [":analysis_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":analysis_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
@@ -187,7 +187,7 @@ cc_proto_library(
     deps = [":analysis_service_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":analysis_service_proto",
     deps = [
         ":analysis_go_proto",
@@ -213,7 +213,7 @@ cc_proto_library(
     deps = [":status_service_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":status_service_proto",
     deps = [":common_go_proto"],
 )
@@ -234,7 +234,7 @@ cc_proto_library(
     deps = [":filecontext_proto"],
 )
 
-go_proto_library(proto = ":filecontext_proto")
+go_kythe_proto(proto = ":filecontext_proto")
 
 java_proto_library(
     name = "filecontext_java_proto",
@@ -253,7 +253,7 @@ cc_proto_library(
     deps = [":buildinfo_proto"],
 )
 
-go_proto_library(proto = ":buildinfo_proto")
+go_kythe_proto(proto = ":buildinfo_proto")
 
 java_proto_library(
     name = "buildinfo_java_proto",
@@ -271,7 +271,7 @@ cc_proto_library(
     deps = [":cxx_proto"],
 )
 
-go_proto_library(proto = ":cxx_proto")
+go_kythe_proto(proto = ":cxx_proto")
 
 java_proto_library(
     name = "cxx_java_proto",
@@ -289,7 +289,7 @@ cc_proto_library(
     deps = [":go_proto"],
 )
 
-go_proto_library(proto = ":go_proto")
+go_kythe_proto(proto = ":go_proto")
 
 java_proto_library(
     name = "go_java_proto",
@@ -308,7 +308,7 @@ cc_proto_library(
     deps = [":java_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":java_proto",
     deps = [":storage_go_proto"],
 )
@@ -330,7 +330,7 @@ cc_proto_library(
     deps = [":claim_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":claim_proto",
     deps = [":storage_go_proto"],
 )
@@ -351,7 +351,7 @@ cc_proto_library(
     deps = [":filetree_proto"],
 )
 
-go_proto_library(proto = ":filetree_proto")
+go_kythe_proto(proto = ":filetree_proto")
 
 java_proto_library(
     name = "filetree_java_proto",
@@ -384,7 +384,7 @@ cc_proto_library(
     deps = [":xref_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":xref_proto",
     deps = [":common_go_proto"],
 )
@@ -404,7 +404,7 @@ cc_proto_library(
     deps = [":identifier_proto"],
 )
 
-go_proto_library(proto = ":identifier_proto")
+go_kythe_proto(proto = ":identifier_proto")
 
 java_proto_library(
     name = "identifier_java_proto",
@@ -418,7 +418,7 @@ proto_library(
     deps = [":common_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":graph_proto",
     deps = [":common_go_proto"],
 )
@@ -444,7 +444,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":explore_proto",
     deps = [
         ":common_go_proto",
@@ -482,7 +482,7 @@ cc_proto_library(
     deps = [":serving_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":serving_proto",
     deps = [":common_go_proto"],
 )
@@ -505,7 +505,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":xref_serving_proto",
     deps = [
         ":common_go_proto",
@@ -525,7 +525,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":graph_serving_proto",
     deps = [
         ":schema_go_proto",
@@ -544,7 +544,7 @@ cc_proto_library(
     deps = [":link_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":link_proto",
     deps = [
         ":common_go_proto",
@@ -574,7 +574,7 @@ cc_proto_library(
     deps = [":internal_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":internal_proto",
     deps = [
         ":common_go_proto",
@@ -599,7 +599,7 @@ cc_proto_library(
     deps = [":entryset_proto"],
 )
 
-go_proto_library(proto = ":entryset_proto")
+go_kythe_proto(proto = ":entryset_proto")
 
 java_proto_library(
     name = "entryset_java_proto",
@@ -611,14 +611,14 @@ proto_library(
     srcs = ["extraction_config.proto"],
 )
 
-go_proto_library(proto = ":extraction_config_proto")
+go_kythe_proto(proto = ":extraction_config_proto")
 
 proto_library(
     name = "repo_proto",
     srcs = ["repo.proto"],
 )
 
-go_proto_library(proto = ":repo_proto")
+go_kythe_proto(proto = ":repo_proto")
 
 proto_library(
     name = "pipeline_proto",
@@ -632,7 +632,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":pipeline_proto",
     deps = [
         ":common_go_proto",
@@ -653,7 +653,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":driver_proto",
     deps = [
         ":analysis_go_proto",
@@ -669,7 +669,7 @@ proto_library(
     deps = [":storage_proto"],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":metadata_proto",
     deps = [":storage_go_proto"],
 )
@@ -726,7 +726,7 @@ proto_library(
     ],
 )
 
-go_proto_library(
+go_kythe_proto(
     proto = ":generated_message_info_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
 )
