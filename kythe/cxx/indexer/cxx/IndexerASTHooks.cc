@@ -2257,7 +2257,11 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   auto II = ILE->inits().begin();
   for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
     if (II == ILE->inits().end()) {
-      LogErrorWithASTDump("Fewer initializers than decls:\n", ILE);
+      // Avoid spuriously logging expr/decl mismatches if the ILE itself
+      // contains errors as those errors will be logged elsewhere.
+      LOG_IF(ERROR, !ILE->containsErrors())
+          << "Fewer initializers than decls:\n"
+          << StreamAdapter::Dump(*ILE, Context);
       break;
     }
     // On rare occasions, the init Expr we get from clang is null.
