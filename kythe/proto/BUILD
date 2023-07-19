@@ -2,8 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load(":go.bzl", "go_kythe_proto")
-load("@rules_rust//proto:proto.bzl", "rust_proto_library")
+load(":genproto.bzl", "rust_proto_library", "update_generated_protos", go_kythe_proto = "go_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -686,8 +685,8 @@ java_proto_library(
 )
 
 bzl_library(
-    name = "go_bzl",
-    srcs = ["go.bzl"],
+    name = "genproto_bzl",
+    srcs = ["genproto.bzl"],
 )
 
 proto_library(
@@ -747,3 +746,6 @@ cc_proto_library(
         ":generated_message_info_proto",
     ],
 )
+
+# Uses native.existing_rules() to find rules to update; must come last.
+update_generated_protos(name = "update")
