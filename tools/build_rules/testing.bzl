@@ -1,48 +1,5 @@
 """This module defines macros for making shell tests."""
 
-def file_diff_test(name, file1, file2, message = "", size = "small", tags = []):
-    """A macro to compare a source file with a generated counterpart.
-
-    This macro generates a sh_test that prints a diff and fails if file1 is not
-    the same as file2.
-
-    Args:
-      name: the name of the sh_test to create
-      file1: the left-hand file to compare
-      file2: the right-hand file to compare
-      message: optional message to print if the files differ
-      size: the size of the test
-      tags: tags for the sh_test rule
-    """
-    if file1 == "" or file2 == "":
-        fail('You must provide both "file1" and "file2"')
-
-    if message == "":
-        message = "Files $(location %s) and $(location %s) differ" % (file1, file2)
-
-    gen = name + "_script"
-    native.genrule(
-        name = gen,
-        srcs = [file1, file2],
-        outs = [gen + ".sh"],
-        executable = True,
-        testonly = True,
-        visibility = ["//visibility:private"],
-        cmd = "\n".join([
-            "if ! diff '$(location %s)' '$(location %s)' ; then" % (file1, file2),
-            "  echo 'printf \"\\n>> %s\\n\\n\" ; exit 1' > $@" % message,
-            "else",
-            "  echo 'exit 0' > $@",
-            "fi",
-        ]),
-    )
-    native.sh_test(
-        name = name,
-        srcs = [":" + gen],
-        size = size,
-        tags = tags,
-    )
-
 def shell_tool_test(
         name,
         script = [],

@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//kythe/proto:go.bzl", "go_kythe_proto")
+load("//kythe/proto:genproto.bzl", go_kythe_proto = "go_proto_library")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -87,4 +87,5 @@ proto_library(
 go_kythe_proto(
     importpath = "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto",
     proto = ":riegeli_test_proto",
+    suggested_update_target = None,
 )
