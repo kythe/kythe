@@ -142,7 +142,7 @@ void DecodeKZipFile(const std::string& path, bool silent,
   CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
                      << reader.status();
   bool compilation_read = false;
-  auto status = reader->Scan([&](std::string_view digest) {
+  auto status = reader->Scan([&](absl::string_view digest) {
     IndexerJob job;
     job.silent = silent;
 

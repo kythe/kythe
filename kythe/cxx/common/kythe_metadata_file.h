@@ -19,8 +19,8 @@
 
 #include <map>
 #include <memory>
-#include <string_view>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "kythe/proto/metadata.pb.h"
 #include "kythe/proto/storage.pb.h"
@@ -58,7 +58,7 @@ class MetadataFile {
   /// Creates a new MetadataFile from a list of rules ranging from `begin` to
   /// `end`.
   template <typename InputIterator>
-  static std::unique_ptr<MetadataFile> LoadFromRules(std::string_view id,
+  static std::unique_ptr<MetadataFile> LoadFromRules(absl::string_view id,
                                                      InputIterator begin,
                                                      InputIterator end) {
     std::unique_ptr<MetadataFile> meta_file = std::make_unique<MetadataFile>();
@@ -85,7 +85,7 @@ class MetadataFile {
     return file_scope_rules_;
   }
 
-  std::string_view id() const { return id_; }
+  absl::string_view id() const { return id_; }
 
  private:
   /// Rules to apply keyed on `begin`.
@@ -119,7 +119,7 @@ class MetadataSupport {
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      std::string_view buffer, std::string_view target_buffer) {
+      absl::string_view buffer, absl::string_view target_buffer) {
     return nullptr;
   }
 
@@ -154,8 +154,8 @@ class MetadataSupports {
   }
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string& filename, std::string_view buffer,
-      const std::string& search_string, std::string_view target_buffer) const;
+      const std::string& filename, absl::string_view buffer,
+      const std::string& search_string, absl::string_view target_buffer) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
 
@@ -168,13 +168,13 @@ class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      std::string_view buffer, std::string_view target_buffer) override;
+      absl::string_view buffer, absl::string_view target_buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.
   /// \return null on failure.
-  static std::unique_ptr<MetadataFile> LoadFromJSON(std::string_view id,
-                                                    std::string_view json);
+  static std::unique_ptr<MetadataFile> LoadFromJSON(absl::string_view id,
+                                                    absl::string_view json);
 };
 
 }  // namespace kythe

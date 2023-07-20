@@ -65,7 +65,7 @@ void DecodeKzipFile(const std::string& path,
   CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
                      << reader.status();
   bool compilation_read = false;
-  auto status = reader->Scan([&](std::string_view digest) {
+  auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
     auto compilation = reader->ReadUnit(digest);
     CHECK(compilation.ok()) << compilation.status();

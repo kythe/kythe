@@ -28,7 +28,7 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   // Create an anchor spanning the full range of the string value.
   const char* begin = tokens.front().source_text.data();
   const char* end = tokens.back().source_text.end();
-  const std::string_view full_span = std::string_view(begin, end - begin);
+  const absl::string_view full_span = absl::string_view(begin, end - begin);
   const proto::VName anchor_vname =
       api->CreateAndAddAnchorNode(file_vname, full_span);
 

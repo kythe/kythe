@@ -17,11 +17,11 @@
 #include "kythe/cxx/common/utf8_line_index.h"
 
 #include <algorithm>
-#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 
 namespace {
@@ -37,7 +37,7 @@ static bool IsUTF8ContinuationByte(int byte) { return ((byte & 0xC0) == 0x80); }
 // covered by a UTF8LineIndex, and also for breaking the file up into lines
 // and then concatenating those lines.
 void CheckRoundTrips(const UTF8LineIndex& index) {
-  std::string_view content(index.str());
+  absl::string_view content(index.str());
   for (int byte_offset = 0; byte_offset < content.size(); ++byte_offset) {
     if (IsUTF8ContinuationByte(content[byte_offset])) continue;
     CharacterPosition position(index.ComputePositionForByteOffset(byte_offset));

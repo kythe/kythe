@@ -17,10 +17,9 @@
 #ifndef KYTHE_CXX_COMMON_INDEX_WRITER_H_
 #define KYTHE_CXX_COMMON_INDEX_WRITER_H_
 
-#include <string_view>
-
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
@@ -42,7 +41,7 @@ class IndexWriterInterface {
 
   /// \brief Write the file data to the index. Returns the hex-encoded
   /// SHA256 digest of the file's contents.
-  virtual absl::StatusOr<std::string> WriteFile(std::string_view content) = 0;
+  virtual absl::StatusOr<std::string> WriteFile(absl::string_view content) = 0;
 
   /// \brief Flush and finalize any outstanding writes.
   virtual absl::Status Close() = 0;
@@ -66,7 +65,7 @@ class IndexWriter final {
   }
 
   /// \brief Write the file data to the index.
-  absl::StatusOr<std::string> WriteFile(std::string_view content) {
+  absl::StatusOr<std::string> WriteFile(absl::string_view content) {
     return impl_->WriteFile(content);
   }
 

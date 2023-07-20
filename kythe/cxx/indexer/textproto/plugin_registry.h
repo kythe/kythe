@@ -17,8 +17,7 @@
 #ifndef KYTHE_CXX_INDEXER_TEXTPROTO_PLUGIN_REGISTRY_H_
 #define KYTHE_CXX_INDEXER_TEXTPROTO_PLUGIN_REGISTRY_H_
 
-#include <string_view>
-
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/indexer/textproto/plugin.h"
 

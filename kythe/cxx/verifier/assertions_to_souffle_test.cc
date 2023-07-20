@@ -65,7 +65,7 @@ class AstTest : public ::testing::Test {
   }
 
   /// \return the generated program without boilerplate
-  std::string_view MustGenerateProgram() {
+  absl::string_view MustGenerateProgram() {
     CHECK(p_.Lower(symbol_table_, {}));
     auto code = p_.code();
     CHECK(absl::ConsumeSuffix(&code, ".\n"));

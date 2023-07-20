@@ -27,7 +27,7 @@ namespace lang_proto {
 namespace {
 
 void AddPathSubstitutions(
-    std::string_view path_argument,
+    absl::string_view path_argument,
     std::vector<std::pair<std::string, std::string>>* substitutions) {
   std::vector<std::string> parts =
       absl::StrSplit(path_argument, ':', absl::SkipEmpty());
@@ -56,7 +56,7 @@ void _ParsePathSubstitutions(
     } else if (argument == "-I" || argument == "--proto_path") {
       expecting_path_arg = true;
     } else {
-      std::string_view argument_value = argument;
+      absl::string_view argument_value = argument;
       if (absl::ConsumePrefix(&argument_value, "-I")) {
         AddPathSubstitutions(argument_value, substitutions);
       } else if (absl::ConsumePrefix(&argument_value, "--proto_path=")) {

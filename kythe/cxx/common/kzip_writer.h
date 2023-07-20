@@ -19,11 +19,11 @@
 
 #include <zip.h>
 
-#include <string_view>
 #include <unordered_map>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/proto/analysis.pb.h"
@@ -38,7 +38,7 @@ class KzipWriter : public IndexWriterInterface {
   /// \param path Path to the file to create. Must not currently exist.
   /// \param encoding Encoding to use for compilation units.
   static absl::StatusOr<IndexWriter> Create(
-      std::string_view path, KzipEncoding encoding = DefaultEncoding());
+      absl::string_view path, KzipEncoding encoding = DefaultEncoding());
   /// \brief Constructs an IndexWriter from the libzip source pointer.
   /// \param source zip_source_t to use as backing store.
   /// See https://libzip.org/documentation/zip_source.html for ownership.
@@ -56,7 +56,7 @@ class KzipWriter : public IndexWriterInterface {
       const kythe::proto::IndexedCompilation& unit) override;
 
   /// \brief Writes the file contents to the kzip file, returning their digest.
-  absl::StatusOr<std::string> WriteFile(std::string_view content) override;
+  absl::StatusOr<std::string> WriteFile(absl::string_view content) override;
 
   /// \brief Flushes accumulated writes and closes the kzip file.
   /// Close must be called before the KzipWriter is destroyed!
@@ -69,8 +69,8 @@ class KzipWriter : public IndexWriterInterface {
 
   explicit KzipWriter(zip_t* archive, KzipEncoding encoding);
 
-  absl::StatusOr<std::string> InsertFile(std::string_view path,
-                                         std::string_view content);
+  absl::StatusOr<std::string> InsertFile(absl::string_view path,
+                                         absl::string_view content);
 
   absl::Status InitializeArchive(zip_t* archive);
 

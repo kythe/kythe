@@ -18,10 +18,10 @@
 #include <unistd.h>
 
 #include <cstdlib>
-#include <string_view>
 
 #include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 
 namespace kythe {

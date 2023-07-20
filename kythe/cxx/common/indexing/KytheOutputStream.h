@@ -17,10 +17,9 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
-#include <string_view>
-
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -31,16 +30,16 @@ using MarkedSource = kythe::proto::common::MarkedSource;
 /// A collection of references to the components of a VName.
 class VNameRef {
  public:
-  std::string_view signature() const { return signature_; }
-  std::string_view corpus() const { return corpus_; }
-  std::string_view root() const { return root_; }
-  std::string_view path() const { return path_; }
-  std::string_view language() const { return language_; }
-  void set_signature(std::string_view s) { signature_ = s; }
-  void set_corpus(std::string_view s) { corpus_ = s; }
-  void set_root(std::string_view s) { root_ = s; }
-  void set_path(std::string_view s) { path_ = s; }
-  void set_language(std::string_view s) { language_ = s; }
+  absl::string_view signature() const { return signature_; }
+  absl::string_view corpus() const { return corpus_; }
+  absl::string_view root() const { return root_; }
+  absl::string_view path() const { return path_; }
+  absl::string_view language() const { return language_; }
+  void set_signature(absl::string_view s) { signature_ = s; }
+  void set_corpus(absl::string_view s) { corpus_ = s; }
+  void set_root(absl::string_view s) { root_ = s; }
+  void set_path(absl::string_view s) { path_ = s; }
+  void set_language(absl::string_view s) { language_ = s; }
 
   explicit VNameRef(const proto::VName& vname)
       : signature_(vname.signature().data(), vname.signature().size()),
@@ -62,17 +61,17 @@ class VNameRef {
   }
 
  private:
-  std::string_view signature_;
-  std::string_view corpus_;
-  std::string_view root_;
-  std::string_view path_;
-  std::string_view language_;
+  absl::string_view signature_;
+  absl::string_view corpus_;
+  absl::string_view root_;
+  absl::string_view path_;
+  absl::string_view language_;
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
   const VNameRef* source;
-  std::string_view fact_name;
-  std::string_view fact_value;
+  absl::string_view fact_name;
+  absl::string_view fact_value;
   /// Overwrites all of the fields in `entry` that can differ between single
   /// facts.
   void Expand(proto::Entry* entry) const {
@@ -84,7 +83,7 @@ struct FactRef {
 /// A collection of references to the components of a single Kythe edge.
 struct EdgeRef {
   const VNameRef* source;
-  std::string_view edge_kind;
+  absl::string_view edge_kind;
   const VNameRef* target;
   /// Overwrites all of the fields in `entry` that can differ between edges
   /// without ordinals.
@@ -98,7 +97,7 @@ struct EdgeRef {
 /// ordinal.
 struct OrdinalEdgeRef {
   const VNameRef* source;
-  std::string_view edge_kind;
+  absl::string_view edge_kind;
   const VNameRef* target;
   uint32_t ordinal;
   /// Overwrites all of the fields in `entry` that can differ between edges with
