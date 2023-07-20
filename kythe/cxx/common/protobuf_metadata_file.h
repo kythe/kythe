@@ -56,7 +56,7 @@ class ProtobufMetadataSupport : public MetadataSupport {
   /// a warning.
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      std::string_view buffer, std::string_view target_buffer) override;
+      absl::string_view buffer, absl::string_view target_buffer) override;
 
   void UseVNameLookup(VNameLookup lookup) override { vname_lookup_ = lookup; }
 

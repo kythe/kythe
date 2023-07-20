@@ -17,7 +17,7 @@
 #include "kythe/cxx/common/re2_flag.h"
 
 namespace kythe {
-bool AbslParseFlag(std::string_view text, RE2Flag* value, std::string* error) {
+bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error) {
   if (text.empty()) {
     return true;
   }

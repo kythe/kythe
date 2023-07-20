@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#include <string_view>
-
 #include "absl/algorithm/container.h"
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"
@@ -90,7 +89,7 @@ TEST(CxxExtractorTest, TestModulesExtraction) {
   unit.set_argument(2, "dummy-target");
   unit.clear_details();
   unit.mutable_argument()->erase(
-      absl::c_find_if(unit.argument(), [](std::string_view arg) {
+      absl::c_find_if(unit.argument(), [](absl::string_view arg) {
         return absl::StartsWith(arg, "-fmodules-cache-path=");
       }));
 

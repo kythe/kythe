@@ -69,14 +69,14 @@ class PreloadedProtoFileTree : public google::protobuf::compiler::SourceTree {
   // as `filename`, leaving FileReaders to do any elaboration (e.g., in this
   // case, applying path substitutions).
   google::protobuf::io::ZeroCopyInputStream* Open(
-      std::string_view filename) override;
+      absl::string_view filename) override;
 
   // If Open() returns nullptr, calling this method immediately will return a
   // description of the error.
   std::string GetLastErrorMessage() override { return last_error_; }
 
   // A wrapper around Open(), that reads the proto file contents into a buffer.
-  bool Read(std::string_view file_path, std::string* out);
+  bool Read(absl::string_view file_path, std::string* out);
 
  private:
   // All path prefix substitutions to consider.

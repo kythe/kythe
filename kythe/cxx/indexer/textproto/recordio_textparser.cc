@@ -17,13 +17,13 @@
 #include "kythe/cxx/indexer/textproto/recordio_textparser.h"
 
 #include <sstream>
-#include <string_view>
 
 #include "absl/functional/function_ref.h"
 #include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 
@@ -36,8 +36,8 @@ namespace {
 // also includes the delimiter char.
 struct WithChar {
   explicit WithChar(char ch) : delimiter_(ch) {}
-  std::string_view Find(std::string_view text, size_t pos) const {
-    std::string_view sep = delimiter_.Find(text, pos);
+  absl::string_view Find(absl::string_view text, size_t pos) const {
+    absl::string_view sep = delimiter_.Find(text, pos);
     // Always return a zero-width span after the delimiter, so that it's
     // included if present.
     sep.remove_prefix(sep.size());
@@ -50,18 +50,18 @@ struct WithChar {
 
 class ProtoLineDelimiter {
  public:
-  explicit ProtoLineDelimiter(std::string_view delimiter,
+  explicit ProtoLineDelimiter(absl::string_view delimiter,
                               int* line_count = nullptr)
       : delimiter_(delimiter), line_count_(line_count), current_line_(0) {}
 
   /// \brief Finds the next occurrence of the configured delimiter
   /// on a line by itself, after the first non-comment, non-empty line.
-  std::string_view Find(std::string_view text, size_t pos) {
+  absl::string_view Find(absl::string_view text, size_t pos) {
     // Store the start line of chunk.
     if (line_count_) {
       *line_count_ = current_line_;
     }
-    for (std::string_view line :
+    for (absl::string_view line :
          absl::StrSplit(text.substr(pos), WithChar('\n'))) {
       current_line_++;
       // Don't look for the delimiter until we've seen our first non-empty,
@@ -92,11 +92,11 @@ class ProtoLineDelimiter {
 }  // namespace
 
 void ParseRecordTextChunks(
-    std::string_view content, std::string_view record_delimiter,
-    absl::FunctionRef<void(std::string_view chunk, int chunk_start_line)>
+    absl::string_view content, absl::string_view record_delimiter,
+    absl::FunctionRef<void(absl::string_view chunk, int chunk_start_line)>
         callback) {
   int line_count = 0;
-  for (std::string_view chunk : absl::StrSplit(
+  for (absl::string_view chunk : absl::StrSplit(
            content, ProtoLineDelimiter(record_delimiter, &line_count))) {
     callback(chunk, line_count);
   }

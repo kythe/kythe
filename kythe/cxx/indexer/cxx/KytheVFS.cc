@@ -58,7 +58,7 @@ std::string FixupPath(llvm::StringRef path, llvm::sys::path::Style style) {
 }
 }  // anonymous namespace
 
-IndexVFS::IndexVFS(std::string_view working_directory,
+IndexVFS::IndexVFS(absl::string_view working_directory,
                    const std::vector<proto::FileData>& virtual_files,
                    const std::vector<llvm::StringRef>& virtual_dirs,
                    llvm::sys::path::Style style)

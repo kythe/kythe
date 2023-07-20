@@ -718,8 +718,9 @@ bool Verifier::SetGoalCommentRegex(const std::string& regex,
 }
 
 bool Verifier::LoadInlineProtoFile(const std::string& file_data,
-                                   std::string_view path, std::string_view root,
-                                   std::string_view corpus) {
+                                   absl::string_view path,
+                                   absl::string_view root,
+                                   absl::string_view corpus) {
   kythe::proto::Entries entries;
   bool ok = google::protobuf::TextFormat::ParseFromString(file_data, &entries);
   if (!ok) {

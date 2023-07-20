@@ -27,7 +27,7 @@ namespace kythe {
 // `root` is the node to turn into a (box (context) (identifier)) or an
 // identifier, depending on the structure of `name`.
 // Returns true if at least one token was found.
-bool GenerateMarkedSourceForDottedName(std::string_view name,
+bool GenerateMarkedSourceForDottedName(absl::string_view name,
                                        MarkedSource* root);
 
 // Given a proto descriptor, generates an appropriate code fact. Returns

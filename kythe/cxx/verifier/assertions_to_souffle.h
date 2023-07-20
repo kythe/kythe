@@ -18,9 +18,9 @@
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 
 #include <string>
-#include <string_view>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {
@@ -34,7 +34,7 @@ class SouffleProgram {
              const std::vector<GoalGroup>& goal_groups);
 
   /// \return the lowered Souffle code.
-  std::string_view code() { return code_; }
+  absl::string_view code() { return code_; }
 
   /// \brief Configures whether to emit initial definitions.
   void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }

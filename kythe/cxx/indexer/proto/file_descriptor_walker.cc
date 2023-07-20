@@ -16,14 +16,13 @@
 
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
-#include <string_view>
-
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
@@ -59,8 +58,8 @@ using ::kythe::proto::VName;
 namespace {
 
 // TODO(justbuchanan): remove all re2::StringPiece code once re2 is compatible
-// with std::string_view.
-re2::StringPiece ToStringPiece(std::string_view v) {
+// with absl::string_view.
+re2::StringPiece ToStringPiece(absl::string_view v) {
   return {v.data(), v.size()};
 }
 
@@ -87,15 +86,15 @@ class ScopedLookup {
   const int component_;
 };
 
-absl::optional<std::string_view> TypeName(const EnumDescriptor& desc) {
+absl::optional<absl::string_view> TypeName(const EnumDescriptor& desc) {
   return desc.name();
 }
 
-absl::optional<std::string_view> TypeName(const Descriptor& desc) {
+absl::optional<absl::string_view> TypeName(const Descriptor& desc) {
   return desc.name();
 }
 
-absl::optional<std::string_view> TypeName(const FieldDescriptor& field) {
+absl::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
   if (field.is_map()) {
     return absl::nullopt;
   }
@@ -111,7 +110,7 @@ absl::optional<std::string_view> TypeName(const FieldDescriptor& field) {
 template <typename DescriptorType>
 void TruncateLocationToTypeName(Location& location,
                                 const DescriptorType& desc) {
-  absl::optional<std::string_view> type_name = TypeName(desc);
+  absl::optional<absl::string_view> type_name = TypeName(desc);
   if (!type_name.has_value() || location.end <= location.begin ||
       (location.end - location.begin) <= type_name->size()) {
     return;
@@ -125,7 +124,7 @@ int FileDescriptorWalker::ComputeByteOffset(int line_number,
                                             int column_number) const {
   int byte_offset_of_start_of_line =
       line_index_.ComputeByteOffset(line_number, 0);
-  std::string_view line_text = line_index_.GetLine(line_number);
+  absl::string_view line_text = line_index_.GetLine(line_number);
   int byte_offset_into_line =
       ByteOffsetOfTabularColumn(line_text, column_number);
   if (byte_offset_into_line < 0) {
@@ -147,7 +146,7 @@ Location FileDescriptorWalker::LocationOfLeadingComments(
   comment_location.begin = entity_location.begin - line_offset_of_entity;
   comment_location.end = entity_location.begin - line_offset_of_entity - 1;
   int next_line_number = entity_start_line - 1;
-  std::string_view bottom_line = line_index_.GetLine(next_line_number);
+  absl::string_view bottom_line = line_index_.GetLine(next_line_number);
   while (
       RE2::FullMatch(ToStringPiece(bottom_line), R"((\s*\*/?\s*)|(\s*//\n))")) {
     comment_location.begin -= bottom_line.size();
@@ -160,7 +159,7 @@ Location FileDescriptorWalker::LocationOfLeadingComments(
   }
   while (!comment_lines.empty()) {
     const std::string& comment_line = comment_lines.back();
-    std::string_view actual_line = line_index_.GetLine(next_line_number);
+    absl::string_view actual_line = line_index_.GetLine(next_line_number);
     std::string comment_re =
         absl::StrCat(R"(\s*(?://|/?\*\s*))", RE2::QuoteMeta(comment_line),
                      R"(\s*(?:\*/)?\s*)");
@@ -194,7 +193,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
       R"(\s*(?:/\*|//)\s*)", RE2::QuoteMeta(comment_lines.front()));
   int line_number = entity_start_line;
   for (; line_number <= line_index_.line_count(); ++line_number) {
-    std::string_view entity_line = line_index_.GetLine(line_number);
+    absl::string_view entity_line = line_index_.GetLine(line_number);
     re2::StringPiece comment_start;
     if (RE2::PartialMatch(ToStringPiece(entity_line), R"((\s*(?:/\*|//)))",
                           &comment_start)) {
@@ -214,7 +213,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
   }
   ++line_number;
   for (const std::string& comment_line : comment_lines) {
-    std::string_view actual_line = line_index_.GetLine(line_number);
+    absl::string_view actual_line = line_index_.GetLine(line_number);
     std::string comment_re =
         absl::StrCat(R"(\s*(?://|/?\*\s*))", RE2::QuoteMeta(comment_line),
                      R"(\s*(?:\*/)?\s*)");
@@ -228,7 +227,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
     ++line_number;
   }
 
-  std::string_view bottom_line = line_index_.GetLine(line_number);
+  absl::string_view bottom_line = line_index_.GetLine(line_number);
   while (RE2::FullMatch(ToStringPiece(bottom_line), R"(\s*\*/?\s*)")) {
     comment_location.end += bottom_line.size();
     ++line_number;
@@ -484,8 +483,8 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
   if (field->is_map()) {
     // Map key/value types do not have SourceCodeInfo locations; we have to
     // find them within the outer "map<...>" type location.
-    std::string_view content = std::string_view(content_);
-    std::string_view type_name = content.substr(
+    absl::string_view content = absl::string_view(content_);
+    absl::string_view type_name = content.substr(
         type_location.begin, type_location.end - type_location.begin);
     re2::StringPiece key, val;
     if (RE2::FullMatch(ToStringPiece(type_name),

@@ -15,7 +15,6 @@
  */
 #include <cstdlib>
 #include <string>
-#include <string_view>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
@@ -25,6 +24,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "google/protobuf/compiler/code_generator.h"
 #include "google/protobuf/compiler/cpp/generator.h"
@@ -45,36 +45,37 @@ using ::google::protobuf::io::Printer;
 using ::google::protobuf::io::StringOutputStream;
 using ::google::protobuf::io::ZeroCopyOutputStream;
 
-constexpr std::string_view kMetadataFileSuffix = ".meta";
-constexpr std::string_view kHeaderFileSuffix = ".h";
-constexpr std::string_view kCompressMetadataParam = "compress_metadata";
-constexpr std::string_view kAnnotateHeaderParam = "annotate_headers";
-constexpr std::string_view kAnnotationGuardParam = "annotation_guard_name";
-constexpr std::string_view kAnnotationGuardDefault = "KYTHE_IS_RUNNING";
-constexpr std::string_view kAnnotationPragmaParam = "annotation_pragma_name";
-constexpr std::string_view kAnnotationPragmaInline = "kythe_inline_metadata";
-constexpr std::string_view kAnnotationPragmaCompress =
+constexpr absl::string_view kMetadataFileSuffix = ".meta";
+constexpr absl::string_view kHeaderFileSuffix = ".h";
+constexpr absl::string_view kCompressMetadataParam = "compress_metadata";
+constexpr absl::string_view kAnnotateHeaderParam = "annotate_headers";
+constexpr absl::string_view kAnnotationGuardParam = "annotation_guard_name";
+constexpr absl::string_view kAnnotationGuardDefault = "KYTHE_IS_RUNNING";
+constexpr absl::string_view kAnnotationPragmaParam = "annotation_pragma_name";
+constexpr absl::string_view kAnnotationPragmaInline = "kythe_inline_metadata";
+constexpr absl::string_view kAnnotationPragmaCompress =
     "kythe_inline_gzip_metadata";
 constexpr int kMetadataLineLength = 76;
 
-std::string_view NextChunk(std::string_view* data, int size) {
+absl::string_view NextChunk(absl::string_view* data, int size) {
   if (data->empty()) {
     return {};
   }
-  std::string_view result = data->substr(0, size);
+  absl::string_view result = data->substr(0, size);
   data->remove_prefix(result.size());
   return result;
 }
 
-void WriteLines(std::string_view metadata, Printer* printer) {
+void WriteLines(absl::string_view metadata, Printer* printer) {
   while (!metadata.empty()) {
-    std::string_view chunk = NextChunk(&metadata, kMetadataLineLength);
+    absl::string_view chunk = NextChunk(&metadata, kMetadataLineLength);
     printer->WriteRaw(chunk.data(), chunk.size());
     printer->PrintRaw("\n");
   }
 }
 
-std::string WriteMetadata(std::string_view metafile, std::string_view contents,
+std::string WriteMetadata(absl::string_view metafile,
+                          absl::string_view contents,
                           ZeroCopyOutputStream* stream) {
   if (!absl::EndsWith(metafile, kMetadataFileSuffix)) {
     return "Not a metadata file";
@@ -209,8 +210,8 @@ class WrappedContext : public GeneratorContext {
 bool CompressMetadata(std::string* parameter) {
   bool has_guard_name = false;
   bool compress_metadata = false;
-  std::vector<std::string_view> parts = {kAnnotateHeaderParam};
-  for (std::string_view param : absl::StrSplit(*parameter, ',')) {
+  std::vector<absl::string_view> parts = {kAnnotateHeaderParam};
+  for (absl::string_view param : absl::StrSplit(*parameter, ',')) {
     if (absl::StartsWith(param, kAnnotationPragmaParam) ||
         param == kAnnotateHeaderParam) {
       continue;

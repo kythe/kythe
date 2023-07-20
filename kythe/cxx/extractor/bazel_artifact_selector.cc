@@ -132,7 +132,7 @@ absl::Status DeserializeInternal(T& selector, const U& container) {
                     : absl::NotFoundError(
                           absl::StrCat("No state found: ", error.ToString()));
 }
-bool StrictAtoI(std::string_view value, int64_t* out) {
+bool StrictAtoI(absl::string_view value, int64_t* out) {
   if (value == "0") {
     *out = 0;
     return true;
@@ -275,7 +275,7 @@ class AspectArtifactSelectorSerializationHelper {
       result_.add_disposed(SerializeFileSetId(id));
     }
 
-    void SerializePending(FileSetId id, std::string_view target) {
+    void SerializePending(FileSetId id, absl::string_view target) {
       (*result_.mutable_pending())[SerializeFileSetId(id)] = target;
     }
 
@@ -405,7 +405,7 @@ class AspectArtifactSelectorSerializationHelper {
       });
     }
 
-    absl::Status DeserializePending(int64_t id, std::string_view target) {
+    absl::Status DeserializePending(int64_t id, absl::string_view target) {
       absl::StatusOr<FileSetId> real_id = DeserializeFileSetId(id);
       if (!real_id.ok()) return real_id.status();
 
@@ -580,7 +580,7 @@ const BazelArtifactFile* AspectArtifactSelector::FileTable::Find(
 
 std::optional<AspectArtifactSelector::FileSetId>
 AspectArtifactSelector::FileSetTable::InternUnlessDisposed(
-    std::string_view id) {
+    absl::string_view id) {
   auto [result, inserted] = InternOrCreate(id);
   if (!inserted && disposed_.contains(result)) {
     return std::nullopt;
@@ -589,7 +589,7 @@ AspectArtifactSelector::FileSetTable::InternUnlessDisposed(
 }
 
 std::pair<AspectArtifactSelector::FileSetId, bool>
-AspectArtifactSelector::FileSetTable::InternOrCreate(std::string_view id) {
+AspectArtifactSelector::FileSetTable::InternOrCreate(absl::string_view id) {
   int64_t token;
   if (StrictAtoI(id, &token)) {
     return {{token}, false};
@@ -637,7 +637,7 @@ std::string AspectArtifactSelector::FileSetTable::ToString(FileSetId id) const {
 }
 
 absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
-    std::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
+    absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
   std::optional<FileSetId> file_set_id = InternUnlessDisposed(id);
   if (!file_set_id.has_value()) {
     // Already disposed, skip.
@@ -709,7 +709,7 @@ AspectArtifactSelector::PartitionFileSets(
 }
 
 void AspectArtifactSelector::ExtractFilesInto(
-    FileSetId id, std::string_view target,
+    FileSetId id, absl::string_view target,
     std::vector<BazelArtifactFile>* files) {
   if (state_.file_sets.Disposed(id)) {
     return;
@@ -768,12 +768,12 @@ void AspectArtifactSelector::InsertFileSet(
 ExtraActionSelector::ExtraActionSelector(
     absl::flat_hash_set<std::string> action_types)
     : action_matches_([action_types = std::move(action_types)](
-                          std::string_view action_type) {
+                          absl::string_view action_type) {
         return action_types.empty() || action_types.contains(action_type);
       }) {}
 
 ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
-    : action_matches_([action_pattern](std::string_view action_type) {
+    : action_matches_([action_pattern](absl::string_view action_type) {
         if (action_pattern == nullptr || action_pattern->pattern().empty()) {
           return false;
         }
