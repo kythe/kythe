@@ -23,7 +23,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/proto/analysis.pb.h"

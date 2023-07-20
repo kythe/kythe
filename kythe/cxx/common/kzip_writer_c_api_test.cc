@@ -26,7 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/strings/strip.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

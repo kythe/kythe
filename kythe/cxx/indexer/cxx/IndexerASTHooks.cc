@@ -26,7 +26,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"

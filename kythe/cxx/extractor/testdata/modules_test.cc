@@ -16,7 +16,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/match.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"

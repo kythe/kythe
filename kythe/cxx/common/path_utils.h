@@ -23,7 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
 

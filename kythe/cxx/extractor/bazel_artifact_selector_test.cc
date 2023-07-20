@@ -23,7 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "gmock/gmock.h"

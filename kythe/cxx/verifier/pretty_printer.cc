@@ -19,7 +19,7 @@
 #include <bitset>
 
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 
 namespace kythe {
 namespace verifier {

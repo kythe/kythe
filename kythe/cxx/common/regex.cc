@@ -22,7 +22,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "re2/re2.h"
 
 namespace kythe {

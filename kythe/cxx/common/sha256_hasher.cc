@@ -23,7 +23,7 @@
 #include <string>
 
 #include "absl/strings/escaping.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/span.h"
 
 namespace kythe {

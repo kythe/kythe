@@ -20,7 +20,7 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {

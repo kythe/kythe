@@ -21,7 +21,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 
 namespace kythe {
 

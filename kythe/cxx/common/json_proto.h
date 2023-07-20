@@ -21,7 +21,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"

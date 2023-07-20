@@ -21,7 +21,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"

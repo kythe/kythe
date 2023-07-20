@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "re2/re2.h"
 
 namespace kythe {

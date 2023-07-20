@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/storage.pb.h"
 

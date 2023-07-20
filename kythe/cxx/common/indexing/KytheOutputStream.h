@@ -19,7 +19,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 

@@ -18,7 +18,7 @@
 #define KYTHE_CXX_INDEXER_TEXTPROTO_RECORDIO_TEXTPARSER_H_
 
 #include "absl/functional/function_ref.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/dynamic_message.h"

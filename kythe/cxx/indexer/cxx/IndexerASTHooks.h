@@ -30,7 +30,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
-#include "absl/strings/string_view.h"
+#include <string_view>
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
