@@ -22,13 +22,13 @@ RUN apt-get update \
                 # pre-commit dependencies
                 python3 python3-dev python3-pip \
                 # Linter dependencies
-                golang-1.18-go shellcheck clang-format-11 openjdk-11-jre-headless git \
+                golang-1.18-go shellcheck clang-format-14 openjdk-11-jre-headless git \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
-# Make clang-format-11 the default
+# Make clang-format-14 the default
 RUN update-alternatives \
-      --install /usr/bin/clang-format clang-format /usr/bin/clang-format-11    100
+      --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14    100
 
 # Make go-1.18 the default
 RUN update-alternatives \
