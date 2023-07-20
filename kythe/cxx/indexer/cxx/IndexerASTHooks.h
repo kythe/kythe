@@ -965,14 +965,14 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void ConnectCategoryToBaseClass(const GraphObserver::NodeId& DeclNode,
                                   const clang::ObjCInterfaceDecl* IFace);
 
-  void LogErrorWithASTDump(absl::string_view msg,
+  void LogErrorWithASTDump(std::string_view msg,
                            const clang::Decl* Decl) const;
-  void LogErrorWithASTDump(absl::string_view msg,
+  void LogErrorWithASTDump(std::string_view msg,
                            const clang::Expr* Expr) const;
-  void LogErrorWithASTDump(absl::string_view msg,
+  void LogErrorWithASTDump(std::string_view msg,
                            const clang::Type* Type) const;
-  void LogErrorWithASTDump(absl::string_view msg, clang::TypeLoc Type) const;
-  void LogErrorWithASTDump(absl::string_view msg, clang::QualType Type) const;
+  void LogErrorWithASTDump(std::string_view msg, clang::TypeLoc Type) const;
+  void LogErrorWithASTDump(std::string_view msg, clang::QualType Type) const;
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
   /// or a clang::TypeAliasDecl.

@@ -42,7 +42,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param virtual_dirs Directories to map.
   /// \param style Style used to parse incoming paths. Paths are normalized
   /// to POSIX-style.
-  explicit IndexVFS(absl::string_view working_directory,
+  explicit IndexVFS(std::string_view working_directory,
                     const std::vector<proto::FileData>& virtual_files
                         ABSL_ATTRIBUTE_LIFETIME_BOUND,
                     const std::vector<llvm::StringRef>& virtual_dirs,

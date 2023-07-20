@@ -64,7 +64,7 @@ KzipWriter* KzipWriter_Create(const char* path, const size_t path_len,
   CHECK(path != nullptr);
   *create_status = 0;
   KzipEncoding kzip_encoding = ToKzipEncoding(encoding);
-  const absl::string_view path_view(path, path_len);
+  const std::string_view path_view(path, path_len);
 
   absl::StatusOr<IndexWriter> writer =
       kythe::KzipWriter::Create(path_view, kzip_encoding);

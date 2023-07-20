@@ -33,7 +33,7 @@ namespace kythe {
 
 class KzipReader : public IndexReaderInterface {
  public:
-  static absl::StatusOr<IndexReader> Open(absl::string_view path);
+  static absl::StatusOr<IndexReader> Open(std::string_view path);
 
   /// \brief Constructs an `IndexReader` from the provided source.
   /// `zip_source_t` is reference counted, see
@@ -46,9 +46,9 @@ class KzipReader : public IndexReaderInterface {
   absl::Status Scan(const ScanCallback& callback) override;
 
   absl::StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
-      absl::string_view digest) override;
+      std::string_view digest) override;
 
-  absl::StatusOr<std::string> ReadFile(absl::string_view digest) override;
+  absl::StatusOr<std::string> ReadFile(std::string_view digest) override;
 
  private:
   struct Discard {
@@ -58,12 +58,12 @@ class KzipReader : public IndexReaderInterface {
   };
   using ZipHandle = std::unique_ptr<zip_t, Discard>;
 
-  explicit KzipReader(ZipHandle archive, absl::string_view basename,
+  explicit KzipReader(ZipHandle archive, std::string_view basename,
                       KzipEncoding encoding);
 
   zip_t* archive() { return archive_.get(); }
 
-  absl::optional<absl::string_view> UnitDigest(absl::string_view path);
+  absl::optional<std::string_view> UnitDigest(std::string_view path);
 
   ZipHandle archive_;
   KzipEncoding encoding_;

@@ -34,7 +34,7 @@ class SouffleProgram {
              const std::vector<GoalGroup>& goal_groups);
 
   /// \return the lowered Souffle code.
-  absl::string_view code() { return code_; }
+  std::string_view code() { return code_; }
 
   /// \brief Configures whether to emit initial definitions.
   void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }

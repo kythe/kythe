@@ -43,7 +43,7 @@ bool CheckVName(const proto::VName& vname) {
 /// in buf_string
 /// \param data_start_pos the offset of the first byte of payload in
 /// buf_string
-absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
+absl::optional<std::string> LoadCommentMetadata(std::string_view buf_string,
                                                 size_t comment_slash_pos,
                                                 size_t data_start_pos) {
   std::string raw_data;
@@ -56,14 +56,14 @@ absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
   // file.
   bool single_line = buf_string[comment_slash_pos + 1] == '/';
   auto next_term =
-      single_line ? absl::string_view::npos : buf_string.find("*/", pos);
+      single_line ? std::string_view::npos : buf_string.find("*/", pos);
   for (; pos < buf_string.size();) {
     while (pos < buf_string.size() && isspace(buf_string[pos])) ++pos;
     auto next_newline = buf_string.find('\n', pos);
-    if (next_term != absl::string_view::npos &&
-        (next_newline == absl::string_view::npos || next_term < next_newline)) {
+    if (next_term != std::string_view::npos &&
+        (next_newline == std::string_view::npos || next_term < next_newline)) {
       raw_data.append(buf_string.data() + pos, next_term - pos);
-    } else if (next_newline != absl::string_view::npos) {
+    } else if (next_newline != std::string_view::npos) {
       raw_data.append(buf_string.data() + pos, next_newline - pos);
       pos = next_newline + 1;
       if (!single_line) {
@@ -83,7 +83,7 @@ absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
 /// \brief Attempts to load buffer as a header-style metadata file.
 /// \param buffer data to try and parse.
 /// \return the decoded metadata on success or absl::nullopt on failure.
-absl::optional<std::string> LoadHeaderMetadata(absl::string_view buffer) {
+absl::optional<std::string> LoadHeaderMetadata(std::string_view buffer) {
   if (buffer.size() < 2) {
     return absl::nullopt;
   }
@@ -100,11 +100,11 @@ absl::optional<std::string> LoadHeaderMetadata(absl::string_view buffer) {
 /// \param search_string the string identifying the data.
 /// \return the decoded metadata on success or absl::nullopt on failure.
 absl::optional<std::string> FindCommentMetadata(
-    absl::string_view buffer, const std::string& search_string) {
+    std::string_view buffer, const std::string& search_string) {
   auto comment_start = buffer.find("/* " + search_string);
-  if (comment_start == absl::string_view::npos) {
+  if (comment_start == std::string_view::npos) {
     comment_start = buffer.find("// " + search_string);
-    if (comment_start == absl::string_view::npos) {
+    if (comment_start == std::string_view::npos) {
       return absl::nullopt;
     }
   }
@@ -122,7 +122,7 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
     return MetadataFile::Rule{};
   }
 
-  absl::string_view edge_string = mapping.edge();
+  std::string_view edge_string = mapping.edge();
   if (edge_string.empty() && !(mapping.type() == MappingRule::ANCHOR_DEFINES &&
                                mapping.semantic() != MappingRule::SEMA_NONE)) {
     LOG(WARNING) << "When loading metadata: empty edge.";
@@ -179,7 +179,7 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
 }
 
 std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
-    absl::string_view id, absl::string_view json) {
+    std::string_view id, std::string_view json) {
   proto::metadata::GeneratedCodeInfo metadata;
   google::protobuf::util::JsonParseOptions options;
   // Existing implementations specify message types using lower-case enum names,
@@ -205,7 +205,7 @@ std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
 
 std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
-    absl::string_view buffer, absl::string_view target_buffer) {
+    std::string_view buffer, std::string_view target_buffer) {
   auto metadata = LoadFromJSON(raw_filename, buffer);
   if (!metadata) {
     LOG(WARNING) << "Failed loading " << raw_filename;
@@ -220,11 +220,11 @@ void MetadataSupports::UseVNameLookup(VNameLookup lookup) const {
 }
 
 std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
-    const std::string& filename, absl::string_view buffer,
-    const std::string& search_string, absl::string_view target_buffer) const {
+    const std::string& filename, std::string_view buffer,
+    const std::string& search_string, std::string_view target_buffer) const {
   std::string modified_filename = filename;
   absl::optional<std::string> decoded_buffer_storage;
-  absl::string_view decoded_buffer = buffer;
+  std::string_view decoded_buffer = buffer;
   if (!search_string.empty()) {
     decoded_buffer_storage = FindCommentMetadata(buffer, search_string);
     if (!decoded_buffer_storage) {

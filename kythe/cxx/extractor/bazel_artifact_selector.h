@@ -237,7 +237,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
   class FileSetTable {
    public:
-    std::optional<FileSetId> InternUnlessDisposed(absl::string_view id);
+    std::optional<FileSetId> InternUnlessDisposed(std::string_view id);
     bool InsertUnlessDisposed(FileSetId id, FileSet file_set);
     // Extracts the FileSet and, if previously present, marks it disposed.
     std::optional<FileSet> ExtractAndDispose(FileSetId id);
@@ -254,7 +254,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
     const absl::flat_hash_set<FileSetId>& disposed() const { return disposed_; }
 
    private:
-    std::pair<FileSetId, bool> InternOrCreate(absl::string_view id);
+    std::pair<FileSetId, bool> InternOrCreate(std::string_view id);
 
     // A record of all pending FileSets.
     absl::flat_hash_map<FileSetId, FileSet> file_sets_;
@@ -279,7 +279,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
     absl::flat_hash_map<FileSetId, std::string> pending;
   };
   absl::optional<BazelArtifact> SelectFileSet(
-      absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset);
+      std::string_view id, const build_event_stream::NamedSetOfFiles& fileset);
 
   absl::optional<BazelArtifact> SelectTargetCompleted(
       const build_event_stream::BuildEventId::TargetCompletedId& id,
@@ -295,12 +295,12 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
   // Extracts the selected files into the (optional) `files` output.
   // If `files` is nullptr, extracted files will be dropped.
-  void ExtractFilesInto(FileSetId id, absl::string_view target,
+  void ExtractFilesInto(FileSetId id, std::string_view target,
                         std::vector<BazelArtifactFile>* files);
   void InsertFileSet(FileSetId id,
                      const build_event_stream::NamedSetOfFiles& fileset);
 
-  std::optional<FileSetId> InternUnlessDisposed(absl::string_view id) {
+  std::optional<FileSetId> InternUnlessDisposed(std::string_view id) {
     return state_.file_sets.InternUnlessDisposed(id);
   }
 
@@ -330,7 +330,7 @@ class ExtraActionSelector final : public BazelArtifactSelector {
       const build_event_stream::BuildEvent& event) final;
 
  private:
-  std::function<bool(absl::string_view)> action_matches_;
+  std::function<bool(std::string_view)> action_matches_;
 };
 
 }  // namespace kythe

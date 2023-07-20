@@ -53,7 +53,7 @@
 namespace kythe {
 namespace lang_textproto {
 
-ABSL_CONST_INIT const absl::string_view kLanguageName = "textproto";
+ABSL_CONST_INIT const std::string_view kLanguageName = "textproto";
 
 namespace {
 
@@ -84,7 +84,7 @@ class LoggingMultiFileErrorCollector
 
 // Finds the file in the compilation unit's inputs and returns its vname.
 // Returns an empty vname if the file is not found.
-proto::VName LookupVNameForFullPath(absl::string_view full_path,
+proto::VName LookupVNameForFullPath(std::string_view full_path,
                                     const proto::CompilationUnit& unit) {
   for (const auto& input : unit.required_input()) {
     if (input.info().path() == full_path) {
@@ -112,7 +112,7 @@ class TextprotoAnalyzer : public PluginApi {
   // Note: The TextprotoAnalyzer does not take ownership of its pointer
   // arguments, so they must outlive it.
   explicit TextprotoAnalyzer(
-      const proto::CompilationUnit* unit, absl::string_view textproto,
+      const proto::CompilationUnit* unit, std::string_view textproto,
       const absl::flat_hash_map<std::string, std::string>*
           file_substitution_cache,
       KytheGraphRecorder* recorder, const DescriptorPool* pool)
@@ -162,17 +162,17 @@ class TextprotoAnalyzer : public PluginApi {
   KytheGraphRecorder* recorder() override { return recorder_; }
 
   void EmitDiagnostic(const proto::VName& file_vname,
-                      absl::string_view signature,
-                      absl::string_view msg) override;
+                      std::string_view signature,
+                      std::string_view msg) override;
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
                                       int end) override;
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                      absl::string_view sp) override;
+                                      std::string_view sp) override;
 
   proto::VName VNameForRelPath(
-      absl::string_view simplified_path) const override;
+      std::string_view simplified_path) const override;
 
   void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) {
     plugins_ = std::move(p);
@@ -194,7 +194,7 @@ class TextprotoAnalyzer : public PluginApi {
                             const Message& proto, const TreeInfo& parse_tree,
                             const FieldDescriptor& field, int field_index);
 
-  std::vector<StringToken> ReadStringTokens(absl::string_view input);
+  std::vector<StringToken> ReadStringTokens(std::string_view input);
 
   int ComputeByteOffset(int line_number, int column_number) const;
 
@@ -202,7 +202,7 @@ class TextprotoAnalyzer : public PluginApi {
 
   const proto::CompilationUnit* unit_;
   KytheGraphRecorder* recorder_;
-  const absl::string_view textproto_content_;
+  const std::string_view textproto_content_;
   const UTF8LineIndex line_index_;
 
   // Proto search paths are used to resolve relative paths to full paths.
@@ -219,7 +219,7 @@ int TextprotoAnalyzer::ComputeByteOffset(int line_number,
                                          int column_number) const {
   int byte_offset_of_start_of_line =
       line_index_.ComputeByteOffset(line_number, 0);
-  absl::string_view line_text = line_index_.GetLine(line_number);
+  std::string_view line_text = line_index_.GetLine(line_number);
   int byte_offset_into_line =
       lang_proto::ByteOffsetOfTabularColumn(line_text, column_number);
   if (byte_offset_into_line < 0) {
@@ -229,8 +229,8 @@ int TextprotoAnalyzer::ComputeByteOffset(int line_number,
 }
 
 proto::VName TextprotoAnalyzer::VNameForRelPath(
-    absl::string_view simplified_path) const {
-  absl::string_view full_path;
+    std::string_view simplified_path) const {
+  std::string_view full_path;
   auto it = file_substitution_cache_->find(simplified_path);
   if (it != file_substitution_cache_->end()) {
     full_path = it->second;
@@ -299,7 +299,7 @@ absl::Status TextprotoAnalyzer::AnalyzeMessage(const proto::VName& file_vname,
 
 // Given a type url that looks like "type.googleapis.com/example.Message1",
 // returns "example.Message1".
-std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
+std::string ProtoMessageNameFromAnyTypeUrl(std::string_view type_url) {
   // Return the substring from after the last '/' to the end or an empty string.
   // If there is no slash, returns the entire string.
   return std::string(
@@ -343,7 +343,7 @@ absl::StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
 
   // Add anchor.
   return CreateAndAddAnchorNode(file_vname,
-                                absl::string_view(match.data(), match.size()));
+                                std::string_view(match.data(), match.size()));
 }
 
 // When the textproto parser finds an Any message in the input, it parses the
@@ -444,7 +444,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 
   while (true) {
     // Match the enum value, which may be an identifier or an integer.
-    absl::string_view match;
+    std::string_view match;
     if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
       return absl::UnknownError("Failed to find text span for enum value: " +
                                 field.full_name());
@@ -472,7 +472,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 
     // Add ref from matched text to enum value descriptor.
     proto::VName anchor_vname = CreateAndAddAnchorNode(
-        file_vname, absl::string_view(match.data(), match.size()));
+        file_vname, std::string_view(match.data(), match.size()));
     auto enum_vname = VNameForDescriptor(enum_val);
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                        VNameRef(enum_vname));
@@ -491,7 +491,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 }
 
 std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
-    absl::string_view input) {
+    std::string_view input) {
   // Create a tokenizer for the input.
   google::protobuf::io::ArrayInputStream array_stream(input.data(),
                                                       input.size());
@@ -514,7 +514,7 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
   CharacterPosition start_pos =
       line_index_.ComputePositionForByteOffset(start_offset);
   CHECK(start_pos.line_number != -1);
-  absl::string_view start_line_content =
+  std::string_view start_line_content =
       line_index_.GetLine(start_pos.line_number);
   const int start_col = start_pos.column_number;
 
@@ -544,7 +544,7 @@ std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
     size_t token_offset = ComputeByteOffset(line, column);
     // create the string_view, trimming the first and last character, which are
     // quotes.
-    st.source_text = absl::string_view(
+    st.source_text = std::string_view(
         textproto_content_.data() + token_offset + 1, t.text.size() - 2);
     tokens.push_back(st);
   } while (tokenizer.Next() &&
@@ -579,7 +579,7 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     }
 
     std::vector<StringToken> tokens =
-        ReadStringTokens(absl::string_view(input.data(), input.size()));
+        ReadStringTokens(std::string_view(input.data(), input.size()));
     if (tokens.empty()) {
       return absl::UnknownError("Unable to find a string value for field: " +
                                 field.name());
@@ -629,7 +629,7 @@ absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
 
   while (true) {
     // Match the integer value.
-    absl::string_view match;
+    std::string_view match;
     if (!re2::RE2::PartialMatch(input, R"(^([\d]+))", &match)) {
       return absl::UnknownError("Failed to find text span for enum value: " +
                                 field.full_name());
@@ -792,11 +792,11 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
   }
 
   // Handle 'proto-file' and 'proto-import' comments if present.
-  std::vector<absl::string_view> proto_files = schema.proto_imports;
+  std::vector<std::string_view> proto_files = schema.proto_imports;
   if (!schema.proto_file.empty()) {
     proto_files.push_back(schema.proto_file);
   }
-  for (const absl::string_view file : proto_files) {
+  for (const std::string_view file : proto_files) {
     size_t begin = file.begin() - textproto_content_.begin();
     size_t end = begin + file.size();
     proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
@@ -826,7 +826,7 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
 // Adds an anchor node, using the string_view's offset relative to
 // `textproto_content_` as the start location.
 proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
-    const proto::VName& file_vname, absl::string_view sp) {
+    const proto::VName& file_vname, std::string_view sp) {
   CHECK(sp.begin() >= textproto_content_.begin() &&
         sp.end() <= textproto_content_.end())
       << "string_view not in range of source text";
@@ -836,8 +836,8 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
 }
 
 void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
-                                       absl::string_view signature,
-                                       absl::string_view msg) {
+                                       std::string_view signature,
+                                       std::string_view msg) {
   proto::VName dn_vname = file_vname;
   dn_vname.set_signature(std::string(signature));
   recorder_->AddProperty(VNameRef(dn_vname), NodeKindID::kDiagnostic);
@@ -871,7 +871,7 @@ absl::optional<std::string> FindArg(std::vector<std::string>* args,
 /// \param path_substitutions A map of (virtual directory, real directory) pairs
 /// \param file_substitution_cache A map of (fullpath, relpath) pairs
 std::string FullPathToRelative(
-    const absl::string_view full_path,
+    const std::string_view full_path,
     const std::vector<std::pair<std::string, std::string>>& path_substitutions,
     absl::flat_hash_map<std::string, std::string>* file_substitution_cache) {
   // If the SourceTree has opened this path already, its entry will be in the
@@ -893,7 +893,7 @@ std::string FullPathToRelative(
     }
 
     // If this substitution matches, apply it and return the simplified path.
-    absl::string_view relpath = full_path;
+    std::string_view relpath = full_path;
     if (absl::ConsumePrefix(&relpath, dir)) {
       std::string result = sub.first.empty() ? std::string(relpath)
                                              : JoinPath(sub.first, relpath);
@@ -1042,7 +1042,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     parser.AllowPartialMessage(true);
     parser.AllowUnknownExtension(true);
 
-    auto analyze_message = [&](absl::string_view chunk, int start_line) {
+    auto analyze_message = [&](std::string_view chunk, int start_line) {
       LOG(INFO) << "Analyze chunk at line: " << start_line;
       // Parse textproto into @proto, recording input locations to @parse_tree.
       TextFormat::ParseInfoTree parse_tree;
@@ -1063,7 +1063,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                 << *record_separator;
       kythe::lang_textproto::ParseRecordTextChunks(
           filecontent->content(), *record_separator,
-          [&](absl::string_view chunk, int line_offset) {
+          [&](std::string_view chunk, int line_offset) {
             absl::Status status = analyze_message(chunk, line_offset);
             if (!status.ok()) {
               LOG(ERROR) << "Failed to parse record starting at line "

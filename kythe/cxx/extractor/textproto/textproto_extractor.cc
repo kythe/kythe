@@ -57,7 +57,7 @@ namespace lang_textproto {
 namespace {
 
 /// \brief Returns a kzip-based IndexWriter or dies.
-IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
+IndexWriter OpenKzipWriterOrDie(std::string_view path) {
   auto writer = KzipWriter::Create(path);
   CHECK(writer.ok()) << "Failed to open KzipWriter: " << writer.status();
   return std::move(*writer);

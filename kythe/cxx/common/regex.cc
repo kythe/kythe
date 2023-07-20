@@ -61,7 +61,7 @@ RE2::Set CheckCompiled(RE2::Set set) {
 }
 }  // namespace
 
-absl::StatusOr<Regex> Regex::Compile(absl::string_view pattern,
+absl::StatusOr<Regex> Regex::Compile(std::string_view pattern,
                                      const RE2::Options& options) {
   std::shared_ptr<const RE2> re = std::make_shared<RE2>(pattern, options);
   if (!re->ok()) {
@@ -103,7 +103,7 @@ RegexSet& RegexSet::operator=(RegexSet&& other) noexcept {
 }
 
 absl::StatusOr<std::vector<int>> RegexSet::ExplainMatch(
-    absl::string_view value) const {
+    std::string_view value) const {
   RE2::Set::ErrorInfo error;
   std::vector<int> matches;
   if (set_->Match(value, &matches, &error)) {

@@ -41,18 +41,18 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::Values;
 
-absl::string_view TestTmpdir() {
+std::string_view TestTmpdir() {
   return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
 }
 
-std::string TestFile(absl::string_view basename) {
+std::string TestFile(std::string_view basename) {
   return absl::StrCat(TestSourceRoot(), "kythe/testdata/platform/",
                       absl::StripPrefix(basename, "/"));
 }
 
 template <typename T>
 struct WithStatusFn {
-  bool operator()(absl::string_view digest) {
+  bool operator()(std::string_view digest) {
     *status = function(digest);
     return status->ok();
   }
@@ -66,7 +66,7 @@ WithStatusFn<T> WithStatus(absl::Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 
-std::string TestOutputFile(absl::string_view basename) {
+std::string TestOutputFile(std::string_view basename) {
   const auto* test_info = testing::UnitTest::GetInstance()->current_test_info();
   const auto filename =
       absl::StrReplaceAll(absl::StrCat(test_info->test_case_name(), "_",
@@ -80,7 +80,7 @@ CopyIndex(IndexReader* reader, IndexWriter* writer) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
   absl::Status scan =
-      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+      reader->Scan(WithStatus(&error, [&](std::string_view digest) {
         auto unit = reader->ReadUnit(digest);
         if (!unit.ok()) {
           return unit.status();
@@ -116,7 +116,7 @@ ReadDigests(IndexReader* reader) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
   absl::Status scan =
-      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+      reader->Scan(WithStatus(&error, [&](std::string_view digest) {
         auto unit = reader->ReadUnit(digest);
         if (!unit.ok()) {
           return unit.status();

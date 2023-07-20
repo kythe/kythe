@@ -5876,27 +5876,27 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
                                  NodeIds);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Decl* Decl) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Decl);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Expr* Expr) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Expr, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Type* Type) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Type, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             clang::QualType Type) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(Type, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             clang::TypeLoc Type) const {
   LOG(ERROR) << msg << " :" << std::endl
              << "@"

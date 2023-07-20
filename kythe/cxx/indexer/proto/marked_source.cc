@@ -19,9 +19,9 @@
 #include "absl/strings/str_split.h"
 
 namespace kythe {
-bool GenerateMarkedSourceForDottedName(absl::string_view name,
+bool GenerateMarkedSourceForDottedName(std::string_view name,
                                        MarkedSource* root) {
-  std::vector<absl::string_view> tokens = absl::StrSplit(name, '.');
+  std::vector<std::string_view> tokens = absl::StrSplit(name, '.');
   if (tokens.empty()) {
     return false;
   }

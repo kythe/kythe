@@ -33,7 +33,7 @@ namespace kythe {
 /// \param input The input text to parse.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
-absl::Status ParseFromJsonString(absl::string_view input,
+absl::Status ParseFromJsonString(std::string_view input,
                                  google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from JSON text.
@@ -42,7 +42,7 @@ absl::Status ParseFromJsonString(absl::string_view input,
 /// \param message The message to parse.
 /// \return The status message result of parsing.
 absl::Status ParseFromJsonString(
-    absl::string_view input,
+    std::string_view input,
     const google::protobuf::util::JsonParseOptions& options,
     google::protobuf::Message* message);
 
@@ -100,7 +100,7 @@ absl::StatusOr<std::string> WriteMessageAsJsonToString(
 /// \param type_uri The URI of the message type.
 /// \param out The resulting Any.
 void PackAny(const google::protobuf::Message& message,
-             absl::string_view type_uri, google::protobuf::Any* out);
+             std::string_view type_uri, google::protobuf::Any* out);
 
 /// \brief Unpack a protobuf from an Any.
 /// \param any The Any to unpack.

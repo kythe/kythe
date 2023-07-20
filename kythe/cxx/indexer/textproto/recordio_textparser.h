@@ -46,8 +46,8 @@ namespace lang_textproto {
 // Also, note that delimiter could start with '#' which is also for the
 // comment.
 void ParseRecordTextChunks(
-    absl::string_view content, absl::string_view record_delimiter,
-    absl::FunctionRef<void(absl::string_view chunk, int chunk_start_line)>
+    std::string_view content, std::string_view record_delimiter,
+    absl::FunctionRef<void(std::string_view chunk, int chunk_start_line)>
         callback);
 
 }  // namespace lang_textproto

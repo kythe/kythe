@@ -230,11 +230,11 @@ class CompilationWriter {
   /// \brief Attempts to generate a root-relative path.
   /// This is a path relative to KYTHE_ROOT_DIRECTORY, not the working directory
   /// and should only be used for doing VName mapping a lookups.
-  RootPath RootRelativePath(absl::string_view path);
+  RootPath RootRelativePath(std::string_view path);
 
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
-  kythe::proto::VName VNameForPath(absl::string_view path);
+  kythe::proto::VName VNameForPath(std::string_view path);
   kythe::proto::VName VNameForPath(const RootPath& path);
 
  private:

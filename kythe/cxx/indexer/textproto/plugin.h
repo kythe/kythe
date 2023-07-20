@@ -41,19 +41,19 @@ class PluginApi {
 
   // Adds an anchor for the text span and returns its VName.
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                              absl::string_view sp) = 0;
+                                              std::string_view sp) = 0;
 
   virtual KytheGraphRecorder* recorder() = 0;
 
   virtual void EmitDiagnostic(const proto::VName& file_vname,
-                              absl::string_view signature,
-                              absl::string_view msg) = 0;
+                              std::string_view signature,
+                              std::string_view msg) = 0;
 
   // Returns a VName for the given relative path by resolving it to its full
   // path and matching it against a file in the CompilationUnit's
   // required_inputs.
   virtual proto::VName VNameForRelPath(
-      absl::string_view simplified_path) const = 0;
+      std::string_view simplified_path) const = 0;
 
   // Returns a pointer to the descriptor pool built from the .proto files
   // included as dependencies in the textproto's compilation unit.
@@ -66,7 +66,7 @@ struct StringToken {
   std::string parsed_value;
   // The span of source text in the input. The underlying string that the view
   // references is owned by the `PluginApi`.
-  absl::string_view source_text;
+  std::string_view source_text;
 };
 
 // Superclass for all plugins. A new plugin is instantiated for each textproto
@@ -99,7 +99,7 @@ class Plugin {
   virtual absl::Status AnalyzeIntegerField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      absl::string_view field_value) {
+      std::string_view field_value) {
     return absl::OkStatus();
   }
 

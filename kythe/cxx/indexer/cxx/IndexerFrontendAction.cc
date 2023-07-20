@@ -52,7 +52,7 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 namespace {
 
 // Message type URI for the build details message.
-constexpr absl::string_view kBuildDetailsURI =
+constexpr std::string_view kBuildDetailsURI =
     "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.

@@ -32,7 +32,7 @@ ABSL_FLAG(std::string, build_event_binary_file, "",
 namespace kythe {
 namespace {
 
-absl::string_view Basename(absl::string_view path) {
+std::string_view Basename(std::string_view path) {
   if (auto pos = path.rfind('/'); pos != path.npos) {
     return path.substr(pos + 1);
   }

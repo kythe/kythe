@@ -115,7 +115,7 @@ std::vector<build_event_stream::BuildEvent> ToNamedSetOfFilesEvents(
 
 // The TargetCompleted event will always come after the NamedSetOfFiles events.
 void ToTargetCompletedBuildEvents(
-    absl::string_view label,
+    std::string_view label,
     const absl::flat_hash_map<std::string, FileSet>& file_sets,
     std::vector<build_event_stream::BuildEvent>& result) {
   ToNamedSetOfFilesEvents(file_sets, result);
@@ -165,7 +165,7 @@ AspectArtifactSelector::Options DefaultOptions() {
   };
 }
 
-build_event_stream::BuildEvent ParseEventOrDie(absl::string_view text) {
+build_event_stream::BuildEvent ParseEventOrDie(std::string_view text) {
   build_event_stream::BuildEvent result;
 
   google::protobuf::io::ArrayInputStream input(text.data(), text.size());

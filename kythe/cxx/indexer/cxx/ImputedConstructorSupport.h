@@ -37,7 +37,7 @@ class ImputedConstructorSupport : public LibrarySupport {
           "llvm::make_unique"});
 
   explicit ImputedConstructorSupport(
-      std::function<bool(absl::string_view)> allow_constructor_name);
+      std::function<bool(std::string_view)> allow_constructor_name);
 
   void InspectCallExpr(IndexerASTVisitor& visitor,
                        const clang::CallExpr* call_expr,
@@ -45,7 +45,7 @@ class ImputedConstructorSupport : public LibrarySupport {
                        GraphObserver::NodeId& callee_id) override;
 
  private:
-  const std::function<bool(absl::string_view)> allow_constructor_name_;
+  const std::function<bool(std::string_view)> allow_constructor_name_;
 };
 
 }  // namespace kythe

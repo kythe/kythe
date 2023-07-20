@@ -89,7 +89,7 @@ TEST(CxxExtractorTest, TestModulesExtraction) {
   unit.set_argument(2, "dummy-target");
   unit.clear_details();
   unit.mutable_argument()->erase(
-      absl::c_find_if(unit.argument(), [](absl::string_view arg) {
+      absl::c_find_if(unit.argument(), [](std::string_view arg) {
         return absl::StartsWith(arg, "-fmodules-cache-path=");
       }));
 

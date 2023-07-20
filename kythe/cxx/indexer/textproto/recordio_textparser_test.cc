@@ -29,7 +29,7 @@ std::vector<std::pair<int, std::string>> ParsedChunks(std::string content,
                                                       std::string separator) {
   std::vector<std::pair<int, std::string>> chunks;
   lang_textproto::ParseRecordTextChunks(
-      content, separator, [&](absl::string_view chunk, int chunk_start_line) {
+      content, separator, [&](std::string_view chunk, int chunk_start_line) {
         chunks.emplace_back(chunk_start_line, std::string(chunk));
       });
   return chunks;

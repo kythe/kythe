@@ -25,12 +25,12 @@
 namespace kythe {
 
 std::string StripCommentMarkers(const std::string& source) {
-  absl::string_view stripped = absl::StripAsciiWhitespace(source);
+  std::string_view stripped = absl::StripAsciiWhitespace(source);
 
   // Handle block comments, of the form "/* ... */".
   if (absl::ConsumePrefix(&stripped, "/*")) {
     absl::ConsumeSuffix(&stripped, "*/");
-    std::vector<absl::string_view> lines = absl::StrSplit(stripped, '\n');
+    std::vector<std::string_view> lines = absl::StrSplit(stripped, '\n');
     for (auto& line : lines) {
       line = absl::StripAsciiWhitespace(line);
       if (!absl::ConsumePrefix(&line, "* ")) {
@@ -41,7 +41,7 @@ std::string StripCommentMarkers(const std::string& source) {
   }
 
   // Handle line-ending comments, of the form "// ...".
-  std::vector<absl::string_view> lines = absl::StrSplit(stripped, '\n');
+  std::vector<std::string_view> lines = absl::StrSplit(stripped, '\n');
   for (auto& line : lines) {
     line = absl::StripAsciiWhitespace(line);
     if (!absl::ConsumePrefix(&line, "// ")) {

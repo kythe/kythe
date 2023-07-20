@@ -31,7 +31,7 @@ using ::kythe::proto::CompilationUnit;
 using ::protobuf_matchers::EquivToProto;
 using ::testing::SizeIs;
 
-constexpr absl::string_view kFilePath =
+constexpr std::string_view kFilePath =
     "kythe/cxx/extractor/testdata/altroot/altpath/file.cc";
 
 CompilationUnit ExpectedCompilation() {

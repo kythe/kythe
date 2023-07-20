@@ -21,7 +21,7 @@
 namespace kythe {
 namespace lang_proto {
 
-int ByteOffsetOfTabularColumn(absl::string_view line_text, int column_number) {
+int ByteOffsetOfTabularColumn(std::string_view line_text, int column_number) {
   int computed_column = 0;
   int offset = 0;
   while (computed_column < column_number && offset < line_text.size()) {

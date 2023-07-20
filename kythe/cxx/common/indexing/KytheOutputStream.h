@@ -30,16 +30,16 @@ using MarkedSource = kythe::proto::common::MarkedSource;
 /// A collection of references to the components of a VName.
 class VNameRef {
  public:
-  absl::string_view signature() const { return signature_; }
-  absl::string_view corpus() const { return corpus_; }
-  absl::string_view root() const { return root_; }
-  absl::string_view path() const { return path_; }
-  absl::string_view language() const { return language_; }
-  void set_signature(absl::string_view s) { signature_ = s; }
-  void set_corpus(absl::string_view s) { corpus_ = s; }
-  void set_root(absl::string_view s) { root_ = s; }
-  void set_path(absl::string_view s) { path_ = s; }
-  void set_language(absl::string_view s) { language_ = s; }
+  std::string_view signature() const { return signature_; }
+  std::string_view corpus() const { return corpus_; }
+  std::string_view root() const { return root_; }
+  std::string_view path() const { return path_; }
+  std::string_view language() const { return language_; }
+  void set_signature(std::string_view s) { signature_ = s; }
+  void set_corpus(std::string_view s) { corpus_ = s; }
+  void set_root(std::string_view s) { root_ = s; }
+  void set_path(std::string_view s) { path_ = s; }
+  void set_language(std::string_view s) { language_ = s; }
 
   explicit VNameRef(const proto::VName& vname)
       : signature_(vname.signature().data(), vname.signature().size()),
@@ -61,17 +61,17 @@ class VNameRef {
   }
 
  private:
-  absl::string_view signature_;
-  absl::string_view corpus_;
-  absl::string_view root_;
-  absl::string_view path_;
-  absl::string_view language_;
+  std::string_view signature_;
+  std::string_view corpus_;
+  std::string_view root_;
+  std::string_view path_;
+  std::string_view language_;
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
   const VNameRef* source;
-  absl::string_view fact_name;
-  absl::string_view fact_value;
+  std::string_view fact_name;
+  std::string_view fact_value;
   /// Overwrites all of the fields in `entry` that can differ between single
   /// facts.
   void Expand(proto::Entry* entry) const {
@@ -83,7 +83,7 @@ struct FactRef {
 /// A collection of references to the components of a single Kythe edge.
 struct EdgeRef {
   const VNameRef* source;
-  absl::string_view edge_kind;
+  std::string_view edge_kind;
   const VNameRef* target;
   /// Overwrites all of the fields in `entry` that can differ between edges
   /// without ordinals.
@@ -97,7 +97,7 @@ struct EdgeRef {
 /// ordinal.
 struct OrdinalEdgeRef {
   const VNameRef* source;
-  absl::string_view edge_kind;
+  std::string_view edge_kind;
   const VNameRef* target;
   uint32_t ordinal;
   /// Overwrites all of the fields in `entry` that can differ between edges with

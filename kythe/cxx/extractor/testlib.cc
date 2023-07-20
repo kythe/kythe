@@ -48,9 +48,9 @@ using HashMap = ::absl::flat_hash_map<std::string, std::size_t>;
 using ::bazel::tools::cpp::runfiles::Runfiles;
 
 // Path prefix joined to runfiles to form the workspace-relative path.
-constexpr absl::string_view kWorkspaceRoot = "io_kythe";
+constexpr std::string_view kWorkspaceRoot = "io_kythe";
 
-constexpr absl::string_view kExtractorPath =
+constexpr std::string_view kExtractorPath =
     "kythe/cxx/extractor/cxx_extractor";
 
 void CanonicalizeHash(HashMap* hashes, std::string* hash) {
@@ -225,7 +225,7 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
         absl::optional<std::vector<kpb::CompilationUnit>> result(
             absl::in_place);  // Default construct a result vector.
 
-        auto status = reader->Scan([&](absl::string_view digest) {
+        auto status = reader->Scan([&](std::string_view digest) {
           if (auto unit = reader->ReadUnit(digest); unit.ok()) {
             result->push_back(std::move(*unit->mutable_unit()));
             return true;
@@ -254,7 +254,7 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
   return absl::nullopt;
 }
 
-absl::optional<std::string> ResolveRunfiles(absl::string_view path) {
+absl::optional<std::string> ResolveRunfiles(std::string_view path) {
   std::string error;
   std::unique_ptr<Runfiles> runfiles(Runfiles::CreateForTest(&error));
   if (runfiles == nullptr) {
@@ -279,7 +279,7 @@ kpb::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options) {
   }
 }
 
-kpb::CompilationUnit ParseTextCompilationUnitOrDie(absl::string_view text) {
+kpb::CompilationUnit ParseTextCompilationUnitOrDie(std::string_view text) {
   kpb::CompilationUnit result;
   CHECK(gpb::TextFormat::ParseFromString(std::string(text), &result));
   return result;

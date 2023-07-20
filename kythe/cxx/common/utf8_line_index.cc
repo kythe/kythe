@@ -35,7 +35,7 @@ std::ostream& operator<<(std::ostream& dest,
 
 bool IsUTF8ContinuationByte(int byte) { return ((byte & 0xC0) == 0x80); }
 
-bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
+bool IsUTF8EndOfLineByte(int byte_offset, std::string_view content) {
   // If/when we were using a string, checking for the past-the-end byte
   // was safe.  Now that we use string_view we have to avoid that.
   return (content[byte_offset] == '\n' ||
@@ -43,7 +43,7 @@ bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
                                             content[byte_offset + 1] != '\n')));
 }
 
-UTF8LineIndex::UTF8LineIndex(absl::string_view content) : content_(content) {
+UTF8LineIndex::UTF8LineIndex(std::string_view content) : content_(content) {
   IndexContent();
 }
 
@@ -148,7 +148,7 @@ int UTF8LineIndex::ComputeByteOffset(int line, int column) const {
   return byte_offset;
 }
 
-absl::string_view UTF8LineIndex::GetLine(int line_number) const {
+std::string_view UTF8LineIndex::GetLine(int line_number) const {
   const int start_byte_offset = ComputeByteOffset(line_number, 0);
   if (line_number == line_begin_byte_offsets_.size()) {
     // The last line is a special case, as it might be unterminated.
@@ -157,19 +157,19 @@ absl::string_view UTF8LineIndex::GetLine(int line_number) const {
   const int end_byte_offset = ComputeByteOffset(line_number + 1, 0);
   if (start_byte_offset == -1 || end_byte_offset == -1) {
     // Error case.
-    return absl::string_view();
+    return std::string_view();
   }
   return absl::ClippedSubstr(content_, start_byte_offset,
                              end_byte_offset - start_byte_offset);
 }
 
-absl::string_view UTF8LineIndex::GetSubstrFromLine(
+std::string_view UTF8LineIndex::GetSubstrFromLine(
     int line_number, int start_position_in_code_points,
     int length_in_code_points) const {
   CHECK_GE(start_position_in_code_points, 0);
   CHECK_GE(length_in_code_points, 0);
 
-  absl::string_view line = GetLine(line_number);
+  std::string_view line = GetLine(line_number);
 
   int start_byte_offset = -1;  // a negative number means not being set yet
   int code_point_number = 0;
@@ -196,7 +196,7 @@ absl::string_view UTF8LineIndex::GetSubstrFromLine(
   } else {
     LOG(ERROR) << "Substring index " << start_position_in_code_points
                << " not found in " << line;
-    return absl::string_view();
+    return std::string_view();
   }
 }
 
