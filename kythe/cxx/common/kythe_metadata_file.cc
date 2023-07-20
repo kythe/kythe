@@ -16,10 +16,11 @@
 
 #include "kythe/cxx/common/kythe_metadata_file.h"
 
+#include <optional>
+
 #include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/schema/edges.h"

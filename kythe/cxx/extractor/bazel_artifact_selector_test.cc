@@ -15,6 +15,7 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -24,7 +25,6 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/any.pb.h"

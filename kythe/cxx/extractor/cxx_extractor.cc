@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -38,7 +39,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "clang/Basic/Module.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"

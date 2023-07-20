@@ -29,7 +29,6 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/cxx/common/regex.h"

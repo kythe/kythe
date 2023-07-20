@@ -20,6 +20,7 @@
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_AST_HOOKS_H_
 
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -31,7 +32,6 @@
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/Sema/SemaConsumer.h"

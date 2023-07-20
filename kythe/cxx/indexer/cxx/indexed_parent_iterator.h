@@ -17,8 +17,8 @@
 #define KYTHE_CXX_INDEXER_CXX_INDEXED_PARENT_ITERATOR_H_
 
 #include <iterator>
+#include <optional>
 
-#include "absl/types/optional.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"

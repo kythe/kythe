@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include <optional>
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/path_utils.h"

@@ -18,12 +18,12 @@
 #define KYTHE_CXX_EXTRACTOR_EXTRACTOR_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 
 #include "absl/log/log.h"
-#include "absl/types/optional.h"
 #include "clang/Tooling/Tooling.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"

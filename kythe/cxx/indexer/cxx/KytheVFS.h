@@ -18,11 +18,11 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
 #include <memory>
+#include <optional>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/Path.h"

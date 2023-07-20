@@ -18,6 +18,7 @@
 #define KYTHE_CXX_INDEXER_CXX_KYTHE_GRAPH_OBSERVER_H_
 
 #include <functional>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -26,7 +27,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
-#include "absl/types/optional.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/language.h"

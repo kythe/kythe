@@ -17,11 +17,11 @@
 #include "ImputedConstructorSupport.h"
 
 #include <memory>
+#include <optional>
 #include <queue>
 
 #include "IndexerASTHooks.h"
 #include "absl/strings/str_join.h"
-#include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"

@@ -19,9 +19,9 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "kythe/proto/metadata.pb.h"
 #include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"

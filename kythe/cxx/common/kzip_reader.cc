@@ -18,6 +18,7 @@
 
 #include <openssl/sha.h>
 
+#include <optional>
 #include <set>
 
 #include "absl/log/check.h"
@@ -31,7 +32,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/json_proto.h"

@@ -16,11 +16,12 @@
 
 #include "file_vname_generator.h"
 
+#include <optional>
+
 #include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
-#include "absl/types/optional.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 

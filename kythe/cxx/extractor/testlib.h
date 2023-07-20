@@ -17,11 +17,11 @@
 #ifndef KYTHE_CXX_EXTRACTOR_TESTLIB_H_
 #define KYTHE_CXX_EXTRACTOR_TESTLIB_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "kythe/proto/analysis.pb.h"

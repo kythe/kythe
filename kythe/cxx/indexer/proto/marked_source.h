@@ -17,7 +17,8 @@
 #ifndef KYTHE_CXX_INDEXER_PROTO_MARKED_SOURCE_H_
 #define KYTHE_CXX_INDEXER_PROTO_MARKED_SOURCE_H_
 
-#include "absl/types/optional.h"
+#include <optional>
+
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 

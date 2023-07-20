@@ -17,7 +17,8 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 #define KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 
-#include "absl/types/optional.h"
+#include <optional>
+
 #include "clang/AST/Decl.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Sema/Sema.h"

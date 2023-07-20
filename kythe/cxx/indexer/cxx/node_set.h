@@ -16,9 +16,9 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_NODE_SET_H_
 #define KYTHE_CXX_INDEXER_CXX_NODE_SET_H_
 
+#include <optional>
 #include <utility>
 
-#include "absl/types/optional.h"
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
 
 namespace kythe {

@@ -18,6 +18,7 @@
 #define KYTHE_CXX_COMMON_PATH_UTILS_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -25,7 +26,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/types/optional.h"
 
 namespace kythe {
 
