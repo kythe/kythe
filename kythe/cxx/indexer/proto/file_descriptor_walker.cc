@@ -86,17 +86,17 @@ class ScopedLookup {
   const int component_;
 };
 
-absl::optional<absl::string_view> TypeName(const EnumDescriptor& desc) {
+std::optional<absl::string_view> TypeName(const EnumDescriptor& desc) {
   return desc.name();
 }
 
-absl::optional<absl::string_view> TypeName(const Descriptor& desc) {
+std::optional<absl::string_view> TypeName(const Descriptor& desc) {
   return desc.name();
 }
 
-absl::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
+std::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
   if (field.is_map()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (const EnumDescriptor* desc = field.enum_type()) {
     return TypeName(*desc);
@@ -104,13 +104,13 @@ absl::optional<absl::string_view> TypeName(const FieldDescriptor& field) {
   if (const Descriptor* desc = field.message_type()) {
     return TypeName(*desc);
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 template <typename DescriptorType>
 void TruncateLocationToTypeName(Location& location,
                                 const DescriptorType& desc) {
-  absl::optional<absl::string_view> type_name = TypeName(desc);
+  std::optional<absl::string_view> type_name = TypeName(desc);
   if (!type_name.has_value() || location.end <= location.begin ||
       (location.end - location.begin) <= type_name->size()) {
     return;
@@ -390,17 +390,17 @@ void FileDescriptorWalker::VisitGeneratedProtoInfo() {
 }
 
 namespace {
-absl::optional<proto::VName> VNameForBuiltinType(FieldDescriptor::Type type) {
+std::optional<proto::VName> VNameForBuiltinType(FieldDescriptor::Type type) {
   // TODO(zrlk): Emit builtins.
-  return absl::nullopt;
+  return std::nullopt;
 }
 }  // anonymous namespace
 
-absl::optional<proto::VName> FileDescriptorWalker::VNameForFieldType(
+std::optional<proto::VName> FileDescriptorWalker::VNameForFieldType(
     const FieldDescriptor* field_proto) {
   if (field_proto->is_map()) {
     // Maps are technically TYPE_MESSAGE, but don't have a useful VName.
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (field_proto->type() == FieldDescriptor::TYPE_MESSAGE ||
       field_proto->type() == FieldDescriptor::TYPE_GROUP) {
@@ -413,7 +413,7 @@ absl::optional<proto::VName> FileDescriptorWalker::VNameForFieldType(
 }
 
 void FileDescriptorWalker::AttachMarkedSource(
-    const proto::VName& vname, const absl::optional<MarkedSource>& code) {
+    const proto::VName& vname, const std::optional<MarkedSource>& code) {
   if (code) {
     builder_->AddCodeFact(vname, *code);
   }

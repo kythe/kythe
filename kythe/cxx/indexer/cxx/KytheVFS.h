@@ -49,7 +49,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
                     llvm::sys::path::Style style);
   /// \return nullopt if `awd` is not absolute or its style could not be
   /// detected; otherwise, the style of `awd`.
-  static absl::optional<llvm::sys::path::Style>
+  static std::optional<llvm::sys::path::Style>
   DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
 
   // IndexVFS is neither copyable nor movable.

@@ -191,7 +191,7 @@ TEST(AspectArtifactSelectorTest, SelectsOutOfOrderFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
@@ -214,7 +214,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -252,7 +252,7 @@ TEST(AspectArtifactSelectorTest, SelectsMatchingTargetsOnce) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 // Verify that we can find artifacts even if the target failed to build.
@@ -273,7 +273,7 @@ TEST(AspectArtifactSelectorTest, SelectsFailedTargets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
@@ -300,7 +300,7 @@ TEST(AspectArtifactSelectorTest, SelectsDuplicatedFileSets) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
@@ -341,7 +341,7 @@ TEST(AspectArtifactSelectorTest, SelectsDuplicatedFileSetsWhenPruned) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
@@ -379,7 +379,7 @@ TEST(AspectArtifactSelectorTest, SelectsSubsequentDuplicatedFileSets) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -393,7 +393,7 @@ TEST(AspectArtifactSelectorTest, SelectsSubsequentDuplicatedFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -427,7 +427,7 @@ TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedFileSets) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -441,7 +441,7 @@ TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -455,7 +455,7 @@ TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(AspectArtifactSelectorTest, SkipsPrunedPendingFileSets) {
@@ -477,13 +477,13 @@ TEST(AspectArtifactSelectorTest, SkipsPrunedPendingFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedPendingFileSets) {
@@ -505,7 +505,7 @@ TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedPendingFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -519,13 +519,13 @@ TEST(AspectArtifactSelectorTest, SkipsSubsequentPrunedPendingFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(AspectArtifactSelectorTest, SelectsSubsequentPrunedPendingFileSets) {
@@ -547,7 +547,7 @@ TEST(AspectArtifactSelectorTest, SelectsSubsequentPrunedPendingFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
       target_completed {
@@ -561,7 +561,7 @@ TEST(AspectArtifactSelectorTest, SelectsSubsequentPrunedPendingFileSets) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "1" } }
     named_set_of_files {
@@ -586,7 +586,7 @@ TEST(AspectArtifactSelectorTest, SkipsNonMatchingOutputGroups) {
     named_set_of_files {
       files { name: "path/to/file.kzip" uri: "file:///path/to/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 
   EXPECT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id {
@@ -601,7 +601,7 @@ TEST(AspectArtifactSelectorTest, SkipsNonMatchingOutputGroups) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 // Verifies that serializing integral ids in V2 format
@@ -794,7 +794,7 @@ TEST(AspectArtifactSelectorTest, SerializationRoundTrips) {
         file_sets { id: "1" }
       }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   // Active.
   ASSERT_THAT(selector.Select(ParseEventOrDie(R"pb(
     id { named_set { id: "2" } }
@@ -802,7 +802,7 @@ TEST(AspectArtifactSelectorTest, SerializationRoundTrips) {
       files { name: "path/to/1/file.kzip" uri: "file:///path/to/1/file.kzip" }
       files { name: "path/to/2/file.kzip" uri: "file:///path/to/2/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 
   // Active => Disposed.
   ASSERT_THAT(selector.Select(ParseEventOrDie(R"pb(
@@ -811,7 +811,7 @@ TEST(AspectArtifactSelectorTest, SerializationRoundTrips) {
       files { name: "path/to/1/file.kzip" uri: "file:///path/to/1/file.kzip" }
       files { name: "path/to/3/file.kzip" uri: "file:///path/to/3/file.kzip" }
     })pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(
       selector.Select(ParseEventOrDie(R"pb(
         id {
@@ -882,7 +882,7 @@ TEST(AspectArtifactSelectorTest, SerializationResumesSelection) {
           file_sets { id: "1" }
         }
       })pb")),
-                Eq(absl::nullopt));
+                Eq(std::nullopt));
     ASSERT_THAT(selector.SerializeInto(state), true);
   }
 
@@ -925,7 +925,7 @@ TEST(AspectArtifactSelectorTest, SerializationResumesSelection) {
 class MockArtifactSelector : public BazelArtifactSelector {
  public:
   MockArtifactSelector() = default;
-  MOCK_METHOD(absl::optional<BazelArtifact>, Select,
+  MOCK_METHOD(std::optional<BazelArtifact>, Select,
               (const build_event_stream::BuildEvent&), (override));
   MOCK_METHOD(bool, SerializeInto, (google::protobuf::Any&), (const override));
   MOCK_METHOD(absl::Status, DeserializeFrom, (const google::protobuf::Any&),
@@ -968,14 +968,14 @@ TEST(AnyArtifactSelectorTest, ForwardsFunctions) {
   MockArtifactSelector mock;
   google::protobuf::Any dummy;
 
-  EXPECT_CALL(mock, Select(_)).WillOnce(Return(absl::nullopt));
+  EXPECT_CALL(mock, Select(_)).WillOnce(Return(std::nullopt));
   EXPECT_CALL(mock, SerializeInto(Ref(dummy))).WillOnce(Return(false));
   EXPECT_CALL(mock, DeserializeFrom(Ref(dummy)))
       .WillOnce(Return(absl::UnimplementedError("")));
 
   AnyArtifactSelector selector = std::ref(mock);
   EXPECT_THAT(selector.Select(build_event_stream::BuildEvent()),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
   EXPECT_THAT(selector.SerializeInto(dummy), false);
   EXPECT_THAT(selector.DeserializeFrom(dummy), absl::UnimplementedError(""));
 }
@@ -1048,7 +1048,7 @@ TEST(ExtraActionSelector, SelectsFromList) {
       type: "another_action_type"
     }
   )pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsFromPattern) {
@@ -1093,7 +1093,7 @@ TEST(ExtraActionSelector, SelectsFromPattern) {
       type: "another_action_type"
     }
   )pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsNoneWithEmptyPattern) {
@@ -1115,7 +1115,7 @@ TEST(ExtraActionSelector, SelectsNoneWithEmptyPattern) {
       type: "another_action_type"
     }
   )pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 TEST(ExtraActionSelector, SelectsNoneWithNullPattern) {
@@ -1136,7 +1136,7 @@ TEST(ExtraActionSelector, SelectsNoneWithNullPattern) {
       type: "another_action_type"
     }
   )pb")),
-              Eq(absl::nullopt));
+              Eq(std::nullopt));
 }
 
 }  // namespace

@@ -33,19 +33,19 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
 // Given a proto descriptor, generates an appropriate code fact. Returns
 // `None` if a code fact couldn't be generated.
 template <typename T>
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const T* descriptor) {
   MarkedSource ms;
   if (GenerateMarkedSourceForDottedName(descriptor->full_name(), &ms)) {
     return ms;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor);
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor);
 
 }  // namespace kythe

@@ -74,7 +74,7 @@ class MetadataFile {
   }
 
   //// Attempts to convert `mapping` to a `Rule`.
-  static absl::optional<MetadataFile::Rule> LoadMetaElement(
+  static std::optional<MetadataFile::Rule> LoadMetaElement(
       const kythe::proto::metadata::MappingRule& mapping);
 
   /// Rules to apply keyed on `begin`.

@@ -66,7 +66,7 @@ CompilationUnit ExpectedCompilation() {
 // Verifies that the extractor properly handles KYTHE_ROOT_DIRECTORY
 // other than the working directory.
 TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
-  absl::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
+  std::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
   ASSERT_TRUE(resolved_path.has_value());
 
   std::string filename(Basename(*resolved_path));
@@ -96,7 +96,7 @@ TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
 // compilation unit working_directory that doesn't conflict
 // with another compilation unit path.
 TEST(RootDirectoryTest, WorkingDirectoryAvoidsConflict) {
-  absl::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
+  std::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
   ASSERT_TRUE(resolved_path.has_value());
 
   std::string filename(Basename(*resolved_path));

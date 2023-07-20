@@ -161,9 +161,9 @@ absl::Status BazelArtifactSelector::Deserialize(
   return DeserializeInternal(*this, state);
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::Select(
+std::optional<BazelArtifact> AspectArtifactSelector::Select(
     const build_event_stream::BuildEvent& event) {
-  absl::optional<BazelArtifact> result = absl::nullopt;
+  std::optional<BazelArtifact> result = std::nullopt;
   if (event.id().has_named_set()) {
     result =
         SelectFileSet(event.id().named_set().id(), event.named_set_of_files());
@@ -636,7 +636,7 @@ std::string AspectArtifactSelector::FileSetTable::ToString(FileSetId id) const {
   return inverse_id_map_.at(id);
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
+std::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
   std::optional<FileSetId> file_set_id = InternUnlessDisposed(id);
   if (!file_set_id.has_value()) {
@@ -663,10 +663,10 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     return result;
   }
   InsertFileSet(*file_set_id, fileset);
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
+std::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
   BazelArtifact result = {
@@ -684,7 +684,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
   if (!result.files.empty()) {
     return result;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 AspectArtifactSelector::PartitionFileSetsResult
@@ -784,7 +784,7 @@ ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
       << action_pattern->error();
 }
 
-absl::optional<BazelArtifact> ExtraActionSelector::Select(
+std::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
   if (event.id().has_action_completed() && event.action().success() &&
       action_matches_(event.action().type())) {
@@ -799,7 +799,7 @@ absl::optional<BazelArtifact> ExtraActionSelector::Select(
       };
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 }  // namespace kythe

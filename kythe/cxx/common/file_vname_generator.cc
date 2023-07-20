@@ -33,19 +33,19 @@ std::string EscapeBackslashes(absl::string_view value) {
   return absl::StrReplaceAll(value, {{R"(\)", R"(\\)"}});
 }
 
-absl::optional<absl::string_view> FindMatch(absl::string_view text,
-                                            const RE2& pattern) {
+std::optional<absl::string_view> FindMatch(absl::string_view text,
+                                           const RE2& pattern) {
   re2::StringPiece match;
   if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
     return absl::string_view(match.data(), match.size());
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
                                           absl::string_view input) {
   std::string result;
-  while (absl::optional<absl::string_view> match =
+  while (std::optional<absl::string_view> match =
              FindMatch(input, *kSubstitutionsPattern)) {
     absl::string_view group = match->substr(1, match->size() - 2);
 

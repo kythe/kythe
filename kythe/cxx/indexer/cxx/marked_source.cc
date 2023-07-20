@@ -809,7 +809,7 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
   return true;
 }
 
-absl::optional<MarkedSource>
+std::optional<MarkedSource>
 MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     const GraphObserver::NodeId& decl_id) {
   auto start_loc = decl_->getSourceRange().getBegin();
@@ -834,7 +834,7 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                       << "\n         to "
                       << end_loc_.printToString(cache_->source_manager());
     }
-    return absl::nullopt;
+    return std::nullopt;
   }
   MarkedSource out_sig;
   if (absl::GetFlag(FLAGS_reformat_marked_source)) {
@@ -847,7 +847,7 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
       DLOG(LEVEL(-1)) << "Incomplete reformatting for "
                       << decl_id.getRawIdentity() << " ("
                       << decl_->getQualifiedNameAsString() << ")";
-      return absl::nullopt;
+      return std::nullopt;
     }
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,
                             &out_sig, name_range_);
@@ -881,13 +881,13 @@ MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl() {
   return out;
 }
 
-absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
+std::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     const GraphObserver::NodeId& decl_id) {
   // MarkedSource generation is expensive. If we're not going to write out the
   // marked source later on, don't spend time on it.
   // TODO(zarko): Introduce a similar check for documentation.
   if (!WillGenerateMarkedSource()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);

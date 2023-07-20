@@ -67,7 +67,7 @@ class RootTraversal {
       // If we would be constructed from a TranslationUnitDecl, stop.
       if (decl && clang::isa<clang::TranslationUnitDecl>(decl)) {
         parent_map_ = nullptr;
-        current_ = absl::nullopt;
+        current_ = std::nullopt;
       }
     }
 
@@ -88,7 +88,7 @@ class RootTraversal {
     void advance();
 
     const IndexedParentMap* parent_map_ = nullptr;
-    absl::optional<value_type> current_ = absl::nullopt;
+    std::optional<value_type> current_ = std::nullopt;
   };
 
   // Constructs a RootTraversal range over `parent_map` beginning at

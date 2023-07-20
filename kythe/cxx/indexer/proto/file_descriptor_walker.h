@@ -208,12 +208,12 @@ class FileDescriptorWalker {
   absl::StatusOr<PartialLocation> ParseLocation(
       const std::vector<int>& span) const;
 
-  absl::optional<proto::VName> VNameForFieldType(
+  std::optional<proto::VName> VNameForFieldType(
       const google::protobuf::FieldDescriptor* field);
 
   /// \brief Attach marked source (if not None) to `vname`.
   void AttachMarkedSource(const proto::VName& vname,
-                          const absl::optional<MarkedSource>& code);
+                          const std::optional<MarkedSource>& code);
 
   const google::protobuf::FileDescriptor* file_descriptor_;
   const google::protobuf::SourceCodeInfo* source_code_info_;

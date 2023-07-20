@@ -63,15 +63,15 @@ class NodeSet {
     return (secondary_.has_value() ? *secondary_ : *primary_);
   }
 
-  const absl::optional<NodeId>& AsOptional() const& { return primary_; }
-  absl::optional<NodeId>&& AsOptional() && { return std::move(primary_); }
+  const std::optional<NodeId>& AsOptional() const& { return primary_; }
+  std::optional<NodeId>&& AsOptional() && { return std::move(primary_); }
 
   Claimability claimability() const { return claim_; }
 
  private:
   Claimability claim_ = Claimability::Claimable;
-  absl::optional<NodeId> primary_;
-  absl::optional<NodeId> secondary_;
+  std::optional<NodeId> primary_;
+  std::optional<NodeId> secondary_;
 };
 }  // namespace kythe
 
