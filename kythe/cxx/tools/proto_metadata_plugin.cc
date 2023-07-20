@@ -15,6 +15,7 @@
  */
 #include <cstdlib>
 #include <string>
+#include <string_view>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
@@ -24,7 +25,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "google/protobuf/compiler/code_generator.h"
 #include "google/protobuf/compiler/cpp/generator.h"
@@ -74,8 +74,7 @@ void WriteLines(std::string_view metadata, Printer* printer) {
   }
 }
 
-std::string WriteMetadata(std::string_view metafile,
-                          std::string_view contents,
+std::string WriteMetadata(std::string_view metafile, std::string_view contents,
                           ZeroCopyOutputStream* stream) {
   if (!absl::EndsWith(metafile, kMetadataFileSuffix)) {
     return "Not a metadata file";

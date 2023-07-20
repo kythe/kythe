@@ -18,7 +18,6 @@
 #define KYTHE_CXX_VERIFIER_PRETTY_PRINTER_H_
 
 #include <sstream>
-
 #include <string_view>
 
 namespace kythe {

@@ -20,11 +20,11 @@
 #include <openssl/sha.h>
 
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
-#include <string_view>
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"

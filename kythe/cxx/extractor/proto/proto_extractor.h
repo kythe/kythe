@@ -18,6 +18,7 @@
 #define KYTHE_CXX_EXTRACTOR_PROTO_PROTO_EXTRACTOR_H_
 
 #include <string_view>
+
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/proto/analysis.pb.h"

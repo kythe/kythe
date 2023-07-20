@@ -21,10 +21,10 @@
 /// \brief Defines the class kythe::GraphObserver
 
 #include <string>
+#include <string_view>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include <string_view>
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"

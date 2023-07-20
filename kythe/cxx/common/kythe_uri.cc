@@ -53,7 +53,7 @@ int value_for_hex_digit(char c) {
 }
 
 std::pair<std::string_view, std::string_view> Split(std::string_view input,
-                                                      char ch) {
+                                                    char ch) {
   return absl::StrSplit(input, absl::MaxSplits(ch, 1));
 }
 

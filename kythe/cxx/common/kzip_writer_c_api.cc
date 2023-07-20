@@ -19,11 +19,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <string_view>
+
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/proto/analysis.pb.h"

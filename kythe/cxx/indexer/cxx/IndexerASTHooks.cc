@@ -17,6 +17,7 @@
 #include "IndexerASTHooks.h"
 
 #include <algorithm>
+#include <string_view>
 #include <tuple>
 
 #include "GraphObserver.h"
@@ -26,7 +27,6 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include <string_view>
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"

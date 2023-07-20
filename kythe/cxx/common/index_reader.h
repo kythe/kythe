@@ -19,10 +19,10 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {

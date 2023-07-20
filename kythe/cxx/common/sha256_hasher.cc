@@ -21,9 +21,9 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #include "absl/strings/escaping.h"
-#include <string_view>
 #include "absl/types/span.h"
 
 namespace kythe {

@@ -21,11 +21,11 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "absl/types/optional.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"

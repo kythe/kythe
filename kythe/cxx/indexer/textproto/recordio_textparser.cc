@@ -17,13 +17,13 @@
 #include "kythe/cxx/indexer/textproto/recordio_textparser.h"
 
 #include <sstream>
+#include <string_view>
 
 #include "absl/functional/function_ref.h"
 #include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 

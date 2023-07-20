@@ -17,12 +17,12 @@
 #include "kythe/cxx/common/regex.h"
 
 #include <memory>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "re2/re2.h"
 
 namespace kythe {

@@ -19,8 +19,8 @@
 
 #include <memory>
 #include <string>
-
 #include <string_view>
+
 #include "re2/re2.h"
 
 namespace kythe {

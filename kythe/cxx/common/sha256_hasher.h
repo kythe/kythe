@@ -22,8 +22,8 @@
 #include <array>
 #include <cstddef>
 #include <string>
-
 #include <string_view>
+
 #include "absl/types/span.h"
 
 namespace kythe {

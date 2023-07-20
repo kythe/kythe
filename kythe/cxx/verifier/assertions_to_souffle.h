@@ -18,9 +18,9 @@
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 
 #include <string>
+#include <string_view>
 
 #include "absl/container/flat_hash_map.h"
-#include <string_view>
 #include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {

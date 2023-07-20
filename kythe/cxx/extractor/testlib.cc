@@ -21,13 +21,13 @@
 
 #include <iostream>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include <string_view>
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
@@ -50,8 +50,7 @@ using ::bazel::tools::cpp::runfiles::Runfiles;
 // Path prefix joined to runfiles to form the workspace-relative path.
 constexpr std::string_view kWorkspaceRoot = "io_kythe";
 
-constexpr std::string_view kExtractorPath =
-    "kythe/cxx/extractor/cxx_extractor";
+constexpr std::string_view kExtractorPath = "kythe/cxx/extractor/cxx_extractor";
 
 void CanonicalizeHash(HashMap* hashes, std::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
@@ -61,8 +60,9 @@ void CanonicalizeHash(HashMap* hashes, std::string* hash) {
 /// \brief Range wrapper around ContextDependentVersion, if any.
 class MutableContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kpb::ContextDependentVersion>().mutable_row()->begin());
+  using iterator = decltype(std::declval<kpb::ContextDependentVersion>()
+                                .mutable_row()
+                                ->begin());
   explicit MutableContextRows(kpb::CompilationUnit::FileInput* file_input) {
     for (gpb::Any& detail : *file_input->mutable_details()) {
       if (detail.UnpackTo(&context_)) {

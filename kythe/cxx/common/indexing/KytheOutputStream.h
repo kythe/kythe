@@ -17,9 +17,10 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
+#include <string_view>
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include <string_view>
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 

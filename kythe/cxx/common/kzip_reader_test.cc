@@ -18,12 +18,12 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"

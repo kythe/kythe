@@ -17,13 +17,13 @@
 
 #include <functional>
 #include <memory>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include <string_view>
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/ASTUnit.h"

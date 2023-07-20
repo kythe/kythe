@@ -18,8 +18,8 @@
 #define KYTHE_CXX_COMMON_KYTHE_URI_H_
 
 #include <string>
-
 #include <string_view>
+
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/storage.pb.h"
 

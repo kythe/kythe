@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <string_view>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -37,7 +38,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include <string_view>
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"

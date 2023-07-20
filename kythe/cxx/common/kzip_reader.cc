@@ -19,6 +19,7 @@
 #include <openssl/sha.h>
 
 #include <set>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -29,7 +30,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -194,8 +194,7 @@ std::string_view DirNameForEncoding(KzipEncoding encoding) {
 
 }  // namespace
 
-absl::optional<std::string_view> KzipReader::UnitDigest(
-    std::string_view path) {
+absl::optional<std::string_view> KzipReader::UnitDigest(std::string_view path) {
   if (!absl::ConsumePrefix(&path, unit_prefix_) || path.empty()) {
     return absl::nullopt;
   }

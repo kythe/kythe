@@ -34,7 +34,7 @@ std::string EscapeBackslashes(std::string_view value) {
 }
 
 absl::optional<std::string_view> FindMatch(std::string_view text,
-                                            const RE2& pattern) {
+                                           const RE2& pattern) {
   re2::StringPiece match;
   if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
     return std::string_view(match.data(), match.size());

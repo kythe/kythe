@@ -19,9 +19,8 @@
 
 #include <iosfwd>
 #include <string>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace kythe {
 
@@ -122,8 +121,8 @@ class UTF8LineIndex {
   //
   // TODO: Optimize this function for the case of ASCII.
   std::string_view GetSubstrFromLine(int line_number,
-                                      int start_position_in_code_points,
-                                      int length_in_code_points) const;
+                                     int start_position_in_code_points,
+                                     int length_in_code_points) const;
 
   // Returns the number of lines in the indexed file, including the last line
   // even if it was not terminated.

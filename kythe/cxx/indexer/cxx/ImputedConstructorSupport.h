@@ -19,10 +19,10 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 
 #include "IndexerLibrarySupport.h"
-#include <string_view>
 #include "clang/AST/Expr.h"
 
 namespace kythe {

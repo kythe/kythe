@@ -17,8 +17,9 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 
-#include "KytheOutputStream.h"
 #include <string_view>
+
+#include "KytheOutputStream.h"
 
 namespace kythe {
 

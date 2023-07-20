@@ -17,9 +17,9 @@
 #include "pretty_printer.h"
 
 #include <bitset>
+#include <string_view>
 
 #include "absl/strings/str_format.h"
-#include <string_view>
 
 namespace kythe {
 namespace verifier {

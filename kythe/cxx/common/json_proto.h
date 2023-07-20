@@ -18,10 +18,10 @@
 #define KYTHE_CXX_COMMON_JSON_PROTO_H_
 
 #include <string>
+#include <string_view>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"

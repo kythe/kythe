@@ -58,8 +58,10 @@ constexpr std::string_view kBuildDetailsURI =
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+  using iterator =
+      decltype(std::declval<kythe::proto::ContextDependentVersion>()
+                   .row()
+                   .begin());
 
   explicit FileContextRows(
       const kythe::proto::CompilationUnit::FileInput& file_input) {

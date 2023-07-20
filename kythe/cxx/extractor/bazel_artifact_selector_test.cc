@@ -16,6 +16,7 @@
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -23,7 +24,6 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-#include <string_view>
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "gmock/gmock.h"

@@ -15,9 +15,9 @@
  */
 
 #include <memory>
+#include <string_view>
 
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "absl/types/span.h"
 #include "re2/re2.h"
 #include "re2/set.h"

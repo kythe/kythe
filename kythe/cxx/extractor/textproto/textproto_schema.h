@@ -18,9 +18,8 @@
 #define KYTHE_CXX_EXTRACTOR_TEXTPROTO_SCHEMA_H_
 
 #include <string>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace kythe {
 namespace lang_textproto {

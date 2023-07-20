@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string_view>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -28,7 +29,6 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
@@ -171,8 +171,7 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                       std::string_view sp) override;
 
-  proto::VName VNameForRelPath(
-      std::string_view simplified_path) const override;
+  proto::VName VNameForRelPath(std::string_view simplified_path) const override;
 
   void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) {
     plugins_ = std::move(p);

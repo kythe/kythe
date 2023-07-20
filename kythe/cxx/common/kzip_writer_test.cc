@@ -19,6 +19,7 @@
 #include <zip.h>
 
 #include <cstdlib>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -27,7 +28,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
-#include <string_view>
 #include "absl/strings/strip.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

@@ -21,10 +21,10 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include <string_view>
 #include "kythe/cxx/common/index_reader.h"
 #include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/proto/analysis.pb.h"

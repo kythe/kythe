@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "IndexerASTHooks.h"
 #include "absl/flags/flag.h"
@@ -26,7 +27,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include <string_view>
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -1321,11 +1321,10 @@ void KytheGraphObserver::applyMetadataFile(
   }
   if (auto metadata = meta_supports_->ParseFile(
           std::string(file->getName()),
-          std::string_view(buffer->getBuffer().data(),
-                            buffer->getBufferSize()),
+          std::string_view(buffer->getBuffer().data(), buffer->getBufferSize()),
           search_string,
           std::string_view(target_buffer->getBuffer().data(),
-                            target_buffer->getBufferSize()))) {
+                           target_buffer->getBufferSize()))) {
     meta_.emplace(id, std::move(metadata));
   }
 }

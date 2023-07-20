@@ -15,8 +15,9 @@
  */
 #include "kythe/cxx/indexer/textproto/recordio_textparser.h"
 
-#include "absl/strings/str_join.h"
 #include <string_view>
+
+#include "absl/strings/str_join.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 

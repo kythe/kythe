@@ -59,7 +59,7 @@ std::string_view PathPrefix(std::string_view path) {
 }
 
 std::string_view TrimPathPrefix(const std::string_view path,
-                                 std::string_view prefix) {
+                                std::string_view prefix) {
   std::string_view result = path;
   if (absl::ConsumePrefix(&result, prefix) &&
       (result.empty() || prefix == "/" || absl::ConsumePrefix(&result, "/"))) {
@@ -297,9 +297,7 @@ absl::StatusOr<std::string> MakeCleanAbsolutePath(std::string_view path) {
   }
 }
 
-std::string_view Dirname(std::string_view path) {
-  return SplitPath(path).dir;
-}
+std::string_view Dirname(std::string_view path) { return SplitPath(path).dir; }
 
 std::string_view Basename(std::string_view path) {
   return SplitPath(path).base;
