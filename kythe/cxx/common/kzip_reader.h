@@ -58,7 +58,7 @@ class KzipReader : public IndexReaderInterface {
   };
   using ZipHandle = std::unique_ptr<zip_t, Discard>;
 
-  explicit KzipReader(ZipHandle archive, std::string_view basename,
+  explicit KzipReader(ZipHandle archive, std::string_view root,
                       KzipEncoding encoding);
 
   zip_t* archive() { return archive_.get(); }
