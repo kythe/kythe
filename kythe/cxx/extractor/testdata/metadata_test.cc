@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include <string_view>
-
+#include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"

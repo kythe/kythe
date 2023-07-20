@@ -45,14 +45,14 @@ class SymbolTable {
   explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
 
   /// \brief Returns the `Symbol` associated with `string` or `nullopt`.
-  absl::optional<Symbol> FindInterned(std::string_view string) const {
+  absl::optional<Symbol> FindInterned(absl::string_view string) const {
     const auto old = symbols_.find(std::string(string));
     if (old == symbols_.end()) return absl::nullopt;
     return old->second;
   }
 
   /// \brief Returns the `Symbol` associated with `string`, or aborts.
-  Symbol MustIntern(std::string_view string) const {
+  Symbol MustIntern(absl::string_view string) const {
     auto sym = FindInterned(string);
     CHECK(sym) << "no symbol for " << string;
     return *sym;

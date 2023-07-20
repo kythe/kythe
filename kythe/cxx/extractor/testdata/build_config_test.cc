@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include <string_view>
-
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "gtest/gtest.h"

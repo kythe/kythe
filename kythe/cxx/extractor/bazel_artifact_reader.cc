@@ -16,7 +16,6 @@
 #include "kythe/cxx/extractor/bazel_artifact_reader.h"
 
 #include <string>
-#include <string_view>
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"

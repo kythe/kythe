@@ -20,7 +20,7 @@
 
 namespace kythe::verifier {
 namespace {
-constexpr std::string_view kGlobalDecls = R"(
+constexpr absl::string_view kGlobalDecls = R"(
 .type vname = [
   signature:number,
   corpus:number,

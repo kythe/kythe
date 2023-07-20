@@ -38,11 +38,11 @@ namespace {
 // Predicate used in CleanPath for skipping empty components
 // and components consistening of a single '.'.
 struct SkipEmptyDot {
-  bool operator()(std::string_view sp) { return !(sp.empty() || sp == "."); }
+  bool operator()(absl::string_view sp) { return !(sp.empty() || sp == "."); }
 };
 
 // Deal with relative paths as well as '/' and '//'.
-std::string_view PathPrefix(std::string_view path) {
+absl::string_view PathPrefix(absl::string_view path) {
   int slash_count = 0;
   for (char ch : path) {
     if (ch == '/' && ++slash_count <= 2) continue;
@@ -58,9 +58,9 @@ std::string_view PathPrefix(std::string_view path) {
   }
 }
 
-std::string_view TrimPathPrefix(const std::string_view path,
-                                std::string_view prefix) {
-  std::string_view result = path;
+absl::string_view TrimPathPrefix(const absl::string_view path,
+                                 absl::string_view prefix) {
+  absl::string_view result = path;
   if (absl::ConsumePrefix(&result, prefix) &&
       (result.empty() || prefix == "/" || absl::ConsumePrefix(&result, "/"))) {
     return result;
@@ -69,7 +69,7 @@ std::string_view TrimPathPrefix(const std::string_view path,
 }
 
 absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
-    PathCanonicalizer::Policy policy, std::string_view root) {
+    PathCanonicalizer::Policy policy, absl::string_view root) {
   switch (policy) {
     case PathCanonicalizer::Policy::kCleanOnly:
       return {absl::nullopt};
@@ -85,7 +85,7 @@ absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
 }
 
 absl::optional<std::string> MaybeRealPath(
-    const absl::optional<PathRealizer>& realizer, std::string_view root) {
+    const absl::optional<PathRealizer>& realizer, absl::string_view root) {
   if (realizer.has_value()) {
     if (auto result = realizer->Relativize(root); result.ok()) {
       return *std::move(result);
@@ -97,14 +97,14 @@ absl::optional<std::string> MaybeRealPath(
 }
 
 struct PathParts {
-  std::string_view dir, base;
+  absl::string_view dir, base;
 };
 
-PathParts SplitPath(std::string_view path) {
+PathParts SplitPath(absl::string_view path) {
   std::string::difference_type pos = path.find_last_of('/');
 
   // Handle the case with no '/' in 'path'.
-  if (pos == std::string_view::npos) return {path.substr(0, 0), path};
+  if (pos == absl::string_view::npos) return {path.substr(0, 0), path};
 
   // Handle the case with a single leading '/' in 'path'.
   if (pos == 0) return {path.substr(0, 1), absl::ClippedSubstr(path, 1)};
@@ -114,7 +114,7 @@ PathParts SplitPath(std::string_view path) {
 
 }  // namespace
 
-absl::StatusOr<PathCleaner> PathCleaner::Create(std::string_view root) {
+absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
   if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(root);
       resolved.ok()) {
     return PathCleaner(*std::move(resolved));
@@ -124,7 +124,7 @@ absl::StatusOr<PathCleaner> PathCleaner::Create(std::string_view root) {
 }
 
 absl::StatusOr<std::string> PathCleaner::Relativize(
-    std::string_view path) const {
+    absl::string_view path) const {
   if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(path);
       resolved.ok()) {
     return std::string(TrimPathPrefix(*std::move(resolved), root_));
@@ -133,7 +133,7 @@ absl::StatusOr<std::string> PathCleaner::Relativize(
   }
 }
 
-absl::StatusOr<PathRealizer> PathRealizer::Create(std::string_view root) {
+absl::StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
   if (absl::StatusOr<std::string> resolved = RealPath(root); resolved.ok()) {
     return PathRealizer(*std::move(resolved));
   } else {
@@ -161,7 +161,7 @@ absl::StatusOr<std::string> PathRealizer::PathCache::FindOrInsert(K&& key,
 }
 
 absl::StatusOr<std::string> PathRealizer::Relativize(
-    std::string_view path) const {
+    absl::string_view path) const {
   return cache_->FindOrInsert(
       CleanPath(path), [this, path]() -> absl::StatusOr<std::string> {
         if (absl::StatusOr<std::string> resolved = RealPath(path);
@@ -174,7 +174,7 @@ absl::StatusOr<std::string> PathRealizer::Relativize(
 }
 
 absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
-    std::string_view root, Policy policy) {
+    absl::string_view root, Policy policy) {
   absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(root);
   if (!cleaner.ok()) {
     return cleaner.status();
@@ -188,7 +188,7 @@ absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
 }
 
 absl::StatusOr<std::string> PathCanonicalizer::Relativize(
-    std::string_view path) const {
+    absl::string_view path) const {
   switch (policy_) {
     case Policy::kPreferRelative:
       if (auto resolved = MaybeRealPath(realizer_, path)) {
@@ -210,7 +210,7 @@ absl::StatusOr<std::string> PathCanonicalizer::Relativize(
 }
 
 absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
-    std::string_view policy) {
+    absl::string_view policy) {
   using Policy = PathCanonicalizer::Policy;
   if (policy == "0" || policy == "clean-only") {
     return Policy::kCleanOnly;
@@ -224,7 +224,7 @@ absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
   return absl::nullopt;
 }
 
-bool AbslParseFlag(std::string_view text, PathCanonicalizer::Policy* policy,
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
                    std::string* error) {
   if (auto parsed = ParseCanonicalizationPolicy(text)) {
     *policy = *parsed;
@@ -248,15 +248,15 @@ std::string AbslUnparseFlag(PathCanonicalizer::Policy policy) {
   return "(unknown)";
 }
 
-std::string JoinPath(std::string_view a, std::string_view b) {
+std::string JoinPath(absl::string_view a, absl::string_view b) {
   return absl::StrCat(absl::StripSuffix(a, "/"), "/",
                       absl::StripPrefix(b, "/"));
 }
 
-std::string CleanPath(std::string_view input) {
+std::string CleanPath(absl::string_view input) {
   const bool is_absolute_path = absl::StartsWith(input, "/");
-  std::vector<std::string_view> parts;
-  for (std::string_view comp : absl::StrSplit(input, '/', SkipEmptyDot{})) {
+  std::vector<absl::string_view> parts;
+  for (absl::string_view comp : absl::StrSplit(input, '/', SkipEmptyDot{})) {
     if (comp == "..") {
       if (!parts.empty() && parts.back() != "..") {
         parts.pop_back();
@@ -270,7 +270,7 @@ std::string CleanPath(std::string_view input) {
   return absl::StrCat(PathPrefix(input), absl::StrJoin(parts, "/"));
 }
 
-bool IsAbsolutePath(std::string_view path) {
+bool IsAbsolutePath(absl::string_view path) {
   return absl::StartsWith(path, "/");
 }
 
@@ -286,7 +286,7 @@ absl::StatusOr<std::string> GetCurrentDirectory() {
   return result;
 }
 
-absl::StatusOr<std::string> MakeCleanAbsolutePath(std::string_view path) {
+absl::StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path) {
   if (IsAbsolutePath(path)) {
     return CleanPath(path);
   }
@@ -297,14 +297,16 @@ absl::StatusOr<std::string> MakeCleanAbsolutePath(std::string_view path) {
   }
 }
 
-std::string_view Dirname(std::string_view path) { return SplitPath(path).dir; }
+absl::string_view Dirname(absl::string_view path) {
+  return SplitPath(path).dir;
+}
 
-std::string_view Basename(std::string_view path) {
+absl::string_view Basename(absl::string_view path) {
   return SplitPath(path).base;
 }
 
-std::string RelativizePath(std::string_view to_relativize,
-                           std::string_view relativize_against) {
+std::string RelativizePath(absl::string_view to_relativize,
+                           absl::string_view relativize_against) {
   absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(relativize_against);
   if (!cleaner.ok()) {
     return "";
@@ -312,7 +314,7 @@ std::string RelativizePath(std::string_view to_relativize,
   return cleaner->Relativize(to_relativize).value_or("");
 }
 
-absl::StatusOr<std::string> RealPath(std::string_view path) {
+absl::StatusOr<std::string> RealPath(absl::string_view path) {
   // realpath requires a null-terminated cstring, but string_view may not be.
   // checking whether or not it is null-terminated is potentially UB.
   std::string zpath(path);

@@ -122,18 +122,18 @@ clang::SourceRange FindNamedCalleeRange(const clang::Expr* expr) {
   return clang::SourceRange();
 }
 
-std::function<bool(std::string_view)> CompilePatterns(
+std::function<bool(absl::string_view)> CompilePatterns(
     const std::unordered_set<std::string>& patterns) {
   re2::RE2::Options options;
   options.set_never_capture(true);
   // TODO(shahms): A mechanism for reporting compile errors.
   std::shared_ptr<re2::RE2> regex = std::make_shared<re2::RE2>(
       absl::StrJoin(patterns, "|",
-                    [](std::string* out, std::string_view value) {
+                    [](std::string* out, absl::string_view value) {
                       absl::StrAppend(out, "(", value, ")");
                     }),
       options);
-  return [regex](std::string_view name) {
+  return [regex](absl::string_view name) {
     return re2::RE2::FullMatch({name.data(), name.size()}, *regex);
   };
 }
@@ -146,7 +146,7 @@ ImputedConstructorSupport::ImputedConstructorSupport(
 }
 
 ImputedConstructorSupport::ImputedConstructorSupport(
-    std::function<bool(std::string_view)> allow_constructor_name)
+    std::function<bool(absl::string_view)> allow_constructor_name)
     : allow_constructor_name_(std::move(allow_constructor_name)) {}
 
 void ImputedConstructorSupport::InspectCallExpr(

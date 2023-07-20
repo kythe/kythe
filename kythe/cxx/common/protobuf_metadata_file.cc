@@ -43,8 +43,8 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
-    std::string_view buffer, std::string_view target_buffer) {
-  std::string_view file_ref(filename);
+    absl::string_view buffer, absl::string_view target_buffer) {
+  absl::string_view file_ref(filename);
   if (!(absl::EndsWith(filename, ".pb.h.meta") ||
         absl::EndsWith(filename, ".pb.h") ||
         absl::EndsWith(filename, ".proto.h.meta") ||

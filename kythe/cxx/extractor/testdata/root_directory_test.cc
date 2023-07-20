@@ -15,8 +15,8 @@
  */
 
 #include <string>
-#include <string_view>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -31,7 +31,7 @@ using ::kythe::proto::CompilationUnit;
 using ::protobuf_matchers::EquivToProto;
 using ::testing::SizeIs;
 
-constexpr std::string_view kFilePath =
+constexpr absl::string_view kFilePath =
     "kythe/cxx/extractor/testdata/altroot/altpath/file.cc";
 
 CompilationUnit ExpectedCompilation() {

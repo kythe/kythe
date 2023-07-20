@@ -38,24 +38,24 @@
 namespace kythe {
 namespace {
 
-constexpr std::string_view kRoot = "root/";
-constexpr std::string_view kJsonUnitRoot = "root/units/";
-constexpr std::string_view kProtoUnitRoot = "root/pbunits/";
-constexpr std::string_view kFileRoot = "root/files/";
+constexpr absl::string_view kRoot = "root/";
+constexpr absl::string_view kJsonUnitRoot = "root/units/";
+constexpr absl::string_view kProtoUnitRoot = "root/pbunits/";
+constexpr absl::string_view kFileRoot = "root/files/";
 // Set all file modified times to 0 so zip file diffs only show content diffs,
 // not zip creation time diffs.
 constexpr time_t kModTime = 0;
 
-std::string SHA256Digest(std::string_view content) {
+std::string SHA256Digest(absl::string_view content) {
   std::array<unsigned char, SHA256_DIGEST_LENGTH> buf;
   ::SHA256(reinterpret_cast<const unsigned char*>(content.data()),
            content.size(), buf.data());
   return absl::BytesToHexString(
-      std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()));
+      absl::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()));
 }
 
 absl::Status WriteTextFile(zip_t* archive, const std::string& path,
-                           std::string_view content) {
+                           absl::string_view content) {
   if (auto source =
           zip_source_buffer(archive, content.data(), content.size(), 0)) {
     auto idx = zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8);
@@ -70,9 +70,9 @@ absl::Status WriteTextFile(zip_t* archive, const std::string& path,
   return libzip::ToStatus(zip_get_error(archive));
 }
 
-std::string_view Basename(std::string_view path) {
+absl::string_view Basename(absl::string_view path) {
   auto pos = path.find_last_of('/');
-  if (pos == std::string_view::npos) {
+  if (pos == absl::string_view::npos) {
     return path;
   }
   return absl::ClippedSubstr(path, pos + 1);
@@ -86,7 +86,7 @@ bool HasEncoding(KzipEncoding lhs, KzipEncoding rhs) {
 }  // namespace
 
 /* static */
-absl::StatusOr<IndexWriter> KzipWriter::Create(std::string_view path,
+absl::StatusOr<IndexWriter> KzipWriter::Create(absl::string_view path,
                                                KzipEncoding encoding) {
   int error;
   if (auto archive =
@@ -116,7 +116,7 @@ KzipWriter::~KzipWriter() {
 
 // Creates entries for the three directories if not already present.
 absl::Status KzipWriter::InitializeArchive(zip_t* archive) {
-  std::vector<std::string_view> dirs = {kRoot, kFileRoot};
+  std::vector<absl::string_view> dirs = {kRoot, kFileRoot};
   if (HasEncoding(encoding_, KzipEncoding::kJson)) {
     dirs.push_back(kJsonUnitRoot);
   }
@@ -171,7 +171,7 @@ absl::StatusOr<std::string> KzipWriter::WriteUnit(
   return result;
 }
 
-absl::StatusOr<std::string> KzipWriter::WriteFile(std::string_view content) {
+absl::StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
   if (!initialized_) {
     auto status = InitializeArchive(archive_);
     if (!status.ok()) {
@@ -196,8 +196,8 @@ absl::Status KzipWriter::Close() {
   return result;
 }
 
-absl::StatusOr<std::string> KzipWriter::InsertFile(std::string_view path,
-                                                   std::string_view content) {
+absl::StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
+                                                   absl::string_view content) {
   // Initially insert an empty string for the file content.
   auto insertion = contents_.emplace(std::string(path), "");
   if (insertion.second) {

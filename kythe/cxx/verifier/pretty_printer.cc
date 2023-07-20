@@ -17,16 +17,16 @@
 #include "pretty_printer.h"
 
 #include <bitset>
-#include <string_view>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 namespace verifier {
 
 PrettyPrinter::~PrettyPrinter() {}
 
-void StringPrettyPrinter::Print(std::string_view string) { data_ << string; }
+void StringPrettyPrinter::Print(absl::string_view string) { data_ << string; }
 void StringPrettyPrinter::Print(const char* string) { data_ << string; }
 
 void StringPrettyPrinter::Print(const void* ptr) {
@@ -37,7 +37,7 @@ void StringPrettyPrinter::Print(const void* ptr) {
   }
 }
 
-void FileHandlePrettyPrinter::Print(std::string_view string) {
+void FileHandlePrettyPrinter::Print(absl::string_view string) {
   absl::FPrintF(file_, "%s", string);
 }
 
@@ -49,7 +49,7 @@ void FileHandlePrettyPrinter::Print(const void* ptr) {
   absl::FPrintF(file_, "0x%016llx", reinterpret_cast<unsigned long long>(ptr));
 }
 
-void QuoteEscapingPrettyPrinter::Print(std::string_view string) {
+void QuoteEscapingPrettyPrinter::Print(absl::string_view string) {
   for (char ch : string) {
     if (ch == '\"') {
       wrapped_.Print("\\\"");
@@ -64,12 +64,12 @@ void QuoteEscapingPrettyPrinter::Print(std::string_view string) {
 }
 
 void QuoteEscapingPrettyPrinter::Print(const char* string) {
-  Print(std::string_view(string));
+  Print(absl::string_view(string));
 }
 
 void QuoteEscapingPrettyPrinter::Print(const void* ptr) { wrapped_.Print(ptr); }
 
-void HtmlEscapingPrettyPrinter::Print(std::string_view string) {
+void HtmlEscapingPrettyPrinter::Print(absl::string_view string) {
   for (char ch : string) {
     if (ch == '\"') {
       wrapped_.Print("&quot;");
@@ -86,7 +86,7 @@ void HtmlEscapingPrettyPrinter::Print(std::string_view string) {
 }
 
 void HtmlEscapingPrettyPrinter::Print(const char* string) {
-  Print(std::string_view(string));
+  Print(absl::string_view(string));
 }
 
 void HtmlEscapingPrettyPrinter::Print(const void* ptr) { wrapped_.Print(ptr); }

@@ -17,12 +17,12 @@
 #include "kythe/cxx/common/regex.h"
 
 #include <memory>
-#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "re2/re2.h"
 
 namespace kythe {
@@ -61,7 +61,7 @@ RE2::Set CheckCompiled(RE2::Set set) {
 }
 }  // namespace
 
-absl::StatusOr<Regex> Regex::Compile(std::string_view pattern,
+absl::StatusOr<Regex> Regex::Compile(absl::string_view pattern,
                                      const RE2::Options& options) {
   std::shared_ptr<const RE2> re = std::make_shared<RE2>(pattern, options);
   if (!re->ok()) {
@@ -103,7 +103,7 @@ RegexSet& RegexSet::operator=(RegexSet&& other) noexcept {
 }
 
 absl::StatusOr<std::vector<int>> RegexSet::ExplainMatch(
-    std::string_view value) const {
+    absl::string_view value) const {
   RE2::Set::ErrorInfo error;
   std::vector<int> matches;
   if (set_->Match(value, &matches, &error)) {

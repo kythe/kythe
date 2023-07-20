@@ -48,14 +48,14 @@ class PermissiveTypeResolver : public TypeResolver {
   absl::Status ResolveMessageType(
       const std::string& type_url,
       google::protobuf::Type* message_type) override {
-    std::string_view adjusted = type_url;
+    absl::string_view adjusted = type_url;
     adjusted.remove_prefix(type_url.rfind('/') + 1);
     return impl_->ResolveMessageType(absl::StrCat("/", adjusted), message_type);
   }
 
   absl::Status ResolveEnumType(const std::string& type_url,
                                google::protobuf::Enum* enum_type) override {
-    std::string_view adjusted = type_url;
+    absl::string_view adjusted = type_url;
     adjusted.remove_prefix(type_url.rfind('/') + 1);
     return impl_->ResolveEnumType(absl::StrCat("/", adjusted), enum_type);
   }
@@ -224,20 +224,20 @@ absl::Status ParseFromJsonStream(
   return ParseFromJsonStream(input, DefaultParseOptions(), message);
 }
 
-absl::Status ParseFromJsonString(std::string_view input,
+absl::Status ParseFromJsonString(absl::string_view input,
                                  const JsonParseOptions& options,
                                  google::protobuf::Message* message) {
   google::protobuf::io::ArrayInputStream stream(input.data(), input.size());
   return ParseFromJsonStream(&stream, options, message);
 }
 
-absl::Status ParseFromJsonString(std::string_view input,
+absl::Status ParseFromJsonString(absl::string_view input,
                                  google::protobuf::Message* message) {
   return ParseFromJsonString(input, DefaultParseOptions(), message);
 }
 
 void PackAny(const google::protobuf::Message& message,
-             std::string_view type_uri, google::protobuf::Any* out) {
+             absl::string_view type_uri, google::protobuf::Any* out) {
   out->set_type_url(type_uri.data(), type_uri.size());
   message.SerializeToString(out->mutable_value());
 }

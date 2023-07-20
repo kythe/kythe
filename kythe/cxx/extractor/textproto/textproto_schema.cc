@@ -23,10 +23,10 @@
 namespace kythe {
 namespace lang_textproto {
 
-TextprotoSchema ParseTextprotoSchemaComments(std::string_view textproto) {
+TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto) {
   TextprotoSchema schema;
 
-  for (std::string_view line : absl::StrSplit(textproto, '\n')) {
+  for (absl::string_view line : absl::StrSplit(textproto, '\n')) {
     if (absl::ConsumePrefix(&line, "#")) {
       line = absl::StripLeadingAsciiWhitespace(line);
       if (absl::ConsumePrefix(&line, "proto-file:")) {

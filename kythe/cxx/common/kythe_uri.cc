@@ -52,14 +52,14 @@ int value_for_hex_digit(char c) {
   return -1;
 }
 
-std::pair<std::string_view, std::string_view> Split(std::string_view input,
-                                                    char ch) {
+std::pair<absl::string_view, absl::string_view> Split(absl::string_view input,
+                                                      char ch) {
   return absl::StrSplit(input, absl::MaxSplits(ch, 1));
 }
 
 }  // namespace
 
-std::string UriEscape(UriEscapeMode mode, std::string_view uri) {
+std::string UriEscape(UriEscapeMode mode, absl::string_view uri) {
   size_t num_escapes = 0;
   for (char c : uri) {
     if (should_escape(mode, c)) {
@@ -83,7 +83,7 @@ std::string UriEscape(UriEscapeMode mode, std::string_view uri) {
 /// \brief URI-unescapes a string.
 /// \param string The string to unescape.
 /// \return A pair of (success, error-or-unescaped-string).
-std::pair<bool, std::string> UriUnescape(std::string_view string) {
+std::pair<bool, std::string> UriUnescape(absl::string_view string) {
   size_t num_escapes = 0;
   for (size_t i = 0, s = string.size(); i < s; ++i) {
     if (string[i] == '%') {
@@ -119,11 +119,11 @@ std::string URI::ToString() const {
       vname_.language().empty()) {
     return result;
   }
-  std::string_view signature = vname_.signature();
-  std::string_view path = vname_.path();
-  std::string_view corpus = vname_.corpus();
-  std::string_view language = vname_.language();
-  std::string_view root = vname_.root();
+  absl::string_view signature = vname_.signature();
+  absl::string_view path = vname_.path();
+  absl::string_view corpus = vname_.corpus();
+  absl::string_view language = vname_.language();
+  absl::string_view root = vname_.root();
   if (!corpus.empty()) {
     result.append("//");
     result.append(UriEscape(UriEscapeMode::kEscapePaths, corpus));
@@ -149,8 +149,8 @@ std::string URI::ToString() const {
 
 /// \brief Separate out the scheme component of `uri` if one exists.
 /// \return (scheme, tail) if there was a scheme; ("", uri) otherwise.
-static std::pair<std::string_view, std::string_view> SplitScheme(
-    std::string_view uri) {
+static std::pair<absl::string_view, absl::string_view> SplitScheme(
+    absl::string_view uri) {
   for (size_t i = 0, s = uri.size(); i != s; ++i) {
     char c = uri[i];
     if (c == ':') {
@@ -161,12 +161,12 @@ static std::pair<std::string_view, std::string_view> SplitScheme(
       break;
     }
   }
-  return std::make_pair(std::string_view(), uri);
+  return std::make_pair(absl::string_view(), uri);
 }
 
 URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {}
 
-bool URI::ParseString(std::string_view uri) {
+bool URI::ParseString(absl::string_view uri) {
   auto head_fragment = Split(uri, '#');
   auto head = head_fragment.first, fragment = head_fragment.second;
   auto scheme_head = SplitScheme(head);
