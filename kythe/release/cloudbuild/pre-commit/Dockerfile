@@ -13,14 +13,14 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/pre-commit .
-FROM ubuntu:22.04
+FROM ubuntu:23.04
 
 RUN apt-get update \
         && apt-get upgrade -y \
         && apt-get install -y --no-install-recommends \
                 curl ca-certificates \
                 # pre-commit dependencies
-                python3 python3-dev python3-pip \
+                python3 python3-dev python3-pip python3-venv \
                 # Linter dependencies
                 golang-1.19-go shellcheck clang-format-14 openjdk-11-jre-headless git \
         && apt-get clean \
@@ -38,7 +38,8 @@ RUN update-alternatives \
 
 # Install pip-packages
 COPY requirements.txt pre-commit-requirements.txt
-RUN pip3 install --require-hashes -r pre-commit-requirements.txt \
+RUN python3 -m venv /tmp/venv
+RUN /tmp/venv/bin/pip3 install --require-hashes -r pre-commit-requirements.txt \
  && rm pre-commit-requirements.txt
 
 # Install extra linters
@@ -66,4 +67,4 @@ RUN curl -o /tmp/rustup.sh --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs 
 # Install go wrapper script
 ADD go /usr/local/bin/go
 ENV PATH=$PATH:/root/go/bin:$CARGO_HOME/bin
-ENTRYPOINT ["pre-commit"]
+ENTRYPOINT ["/tmp/venv/bin/pre-commit"]
