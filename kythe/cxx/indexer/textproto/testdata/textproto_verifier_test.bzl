@@ -36,8 +36,8 @@ def _textproto_extract_kzip_impl(ctx):
     toplevel_proto_srcs, all_proto_srcs, pathopt = get_proto_files_and_proto_paths(ctx.attr.protos)
 
     args = ctx.actions.args()
-    args.add("--")
     args.add_all(ctx.attr.opts)
+    args.add("--")
     args.add_all(pathopt, before_each = "--proto_path")
 
     extract(
@@ -82,6 +82,7 @@ def textproto_verifier_test(
         protos,
         size = "small",
         tags = [],
+        extractor_opts = [],
         indexer_opts = [],
         verifier_opts = [],
         convert_marked_source = False,
@@ -95,6 +96,7 @@ def textproto_verifier_test(
       protos: Proto libraries that define the textproto's schema
       size: Test size
       tags: Test tags
+      extractor_opts: List of options passed to the textproto extractor
       indexer_opts: List of options passed to the textproto indexer
       verifier_opts: List of options passed to the verifier tool
       convert_marked_source: Whether the verifier should convert marked source.
@@ -119,6 +121,7 @@ def textproto_verifier_test(
             visibility = visibility,
             vnames_config = vnames_config,
             protos = protos,
+            opts = extractor_opts,
         )
 
         # index textproto

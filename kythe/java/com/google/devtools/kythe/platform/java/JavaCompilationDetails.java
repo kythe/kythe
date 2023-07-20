@@ -72,7 +72,7 @@ public class JavaCompilationDetails implements AutoCloseable {
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
 
     // Get the compilation options
-    List<String> options = optionsFromCompilationUnit(compilationUnit, processors);
+    ImmutableList<String> options = optionsFromCompilationUnit(compilationUnit, processors);
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
     // Create a CompilationUnitPathFileManager that uses the fileDataProvider and
@@ -208,7 +208,8 @@ public class JavaCompilationDetails implements AutoCloseable {
     ModifiableOptions arguments =
         ModifiableOptions.of(compilationUnit.getArgumentList())
             .ensureEncodingSet(DEFAULT_ENCODING)
-            .updateWithJavaOptions(compilationUnit);
+            .updateWithJavaOptions(compilationUnit)
+            .updateToMinimumSupportedSourceVersion();
 
     if (processors.isEmpty()) {
       arguments.add("-proc:none");

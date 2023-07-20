@@ -122,9 +122,10 @@ java_extract_kzip = rule(
             providers = [JavaInfo],
         ),
         "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
+            default = Label("@rules_java//toolchains:current_java_toolchain"),
         ),
     },
+    toolchains = ["@bazel_tools//tools/jdk:toolchain_type"],
     fragments = ["java"],
     host_fragments = ["java"],
     outputs = {"kzip": "%{name}.kzip"},
@@ -287,7 +288,7 @@ _generate_java_proto = rule(
             cfg = "exec",
         ),
         "_singlejar": attr.label(
-            default = Label("@bazel_tools//tools/jdk:singlejar"),
+            default = Label("@rules_java//toolchains:singlejar"),
             executable = True,
             cfg = "exec",
         ),

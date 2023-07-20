@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /** JdkCompatibilityShims implementation for JDK9-compatible releases. */
 @AutoService(JdkCompatibilityShims.class)
@@ -32,12 +33,8 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   public ReflectiveJdkCompatibilityShims() {}
 
   @Override
-  public CompatibilityClass getCompatibility() {
-    Runtime.Version version = Runtime.version();
-    if (version.compareToIgnoreOptional(minVersion) >= 0) {
-      return CompatibilityClass.FALLBACK;
-    }
-    return CompatibilityClass.INCOMPATIBLE;
+  public CompatibilityRange getCompatibleRange() {
+    return new CompatibilityRange(minVersion, Optional.empty(), CompatibilityLevel.FALLBACK);
   }
 
   @Override

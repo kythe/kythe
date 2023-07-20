@@ -115,7 +115,7 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, msg proto.Message) er
 }
 
 // WriteJSONResponse encodes v as JSON and writes it to w.
-func WriteJSONResponse(w http.ResponseWriter, r *http.Request, v interface{}) error {
+func WriteJSONResponse(w http.ResponseWriter, r *http.Request, v any) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	cw := httpencoding.CompressData(w, r)
 	defer cw.Close()

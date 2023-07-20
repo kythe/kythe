@@ -17,9 +17,14 @@
 #ifndef KYTHE_CXX_EXTRACTOR_BAZEL_ARTIFACT_H_
 #define KYTHE_CXX_EXTRACTOR_BAZEL_ARTIFACT_H_
 
+#include <iomanip>
+#include <iostream>
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 
 namespace kythe {
 
@@ -38,6 +43,22 @@ struct BazelArtifactFile {
   bool operator!=(const BazelArtifactFile& other) const {
     return !(*this == other);
   }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BazelArtifactFile& file) {
+    return H::combine(std::move(h), file.local_path, file.uri);
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const BazelArtifactFile& file) {
+    absl::Format(&sink, "BazelArtifactFile{.local_path = %v, .uri = %v}",
+                 absl::FormatStreamed(std::quoted(file.local_path)),
+                 absl::FormatStreamed(std::quoted(file.uri)));
+  }
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const BazelArtifactFile& file) {
+    return (out << absl::StreamFormat("%v", file));
+  }
 };
 
 /// \brief A list of extracted compilation units and the target which owns them.
@@ -52,6 +73,22 @@ struct BazelArtifact {
 
   bool operator!=(const BazelArtifact& other) const {
     return !(*this == other);
+  }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BazelArtifact& artifact) {
+    return H::combine(std::move(h), artifact.label, artifact.files);
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const BazelArtifact& artifact) {
+    absl::Format(&sink, "BazelArtifact{.label = %v, .files = { %s }}",
+                 absl::FormatStreamed(std::quoted(artifact.label)),
+                 absl::StrJoin(artifact.files, ", "));
+  }
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const BazelArtifact& artifact) {
+    return (out << absl::StreamFormat("%v", artifact));
   }
 };
 

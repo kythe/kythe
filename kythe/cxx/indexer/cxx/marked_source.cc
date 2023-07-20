@@ -16,7 +16,11 @@
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 
+#include <optional>
+
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
@@ -24,7 +28,6 @@
 #include "clang/Format/Format.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
-#include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
@@ -33,6 +36,13 @@ ABSL_FLAG(bool, reformat_marked_source, false,
           "Reformat source code used in MarkedSource (experimental).");
 ABSL_FLAG(bool, pretty_print_function_prototypes, false,
           "Synthesize new function prototypes (experimental).");
+
+// TODO(shahms): This is part of the Abseil logging migration.
+// Support for VLOG is planned, but not yet implemented.
+// Elsewhere, VLOG(1) maps to DLOG(LEVEL(-1)) until it is,
+// but VLOG_IS_ON is only used in this file, so just disable it entirely
+// until VLOG is supported properly, at which point this will be removed.
+#define VLOG_IS_ON(x) false
 
 namespace kythe {
 namespace {
@@ -136,7 +146,7 @@ class NodeStack {
   /// \brief Copy data from `annotations` and `formatted_range` to
   /// `dest_source`.
   /// \return the MarkedSource node covering an identifier, or null.
-  MarkedSource* ProcessAnnotations(const std::string& formatted_range,
+  MarkedSource* ProcessAnnotations(absl::string_view formatted_range,
                                    const std::vector<Annotation>& annotations,
                                    MarkedSource* dest_source) {
     /// For certain kinds of annotations, we'll substitute our own special
@@ -221,8 +231,9 @@ class NodeStack {
   /// \param at_end whether the span on the top of the stack is about to be
   /// popped because there are no other spans that get opened before the
   /// current span closes.
-  void AppendToTop(const std::string& formatted_range, size_t cancel_count,
+  void AppendToTop(absl::string_view formatted_range, size_t cancel_count,
                    size_t start, size_t end, bool at_end) {
+    absl::string_view text = formatted_range.substr(start, end - start);
     CHECK(!nodes_.empty());
     if (cancel_count != 0) {
       return;
@@ -231,19 +242,18 @@ class NodeStack {
     auto* node = nodes_.top().marked_source;
     if (at_end) {
       if (node->child().empty() && node->post_text().empty()) {
-        node->mutable_pre_text()->append(formatted_range, start, end - start);
+        node->mutable_pre_text()->append(text);
       } else {
-        node->mutable_post_text()->append(formatted_range, start, end - start);
+        node->mutable_post_text()->append(text);
       }
     } else {
       // If there are children before this node, we need to add a new BOX
       // to hold this token.
       if (node->child().empty()) {
-        node->mutable_pre_text()->append(formatted_range, start, end - start);
+        node->mutable_pre_text()->append(text);
       } else {
         auto* new_node = node->add_child();
-        new_node->mutable_pre_text()->append(formatted_range, start,
-                                             end - start);
+        new_node->mutable_pre_text()->append(text);
       }
     }
   }
@@ -437,7 +447,8 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {
-      VLOG(1) << "Invalid return type range for " << decl->getNameAsString();
+      DLOG(LEVEL(-1)) << "Invalid return type range for "
+                      << decl->getNameAsString();
     }
   }
 
@@ -485,7 +496,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       // clogging log output.
       if (annotation.kind != Annotation::QualifiedName &&
           IsValidRange(cache_->source_manager(), original_range)) {
-        VLOG(1)
+        DLOG(LEVEL(-1))
             << "Invalid annotation range (" << annotation.kind << "): '"
             << original_range.getBegin().printToString(cache_->source_manager())
             << "' to '"
@@ -509,7 +520,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   /// is placed to the left of types, _Nullable is placed to the right of types.
   bool ShouldSkipDecl(const clang::Decl* decl, const clang::QualType& qt,
                       const clang::SourceRange& sr) {
-    clang::Optional<clang::NullabilityKind> k = qt->getNullability();
+    std::optional<clang::NullabilityKind> k = qt->getNullability();
     return k && sr.getBegin().getRawEncoding() > sr.getEnd().getRawEncoding();
   }
 
@@ -812,15 +823,16 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                             clang::SourceRange(start_loc, end_loc));
   if (range.empty()) {
     if (VLOG_IS_ON(1)) {
-      VLOG(1) << "GetTextRange failed for " << decl_->getDeclKindName() << " "
-              << decl_->getQualifiedNameAsString() << "\n at "
-              << start_loc.printToString(cache_->source_manager()) << "\n to "
-              << end_loc.printToString(cache_->source_manager())
-              << "\n originally "
-              << decl_->getSourceRange().getBegin().printToString(
-                     cache_->source_manager())
-              << "\n         to "
-              << end_loc_.printToString(cache_->source_manager());
+      DLOG(LEVEL(-1)) << "GetTextRange failed for " << decl_->getDeclKindName()
+                      << " " << decl_->getQualifiedNameAsString() << "\n at "
+                      << start_loc.printToString(cache_->source_manager())
+                      << "\n to "
+                      << end_loc.printToString(cache_->source_manager())
+                      << "\n originally "
+                      << decl_->getSourceRange().getBegin().printToString(
+                             cache_->source_manager())
+                      << "\n         to "
+                      << end_loc_.printToString(cache_->source_manager());
     }
     return absl::nullopt;
   }
@@ -832,8 +844,9 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     auto formatted_range = Reformat(cache_->lang_options(), range.str(),
                                     &replacements, &incomplete);
     if (incomplete) {
-      VLOG(1) << "Incomplete reformatting for " << decl_id.getRawIdentity()
-              << " (" << decl_->getQualifiedNameAsString() << ")";
+      DLOG(LEVEL(-1)) << "Incomplete reformatting for "
+                      << decl_id.getRawIdentity() << " ("
+                      << decl_->getQualifiedNameAsString() << ")";
       return absl::nullopt;
     }
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,

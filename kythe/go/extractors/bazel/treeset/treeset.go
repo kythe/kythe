@@ -19,11 +19,11 @@ package treeset
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 )
@@ -78,7 +78,7 @@ func FindMissingTreeInputs(inputs []string, requiredFiles stringset.Set) []strin
 			dir = filepath.Dir(dir)
 		}
 		if dir == "" {
-			log.Printf("WARNING: couldn't find an input for %s\n", file)
+			log.Warningf("couldn't find an input for %s\n", file)
 		}
 
 	}
@@ -94,7 +94,7 @@ func ExpandDirectories(ctx context.Context, paths []string) []string {
 	for _, root := range paths {
 		files, err := ListSources(ctx, root)
 		if err != nil {
-			log.Printf("WARNING: couldn't list files for %s: %s\n", root, err)
+			log.Warningf("couldn't list files for %s: %s\n", root, err)
 			nps = append(nps, root)
 		} else {
 			nps = append(nps, files.Elements()...)

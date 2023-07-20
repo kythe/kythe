@@ -20,7 +20,6 @@ package xrefs // import "kythe.io/kythe/go/services/xrefs"
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -28,6 +27,7 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/edges"
 
 	"bitbucket.org/creachadair/stringset"
@@ -91,7 +91,6 @@ func FixTickets(tickets []string) ([]string, error) {
 // IsDefKind reports whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
-	// TODO(schroederc): handle full vs. binding CompletesEdge
 	edgeKind = edges.Canonical(edgeKind)
 	if IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, edgeKind, incomplete) {
 		return false
@@ -100,13 +99,13 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
 	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
-		return edgeKind == edges.Defines || edges.IsVariant(edgeKind, edges.Completes)
+		return edgeKind == edges.Defines
 	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
-		return edgeKind == edges.DefinesBinding || edges.IsVariant(edgeKind, edges.Completes)
+		return edgeKind == edges.DefinesBinding
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
-		return edges.IsVariant(edgeKind, edges.Defines) || edges.IsVariant(edgeKind, edges.Completes)
+		return edges.IsVariant(edgeKind, edges.Defines)
 	default:
-		log.Printf("ERROR: unhandled CrossReferencesRequest_DefinitionKind: %v", requestedKind)
+		log.Errorf("unhandled CrossReferencesRequest_DefinitionKind: %v", requestedKind)
 		return false
 	}
 }
@@ -121,7 +120,7 @@ func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKi
 	case xpb.CrossReferencesRequest_ALL_DECLARATIONS:
 		return (incomplete && edges.IsVariant(edgeKind, edges.Defines)) || edgeKind == internalDeclarationKind
 	default:
-		log.Printf("ERROR: unhandled CrossReferenceRequest_DeclarationKind: %v", requestedKind)
+		log.Errorf("unhandled CrossReferenceRequest_DeclarationKind: %v", requestedKind)
 		return false
 	}
 }
@@ -140,7 +139,7 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
 		return edges.IsVariant(edgeKind, edges.Ref)
 	default:
-		log.Printf("ERROR: unhandled CrossReferencesRequest_ReferenceKind: %v", requestedKind)
+		log.Errorf("unhandled CrossReferencesRequest_ReferenceKind: %v", requestedKind)
 		return false
 	}
 }
@@ -176,7 +175,7 @@ func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind 
 	case xpb.CrossReferencesRequest_OVERRIDE_CALLERS:
 		return edgeKind == internalCallerKindDirect || edgeKind == internalCallerKindOverride
 	default:
-		log.Printf("ERROR: unhandled CrossReferencesRequest_CallerKind: %v", requestedKind)
+		log.Errorf("unhandled CrossReferencesRequest_CallerKind: %v", requestedKind)
 		return false
 	}
 }
@@ -302,7 +301,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/xrefs", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("xrefs.CrossReferences:\t%s", time.Since(start))
+			log.Infof("xrefs.CrossReferences:\t%s", time.Since(start))
 		}()
 		var req xpb.CrossReferencesRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -316,13 +315,13 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Errorf("CrossReferences error: %v", err)
 		}
 	})
 	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("xrefs.Decorations:\t%s", time.Since(start))
+			log.Infof("xrefs.Decorations:\t%s", time.Since(start))
 		}()
 		var req xpb.DecorationsRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -336,13 +335,13 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Errorf("Decorations error: %v", err)
 		}
 	})
 	mux.HandleFunc("/documentation", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("xrefs.Documentation:\t%s", time.Since(start))
+			log.Infof("xrefs.Documentation:\t%s", time.Since(start))
 		}()
 		var req xpb.DocumentationRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -356,7 +355,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Errorf("Documentation error: %v", err)
 		}
 	})
 }

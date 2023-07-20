@@ -44,6 +44,7 @@ go_binary(
     srcs = ["test/test_vname_rules.go"],
     deps = [
         ":vnameutil",
+        "//kythe/go/util/log",
         "//kythe/proto:storage_go_proto",
         "@org_golang_google_protobuf//proto:go_default_library",
     ],

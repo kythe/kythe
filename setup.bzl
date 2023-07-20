@@ -1,6 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-load("@bazel_tools//tools/jdk:remote_java_repository.bzl", _remote_java_repository = "remote_java_repository")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
@@ -19,11 +19,6 @@ def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **k
         **kwargs
     )
 
-def remote_java_repository(**kwargs):
-    if native.bazel_version.startswith("5."):
-        kwargs["exec_compatible_with"] = kwargs.pop("target_compatible_with")
-    _remote_java_repository(**kwargs)
-
 def kythe_rule_repositories():
     """Defines external repositories for Kythe Bazel rules.
 
@@ -40,32 +35,28 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "io_bazel_rules_go",
-        sha256 = "ae013bf35bd23234d1dea46b079f1e05ba74ac0321423830119d3e787ec73483",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.36.0/rules_go-v0.36.0.zip",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.36.0/rules_go-v0.36.0.zip",
-        ],
+        repo_name = "bazelbuild/rules_go",
+        commit = "f5aa81cecbaf966fb9f749d4cd653ff16c9a7003",
     )
 
     maybe(
         http_archive,
         name = "rules_cc",
-        sha256 = "ff7876d80cd3f6b8c7a064bd9aa42a78e02096544cca2b22a9cf390a4397a53e",
-        strip_prefix = "rules_cc-081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_cc/archive/081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e.tar.gz",
-            "https://github.com/bazelbuild/rules_cc/archive/081771d4a0e9d7d3aa0eed2ef389fa4700dfb23e.tar.gz",
-        ],
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.6/rules_cc-0.0.6.tar.gz"],
+        sha256 = "3d9e271e2876ba42e114c9b9bc51454e379cbf0ec9ef9d40e2ae4cec61a31b40",
+        strip_prefix = "rules_cc-0.0.6",
     )
 
     maybe(
         http_archive,
         name = "rules_java",
-        url = "https://github.com/bazelbuild/rules_java/archive/973a93dd2d698929264d1028836f6b9cc60ff817.zip",
-        sha256 = "a6cb0dbe343b67c7d4f3f11a68e327acdfc71fee1e17affa4e605129fc56bb15",
-        strip_prefix = "rules_java-973a93dd2d698929264d1028836f6b9cc60ff817",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
+            "https://github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
+        ],
+        sha256 = "bcfabfb407cb0c8820141310faa102f7fb92cc806b0f0e26a625196101b0b57e",
     )
 
     maybe(
@@ -96,9 +87,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_jvm_external",
-        sha256 = "31701ad93dbfe544d597dbe62c9a1fdd76d81d8a9150c2bf1ecf928ecdf97169",
-        strip_prefix = "rules_jvm_external-4.0",
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.0.zip"],
+        sha256 = "f86fd42a809e1871ca0aabe89db0d440451219c3ce46c58da240c7dcdc00125f",
+        strip_prefix = "rules_jvm_external-5.2",
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/releases/download/5.2/rules_jvm_external-5.2.tar.gz"],
     )
 
     maybe(
@@ -163,9 +154,9 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "77fad4c31e9c32a61da78946f41e8db28ec6a6a7",
-        sha256 = "f8c74e9cec4b7993b5845a446a7b24f5597ead2c2ee9e0c80ab1fe9cca31fe2a",
-        name = "llvm-project-raw",
+        commit = "357da2f5979647bc0f0589506c165e941b05ace3",
+        sha256 = "003c1f3f22ddbb066e5b1dd89b4a31931731e9514972ba7ae0aea02c43bf0db2",
+        name = "llvm-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
@@ -177,4 +168,157 @@ def kythe_rule_repositories():
         name = "hedron_compile_commands",
         commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
         sha256 = "0dfe793b5779855cf73b3ee9f430e00225f51f38c70555936d4dd6f1b3c65e66",
+    )
+
+    # proto_library, cc_proto_library, and java_proto_library rules implicitly
+    # depend on @com_google_protobuf for protoc and proto runtimes.
+    maybe(
+        http_archive,
+        name = "com_google_protobuf",
+        sha256 = "1ff680568f8e537bb4be9813bac0c1d87848d5be9d000ebe30f0bc2d7aabe045",
+        strip_prefix = "protobuf-22.2",
+        urls = [
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+        ],
+        repo_mapping = {"@zlib": "@net_zlib"},
+    )
+
+def remote_jdk20_repos():
+    """Imports OpenJDK 20 repositories."""
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_linux",
+        target_compatible_with = [
+            "@platforms//os:linux",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "0386418db7f23ae677d05045d30224094fc13423593ce9cd087d455069893bac",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-linux_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-linux_x64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-linux_x64.tar.gz",
+        ],
+        version = "20",
+    )
+
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_macos",
+        target_compatible_with = [
+            "@platforms//os:macos",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "fde6cc17a194ea0d9b0c6c0cb6178199d8edfc282d649eec2c86a9796e843f86",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-macosx_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_x64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_x64.tar.gz",
+        ],
+        version = "20",
+    )
+
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_macos_aarch64",
+        target_compatible_with = [
+            "@platforms//os:macos",
+            "@platforms//cpu:aarch64",
+        ],
+        sha256 = "a2eff6a940c2df3a2352278027e83f5959f34dcfc8663034fe92be0f1b91ce6f",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-macosx_aarch64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_aarch64.tar.gz",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-macosx_aarch64.tar.gz",
+        ],
+        version = "20",
+    )
+    maybe(
+        remote_java_repository,
+        name = "remotejdk20_win",
+        target_compatible_with = [
+            "@platforms//os:windows",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "ac5f6a7d84dbbb0bb4d376feb331cc4c49a9920562f2a5e85b7a6b4863b10e1e",
+        strip_prefix = "zulu20.28.85-ca-jdk20.0.0-win_x64",
+        urls = [
+            "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-win_x64.zip",
+            "https://cdn.azul.com/zulu/bin/zulu20.28.85-ca-jdk20.0.0-win_x64.zip",
+        ],
+        version = "20",
+    )
+
+def _remote_jdk_repository(name, version, os, cpu, sha256 = None):
+    jdk = version.split(".")[0]
+    jdk_cpu = {
+        "x86_64": "x64",
+    }.get(cpu, cpu)
+    jdk_os = {
+        "macos": "macosx",
+        "windows": "win",
+    }.get(os, os)
+
+    basename = "zulu{version}-{os}_{cpu}".format(
+        version = version,
+        jdk = jdk,
+        os = jdk_os,
+        cpu = jdk_cpu,
+    )
+
+    remote_java_repository(
+        name = name,
+        target_compatible_with = [
+            c.format(os = os, cpu = cpu)
+            for c in [
+                "@platforms//os:{os}",
+                "@platforms//cpu:{cpu}",
+            ]
+        ],
+        sha256 = sha256,
+        strip_prefix = basename,
+        urls = [
+            url.format(basename = basename)
+            for url in [
+                "https://mirror.bazel.build/cdn.azul.com/zulu/bin/{basename}.tar.gz",
+                "https://cdn.azul.com/zulu/bin/{basename}.tar.gz",
+            ]
+        ],
+        version = jdk,
+    )
+
+def remote_jdk21_repos():
+    """Imports OpenJDK 21 repositories."""
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_linux",
+        os = "linux",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        sha256 = "fb103e1a437c66b457e9d78facd1e2568b71e9f137f835d57263bf80fea8635a",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos",
+        os = "macos",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos_aarch64",
+        os = "macos",
+        cpu = "aarch64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_win",
+        os = "windows",
+        cpu = "x86_64",
+        version = "21.0.65-ea-jdk21.0.0-ea.26",
     )

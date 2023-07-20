@@ -21,4 +21,4 @@ var Primary = struct {
 //- _Alt2=vname("IDENTIFIER:Primary.my_param", default, "", "test/example.txt", lang) generates MyParam
 //- MyParam.node/kind variable
 
-//gokythe-inline-metadata:ElISFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo1ChJJREVOVElGSUVSOlByaW1hcnkSB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgFSgcElsSFS9reXRoZS9lZGdlL2dlbmVyYXRlcxo+ChtJREVOVElGSUVSOlByaW1hcnkubXlfcGFyYW0SB2RlZmF1bHQiEHRlc3QvZXhhbXBsZS50eHQqBGxhbmcgKSgw
+//gokythe-inline-metadata:ElMSFiUva3l0aGUvZWRnZS9nZW5lcmF0ZXMaNQoSSURFTlRJRklFUjpQcmltYXJ5EgdkZWZhdWx0IhB0ZXN0L2V4YW1wbGUudHh0KgRsYW5nIBUoHBJcEhYlL2t5dGhlL2VkZ2UvZ2VuZXJhdGVzGj4KG0lERU5USUZJRVI6UHJpbWFyeS5teV9wYXJhbRIHZGVmYXVsdCIQdGVzdC9leGFtcGxlLnR4dCoEbGFuZyApKDA=

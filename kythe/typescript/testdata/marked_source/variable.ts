@@ -2,144 +2,106 @@ export {}
 
 //- @a defines/binding A
 //- A code ACode
-//- ACode child.0 AContext
-//- AContext.kind "CONTEXT"
-//- AContext.pre_text "const"
-//- ACode child.1 ASpace
-//- ASpace.kind "BOX"
-//- ASpace.pre_text " "
-//- ACode child.2 AName
+//- ACode child.0 AName
 //- AName.kind "IDENTIFIER"
 //- AName.pre_text "a"
-//- ACode child.3 ATy
+//- ACode child.1 ATy
 //- ATy.kind "TYPE"
 //- ATy.pre_text ": "
 //- ATy.post_text "string"
-//- ACode child.4 AEq
+//- ACode child.2 AEq
 //- AEq.kind "BOX"
 //- AEq.pre_text " = "
-//- ACode child.5 AInit
+//- ACode child.3 AInit
 //- AInit.kind "INITIALIZER"
 //- AInit.pre_text "'text'"
 const a: string = 'text';
 
 //- @b defines/binding B
 //- B code BCode
-//- BCode child.0 BContext
-//- BContext.pre_text "const"
-//- BCode child.1 BSpace
-//- BSpace.pre_text " "
-//- BCode child.2 BName
+//- BCode child.0 BName
 //- BName.pre_text "b"
-//- BCode child.3 BTy
+//- BCode child.1 BTy
 //- BTy.post_text "\"text\""
-//- BCode child.4 BEq
+//- BCode child.2 BEq
 //- BEq.pre_text " = "
-//- BCode child.5 BInit
+//- BCode child.3 BInit
 //- BInit.pre_text "'text'"
 const b = 'text';
 
 //- @c defines/binding C
 //- C code CCode
-//- CCode child.0 CContext
-//- CContext.pre_text "let"
-//- CCode child.1 CSpace
-//- CSpace.pre_text " "
-//- CCode child.2 CName
+//- CCode child.0 CName
 //- CName.pre_text "c"
-//- CCode child.3 CTy
+//- CCode child.1 CTy
 //- CTy.post_text "string"
-//- CCode child.4 CEq
+//- CCode child.2 CEq
 //- CEq.pre_text " = "
-//- CCode child.5 CInit
+//- CCode child.3 CInit
 //- CInit.pre_text "'text'"
 let c = 'text';
 
 //- @#0d defines/binding D
 //- D code DCode
-//- DCode child.0 DContext
-//- DContext.pre_text "let"
-//- DCode child.1 DSpace
-//- DSpace.pre_text " "
-//- DCode child.2 DName
+//- DCode child.0 DName
 //- DName.pre_text "d"
-//- DCode child.3 DTy
+//- DCode child.1 DTy
 //- DTy.post_text "string" // not string|undefined b/c tests have strictNullChecks=false
-//- !{DCode child.4 _DTy}
+//- !{DCode child.2 _DTy}
 let d: string|undefined;
 
 try {
   //- @e defines/binding E
   //- E code ECode
-  //- ECode child.0 EContext
-  //- EContext.pre_text "(local var)"
-  //- ECode child.1 ESpace
-  //- ESpace.pre_text " "
-  //- ECode child.2 EName
+  //- ECode child.0 EName
   //- EName.pre_text "e"
-  //- ECode child.3 ETy
+  //- ECode child.1 ETy
   //- ETy.post_text "any"
-  //- !{ECode child.4 _ETy}
+  //- !{ECode child.2 _ETy}
 } catch (e) {
 }
 
 //- @#0f defines/binding F
 //- F code FCode
-//- FCode child.0 FContext
-//- FContext.pre_text "let"
-//- FCode child.1 FSpace
-//- FSpace.pre_text " "
-//- FCode child.2 FName
+//- FCode child.0 FName
 //- FName.pre_text "f"
-//- FCode child.3 FTy
+//- FCode child.1 FTy
 //- FTy.post_text "number"
-//- FCode child.4 FEq
+//- FCode child.2 FEq
 //- FEq.pre_text " = "
-//- FCode child.5 FInit
+//- FCode child.3 FInit
 //- FInit.pre_text "0"
 //- @halias defines/binding H
 //- H code HCode
-//- HCode child.0 HContext
-//- HContext.pre_text "let"
-//- HCode child.1 HSpace
-//- HSpace.pre_text " "
-//- HCode child.2 HName
+//- HCode child.0 HName
 //- HName.pre_text "halias"
-//- HCode child.3 HTy
+//- HCode child.1 HTy
 //- HTy.post_text "number"
-//- HCode child.4 HEq
+//- HCode child.2 HEq
 //- HEq.pre_text " = "
-//- HCode child.5 HInit
+//- HCode child.3 HInit
 //- HInit.pre_text "1"
 //- @#0redcat defines/binding Redcat
 //- Redcat code RedcatCode
-//- RedcatCode child.0 RedcatContext
-//- RedcatContext.pre_text "let"
-//- RedcatCode child.1 RedcatSpace
-//- RedcatSpace.pre_text " "
-//- RedcatCode child.2 RedcatName
+//- RedcatCode child.0 RedcatName
 //- RedcatName.pre_text "redcat"
-//- RedcatCode child.3 RedcatTy
+//- RedcatCode child.1 RedcatTy
 //- RedcatTy.post_text "number"
-//- RedcatCode child.4 RedcatEq
+//- RedcatCode child.2 RedcatEq
 //- RedcatEq.pre_text " = "
-//- RedcatCode child.5 RedcatInit
+//- RedcatCode child.3 RedcatInit
 //- RedcatInit.pre_text "2"
 let {f, g: {h: halias}, redcat} = {f: 0, g: {h: 1}, ['redcat']: 2};
 
 //- @i defines/binding I
 //- I code ICode
-//- ICode child.0 IContext
-//- IContext.pre_text "let"
-//- ICode child.1 ISpace
-//- ISpace.pre_text " "
-//- ICode child.2 IName
+//- ICode child.0 IName
 //- IName.pre_text "i"
-//- ICode child.3 ITy
+//- ICode child.1 ITy
 //- ITy.post_text "number"
-//- ICode child.4 IEq
+//- ICode child.2 IEq
 //- IEq.pre_text " = "
-//- ICode child.5 IInit
+//- ICode child.3 IInit
 //- IInit.pre_text "3"
 let [_, [i]] = [2, [3]];
 
@@ -147,7 +109,7 @@ let [_, [i]] = [2, [3]];
 // whole RHS of the variable declaration.
 //- @#0j defines/binding J
 //- J code JCode
-//- JCode child.5 JInit
+//- JCode child.3 JInit
 //- JInit.pre_text "(() => {\n  return {j: 1};\n})()"
 let {j} = (() => {
   return {j: 1};

@@ -26,12 +26,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/golang/snappy"
@@ -44,7 +44,7 @@ import (
 // the sorter are allowed.
 type Interface interface {
 	// Add adds a new element to the set of data to be sorted.
-	Add(i interface{}) error
+	Add(i any) error
 
 	// Iterator returns an Iterator to read each of the elements previously added
 	// to the set of data to be sorted.  Once Iterator is called, no more data may
@@ -56,14 +56,14 @@ type Interface interface {
 	// sorted.  If f returns an error, it is returned immediately and f is no
 	// longer called.  Once Read is called, no more data may be added to the
 	// sorter.  Iterator and Read may only be called once.
-	Read(f func(interface{}) error) error
+	Read(f func(any) error) error
 }
 
 // An Iterator reads each element, in order, in a sorted dataset.
 type Iterator interface {
 	// Next returns the next ordered element.  If none exist, an io.EOF error is
 	// returned.
-	Next() (interface{}, error)
+	Next() (any, error)
 
 	// Close releases all of the Iterator's used resources.  Each Iterator must be
 	// closed after the client's last call to Next or stray temporary files may be
@@ -75,16 +75,16 @@ type Iterator interface {
 // elements.
 type Marshaler interface {
 	// Marshal binary encodes the given element.
-	Marshal(interface{}) ([]byte, error)
+	Marshal(any) ([]byte, error)
 
 	// Unmarshal decodes the given encoding of an element.
-	Unmarshal([]byte) (interface{}, error)
+	Unmarshal([]byte) (any, error)
 }
 
 type mergeSorter struct {
 	opts MergeOptions
 
-	buffer  []interface{}
+	buffer  []any
 	workDir string
 	shards  []string
 
@@ -159,7 +159,7 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 
 	return &mergeSorter{
 		opts:    opts,
-		buffer:  make([]interface{}, 0, opts.MaxInMemory),
+		buffer:  make([]any, 0, opts.MaxInMemory),
 		workDir: dir,
 	}, nil
 }
@@ -171,7 +171,7 @@ var (
 )
 
 // Add implements part of the Interface interface.
-func (m *mergeSorter) Add(i interface{}) error {
+func (m *mergeSorter) Add(i any) error {
 	if m.finalized {
 		return ErrAlreadyFinalized
 	}
@@ -188,7 +188,7 @@ func (m *mergeSorter) Add(i interface{}) error {
 }
 
 type mergeIterator struct {
-	buffer []interface{}
+	buffer []any
 
 	merger    *sortutil.ByLesser
 	marshaler Marshaler
@@ -223,7 +223,7 @@ func (m *mergeSorter) Iterator() (iter Iterator, err error) {
 		// Try to cleanup on errors
 		if err != nil {
 			if cErr := it.Close(); cErr != nil {
-				log.Printf("WARNING: error closing Iterator after error: %v", cErr)
+				log.Warningf("error closing Iterator after error: %v", cErr)
 			}
 		}
 	}()
@@ -267,7 +267,7 @@ func (m *mergeSorter) Iterator() (iter Iterator, err error) {
 }
 
 // Next implements part of the Iterator interface.
-func (i *mergeIterator) Next() (interface{}, error) {
+func (i *mergeIterator) Next() (any, error) {
 	if i.merger == nil {
 		// Fast path for a single, in-memory shard
 		if len(i.buffer) == 0 {
@@ -335,7 +335,7 @@ func (i *mergeIterator) Close() error {
 }
 
 // Read implements part of the Interface interface.
-func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
+func (m *mergeSorter) Read(f func(i any) error) (err error) {
 	it, err := m.Iterator()
 	if err != nil {
 		return err
@@ -345,7 +345,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 			if err == nil {
 				err = cErr
 			} else {
-				log.Println("WARNING: error closing Iterator:", cErr)
+				log.Warningf("error closing Iterator: %v", cErr)
 			}
 		}
 	}()
@@ -366,7 +366,7 @@ const shardFileMode = 0600 | os.ModeExclusive | os.ModeAppend | os.ModeTemporary
 
 func (m *mergeSorter) dumpShard() (err error) {
 	defer func() {
-		m.buffer = make([]interface{}, 0, m.opts.MaxInMemory)
+		m.buffer = make([]any, 0, m.opts.MaxInMemory)
 		m.bufferSize = 0
 	}()
 
@@ -422,7 +422,7 @@ func replaceErrIfNil(err *error, s string, newError error) {
 }
 
 type mergeElement struct {
-	el interface{}
+	el any
 	rd *delimited.Reader
 	f  *os.File
 }
@@ -430,7 +430,7 @@ type mergeElement struct {
 type mergeElementLesser struct{ sortutil.Lesser }
 
 // Less implements the sortutil.Lesser interface.
-func (m *mergeElementLesser) Less(a, b interface{}) bool {
+func (m *mergeElementLesser) Less(a, b any) bool {
 	x, y := a.(*mergeElement), b.(*mergeElement)
 	return m.Lesser.Less(x.el, y.el)
 }

@@ -1,6 +1,4 @@
-package(
-    features = ["layering_check"],
-)
+package(features = ["layering_check"])
 
 cc_binary(
     name = "textproto_extractor",
@@ -15,10 +13,11 @@ cc_binary(
         "//kythe/cxx/extractor/proto:lib",
         "//kythe/cxx/indexer/proto:search_path",
         "//kythe/proto:analysis_cc_proto",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -19,15 +19,50 @@
 
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 
 namespace kythe::verifier {
+/// \brief Packages together for a possibly multistage Souffle program.
+class SouffleProgram {
+ public:
+  /// \brief Turns `goal_groups` into a Souffle program.
+  /// \param symbol_table the symbol table used by `goal_groups`.
+  /// \param goal_groups the goal groups to lower.
+  bool Lower(const SymbolTable& symbol_table,
+             const std::vector<GoalGroup>& goal_groups);
 
-/// \brief Turns `goal_groups` into a Souffle program.
-/// \param symbol_table the symbol table used by `goal_groups`.
-/// \param goal_groups the goal groups to lower.
-std::string LowerGoalsToSouffle(const SymbolTable& symbol_table,
-                                const std::vector<GoalGroup>& goal_groups);
+  /// \return the lowered Souffle code.
+  absl::string_view code() { return code_; }
+
+  /// \brief Configures whether to emit initial definitions.
+  void set_emit_prelude(bool emit_prelude) { emit_prelude_ = emit_prelude; }
+
+ private:
+  /// \brief Lowers `node`.
+  bool LowerSubexpression(AstNode* node);
+
+  /// \brief Lowers a goal from `goal`.
+  bool LowerGoal(const SymbolTable& symbol_table, AstNode* goal);
+
+  /// \brief Lowers `group`.
+  bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
+
+  /// The current finished code buffer.
+  std::string code_;
+
+  /// Whether to emit the prelude.
+  bool emit_prelude_ = true;
+
+  /// \return a stable short name for `evar`.
+  size_t FindEVar(EVar* evar) {
+    return evars_.try_emplace(evar, evars_.size()).first->second;
+  }
+
+  /// Known evars.
+  absl::flat_hash_map<EVar*, size_t> evars_;
+};
 
 }  // namespace kythe::verifier
 

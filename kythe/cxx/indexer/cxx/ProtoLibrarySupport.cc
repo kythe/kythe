@@ -37,14 +37,12 @@
 #include <map>
 
 #include "absl/flags/flag.h"
+#include "absl/log/log.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/ExprCXX.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "google/protobuf/message.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 
 ABSL_FLAG(std::string, parseprotohelper_full_name,
           "proto2::contrib::parse_proto::internal::ParseProtoHelper",
@@ -194,7 +192,7 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
       case Tokenizer::TYPE_IDENTIFIER: {
         // Assume that this is a field name.
         const auto* AccessorDecl =
-            FindAccessorDeclWithName(MsgDecl, ToStringRef(Token.text));
+            FindAccessorDeclWithName(MsgDecl, Token.text);
         if (!AccessorDecl) {
           LOG(ERROR) << "Cannot find field " << Token.text << " for message "
                      << MsgDecl.getDeclName().getAsString();

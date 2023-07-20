@@ -24,12 +24,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/util/datasize"
+	"kythe.io/kythe/go/util/log"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -49,6 +49,14 @@ type Store struct {
 // Range is section of contiguous keys, including Start and excluding End.
 type Range struct {
 	Start, End []byte
+}
+
+// KeyRange returns a Range that contains only the given key.
+func KeyRange(k []byte) *Range {
+	return &Range{
+		Start: k,
+		End:   append(k[0:len(k):len(k)], 0),
+	}
 }
 
 type shard struct {
@@ -212,7 +220,7 @@ func (p *WritePool) Flush() error {
 		return nil
 	}
 	if debug {
-		log.Printf("Flushing (%d) %s", p.writes, datasize.Size(p.size))
+		log.Infof("Flushing (%d) %s", p.writes, datasize.Size(p.size))
 	}
 	err := p.wr.Close()
 	p.wr = nil

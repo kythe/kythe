@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/kzip"
@@ -30,6 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
@@ -62,7 +62,7 @@ func (c *filterCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and filters the input file.
-func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("Required --output path missing")
 	}
@@ -123,7 +123,7 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, filter
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Printf("Skipping empty .kzip: %s", input)
+		log.Infof("Skipping empty .kzip: %s", input)
 		return nil
 	}
 

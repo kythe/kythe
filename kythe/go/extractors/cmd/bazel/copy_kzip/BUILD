@@ -8,5 +8,6 @@ go_binary(
     deps = [
         "//kythe/go/extractors/bazel",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
     ],
 )

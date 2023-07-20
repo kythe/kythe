@@ -31,8 +31,9 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -163,7 +164,7 @@ class ClaimTool {
           claim.mutable_compilation_v_name()->CopyFrom(
               claimable.second.elected_claimant->vname);
           claim.mutable_dependency_v_name()->CopyFrom(claimable.second.vname);
-          absl::PrintF("%s", claim.DebugString());
+          absl::PrintF("%v", claim);
         }
       }
       return;
@@ -196,8 +197,7 @@ class ClaimTool {
     auto insert_result =
         claimants_.emplace(unit.v_name(), Claimant{unit.v_name()});
     if (!insert_result.second) {
-      LOG(WARNING) << "Compilation unit with name "
-                   << unit.v_name().DebugString()
+      LOG(WARNING) << "Compilation unit with name " << unit.v_name()
                    << " had the same VName as another previous unit.";
     }
     for (auto& input : unit.required_input()) {
@@ -210,7 +210,7 @@ class ClaimTool {
           // If this happens, we'll emit a warning, but we'll also be sure to
           // keep the signature around as a suffix when building vnames for
           // contexts.
-          LOG(WARNING) << "Input " << input_vname.DebugString()
+          LOG(WARNING) << "Input " << input_vname
                        << " has a nonempty signature.\n";
         }
         for (const auto& row : context_rows) {

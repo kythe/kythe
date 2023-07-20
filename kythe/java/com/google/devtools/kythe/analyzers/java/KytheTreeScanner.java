@@ -46,6 +46,7 @@ import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
+import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo.Annotation.Semantic;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree.Kind;
@@ -233,6 +234,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     loadImplicitAnnotationsFile();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
+    JavaNode node = ctx.setNode(new JavaNode(fileNode));
 
     List<JavaNode> decls = scanList(compilation.getTypeDecls(), ctx);
     decls.removeAll(Collections.singleton(null));
@@ -248,7 +250,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     emitFileScopeMetadata(fileNode.getVName());
 
-    return new JavaNode(fileNode);
+    return node;
   }
 
   private void emitFileScopeMetadata(VName file) {
@@ -284,7 +286,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   @Override
   public JavaNode visitImport(JCImport imprt, TreeContext owner) {
-    return scan(imprt.qualid, owner.downAsSnippet(imprt));
+    return scan(shims.getQualifiedIdentifier(imprt), owner.downAsSnippet(imprt));
   }
 
   @Override
@@ -300,7 +302,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       node = emitSymUsage(ctx, ident.sym, EdgeKind.REF_ID);
     } else {
       JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
-      RefType refType = getRefType(owner.getTree(), parentTree, ident.sym, ident.pos);
+      RefType refType = getRefType(ctx, owner.getTree(), parentTree, ident.sym, ident.pos);
       if (refType == RefType.READ || refType == RefType.READ_WRITE) {
         node = emitSymUsage(ctx, ident.sym, EdgeKind.REF);
       }
@@ -483,7 +485,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTree member : classDef.getMembers()) {
       if (member instanceof JCMethodDecl) {
         JCMethodDecl method = (JCMethodDecl) member;
-        if (method.sym.isConstructor()) {
+        if (method.sym == null) {
+          String name = method.name == null ? "" : method.name.toString();
+          logger.atWarning().log(
+              "Missing method symbol: %s at %s:%s", name, ctx.getSourcePath(), ctx.getTreeSpan());
+          var unused = emitDiagnostic(ctx, "missing method symbol: " + name, null, null);
+        } else if (method.sym.isConstructor()) {
           // Already handled above.
           continue;
         }
@@ -680,7 +687,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return new JavaNode(lambdaNode);
   }
 
-  private static Iterable<Type> getTargets(JCFunctionalExpression node) {
+  private static ImmutableList<Type> getTargets(JCFunctionalExpression node) {
     if (node == null || node.target == null) {
       return ImmutableList.of();
     }
@@ -864,7 +871,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
 
       JCTree parentTree = owner.up() == null ? null : owner.up().getTree();
-      RefType refType = getRefType(owner.getTree(), parentTree, sym, field.pos);
+      RefType refType = getRefType(ctx, owner.getTree(), parentTree, sym, field.pos);
       // RefType can only be READ, WRITE, OR READ_WRITE so node will always have a value set by
       // at least one call to emitNameUsage. We just have to initialize to null to keep the compiler
       // happy.
@@ -901,7 +908,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "error analyzing method", null, null);
     }
 
-    emitAnchor(ctx, EdgeKind.REF_CALL, method.getVName());
+    EdgeKind kind =
+        Optional.ofNullable(method.getSymbol()).map(Symbol::isConstructor).orElse(false)
+            ? EdgeKind.REF_CALL_DIRECT
+            : EdgeKind.REF_CALL;
+
+    if (config.getEmitRefCallOverIdentifier()) {
+      TreeContext methodCtx = ctx.down(invoke.getMethodSelect());
+      if (invoke.getMethodSelect() instanceof JCIdent) {
+        emitAnchor(methodCtx, kind, method.getVName());
+        return method;
+      } else if (invoke.getMethodSelect() instanceof JCFieldAccess) {
+        JCFieldAccess field = (JCFieldAccess) invoke.getMethodSelect();
+        if (field.sym != null && field.name != null) {
+          return emitNameUsage(methodCtx, field.sym, field.name, kind);
+        }
+      }
+      // fall-through to handle non-identifier invocations
+    }
+
+    emitAnchor(ctx, kind, method.getVName());
     return method;
   }
 
@@ -931,6 +957,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Span over "new Class(...)"
     Span callSpan = new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass));
+    if (config.getEmitRefCallOverIdentifier()) {
+      callSpan = refSpan;
+    }
 
     if (owner.getTree().getTag() == JCTree.Tag.VARDEF) {
       JCVariableDecl varDef = (JCVariableDecl) owner.getTree();
@@ -947,7 +976,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(anchor, EdgeKind.REF, ctorNode, getScope(ctx));
 
     EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
-    emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode, getCallScope(ctx));
+    emitAnchor(callAnchor, EdgeKind.REF_CALL_DIRECT, ctorNode, getCallScope(ctx));
 
     scanList(newClass.getTypeArguments(), ctx);
     scanList(newClass.getArguments(), ctx);
@@ -1194,7 +1223,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private @Nullable JavaNode getJavaNode(Symbol sym) {
     if (sym.getKind() == ElementKind.PACKAGE) {
-      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
+      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName())
+          .setSymbol(sym);
     }
 
     VName jvmNode = getJvmNode(sym);
@@ -1202,7 +1232,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode node =
         signatureGenerator
             .getSignature(sym)
-            .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+            .map(
+                sig ->
+                    new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null))
+                        .setSymbol(sym))
             .orElse(null);
     if (node != null && jvmNode != null) {
       entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
@@ -1287,7 +1320,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           edgeKind,
           node.getVName(),
           ctx.getSnippet(),
-          edgeKind == EdgeKind.REF_CALL ? getCallScope(ctx) : getScope(ctx));
+          edgeKind.isVariant(EdgeKind.REF_CALL) ? getCallScope(ctx) : getScope(ctx));
       statistics.incrementCounter("name-usages-emitted");
     }
     return node;
@@ -1395,7 +1428,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // This usually indicates a problem with the compilation's bootclasspath.
       return emitDiagnostic(null, "failed to resolve " + sym, null, null);
     }
-    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
+    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null))
+        .setSymbol(sym);
   }
 
   private void emitMetadata(Span span, VName node) {
@@ -1406,6 +1440,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             entrySets.emitEdge(rule.vname, rule.edgeOut, node);
           } else {
             entrySets.emitEdge(node, rule.edgeOut, rule.vname);
+          }
+
+          if (rule.semantic == Semantic.SET) {
+            VName genFuncVName = rule.reverseEdge ? node : rule.vname;
+            entrySets.getEmitter().emitFact(genFuncVName, "/kythe/semantic/generated", "set");
           }
         }
       }
@@ -1436,7 +1475,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
         kind,
         node,
-        kind == EdgeKind.REF_CALL ? getCallScope(anchorContext) : getScope(anchorContext));
+        kind.isVariant(EdgeKind.REF_CALL) ? getCallScope(anchorContext) : getScope(anchorContext));
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
@@ -1458,7 +1497,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return null;
     }
     entrySets.emitEdge(anchor.getVName(), kind, node);
-    if (kind == EdgeKind.REF_CALL || config.getEmitAnchorScopes()) {
+    if (kind.isVariant(EdgeKind.REF_CALL) || config.getEmitAnchorScopes()) {
       scope.forEach(s -> entrySets.emitEdge(anchor.getVName(), EdgeKind.CHILDOF, s));
     }
     return anchor;
@@ -1818,8 +1857,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
    * @return A {@link RefType} indicating whether the reference reads from the symbol, writes to it,
    *     or does both.
    */
-  private static RefType getRefType(
-      JCTree tree, @Nullable JCTree parent, Symbol sym, int position) {
+  private RefType getRefType(
+      TreeContext ctx, JCTree tree, @Nullable JCTree parent, Symbol sym, int position) {
     // JCAssign looks like "a = 1 + 2"
     // JCAssignOp looks like "a += 3"
     if (tree instanceof JCAssign || tree instanceof JCAssignOp) {
@@ -1836,7 +1875,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Check if the symbol is on the left side of the assignment, which is always at least a WRITE
       // reference, or if the symbol experiences a write on the right side such as "a = b++",
       // which is always a READ_WRITE.
-      if (expressionMatchesSymbol(lhs, sym, position)) {
+      if (expressionMatchesSymbol(ctx, lhs, sym, position)) {
         // We also need to check if this reference is READ_WRITE. This is true in the following
         // cases:
         //   - The tree is a JCAssignOp such as "b++;" or
@@ -1849,7 +1888,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           refType = RefType.READ_WRITE;
         }
         return refType;
-      } else if (symbolWrittenOnRHS(rhs, sym, position)) {
+      } else if (symbolWrittenOnRHS(ctx, rhs, sym, position)) {
         return RefType.READ_WRITE;
       }
     } else if (tree instanceof JCExpressionStatement) {
@@ -1872,7 +1911,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
    * Returns whether a {@link JCExpression}, representing either a {@link JCIdent} or a {@link
    * JCFieldAccess}, matches a {@link Symbol} at a given integer position.
    */
-  private static boolean expressionMatchesSymbol(JCExpression e, Symbol sym, int position) {
+  private boolean expressionMatchesSymbol(
+      TreeContext ctx, JCExpression e, Symbol sym, int position) {
     if (e instanceof JCIdent) {
       JCIdent ident = (JCIdent) e;
       if (ident.sym.equals(sym) && ident.pos == position) {
@@ -1880,7 +1920,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
     } else if (e instanceof JCFieldAccess) {
       JCFieldAccess fieldAccess = (JCFieldAccess) e;
-      if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
+      if (fieldAccess.sym == null) {
+        String name = fieldAccess.name == null ? "" : fieldAccess.name.toString();
+        logger.atWarning().log(
+            "Missing field access symbol: %s at %s:%s",
+            name, ctx.getSourcePath(), ctx.getTreeSpan());
+        var unused = emitDiagnostic(ctx, "missing field access symbol: " + name, null, null);
+      } else if (fieldAccess.sym.equals(sym) && fieldAccess.pos == position) {
         return true;
       }
     }
@@ -1891,16 +1937,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
    * Returns whether a {@link Symbol} at a given integer position is written to in a {@link
    * JCExpression} from the right-hand side of a {@link JCAssign} or {@link JCAssignOp} expression.
    */
-  private static boolean symbolWrittenOnRHS(JCExpression e, Symbol sym, int position) {
+  private boolean symbolWrittenOnRHS(TreeContext ctx, JCExpression e, Symbol sym, int position) {
     if (e instanceof JCParens) {
-      return symbolWrittenOnRHS(((JCParens) e).expr, sym, position);
+      return symbolWrittenOnRHS(ctx, ((JCParens) e).expr, sym, position);
     } else if (e instanceof JCUnary) {
       switch (e.getTree().getKind()) {
         case POSTFIX_INCREMENT:
         case POSTFIX_DECREMENT:
         case PREFIX_INCREMENT:
         case PREFIX_DECREMENT:
-          return expressionMatchesSymbol(((JCUnary) e).arg, sym, position);
+          return expressionMatchesSymbol(ctx, ((JCUnary) e).arg, sym, position);
         default:
           return false;
       }
@@ -1908,7 +1954,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JCExpression lhs = ((JCBinary) e).lhs;
       JCExpression rhs = ((JCBinary) e).rhs;
       // Process the each side recursively because they could be another binary expression
-      return symbolWrittenOnRHS(lhs, sym, position) || symbolWrittenOnRHS(rhs, sym, position);
+      return symbolWrittenOnRHS(ctx, lhs, sym, position)
+          || symbolWrittenOnRHS(ctx, rhs, sym, position);
     }
     return false;
   }

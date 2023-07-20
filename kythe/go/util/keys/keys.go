@@ -35,8 +35,8 @@ import (
 //   - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Append
-func Append(key []byte, items ...interface{}) ([]byte, error) {
-	expanded := make([]interface{}, 0, len(items))
+func Append(key []byte, items ...any) ([]byte, error) {
+	expanded := make([]any, 0, len(items))
 	for _, item := range items {
 		switch x := item.(type) {
 		case *spb.VName:
@@ -75,9 +75,9 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 //   - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Parse
-func Parse(key string, items ...interface{}) (remaining string, err error) {
+func Parse(key string, items ...any) (remaining string, err error) {
 	// See Append implementation for details
-	expanded := make([]interface{}, 0, len(items))
+	expanded := make([]any, 0, len(items))
 	for _, item := range items {
 		switch x := item.(type) {
 		case *spb.VName:

@@ -1,4 +1,5 @@
 load("@rules_java//java:defs.bzl", "java_library")
+load("//tools:build_rules/selects.bzl", select_with_or = "with_or")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -21,10 +22,19 @@ java_library(
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
-    ] + select({
-        "//buildenv/java:language_version_11": [":jdk9_compatibility_shims"],
-        "//buildenv/java:language_version_17": [":jdk15_compatibility_shims"],
-        "//buildenv/java:language_version_19": [":jdk15_compatibility_shims"],
+    ] + select_with_or({
+        (
+            "//buildenv/java:language_version_default",
+            "//buildenv/java:language_version_11",
+        ): [":jdk9_compatibility_shims"],
+        (
+            "//buildenv/java:language_version_17",
+            "//buildenv/java:language_version_19",
+        ): [":jdk15_compatibility_shims"],
+        (
+            "//buildenv/java:language_version_20",
+            "//buildenv/java:language_version_21",
+        ): [":jdk20_compatibility_shims"],
     }),
     deps = [
         ":jdk_compatibility_shims",
@@ -45,18 +55,24 @@ java_library(
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
     ],
     visibility = ["//visibility:private"],
-    deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
 )
 
 java_library(
     name = "jdk9_compatibility_shims",
-    srcs = ["Jdk9CompatibilityShims.java"],
+    srcs = ["9/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
-    target_compatible_with = select({
-        "//buildenv/java:language_version_11": [],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_default",
+            "//buildenv/java:language_version_11",
+        ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
@@ -70,16 +86,42 @@ java_library(
 
 java_library(
     name = "jdk15_compatibility_shims",
-    srcs = ["Jdk15CompatibilityShims.java"],
+    srcs = ["15/JdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
     # bazel cquery doesn't work with objc_library targets.
     tags = ["manual"],
-    target_compatible_with = select({
-        "//buildenv/java:language_version_17": [],
-        "//buildenv/java:language_version_19": [],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_17",
+            "//buildenv/java:language_version_19",
+        ): [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
+)
+
+java_library(
+    name = "jdk20_compatibility_shims",
+    srcs = ["20/JdkCompatibilityShimsImpl.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
+    ],
+    tags = ["manual"],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_20",
+            "//buildenv/java:language_version_21",
+        ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:private"],
@@ -92,7 +134,7 @@ java_library(
 
 java_library(
     name = "reflective_jdk_compatibility_shims",
-    srcs = ["ReflectiveJdkCompatibilityShims.java"],
+    srcs = ["ReflectiveJdkCompatibilityShimsImpl.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",

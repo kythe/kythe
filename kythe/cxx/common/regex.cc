@@ -18,10 +18,11 @@
 
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "re2/re2.h"
 
 namespace kythe {
@@ -52,7 +53,7 @@ RE2::Set CheckCompiled(RE2::Set set) {
   RE2::Set::ErrorInfo error;
   if (!set.Match("", nullptr, &error)) {
     if (error.kind == RE2::Set::kNotCompiled) {
-      LOG(DFATAL) << "Uncompiled RE2::Set passed to RegexSet";
+      DLOG(FATAL) << "Uncompiled RE2::Set passed to RegexSet";
       CHECK(set.Compile()) << "Failed to compile RE2::Set";
     }
   }

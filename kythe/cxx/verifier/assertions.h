@@ -32,9 +32,6 @@ class AssertionParserImpl;
 namespace kythe {
 namespace verifier {
 
-/// \brief A database of fact-shaped AstNodes.
-using Database = std::vector<AstNode*>;
-
 class Verifier;
 
 /// \brief Parses logic programs.
@@ -79,19 +76,6 @@ class AssertionParser {
 
   /// \brief All of the goal groups in this `AssertionParser`.
   std::vector<GoalGroup>& groups() { return groups_; }
-
-  /// An EVar whose assignment is interesting to display.
-  struct Inspection {
-    enum class Kind {
-      EXPLICIT,  ///< The user requested this inspection (with "?").
-      IMPLICIT   ///< This inspection was added by default.
-    };
-    std::string label;  ///< A label for user reference.
-    EVar* evar;         ///< The EVar to inspect.
-    Kind kind;          ///< Whether this inspection was added by default.
-    Inspection(const std::string& label, EVar* evar, Kind kind)
-        : label(label), evar(evar), kind(kind) {}
-  };
 
   /// \brief All of the inspections in this `AssertionParser`.
   std::vector<Inspection>& inspections() { return inspections_; }
@@ -270,7 +254,7 @@ class AssertionParser {
   Verifier& verifier_;
 
   /// The arena from the verifier; needed by the parser implementation.
-  Arena* arena_;
+  Arena* arena_ = nullptr;
 
   std::vector<GoalGroup> groups_;
   bool inside_goal_group_ = false;
@@ -313,7 +297,7 @@ class AssertionParser {
   bool had_errors_ = false;
   /// Save the end-of-file location from the lexer.
   yy::location last_eof_;
-  size_t last_eof_ofs_;
+  size_t last_eof_ofs_ = 0;
   /// Inspections to be performed after the verifier stops.
   std::vector<Inspection> inspections_;
   /// Context mapping symbols to AST nodes.
@@ -321,9 +305,9 @@ class AssertionParser {
   std::unordered_map<Symbol, EVar*> evar_context_;
   std::unordered_map<EVar*, Symbol> singleton_evars_;
   /// Are we dumping lexer trace information?
-  bool trace_lex_;
+  bool trace_lex_ = false;
   /// Are we dumping parser trace information?
-  bool trace_parse_;
+  bool trace_parse_ = false;
   /// Should we inspect every user-provided EVar?
   bool default_inspect_ = false;
   /// The current file's path.
@@ -333,7 +317,6 @@ class AssertionParser {
   /// The current file's corpus.
   Symbol corpus_;
 };
-
 }  // namespace verifier
 }  // namespace kythe
 

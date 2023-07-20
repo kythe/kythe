@@ -18,7 +18,8 @@
 
 #include <stack>
 
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
@@ -254,7 +255,7 @@ TEST_F(MarkupHandlerTest, HtmlIgnoresBadEscapes) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

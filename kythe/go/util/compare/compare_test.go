@@ -25,7 +25,7 @@ import (
 
 func TestCompare(t *testing.T) {
 	tests := []struct {
-		a, b     interface{}
+		a, b     any
 		opts     []Option
 		expected Order
 	}{

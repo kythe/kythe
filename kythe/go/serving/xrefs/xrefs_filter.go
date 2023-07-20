@@ -17,10 +17,11 @@
 package xrefs
 
 import (
-	"log"
 	"math"
 	"regexp"
 	"regexp/syntax"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -93,7 +94,7 @@ func (f *corpusPathFilter) PageSet(set *srvpb.PagedCrossReferences) *pageSet {
 	}
 
 	if len(set.GetPageIndex()) >= math.MaxUint32 {
-		log.Printf("WARNING: too many pages to perform index search: %d", len(set.GetPageIndex()))
+		log.Warningf("too many pages to perform index search: %d", len(set.GetPageIndex()))
 		return nil
 	}
 
@@ -261,6 +262,9 @@ func postingAnd(idx postings, list []uint32, trigram uint32) []uint32 {
 }
 
 func mergeOr(l1, l2 []uint32) []uint32 {
+	if isAllPages(l1) || isAllPages(l2) {
+		return allPages
+	}
 	var l []uint32
 	var i, j int
 	for i < len(l1) || j < len(l2) {
@@ -409,6 +413,8 @@ func (f *corpusPathFilter) FilterGroup(grp *srvpb.PagedCrossReferences_Group) (f
 	var n int
 	grp.Anchor, n = f.filterAnchors(grp.GetAnchor())
 	filtered += n
+	grp.ScopedReference, n = f.filterReferences(grp.GetScopedReference())
+	filtered += n
 	grp.RelatedNode, n = f.filterRelatedNodes(grp.GetRelatedNode())
 	filtered += n
 	grp.Caller, n = f.filterCallers(grp.GetCaller())
@@ -426,6 +432,18 @@ func (f *corpusPathFilter) filterAnchors(as []*srvpb.ExpandedAnchor) ([]*srvpb.E
 		j++
 	}
 	return as[:j], len(as) - j
+}
+
+func (f *corpusPathFilter) filterReferences(rs []*srvpb.PagedCrossReferences_ScopedReference) ([]*srvpb.PagedCrossReferences_ScopedReference, int) {
+	var j int
+	for i, c := range rs {
+		if !f.AllowExpandedAnchor(c.GetScope()) {
+			continue
+		}
+		rs[j] = rs[i]
+		j++
+	}
+	return rs[:j], len(rs) - j
 }
 
 func (f *corpusPathFilter) filterCallers(cs []*srvpb.PagedCrossReferences_Caller) ([]*srvpb.PagedCrossReferences_Caller, int) {

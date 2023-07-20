@@ -50,7 +50,7 @@ func (f *repeatedString) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *repeatedString) Get() interface{} {
+func (f *repeatedString) Get() any {
 	if f == nil {
 		return []string(nil)
 	}
@@ -85,7 +85,7 @@ func (f *repeatedEnv) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *repeatedEnv) Get() interface{} {
+func (f *repeatedEnv) Get() any {
 	if f == nil {
 		return map[string]string(nil)
 	}
@@ -132,7 +132,7 @@ func (f *kytheURI) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *kytheURI) Get() interface{} {
+func (f *kytheURI) Get() any {
 	return f
 }
 
@@ -175,7 +175,7 @@ func (f *repeatedAny) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *repeatedAny) Get() interface{} {
+func (f *repeatedAny) Get() any {
 	if f == nil {
 		return []*anypb.Any(nil)
 	}
@@ -208,6 +208,6 @@ func (f *vnameRules) String() string {
 }
 
 // Get implements part of the flag.Getter interface.
-func (f *vnameRules) Get() interface{} {
+func (f *vnameRules) Get() any {
 	return f
 }

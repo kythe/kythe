@@ -15,6 +15,22 @@ docker_build(
     use_cache = True,
 )
 
+docker_build(
+    name = "stage",
+    src = "Dockerfile",
+    data = [
+        "bazel_wrapper.sh",
+        "extract.sh",
+        "//kythe/release",
+        "//kythe/release/base:fix_permissions.sh",
+        "@com_github_bazelbuild_bazelisk//:bazelisk",
+    ],
+    image_name = "gcr.io/kythe-public/bazel-extractor",
+    stage_only = True,
+    tags = ["manual"],
+    use_cache = True,
+)
+
 filegroup(
     name = "extractors_bazelrc",
     srcs = ["extractors.bazelrc"],

@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
@@ -24,7 +26,7 @@
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Lexer.h"
-#include "glog/logging.h"
+#include "kythe/cxx/indexer/cxx/stream_adapter.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
@@ -33,13 +35,6 @@ using ::clang::CharSourceRange;
 using ::clang::dyn_cast;
 using ::clang::SourceLocation;
 using ::clang::SourceRange;
-
-std::string DumpString(const clang::Decl& decl) {
-  std::string result;
-  llvm::raw_string_ostream out(result);
-  decl.dump(out);
-  return out.str();
-}
 
 CharSourceRange GetImmediateFileRange(
     const clang::SourceManager& source_manager, const SourceLocation loc) {
@@ -50,35 +45,53 @@ CharSourceRange GetImmediateFileRange(
              : source_manager.getImmediateExpansionRange(loc);
 }
 
-CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
-                             CharSourceRange range) {
+CharSourceRange GetFileRange(CharSourceRange range,
+                             const clang::SourceManager& source_manager,
+                             const clang::LangOptions& lang_options) {
   bool begin_in_macro_body = false;
+  bool begin_at_macro_start = false;
   while (!range.getBegin().isFileID()) {
     begin_in_macro_body = source_manager.isMacroBodyExpansion(range.getBegin());
+    begin_at_macro_start = clang::Lexer::isAtStartOfMacroExpansion(
+        range.getBegin(), source_manager, lang_options);
     range.setBegin(
         GetImmediateFileRange(source_manager, range.getBegin()).getBegin());
   }
   bool end_in_macro_body = false;
+  bool end_at_macro_end = false;
   while (!range.getEnd().isFileID()) {
     end_in_macro_body = source_manager.isMacroBodyExpansion(range.getEnd());
+    end_at_macro_end = clang::Lexer::isAtEndOfMacroExpansion(
+        range.getEnd(), source_manager, lang_options);
     CharSourceRange end = GetImmediateFileRange(source_manager, range.getEnd());
     range.setEnd(end.getEnd());
     range.setTokenRange(end.isTokenRange());
   }
-  if (begin_in_macro_body && end_in_macro_body) {
-    // For macro body ranges we want to return a zero-width range
-    // pointing to the beginning of the macro expansion so that any
-    // edges originating from within the macro body are suppressed.
-    // TODO(shahms): Emit the properly expanded range in all cases once UI
-    // issues are addressed.
+
+  // For macro body ranges we want to return a zero-width range
+  // pointing to the beginning of the macro expansion so that any
+  // edges originating from within the macro body are suppressed.
+  // TODO(shahms): Emit the properly expanded range in all cases once UI
+  // issues are addressed.
+  if (
+      // Only if both the immediately prior range is within a macro body for
+      // both locations.
+      (begin_in_macro_body && end_in_macro_body) &&
+      // And only if both ends would not cover the entire macro expansion.
+      // This covers the case where a macro expands to a single token, for
+      // e.g. function renaming, etc.
+      !(begin_at_macro_start && end_at_macro_end)) {
     return CharSourceRange::getCharRange(range.getBegin());
   }
+
   return range;
 }
 
-CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
-                             const SourceRange range) {
-  return GetFileRange(source_manager, CharSourceRange::getTokenRange(range));
+CharSourceRange GetFileRange(const SourceRange range,
+                             const clang::SourceManager& source_manager,
+                             const clang::LangOptions& lang_options) {
+  return GetFileRange(CharSourceRange::getTokenRange(range), source_manager,
+                      lang_options);
 }
 }  // namespace
 
@@ -148,7 +161,8 @@ SourceRange ClangRangeFinder::RangeForNameOfMethod(
 
   // If the selector location is not valid or is not a file, return the
   // whole range of the selector and hope for the best.
-  LOG(ERROR) << "Unable to determine source range for: " << DumpString(decl);
+  LOG(ERROR) << "Unable to determine source range for: "
+             << StreamAdapter::Dump(decl);
   return NormalizeRange(decl.getSourceRange());
 }
 
@@ -167,16 +181,17 @@ SourceRange ClangRangeFinder::RangeForNamespace(
 }
 
 SourceRange ClangRangeFinder::NormalizeRange(SourceLocation start) const {
-  return ToCharRange(GetFileRange(source_manager(), start));
+  return ToCharRange(GetFileRange(start, source_manager(), lang_options()));
 }
 
 SourceRange ClangRangeFinder::NormalizeRange(SourceLocation start,
                                              SourceLocation end) const {
-  return ToCharRange(GetFileRange(source_manager(), SourceRange(start, end)));
+  return ToCharRange(
+      GetFileRange(SourceRange(start, end), source_manager(), lang_options()));
 }
 
 SourceRange ClangRangeFinder::NormalizeRange(SourceRange range) const {
-  return ToCharRange(GetFileRange(source_manager(), range));
+  return ToCharRange(GetFileRange(range, source_manager(), lang_options()));
 }
 
 SourceRange ClangRangeFinder::ToCharRange(clang::CharSourceRange range) const {

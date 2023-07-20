@@ -26,7 +26,8 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -49,16 +50,16 @@ class ProtoFiles {
   ///
   /// File data will only be emitted once. This class looks up `path` on the
   /// local file system.
-  bool IndexFile(const gpb::string& path, KytheGraphRecorder* recorder);
+  bool IndexFile(const std::string& path, KytheGraphRecorder* recorder);
 
   /// \brief Looks up the byte offset for a `line` and `col` in `file`.
   /// \return -1 if the file can't be found or `line` is out of range.
-  int64_t anchor_offset(const gpb::string& file, int line, int col) const;
+  int64_t anchor_offset(const std::string& file, int line, int col) const;
 
  private:
   /// \brief Store the file at `path` with text `buffer`. Identifies the
   /// starting byte for each of its lines.
-  void InsertFile(const gpb::string& path, std::string&& buffer);
+  void InsertFile(const std::string& path, std::string&& buffer);
 
   struct FileRecord {
     /// The content of the file.
@@ -68,12 +69,12 @@ class ProtoFiles {
     std::vector<size_t> line_starts;
   };
   /// Maps from filenames to `FileRecord`s.
-  std::map<gpb::string, FileRecord> files_;
+  std::map<std::string, FileRecord> files_;
 };
 
 /// \brief Reads the contents of the file at `path` into `buffer`.
 /// \return true on success; false on failure.
-bool ReadFile(const gpb::string& path, std::string* buffer) {
+bool ReadFile(const std::string& path, std::string* buffer) {
   int in_fd = ::open(path.c_str(), O_RDONLY);
   if (in_fd < 0) {
     LOG(ERROR) << "Couldn't open " << path;
@@ -95,7 +96,7 @@ bool ReadFile(const gpb::string& path, std::string* buffer) {
   return true;
 }
 
-bool ProtoFiles::IndexFile(const gpb::string& path,
+bool ProtoFiles::IndexFile(const std::string& path,
                            KytheGraphRecorder* recorder) {
   auto file = files_.find(path);
   if (file != files_.end()) {
@@ -113,7 +114,7 @@ bool ProtoFiles::IndexFile(const gpb::string& path,
   return true;
 }
 
-int64_t ProtoFiles::anchor_offset(const gpb::string& file, int line,
+int64_t ProtoFiles::anchor_offset(const std::string& file, int line,
                                   int col) const {
   const auto& file_pair = files_.find(file);
   if (file_pair == files_.end()) {
@@ -125,7 +126,7 @@ int64_t ProtoFiles::anchor_offset(const gpb::string& file, int line,
   return file_pair->second.line_starts[line] + col;
 }
 
-void ProtoFiles::InsertFile(const gpb::string& path, std::string&& buffer) {
+void ProtoFiles::InsertFile(const std::string& path, std::string&& buffer) {
   std::vector<size_t> lookup;
   lookup.push_back(0);
   for (int i = 0; i < buffer.size(); ++i) {
@@ -329,8 +330,7 @@ bool IndexDescriptorSet(const google::protobuf::FileDescriptorSet& fds,
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  FLAGS_logtostderr = true;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
   std::vector<std::string> final_args(remain.begin() + 1, remain.end());
   google::protobuf::io::FileOutputStream out_stream(STDOUT_FILENO);

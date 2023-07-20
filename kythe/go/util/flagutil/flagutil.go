@@ -74,7 +74,7 @@ func UsageError(msg string) {
 
 // UsageErrorf prints str formatted with the given vals to stderr, calls
 // flag.Usage, and exits the program unsuccessfully.
-func UsageErrorf(str string, vals ...interface{}) {
+func UsageErrorf(str string, vals ...any) {
 	UsageError(fmt.Sprintf(str, vals...))
 }
 
@@ -96,7 +96,7 @@ func (f *StringList) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *StringList) Get() interface{} {
+func (f *StringList) Get() any {
 	if f == nil {
 		return []string(nil)
 	}
@@ -136,7 +136,7 @@ func (f *StringSet) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *StringSet) Get() interface{} {
+func (f *StringSet) Get() any {
 	if f == nil {
 		return stringset.Set(nil)
 	}
@@ -184,7 +184,7 @@ func (f *StringMultimap) String() string {
 }
 
 // Get implements flag.Getter and returns a slice of string values.
-func (f *StringMultimap) Get() interface{} {
+func (f *StringMultimap) Get() any {
 	if f == nil {
 		return map[string]stringset.Set(nil)
 	}

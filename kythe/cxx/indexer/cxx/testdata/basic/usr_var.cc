@@ -1,7 +1,7 @@
 // We index USRs for variables.
 
 //- @global defines/binding Global
-//- GlobalUSR /clang/usr Global
+//- GlobalUSR=vname(_,"",_,_,_) /clang/usr Global
 //- GlobalUSR.node/kind clang/usr
 int global;
 

@@ -1,6 +1,4 @@
 extern crate protobuf;
-pub mod filecontext;
-pub use filecontext::*;
 pub mod storage;
 pub use storage::*;
 pub mod any;

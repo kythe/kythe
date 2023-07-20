@@ -47,6 +47,10 @@ type ProtoLookup interface {
 	// Lookup unmarshals the value for the given key into msg, returning any
 	// error.  If the key was not found, ErrNoSuchKey is returned.
 	Lookup(ctx context.Context, key []byte, msg proto.Message) error
+
+	// Lookup unmarshals the values for the given key into new proto.Message using
+	// m, returning any error.  If the key was not found, f is never called.
+	LookupValues(ctx context.Context, key []byte, m proto.Message, f func(msg proto.Message) error) error
 }
 
 // BufferedProto buffers calls to Put to provide a high throughput write
@@ -65,6 +69,10 @@ type KVProto struct{ keyvalue.DB }
 // ErrNoSuchKey is returned when a value was not found for a particular key.
 var ErrNoSuchKey = errors.New("no such key")
 
+// ErrStopLookup should be returned from the function passed to LookupValues
+// when the client wants no further values.
+var ErrStopLookup = errors.New("stop lookup")
+
 // Lookup implements part of the Proto interface.
 func (t *KVProto) Lookup(ctx context.Context, key []byte, msg proto.Message) error {
 	v, err := t.Get(ctx, key, nil)
@@ -74,6 +82,34 @@ func (t *KVProto) Lookup(ctx context.Context, key []byte, msg proto.Message) err
 		return err
 	} else if err := proto.Unmarshal(v, msg); err != nil {
 		return fmt.Errorf("proto unmarshal error: %v", err)
+	}
+	return nil
+}
+
+// LookupValues implements part of the ProtoLookup interface.
+func (t *KVProto) LookupValues(ctx context.Context, key []byte, m proto.Message, f func(proto.Message) error) error {
+	it, err := t.ScanRange(ctx, keyvalue.KeyRange(key), nil)
+	if err != nil {
+		return err
+	}
+	for {
+		_, val, err := it.Next()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		msg := m.ProtoReflect().New().Interface()
+		if err := proto.Unmarshal(val, msg); err != nil {
+			return err
+		}
+
+		if err := f(msg); err == ErrStopLookup {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return nil
 }

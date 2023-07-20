@@ -19,13 +19,14 @@
 #include "IndexerPPCallbacks.h"
 
 #include "GraphObserver.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Index/USRGeneration.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
-#include "glog/logging.h"
 #include "kythe/cxx/extractor/path_utils.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -47,9 +48,8 @@
 namespace kythe {
 
 IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
-                                       GraphObserver& GO, enum Verbosity V,
-                                       int UsrByteSize)
-    : Preprocessor(PP), Observer(GO), Verbosity(V), UsrByteSize(UsrByteSize) {
+                                       GraphObserver& GO, int UsrByteSize)
+    : Preprocessor(PP), Observer(GO), UsrByteSize(UsrByteSize) {
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
@@ -191,23 +191,21 @@ void IndexerPPCallbacks::MacroExpands(const clang::Token& Token,
   const clang::MacroInfo& Info = *Macro.getMacroInfo();
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
   if (!Range.getBegin().isFileID() || !Range.getEnd().isFileID()) {
-    if (Verbosity) {
-      auto NewBegin =
-          Observer.getSourceManager()->getExpansionLoc(Range.getBegin());
-      if (!NewBegin.isFileID()) {
-        return;
-      }
-      Range = clang::SourceRange(
-          NewBegin,
-          clang::Lexer::getLocForEndOfToken(
-              NewBegin, 0, /* offset from token end */
-              *Observer.getSourceManager(), *Observer.getLangOptions()));
-      if (Range.isInvalid()) {
-        return;
-      }
-      Observer.recordIndirectlyExpandsRange(RangeInCurrentContext(Range),
-                                            MacroId);
+    auto NewBegin =
+        Observer.getSourceManager()->getExpansionLoc(Range.getBegin());
+    if (!NewBegin.isFileID()) {
+      return;
     }
+    Range = clang::SourceRange(
+        NewBegin,
+        clang::Lexer::getLocForEndOfToken(
+            NewBegin, 0, /* offset from token end */
+            *Observer.getSourceManager(), *Observer.getLangOptions()));
+    if (Range.isInvalid()) {
+      return;
+    }
+    Observer.recordIndirectlyExpandsRange(RangeInCurrentContext(Range),
+                                          MacroId);
   } else {
     Observer.recordExpandsRange(RangeForTokenInCurrentContext(Token), MacroId);
   }

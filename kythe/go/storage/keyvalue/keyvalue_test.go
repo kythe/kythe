@@ -26,6 +26,13 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
+func TestKeyRange(t *testing.T) {
+	r := KeyRange([]byte("key"))
+	if c := bytes.Compare(r.Start, r.End); c != -1 {
+		t.Errorf("%s >= %s", r.Start, r.End)
+	}
+}
+
 func TestVNameEncoding(t *testing.T) {
 	tests := []*spb.VName{
 		nil,

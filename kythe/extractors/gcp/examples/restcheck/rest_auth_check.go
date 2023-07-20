@@ -29,7 +29,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+
+	"kythe.io/kythe/go/util/log"
 
 	"golang.org/x/oauth2/google"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"

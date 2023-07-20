@@ -75,7 +75,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param path The path to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool get_vname(const llvm::StringRef& path, proto::VName* merge_with);
+  bool get_vname(llvm::StringRef path, proto::VName* merge_with);
 
   /// \brief Returns a string representation of `uid` for error messages.
   std::string get_debug_uid_string(const llvm::sys::fs::UniqueID& uid);

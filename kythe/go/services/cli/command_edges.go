@@ -22,11 +22,11 @@ import (
 	"flag"
 	"fmt"
 	"html"
-	"log"
 	"sort"
 	"strings"
 
 	"kythe.io/kythe/go/services/graph"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -83,7 +83,7 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		return err
 	}
 	if reply.NextPageToken != "" {
-		defer log.Printf("Next page token: %s", reply.NextPageToken)
+		defer log.Infof("Next page token: %s", reply.NextPageToken)
 	}
 	if c.countOnly {
 		return c.displayEdgeCounts(reply)

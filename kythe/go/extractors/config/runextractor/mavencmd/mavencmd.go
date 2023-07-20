@@ -21,7 +21,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
 	"kythe.io/kythe/go/extractors/constants"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/subcommands"
 )
@@ -74,7 +74,7 @@ func (m mavenCommand) checkFlags() error {
 }
 
 // Execute implements the subcommands interface and runs maven extraction.
-func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	if err := m.checkFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
@@ -89,12 +89,12 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 
 	if m.verbose {
 		// Print diff to show changes made to pom.xml.
-		log.Printf("Modified pom.xml. Diff:")
+		log.Infof("Modified pom.xml. Diff:")
 		diff, err := tf.GetDiff()
 		if err != nil {
 			m.Fail("Error diffing pom.xml: %v", err)
 		}
-		log.Print(diff)
+		log.Info(diff)
 	}
 
 	mvnArgs := []string{"clean", "install",
@@ -102,7 +102,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		"-Dmaven.compiler.fork=true",
 		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper),
 	}
-	log.Printf("Running `mvn %v`", strings.Join(mvnArgs, " "))
+	log.Infof("Running `mvn %v`", strings.Join(mvnArgs, " "))
 	cmd := exec.Command("mvn", mvnArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

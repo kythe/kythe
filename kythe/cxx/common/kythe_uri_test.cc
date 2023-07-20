@@ -16,12 +16,16 @@
 
 #include "kythe/cxx/common/kythe_uri.h"
 
-#include "glog/logging.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/vname_ordering.h"
+#include "protobuf-matchers/protocol-buffer-matchers.h"
 
 namespace kythe {
 namespace {
+using ::protobuf_matchers::EqualsProto;
 
 struct MakeURI {
   const char* signature = "";
@@ -216,8 +220,7 @@ TEST(KytheUri, RoundTrip) {
   auto uri_roundtrip = URI::FromString(uri.uri().ToString());
   EXPECT_TRUE(uri_roundtrip.first);
   const auto& other_vname = uri_roundtrip.second.v_name();
-  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
-      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
+  EXPECT_THAT(uri.v_name(), EqualsProto(other_vname));
 }
 
 TEST(KytheUri, OneSlashRoundTrip) {
@@ -229,8 +232,7 @@ TEST(KytheUri, OneSlashRoundTrip) {
   auto uri_roundtrip = URI::FromString(uri.uri().ToString());
   EXPECT_TRUE(uri_roundtrip.first);
   const auto& other_vname = uri_roundtrip.second.v_name();
-  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
-      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
+  EXPECT_THAT(uri.v_name(), EqualsProto(other_vname));
 }
 
 TEST(KytheUri, TwoSlashRoundTrip) {
@@ -242,8 +244,7 @@ TEST(KytheUri, TwoSlashRoundTrip) {
   auto uri_roundtrip = URI::FromString(uri.uri().ToString());
   EXPECT_TRUE(uri_roundtrip.first);
   const auto& other_vname = uri_roundtrip.second.v_name();
-  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
-      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
+  EXPECT_THAT(uri.v_name(), EqualsProto(other_vname));
 }
 
 // TODO(zarko): Check the "////////" corpus once we settle whether corpus
@@ -296,7 +297,7 @@ TEST(KytheUri, Strings) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

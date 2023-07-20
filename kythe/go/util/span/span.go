@@ -22,8 +22,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
+
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"google.golang.org/protobuf/proto"
@@ -41,7 +42,7 @@ func InBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundary, e
 	case xpb.DecorationsRequest_AROUND_SPAN:
 		return start <= startBoundary && end >= endBoundary
 	default:
-		log.Printf("WARNING: unknown DecorationsRequest_SpanKind: %v", kind)
+		log.Warningf("unknown DecorationsRequest_SpanKind: %v", kind)
 	}
 	return false
 }
@@ -61,7 +62,7 @@ func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
 		}
 	}()
 	dmp := diffmatchpatch.New()
-	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))
+	diff := dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), false))
 	return &Patcher{mapToOffsets(diff)}, nil
 }
 

@@ -22,12 +22,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
@@ -105,7 +106,7 @@ func extractorArgs(args []string, jar string) []string {
 			}
 			isJavac = true
 			result = append(result,
-				"--add-modules", "java.logging,java.sql",
+				"--add-modules=java.logging,java.sql",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.main=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.util=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.file=ALL-UNNAMED",
@@ -120,6 +121,13 @@ func extractorArgs(args []string, jar string) []string {
 			case strings.HasPrefix(a, "-Xplugin:depend"), strings.HasPrefix(a, "-Xlint:"), strings.HasPrefix(a, "-Xdoclint"):
 			case strings.HasPrefix(a, "-Xmx"):
 				result = append(result, "-Xmx3G")
+			case !isJavac && strings.HasPrefix(a, "--") && len(args) > 0 && !strings.HasPrefix(args[0], "-"):
+				// Add an = separator between "--arg" and its value for JVM arguments
+				// in order to be friendlier to Bazel Java "launchers".
+				// The JVM generally accepts either form, but the generic argument processing
+				// in many launchers requires the "=" separator.
+				v, args = shift(args)
+				result = append(result, a+"="+v)
 			default:
 				result = append(result, a)
 			}
@@ -159,11 +167,11 @@ func main() {
 	jar := extractorJar()
 	if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
 		if excludeModules.Contains(moduleName()) {
-			log.Printf("*** Skipping: %s", moduleName())
+			log.Infof("*** Skipping: %s", moduleName())
 		} else {
 			cmd := exec.Command(java, args...)
 			cmd.Env = extractorEnv()
-			log.Printf("*** Extracting: %s", moduleName())
+			log.Infof("*** Extracting: %s", moduleName())
 			if output, err := cmd.CombinedOutput(); err != nil {
 				w, err := os.Create(filepath.Join(outputDir(), moduleName()+".err"))
 				if err != nil {
@@ -174,7 +182,7 @@ func main() {
 				w.Close()
 
 				// Log, but don't abort, on extraction failures.
-				log.Printf("ERROR: extractor failure for module %s: %v", moduleName(), err)
+				log.Errorf("extractor failure for module %s: %v", moduleName(), err)
 			}
 		}
 	}

@@ -15,6 +15,9 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",
@@ -24,8 +27,9 @@ cc_binary(
         "//kythe/cxx/common/schema:facts",
         "//kythe/cxx/indexer/cxx:clang_utils",
         "//third_party/llvm/src:clang_builtin_headers",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",

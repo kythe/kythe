@@ -44,12 +44,12 @@ import (
 	"go/types"
 	"io"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -281,7 +281,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 				return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
 			}
 			if !matchesBuildTags(fpath, data, bc) {
-				log.Printf("Skipped source file %q because build tags do not match", fpath)
+				log.Infof("Skipped source file %q because build tags do not match", fpath)
 				continue
 			}
 			vpath := ri.VName.GetPath()
@@ -317,7 +317,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 				encodedMetadata := strings.TrimPrefix(lastComment, delimiter)
 				newRule, err := loadInlineMetadata(ri, encodedMetadata)
 				if err != nil {
-					log.Printf("Error loading metadata in %q: %v", ri.Info.GetPath(), err)
+					log.Errorf("loading metadata in %q: %v", ri.Info.GetPath(), err)
 				} else {
 					rules = append(rules, newRule)
 				}
@@ -327,9 +327,9 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 
 		// Check for mapping metadata.
 		if rs, err := opts.checkRules(ri, f); err != nil {
-			log.Printf("Error checking rules in %q: %v", fpath, err)
+			log.Errorf("checking rules in %q: %v", fpath, err)
 		} else if rs != nil {
-			log.Printf("Found %d metadata rules for path %q", len(rs.Rules), rs.Path)
+			log.Infof("Found %d metadata rules for path %q", len(rs.Rules), rs.Path)
 			rules = append(rules, rs)
 			continue
 		}
@@ -624,13 +624,13 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 		return tagLabel, pi.anonSignature(t)
 
 	default:
-		log.Panicf("Unexpected object kind: %T", obj)
+		panic(fmt.Sprintf("Unexpected object kind: %T", obj))
 	}
 
 	// At this point, we have eliminated built-in objects; everything else must
 	// be defined in a package.
 	if obj.Pkg() == nil {
-		log.Panic("Object without a package: ", obj)
+		panic(fmt.Sprintf("Object without a package: %v", obj))
 	}
 
 	// Objects at package scope (i.e., parent scope is package scope).
@@ -920,11 +920,12 @@ func loadInlineMetadata(fi *apb.CompilationUnit_FileInput, encodedMetadata strin
 
 	rules := make(metadata.Rules, 0, len(gci.GetMeta()))
 	for _, r := range gci.GetMeta() {
+		k, rev := strings.CutPrefix(r.Edge, "%")
 		rules = append(rules, metadata.Rule{
 			EdgeIn:  edges.DefinesBinding,
-			EdgeOut: edges.Generates,
+			EdgeOut: k,
 			VName:   r.GetVname(),
-			Reverse: true,
+			Reverse: rev,
 			Begin:   int(r.GetBegin()),
 			End:     int(r.GetEnd()),
 		})

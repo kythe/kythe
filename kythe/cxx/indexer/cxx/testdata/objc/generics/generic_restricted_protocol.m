@@ -23,10 +23,9 @@
 
 // No source range defines BoxDecl since this is a generic type.
 //- @Type defines/binding TypeVar
-//- @Box defines/binding BoxAbs
+//- @Box defines/binding BoxDecl
 //- TypeVar.node/kind tvar
-//- BoxAbs.node/kind record
-//- BoxAbs tparam.0 TypeVar
+//- BoxDecl tparam.0 TypeVar
 //- TypeVar bounded/upper ProtoDeclType
 //- ProtoDeclType.node/kind tapp
 //- ProtoDeclType param.0 vname("ptr#builtin", _, _, _, _)

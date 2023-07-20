@@ -16,6 +16,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/log",
         "//kythe/go/util/metadata",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/schema/edges",
@@ -107,6 +108,13 @@ go_indexer_test(
 go_indexer_test(
     name = "funcall_test",
     srcs = ["testdata/basic/funcall.go"],
+    import_path = "test/fun",
+)
+
+go_indexer_test(
+    name = "funcallid_test",
+    srcs = ["testdata/basic/funcallid.go"],
+    extra_indexer_args = ["-emit_ref_call_over_identifier"],
     import_path = "test/fun",
 )
 
@@ -259,16 +267,31 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "packageinit_file_test",
+    srcs = ["testdata/basic/packageinit_file.go"],
+    import_path = "test/pkginit",
+    use_file_as_top_level_scope = True,
+)
+
+go_indexer_test(
     name = "types_test",
     srcs = ["testdata/types.go"],
     has_marked_source = True,
 )
 
 go_indexer_test(
+    name = "dep.v2",
+    srcs = ["testdata/dep.v2.go"],
+)
+
+go_indexer_test(
     name = "dependent_test",
     srcs = ["testdata/dependent.go"],
     has_marked_source = True,
-    deps = [":types_test"],
+    deps = [
+        ":dep.v2",
+        ":types_test",
+    ],
 )
 
 go_indexer_test(

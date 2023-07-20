@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/subcommands"
 	"golang.org/x/sync/errgroup"
@@ -66,7 +66,7 @@ func (c *cmd) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements part of subcommands.Command.
-func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	var hasErrors bool
 	for _, path := range fs.Args() {
 		ext := filepath.Ext(path)
@@ -74,7 +74,7 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}
 
 		f, err := vfs.Open(ctx, path)
 		if err != nil {
-			log.Printf("Error opening .kzip file: %v", err)
+			log.Errorf("opening .kzip file: %v", err)
 			hasErrors = true
 			continue
 		}
@@ -90,7 +90,7 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}
 			}
 		})
 		if err != nil {
-			log.Printf("Error scanning .kzip file: %v", err)
+			log.Errorf("scanning .kzip file: %v", err)
 			hasErrors = true
 		}
 	}
@@ -140,7 +140,7 @@ func (c *cmd) writeFiles(fd []fileData) error {
 	}
 	g, ctx := errgroup.WithContext(context.Background())
 	start := time.Now()
-	defer func() { log.Printf("Extracted %d files in %v", len(fd), time.Since(start)) }()
+	defer func() { log.Infof("Extracted %d files in %v", len(fd), time.Since(start)) }()
 	sem := semaphore.NewWeighted(64) // limit concurrency on large compilations
 	for _, file := range fd {
 		file := file

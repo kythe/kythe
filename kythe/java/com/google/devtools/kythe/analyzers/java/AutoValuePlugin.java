@@ -134,6 +134,15 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
             .forEach(
                 getter -> entrySets.emitEdge(getter, EdgeKind.PROPERTY_READS, propNode.getVName()));
 
+        // Mark the "set" semantic of the setter generator symbol.
+        prop.setter()
+            .map(GeneratedSymbol::abstractSym)
+            .flatMap(kytheGraph::getNode)
+            .map(KytheNode::getVName)
+            .ifPresent(
+                setter ->
+                    entrySets.getEmitter().emitFact(setter, "/kythe/semantic/generated", "set"));
+
         // Emit property/writes edges for setter symbols.
         prop.setter().stream()
             .flatMap(GeneratedSymbol::stream)

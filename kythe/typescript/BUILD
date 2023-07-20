@@ -27,6 +27,7 @@ ts_project(
     name = "indexer",
     srcs = [
         "indexer.ts",
+        "plugin_api.ts",
         "utf8.ts",
     ],
     declaration = True,
@@ -88,8 +89,8 @@ js_test(
     ] + glob(
         ["testdata/**/*"],
     ) + [
-        "//kythe/go/platform/tools/entrystream",
         "//kythe/cxx/verifier",
+        "//kythe/go/platform/tools/entrystream",
     ],
     entry_point = ":test.js",
 )

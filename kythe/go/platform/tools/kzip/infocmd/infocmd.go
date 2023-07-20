@@ -59,7 +59,7 @@ func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
-func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	if c.input == "" {
 		return c.Fail("Required --input path missing")
 	}
@@ -74,7 +74,7 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	s, err := os.Stat(c.input)
+	s, err := vfs.Stat(ctx, c.input)
 	if err != nil {
 		return c.Fail("Couldn't stat kzip file: %v", err)
 	}

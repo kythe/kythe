@@ -13,16 +13,16 @@ public enum Enums {
   //- B childof Enum
   //- B.node/kind constant
   //- @A ref EnumCtor
-  //- @A ref/call EnumCtor
+  //- @A ref/call/direct EnumCtor
   //- @B ref EnumCtor
-  //- @B ref/call EnumCtor
+  //- @B ref/call/direct EnumCtor
   A, B,
 
   //- @C defines/binding C
   //- C childof Enum
   //- C.node/kind constant
   //- @C ref EnumStrCtor
-  //- @"C(\"hello\")" ref/call EnumStrCtor
+  //- @"C(\"hello\")" ref/call/direct EnumStrCtor
   C("hello"),
 
   //- @D defines/binding D
@@ -34,7 +34,7 @@ public enum Enums {
   //- @E defines/binding E
   //- E.node/kind constant
   //- @E ref EnumCtr
-  //- @"E()" ref/call EnumCtr
+  //- @"E()" ref/call/direct EnumCtr
   E();
 
   //- @Enums defines/binding EnumStrCtor

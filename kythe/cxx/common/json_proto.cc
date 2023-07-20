@@ -16,10 +16,11 @@
 
 #include "json_proto.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
@@ -44,7 +45,7 @@ class PermissiveTypeResolver : public TypeResolver {
       : impl_(google::protobuf::util::NewTypeResolverForDescriptorPool("",
                                                                        pool)) {}
 
-  google::protobuf::util::Status ResolveMessageType(
+  absl::Status ResolveMessageType(
       const std::string& type_url,
       google::protobuf::Type* message_type) override {
     absl::string_view adjusted = type_url;
@@ -52,8 +53,8 @@ class PermissiveTypeResolver : public TypeResolver {
     return impl_->ResolveMessageType(absl::StrCat("/", adjusted), message_type);
   }
 
-  google::protobuf::util::Status ResolveEnumType(
-      const std::string& type_url, google::protobuf::Enum* enum_type) override {
+  absl::Status ResolveEnumType(const std::string& type_url,
+                               google::protobuf::Enum* enum_type) override {
     absl::string_view adjusted = type_url;
     adjusted.remove_prefix(type_url.rfind('/') + 1);
     return impl_->ResolveEnumType(absl::StrCat("/", adjusted), enum_type);

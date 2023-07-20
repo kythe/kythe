@@ -12,6 +12,7 @@ go_library(
         "//kythe/go/extractors/config/runextractor/backup",
         "//kythe/go/extractors/constants",
         "//kythe/go/util/cmdutil",
+        "//kythe/go/util/log",
         "@com_github_google_subcommands//:go_default_library",
     ],
 )

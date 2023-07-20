@@ -24,6 +24,8 @@ def cc_proto_verifier_test(
         name,
         srcs,
         proto_libs,
+        cc_deps = [],
+        cc_indexer = "//kythe/cxx/indexer/cxx:indexer",
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
@@ -39,6 +41,8 @@ def cc_proto_verifier_test(
       name: Name of the test.
       srcs: The compilation's C++ source files; each file's verifier goals will be checked
       proto_libs: A list of proto_library targets
+      cc_deps: Additional cc deps needed by the cc test file
+      cc_indexer: The cc indexer to use
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
       experimental_guess_proto_semantics: guess proto semantics?
@@ -67,6 +71,7 @@ def cc_proto_verifier_test(
             cc_kythe_proto_library,
             name = name + "_cc_proto",
             deps = proto_libs,
+            enable_proto_static_reflection = False,
         ),
     ]
 
@@ -74,7 +79,7 @@ def cc_proto_verifier_test(
         cc_extract_kzip,
         name = name + "_cc_kzip",
         srcs = srcs,
-        deps = cc_proto_libs,
+        deps = cc_proto_libs + cc_deps,
     )
 
     claim_file = None
@@ -84,7 +89,7 @@ def cc_proto_verifier_test(
             name = name + "_static_claim",
             outs = [claim_file],
             srcs = [cc_kzip],
-            exec_tools = ["//kythe/cxx/tools:static_claim"],
+            tools = ["//kythe/cxx/tools:static_claim"],
             cmd = " ".join([
                 "echo \"$<\" |",
                 "$(location //kythe/cxx/tools:static_claim)",
@@ -117,14 +122,14 @@ def cc_proto_verifier_test(
         srcs = [cc_kzip],
         deps = claim_deps,
         opts = [
-            # Avoid emitting some nodes with conflicting facts.
-            "--experimental_index_lite",
             # Try to reduce the graph size to make life easier for the verifier.
             "--test_claim",
             "--noindex_template_instantiations",
             "--experimental_drop_instantiation_independent_data",
             "--noemit_anchors_on_builtins",
         ] + guess_opt + df_opt + claim_opt,
+        indexer = cc_indexer,
+        test_indexer = cc_indexer,
     )
 
     return _invoke(

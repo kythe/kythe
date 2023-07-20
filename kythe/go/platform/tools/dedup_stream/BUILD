@@ -10,5 +10,6 @@ go_binary(
         "//kythe/go/platform/delimited/dedup",
         "//kythe/go/util/datasize",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
     ],
 )

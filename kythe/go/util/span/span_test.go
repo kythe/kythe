@@ -369,6 +369,29 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
+func TestLargeDiff(t *testing.T) {
+	var before, after string
+	for i := 0; i < 60; i++ {
+		before += fmt.Sprintf("%d\n", i)
+		after += fmt.Sprintf("%d\n", i/2)
+	}
+
+	patcher, err := NewPatcher([]byte(before), []byte(after))
+	testutil.Fatalf(t, "NewPatcher: %v", err)
+
+	s := sp(p(26, 12, 1), p(28, 12, 3))
+	expected := sp(p(55, 25, 1), p(57, 25, 3))
+
+	found, exists := patcher.PatchSpan(s)
+	if !exists {
+		t.Fatal("Patched span does not exist")
+	}
+
+	if diff := compare.ProtoDiff(expected, found); diff != "" {
+		t.Errorf("(-expected; +found)\n%s", diff)
+	}
+}
+
 type span struct{ Start, End int32 }
 
 func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.Start, s.End) }

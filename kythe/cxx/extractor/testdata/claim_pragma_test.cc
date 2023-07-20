@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
-#include <memory> 
+#include "absl/memory/memory.h"
+#include "absl/log/check.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
@@ -18,11 +20,9 @@ namespace {
 using ::google::protobuf::FieldDescriptor;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::DefaultFieldComparator;
 using ::google::protobuf::util::MessageDifferencer;
+using ::google::protobuf::util::SimpleFieldComparator;
 using ::testing::ElementsAre;
-
-using pbstring = ::google::protobuf::string;
 
 constexpr char kExpectedContents[] = R"(
 v_name {
@@ -33,7 +33,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_main.cc"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_main.cc"
+    path: "kythe/cxx/extractor/testdata/claim_main.cc"
     digest: "4b19bb44ad66bc14a2b29694604420990d94e2b27bb55d10ce9ad5a93f6a6bde"
   }
   details {
@@ -58,7 +58,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_b.h"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_b.h"
+    path: "kythe/cxx/extractor/testdata/claim_b.h"
     digest: "a3d03965930673eced0d8ad50753f1933013a27a06b8be57443781275f1f937f"
   }
   details {
@@ -75,7 +75,7 @@ required_input {
     path: "kythe/cxx/extractor/testdata/claim_a.h"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/claim_a.h"
+    path: "kythe/cxx/extractor/testdata/claim_a.h"
     digest: "2c339c36aa02459955c6d5be9e73ebe030baf3b74dc1123439af8613844d0b1f"
   }
   details {
@@ -96,7 +96,7 @@ argument: "--driver-mode=g++"
 argument: "-I./kythe/cxx/extractor/testdata"
 argument: "./kythe/cxx/extractor/testdata/claim_main.cc"
 argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/claim_main.cc"
+source_file: "kythe/cxx/extractor/testdata/claim_main.cc"
 entry_context: "hash0"
 )";
 
@@ -113,7 +113,7 @@ entry_context: "hash0"
 //                                {"message", "inner", "field"});
 const FieldDescriptor* FindNestedFieldByLowercasePath(
     const google::protobuf::Descriptor* descriptor,
-    const std::vector<pbstring>& field_names) {
+    const std::vector<std::string>& field_names) {
   const FieldDescriptor* field = nullptr;
   for (const auto& name : field_names) {
     if (descriptor == nullptr) return nullptr;
@@ -137,7 +137,7 @@ std::vector<const FieldDescriptor*> CanonicalizedHashFields(
   };
 }
 
-class CanonicalHashComparator : public DefaultFieldComparator {
+class CanonicalHashComparator : public SimpleFieldComparator {
  public:
   bool CanonicalizeHashField(const FieldDescriptor* field) {
     CHECK(field && field->cpp_type() == FieldDescriptor::CPPTYPE_STRING)
@@ -147,7 +147,7 @@ class CanonicalHashComparator : public DefaultFieldComparator {
   }
 
  private:
-  using HashMap = std::unordered_map<pbstring, size_t>;
+  using HashMap = std::unordered_map<std::string, size_t>;
 
   ComparisonResult Compare(
       const Message& message_1, const Message& message_2,
@@ -155,16 +155,16 @@ class CanonicalHashComparator : public DefaultFieldComparator {
       const google::protobuf::util::FieldContext* field_context) override {
     // Fall back to the default if this isn't a canonicalized field.
     if (canonical_fields_.find(field) == canonical_fields_.end()) {
-      return DefaultFieldComparator::Compare(message_1, message_2, field,
-                                             index_1, index_2, field_context);
+      return SimpleCompare(message_1, message_2, field, index_1, index_2,
+                           field_context);
     }
     const auto* reflection_1 = message_1.GetReflection();
     const auto* reflection_2 = message_2.GetReflection();
     if (field->is_repeated()) {
       // Allocate scratch strings to store the result if a conversion is
       // needed.
-      pbstring scratch1;
-      pbstring scratch2;
+      std::string scratch1;
+      std::string scratch2;
       return CompareCanonicalHash(reflection_1->GetRepeatedStringReference(
                                       message_1, field, index_1, &scratch1),
                                   reflection_2->GetRepeatedStringReference(
@@ -172,23 +172,23 @@ class CanonicalHashComparator : public DefaultFieldComparator {
     } else {
       // Allocate scratch strings to store the result if a conversion is
       // needed.
-      pbstring scratch1;
-      pbstring scratch2;
+      std::string scratch1;
+      std::string scratch2;
       return CompareCanonicalHash(
           reflection_1->GetStringReference(message_1, field, &scratch1),
           reflection_2->GetStringReference(message_2, field, &scratch2));
     }
   }
 
-  ComparisonResult CompareCanonicalHash(const pbstring& string_1,
-                                        const pbstring& string_2) {
+  ComparisonResult CompareCanonicalHash(const std::string& string_1,
+                                        const std::string& string_2) {
     return HashIndex(&left_message_hashes_, string_1) ==
                    HashIndex(&right_message_hashes_, string_2)
                ? SAME
                : DIFFERENT;
   }
 
-  static size_t HashIndex(HashMap* canonical_map, const pbstring& hash) {
+  static size_t HashIndex(HashMap* canonical_map, const std::string& hash) {
     size_t index = canonical_map->size();
     // We use an index equivalent to the visitation order of the hashes.
     // This is potentially fragile as we really only care if a protocol buffer
@@ -231,7 +231,7 @@ class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
 
     kythe::proto::CompilationUnit expected;
     ASSERT_TRUE(TextFormat::ParseFromString(kExpectedContents, &expected));
-    google::protobuf::string diffs;
+    std::string diffs;
     diff.ReportDifferencesToString(&diffs);
     EXPECT_TRUE(diff.Compare(expected, unit)) << diffs;
 

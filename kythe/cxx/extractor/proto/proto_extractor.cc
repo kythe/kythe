@@ -18,8 +18,9 @@
 
 #include <string>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 #include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/file_utils.h"
@@ -54,7 +55,7 @@ class LoggingMultiFileErrorCollector
 class RecordingDiskSourceTree : public DiskSourceTree {
  public:
   google::protobuf::io::ZeroCopyInputStream* Open(
-      const std::string& filename) override {
+      absl::string_view filename) override {
     // Record resolved/canonical path because the same proto may be Open()'d via
     // multiple relative paths and we only want to record it once.
     std::string canonical_path;

@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/analysis/driver"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -102,7 +102,7 @@ func (q *FileQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
 			q.closer = f
 
 		default:
-			log.Printf("Warning: Skipped unknown file kind: %q", path)
+			log.Warningf("Skipped unknown file kind: %q", path)
 			continue
 		}
 	}

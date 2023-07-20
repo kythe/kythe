@@ -24,6 +24,7 @@ import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptio
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
+import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.main.Option;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -207,5 +208,59 @@ public class OptionsTest {
         .matches("source/from/details");
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
         .matches(".*(\\.jar|lib/modules)");
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesSource() {
+    // We can't test both --source and --source formats of the flag because it is only supported by
+    // recent versions of java.
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.JDK1_2.name));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesSource1DotFormat() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.JDK1_2.name));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_removeTarget() {
+    ModifiableOptions args =
+        ModifiableOptions.of(
+            ImmutableList.of("-foo", "-source", Source.JDK1_2.name, "-target", Source.JDK1_2.name));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_updatesMultipleSource() {
+    ModifiableOptions args =
+        ModifiableOptions.of(
+            ImmutableList.of("-foo", "-source", Source.JDK1_2.name, "-source", Source.JDK1_3.name));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.MIN.name)
+        .inOrder();
+  }
+
+  @Test
+  public void updateToMinimumSupportedSourceVersion_doesNotUpdateSupportedVersion() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-foo", "-source", Source.DEFAULT.name));
+
+    assertThat(args.updateToMinimumSupportedSourceVersion().build())
+        .containsExactly("-foo", Option.SOURCE.getPrimaryName(), Source.DEFAULT.name)
+        .inOrder();
   }
 }

@@ -31,7 +31,7 @@ namespace kythe {
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
  public:
-  IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO, Verbosity V,
+  IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO,
                      int UsrByteSize);
   ~IndexerPPCallbacks() override;
 
@@ -154,8 +154,6 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   const clang::Preprocessor& Preprocessor;
   /// The `GraphObserver` we will use for reporting information.
   GraphObserver& Observer;
-  /// Whether we should emit all data.
-  enum Verbosity Verbosity;
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;

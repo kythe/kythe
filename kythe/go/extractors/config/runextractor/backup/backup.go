@@ -31,9 +31,10 @@ package backup // import "kythe.io/kythe/go/extractors/config/runextractor/backu
 import (
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
+
+	"kythe.io/kythe/go/util/log"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -84,7 +85,7 @@ func (f *File) Restore() error {
 func (f *File) Release() {
 	if f.tmp != "" {
 		if err := os.Remove(f.tmp); err != nil {
-			log.Printf("Warning: removing backup of %q failed: %v", f.orig, err)
+			log.Warningf("removing backup of %q failed: %v", f.orig, err)
 		}
 	}
 }

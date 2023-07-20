@@ -20,32 +20,37 @@ import (
 	"context"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
-
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
+
+	"google.golang.org/protobuf/proto"
 
 	ipb "kythe.io/kythe/proto/identifier_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 var matchTable = Table{testProtoTable{
-	"foo::bar": &srvpb.IdentifierMatch{
+	"foo::bar": []proto.Message{&srvpb.IdentifierMatch{
 		Node: []*srvpb.IdentifierMatch_Node{
 			node("kythe://corpus?lang=c++", "record", "class"),
+		},
+		BaseName:      "bar",
+		QualifiedName: "foo::bar",
+	}, &srvpb.IdentifierMatch{
+		Node: []*srvpb.IdentifierMatch_Node{
 			node("kythe://corpus?lang=rust", "record", "struct"),
 		},
 		BaseName:      "bar",
 		QualifiedName: "foo::bar",
-	},
+	}},
 
-	"com.java.package.Interface": &srvpb.IdentifierMatch{
+	"com.java.package.Interface": []proto.Message{&srvpb.IdentifierMatch{
 		Node: []*srvpb.IdentifierMatch_Node{
 			node("kythe://habeas?lang=java", "record", "interface"),
 		},
 		BaseName:      "Interface",
 		QualifiedName: "com.java.package.Interface",
-	},
+	}},
 }}
 
 var tests = []testCase{
@@ -70,7 +75,7 @@ var tests = []testCase{
 	},
 	{
 		findRequest("com.java.package.Interface", []string{"corpus"}, nil),
-		[]*ipb.FindReply_Match{},
+		nil,
 	},
 }
 
@@ -118,19 +123,32 @@ type testCase struct {
 	Matches []*ipb.FindReply_Match
 }
 
-type testProtoTable map[string]proto.Message
+type testProtoTable map[string][]proto.Message
 
 func (t testProtoTable) Put(_ context.Context, key []byte, val proto.Message) error {
-	t[string(key)] = val
+	t[string(key)] = []proto.Message{val}
 	return nil
 }
 
 func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message) error {
 	m, ok := t[string(key)]
-	if !ok {
+	if !ok || len(m) == 0 {
 		return table.ErrNoSuchKey
 	}
-	proto.Merge(msg, m)
+	proto.Merge(msg, m[0])
+	return nil
+}
+
+func (t testProtoTable) LookupValues(_ context.Context, key []byte, m proto.Message, f func(proto.Message) error) error {
+	for _, val := range t[string(key)] {
+		msg := m.ProtoReflect().New().Interface()
+		proto.Merge(msg, val)
+		if err := f(msg); err == table.ErrStopLookup {
+			return nil
+		} else if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

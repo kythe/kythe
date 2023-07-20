@@ -25,6 +25,8 @@
 #include <string>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -35,7 +37,6 @@
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/cxx/DynamicClaimClient.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"

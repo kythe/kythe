@@ -102,10 +102,9 @@ var (
 		"/kythe/edge/childof":                  6,
 		"/kythe/edge/childof/context":          7,
 		"/kythe/edge/completedby":              49,
-		"/kythe/edge/completes":                8,
-		"/kythe/edge/completes/uniquely":       9,
 		"/kythe/edge/defines":                  10,
 		"/kythe/edge/defines/binding":          11,
+		"/kythe/edge/defines/implicit":         50,
 		"/kythe/edge/depends":                  12,
 		"/kythe/edge/documents":                13,
 		"/kythe/edge/exports":                  14,
@@ -224,8 +223,6 @@ var (
 		5:  "/kythe/edge/bounded/upper",
 		6:  "/kythe/edge/childof",
 		7:  "/kythe/edge/childof/context",
-		8:  "/kythe/edge/completes",
-		9:  "/kythe/edge/completes/uniquely",
 		10: "/kythe/edge/defines",
 		11: "/kythe/edge/defines/binding",
 		12: "/kythe/edge/depends",
@@ -266,6 +263,7 @@ var (
 		47: "/kythe/edge/ref/writes",
 		48: "/kythe/edge/tparam",
 		49: "/kythe/edge/completedby",
+		50: "/kythe/edge/defines/implicit",
 	}
 )
 

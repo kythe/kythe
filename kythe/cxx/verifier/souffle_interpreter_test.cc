@@ -16,18 +16,24 @@
 
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 
 namespace kythe::verifier {
 TEST(SouffleInterpreterTest, SmokeTest) {
   SymbolTable symbols;
+  // Intern the symbols required by the prelude.
+  symbols.intern("");
+  symbols.intern("/kythe/node/kind");
+  symbols.intern("anchor");
+  symbols.intern("/kythe/loc/start");
+  symbols.intern("/kythe/loc/end");
   Database db;
+  AnchorMap anchors;
   std::vector<GoalGroup> groups;
-  std::vector<AssertionParser::Inspection> inspections;
-  auto result =
-      RunSouffle(symbols, groups, db, inspections,
-                 [](const AssertionParser::Inspection&) { return true; });
+  std::vector<Inspection> inspections;
+  auto result = RunSouffle(symbols, groups, db, anchors, inspections,
+                           [](const Inspection&) { return true; });
   ASSERT_TRUE(result.success);
 }
 }  // namespace kythe::verifier

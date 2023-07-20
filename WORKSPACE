@@ -8,7 +8,7 @@ load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 # Bazel and our maximum supported version of Bazel.
 check_version(MIN_VERSION, MAX_VERSION)
 
-load("//:setup.bzl", "kythe_rule_repositories", "remote_java_repository")
+load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
 
@@ -176,20 +176,13 @@ register_toolchains(
     ":rust_proto_toolchain",
 )
 
-# Bazel does not yet ship with JDK-19 compatible JDK, so configure our own.
-remote_java_repository(
-    name = "remotejdk19_linux",
-    prefix = "remotejdk",
-    sha256 = "2ac8cd9e7e1e30c8fba107164a2ded9fad698326899564af4b1254815adfaa8a",
-    strip_prefix = "zulu19.30.11-ca-jdk19.0.1-linux_x64",
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    urls = [
-        "https://mirror.bazel.build/cdn.azul.com/zulu/bin/zulu19.30.11-ca-jdk19.0.1-linux_x64.tar.gz",
-        "https://cdn.azul.com/zulu/bin/zulu19.30.11-ca-jdk19.0.1-linux_x64.tar.gz",
-    ],
-    version = "19",
+http_archive(
+    name = "aspect_bazel_lib",
+    sha256 = "e3151d87910f69cf1fc88755392d7c878034a69d6499b287bcfc00b1cf9bb415",
+    strip_prefix = "bazel-lib-1.32.1",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.32.1/bazel-lib-v1.32.1.tar.gz",
 )
 
-register_toolchains("//buildenv/java:all")
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
+
+aspect_bazel_lib_dependencies()

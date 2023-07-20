@@ -23,13 +23,15 @@ package identifiers // import "kythe.io/kythe/go/serving/identifiers"
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
+
+	"google.golang.org/protobuf/proto"
 
 	ipb "kythe.io/kythe/proto/identifier_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -53,31 +55,28 @@ func (it *Table) Find(ctx context.Context, req *ipb.FindRequest) (*ipb.FindReply
 		qname     = req.GetIdentifier()
 		corpora   = req.GetCorpus()
 		languages = req.GetLanguages()
-		match     srvpb.IdentifierMatch
 		reply     ipb.FindReply
 	)
 
-	if err := it.Lookup(ctx, []byte(qname), &match); err != nil {
-		return &reply, nil
-	}
+	return &reply, it.LookupValues(ctx, []byte(qname), (*srvpb.IdentifierMatch)(nil), func(msg proto.Message) error {
+		match := msg.(*srvpb.IdentifierMatch)
+		for _, node := range match.GetNode() {
+			if !validCorpusAndLang(corpora, languages, node) {
+				continue
+			}
 
-	for _, node := range match.GetNode() {
-		if !validCorpusAndLang(corpora, languages, node) {
-			continue
+			matchNode := &ipb.FindReply_Match{
+				Ticket:        node.GetTicket(),
+				NodeKind:      node.GetNodeKind(),
+				NodeSubkind:   node.GetNodeSubkind(),
+				BaseName:      match.GetBaseName(),
+				QualifiedName: match.GetQualifiedName(),
+			}
+
+			reply.Matches = append(reply.GetMatches(), matchNode)
 		}
-
-		matchNode := ipb.FindReply_Match{
-			Ticket:        node.GetTicket(),
-			NodeKind:      node.GetNodeKind(),
-			NodeSubkind:   node.GetNodeSubkind(),
-			BaseName:      match.GetBaseName(),
-			QualifiedName: match.GetQualifiedName(),
-		}
-
-		reply.Matches = append(reply.GetMatches(), &matchNode)
-	}
-
-	return &reply, nil
+		return nil
+	})
 }
 
 func validCorpusAndLang(corpora, langs []string, node *srvpb.IdentifierMatch_Node) bool {
@@ -119,7 +118,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 	mux.HandleFunc("/find_identifier", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("identifiers.Find:\t%s", time.Since(start))
+			log.Infof("identifiers.Find:\t%s", time.Since(start))
 		}()
 		var req ipb.FindRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -133,7 +132,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 }

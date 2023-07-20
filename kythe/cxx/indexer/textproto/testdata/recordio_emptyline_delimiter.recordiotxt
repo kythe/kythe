@@ -1,0 +1,30 @@
+# proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
+# proto-message: example.Message2
+
+#- @field1 ref/writes Field1
+field1: "hello"
+#- @repeated_message ref/writes RepeatedMessage
+repeated_message {
+    #- @str_field ref/writes Message1StrField
+    str_field: "hello"
+}
+# The message below is indented with tabs to test that they are handled
+# correctly by the indexer.
+#- @repeated_message ref/writes RepeatedMessage
+	repeated_message {
+		#- @str_field ref/writes Message1StrField
+		str_field: "hello"
+	}
+
+#- @field1 ref/writes Field1
+field1: "hello"
+#- @repeated_message ref/writes RepeatedMessage
+repeated_message {
+    #- @str_field ref/writes Message1StrField
+    str_field: "hello"
+}
+
+#- @field1 ref/writes Field1
+field1: "hello"
+
+# end of chunks with a comment.

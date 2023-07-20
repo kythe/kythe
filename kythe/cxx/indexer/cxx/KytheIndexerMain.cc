@@ -47,8 +47,6 @@ ABSL_FLAG(bool, experimental_drop_instantiation_independent_data, false,
           "instantiation-independent.");
 ABSL_FLAG(bool, report_profiling_events, false,
           "Write profiling events to standard error.");
-ABSL_FLAG(bool, experimental_index_lite, false,
-          "Drop uncommonly-used data from the index.");
 ABSL_FLAG(bool, experimental_drop_objc_fwd_class_docs, false,
           "Drop comments for Objective-C forward class declarations.");
 ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
@@ -68,6 +66,8 @@ ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
 ABSL_FLAG(std::string, record_hashes_file, "", "Record hashes to this file.");
 ABSL_FLAG(bool, record_call_directness, false,
           "Record directness of function calls.");
+ABSL_FLAG(bool, emit_usr_corpus, false,
+          "Use the default corpus when emitting USR nodes.");
 
 namespace kythe {
 
@@ -86,9 +86,6 @@ int main(int argc, char* argv[]) {
   options.IgnoreUnimplemented = context.ignore_unimplemented()
                                     ? kythe::BehaviorOnUnimplemented::Continue
                                     : kythe::BehaviorOnUnimplemented::Abort;
-  options.Verbosity = absl::GetFlag(FLAGS_experimental_index_lite)
-                          ? kythe::Verbosity::Lite
-                          : kythe::Verbosity::Classic;
   options.ObjCFwdDocs =
       absl::GetFlag(FLAGS_experimental_drop_objc_fwd_class_docs)
           ? kythe::BehaviorOnFwdDeclComments::Ignore
@@ -99,6 +96,7 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.EmitUsrCorpus = absl::GetFlag(FLAGS_emit_usr_corpus);
   options.TemplateInstanceExcludePathPattern =
       absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
   options.DataflowEdges =

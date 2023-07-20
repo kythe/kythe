@@ -123,10 +123,9 @@ enum EdgeKind {
   CHILD_OF = 6 [(metadata).label = "/kythe/edge/childof"];
   CHILD_OF_CONTEXT = 7 [(metadata).label = "/kythe/edge/childof/context"];
   COMPLETED_BY = 49 [(metadata).label = "/kythe/edge/completedby"];
-  COMPLETES = 8 [(metadata).label = "/kythe/edge/completes"];
-  COMPLETES_UNIQUELY = 9 [(metadata).label = "/kythe/edge/completes/uniquely"];
   DEFINES = 10 [(metadata).label = "/kythe/edge/defines"];
   DEFINES_BINDING = 11 [(metadata).label = "/kythe/edge/defines/binding"];
+  DEFINES_IMPLICIT = 50 [(metadata).label = "/kythe/edge/defines/implicit"];
   DEPENDS = 12 [(metadata).label = "/kythe/edge/depends"];
   DOCUMENTS = 13 [(metadata).label = "/kythe/edge/documents"];
   EXPORTS = 14 [(metadata).label = "/kythe/edge/exports"];
@@ -168,6 +167,8 @@ enum EdgeKind {
   TPARAM = 48 [(metadata).label = "/kythe/edge/tparam"];
   TYPED = 42 [(metadata).label = "/kythe/edge/typed"];
   UNDEFINES = 43 [(metadata).label = "/kythe/edge/undefines"];
+
+  reserved 8, 9;
 }
 
 // A Node represents a Kythe graph node with all its known facts and edges.

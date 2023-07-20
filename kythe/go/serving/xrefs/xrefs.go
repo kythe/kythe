@@ -30,7 +30,6 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -41,6 +40,7 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/tickets"
@@ -316,14 +316,14 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		multiPatcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Printf("ERROR: creating patcher: %v", err)
+			log.Errorf("creating patcher: %v", err)
 		}
 
 		if multiPatcher != nil {
 			defer func() {
 				if err := multiPatcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Printf("ERROR: closing patcher: %v", err)
+					log.Errorf("closing patcher: %v", err)
 				}
 			}()
 		}
@@ -338,7 +338,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	if decor.File == nil {
 		if len(decor.Diagnostic) == 0 {
-			log.Printf("Error: FileDecorations.file is missing without related diagnostics: %q", req.Location.Ticket)
+			log.Errorf("FileDecorations.file is missing without related diagnostics: %q", req.Location.Ticket)
 			return nil, xrefs.ErrDecorationsNotFound
 		}
 
@@ -388,7 +388,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		})
 	}
 
-	if req.SourceText {
+	if req.SourceText && text != nil {
 		reply.Encoding = decor.File.Encoding
 		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = text
@@ -454,7 +454,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				if fileInfo != nil {
 					if err := multiPatcher.AddFile(ctx, fileInfo); isNonContextError(err) {
 						// Attempt to continue with the request, just log the error.
-						log.Printf("ERROR: adding file: %v", err)
+						log.Errorf("adding file: %v", err)
 					}
 				}
 			}
@@ -578,7 +578,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if multiPatcher != nil {
 		defs, err := patchDefLocations(ctx, multiPatcher, reply.GetDefinitionLocations())
 		if err != nil {
-			log.Printf("ERROR: patching definition locations: %v", err)
+			log.Errorf("patching definition locations: %v", err)
 		} else {
 			reply.DefinitionLocations = defs
 		}
@@ -720,7 +720,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		max: int(req.PageSize),
 
 		refOptions: refOptions{
-			anchorText: req.AnchorText,
+			anchorText:    req.AnchorText,
+			includeScopes: req.SemanticScopes,
 		},
 	}
 	if stats.max < 0 {
@@ -801,21 +802,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Printf("ERROR: creating patcher: %v", err)
+			log.Errorf("creating patcher: %v", err)
 		}
 
 		if patcher != nil {
 			defer func() {
 				if err := patcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Printf("ERROR: closing patcher: %v", err)
+					log.Errorf("closing patcher: %v", err)
 				}
 			}()
 
 			stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
 				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 					// Attempt to continue with the request, just log the error.
-					log.Printf("ERROR: adding file: %v", err)
+					log.Errorf("adding file: %v", err)
 				}
 			}
 		}
@@ -832,7 +833,7 @@ readLoop:
 		}
 
 		if !leewayTime.IsZero() && time.Now().After(leewayTime) {
-			log.Println("WARNING: hit soft deadline; trying to return already read xrefs")
+			log.Warning("hit soft deadline; trying to return already read xrefs")
 			break
 		}
 
@@ -892,6 +893,7 @@ readLoop:
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.Definitions += int64(len(grp.Anchor))
+				reply.Total.Definitions += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.Definitions += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp)
@@ -899,6 +901,7 @@ readLoop:
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.Declarations += int64(len(grp.Anchor))
+				reply.Total.Declarations += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.Declarations += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp)
@@ -906,6 +909,7 @@ readLoop:
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				filtered := filter.FilterGroup(grp)
 				reply.Total.References += int64(len(grp.Anchor))
+				reply.Total.References += int64(countRefs(grp.GetScopedReference()))
 				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
@@ -1002,7 +1006,7 @@ readLoop:
 
 		for _, idx := range cr.GetPageIndex()[firstUnskippedPage:] {
 			if !leewayTime.IsZero() && time.Now().After(leewayTime) {
-				log.Printf("WARNING: hit soft deadline; trying to return already read xrefs: %s", time.Now().Sub(leewayTime))
+				log.Warningf("hit soft deadline; trying to return already read xrefs: %s", time.Now().Sub(leewayTime))
 				break readLoop
 			}
 
@@ -1114,7 +1118,7 @@ readLoop:
 	stopReadingPages()
 	go func() {
 		if err := pageReadGroup.Wait(); isNonContextError(err) {
-			log.Printf("ERROR: page read ahead error: %v", err)
+			log.Errorf("page read ahead error: %v", err)
 		}
 	}()
 
@@ -1236,6 +1240,14 @@ func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mer
 	return allTickets
 }
 
+func countRefs(rs []*srvpb.PagedCrossReferences_ScopedReference) int {
+	var n int
+	for _, ref := range rs {
+		n += len(ref.GetReference())
+	}
+	return n
+}
+
 func nodeKind(n *srvpb.Node) string {
 	if n == nil {
 		return ""
@@ -1257,8 +1269,9 @@ func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
 }
 
 type refOptions struct {
-	patcherFunc patcherFunc
-	anchorText  bool
+	patcherFunc   patcherFunc
+	anchorText    bool
+	includeScopes bool
 }
 
 type refStats struct {
@@ -1368,31 +1381,79 @@ func (s *refStats) addRelatedNodes(crs *xpb.CrossReferencesReply_CrossReferenceS
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group) bool {
-	kind := edges.Canonical(grp.Kind)
-	as := grp.Anchor
-	fileInfos := makeFileInfoMap(grp.FileInfo)
-
-	if s.total == s.max {
+	if s.total >= s.max {
 		return true
-	} else if s.skip > len(as) {
-		s.skip -= len(as)
-		return false
-	} else if s.skip > 0 {
-		as = as[s.skip:]
-		s.skip = 0
 	}
 
-	if s.total+len(as) > s.max {
-		as = as[:(s.max - s.total)]
+	scopedRefs := grp.GetScopedReference()[:len(grp.GetScopedReference()):len(grp.GetScopedReference())]
+	// Convert legacy unscoped references to simple ScopedReference containers
+	for _, a := range grp.Anchor {
+		scopedRefs = append(scopedRefs, &srvpb.PagedCrossReferences_ScopedReference{
+			Reference: []*srvpb.ExpandedAnchor{a},
+		})
 	}
-	s.total += len(as)
+	totalRefs := countRefs(scopedRefs)
+
+	if s.skip >= totalRefs {
+		s.skip -= totalRefs
+		return false
+	}
+
+	if s.skip > 0 {
+		var firstNonEmpty int
+		for i := 0; i < len(scopedRefs) && s.skip > 0; i++ {
+			sr := scopedRefs[i]
+			if len(sr.GetReference()) <= s.skip {
+				s.skip -= len(sr.GetReference())
+				firstNonEmpty++
+				continue
+			}
+			sr.Reference = sr.GetReference()[s.skip:]
+			s.skip = 0
+		}
+		scopedRefs = scopedRefs[firstNonEmpty:]
+	}
+
+	kind := edges.Canonical(grp.Kind)
+	fileInfos := makeFileInfoMap(grp.FileInfo)
 	c := &anchorConverter{fileInfos: fileInfos, anchorText: s.anchorText, patcherFunc: s.patcherFunc}
-	for _, a := range as {
-		ra := c.Convert(a)
-		ra.Anchor.Kind = kind
+	for _, sr := range scopedRefs {
+		if !s.includeScopes || sr.Scope == nil {
+			for _, a := range sr.Reference {
+				ra := c.Convert(a)
+				ra.Anchor.Kind = kind
+				*to = append(*to, ra)
+				s.total++
+				if s.total >= s.max {
+					return true
+				}
+			}
+			continue
+		}
+		scope := c.Convert(sr.Scope).Anchor
+		scope.Kind = sr.Scope.Kind
+		ra := &xpb.CrossReferencesReply_RelatedAnchor{
+			Anchor: scope,
+			Ticket: sr.SemanticScope,
+			Site:   make([]*xpb.Anchor, 0, len(sr.Reference)),
+		}
+		ra.MarkedSource = sr.MarkedSource
+		refs := sr.GetReference()
+		if s.total+len(refs) > s.max {
+			refs = refs[:(s.max - s.total)]
+		}
+		for _, site := range refs {
+			a := c.Convert(site).Anchor
+			a.Kind = kind
+			ra.Site = append(ra.Site, a)
+		}
 		*to = append(*to, ra)
+		s.total += len(ra.Site)
+		if s.total >= s.max {
+			return true
+		}
 	}
-	return s.total == s.max
+	return false
 }
 
 type patcherFunc func(f *srvpb.FileInfo)
@@ -1410,7 +1471,7 @@ func (c *anchorConverter) Convert(a *srvpb.ExpandedAnchor) *xpb.CrossReferencesR
 	}
 	parent, err := tickets.AnchorFile(a.Ticket)
 	if err != nil {
-		log.Printf("Error parsing anchor ticket: %v", err)
+		log.Errorf("parsing anchor ticket: %v", err)
 	}
 	fileInfo := a.GetFileInfo()
 	if fileInfo == nil {
@@ -1486,7 +1547,7 @@ func (t *Table) lookupDocument(ctx context.Context, ticket string) (*srvpb.Docum
 	if d.DocumentedBy != "" {
 		doc, err := t.documentation(ctx, d.DocumentedBy)
 		if err != nil {
-			log.Printf("Error looking up subsuming documentation for {%+v}: %v", d, err)
+			log.Errorf("looking up subsuming documentation for {%+v}: %v", d, err)
 			return nil, err
 		}
 
@@ -1534,21 +1595,21 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Printf("ERROR: creating patcher: %v", err)
+			log.Errorf("creating patcher: %v", err)
 		}
 
 		if patcher != nil {
 			defer func() {
 				if err := patcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Printf("ERROR: closing patcher: %v", err)
+					log.Errorf("closing patcher: %v", err)
 				}
 			}()
 
 			dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
 				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 					// Attempt to continue with the request, just log the error.
-					log.Printf("ERROR: adding file: %v", err)
+					log.Errorf("adding file: %v", err)
 				}
 			}
 		}
@@ -1585,7 +1646,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	if patcher != nil {
 		defs, err := patchDefLocations(ctx, patcher, reply.GetDefinitionLocations())
 		if err != nil {
-			log.Printf("ERROR: patching definition locations: %v", err)
+			log.Errorf("patching definition locations: %v", err)
 		} else {
 			reply.DefinitionLocations = defs
 		}
@@ -1606,7 +1667,7 @@ func clearSnippet(anchor *xpb.Anchor) {
 	anchor.SnippetSpan = nil
 }
 
-func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
+func tracePrintf(ctx context.Context, msg string, args ...any) {
 	if t, ok := trace.FromContext(ctx); ok {
 		t.LazyPrintf(msg, args...)
 	}

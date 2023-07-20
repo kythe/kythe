@@ -17,17 +17,14 @@
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
-#include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
 namespace kythe {
 namespace lang_proto {
 
 using ::google::protobuf::FileDescriptorProto;
-using ::google::protobuf::FindWithDefault;
-using ::google::protobuf::InsertIfNotPresent;
 using ::kythe::proto::VName;
 
 // TODO: it seems very likely that a lot of the path-mangling
@@ -58,7 +55,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
   // claiming.  Formerly this helped avoid issues with cyclic dependencies, but
   // now only the reused proto2 infrastructure descends into dependencies and
   // thus only it is exposed to cyclic dependency risks.
-  if (!InsertIfNotPresent(&visited_files_, rel_path)) {
+  if (!visited_files_.insert(rel_path).second) {
     return true;
   }
 
@@ -98,15 +95,18 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
 
 bool ProtoAnalyzer::Parse(const std::string& proto_file,
                           const std::string& content) {
-  VLOG(1) << "FILE : " << proto_file << std::endl;
+  DLOG(LEVEL(-1)) << "FILE : " << proto_file << std::endl;
   return AnalyzeFile(proto_file, VNameFromFullPath(proto_file), content);
 }
 
 VName ProtoAnalyzer::VNameFromRelPath(
     const std::string& simplified_path) const {
-  std::string full_path = FindWithDefault(*path_substitution_cache_,
-                                          simplified_path, simplified_path);
-  return VNameFromFullPath(full_path);
+  const std::string* full_path = &simplified_path;
+  if (auto iter = path_substitution_cache_->find(simplified_path);
+      iter != path_substitution_cache_->end()) {
+    full_path = &iter->second;
+  }
+  return VNameFromFullPath(*full_path);
 }
 
 VName ProtoAnalyzer::VNameFromFullPath(const std::string& path) const {

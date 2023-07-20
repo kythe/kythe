@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/extractor/cxx_details.h"
 
-#include "glog/logging.h"
+#include "absl/log/log.h"
 
 namespace kythe {
 

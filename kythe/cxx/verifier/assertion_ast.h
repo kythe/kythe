@@ -23,9 +23,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
+#include "absl/types/optional.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 #include "re2/re2.h"
@@ -41,6 +43,20 @@ typedef size_t Symbol;
 class SymbolTable {
  public:
   explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
+
+  /// \brief Returns the `Symbol` associated with `string` or `nullopt`.
+  absl::optional<Symbol> FindInterned(absl::string_view string) const {
+    const auto old = symbols_.find(std::string(string));
+    if (old == symbols_.end()) return absl::nullopt;
+    return old->second;
+  }
+
+  /// \brief Returns the `Symbol` associated with `string`, or aborts.
+  Symbol MustIntern(absl::string_view string) const {
+    auto sym = FindInterned(string);
+    CHECK(sym) << "no symbol for " << string;
+    return *sym;
+  }
 
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
@@ -350,6 +366,25 @@ struct GoalGroup {
   };
   AcceptanceCriterion accept_if;  ///< How this group is handled.
   std::vector<AstNode*> goals;    ///< Grouped goals, implicitly conjoined.
+};
+
+/// \brief A database of fact-shaped AstNodes.
+using Database = std::vector<AstNode*>;
+
+/// \brief Multimap from anchor offsets to anchor VName tuples.
+using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
+
+/// An EVar whose assignment is interesting to display.
+struct Inspection {
+  enum class Kind {
+    EXPLICIT,  ///< The user requested this inspection (with "?").
+    IMPLICIT   ///< This inspection was added by default.
+  };
+  std::string label;  ///< A label for user reference.
+  EVar* evar;         ///< The EVar to inspect.
+  Kind kind;          ///< Whether this inspection was added by default.
+  Inspection(const std::string& label, EVar* evar, Kind kind)
+      : label(label), evar(evar), kind(kind) {}
 };
 
 }  // namespace verifier

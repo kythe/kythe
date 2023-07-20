@@ -17,22 +17,16 @@
 #include "kythe/cxx/indexer/proto/source_tree.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {
-
-using ::google::protobuf::FindOrDie;
-using ::google::protobuf::FindOrNull;
-using ::google::protobuf::InsertIfNotPresent;
-
 namespace {
 
 // TODO(justbuchanan): why isn't there a replace_all=false version of
@@ -48,26 +42,27 @@ std::string StringReplaceFirst(absl::string_view s, absl::string_view oldsub,
 
 bool PreloadedProtoFileTree::AddFile(const std::string& filename,
                                      const std::string& contents) {
-  VLOG(1) << filename << " added to PreloadedProtoFileTree";
-  return InsertIfNotPresent(&file_map_, filename, contents);
+  DLOG(LEVEL(-1)) << filename << " added to PreloadedProtoFileTree";
+  return file_map_.try_emplace(filename, contents).second;
 }
 
 google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
-    const std::string& filename) {
+    absl::string_view filename) {
   last_error_ = "";
 
-  const std::string* cached_path = FindOrNull(*file_mapping_cache_, filename);
-  if (cached_path != nullptr) {
-    std::string* stored_contents = FindOrNull(file_map_, *cached_path);
-    if (stored_contents == nullptr) {
+  if (auto iter = file_mapping_cache_->find(filename);
+      iter != file_mapping_cache_->end()) {
+    const std::string& cached_path = iter->second;
+    auto contents = file_map_.find(cached_path);
+    if (contents == file_map_.end()) {
       last_error_ = absl::StrCat("Proto file Open(", filename,
                                  ") failed:", " cached mapping to ",
-                                 *cached_path, "no longer valid.");
+                                 cached_path, "no longer valid.");
       LOG(ERROR) << last_error_;
       return nullptr;
     }
-    return new google::protobuf::io::ArrayInputStream(stored_contents->data(),
-                                                      stored_contents->size());
+    return new google::protobuf::io::ArrayInputStream(contents->second.data(),
+                                                      contents->second.size());
   }
   for (auto& substitution : *substitutions_) {
     std::string found_path;
@@ -79,29 +74,27 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
       found_path = CleanPath(StringReplaceFirst(filename, substitution.first,
                                                 substitution.second));
     }
-    std::string* stored_contents =
-        found_path.empty() ? nullptr : FindOrNull(file_map_, found_path);
-    if (stored_contents != nullptr) {
-      VLOG(1) << "Proto file Open(" << filename << ") under ["
-              << substitution.first << "->" << substitution.second << "]";
-      if (auto [unused, inserted] =
+    if (auto iter = file_map_.find(found_path); iter != file_map_.end()) {
+      DLOG(LEVEL(-1)) << "Proto file Open(" << filename << ") under ["
+                      << substitution.first << "->" << substitution.second
+                      << "]";
+      if (auto [mapped_iter, inserted] =
               file_mapping_cache_->emplace(filename, found_path);
           !inserted) {
         LOG(ERROR) << "Redundant/contradictory data in index or internal bug."
                    << "  \"" << filename << "\" is mapped twice, first to \""
-                   << FindOrDie(*file_mapping_cache_, filename)
-                   << "\" and now to \"" << found_path << "\".  Aborting "
+                   << mapped_iter->second << "\" and now to \"" << found_path
+                   << "\".  Aborting "
                    << "new remapping...";
       }
-      return new google::protobuf::io::ArrayInputStream(
-          stored_contents->data(), stored_contents->size());
+      return new google::protobuf::io::ArrayInputStream(iter->second.data(),
+                                                        iter->second.size());
     }
   }
-  std::string* stored_contents = FindOrNull(file_map_, filename);
-  if (stored_contents != nullptr) {
-    VLOG(1) << "Proto file Open(" << filename << ") at root";
-    return new google::protobuf::io::ArrayInputStream(stored_contents->data(),
-                                                      stored_contents->size());
+  if (auto iter = file_map_.find(filename); iter != file_map_.end()) {
+    DLOG(LEVEL(-1)) << "Proto file Open(" << filename << ") at root";
+    return new google::protobuf::io::ArrayInputStream(iter->second.data(),
+                                                      iter->second.size());
   }
   last_error_ = absl::StrCat("Proto file Open(", filename, ") failed because '",
                              filename, "' not recognized by indexer");

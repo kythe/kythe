@@ -18,6 +18,8 @@
 #include <functional>
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -27,7 +29,6 @@
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -43,15 +44,18 @@ class ClangRangeFinderTest : public ::testing::Test {
   clang::ASTUnit& Parse(llvm::StringRef code,
                         llvm::StringRef filename = "input.cc") {
     ast_ = buildASTFromCode(code, filename);
-    return *CHECK_NOTNULL(ast_);
+    return *ABSL_DIE_IF_NULL(ast_);
   }
 
   absl::string_view GetSourceText(clang::SourceRange range) {
+    return GetSourceText(clang::CharSourceRange::getCharRange(range));
+  }
+
+  absl::string_view GetSourceText(clang::CharSourceRange range) {
     CHECK(range.isValid());
     bool invalid = false;
-    auto text =
-        clang::Lexer::getSourceText(clang::CharSourceRange::getCharRange(range),
-                                    source_manager(), lang_options(), &invalid);
+    auto text = clang::Lexer::getSourceText(range, source_manager(),
+                                            lang_options(), &invalid);
     CHECK(!invalid);
     return absl::string_view(text.data(), text.size());
   }
@@ -123,7 +127,7 @@ class NamedDeclTestCase {
   using DeclFinder = std::function<const clang::NamedDecl*(clang::ASTUnit&)>;
   NamedDeclTestCase(absl::string_view format, absl::string_view name = "entity",
                     DeclFinder find_decl = &FindLastDecl)
-      : format_(CHECK_NOTNULL(absl::ParsedFormat<'s'>::New(format))),
+      : format_(ABSL_DIE_IF_NULL(absl::ParsedFormat<'s'>::New(format))),
         name_(name),
         find_decl_(std::move(find_decl)) {}
   NamedDeclTestCase(absl::string_view format, DeclFinder find_decl)
@@ -132,7 +136,7 @@ class NamedDeclTestCase {
   std::string SourceText() const { return absl::StrFormat(*format_, name_); }
 
   const clang::NamedDecl* FindDecl(clang::ASTUnit& ast) const {
-    return CHECK_NOTNULL(find_decl_(ast));
+    return ABSL_DIE_IF_NULL(find_decl_(ast));
   }
 
   absl::string_view name() const { return name_; }
@@ -281,6 +285,44 @@ TEST_F(ClangRangeFinderTest, TerribleMacrosAreZeroWidth) {
                           Pair("b", "b"),
                           Pair("_status_or_value25", EmptyAt(expansion)),
                           Pair("_", EmptyAt(expansion)), Pair("r", "r")));
+}
+
+// Verifies that references to non-argument macro entities result in
+// the full range of the macro expansion when they are the only token.
+TEST_F(ClangRangeFinderTest, SingleTokenMacroRangesUsesFullRange) {
+  std::vector<NamedDeclTestCase> decls = {
+      {"#define NAMED(a) prefix_##a\n"
+       "void %s ();",
+       "NAMED(entity)"},
+      {"#define NAMED(a) prefix_##a\n"
+       "#define entity NAMED(entity)\n"
+       "void %s ();"},
+  };
+  for (const auto& test : decls) {
+    ASTUnit& ast = Parse(test.SourceText());
+    ClangRangeFinder finder(&source_manager(), &lang_options());
+
+    EXPECT_EQ(GetSourceText(finder.RangeForNameOf(test.FindDecl(ast))),
+              test.name());
+  }
+}
+
+// Verifies that references to non-argument macro entities result in
+// the full range of the macro expansion when they are all of the tokens.
+TEST_F(ClangRangeFinderTest, MultiTokenMacroRangesUsesFullRange) {
+  std::vector<NamedDeclTestCase> decls = {
+      {"#define CLASS(a) class prefix_##a { prefix_##a() = default; }\n"
+       "CLASS(%s);"},
+  };
+  for (const auto& test : decls) {
+    ASTUnit& ast = Parse(test.SourceText());
+
+    EXPECT_EQ(GetSourceText(range_finder().NormalizeRange(
+                  test.FindDecl(ast)->getSourceRange())),
+              absl::StrFormat("CLASS(%s)", test.name()))
+        << GetSourceText(source_manager().getExpansionRange(
+               test.FindDecl(ast)->getSourceRange()));
+  }
 }
 }  // namespace
 }  // namespace kythe

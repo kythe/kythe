@@ -23,6 +23,7 @@
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
@@ -30,7 +31,6 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
-#include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "llvm/ADT/APSInt.h"
@@ -313,6 +313,8 @@ class GraphObserver {
     kWrite,
     /// This use site is both a read and a write.
     kReadWrite,
+    /// This use site takes an alias.
+    kTakeAlias,
   };
 
   GraphObserver() {}
@@ -372,8 +374,7 @@ class GraphObserver {
   /// `clang::BuiltinType::getName(this->getLangOptions())` or the builtin
   /// type constructor.
   /// \return The `NodeId` for `Spelling`.
-  virtual NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef& Spelling) const = 0;
+  virtual NodeId getNodeIdForBuiltinType(llvm::StringRef Spelling) const = 0;
 
   /// \brief Returns the ID for a type node aliasing another type node.
   /// \param AliasName a `NameId` for the alias name.
@@ -600,8 +601,7 @@ class GraphObserver {
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.
   /// \param Name The `Name` for which resolution has been deferred
-  virtual void recordLookupNode(const NodeId& Node,
-                                const llvm::StringRef& Name) {}
+  virtual void recordLookupNode(const NodeId& Node, llvm::StringRef Name) {}
 
   /// \brief Records a parameter relationship.
   /// \param `ParamOfNode` The node this `ParamNode` is the parameter of.
@@ -668,6 +668,9 @@ class GraphObserver {
       const Range& SourceRange, const NodeId& DeclId,
       const absl::optional<NodeId>& DefnId = absl::nullopt) {}
 
+  /// \brief Should an anchor be stamped
+  enum class Stamping { Unstamped, Stamped };
+
   /// \brief Records that a particular `Range` contains the declaration
   /// of the node called `DeclId` (with possible full definition `DefnId`).
   ///
@@ -676,7 +679,8 @@ class GraphObserver {
   /// we would `recordDefinitionBindingRange` on the range for `C`.
   virtual void recordDefinitionBindingRange(
       const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId = absl::nullopt) {}
+      const absl::optional<NodeId>& DefnId = absl::nullopt,
+      Stamping stamping = Stamping::Stamped) {}
 
   /// \brief Records that a particular `Range` contains the declaration
   /// of the node called `DeclId` (with possible full definition `DefnId`).
@@ -853,9 +857,9 @@ class GraphObserver {
   /// \param Id The ID of the node to record.
   /// \param NodeKind The kind of the node ("google/protobuf")
   /// \param Compl Whether this node is complete.
-  virtual void recordUserDefinedNode(const NodeId& Id,
-                                     const llvm::StringRef& NodeKind,
-                                     Completeness Compl) {}
+  virtual void recordUserDefinedNode(const NodeId& Id, llvm::StringRef NodeKind,
+                                     const absl::optional<Completeness> Compl) {
+  }
 
   /// \brief Records a use site for some decl.
   virtual void recordDeclUseLocation(const Range& SourceRange,
@@ -960,8 +964,14 @@ class GraphObserver {
   /// \brief Records that the specified node is deprecated.
   /// \param NodeId The `NodeId` of the deprecated node.
   /// \param Advice A user-readable message about the deprecation (or empty).
-  virtual void recordDeprecated(const NodeId& NodeId,
-                                const llvm::StringRef& Advice) {}
+  virtual void recordDeprecated(const NodeId& NodeId, llvm::StringRef Advice) {}
+
+  /// \brief Records a diagnostic at the given source range
+  /// \param Range The source range
+  /// \param Signature The signature to use for the diagnostic VName
+  /// \param Message The diagnostic message
+  virtual void recordDiagnostic(const Range& Range, llvm::StringRef Signature,
+                                llvm::StringRef Message) {}
 
   /// \brief Called when a new input file is entered.
   ///
@@ -994,7 +1004,7 @@ class GraphObserver {
   /// source file to the given stream.
   /// \pre Preprocessing is complete.
   virtual void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream& Ostream) {}
+      llvm::raw_ostream& Ostream) const {}
 
   /// \brief Checks whether this `GraphObserver` should emit data for some
   /// `NodeId` and its descendants.
@@ -1082,7 +1092,7 @@ class GraphObserver {
 
   /// \brief Append a string representation of `Range` to `Ostream`.
   virtual void AppendRangeToStream(llvm::raw_ostream& Ostream,
-                                   const Range& Range) {
+                                   const Range& Range) const {
     Range.PhysicalRange.getBegin().print(Ostream, *SourceManager);
     Ostream << "@";
     Range.PhysicalRange.getEnd().print(Ostream, *SourceManager);
@@ -1156,8 +1166,7 @@ class NullGraphObserver : public GraphObserver {
     static void* NullClaimTokenClass;
   };
 
-  NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef& Spelling) const override {
+  NodeId getNodeIdForBuiltinType(llvm::StringRef Spelling) const override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
@@ -1264,21 +1273,21 @@ inline bool operator!=(const GraphObserver::Range& L,
   return !(L == R);
 }
 
-// 64 characters that can appear in identifiers (plus $ from Java).
-static constexpr char kSafeEncodingCharacters[] =
-    "abcdefghijklmnopqrstuvwxyz012345"
-    "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-static constexpr size_t kBitsPerCharacter = 6;
-static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
-              "The alphabet is big enough");
-
 /// Returns a compact string representation of the `Hash`.
-static inline std::string HashToString(size_t Hash) {
+inline std::string HashToString(size_t Hash) {
+  // 64 characters that can appear in identifiers (plus $ from Java).
+  static constexpr char kSafeEncodingCharacters[] =
+      "abcdefghijklmnopqrstuvwxyz012345"
+      "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  static constexpr size_t kBitsPerCharacter = 6;
+  static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
+                "The alphabet is big enough");
+
   if (!Hash) {
     return "";
   }
-  int SetBit = sizeof(Hash) * CHAR_BIT - llvm::countLeadingZeros(Hash);
+  int SetBit = llvm::bit_width(Hash);
   size_t Pos = (SetBit + kBitsPerCharacter - 1) / kBitsPerCharacter;
   std::string HashOut(Pos, kSafeEncodingCharacters[0]);
   while (Hash) {

@@ -57,8 +57,14 @@ class Verifier {
   /// \brief Loads a text proto with goal comments indicating rules and data.
   /// The VName for the source file will be blank.
   /// \param file_data The data to load
+  /// \param path the path to use for anchors
+  /// \param root the root to use for anchors
+  /// \param corpus the corpus to use for anchors
   /// \return false if we failed
-  bool LoadInlineProtoFile(const std::string& file_data);
+  bool LoadInlineProtoFile(const std::string& file_data,
+                           absl::string_view path = "",
+                           absl::string_view root = "",
+                           absl::string_view corpus = "");
 
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();
@@ -89,8 +95,7 @@ class Verifier {
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
   bool VerifyAllGoals(
-      std::function<bool(Verifier* context, const AssertionParser::Inspection&)>
-          inspect);
+      std::function<bool(Verifier* context, const Inspection&)> inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.
@@ -226,7 +231,7 @@ class Verifier {
   /// \return null if something went wrong; otherwise, an AstNode corresponding
   /// to a VName of a synthetic node for `code_data`.
   AstNode* ConvertCodeFact(const yy::location& loc,
-                           const google::protobuf::string& code_data);
+                           const std::string& code_data);
 
   /// \brief Converts an encoded /kythe/code/json fact to a form that's useful
   /// to the verifier.
@@ -234,7 +239,7 @@ class Verifier {
   /// \return null if something went wrong; otherwise, an AstNode corresponding
   /// to a VName of a synthetic node for `code_data`.
   AstNode* ConvertCodeJsonFact(const yy::location& loc,
-                               const google::protobuf::string& code_data);
+                               const std::string& code_data);
 
   /// \brief Converts a MarkedSource message to a form that's useful
   /// to the verifier.
@@ -271,8 +276,8 @@ class Verifier {
   /// All known facts.
   Database facts_;
 
-  /// Multimap from anchor offsets to anchor VName tuples.
-  std::multimap<std::pair<size_t, size_t>, AstNode*> anchors_;
+  /// Maps anchor offsets to anchor VName tuples.
+  AnchorMap anchors_;
 
   /// Has the database been prepared?
   bool database_prepared_ = false;

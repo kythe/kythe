@@ -12,6 +12,7 @@ go_binary(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
     ],

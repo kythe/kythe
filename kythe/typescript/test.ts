@@ -31,6 +31,7 @@ import * as ts from 'typescript';
 
 import * as indexer from './indexer';
 import * as kythe from './kythe';
+import {CompilationUnit, IndexerHost, Plugin} from './plugin_api';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['TEST_SRCDIR'];
@@ -81,6 +82,10 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   return compilerHost;
 }
 
+function isTsFile(filename: string): boolean {
+  return filename.endsWith('.ts') || filename.endsWith('.tsx');
+}
+
 /**
  * verify runs the indexer against a test case and passes it through the
  * Kythe verifier.  It returns a Promise because the node subprocess API must
@@ -88,8 +93,8 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
  */
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, testCase: TestCase,
-    plugins?: indexer.Plugin[]): Promise<void> {
-  const compilationUnit: kythe.VName = {
+    plugins?: Plugin[], emitRefCallOverIdentifier?: boolean): Promise<void> {
+  const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
     path: '',
@@ -97,7 +102,6 @@ function verify(
     language: '',
   };
   const testFiles = testCase.files;
-  const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
       `${ENTRYSTREAM} --read_format=json | ` +
@@ -106,16 +110,27 @@ function verify(
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
-  const pathVnames = new Map<string, kythe.VName>();
+  const fileVNames = new Map<string, kythe.VName>();
   for (const file of testFiles) {
-    pathVnames.set(file, {...compilationUnit, path: file});
+    fileVNames.set(file, {...rootVName, path: file});
   }
 
   try {
-    indexer.index(
-        compilationUnit, pathVnames, testFiles, program, (obj: {}) => {
-          verifier.stdin.write(JSON.stringify(obj) + '\n');
-        }, plugins);
+    const compilationUnit: CompilationUnit = {
+      rootVName,
+      fileVNames,
+      srcs: testFiles,
+      rootFiles: testFiles,
+    };
+    indexer.index(compilationUnit, {
+      compilerOptions: options,
+      compilerHost: host,
+      emit(obj: {}) {
+        verifier.stdin.write(JSON.stringify(obj) + '\n');
+      },
+      plugins,
+      emitRefCallOverIdentifier,
+    });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
     // we hang waiting for the verifier to complete.
@@ -144,7 +159,7 @@ function collectTSFilesInDirectoryRecursively(dir: string, result: string[]) {
   for (const file of fs.readdirSync(dir, {withFileTypes: true})) {
     if (file.isDirectory()) {
       collectTSFilesInDirectoryRecursively(`${dir}/${file.name}`, result);
-    } else if (file.name.endsWith('.ts')) {
+    } else if (isTsFile(file.name)) {
       result.push(path.resolve(`${dir}/${file.name}`));
     }
   }
@@ -177,7 +192,7 @@ function getTestCases(options: ts.CompilerOptions, dir: string): TestCase[] {
       } else {
         result.push(...getTestCases(options, relativeName));
       }
-    } else if (file.name.endsWith('.ts')) {
+    } else if (isTsFile(file.name)) {
       result.push({
         name: relativeName,
         files: [path.resolve(relativeName)],
@@ -203,7 +218,7 @@ function filterTestCases(testCases: TestCase[], filters: string[]): TestCase[] {
   });
 }
 
-async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
+async function testIndexer(filters: string[], plugins?: Plugin[]) {
   const config =
       indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
   let testCases = getTestCases(config.options, 'testdata');
@@ -217,10 +232,11 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
       // plugin.ts is tested by testPlugin() test.
       continue;
     }
+    const emitRefCallOverIdentifier = testCase.name.endsWith('_id.ts');
     const start = new Date().valueOf();
     process.stdout.write(`${testCase.name}: `);
     try {
-      await verify(host, config.options, testCase, plugins);
+      await verify(host, config.options, testCase, plugins, emitRefCallOverIdentifier);
     } catch (e) {
       console.log('FAIL');
       throw e;
@@ -232,16 +248,16 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
 }
 
 async function testPlugin() {
-  const plugin: indexer.Plugin = {
+  const plugin: Plugin = {
     name: 'TestPlugin',
-    index(context: indexer.IndexerHost) {
-      for (const testPath of context.paths) {
+    index(context: IndexerHost) {
+      for (const testPath of context.compilationUnit.srcs) {
         const pluginMod = {
           ...context.pathToVName(context.moduleName(testPath)),
           signature: 'plugin-module',
           language: 'plugin-language',
         };
-        context.emit({
+        context.options.emit({
           source: pluginMod,
           fact_name: '/kythe/node/pluginKind' as kythe.FactName,
           fact_value: Buffer.from('pluginRecord').toString('base64'),

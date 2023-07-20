@@ -21,10 +21,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"testing"
 
 	"kythe.io/kythe/go/util/compare"
+	"kythe.io/kythe/go/util/log"
 
 	"google.golang.org/protobuf/proto"
 
@@ -198,7 +198,7 @@ func numToProto(i int) *rtpb.Complex {
 func testReadWriteProtos(t *testing.T, opts *WriterOptions) {
 	const N = 1e3
 	buf := writeProtos(t, opts, N)
-	log.Printf("Compressed size of %q: %d bytes", t.Name(), buf.Len())
+	log.Infof("Compressed size of %q: %d bytes", t.Name(), buf.Len())
 	rd := NewReader(bytes.NewReader(buf.Bytes()))
 	for i := 0; i < N; i++ {
 		expected := numToProto(i)
@@ -388,9 +388,8 @@ func TestRecordsMetadata(t *testing.T) {
 		Transpose:   true,
 		Compression: BrotliCompression(4),
 	}
-	expected := &rmpb.RecordsMetadata{
-		RecordWriterOptions: proto.String(opts.String()),
-	}
+	expected := &rmpb.RecordsMetadata{}
+	expected.RecordWriterOptions = proto.String(opts.String())
 
 	buf := writeStrings(t, opts, 128)
 	rd := NewReader(bytes.NewReader(buf.Bytes()))

@@ -187,7 +187,7 @@ message DecorationsReply {
   string revision = 18;
 
   // The encoded source text for the selected window.
-  bytes source_text = 2;
+  optional bytes source_text = 2;
   string encoding = 3;
 
   // Represents a reference edge source ---KIND---> target.  Each source is an
@@ -354,6 +354,13 @@ message CrossReferencesRequest {
   // information.
   CallerKind caller_kind = 12;
 
+  // Whether to include scopes for all references.  References with scopes will
+  // appear as the sites of a RelatedAnchor with their semantic scope populating
+  // the anchor/ticket/marked_source fields. If the serving data does not
+  // provide a scope for a reference, the RelatedAnchor will have no sites and
+  // the actual reference will be the primary anchor.
+  bool semantic_scopes = 20;
+
   // Collection of filter globs that determines which facts will be returned for
   // the related nodes of each requested node.  If filter is empty or unset, no
   // node facts or related nodes are returned.  See EdgesRequest (graph.proto)
@@ -517,14 +524,16 @@ message CrossReferencesReply {
   }
 
   message RelatedAnchor {
-    // The anchor covering the related object.
+    // The anchor covering the related object.  The scope/caller of the sites.
     Anchor anchor = 1;
     // A name for the related object.
     kythe.proto.common.MarkedSource marked_source = 5;
     // Specific locations, usually within the related object, that caused
-    // the relationship to exist. This field is relevant to caller sets.
+    // the relationship to exist. This field is relevant to caller sets and
+    // scoped references.
     repeated Anchor site = 3;
-    // The relevant semantic object. Populated for callers.
+    // The relevant semantic object. Populated for callers and scoped
+    // references.
     string ticket = 4;
 
     reserved 2;

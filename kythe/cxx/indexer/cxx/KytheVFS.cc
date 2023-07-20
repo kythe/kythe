@@ -19,10 +19,11 @@
 #include <memory>
 #include <system_error>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "glog/logging.h"
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -66,11 +67,15 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
           style)) {
   if (!llvm::sys::path::is_absolute(working_directory_,
                                     llvm::sys::path::Style::posix)) {
-    absl::FPrintF(stderr, "warning: working directory %s is not absolute\n",
-                  working_directory_);
+    LOG(WARNING) << "working directory " << working_directory_
+                 << " is not absolute";
+    // Various traversal routines assume that the working directory is absolute
+    // and will recurse infinitely if it is not, so ensure that we follow this
+    // invariant.
+    working_directory_ = absl::StrCat("/", working_directory_);
   }
   for (const auto& data : virtual_files) {
-    std::string path = FixupPath(ToStringRef(data.info().path()), style);
+    std::string path = FixupPath(data.info().path(), style);
     if (auto* record = FileRecordForPath(path, BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
       record->data =
@@ -93,8 +98,7 @@ llvm::ErrorOr<llvm::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-bool IndexVFS::get_vname(const llvm::StringRef& path,
-                         proto::VName* merge_with) {
+bool IndexVFS::get_vname(llvm::StringRef path, proto::VName* merge_with) {
   if (FileRecord* record =
           FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file &&

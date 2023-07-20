@@ -22,16 +22,16 @@ import com.google.devtools.kythe.util.schema.Schema;
 public enum EdgeKind {
   DEFINES(true, "defines"),
   DEFINES_BINDING(true, "defines/binding"),
+  DEFINES_IMPLICIT(true, "defines/implicit"),
   DOCUMENTS(true, "documents"),
   TAGGED(true, "tagged"),
   UNDEFINES(true, "undefines"),
 
   // Edges from an anchor.
-  COMPLETES(true, "completes"),
-  COMPLETES_UNIQUELY(true, "completes/uniquely"),
   IMPUTES(true, "imputes"),
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),
+  REF_CALL_DIRECT(true, "ref/call/direct"),
   REF_CALL_IMPLICIT(true, "ref/call/implicit"),
   REF_DOC(true, "ref/doc"),
   REF_EXPANDS(true, "ref/expands"),
@@ -89,6 +89,11 @@ public enum EdgeKind {
   /** Returns {@code true} if the edge is used for {@link NodeKind.ANCHOR}s. */
   public final boolean isAnchorEdge() {
     return isAnchorEdge;
+  }
+
+  /** Returns {@code true} if this edge kind is a variant of {@code k}. */
+  public final boolean isVariant(EdgeKind k) {
+    return this == k || getValue().startsWith(k.getValue() + "/");
   }
 
   /** Returns the edge kind's Kythe GraphStore value. */

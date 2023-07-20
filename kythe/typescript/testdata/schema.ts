@@ -4,8 +4,8 @@
 //- FileModule=VName("module", _, _, "testdata/schema", "typescript").node/kind record
 //- FileModuleAnchor.node/kind anchor
 //- FileModuleAnchor./kythe/loc/start 0
-//- FileModuleAnchor./kythe/loc/end 1
-//- FileModuleAnchor defines/binding FileModule
+//- FileModuleAnchor./kythe/loc/end 0
+//- FileModuleAnchor defines/implicit FileModule
 
 // NamespaceImport
 //- @NspI defines/binding VName("NspI", _, _, "testdata/schema", "typescript")
@@ -17,7 +17,6 @@ export default NspI;
 
 // ClassDeclaration
 //- @C defines/binding VName("C#type", _, _, "testdata/schema", "typescript")
-//- @C defines/binding VName("C", _, _, "testdata/schema", "typescript")
 class C {
   // PropertyDeclaration instance member
   //- @property defines/binding VName("C#type.property", _, _, "testdata/schema", "typescript")
@@ -36,7 +35,7 @@ class C {
   method() {}
 
   // Constructor, ParameterPropertyDeclaration
-  //- @constructor defines/binding VName("C#type.constructor", _, _, "testdata/schema", "typescript")
+  //- @constructor defines/binding VName("C", _, _, "testdata/schema", "typescript")
   //- @cprop defines/binding VName("C#type.cprop", _, _, "testdata/schema", "typescript")
   constructor(private cprop: number) {}
 

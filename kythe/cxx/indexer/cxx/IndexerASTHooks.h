@@ -28,12 +28,13 @@
 #include "IndexerLibrarySupport.h"
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/Sema/SemaConsumer.h"
-#include "glog/logging.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
@@ -44,12 +45,6 @@
 #include "type_map.h"
 
 namespace kythe {
-
-/// \brief Specifies whether uncommonly-used data should be dropped.
-enum Verbosity : bool {
-  Classic = true,  ///< Emit all data.
-  Lite = false     ///< Emit only common data.
-};
 
 /// \brief Specifies what the indexer should do if it encounters a case it
 /// doesn't understand.
@@ -108,8 +103,6 @@ struct IndexerOptions {
   BehaviorOnUnimplemented IgnoreUnimplemented = BehaviorOnUnimplemented::Abort;
   /// \brief Whether we should visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
-  /// \brief Whether we should emit all data.
-  Verbosity Verbosity = kythe::Verbosity::Classic;
   /// \brief Should we emit documentation for forward class decls in ObjC?
   BehaviorOnFwdDeclComments ObjCFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Should we emit documentation for forward decls in C++?
@@ -119,6 +112,8 @@ struct IndexerOptions {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Whether to use the default corpus when emitting USRs.
+  bool EmitUsrCorpus = false;
   /// \brief Controls whether dataflow edges are emitted.
   EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
   /// \brief if nonempty, the pattern to match a path against to see whether
@@ -497,21 +492,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
     return absl::nullopt;
   }
 
-  /// \brief Builds a stable node ID for `Decl`.
-  ///
-  /// There is not a one-to-one correspondence between `Decl`s and nodes.
-  /// Certain `Decl`s, like `TemplateTemplateParmDecl`, are split into a
-  /// node representing the parameter and a node representing the kind of
-  /// the abstraction. The primary node is returned by the normal
-  /// `BuildNodeIdForDecl` function.
-  ///
-  /// \param Decl The declaration that is being identified.
-  /// \param Index The index of the sub-id to generate.
-  ///
-  /// \return A stable node ID for `Decl`'s `Index`th subnode.
-  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl,
-                                           unsigned Index);
-
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
   /// \param Decl The declaration that is being named.
@@ -739,6 +719,42 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NullGraphObserver NullObserver;
   GraphObserver& Observer;
   clang::ASTContext& Context;
+
+  /// \return the `Decl` that is the target of influence by an lexpression with
+  /// head `head`, or null. For example, in `foo[x].bar(y).z`, the target of
+  /// influence is the member decl for `z`.
+  const clang::Decl* GetInfluencedDeclFromLValueHead(const clang::Expr* head);
+
+  /// \brief Describes a target (possibly sub-)expression resulting from some
+  /// operation.
+  ///
+  /// Often parts of an expression are especially interesting, like
+  /// lvalue heads (`z` in `x.y.z`) or the results of eliminating simple aliases
+  /// (`x` in `*&x`). The `head` field will contain that subexpression. If
+  /// the entire expression is relevant, or if no subexpression could be found,
+  /// `head` will contain the input expression.
+  ///
+  /// It may also be the case that the indexer has more information about
+  /// a particular target, e.g. that it should semantically refer to some
+  /// remote node rather than the one indicated by the (sub)expression. In this
+  /// case the `alt` field will contain that remote node's ID; this should be
+  /// preferred to `head`. For example, `alt` will be set to the ID of the
+  /// `foo` field in `*x->mutable_foo()`.
+  struct TargetExpr {
+    const clang::Expr* head;                   ///< The target (sub)expression.
+    std::optional<GraphObserver::NodeId> alt;  ///< The preferred target.
+  };
+
+  /// \brief Eliminates the trivial introduction of aliasing.
+  ///
+  /// In some situations (and modulo undefined behavior), the expression
+  /// `*(&foo)` can be reduced to `foo`. `foo` may be a simple DeclRefExpr, but
+  /// it could also be a MemberExpr that has alias semantics tied to another
+  /// field or some piece of generated code.
+  ///
+  /// \return a TargetExpr with the alias eliminated, or with the original
+  /// `expr` set if no alias could be eliminated.
+  TargetExpr SkipTrivialAliasing(const clang::Expr* expr);
 
   /// \brief The result of calling into the lexer.
   enum class LexerResult {
@@ -982,24 +998,50 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns whether `Decl` should be indexed.
   bool ShouldIndex(const clang::Decl* Decl);
 
-  GraphObserver::UseKind UseKindFor(const clang::Stmt* stmt) {
-    auto i = use_kinds_.find(stmt);
-    return i == use_kinds_.end() ? GraphObserver::UseKind::kUnknown : i->second;
+  /// \brief Binds a particular `target` with a semantic `kind` (e.g., this
+  /// expr is a use that is a write to some node).
+  struct KindWithTarget {
+    GraphObserver::UseKind kind;   ///< The way `target` is being used.
+    GraphObserver::NodeId target;  ///< The node being used.
+  };
+
+  KindWithTarget UseKindFor(const clang::Expr* expr,
+                            const GraphObserver::NodeId& default_target) {
+    auto i = use_kinds_.find(expr);
+    return i == use_kinds_.end()
+               ? KindWithTarget{GraphObserver::UseKind::kUnknown,
+                                default_target}
+               : KindWithTarget{i->second.kind, i->second.target
+                                                    ? *i->second.target
+                                                    : default_target};
   }
 
-  /// \brief Marks that `stmt` was used as a write target.
-  /// \return `stmt` as passed.
-  const clang::Stmt* UsedAsWrite(const clang::Stmt* stmt) {
-    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kWrite;
-    return stmt;
+  /// \brief Marks that `expr` was used as a write target.
+  /// \return `expr` as passed, as well as an optional indirect target.
+  TargetExpr UsedAsWrite(const clang::Expr* expr) {
+    if (expr != nullptr) {
+      auto [head, alt] = SkipTrivialAliasing(expr);
+      use_kinds_[head] = {GraphObserver::UseKind::kWrite, alt};
+      return {expr, alt};
+    }
+    return {expr, std::nullopt};
   }
 
-  /// \brief Marks that `stmt` was used as a read+write target.
-  /// \return `stmt` as passed.
-  const clang::Stmt* UsedAsReadWrite(const clang::Stmt* stmt) {
-    if (stmt != nullptr) use_kinds_[stmt] = GraphObserver::UseKind::kReadWrite;
-    return stmt;
+  /// \brief Marks that `expr` was used as a read+write target.
+  /// \return `expr` as passed, as well as an optional indirect target.
+  TargetExpr UsedAsReadWrite(const clang::Expr* expr) {
+    if (expr != nullptr) {
+      auto [head, alt] = SkipTrivialAliasing(expr);
+      use_kinds_[head] = {GraphObserver::UseKind::kReadWrite, alt};
+      return {expr, alt};
+    }
+    return {expr, std::nullopt};
   }
+
+  /// \brief Returns a bundle of nodes to blame for field initializers.
+  IndexJob::SomeNodes FindConstructorsForBlame(const clang::FieldDecl& field);
+  IndexJob::SomeNodes FindNodesForBlame(const clang::ObjCMethodDecl& decl);
+  IndexJob::SomeNodes FindNodesForBlame(const clang::FunctionDecl& decl);
 
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
@@ -1022,8 +1064,19 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Comments we've already visited.
   std::unordered_set<const clang::RawComment*> VisitedComments;
 
+  /// \brief Binds a particular implicit `expr` with a semantic `kind` (e.g.,
+  /// this expr is a use that is a write to some node). May provide an
+  /// overriding `target` if there is a more specific node than the one
+  /// implied by the `expr`.
+  struct KindWithOptionalTarget {
+    GraphObserver::UseKind kind;  ///< The way `target` is being used.
+    std::optional<GraphObserver::NodeId>
+        target;  ///< The node being used, if different from
+                 ///< the implicit `expr`.
+  };
+
   /// \brief AST nodes we know are used in specific ways.
-  absl::flat_hash_map<const clang::Stmt*, GraphObserver::UseKind> use_kinds_;
+  absl::flat_hash_map<const clang::Expr*, KindWithOptionalTarget> use_kinds_;
 
   struct AlternateSemantic {
     GraphObserver::UseKind use_kind;

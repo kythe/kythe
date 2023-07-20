@@ -1,8 +1,8 @@
 # proto-file: kythe/cxx/indexer/textproto/testdata/example.proto
 # proto-message: example.Message2
 
-#- @msg1 ref Msg1
+#- @msg1 ref/writes Msg1
 msg1 {
-    #- @str_field ref Message1StrField
+    #- @str_field ref/writes Message1StrField
     str_field: "hello"
 }

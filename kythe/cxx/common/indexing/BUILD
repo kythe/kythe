@@ -14,6 +14,9 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:analysis_cc_proto",
@@ -37,15 +40,20 @@ cc_library(
         "KytheCachingOutput.h",
         "MemcachedHashCache.h",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":output",
         "//external:libmemcached",
+        "//kythe/cxx/common:sha256_hasher",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@boringssl//:crypto",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",

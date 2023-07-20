@@ -21,7 +21,6 @@ package filetree // import "kythe.io/kythe/go/services/filetree"
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
@@ -68,7 +68,7 @@ func NewMap() *Map {
 // Populate adds each file node in gs to m.
 func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 	start := time.Now()
-	log.Println("Populating in-memory file tree")
+	log.Info("Populating in-memory file tree")
 	var total int
 	if err := gs.Scan(ctx, &spb.ScanRequest{FactPrefix: facts.NodeKind},
 		func(entry *spb.Entry) error {
@@ -80,7 +80,7 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 		}); err != nil {
 		return fmt.Errorf("failed to Scan GraphStore for directory structure: %v", err)
 	}
-	log.Printf("Indexed %d files in %s", total, time.Since(start))
+	log.Infof("Indexed %d files in %s", total, time.Since(start))
 	return nil
 }
 
@@ -89,8 +89,9 @@ func (m *Map) AddFile(file *spb.VName) {
 	dirPath := CleanDirPath(path.Dir(file.Path))
 	dir := m.ensureDir(file.Corpus, file.Root, dirPath)
 	dir.Entry = addEntry(dir.Entry, &ftpb.DirectoryReply_Entry{
-		Kind: ftpb.DirectoryReply_FILE,
-		Name: filepath.Base(file.Path),
+		Kind:      ftpb.DirectoryReply_FILE,
+		Name:      filepath.Base(file.Path),
+		Generated: file.GetRoot() != "",
 	})
 }
 
@@ -159,8 +160,9 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 		if path != "" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
 			parent.Entry = addEntry(parent.Entry, &ftpb.DirectoryReply_Entry{
-				Kind: ftpb.DirectoryReply_DIRECTORY,
-				Name: filepath.Base(path),
+				Kind:      ftpb.DirectoryReply_DIRECTORY,
+				Name:      filepath.Base(path),
+				Generated: root != "",
 			})
 		}
 	}
@@ -208,7 +210,7 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 	mux.HandleFunc("/corpusRoots", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("filetree.CorpusRoots:\t%s", time.Since(start))
+			log.Infof("filetree.CorpusRoots:\t%s", time.Since(start))
 		}()
 
 		var req ftpb.CorpusRootsRequest
@@ -222,13 +224,13 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, cr); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 	mux.HandleFunc("/dir", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("filetree.Dir:\t%s", time.Since(start))
+			log.Infof("filetree.Dir:\t%s", time.Since(start))
 		}()
 
 		var req ftpb.DirectoryRequest
@@ -242,7 +244,7 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 	})
 }

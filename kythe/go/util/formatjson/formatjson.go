@@ -19,12 +19,13 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
+
+	"kythe.io/kythe/go/util/log"
 )
 
 func main() {
-	obj := make(map[string]interface{})
+	obj := make(map[string]any)
 	d := json.NewDecoder(os.Stdin)
 	if err := d.Decode(&obj); err != nil {
 		log.Fatal(err)

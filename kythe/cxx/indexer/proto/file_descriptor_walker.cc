@@ -16,16 +16,16 @@
 
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/repeated_field.h"
-#include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
@@ -851,26 +851,30 @@ void FileDescriptorWalker::VisitNestedFields(const std::string& name_prefix,
 
 void FileDescriptorWalker::AddComments(const VName& v_name,
                                        const std::vector<int>& path) {
-  const auto* protoc_location =
-      google::protobuf::FindOrNull(path_location_map_, path);
+  auto protoc_iter = path_location_map_.find(path);
+  if (protoc_iter == path_location_map_.end()) {
+    return;
+  }
+  const auto& protoc_location = protoc_iter->second;
   absl::StatusOr<PartialLocation> readable_location =
       ParseLocation(location_map_[path]);
-  if (protoc_location != nullptr && readable_location.ok()) {
-    Location entity_location;
-    InitializeLocation(location_map_[path], &entity_location);
-    PartialLocation coordinates = *readable_location;
-    if (protoc_location->has_leading_comments()) {
-      Location comment_location = LocationOfLeadingComments(
-          entity_location, coordinates.start_line, coordinates.start_column,
-          protoc_location->leading_comments());
-      builder_->AddDocComment(v_name, comment_location);
-    }
-    if (protoc_location->has_trailing_comments()) {
-      Location comment_location = LocationOfTrailingComments(
-          entity_location, coordinates.start_line, coordinates.start_column,
-          protoc_location->trailing_comments());
-      builder_->AddDocComment(v_name, comment_location);
-    }
+  if (!readable_location.ok()) {
+    return;
+  }
+  Location entity_location;
+  InitializeLocation(location_map_[path], &entity_location);
+  PartialLocation coordinates = *readable_location;
+  if (protoc_location.has_leading_comments()) {
+    Location comment_location = LocationOfLeadingComments(
+        entity_location, coordinates.start_line, coordinates.start_column,
+        protoc_location.leading_comments());
+    builder_->AddDocComment(v_name, comment_location);
+  }
+  if (protoc_location.has_trailing_comments()) {
+    Location comment_location = LocationOfTrailingComments(
+        entity_location, coordinates.start_line, coordinates.start_column,
+        protoc_location.trailing_comments());
+    builder_->AddDocComment(v_name, comment_location);
   }
 }
 

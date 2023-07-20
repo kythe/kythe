@@ -21,12 +21,14 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
@@ -44,6 +46,7 @@
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
 #include "kythe/cxx/indexer/textproto/plugin.h"
+#include "kythe/cxx/indexer/textproto/recordio_textparser.h"
 #include "kythe/proto/analysis.pb.h"
 #include "re2/re2.h"
 
@@ -95,6 +98,13 @@ proto::VName LookupVNameForFullPath(absl::string_view full_path,
   return proto::VName{};
 }
 
+// The TreeInfo contains the ParseInfoTree from proto2 textformat parser
+// and line offset of the textproto within a file.
+struct TreeInfo {
+  const TextFormat::ParseInfoTree* parse_tree = nullptr;
+  int line_offset = 0;
+};
+
 // The TextprotoAnalyzer maintains state needed across indexing operations and
 // provides some relevant helper methods.
 class TextprotoAnalyzer : public PluginApi {
@@ -122,14 +132,14 @@ class TextprotoAnalyzer : public PluginApi {
   absl::Status AnalyzeMessage(const proto::VName& file_vname,
                               const Message& proto,
                               const Descriptor& descriptor,
-                              const TextFormat::ParseInfoTree& parse_tree);
+                              const TreeInfo& tree_info);
 
   // Analyzes the message contained inside a google.protobuf.Any field. The
   // parse location of the field (if nonzero) is used to add an anchor for the
   // Any's type specifier (i.e. [some.url/mypackage.MyMessage]).
   absl::Status AnalyzeAny(const proto::VName& file_vname, const Message& proto,
                           const Descriptor& descriptor,
-                          const TextFormat::ParseInfoTree& parse_tree,
+                          const TreeInfo& tree_info,
                           TextFormat::ParseLocation field_loc);
 
   absl::StatusOr<proto::VName> AnalyzeAnyTypeUrl(
@@ -142,7 +152,10 @@ class TextprotoAnalyzer : public PluginApi {
                                   const Message& proto,
                                   const FieldDescriptor& field,
                                   int start_offset);
-
+  absl::Status AnalyzeIntegerValue(const proto::VName& file_vname,
+                                   const Message& proto,
+                                   const FieldDescriptor& field,
+                                   int start_offset);
   absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
                                      const Descriptor& msg_descriptor);
 
@@ -178,8 +191,7 @@ class TextprotoAnalyzer : public PluginApi {
 
  private:
   absl::Status AnalyzeField(const proto::VName& file_vname,
-                            const Message& proto,
-                            const TextFormat::ParseInfoTree& parse_tree,
+                            const Message& proto, const TreeInfo& parse_tree,
                             const FieldDescriptor& field, int field_index);
 
   std::vector<StringToken> ReadStringTokens(absl::string_view input);
@@ -228,9 +240,10 @@ proto::VName TextprotoAnalyzer::VNameForRelPath(
   return LookupVNameForFullPath(full_path, *unit_);
 }
 
-absl::Status TextprotoAnalyzer::AnalyzeMessage(
-    const proto::VName& file_vname, const Message& proto,
-    const Descriptor& descriptor, const TextFormat::ParseInfoTree& parse_tree) {
+absl::Status TextprotoAnalyzer::AnalyzeMessage(const proto::VName& file_vname,
+                                               const Message& proto,
+                                               const Descriptor& descriptor,
+                                               const TreeInfo& tree_info) {
   const Reflection* reflection = proto.GetReflection();
 
   // Iterate across all fields in the message. For proto1 and 2, each field has
@@ -249,11 +262,11 @@ absl::Status TextprotoAnalyzer::AnalyzeMessage(
 
       // Add a ref for each instance of the repeated field.
       for (int i = 0; i < count; i++) {
-        auto s = AnalyzeField(file_vname, proto, parse_tree, field, i);
+        auto s = AnalyzeField(file_vname, proto, tree_info, field, i);
         if (!s.ok()) return s;
       }
     } else {
-      auto s = AnalyzeField(file_vname, proto, parse_tree, field,
+      auto s = AnalyzeField(file_vname, proto, tree_info, field,
                             kNonRepeatedFieldIndex);
       if (!s.ok()) return s;
     }
@@ -271,11 +284,11 @@ absl::Status TextprotoAnalyzer::AnalyzeMessage(
     if (field->is_repeated()) {
       const size_t count = reflection->FieldSize(proto, field);
       for (size_t i = 0; i < count; i++) {
-        auto s = AnalyzeField(file_vname, proto, parse_tree, *field, i);
+        auto s = AnalyzeField(file_vname, proto, tree_info, *field, i);
         if (!s.ok()) return s;
       }
     } else {
-      auto s = AnalyzeField(file_vname, proto, parse_tree, *field,
+      auto s = AnalyzeField(file_vname, proto, tree_info, *field,
                             kNonRepeatedFieldIndex);
       if (!s.ok()) return s;
     }
@@ -342,7 +355,7 @@ absl::StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
 // matches fields up with the ParseInfoTree.
 absl::Status TextprotoAnalyzer::AnalyzeAny(
     const proto::VName& file_vname, const Message& proto,
-    const Descriptor& descriptor, const TextFormat::ParseInfoTree& parse_tree,
+    const Descriptor& descriptor, const TreeInfo& tree_info,
     TextFormat::ParseLocation field_loc) {
   CHECK(descriptor.full_name() == "google.protobuf.Any");
 
@@ -353,7 +366,7 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
   // assume it's a directly-specified Any and defer to AnalyzeMessage.
   auto s = AnalyzeAnyTypeUrl(file_vname, field_loc);
   if (!s.ok()) {
-    return AnalyzeMessage(file_vname, proto, descriptor, parse_tree);
+    return AnalyzeMessage(file_vname, proto, descriptor, tree_info);
   }
   const proto::VName type_url_anchor = *s;
 
@@ -399,7 +412,7 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
   }
 
   // Analyze the message contained in the Any.
-  return AnalyzeMessage(file_vname, *value_proto, *msg_desc, parse_tree);
+  return AnalyzeMessage(file_vname, *value_proto, *msg_desc, tree_info);
 }
 
 // Trims whitespace (including newlines) and comments from the start of the
@@ -431,12 +444,12 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 
   while (true) {
     // Match the enum value, which may be an identifier or an integer.
-    re2::StringPiece match;
+    absl::string_view match;
     if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
       return absl::UnknownError("Failed to find text span for enum value: " +
                                 field.full_name());
     }
-    const std::string value_str = match.ToString();
+    const std::string value_str(match);
     input = input.substr(value_str.size());
 
     // Lookup EnumValueDescriptor based on the matched value.
@@ -595,19 +608,69 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
   return absl::OkStatus();
 }
 
+absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
+    const proto::VName& file_vname, const Message& proto,
+    const FieldDescriptor& field, int start_offset) {
+  // Start after the last character of the field name.
+  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  input = input.substr(start_offset);
+
+  // Consume whitespace and colon after field name.
+  ConsumeTextprotoWhitespace(&input);
+  if (!re2::RE2::Consume(&input, ":")) {
+    return absl::UnknownError(
+        "Failed to find ':' when analyzing integer value");
+  }
+  ConsumeTextprotoWhitespace(&input);
+
+  // Detect 'array format' for repeated fields and trim the leading '['.
+  const bool array_format = field.is_repeated() && RE2::Consume(&input, "\\[");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
+
+  while (true) {
+    // Match the integer value.
+    absl::string_view match;
+    if (!re2::RE2::PartialMatch(input, R"(^([\d]+))", &match)) {
+      return absl::UnknownError("Failed to find text span for enum value: " +
+                                field.full_name());
+    }
+    input = input.substr(match.size());
+    for (auto& p : plugins_) {
+      auto s = p->AnalyzeIntegerField(this, file_vname, field, match);
+      if (!s.ok()) {
+        LOG(ERROR) << "Plugin error: " << s;
+      }
+    }
+
+    if (!array_format) break;
+
+    // Consume trailing comma and whitespace; exit if there's no comma.
+    ConsumeTextprotoWhitespace(&input);
+    if (!re2::RE2::Consume(&input, ",")) {
+      break;
+    }
+    ConsumeTextprotoWhitespace(&input);
+  }
+
+  return absl::OkStatus();
+}
+
 // Analyzes the field and returns the number of values indexed. Typically this
 // is 1, but it could be 1+ when list syntax is used in the textproto.
-absl::Status TextprotoAnalyzer::AnalyzeField(
-    const proto::VName& file_vname, const Message& proto,
-    const TextFormat::ParseInfoTree& parse_tree, const FieldDescriptor& field,
-    int field_index) {
-  TextFormat::ParseLocation loc = parse_tree.GetLocation(&field, field_index);
+absl::Status TextprotoAnalyzer::AnalyzeField(const proto::VName& file_vname,
+                                             const Message& proto,
+                                             const TreeInfo& tree_info,
+                                             const FieldDescriptor& field,
+                                             int field_index) {
+  TextFormat::ParseLocation loc =
+      tree_info.parse_tree->GetLocation(&field, field_index);
+  // Location of field that does not exists in the txt format returns -1.
   // GetLocation() returns 0-indexed values, but UTF8LineIndex expects
   // 1-indexed line numbers.
-  loc.line++;
+  loc.line += tree_info.line_offset + 1;
 
   bool add_anchor_node = true;
-  if (loc.line == 0) {
+  if (loc.line == tree_info.line_offset) {
     // When AnalyzeField() is called for repeated fields or extensions, we know
     // the field was actually present in the input textproto. In the case of
     // repeated fields, the presence of only one location entry but multiple
@@ -649,9 +712,9 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
     const int end = begin + len;
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 
-    // Add ref to proto field.
+    // Add ref/writes to proto field.
     auto field_vname = VNameForDescriptor(&field);
-    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRefWrites,
                        VNameRef(field_vname));
 
     // Add refs for enum values.
@@ -667,13 +730,29 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
       if (!s.ok()) {
         LOG(ERROR) << "Error analyzing string value: " << s;
       }
+    } else if (!plugins_.empty() &&
+               (field.type() == FieldDescriptor::TYPE_FIXED32 ||
+                field.type() == FieldDescriptor::TYPE_FIXED64 ||
+                field.type() == FieldDescriptor::TYPE_UINT32 ||
+                field.type() == FieldDescriptor::TYPE_UINT64 ||
+                field.type() == FieldDescriptor::TYPE_INT32 ||
+                field.type() == FieldDescriptor::TYPE_INT64)) {
+      auto s = AnalyzeIntegerValue(file_vname, proto, field, end);
+      if (!s.ok()) {
+        LOG(ERROR) << "Error analyzing integer value: " << s;
+      }
     }
   }
 
   // Handle submessage.
   if (field.type() == FieldDescriptor::TYPE_MESSAGE) {
-    const TextFormat::ParseInfoTree& subtree =
-        *parse_tree.GetTreeForNested(&field, field_index);
+    const TextFormat::ParseInfoTree* subtree =
+        tree_info.parse_tree->GetTreeForNested(&field, field_index);
+    if (subtree == nullptr) {
+      return absl::OkStatus();
+    }
+    TreeInfo subtree_info{subtree, tree_info.line_offset};
+
     const Reflection* reflection = proto.GetReflection();
     const Message& submessage =
         field_index == kNonRepeatedFieldIndex
@@ -686,10 +765,11 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
       // url and add an anchor node.
       TextFormat::ParseLocation field_loc =
           add_anchor_node ? loc : TextFormat::ParseLocation{};
-      return AnalyzeAny(file_vname, submessage, subdescriptor, subtree,
+      return AnalyzeAny(file_vname, submessage, subdescriptor, subtree_info,
                         field_loc);
     } else {
-      return AnalyzeMessage(file_vname, submessage, subdescriptor, subtree);
+      return AnalyzeMessage(file_vname, submessage, subdescriptor,
+                            subtree_info);
     }
   }
 
@@ -768,12 +848,12 @@ void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
                      VNameRef(dn_vname));
 }
 
-// Find and return the argument after --proto_message. Removes the flag and
+// Find and return the argument after given argname. Removes the flag and
 // argument from @args if found.
-absl::optional<std::string> ParseProtoMessageArg(
-    std::vector<std::string>* args) {
+absl::optional<std::string> FindArg(std::vector<std::string>* args,
+                                    std::string argname) {
   for (auto iter = args->begin(); iter != args->end(); iter++) {
-    if (*iter == "--proto_message") {
+    if (*iter == argname) {
       if (iter + 1 < args->end()) {
         std::string v = *(iter + 1);
         args->erase(iter, iter + 2);
@@ -861,14 +941,10 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                               &path_substitutions, &args);
 
   // Find --proto_message in args.
-  std::string message_name;
-  {
-    auto opt_message_name = ParseProtoMessageArg(&args);
-    if (!opt_message_name.has_value()) {
-      return absl::UnknownError(
-          "Compilation unit arguments must specify --proto_message");
-    }
-    message_name = *opt_message_name;
+  std::string message_name = FindArg(&args, "--proto_message").value_or("");
+  if (message_name.empty()) {
+    return absl::UnknownError(
+        "Compilation unit arguments must specify --proto_message");
   }
   LOG(INFO) << "Proto message name: " << message_name;
 
@@ -886,7 +962,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
       continue;
     }
 
-    VLOG(1) << "Added file to descriptor db: " << file.info().path();
+    DLOG(LEVEL(-1)) << "Added file to descriptor db: " << file.info().path();
     if (!file_reader.AddFile(file.info().path(), file.content())) {
       return absl::UnknownError("Unable to add file to SourceTree.");
     }
@@ -915,7 +991,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     if (!proto_importer.Import(relpath)) {
       return absl::UnknownError("Error importing proto file: " + relpath);
     }
-    VLOG(1) << "Added proto to descriptor pool: " << relpath;
+    DLOG(LEVEL(-1)) << "Added proto to descriptor pool: " << relpath;
   }
   const DescriptorPool* descriptor_pool = proto_importer.pool();
 
@@ -927,34 +1003,24 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
         "Unable to find proto message in descriptor pool: ", message_name));
   }
 
-  for (auto& source : file_data_by_path) {
+  // Only recordio format specifies record_separator.
+  // Presense of record_separator flag indicates it's recordio file format.
+  absl::optional<std::string> record_separator =
+      FindArg(&args, "--record_separator");
+  for (auto& [filepath, filecontent] : file_data_by_path) {
     // Use reflection to create an instance of the top-level proto message.
     // note: msg_factory must outlive any protos created from it.
     google::protobuf::DynamicMessageFactory msg_factory;
     std::unique_ptr<Message> proto(msg_factory.GetPrototype(descriptor)->New());
 
-    // Parse textproto into @proto, recording input locations to @parse_tree.
-    TextFormat::ParseInfoTree parse_tree;
-    {
-      TextFormat::Parser parser;
-      parser.WriteLocationsTo(&parse_tree);
-      // Relax parser restrictions - even if the proto is partially ill-defined,
-      // we'd like to analyze the parts that are good.
-      parser.AllowPartialMessage(true);
-      parser.AllowUnknownExtension(true);
-      if (!parser.ParseFromString(source.second->content(), proto.get())) {
-        return absl::UnknownError("Failed to parse text proto");
-      }
-    }
-
     // Emit file node.
-    proto::VName file_vname = LookupVNameForFullPath(source.first, unit);
+    proto::VName file_vname = LookupVNameForFullPath(filepath, unit);
     recorder->AddProperty(VNameRef(file_vname), NodeKindID::kFile);
     // Record source text as a fact.
     recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
-                          source.second->content());
+                          filecontent->content());
 
-    TextprotoAnalyzer analyzer(&unit, source.second->content(),
+    TextprotoAnalyzer analyzer(&unit, filecontent->content(),
                                &file_substitution_cache, recorder,
                                descriptor_pool);
 
@@ -970,10 +1036,45 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
       analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
     }
 
-    auto s =
-        analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, parse_tree);
-    if (!s.ok()) {
-      return s;
+    TextFormat::Parser parser;
+    // Relax parser restrictions - even if the proto is partially ill-defined,
+    // we'd like to analyze the parts that are good.
+    parser.AllowPartialMessage(true);
+    parser.AllowUnknownExtension(true);
+
+    auto analyze_message = [&](absl::string_view chunk, int start_line) {
+      LOG(INFO) << "Analyze chunk at line: " << start_line;
+      // Parse textproto into @proto, recording input locations to @parse_tree.
+      TextFormat::ParseInfoTree parse_tree;
+      parser.WriteLocationsTo(&parse_tree);
+
+      google::protobuf::io::ArrayInputStream stream(chunk.data(), chunk.size());
+      if (!parser.Parse(&stream, proto.get())) {
+        return absl::UnknownError("Failed to parse text proto");
+      }
+
+      TreeInfo tree_info{&parse_tree, start_line};
+      return analyzer.AnalyzeMessage(file_vname, *proto, *descriptor,
+                                     tree_info);
+    };
+
+    if (record_separator.has_value()) {
+      LOG(INFO) << "Analyzing recordio fileformat with delimiter: "
+                << *record_separator;
+      kythe::lang_textproto::ParseRecordTextChunks(
+          filecontent->content(), *record_separator,
+          [&](absl::string_view chunk, int line_offset) {
+            absl::Status status = analyze_message(chunk, line_offset);
+            if (!status.ok()) {
+              LOG(ERROR) << "Failed to parse record starting at line "
+                         << line_offset << ": " << status;
+            }
+          });
+    } else {
+      absl::Status status = analyze_message(filecontent->content(), 0);
+      if (!status.ok()) {
+        return status;
+      }
     }
   }
 

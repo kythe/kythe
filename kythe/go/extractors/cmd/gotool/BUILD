@@ -12,6 +12,7 @@ go_binary(
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
     ],

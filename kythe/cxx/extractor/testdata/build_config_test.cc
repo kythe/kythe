@@ -15,58 +15,57 @@
  */
 
 #include "absl/strings/string_view.h"
+#include "absl/log/log.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
+#include "protobuf-matchers/protocol-buffer-matchers.h"
 
 namespace kythe {
 namespace {
+using ::protobuf_matchers::EquivToProto;
 
-constexpr absl::string_view kExpectedCompilation = R"(
-v_name {
-  language: "c++"
-}
-required_input {
-  v_name {
-    path: "kythe/cxx/extractor/testdata/build_config.cc"
-  }
-  info {
-    path: "./kythe/cxx/extractor/testdata/build_config.cc"
-    digest: "49e4a60bd04c5ec2070a81f53d7a19db4a3538db6764e5804047c219be5f9309"
-  }
-  details {
-    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
-      row {
-        source_context: "hash0"
+proto::CompilationUnit ExpectedCompilation() {
+  return ParseTextCompilationUnitOrDie(R"pb(
+    v_name { language: "c++" }
+    required_input {
+      v_name { path: "kythe/cxx/extractor/testdata/build_config.cc" }
+      info {
+        path: "kythe/cxx/extractor/testdata/build_config.cc"
+        digest: "49e4a60bd04c5ec2070a81f53d7a19db4a3538db6764e5804047c219be5f9309"
+      }
+      details {
+        [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+          row { source_context: "hash0" always_process: true }
+        }
       }
     }
-  }
+    argument: "/dummy/bin/g++"
+    argument: "-target"
+    argument: "dummy-target"
+    argument: "-DKYTHE_IS_RUNNING=1"
+    argument: "-resource-dir"
+    argument: "/kythe_builtins"
+    argument: "--driver-mode=g++"
+    argument: "-I./kythe/cxx/extractor"
+    argument: "./kythe/cxx/extractor/testdata/build_config.cc"
+    argument: "-fsyntax-only"
+    source_file: "kythe/cxx/extractor/testdata/build_config.cc"
+    working_directory: "/root"
+    entry_context: "hash0"
+    details {
+      # The TextFormat parser does not like our custom type_url, but generally
+      # disregards the part before the type name.
+      [type.googleapis.com/kythe.proto.BuildDetails] {
+        build_target: "//this/is/a/build:target"
+        build_config: "test-build-config"
+      }
+    }
+  )pb");
 }
-argument: "/dummy/bin/g++"
-argument: "-target"
-argument: "dummy-target"
-argument: "-DKYTHE_IS_RUNNING=1"
-argument: "-resource-dir"
-argument: "/kythe_builtins"
-argument: "--driver-mode=g++"
-argument: "-I./kythe/cxx/extractor"
-argument: "./kythe/cxx/extractor/testdata/build_config.cc"
-argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/build_config.cc"
-working_directory: "/root"
-entry_context: "hash0"
-details {
-  # The TextFormat parser does not like our custom type_url, but generally
-  # disregards the part before the type name.
-  [type.googleapis.com/kythe.proto.BuildDetails] {
-    build_target: "//this/is/a/build:target"
-    build_config: "test-build-config"
-  }
-}
-)";
 
 TEST(CxxExtractorTest, TestBuildConfigExtraction) {
   google::protobuf::LinkMessageReflection<kythe::proto::BuildDetails>();
@@ -92,7 +91,7 @@ TEST(CxxExtractorTest, TestBuildConfigExtraction) {
           }),
       unit.mutable_details()->end());
 
-  EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
+  EXPECT_THAT(unit, EquivToProto(ExpectedCompilation()));
 }
 
 }  // namespace

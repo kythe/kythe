@@ -22,11 +22,11 @@ import (
 	"context"
 	"flag"
 	"io"
-	"log"
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/log"
 )
 
 var (
@@ -62,7 +62,7 @@ func main() {
 		log.Fatalf("Unable to copy input to output: %v", err)
 	}
 
-	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
+	log.Infof("Finished extracting [%v elapsed]", time.Since(start))
 }
 
 func copyFile(input, output string) error {

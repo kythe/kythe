@@ -108,9 +108,9 @@ while [[ $# -gt 0 ]]; do
         log "Copying $1 to $P"
         cp "$1" "$P"/
       else
-        rp="${1#$GENDIR/}"
-        rp="${rp#$BINDIR/}"
-        rp="$(dirname "${rp#$RELPATHS/}")"
+        rp="${1#"$GENDIR"/}"
+        rp="${rp#"$BINDIR"/}"
+        rp="$(dirname "${rp#"$RELPATHS"/}")"
         mkdir -p "$P/$rp"
         log "Copying $1 to $P/$rp"
         cp "$1" "$P/$rp"
@@ -123,3 +123,5 @@ done
 tar czf "$OUT" -C "$OUT.dir" "$(basename "$PBASE")"
 
 $SHASUM_TOOL "$OUT" > "$OUT.sha256"
+
+echo "Release outputs are ${OUT} and ${OUT}.sha256"

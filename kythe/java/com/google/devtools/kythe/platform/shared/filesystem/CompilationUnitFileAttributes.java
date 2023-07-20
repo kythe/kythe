@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.shared.filesystem;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link BasicFileAttributes} implementation for {@link CompilationUnitFileSystem}. */
 final class CompilationUnitFileAttributes implements BasicFileAttributes {
@@ -68,7 +69,7 @@ final class CompilationUnitFileAttributes implements BasicFileAttributes {
   }
 
   @Override
-  public Object fileKey() {
+  public @Nullable Object fileKey() {
     return null;
   }
 }

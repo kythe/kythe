@@ -21,7 +21,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -36,6 +35,7 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 
 	"golang.org/x/net/http2"
 
@@ -116,7 +116,7 @@ func main() {
 		identifiers.RegisterHTTPHandlers(ctx, it, apiMux)
 		filetree.RegisterHTTPHandlers(ctx, ft, apiMux)
 		if *publicResources != "" {
-			log.Println("Serving public resources at", *publicResources)
+			log.Info("Serving public resources at", *publicResources)
 			if s, err := os.Stat(*publicResources); err != nil {
 				log.Fatalf("ERROR: could not get FileInfo for %q: %v", *publicResources, err)
 			} else if !s.IsDir() {
@@ -138,7 +138,7 @@ func main() {
 }
 
 func startHTTP() {
-	log.Printf("HTTP server listening on %q", *httpListeningAddr)
+	log.Infof("HTTP server listening on %q", *httpListeningAddr)
 	log.Fatal(http.ListenAndServe(*httpListeningAddr, nil))
 }
 
@@ -146,6 +146,6 @@ func startTLS() {
 	srv := &http.Server{Addr: *tlsListeningAddr}
 	http2.ConfigureServer(srv, nil)
 
-	log.Printf("TLS HTTP2 server listening on %q", *tlsListeningAddr)
+	log.Infof("TLS HTTP2 server listening on %q", *tlsListeningAddr)
 	log.Fatal(srv.ListenAndServeTLS(*tlsCertFile, *tlsKeyFile))
 }

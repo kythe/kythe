@@ -19,9 +19,12 @@
 #include <map>
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
@@ -96,8 +99,7 @@ class CxxExtractorTest : public testing::Test {
   /// \param path Absolute path, beginning with / (or B:\ or \\, etc), to the
   /// file to create.
   /// \param code Code to write at the file named by `path`.
-  void AddAbsoluteSourceFile(const llvm::StringRef& path,
-                             const std::string& code) {
+  void AddAbsoluteSourceFile(llvm::StringRef path, const std::string& code) {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
@@ -213,7 +215,7 @@ class CxxExtractorTest : public testing::Test {
               supported_language::Language::kCpp,
               std::make_unique<ForwardingCompilationWriterSink>(sink),
               main_source_file, transcript, source_files, header_search_info,
-              had_errors, ".");
+              had_errors);
         });
     clang::tooling::ToolInvocation invocation(
         final_arguments, std::move(extractor), file_manager.get());
@@ -365,7 +367,7 @@ TEST_F(CxxExtractorTest, DoesNotBreakForMissingIncludes) {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   ::testing::InitGoogleTest(&argc, argv);
   int result = RUN_ALL_TESTS();
   return result;

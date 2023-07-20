@@ -12,6 +12,7 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/log",
         "//kythe/go/util/profile",
         "//kythe/proto:storage_go_proto",
     ],

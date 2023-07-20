@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
@@ -45,6 +45,8 @@ type mergeCommand struct {
 	recursive          bool
 	ignoreDuplicateCUs bool
 	rules              vnameRules
+
+	unitsBeforeFiles bool
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -64,10 +66,11 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
 	fs.Var(&c.rules, "rules", "VName rules to apply while merging (optional)")
 	fs.BoolVar(&c.ignoreDuplicateCUs, "ignore_duplicate_cus", false, "Do not fail if we try to add the same CU twice")
+	fs.BoolVar(&c.unitsBeforeFiles, "experimental_write_units_first", false, "When writing the kzip file, puts CU entries before files")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
-func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("Required --output path missing")
 	}
@@ -146,7 +149,7 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Printf("Skipping empty .kzip: %s", path)
+		log.Infof("Skipping empty .kzip: %s", path)
 		return nil
 	}
 
@@ -155,32 +158,60 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 		return fmt.Errorf("error creating reader: %v", err)
 	}
 
+	if c.unitsBeforeFiles {
+		var requiredDigests []string
+		if err := c.mergeUnitsInto(ctx, wr, rd, func(digest string) error {
+			requiredDigests = append(requiredDigests, digest)
+			return nil
+		}); err != nil {
+			return err
+		}
+		for _, digest := range requiredDigests {
+			if err := copyFileInto(wr, rd, digest, filesAdded); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return c.mergeUnitsInto(ctx, wr, rd, func(digest string) error {
+		return copyFileInto(wr, rd, digest, filesAdded)
+	})
+}
+
+func (c *mergeCommand) mergeUnitsInto(ctx context.Context, wr *kzip.Writer, rd *kzip.Reader, f func(digest string) error) error {
 	return rd.Scan(func(u *kzip.Unit) error {
 		for _, ri := range u.Proto.RequiredInput {
-			if filesAdded.Add(ri.Info.Digest) {
-				r, err := rd.Open(ri.Info.Digest)
-				if err != nil {
-					return fmt.Errorf("error opening file: %v", err)
-				}
-				if _, err := wr.AddFile(r); err != nil {
-					r.Close()
-					return fmt.Errorf("error adding file: %v", err)
-				} else if err := r.Close(); err != nil {
-					return fmt.Errorf("error closing file: %v", err)
-				}
+			if err := f(ri.Info.Digest); err != nil {
+				return err
 			}
 			if vname, match := c.rules.Apply(ri.Info.Path); match {
 				ri.VName = vname
 			}
 		}
 		// TODO(schroederc): duplicate compilations with different revisions
-		_, err = wr.AddUnit(u.Proto, u.Index)
+		_, err := wr.AddUnit(u.Proto, u.Index)
 		if c.ignoreDuplicateCUs && err == kzip.ErrUnitExists {
-			log.Printf("Found duplicate CU: %v", u.Proto.GetDetails())
+			log.Infof("Found duplicate CU: %v", u.Proto.GetDetails())
 			return nil
 		}
 		return err
 	})
+}
+
+func copyFileInto(wr *kzip.Writer, rd *kzip.Reader, digest string, filesAdded stringset.Set) error {
+	if filesAdded.Add(digest) {
+		r, err := rd.Open(digest)
+		if err != nil {
+			return fmt.Errorf("error opening file: %v", err)
+		}
+		if _, err := wr.AddFile(r); err != nil {
+			r.Close()
+			return fmt.Errorf("error adding file: %v", err)
+		} else if err := r.Close(); err != nil {
+			return fmt.Errorf("error closing file: %v", err)
+		}
+	}
+	return nil
 }
 
 func recurseDirectories(ctx context.Context, archives []string) ([]string, error) {

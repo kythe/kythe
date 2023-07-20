@@ -35,6 +35,8 @@ func f() {
 	}
 
 	//- @z defines/binding Z
+	//- @Nested ref/writes Nested
+	//- !{ @Nested ref Nested }
 	z := S{Nested: &S{}}
 	//- @z ref Z
 	//- @F ref/writes F
@@ -47,4 +49,15 @@ func f() {
 	//- @x ref X
 	//- @y ref Y
 	fmt.Println(x, y)
+}
+
+func g() any {
+	//- @val defines/binding Val
+	var val int
+
+	return map[int]bool{
+		//- @val ref Val
+		//- !{ @val ref/writes Val }
+		val: true,
+	}
 }

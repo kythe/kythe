@@ -10,6 +10,7 @@ go_binary(
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
         "//kythe/go/test/services/xrefs",
+        "//kythe/go/util/log",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:storage_go_proto",
         "//kythe/proto:xref_go_proto",

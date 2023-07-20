@@ -22,9 +22,9 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "assertion_ast.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -137,7 +137,7 @@ Example:
   std::string dbname = "database";
   size_t facts = 0;
   kythe::proto::Entry entry;
-  google::protobuf::uint32 byte_size;
+  uint32_t byte_size;
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
   for (;;) {
     google::protobuf::io::CodedInputStream coded_input(&raw_input);

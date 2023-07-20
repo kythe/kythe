@@ -35,3 +35,9 @@ message Message {
   //- @repeated_int32_field defines/binding RepeatedInt32Field
   repeated int32 repeated_int32_field = 6;
 }
+
+//- @Message2 defines/binding Message2?
+message Message2 {
+  //- @string_field defines/binding Message2StringField?
+  string string_field = 1;
+}

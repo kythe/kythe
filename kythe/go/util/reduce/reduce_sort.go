@@ -68,7 +68,7 @@ func Sort(ctx context.Context, splits SplitInput, r Reducer) (SplitInput, error)
 		return nil, err
 	}
 
-	addToSorter := OutFunc(func(_ context.Context, i interface{}) error {
+	addToSorter := OutFunc(func(_ context.Context, i any) error {
 		_, ok := i.(*ipb.SortedKeyValue)
 		if !ok {
 			return fmt.Errorf("given non-SortedKeyValue: %T", i)
@@ -116,7 +116,7 @@ type sortSplitInput struct {
 	endOfSplit bool
 }
 
-func (s *sortSplitInput) Next() (interface{}, error) {
+func (s *sortSplitInput) Next() (any, error) {
 	if s.endOfSplit {
 		return nil, io.EOF
 	} else if s.first != nil {
@@ -154,7 +154,7 @@ func (s *sortSplitInput) NextSplit() (Input, error) {
 
 type keyValueSortUtil struct{}
 
-func (keyValueSortUtil) Less(a, b interface{}) bool {
+func (keyValueSortUtil) Less(a, b any) bool {
 	x, y := a.(*ipb.SortedKeyValue), b.(*ipb.SortedKeyValue)
 	if x.Key == y.Key {
 		return x.SortKey < y.SortKey
@@ -162,11 +162,11 @@ func (keyValueSortUtil) Less(a, b interface{}) bool {
 	return x.Key < y.Key
 }
 
-func (keyValueSortUtil) Marshal(x interface{}) ([]byte, error) {
+func (keyValueSortUtil) Marshal(x any) ([]byte, error) {
 	return proto.Marshal(x.(proto.Message))
 }
 
-func (keyValueSortUtil) Unmarshal(rec []byte) (interface{}, error) {
+func (keyValueSortUtil) Unmarshal(rec []byte) (any, error) {
 	var kv ipb.SortedKeyValue
 	return &kv, proto.Unmarshal(rec, &kv)
 }

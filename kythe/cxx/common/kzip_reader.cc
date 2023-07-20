@@ -20,6 +20,8 @@
 
 #include <set>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -30,7 +32,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
-#include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/json_proto.h"
@@ -115,7 +116,7 @@ absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
         absl::StrCat("Malformed kzip: invalid root: ", root));
   }
   root.remove_suffix(root.size() - slashpos);
-  VLOG(1) << "Using archive root: " << root;
+  DLOG(LEVEL(-1)) << "Using archive root: " << root;
   std::set<absl::string_view> proto_units;
   std::set<absl::string_view> json_units;
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {

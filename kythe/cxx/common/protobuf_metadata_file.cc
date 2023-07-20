@@ -18,8 +18,8 @@
 
 #include <sstream>
 
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
-#include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -100,7 +100,9 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
           absl::StartsWith(token, "release_")) {
         rule.semantic = kythe::MetadataFile::Semantic::kWrite;
       } else if (absl::StartsWith(token, "mutable_")) {
-        rule.semantic = kythe::MetadataFile::Semantic::kReadWrite;
+        rule.semantic = set_aliases_as_writes_
+                            ? kythe::MetadataFile::Semantic::kWrite
+                            : kythe::MetadataFile::Semantic::kTakeAlias;
       }
     }
     rules.push_back(rule);

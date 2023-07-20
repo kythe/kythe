@@ -23,11 +23,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 	"kythe.io/kythe/go/extractors/constants"
+	"kythe.io/kythe/go/util/log"
 )
 
 var (

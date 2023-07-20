@@ -23,9 +23,10 @@
 
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/strip.h"
 #include "assertions.h"
-#include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/kythe_uri.h"
@@ -337,10 +338,7 @@ static bool FastLookupFactLessThan(AstNode* a, AstNode* b) {
 // look at deferring to a pre-existing system.
 class Solver {
  public:
-  using Inspection = AssertionParser::Inspection;
-
-  Solver(Verifier* context, Database& database,
-         std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors,
+  Solver(Verifier* context, Database& database, AnchorMap& anchors,
          std::function<bool(Verifier*, const Inspection&)>& inspect)
       : context_(*context),
         database_(database),
@@ -581,7 +579,7 @@ class Solver {
  private:
   Verifier& context_;
   Database& database_;
-  std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors_;
+  AnchorMap& anchors_;
   std::function<bool(Verifier*, const Inspection&)>& inspect_;
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
@@ -719,7 +717,10 @@ bool Verifier::SetGoalCommentRegex(const std::string& regex,
   return true;
 }
 
-bool Verifier::LoadInlineProtoFile(const std::string& file_data) {
+bool Verifier::LoadInlineProtoFile(const std::string& file_data,
+                                   absl::string_view path,
+                                   absl::string_view root,
+                                   absl::string_view corpus) {
   kythe::proto::Entries entries;
   bool ok = google::protobuf::TextFormat::ParseFromString(file_data, &entries);
   if (!ok) {
@@ -733,8 +734,10 @@ bool Verifier::LoadInlineProtoFile(const std::string& file_data) {
     }
   }
   Symbol empty = symbol_table_.intern("");
-  return parser_.ParseInlineRuleString(file_data, *kStandardIn, empty, empty,
-                                       empty, "\\s*\\#\\-(.*)");
+  return parser_.ParseInlineRuleString(
+      file_data, *kStandardIn, symbol_table_.intern(std::string(path)),
+      symbol_table_.intern(std::string(root)),
+      symbol_table_.intern(std::string(corpus)), "\\s*\\#\\-(.*)");
 }
 
 bool Verifier::LoadInlineRuleFile(const std::string& filename) {
@@ -962,29 +965,31 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
+    std::function<bool(Verifier*, const Inspection&)> inspect) {
   if (use_fast_solver_) {
-    auto result = RunSouffle(
-        symbol_table_, parser_.groups(), facts_, parser_.inspections(),
-        [&](const Solver::Inspection& i) { return inspect(this, i); });
+    auto result = RunSouffle(symbol_table_, parser_.groups(), facts_, anchors_,
+                             parser_.inspections(), [&](const Inspection& i) {
+                               return inspect(this, i);
+                             });
     highest_goal_reached_ = result.highest_goal_reached;
     highest_group_reached_ = result.highest_group_reached;
     return result.success;
+  } else {
+    if (!PrepareDatabase()) {
+      return false;
+    }
+    Solver solver(this, facts_, anchors_, inspect);
+    bool result = solver.Solve();
+    highest_goal_reached_ = solver.highest_goal_reached();
+    highest_group_reached_ = solver.highest_group_reached();
+    return result;
   }
-  if (!PrepareDatabase()) {
-    return false;
-  }
-  Solver solver(this, facts_, anchors_, inspect);
-  bool result = solver.Solve();
-  highest_goal_reached_ = solver.highest_goal_reached();
-  highest_group_reached_ = solver.highest_group_reached();
-  return result;
 }
 
 bool Verifier::VerifyAllGoals() {
   return VerifyAllGoals([this](Verifier* context,
-                               const Solver::Inspection& inspection) {
-    if (inspection.kind == Solver::Inspection::Kind::EXPLICIT) {
+                               const Inspection& inspection) {
+    if (inspection.kind == Inspection::Kind::EXPLICIT) {
       FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
       printer.Print(inspection.label);
       printer.Print(": ");
@@ -1109,7 +1114,7 @@ static bool EncodedFactHasValidForm(Verifier* cxt, AstNode* a) {
 }
 
 Verifier::InternedVName Verifier::InternVName(AstNode* node) {
-  auto* tuple = node->AsTuple();
+  auto* tuple = node->AsApp()->rhs()->AsTuple();
   return {tuple->element(0)->AsIdentifier()->symbol(),
           tuple->element(1)->AsIdentifier()->symbol(),
           tuple->element(2)->AsIdentifier()->symbol(),
@@ -1156,8 +1161,10 @@ bool Verifier::PrepareDatabase() {
   if (database_prepared_) {
     return true;
   }
-  CHECK(!use_fast_solver_)
-      << "This configuration is not supported when --use_fast_solver is on.";
+  if (use_fast_solver_) {
+    LOG(WARNING) << "PrepareDatabase() called when fast solver was enabled";
+    return true;
+  }
   // TODO(zarko): Make this configurable.
   FileHandlePrettyPrinter printer(stderr);
   // First, sort the tuples. As an invariant, we know they will be of the form
@@ -1286,7 +1293,7 @@ bool Verifier::PrepareDatabase() {
                       symbol_table_.text(ident->symbol()))) {
                 printer.Print("(failed to decode)\n");
               } else {
-                printer.Print(marked_source.DebugString());
+                printer.Print(absl::StrCat(marked_source));
                 printer.Print("\n");
               }
             } else {
@@ -1340,7 +1347,7 @@ AstNode* Verifier::NewUniqueVName(const yy::location& loc) {
 }
 
 AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
-                                   const google::protobuf::string& code_data) {
+                                   const std::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
     LOG(ERROR) << loc << ": can't parse code protobuf" << std::endl;
@@ -1349,8 +1356,8 @@ AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
   return ConvertMarkedSource(loc, marked_source);
 }
 
-AstNode* Verifier::ConvertCodeJsonFact(
-    const yy::location& loc, const google::protobuf::string& code_data) {
+AstNode* Verifier::ConvertCodeJsonFact(const yy::location& loc,
+                                       const std::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!google::protobuf::util::JsonStringToMessage(code_data, &marked_source)
            .ok()) {

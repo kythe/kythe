@@ -24,13 +24,13 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "google/protobuf/util/message_differencer.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -44,7 +44,7 @@ namespace kythe {
 namespace {
 namespace gpb = ::google::protobuf;
 namespace kpb = ::kythe::proto;
-using HashMap = ::absl::flat_hash_map<gpb::string, std::size_t>;
+using HashMap = ::absl::flat_hash_map<std::string, std::size_t>;
 using ::bazel::tools::cpp::runfiles::Runfiles;
 
 // Path prefix joined to runfiles to form the workspace-relative path.
@@ -53,35 +53,10 @@ constexpr absl::string_view kWorkspaceRoot = "io_kythe";
 constexpr absl::string_view kExtractorPath =
     "kythe/cxx/extractor/cxx_extractor";
 
-void CanonicalizeHash(HashMap* hashes, gpb::string* hash) {
+void CanonicalizeHash(HashMap* hashes, std::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
   *hash = absl::StrCat("hash", inserted.first->second);
 }
-
-class EquivToCompilationImpl
-    : public ::testing::MatcherInterface<const kpb::CompilationUnit&> {
- public:
-  explicit EquivToCompilationImpl(kpb::CompilationUnit expected)
-      : expected_(std::move(expected)) {}
-
-  bool MatchAndExplain(
-      const kpb::CompilationUnit& actual,
-      ::testing::MatchResultListener* listener) const override {
-    std::string delta;
-    if (!EquivalentCompilations(expected_, actual, &delta)) {
-      *listener << "\n" << delta;
-      return false;
-    }
-    return true;
-  }
-
-  void DescribeTo(std::ostream* os) const override {
-    *os << "kythe::proto::CompilationUnit differs";
-  }
-
- private:
-  kpb::CompilationUnit expected_;
-};
 
 /// \brief Range wrapper around ContextDependentVersion, if any.
 class MutableContextRows {
@@ -207,8 +182,7 @@ bool ExecuteAndWait(const std::string& program,
   std::string error;
   bool execution_failed = false;
   int exit_code = llvm::sys::ExecuteAndWait(
-      program, VectorForExecute(argv),
-      llvm::makeArrayRef(VectorForExecute(env)),
+      program, VectorForExecute(argv), VectorForExecute(env),
       /* Redirects */ std::nullopt,
       /* SecondsToWait */ 0, /* MemoryLimit */ 0, &error, &execution_failed);
   if (!error.empty() || execution_failed || exit_code != 0) {
@@ -305,30 +279,9 @@ kpb::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options) {
   }
 }
 
-bool EquivalentCompilations(const kpb::CompilationUnit& lhs,
-                            const kpb::CompilationUnit& rhs,
-                            std::string* delta) {
-  gpb::util::MessageDifferencer diff;
-  diff.set_message_field_comparison(gpb::util::MessageDifferencer::EQUIVALENT);
-  diff.ReportDifferencesToString(delta);
-  return diff.Compare(lhs, rhs);
-}
-
 kpb::CompilationUnit ParseTextCompilationUnitOrDie(absl::string_view text) {
   kpb::CompilationUnit result;
   CHECK(gpb::TextFormat::ParseFromString(std::string(text), &result));
   return result;
 }
-
-::testing::Matcher<const kpb::CompilationUnit&> EquivToCompilation(
-    const kpb::CompilationUnit& unit) {
-  return ::testing::Matcher<const kpb::CompilationUnit&>(
-      new EquivToCompilationImpl(unit));
-}
-
-::testing::Matcher<const kpb::CompilationUnit&> EquivToCompilation(
-    absl::string_view expected) {
-  return EquivToCompilation(ParseTextCompilationUnitOrDie(expected));
-}
-
 }  // namespace kythe

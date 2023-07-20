@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "netutil",
     srcs = ["netutil.go"],
+    deps = ["//kythe/go/util/log"],
 )
 
 go_test(

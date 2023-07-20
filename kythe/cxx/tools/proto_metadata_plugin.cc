@@ -18,6 +18,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
@@ -25,9 +26,8 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "google/protobuf/compiler/code_generator.h"
-#include "google/protobuf/compiler/cpp/cpp_generator.h"
+#include "google/protobuf/compiler/cpp/generator.h"
 #include "google/protobuf/compiler/plugin.h"
 #include "google/protobuf/compiler/plugin.pb.h"
 #include "google/protobuf/io/gzip_stream.h"

@@ -16,6 +16,8 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_CLANG_RANGE_FINDER_H_
 #define KYTHE_CXX_INDEXER_CXX_CLANG_RANGE_FINDER_H_
 
+#include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
@@ -23,7 +25,6 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
-#include "glog/logging.h"
 
 namespace kythe {
 
@@ -37,8 +38,8 @@ class ClangRangeFinder {
   /// and LangOptions.
   explicit ClangRangeFinder(const clang::SourceManager* source_manager,
                             const clang::LangOptions* lang_options)
-      : source_manager_(CHECK_NOTNULL(source_manager)),
-        lang_options_(CHECK_NOTNULL(lang_options)) {}
+      : source_manager_(ABSL_DIE_IF_NULL(source_manager)),
+        lang_options_(ABSL_DIE_IF_NULL(lang_options)) {}
 
   /// \brief Returns a range encompassing the name of the decl.
   clang::SourceRange RangeForNameOf(const clang::NamedDecl* decl) const;

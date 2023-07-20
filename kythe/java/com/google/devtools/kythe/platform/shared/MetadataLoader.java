@@ -27,6 +27,5 @@ public interface MetadataLoader {
    *     using file extensions.
    * @param data The raw data that composes the metadata file.
    */
-  @Nullable
-  Metadata parseFile(String fileName, byte[] data);
+  @Nullable Metadata parseFile(String fileName, byte[] data);
 }

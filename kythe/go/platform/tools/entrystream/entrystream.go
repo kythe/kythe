@@ -36,7 +36,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -46,6 +45,7 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/riegeli"
 
 	"google.golang.org/protobuf/proto"
@@ -103,11 +103,11 @@ func main() {
 	*writeFormat = strings.ToLower(*writeFormat)
 
 	if *readJSON {
-		log.Printf("WARNING: --read_json is deprecated; use --read_format=json")
+		log.Warningf("--read_json is deprecated; use --read_format=json")
 		*readFormat = jsonFormat
 	}
 	if *writeJSON {
-		log.Printf("WARNING: --write_json is deprecated; use --write_format=json")
+		log.Warningf("--write_json is deprecated; use --write_format=json")
 		*writeFormat = jsonFormat
 	}
 
@@ -256,7 +256,7 @@ func sortEntries(rd stream.EntryReader) (stream.EntryReader, error) {
 	}
 
 	return func(f func(*spb.Entry) error) error {
-		return sorter.Read(func(i interface{}) error {
+		return sorter.Read(func(i any) error {
 			return f(i.(*spb.Entry))
 		})
 	}, nil
@@ -264,15 +264,15 @@ func sortEntries(rd stream.EntryReader) (stream.EntryReader, error) {
 
 type entryLesser struct{}
 
-func (entryLesser) Less(a, b interface{}) bool {
+func (entryLesser) Less(a, b any) bool {
 	return compare.Entries(a.(*spb.Entry), b.(*spb.Entry)) == compare.LT
 }
 
 type entryMarshaler struct{}
 
-func (entryMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+func (entryMarshaler) Marshal(x any) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
 
-func (entryMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+func (entryMarshaler) Unmarshal(rec []byte) (any, error) {
 	var e spb.Entry
 	return &e, proto.Unmarshal(rec, &e)
 }

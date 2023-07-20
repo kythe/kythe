@@ -28,6 +28,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
@@ -42,6 +43,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -57,6 +59,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -73,6 +76,25 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "header_only_module_test",
+    srcs = ["header_only_module_test.cc"],
+    data = [
+        "header_only_module.cppmap",
+        "header_only_module.h",
+    ],
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -91,6 +113,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -104,11 +127,16 @@ cc_test(
         "claim_b.h",
         "claim_main.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/extractor:lib",
         "//kythe/cxx/extractor:supported_language",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -155,6 +183,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -172,6 +201,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -188,6 +218,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -205,6 +236,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
@@ -216,12 +248,17 @@ cc_test(
     data = [
         "build_config.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -242,6 +279,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gmock_main",
         "//third_party:gtest",
+        "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
     ],
 )

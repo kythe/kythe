@@ -24,17 +24,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
+
+	"github.com/golang/protobuf/proto"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -49,9 +50,11 @@ var (
 	metaSuffix                     = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 	docBase                        = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
 	onlyEmitDocURIsForStandardLibs = flag.Bool("only_emit_doc_uris_for_standard_libs", false, "If true, the doc/uri fact is only emitted for go std library packages")
+	emitRefCallOverIdentifier      = flag.Bool("emit_ref_call_over_identifier", false, "If true, emit ref/call anchor spans over the function identifier")
 	verbose                        = flag.Bool("verbose", false, "Emit verbose log information")
 	contOnErr                      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 	useCompilationCorpusForAll     = flag.Bool("use_compilation_corpus_for_all", false, "If enabled, all Entry VNames are given the corpus of the compilation unit being indexed. This includes items in the go std library and builtin types.")
+	useFileAsTopLevelScope         = flag.Bool("use_file_as_top_level_scope", false, "If enabled, use the file node for top-level callsite scopes")
 	overrideStdlibCorpus           = flag.String("override_stdlib_corpus", "", "If set, all stdlib nodes are assigned this corpus. Note that this takes precedence over --use_compilation_corpus_for_all")
 
 	writeEntry func(context.Context, *spb.Entry) error
@@ -106,7 +109,7 @@ func main() {
 		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 			err := indexGo(ctx, unit, f)
 			if err != nil && *contOnErr {
-				log.Printf("Continuing after error: %v", err)
+				log.Errorf("Continuing after error: %v", err)
 				return nil
 			}
 			return err
@@ -151,7 +154,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		return err
 	}
 	if *verbose {
-		log.Printf("Finished resolving compilation: %s", pi.String())
+		log.Infof("Finished resolving compilation: %s", pi.String())
 	}
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs:               *doLibNodes,
@@ -161,7 +164,9 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		DocBase:                        docURL,
 		OnlyEmitDocURIsForStandardLibs: *onlyEmitDocURIsForStandardLibs,
 		UseCompilationCorpusForAll:     *useCompilationCorpusForAll,
+		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
 		OverrideStdlibCorpus:           *overrideStdlibCorpus,
+		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
 	})
 }
 

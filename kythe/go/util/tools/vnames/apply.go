@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"github.com/google/subcommands"
@@ -60,7 +60,7 @@ func (c *applyRulesCmd) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.format, "format", string(jsonFormat), `Path of VName rewrite rules file {"JSON", "PROTO"}`)
 	flag.BoolVar(&c.allowEmpty, "allow_empty", false, "Whether to write an empty VName when no rule matches the input")
 }
-func (c *applyRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+func (c *applyRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ...any) subcommands.ExitStatus {
 	rules, err := rulesFormat(strings.ToUpper(c.format)).readFile(ctx, c.rulesPath)
 	if err != nil {
 		return cmdErrorf("reading %q: %v", c.rulesPath, err)
@@ -129,7 +129,7 @@ func (f rulesFormat) writeRules(rules vnameutil.Rules, w io.Writer) error {
 	}
 }
 
-func cmdErrorf(msg string, args ...interface{}) subcommands.ExitStatus {
-	log.Printf("ERROR: "+msg, args...)
+func cmdErrorf(msg string, args ...any) subcommands.ExitStatus {
+	log.Errorf(msg, args...)
 	return subcommands.ExitFailure
 }

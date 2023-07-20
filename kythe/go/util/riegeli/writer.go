@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"google.golang.org/protobuf/proto"
 
@@ -52,10 +51,11 @@ func (w *Writer) ensureFileHeader() error {
 		tw := &talliedRecordWriter{recordWriter: rw}
 		if err != nil {
 			return err
-		} else if _, err := tw.PutProto(&rmpb.RecordsMetadata{
-			// TODO(schroederc): add support for full RecordsMetadata
-			RecordWriterOptions: proto.String(opts),
-		}); err != nil {
+		}
+		metadata := rmpb.RecordsMetadata{}
+		// TODO(schroederc): add support for full RecordsMetadata
+		metadata.RecordWriterOptions = proto.String(opts)
+		if _, err := tw.PutProto(&metadata); err != nil {
 			return err
 		}
 		data, err := tw.Encode()
@@ -317,7 +317,7 @@ func newRecordChunkWriter(opts *WriterOptions) (*recordChunkWriter, error) {
 // Marshal writes the chunk header to the given buffer.
 func (h *chunkHeader) Marshal(buf []byte) {
 	if len(buf) != chunkHeaderSize {
-		log.Panicf("wrong chunk header buffer size: %d != %d", len(buf), chunkHeaderSize)
+		panic(fmt.Sprintf("wrong chunk header buffer size: %d != %d", len(buf), chunkHeaderSize))
 	}
 	// header_hash       (8 bytes) — hash of the rest of the header
 	// data_size         (8 bytes) — size of data

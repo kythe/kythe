@@ -54,6 +54,17 @@ TypeScript projects this doesn't come up because all files are modules.
 
 ## Design notes
 
+### Plugin system
+
+Indexer is based on plugin system. Each plugin takes an `IndexerHost` instance
+and emits Kythe nodes, facts and edges. Plugin usually iterates through a set of
+srcs files and processes them resulting in Kythe data.
+
+There is one default plugin that always included - `TypescriptIndexer`. This
+plugin does the main indexing work: go through all symbols in file and emit
+nodes and edges for them. Other plugins live outside of this repo and are can
+be passed as optional array.
+
 ### Separate compilation
 
 The Google TypeScript build relies heavily on TypeScript's `--declaration` flag

@@ -20,7 +20,8 @@ cc_library(
     deps = [
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:xref_cc_proto",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -30,10 +31,14 @@ cc_library(
     srcs = [
         "markup_handler_test.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":markup_handler",
         "//third_party:gtest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:initialize",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -60,7 +65,7 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:xref_cc_proto",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
     ],
 )
 
@@ -70,12 +75,15 @@ cc_library(
     srcs = [
         "html_renderer_test.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":html_renderer",
         ":markup_handler",
         "//kythe/proto:common_cc_proto",
         "//third_party:gtest",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log:initialize",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -93,6 +101,9 @@ cc_binary(
     srcs = [
         "doc.cc",
     ],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":html_renderer",
         ":markup_handler",
@@ -102,11 +113,14 @@ cc_binary(
         "//kythe/cxx/common:net_client",
         "//kythe/cxx/common/schema:edges",
         "//kythe/cxx/common/schema:facts",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//src/google/protobuf/io",
     ],
 )

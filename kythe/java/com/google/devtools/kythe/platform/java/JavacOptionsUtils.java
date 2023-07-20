@@ -26,11 +26,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.sun.tools.javac.api.JavacTool;
+import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
@@ -57,6 +59,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>To make modifications to javac commandline arguments, use {@code ModifiableOptions.of(args)}.
  */
 public class JavacOptionsUtils {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   private JavacOptionsUtils() {}
 
   private static final Path JAVA_HOME = Paths.get(StandardSystemProperty.JAVA_HOME.value());
@@ -320,8 +324,8 @@ public class JavacOptionsUtils {
 
       // We need to call removeArgumentPaths() even if we don't use the return value because it
       // strips out any existing command-line-specified values from 'arguments'.
-      List<String> argumentPaths = this.removeArgumentPaths(option);
-      List<String> detailsPaths =
+      ImmutableList<String> argumentPaths = this.removeArgumentPaths(option);
+      ImmutableList<String> detailsPaths =
           pathList.stream()
               .flatMap(pL -> PATH_SPLITTER.splitToList(pL).stream())
               .collect(toImmutableList());
@@ -360,6 +364,56 @@ public class JavacOptionsUtils {
       acceptOptions(handleOpts(ImmutableList.of(option)), x -> {}, unmatched, matched);
       internal = replacements;
       return paths.build();
+    }
+
+    /**
+     * Find any -source flags that specify a version of java that the JRE can't support and replace
+     * them with the lowest version that the JRE does support.
+     *
+     * <p>There may be problems during analysis due to flags passed to javac or language features
+     * that changed, but the alternative is to have the analysis fail immediately when we send the
+     * flag to the underlying Java APIs to do the analysis.
+     */
+    public ModifiableOptions updateToMinimumSupportedSourceVersion() {
+      ArrayList<String> unsupportedVersions = new ArrayList<>();
+      ArrayList<String> supportedVersions = new ArrayList<>();
+      List<String> replacements = new ArrayList<>(internal.size());
+      Consumer<String> matched =
+          (value) -> {
+            Source v = Source.lookup(value);
+            if (v == null) {
+              logger.atWarning().log("Could not parse source version number: %s", value);
+              // Don't mutate the flag if it can't be parsed.
+              supportedVersions.add(value);
+            } else if (v.compareTo(Source.MIN) < 0) {
+              unsupportedVersions.add(value);
+            } else {
+              supportedVersions.add(value);
+            }
+          };
+      Consumer<String> unmatched = replacements::add;
+      acceptOptions(handleOpts(ImmutableList.of(Option.SOURCE)), x -> {}, unmatched, matched);
+      internal = replacements;
+
+      if (!supportedVersions.isEmpty() || !unsupportedVersions.isEmpty()) {
+        if (supportedVersions.size() + unsupportedVersions.size() > 1) {
+          logger.atWarning().log("More than one -source flag passed, only using the last value");
+        }
+        internal.add(Option.SOURCE.getPrimaryName());
+        if (!supportedVersions.isEmpty()) {
+          internal.add(Iterables.getLast(supportedVersions));
+        } else if (!unsupportedVersions.isEmpty()) {
+          internal.add(Source.MIN.name);
+          // If we changed the source version, remove the target flag since the set of valid target
+          // values depends on what source was set to. Since we are already changing the source
+          // version, it shouldn't be any worse to change the explicit target version and instead
+          // use the default.
+          removeOptions(ImmutableSet.of(Option.TARGET));
+          // TODO(salguarnieri) increment a counter here.
+        }
+      }
+
+      return this;
     }
 
     /** Applies handler to the interal options and returns the result. */

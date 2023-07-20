@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/compare"
+	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -37,8 +37,8 @@ import (
 
 // A testreq is the equivalent of a request, pre-encoding.
 type testreq struct {
-	Type string      `json:"req,omitempty"`
-	Args interface{} `json:"args,omitempty"`
+	Type string `json:"req,omitempty"`
+	Args any    `json:"args,omitempty"`
 }
 
 // An indexer simulates an indexer process. It sends each of the requests in
@@ -163,7 +163,7 @@ var (
 const analysisReply = `{"rsp":"ok","args":{"fds":"Q","rev":"1","unit":{"v_name":{"signature":"test"}}}}`
 const analysisWireReply = `{"rsp":"ok","args":{"fds":"Q","rev":"1","unit":"CgYKBHRlc3Q="}}`
 
-func mustMarshal(v interface{}) string {
+func mustMarshal(v any) string {
 	bits, err := json.Marshal(v)
 	if err != nil {
 		log.Fatalf("Error marshaling JSON: %v", err)

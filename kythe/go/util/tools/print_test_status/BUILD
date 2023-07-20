@@ -15,6 +15,7 @@ go_binary(
     srcs = ["print_test_status.go"],
     deps = [
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/log",
         "//third_party/bazel:test_status_go_proto",
         "@org_golang_google_protobuf//proto:go_default_library",
     ],

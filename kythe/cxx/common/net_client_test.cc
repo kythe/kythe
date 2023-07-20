@@ -21,7 +21,10 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/initialize.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/graph.pb.h"
@@ -39,12 +42,11 @@ void TestNodeRequest() {
   request.add_ticket("kythe:?lang=c%2B%2B#SOMEFILE");
   std::string error;
   CHECK(client.Nodes(request, &response, &error)) << error;
-  CHECK_EQ(1, response.nodes().size()) << response.DebugString();
+  CHECK_EQ(1, response.nodes().size()) << response;
 
-  CHECK_EQ(request.ticket(0), response.nodes().begin()->first)
-      << response.DebugString();
+  CHECK_EQ(request.ticket(0), response.nodes().begin()->first) << response;
   kythe::proto::common::NodeInfo node = response.nodes().begin()->second;
-  CHECK_EQ(1, node.facts().size()) << response.DebugString();
+  CHECK_EQ(1, node.facts().size()) << response;
 
   CHECK_EQ("/kythe/node/kind", node.facts().begin()->first);
   CHECK_EQ("file", node.facts().begin()->second);
@@ -53,7 +55,7 @@ void TestNodeRequest() {
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   absl::ParseCommandLine(argc, argv);
   kythe::JsonClient::InitNetwork();
   TestNodeRequest();
