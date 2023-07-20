@@ -2,7 +2,9 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load(":genproto.bzl", "rust_proto_library", "update_generated_protos", go_kythe_proto = "go_proto_library")
+load(":genproto.bzl", "update_generated_protos")
+load(":go.bzl", go_kythe_proto = "go_proto_library")
+load(":rust.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -687,6 +689,16 @@ java_proto_library(
 bzl_library(
     name = "genproto_bzl",
     srcs = ["genproto.bzl"],
+)
+
+bzl_library(
+    name = "go_bzl",
+    srcs = ["go.bzl"],
+)
+
+bzl_library(
+    name = "rust_bzl",
+    srcs = ["rust.bzl"],
 )
 
 proto_library(
