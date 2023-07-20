@@ -439,7 +439,7 @@ void KytheGraphObserver::recordIncludesRange(const Range& source_range,
 
 void KytheGraphObserver::recordUserDefinedNode(
     const NodeId& node, llvm::StringRef kind,
-    const absl::optional<Completeness> completeness) {
+    const std::optional<Completeness> completeness) {
   VNameRef node_vname = VNameRefFromNodeId(node);
   recorder_->AddProperty(node_vname, PropertyID::kNodeKind, ConvertRef(kind));
   if (completeness) {
@@ -450,7 +450,7 @@ void KytheGraphObserver::recordUserDefinedNode(
 
 void KytheGraphObserver::recordVariableNode(
     const NodeId& node, Completeness completeness, VariableSubkind subkind,
-    const absl::optional<MarkedSource>& marked_source) {
+    const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node);
   recorder_->AddProperty(node_vname, NodeKindID::kVariable);
   recorder_->AddProperty(node_vname, PropertyID::kComplete,
@@ -466,7 +466,7 @@ void KytheGraphObserver::recordVariableNode(
 }
 
 void KytheGraphObserver::recordNamespaceNode(
-    const NodeId& node, const absl::optional<MarkedSource>& marked_source) {
+    const NodeId& node, const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node);
   if (written_namespaces_.insert(node.ToClaimedString()).second) {
     recorder_->AddProperty(node_vname, NodeKindID::kPackage);
@@ -579,7 +579,7 @@ bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
 void KytheGraphObserver::ApplyMetadataRules(
     const GraphObserver::Range& source_range,
     const GraphObserver::NodeId& primary_anchored_to_decl,
-    const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+    const std::optional<GraphObserver::NodeId>& primary_anchored_to_def,
     EdgeKindID anchor_edge_kind, const kythe::proto::VName& anchor_name) {
   if (source_range.Kind == Range::RangeKind::Physical) {
     if (anchor_edge_kind == EdgeKindID::kDefinesBinding) {
@@ -615,7 +615,7 @@ void KytheGraphObserver::ApplyMetadataRules(
 void KytheGraphObserver::RecordStampedAnchor(
     const GraphObserver::Range& source_range,
     const GraphObserver::NodeId& primary_anchored_to_decl,
-    const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+    const std::optional<GraphObserver::NodeId>& primary_anchored_to_def,
     EdgeKindID anchor_edge_kind, const GraphObserver::NodeId& stamp) {
   proto::VName anchor_name = StampedVNameFromRange(source_range, stamp);
   if (stamped_ranges_.emplace(source_range, stamp).second) {
@@ -650,7 +650,7 @@ void KytheGraphObserver::RecordAnchor(
   if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRefFromNodeId(primary_anchored_to));
-    ApplyMetadataRules(source_range, primary_anchored_to, absl::nullopt,
+    ApplyMetadataRules(source_range, primary_anchored_to, std::nullopt,
                        anchor_edge_kind, anchor_name);
   }
 }
@@ -687,14 +687,14 @@ void KytheGraphObserver::recordCallEdge(
   RecordAnchor(source_range, callee_id, kind, Claimability::Unclaimable);
 }
 
-absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
+std::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
     const Range& range) {
   // Always use physical ranges for these. We'll record a reference site as
   // well, but including virtual ranges in the callgraph itself isn't useful
   // (since the data we'd be expressing amounts to 'a call exists, somewhere').
   if (range.Kind == GraphObserver::Range::RangeKind::Implicit ||
       !range.PhysicalRange.getBegin().isValid()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   clang::SourceLocation begin = range.PhysicalRange.getBegin();
   if (begin.isMacroID()) {
@@ -712,7 +712,7 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
                        FunctionSubkind::Initializer, file_source);
     recordDefinitionBindingRange(
         Range(clang::SourceRange(file_start, file_start), token), file_id,
-        absl::nullopt);
+        std::nullopt);
   }
   return file_id;
 }
@@ -845,8 +845,8 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
 
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
     const NodeId& type_id, const NodeId& aliased_type,
-    const absl::optional<NodeId>& root_aliased_type,
-    const absl::optional<MarkedSource>& marked_source) {
+    const std::optional<NodeId>& root_aliased_type,
+    const std::optional<MarkedSource>& marked_source) {
   if (!deferring_nodes_ ||
       written_types_.insert(type_id.ToClaimedString()).second) {
     VNameRef type_vname(VNameRefFromNodeId(type_id));
@@ -897,14 +897,14 @@ void KytheGraphObserver::recordDocumentationRange(
 
 void KytheGraphObserver::recordFullDefinitionRange(
     const GraphObserver::Range& source_range, const NodeId& node_decl,
-    const absl::optional<NodeId>& node_def) {
+    const std::optional<NodeId>& node_def) {
   RecordStampedAnchor(source_range, node_decl, node_def,
                       EdgeKindID::kDefinesFull, node_decl);
 }
 
 void KytheGraphObserver::recordDefinitionBindingRange(
     const GraphObserver::Range& binding_range, const NodeId& node_decl,
-    const absl::optional<NodeId>& node_def, Stamping stamping) {
+    const std::optional<NodeId>& node_def, Stamping stamping) {
   if (stamping == Stamping::Stamped) {
     RecordStampedAnchor(binding_range, node_decl, node_def,
                         EdgeKindID::kDefinesBinding, node_decl);
@@ -917,7 +917,7 @@ void KytheGraphObserver::recordDefinitionBindingRange(
 void KytheGraphObserver::recordDefinitionRangeWithBinding(
     const GraphObserver::Range& source_range,
     const GraphObserver::Range& binding_range, const NodeId& node_decl,
-    const absl::optional<NodeId>& node_def) {
+    const std::optional<NodeId>& node_def) {
   RecordStampedAnchor(source_range, node_decl, node_def,
                       EdgeKindID::kDefinesFull, node_decl);
   RecordStampedAnchor(binding_range, node_decl, node_def,
@@ -940,8 +940,8 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
-    const NodeId& name_id, const absl::optional<MarkedSource>& marked_source,
-    const absl::optional<NodeId>& parent) {
+    const NodeId& name_id, const std::optional<MarkedSource>& marked_source,
+    const std::optional<NodeId>& parent) {
   if (!deferring_nodes_ ||
       written_types_.insert(name_id.ToClaimedString()).second) {
     VNameRef type_vname(VNameRefFromNodeId(name_id));
@@ -1036,7 +1036,7 @@ void KytheGraphObserver::recordIntegerConstantNode(const NodeId& node_id,
 
 void KytheGraphObserver::recordFunctionNode(
     const NodeId& node_id, Completeness completeness, FunctionSubkind subkind,
-    const absl::optional<MarkedSource>& marked_source) {
+    const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kFunction);
   recorder_->AddProperty(node_vname, PropertyID::kComplete,
@@ -1067,13 +1067,13 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
 }
 
 void KytheGraphObserver::recordMarkedSource(
-    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
+    const NodeId& node_id, const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   AddMarkedSource(node_vname, marked_source);
 }
 
 void KytheGraphObserver::recordTVarNode(
-    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
+    const NodeId& node_id, const std::optional<MarkedSource>& marked_source) {
   auto node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kTVar);
   AddMarkedSource(node_vname, marked_source);
@@ -1100,7 +1100,7 @@ void KytheGraphObserver::recordLookupNode(const NodeId& node_id,
 }
 
 void KytheGraphObserver::recordInterfaceNode(
-    const NodeId& node_id, const absl::optional<MarkedSource>& marked_source) {
+    const NodeId& node_id, const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kInterface);
   AddMarkedSource(node_vname, marked_source);
@@ -1108,7 +1108,7 @@ void KytheGraphObserver::recordInterfaceNode(
 
 void KytheGraphObserver::recordRecordNode(
     const NodeId& node_id, RecordKind kind, Completeness completeness,
-    const absl::optional<MarkedSource>& marked_source) {
+    const std::optional<MarkedSource>& marked_source) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kRecord);
   switch (kind) {

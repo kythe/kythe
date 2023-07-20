@@ -17,11 +17,11 @@
 #ifndef KYTHE_CXX_EXTRACTOR_TESTLIB_H_
 #define KYTHE_CXX_EXTRACTOR_TESTLIB_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "kythe/proto/analysis.pb.h"
@@ -39,8 +39,8 @@ struct ExtractorOptions {
 };
 
 /// \brief Runs the C++ extractor using the provided options and returns the
-/// resulting compilations or absl::nullopt if there was an error.
-absl::optional<std::vector<kythe::proto::CompilationUnit>> ExtractCompilations(
+/// resulting compilations or std::nullopt if there was an error.
+std::optional<std::vector<kythe::proto::CompilationUnit>> ExtractCompilations(
     ExtractorOptions options);
 
 /// \brief Runs the C++ extractor using the provided options and returns the
@@ -50,7 +50,7 @@ kythe::proto::CompilationUnit ExtractSingleCompilationOrDie(
 
 /// \brief Resolves the provided workspace-relative path to find the absolute
 /// runfiles path of the given file.
-absl::optional<std::string> ResolveRunfiles(absl::string_view path);
+std::optional<std::string> ResolveRunfiles(absl::string_view path);
 
 /// \brief Compares the two protobuf messages with MessageDifferencer and
 /// reports the delta.

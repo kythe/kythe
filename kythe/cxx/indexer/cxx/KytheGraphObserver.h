@@ -18,6 +18,7 @@
 #define KYTHE_CXX_INDEXER_CXX_KYTHE_GRAPH_OBSERVER_H_
 
 #include <functional>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -26,7 +27,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
-#include "absl/types/optional.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/language.h"
@@ -208,24 +208,24 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId recordTypeAliasNode(
       const NodeId& type_id, const NodeId& aliased_type,
-      const absl::optional<NodeId>& root_aliased_type,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<NodeId>& root_aliased_type,
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordFunctionNode(
       const NodeId& node, Completeness function_completeness,
       FunctionSubkind subkind,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void assignUsr(const NodeId& node, llvm::StringRef usr,
                  int byte_size) override;
 
   void recordTVarNode(
       const NodeId& node,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordMarkedSource(
       const NodeId& node,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordLookupNode(const NodeId& node, llvm::StringRef text) override;
 
@@ -237,11 +237,11 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordInterfaceNode(
       const NodeId& node,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordRecordNode(
       const NodeId& node, RecordKind Kind, Completeness record_completeness,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordEnumNode(const NodeId& node, Completeness completeness,
                       EnumKind kind) override;
@@ -251,9 +251,9 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId nodeIdForNominalTypeNode(const NameId& name_id) const override;
 
-  NodeId recordNominalTypeNode(
-      const NodeId& name_id, const absl::optional<MarkedSource>& marked_source,
-      const absl::optional<NodeId>& parent) override;
+  NodeId recordNominalTypeNode(const NodeId& name_id,
+                               const std::optional<MarkedSource>& marked_source,
+                               const std::optional<NodeId>& parent) override;
 
   void recordCategoryExtendsEdge(const NodeId& from, const NodeId& to) override;
 
@@ -279,28 +279,27 @@ class KytheGraphObserver : public GraphObserver {
   void recordVariableNode(
       const NodeId& decl_node, Completeness var_completeness,
       VariableSubkind subkind,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
   void recordNamespaceNode(
       const NodeId& decl_node,
-      const absl::optional<MarkedSource>& marked_source) override;
+      const std::optional<MarkedSource>& marked_source) override;
 
-  void recordUserDefinedNode(
-      const NodeId& node, llvm::StringRef node_kind,
-      absl::optional<Completeness> completeness) override;
+  void recordUserDefinedNode(const NodeId& node, llvm::StringRef node_kind,
+                             std::optional<Completeness> completeness) override;
 
   void recordFullDefinitionRange(
       const Range& source_range, const NodeId& node_decl,
-      const absl::optional<NodeId>& node_def) override;
+      const std::optional<NodeId>& node_def) override;
 
   void recordDefinitionBindingRange(
       const Range& binding_range, const NodeId& node_decl,
-      const absl::optional<NodeId>& node_def,
+      const std::optional<NodeId>& node_def,
       Stamping stamping = Stamping::Stamped) override;
 
   void recordDefinitionRangeWithBinding(
       const Range& source_range, const Range& binding_range,
-      const NodeId& node_decl, const absl::optional<NodeId>& node_def) override;
+      const NodeId& node_decl, const std::optional<NodeId>& node_def) override;
 
   void recordDocumentationRange(const Range& source_range,
                                 const NodeId& node) override;
@@ -354,7 +353,7 @@ class KytheGraphObserver : public GraphObserver {
                       const NodeId& callee_id, Implicit i,
                       CallDispatch d) override;
 
-  absl::optional<NodeId> recordFileInitializer(const Range& range) override;
+  std::optional<NodeId> recordFileInitializer(const Range& range) override;
 
   void recordMacroNode(const NodeId& macro_id) override;
 
@@ -479,7 +478,7 @@ class KytheGraphObserver : public GraphObserver {
   const NamespaceTokens& getNamespaceTokens(clang::SourceLocation loc) const;
 
   void AddMarkedSource(const VNameRef& vname,
-                       const absl::optional<MarkedSource>& signature) {
+                       const std::optional<MarkedSource>& signature) {
     if (signature) {
       recorder_->AddMarkedSource(vname, *signature);
     }
@@ -515,12 +514,12 @@ class KytheGraphObserver : public GraphObserver {
   void ApplyMetadataRules(
       const GraphObserver::Range& source_range,
       const GraphObserver::NodeId& primary_anchored_to_decl,
-      const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+      const std::optional<GraphObserver::NodeId>& primary_anchored_to_def,
       EdgeKindID anchor_edge_kind, const kythe::proto::VName& anchor_name);
   void RecordStampedAnchor(
       const GraphObserver::Range& source_range,
       const GraphObserver::NodeId& primary_anchored_to_decl,
-      const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+      const std::optional<GraphObserver::NodeId>& primary_anchored_to_def,
       EdgeKindID anchor_edge_kind, const GraphObserver::NodeId& stamp);
   void RecordAnchor(const GraphObserver::Range& source_range,
                     const GraphObserver::NodeId& primary_anchored_to,

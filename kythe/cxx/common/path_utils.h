@@ -18,6 +18,7 @@
 #define KYTHE_CXX_COMMON_PATH_UTILS_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -25,7 +26,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/types/optional.h"
 
 namespace kythe {
 
@@ -107,12 +107,12 @@ class PathCanonicalizer {
 
  private:
   explicit PathCanonicalizer(Policy policy, PathCleaner cleaner,
-                             absl::optional<PathRealizer> realizer)
+                             std::optional<PathRealizer> realizer)
       : policy_(policy), cleaner_(cleaner), realizer_(realizer) {}
 
   Policy policy_;
   PathCleaner cleaner_;
-  absl::optional<PathRealizer> realizer_;
+  std::optional<PathRealizer> realizer_;
 };
 
 /// \brief Parses a flag string as a PathCanonicalizer::Policy.
@@ -132,7 +132,7 @@ std::string AbslUnparseFlag(PathCanonicalizer::Policy policy);
 ///
 /// Parses either integeral values of enumerators or lower-case,
 /// dash-separated names: "clean-only", "prefer-relative", "prefer-real".
-absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+std::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
     absl::string_view policy);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
