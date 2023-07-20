@@ -22,7 +22,7 @@ RUN apt-get update \
                 # pre-commit dependencies
                 python3 python3-dev python3-pip \
                 # Linter dependencies
-                golang-1.18-go shellcheck clang-format-14 openjdk-11-jre-headless git \
+                golang-1.19-go shellcheck clang-format-14 openjdk-11-jre-headless git \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
@@ -30,11 +30,11 @@ RUN apt-get update \
 RUN update-alternatives \
       --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14    100
 
-# Make go-1.18 the default
+# Make go-1.19 the default
 RUN update-alternatives \
-      --install /usr/bin/go go /usr/lib/go-1.18/bin/go  100
+      --install /usr/bin/go go /usr/lib/go-1.19/bin/go  100
 RUN update-alternatives \
-      --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt  100
+      --install /usr/bin/gofmt gofmt /usr/lib/go-1.19/bin/gofmt  100
 
 # Install pip-packages
 COPY requirements.txt pre-commit-requirements.txt
