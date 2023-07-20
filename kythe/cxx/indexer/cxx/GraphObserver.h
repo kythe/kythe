@@ -21,10 +21,10 @@
 /// \brief Defines the class kythe::GraphObserver
 
 #include <string>
+#include <string_view>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
@@ -72,16 +72,16 @@ class ProfileBlock {
 
 class HashRecorder {
  public:
-  virtual void RecordHash(absl::string_view hash, absl::string_view web64hash,
-                          absl::string_view original) {}
+  virtual void RecordHash(std::string_view hash, std::string_view web64hash,
+                          std::string_view original) {}
   virtual ~HashRecorder() = default;
 };
 
 class FileHashRecorder : public HashRecorder {
  public:
-  explicit FileHashRecorder(absl::string_view path);
-  void RecordHash(absl::string_view hash, absl::string_view web64hash,
-                  absl::string_view original) override;
+  explicit FileHashRecorder(std::string_view path);
+  void RecordHash(std::string_view hash, std::string_view web64hash,
+                  std::string_view original) override;
   ~FileHashRecorder() override;
 
  private:
@@ -131,16 +131,16 @@ class GraphObserver {
 
   /// \brief Uses a one-way function to encode `InString`. Guaranteed to return
   /// only websafe base64 characters.
-  std::string ForceEncodeString(absl::string_view InString) const;
+  std::string ForceEncodeString(std::string_view InString) const;
 
   /// \brief Uses a one-way function to compress `InString` if it's longer than
   /// the result of using that function would be.
-  std::string CompressString(absl::string_view InString) const;
+  std::string CompressString(std::string_view InString) const;
 
   /// \brief Uses a one-way function to compress the anchor signature
   /// `InSignature` if it's longer than the result of using that function would
   /// be.
-  std::string CompressAnchorSignature(absl::string_view InSignature) const;
+  std::string CompressAnchorSignature(std::string_view InSignature) const;
 
   /// \brief Push another group onto the group stack, assigning
   /// any observations that follow to it.
@@ -1135,7 +1135,7 @@ class GraphObserver {
       std::function<bool(clang::FileID, const NodeId&)> iter) const {}
 
   /// Name of the platform or build configuration to emit on anchors.
-  virtual absl::string_view getBuildConfig() const { return ""; }
+  virtual std::string_view getBuildConfig() const { return ""; }
 
  protected:
   clang::SourceManager* SourceManager = nullptr;

@@ -17,6 +17,7 @@
 #include "IndexerASTHooks.h"
 
 #include <algorithm>
+#include <string_view>
 #include <tuple>
 
 #include "GraphObserver.h"
@@ -26,7 +27,6 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"
@@ -5876,27 +5876,27 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
                                  NodeIds);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Decl* Decl) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Decl);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Expr* Expr) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Expr, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             const clang::Type* Type) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(*Type, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             clang::QualType Type) const {
   LOG(ERROR) << msg << " :" << std::endl << StreamAdapter::Dump(Type, Context);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
+void IndexerASTVisitor::LogErrorWithASTDump(std::string_view msg,
                                             clang::TypeLoc Type) const {
   LOG(ERROR) << msg << " :" << std::endl
              << "@"

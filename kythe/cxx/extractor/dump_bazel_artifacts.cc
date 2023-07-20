@@ -16,12 +16,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/log/log.h"
-#include "absl/strings/string_view.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/extractor/bazel_artifact_reader.h"
@@ -32,7 +32,7 @@ ABSL_FLAG(std::string, build_event_binary_file, "",
 namespace kythe {
 namespace {
 
-absl::string_view Basename(absl::string_view path) {
+std::string_view Basename(std::string_view path) {
   if (auto pos = path.rfind('/'); pos != path.npos) {
     return path.substr(pos + 1);
   }

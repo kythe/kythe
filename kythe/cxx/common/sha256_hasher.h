@@ -22,8 +22,8 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 
 namespace kythe {
@@ -45,13 +45,13 @@ class Sha256Hasher {
 
    public:
     template <typename T, typename Dest = first_convertible<
-                              absl::string_view, absl::Span<const std::byte>,
+                              std::string_view, absl::Span<const std::byte>,
                               absl::Span<const unsigned char>,
                               absl::Span<const char>>::from<T>>
     ByteView(T&& data)  // NOLINT
         : ByteView(Dest(data)) {}
 
-    ByteView(absl::string_view data)  // NOLINT
+    ByteView(std::string_view data)  // NOLINT
         : ByteView(data.data(), data.size()) {}
     ByteView(absl::Span<const std::byte> data)  // NOLINT
         : ByteView(data.data(), data.size()) {}

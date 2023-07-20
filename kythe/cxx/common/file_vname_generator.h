@@ -19,11 +19,11 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "kythe/proto/storage.pb.h"
 #include "re2/re2.h"
 
@@ -38,15 +38,15 @@ class FileVNameGenerator {
   /// \param json_string The string containing the configuration to add.
   /// \param error_text Non-null. Will be set to text describing any errors.
   /// \return false if the string could not be parsed.
-  bool LoadJsonString(absl::string_view data, std::string* error_text);
-  absl::Status LoadJsonString(absl::string_view data);
+  bool LoadJsonString(std::string_view data, std::string* error_text);
+  absl::Status LoadJsonString(std::string_view data);
 
   /// \brief Returns a base VName for a given file path (or an empty VName if
   /// no configuration rule matches the path).
-  kythe::proto::VName LookupBaseVName(absl::string_view path) const;
+  kythe::proto::VName LookupBaseVName(std::string_view path) const;
 
   /// \brief Returns a VName for the given file path.
-  kythe::proto::VName LookupVName(absl::string_view path) const;
+  kythe::proto::VName LookupVName(std::string_view path) const;
 
   /// \brief Sets the default base VName to use when no rules match.
   void set_default_base_vname(const kythe::proto::VName& default_vname) {

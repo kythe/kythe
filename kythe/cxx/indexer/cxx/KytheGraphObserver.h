@@ -397,7 +397,7 @@ class KytheGraphObserver : public GraphObserver {
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName& vname) { claimant_ = vname; }
 
-  void set_default_corpus(absl::string_view corpus) {
+  void set_default_corpus(std::string_view corpus) {
     default_token_.mutable_vname()->set_corpus(std::string(corpus));
     type_token_.mutable_vname()->set_corpus(std::string(corpus));
   }
@@ -458,7 +458,7 @@ class KytheGraphObserver : public GraphObserver {
   void iterateOverClaimedFiles(
       std::function<bool(clang::FileID, const NodeId&)> iter) const override;
 
-  absl::string_view getBuildConfig() const override { return build_config_; }
+  std::string_view getBuildConfig() const override { return build_config_; }
 
   std::vector<std::pair<clang::FileID, const MetadataFile*>> GetMetadataFiles()
       const override {

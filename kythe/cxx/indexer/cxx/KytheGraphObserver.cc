@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "IndexerASTHooks.h"
 #include "absl/flags/flag.h"
@@ -26,7 +27,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -62,7 +62,7 @@ namespace kythe {
 namespace {
 
 /// \brief Clang builtins whose name and token match.
-constexpr absl::string_view kUniformClangBuiltins[] = {
+constexpr std::string_view kUniformClangBuiltins[] = {
     "void",
     "bool",
     "_Bool",
@@ -151,8 +151,8 @@ struct ClaimedStringFormatter {
   }
 };
 
-absl::string_view ConvertRef(llvm::StringRef ref) {
-  return absl::string_view(ref.data(), ref.size());
+std::string_view ConvertRef(llvm::StringRef ref) {
+  return std::string_view(ref.data(), ref.size());
 }
 
 const char* VisibilityPropertyValue(clang::AccessSpecifier access) {
@@ -723,12 +723,12 @@ VNameRef KytheGraphObserver::VNameRefFromNodeId(
     return DecodeMintedVName(node_id);
   }
   VNameRef out_ref;
-  out_ref.set_language(absl::string_view(supported_language::kIndexerLang));
+  out_ref.set_language(std::string_view(supported_language::kIndexerLang));
   if (const auto* token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
     if (token->language_independent()) {
-      out_ref.set_language(absl::string_view());
+      out_ref.set_language(std::string_view());
     }
   }
   out_ref.set_signature(ConvertRef(node_id.IdentityRef()));
@@ -1058,7 +1058,7 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
   usr_vname.set_corpus(usr_default_corpus_
-                           ? absl::string_view(default_token_.vname().corpus())
+                           ? std::string_view(default_token_.vname().corpus())
                            : "");
   usr_vname.set_signature(hex);
   usr_vname.set_language("usr");
@@ -1321,11 +1321,10 @@ void KytheGraphObserver::applyMetadataFile(
   }
   if (auto metadata = meta_supports_->ParseFile(
           std::string(file->getName()),
-          absl::string_view(buffer->getBuffer().data(),
-                            buffer->getBufferSize()),
+          std::string_view(buffer->getBuffer().data(), buffer->getBufferSize()),
           search_string,
-          absl::string_view(target_buffer->getBuffer().data(),
-                            target_buffer->getBufferSize()))) {
+          std::string_view(target_buffer->getBuffer().data(),
+                           target_buffer->getBufferSize()))) {
     meta_.emplace(id, std::move(metadata));
   }
 }
@@ -1615,22 +1614,22 @@ KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
 }
 
 void KytheGraphObserver::RegisterBuiltins() {
-  auto RegisterBuiltin = [&](absl::string_view name,
+  auto RegisterBuiltin = [&](std::string_view name,
                              const MarkedSource& marked_source) {
     builtins_.emplace(name, Builtin{NodeId::CreateUncompressed(
                                         getDefaultClaimToken(),
                                         absl::StrCat(name, "#builtin")),
                                     marked_source, false});
   };
-  auto RegisterTokenBuiltin = [&](absl::string_view name,
-                                  absl::string_view token) {
+  auto RegisterTokenBuiltin = [&](std::string_view name,
+                                  std::string_view token) {
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
     sig.set_pre_text(token);
     RegisterBuiltin(name, sig);
   };
 
-  for (absl::string_view token : kUniformClangBuiltins) {
+  for (std::string_view token : kUniformClangBuiltins) {
     RegisterTokenBuiltin(token, token);
   }
 

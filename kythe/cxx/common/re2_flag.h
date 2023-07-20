@@ -19,15 +19,15 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
-#include "absl/strings/string_view.h"
 #include "re2/re2.h"
 
 namespace kythe {
 struct RE2Flag {
   std::shared_ptr<re2::RE2> value;
 };
-bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error);
+bool AbslParseFlag(std::string_view text, RE2Flag* value, std::string* error);
 std::string AbslUnparseFlag(const RE2Flag& value);
 }  // namespace kythe
 

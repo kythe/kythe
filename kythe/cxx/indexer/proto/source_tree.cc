@@ -33,8 +33,8 @@ namespace {
 // StrReplace() in open-source abseil?
 /// Finds the first occurrence of @oldsub in @s and replaces it with @newsub. If
 /// @oldsub is not present, just returns @s.
-std::string StringReplaceFirst(absl::string_view s, absl::string_view oldsub,
-                               absl::string_view newsub) {
+std::string StringReplaceFirst(std::string_view s, std::string_view oldsub,
+                               std::string_view newsub) {
   return absl::StrJoin(absl::StrSplit(s, absl::MaxSplits(oldsub, 1)), newsub);
 }
 
@@ -47,7 +47,7 @@ bool PreloadedProtoFileTree::AddFile(const std::string& filename,
 }
 
 google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
-    absl::string_view filename) {
+    std::string_view filename) {
   last_error_ = "";
 
   if (auto iter = file_mapping_cache_->find(filename);
@@ -102,7 +102,7 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
   return nullptr;
 }
 
-bool PreloadedProtoFileTree::Read(absl::string_view file_path,
+bool PreloadedProtoFileTree::Read(std::string_view file_path,
                                   std::string* out) {
   std::unique_ptr<google::protobuf::io::ZeroCopyInputStream> in_stream(
       Open({file_path.data(), file_path.size()}));

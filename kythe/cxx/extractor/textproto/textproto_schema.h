@@ -18,16 +18,15 @@
 #define KYTHE_CXX_EXTRACTOR_TEXTPROTO_SCHEMA_H_
 
 #include <string>
+#include <string_view>
 #include <vector>
-
-#include "absl/strings/string_view.h"
 
 namespace kythe {
 namespace lang_textproto {
 
 struct TextprotoSchema {
-  absl::string_view proto_message, proto_file;
-  std::vector<absl::string_view> proto_imports;
+  std::string_view proto_message, proto_file;
+  std::vector<std::string_view> proto_imports;
 };
 
 /// Parses comments at the top of textproto files that specify the corresponding
@@ -46,7 +45,7 @@ struct TextprotoSchema {
 /// incomplete.
 /// WARNING: The return value is made up of string_views that reference the
 /// input. Therefore the input string_view must outlive any use of the output.
-TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto);
+TextprotoSchema ParseTextprotoSchemaComments(std::string_view textproto);
 
 }  // namespace lang_textproto
 }  // namespace kythe

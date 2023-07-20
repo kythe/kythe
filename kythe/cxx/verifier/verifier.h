@@ -62,9 +62,9 @@ class Verifier {
   /// \param corpus the corpus to use for anchors
   /// \return false if we failed
   bool LoadInlineProtoFile(const std::string& file_data,
-                           absl::string_view path = "",
-                           absl::string_view root = "",
-                           absl::string_view corpus = "");
+                           std::string_view path = "",
+                           std::string_view root = "",
+                           std::string_view corpus = "");
 
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();

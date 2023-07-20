@@ -19,6 +19,7 @@
 #include <zip.h>
 
 #include <cstdlib>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -26,7 +27,6 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -39,11 +39,11 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::Values;
 
-absl::string_view TestTmpdir() {
+std::string_view TestTmpdir() {
   return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
 }
 
-std::string TestOutputFile(absl::string_view basename) {
+std::string TestOutputFile(std::string_view basename) {
   const auto* test_info = testing::UnitTest::GetInstance()->current_test_info();
   const auto filename =
       absl::StrReplaceAll(absl::StrCat(test_info->test_case_name(), "_",

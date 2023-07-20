@@ -19,9 +19,8 @@
 
 #include <iosfwd>
 #include <string>
+#include <string_view>
 #include <vector>
-
-#include "absl/strings/string_view.h"
 
 namespace kythe {
 
@@ -31,7 +30,7 @@ bool IsUTF8ContinuationByte(int byte);
 
 // Returns whether a UTF-8 byte from the |content| is the end of a line,
 // i.e., a '\n', or a '\r' not immediately followed by a '\n'.
-bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content);
+bool IsUTF8EndOfLineByte(int byte_offset, std::string_view content);
 
 // Describes the position of a character in a file, in an encoding-independent
 // way.  By encoding-independent, we mean that if the file were re-encoded in
@@ -77,7 +76,7 @@ class UTF8LineIndex {
   // The content must be less than 2GB long.
   //
   // Complexity: O(content.size())
-  explicit UTF8LineIndex(absl::string_view content);
+  explicit UTF8LineIndex(std::string_view content);
 
   // Given a (0-based) byte offset into the file, returns character-based
   // information on the position of that offset.
@@ -111,7 +110,7 @@ class UTF8LineIndex {
   //
   // The first line is line 1. This returned string_view is a view into the
   // buffer indexed by this UTF8LineIndex.
-  absl::string_view GetLine(int line_number) const;
+  std::string_view GetLine(int line_number) const;
 
   // Returns a substring from the line at a given line number, starting from
   // a given |start_position_in_code_points| and with a length of
@@ -121,9 +120,9 @@ class UTF8LineIndex {
   // the rest of the line including the end-of-line marker.
   //
   // TODO: Optimize this function for the case of ASCII.
-  absl::string_view GetSubstrFromLine(int line_number,
-                                      int start_position_in_code_points,
-                                      int length_in_code_points) const;
+  std::string_view GetSubstrFromLine(int line_number,
+                                     int start_position_in_code_points,
+                                     int length_in_code_points) const;
 
   // Returns the number of lines in the indexed file, including the last line
   // even if it was not terminated.
@@ -142,7 +141,7 @@ class UTF8LineIndex {
   }
 
   // Returns (a reference to) the content of the indexed file.
-  absl::string_view str() const { return content_; }
+  std::string_view str() const { return content_; }
 
  private:
   // Populates the index vectors based on content_.
@@ -157,7 +156,7 @@ class UTF8LineIndex {
   }
 
   // The content covered by this UTF8LineIndex.
-  absl::string_view content_;
+  std::string_view content_;
 
   // line_ends_byte_offsets_[n] stores the byte offset of the start of line n-1.
   std::vector<int> line_begin_byte_offsets_;

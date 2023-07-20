@@ -146,7 +146,7 @@ class NodeStack {
   /// \brief Copy data from `annotations` and `formatted_range` to
   /// `dest_source`.
   /// \return the MarkedSource node covering an identifier, or null.
-  MarkedSource* ProcessAnnotations(absl::string_view formatted_range,
+  MarkedSource* ProcessAnnotations(std::string_view formatted_range,
                                    const std::vector<Annotation>& annotations,
                                    MarkedSource* dest_source) {
     /// For certain kinds of annotations, we'll substitute our own special
@@ -231,9 +231,9 @@ class NodeStack {
   /// \param at_end whether the span on the top of the stack is about to be
   /// popped because there are no other spans that get opened before the
   /// current span closes.
-  void AppendToTop(absl::string_view formatted_range, size_t cancel_count,
+  void AppendToTop(std::string_view formatted_range, size_t cancel_count,
                    size_t start, size_t end, bool at_end) {
-    absl::string_view text = formatted_range.substr(start, end - start);
+    std::string_view text = formatted_range.substr(start, end - start);
     CHECK(!nodes_.empty());
     if (cancel_count != 0) {
       return;

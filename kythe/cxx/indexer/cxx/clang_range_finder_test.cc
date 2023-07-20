@@ -17,13 +17,13 @@
 
 #include <functional>
 #include <memory>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/ASTUnit.h"
@@ -47,17 +47,17 @@ class ClangRangeFinderTest : public ::testing::Test {
     return *ABSL_DIE_IF_NULL(ast_);
   }
 
-  absl::string_view GetSourceText(clang::SourceRange range) {
+  std::string_view GetSourceText(clang::SourceRange range) {
     return GetSourceText(clang::CharSourceRange::getCharRange(range));
   }
 
-  absl::string_view GetSourceText(clang::CharSourceRange range) {
+  std::string_view GetSourceText(clang::CharSourceRange range) {
     CHECK(range.isValid());
     bool invalid = false;
     auto text = clang::Lexer::getSourceText(range, source_manager(),
                                             lang_options(), &invalid);
     CHECK(!invalid);
-    return absl::string_view(text.data(), text.size());
+    return std::string_view(text.data(), text.size());
   }
 
   const clang::Decl* top_level_back() { return *(ast_->top_level_end() - 1); }
@@ -74,10 +74,10 @@ class ClangRangeFinderTest : public ::testing::Test {
   std::unique_ptr<clang::ASTUnit> ast_;
 };
 
-// Returns a matcher checking for an empty absl::string_view starting at data.
+// Returns a matcher checking for an empty std::string_view starting at data.
 auto EmptyAt(const char* data) {
   return ::testing::AllOf(
-      ::testing::Property(&absl::string_view::data, ::testing::Eq(data)),
+      ::testing::Property(&std::string_view::data, ::testing::Eq(data)),
       ::testing::IsEmpty());
 }
 
@@ -125,12 +125,12 @@ std::vector<const clang::NamedDecl*> FindAllNamedDecls(clang::ASTUnit& ast) {
 class NamedDeclTestCase {
  public:
   using DeclFinder = std::function<const clang::NamedDecl*(clang::ASTUnit&)>;
-  NamedDeclTestCase(absl::string_view format, absl::string_view name = "entity",
+  NamedDeclTestCase(std::string_view format, std::string_view name = "entity",
                     DeclFinder find_decl = &FindLastDecl)
       : format_(ABSL_DIE_IF_NULL(absl::ParsedFormat<'s'>::New(format))),
         name_(name),
         find_decl_(std::move(find_decl)) {}
-  NamedDeclTestCase(absl::string_view format, DeclFinder find_decl)
+  NamedDeclTestCase(std::string_view format, DeclFinder find_decl)
       : NamedDeclTestCase(format, "entity", std::move(find_decl)) {}
 
   std::string SourceText() const { return absl::StrFormat(*format_, name_); }
@@ -139,7 +139,7 @@ class NamedDeclTestCase {
     return ABSL_DIE_IF_NULL(find_decl_(ast));
   }
 
-  absl::string_view name() const { return name_; }
+  std::string_view name() const { return name_; }
 
  private:
   std::shared_ptr<absl::ParsedFormat<'s'>> format_;
@@ -242,7 +242,7 @@ TEST_F(ClangRangeFinderTest, TerribleMacrosAreZeroWidth) {
   // macro arguments.  We want to ensure that only ranges originating from
   // explicit macro arguments are expanded and all others are zero-width from
   // the front of the macro expansion.
-  absl::string_view macro = R"(
+  std::string_view macro = R"(
 #define ASSIGN_OR_RETURN(...)                                            \
   IMPL_GET_VARIADIC_(                                                    \
       (__VA_ARGS__, IMPL_ASSIGN_OR_RETURN_3_, IMPL_ASSIGN_OR_RETURN_2_)) \
@@ -269,7 +269,7 @@ TEST_F(ClangRangeFinderTest, TerribleMacrosAreZeroWidth) {
                             "ASSIGN_OR_RETURN(int r, get(a, b));",
                             "return nullptr;", "}"},
                            "\n"));
-  std::vector<std::pair<std::string, absl::string_view>> ranges;
+  std::vector<std::pair<std::string, std::string_view>> ranges;
   for (const auto* decl : FindAllNamedDecls(Parse(source))) {
     if (decl->getName().empty()) continue;
     ranges.push_back({decl->getNameAsString(),

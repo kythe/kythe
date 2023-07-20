@@ -50,7 +50,7 @@ kythe::proto::CompilationUnit ExtractSingleCompilationOrDie(
 
 /// \brief Resolves the provided workspace-relative path to find the absolute
 /// runfiles path of the given file.
-absl::optional<std::string> ResolveRunfiles(absl::string_view path);
+absl::optional<std::string> ResolveRunfiles(std::string_view path);
 
 /// \brief Compares the two protobuf messages with MessageDifferencer and
 /// reports the delta.
@@ -66,11 +66,11 @@ bool EquivalentCompilations(const kythe::proto::CompilationUnit& lhs,
 /// \brief Returns a gMock matcher which compares its argument aginst the
 /// provided compilation unit and returns the result.
 ::testing::Matcher<const kythe::proto::CompilationUnit&> EquivToCompilation(
-    absl::string_view expected);
+    std::string_view expected);
 
 /// \brief Parses a TextFormat CompilationUnit protocol buffer or aborts.
 kythe::proto::CompilationUnit ParseTextCompilationUnitOrDie(
-    absl::string_view text);
+    std::string_view text);
 
 }  // namespace kythe
 #endif  // KYTHE_CXX_EXTRACTOR_TESTLIB_H_

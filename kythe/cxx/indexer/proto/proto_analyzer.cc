@@ -16,9 +16,10 @@
 
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 
+#include <string_view>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
-#include "absl/strings/string_view.h"
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 
 namespace kythe {

@@ -29,25 +29,25 @@ namespace {
 
 const LazyRE2 kSubstitutionsPattern = {R"(@\w+@)"};
 
-std::string EscapeBackslashes(absl::string_view value) {
+std::string EscapeBackslashes(std::string_view value) {
   return absl::StrReplaceAll(value, {{R"(\)", R"(\\)"}});
 }
 
-absl::optional<absl::string_view> FindMatch(absl::string_view text,
-                                            const RE2& pattern) {
+absl::optional<std::string_view> FindMatch(std::string_view text,
+                                           const RE2& pattern) {
   re2::StringPiece match;
   if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
-    return absl::string_view(match.data(), match.size());
+    return std::string_view(match.data(), match.size());
   }
   return absl::nullopt;
 }
 
 absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
-                                          absl::string_view input) {
+                                          std::string_view input) {
   std::string result;
-  while (absl::optional<absl::string_view> match =
+  while (absl::optional<std::string_view> match =
              FindMatch(input, *kSubstitutionsPattern)) {
-    absl::string_view group = match->substr(1, match->size() - 2);
+    std::string_view group = match->substr(1, match->size() - 2);
 
     int index = 0;
     if (!absl::SimpleAtoi(group, &index)) {
@@ -62,7 +62,7 @@ absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
       return absl::InvalidArgumentError(
           absl::StrCat("Capture index out of range: ", index));
     }
-    absl::string_view prefix = input.substr(0, match->begin() - input.begin());
+    std::string_view prefix = input.substr(0, match->begin() - input.begin());
     absl::StrAppend(&result, EscapeBackslashes(prefix), "\\", index);
     input.remove_prefix(prefix.size() + match->size());
   }
@@ -73,7 +73,7 @@ absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
 
 absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
                                                 const rapidjson::Value& parent,
-                                                absl::string_view name) {
+                                                std::string_view name) {
   const auto member =
       parent.FindMember(rapidjson::Value(name.data(), name.size()));
   if (member == parent.MemberEnd()) {
@@ -89,7 +89,7 @@ absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
 }  // namespace
 
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
-    absl::string_view path) const {
+    std::string_view path) const {
   for (const auto& rule : rules_) {
     std::vector<re2::StringPiece> captures(
         1 +
@@ -117,7 +117,7 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
 }
 
 kythe::proto::VName FileVNameGenerator::LookupVName(
-    absl::string_view path) const {
+    std::string_view path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
     vname.set_path(path.data(), path.size());
@@ -125,7 +125,7 @@ kythe::proto::VName FileVNameGenerator::LookupVName(
   return vname;
 }
 
-bool FileVNameGenerator::LoadJsonString(absl::string_view data,
+bool FileVNameGenerator::LoadJsonString(std::string_view data,
                                         std::string* error_text) {
   absl::Status status = LoadJsonString(data);
   if (!status.ok() && error_text != nullptr) {
@@ -134,7 +134,7 @@ bool FileVNameGenerator::LoadJsonString(absl::string_view data,
   return status.ok();
 }
 
-absl::Status FileVNameGenerator::LoadJsonString(absl::string_view data) {
+absl::Status FileVNameGenerator::LoadJsonString(std::string_view data) {
   using Value = rapidjson::Value;
   rapidjson::Document document;
   document.Parse(data.data(), data.size());

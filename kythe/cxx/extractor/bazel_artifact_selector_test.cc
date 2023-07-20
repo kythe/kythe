@@ -16,6 +16,7 @@
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -23,7 +24,6 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "gmock/gmock.h"
@@ -115,7 +115,7 @@ std::vector<build_event_stream::BuildEvent> ToNamedSetOfFilesEvents(
 
 // The TargetCompleted event will always come after the NamedSetOfFiles events.
 void ToTargetCompletedBuildEvents(
-    absl::string_view label,
+    std::string_view label,
     const absl::flat_hash_map<std::string, FileSet>& file_sets,
     std::vector<build_event_stream::BuildEvent>& result) {
   ToNamedSetOfFilesEvents(file_sets, result);
@@ -165,7 +165,7 @@ AspectArtifactSelector::Options DefaultOptions() {
   };
 }
 
-build_event_stream::BuildEvent ParseEventOrDie(absl::string_view text) {
+build_event_stream::BuildEvent ParseEventOrDie(std::string_view text) {
   build_event_stream::BuildEvent result;
 
   google::protobuf::io::ArrayInputStream input(text.data(), text.size());

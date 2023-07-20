@@ -52,14 +52,16 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 namespace {
 
 // Message type URI for the build details message.
-constexpr absl::string_view kBuildDetailsURI =
+constexpr std::string_view kBuildDetailsURI =
     "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+  using iterator =
+      decltype(std::declval<kythe::proto::ContextDependentVersion>()
+                   .row()
+                   .begin());
 
   explicit FileContextRows(
       const kythe::proto::CompilationUnit::FileInput& file_input) {

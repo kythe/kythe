@@ -18,10 +18,10 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
 #include <memory>
+#include <string_view>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
@@ -42,7 +42,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param virtual_dirs Directories to map.
   /// \param style Style used to parse incoming paths. Paths are normalized
   /// to POSIX-style.
-  explicit IndexVFS(absl::string_view working_directory,
+  explicit IndexVFS(std::string_view working_directory,
                     const std::vector<proto::FileData>& virtual_files
                         ABSL_ATTRIBUTE_LIFETIME_BOUND,
                     const std::vector<llvm::StringRef>& virtual_dirs,

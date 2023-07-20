@@ -17,14 +17,14 @@
 #ifndef KYTHE_CXX_INDEXER_PROTO_OFFSET_UTIL_H_
 #define KYTHE_CXX_INDEXER_PROTO_OFFSET_UTIL_H_
 
-#include "absl/strings/string_view.h"
+#include <string_view>
 
 namespace kythe {
 namespace lang_proto {
 
 // Figures out just how many bytes one needs to go into `line_text` to reach
 // what the proto compiler calls column `column_number`.
-int ByteOffsetOfTabularColumn(absl::string_view line_text, int column_number);
+int ByteOffsetOfTabularColumn(std::string_view line_text, int column_number);
 
 }  // namespace lang_proto
 }  // namespace kythe

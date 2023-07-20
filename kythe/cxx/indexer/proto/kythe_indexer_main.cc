@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <string_view>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -37,7 +38,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -84,7 +84,7 @@ void DecodeKzipFile(const std::string& path,
   CHECK(reader.ok()) << "Couldn't open kzip from " << path << ": "
                      << reader.status();
   bool compilation_read = false;
-  auto status = reader->Scan([&](absl::string_view digest) {
+  auto status = reader->Scan([&](std::string_view digest) {
     std::vector<proto::FileData> virtual_files;
     auto compilation = reader->ReadUnit(digest);
     CHECK(compilation.ok()) << compilation.status();
@@ -116,7 +116,7 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
   std::string source_data;
   ssize_t amount_read;
   while ((amount_read = ::read(fd, buf, sizeof buf)) > 0) {
-    absl::StrAppend(&source_data, absl::string_view(buf, amount_read));
+    absl::StrAppend(&source_data, std::string_view(buf, amount_read));
   }
   if (amount_read < 0) {
     LOG(ERROR) << "Error reading input file";

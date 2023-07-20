@@ -30,7 +30,7 @@ namespace kythe {
 namespace lang_textproto {
 
 // The canonical name for the textproto language in Kythe.
-extern const absl::string_view kLanguageName;
+extern const std::string_view kLanguageName;
 
 /// Analyzes the textproto file(s) described by @unit and emits graph facts to
 /// @recorder.

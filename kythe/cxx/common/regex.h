@@ -15,9 +15,9 @@
  */
 
 #include <memory>
+#include <string_view>
 
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "re2/re2.h"
 #include "re2/set.h"
@@ -32,7 +32,7 @@ class Regex {
  public:
   /// \brief Compiles the pattern into a Regex with the provided options.
   static absl::StatusOr<Regex> Compile(
-      absl::string_view pattern,
+      std::string_view pattern,
       const RE2::Options& options = RE2::DefaultOptions);
 
   /// \brief Constructs a Regex from an already-compiled RE2 object.
@@ -65,7 +65,7 @@ class Regex {
 class RegexSet {
  public:
   /// \brief Builds a RegexSet from the list of patterns and options.
-  template <typename Range = absl::Span<const absl::string_view>>
+  template <typename Range = absl::Span<const std::string_view>>
   static absl::StatusOr<RegexSet> Build(
       const Range& patterns, const RE2::Options& = RE2::DefaultOptions,
       RE2::Anchor = RE2::UNANCHORED);
@@ -88,14 +88,14 @@ class RegexSet {
 
   /// \brief Returns true if the provided value matches one of the contained
   /// regular expressions.
-  bool Match(absl::string_view value) const {
+  bool Match(std::string_view value) const {
     return set_->Match(value, nullptr);
   }
 
   /// \brief Matches the input against the contained regular expressions,
   /// returning the indices at which the value matched or an empty vector if it
   /// did not.
-  absl::StatusOr<std::vector<int>> ExplainMatch(absl::string_view value) const;
+  absl::StatusOr<std::vector<int>> ExplainMatch(std::string_view value) const;
 
  private:
   std::shared_ptr<const RE2::Set> set_;  // non-null.

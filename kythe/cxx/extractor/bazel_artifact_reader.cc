@@ -16,11 +16,11 @@
 #include "kythe/cxx/extractor/bazel_artifact_reader.h"
 
 #include <string>
+#include <string_view>
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {

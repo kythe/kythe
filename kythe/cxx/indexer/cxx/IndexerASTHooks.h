@@ -20,6 +20,7 @@
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_AST_HOOKS_H_
 
 #include <memory>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -30,7 +31,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
@@ -965,14 +965,11 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void ConnectCategoryToBaseClass(const GraphObserver::NodeId& DeclNode,
                                   const clang::ObjCInterfaceDecl* IFace);
 
-  void LogErrorWithASTDump(absl::string_view msg,
-                           const clang::Decl* Decl) const;
-  void LogErrorWithASTDump(absl::string_view msg,
-                           const clang::Expr* Expr) const;
-  void LogErrorWithASTDump(absl::string_view msg,
-                           const clang::Type* Type) const;
-  void LogErrorWithASTDump(absl::string_view msg, clang::TypeLoc Type) const;
-  void LogErrorWithASTDump(absl::string_view msg, clang::QualType Type) const;
+  void LogErrorWithASTDump(std::string_view msg, const clang::Decl* Decl) const;
+  void LogErrorWithASTDump(std::string_view msg, const clang::Expr* Expr) const;
+  void LogErrorWithASTDump(std::string_view msg, const clang::Type* Type) const;
+  void LogErrorWithASTDump(std::string_view msg, clang::TypeLoc Type) const;
+  void LogErrorWithASTDump(std::string_view msg, clang::QualType Type) const;
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
   /// or a clang::TypeAliasDecl.

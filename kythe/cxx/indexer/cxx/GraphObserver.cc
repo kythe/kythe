@@ -35,16 +35,16 @@ struct MintedVNameHeader {
 };
 }  // anonymous namespace
 
-FileHashRecorder::FileHashRecorder(absl::string_view path)
+FileHashRecorder::FileHashRecorder(std::string_view path)
     : out_file_(::fopen(std::string(path).c_str(), "w")) {
   if (out_file_ == nullptr) ::perror("Error in fopen");
   CHECK(out_file_ != nullptr)
       << "Couldn't open file " << path << " for hash recording.";
 }
 
-void FileHashRecorder::RecordHash(absl::string_view hash,
-                                  absl::string_view web64hash,
-                                  absl::string_view original) {
+void FileHashRecorder::RecordHash(std::string_view hash,
+                                  std::string_view web64hash,
+                                  std::string_view original) {
   auto result = hashes_.insert(std::string(hash));
   if (!result.second) return;
   absl::FPrintF(out_file_, "%s\t%s\n", web64hash, original);
@@ -53,7 +53,7 @@ FileHashRecorder::~FileHashRecorder() {
   CHECK(::fclose(out_file_) == 0) << "Couldn't close file for hash recording.";
 }
 
-std::string GraphObserver::ForceEncodeString(absl::string_view InString) const {
+std::string GraphObserver::ForceEncodeString(std::string_view InString) const {
   auto hash = Sha256Hasher(InString).FinishBinString();
   std::string result;
   // Use web-safe escaping because vnames are frequently URI-encoded. This
@@ -67,14 +67,14 @@ std::string GraphObserver::ForceEncodeString(absl::string_view InString) const {
 }
 
 std::string GraphObserver::CompressAnchorSignature(
-    absl::string_view InSignature) const {
+    std::string_view InSignature) const {
   if (InSignature.size() <= kSha256DigestBase64MaxEncodingLength) {
     return std::string(InSignature);
   }
   return absl::WebSafeBase64Escape(Sha256Hasher(InSignature).FinishBinString());
 }
 
-std::string GraphObserver::CompressString(absl::string_view InString) const {
+std::string GraphObserver::CompressString(std::string_view InString) const {
   if (InString.size() <= kSha256DigestBase64MaxEncodingLength) {
     return std::string(InString);
   }

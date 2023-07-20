@@ -19,6 +19,7 @@
 #include <openssl/sha.h>
 
 #include <set>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -29,7 +30,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -41,8 +41,8 @@
 namespace kythe {
 namespace {
 
-constexpr absl::string_view kJsonUnitsDir = "/units/";
-constexpr absl::string_view kProtoUnitsDir = "/pbunits/";
+constexpr std::string_view kJsonUnitsDir = "/units/";
+constexpr std::string_view kProtoUnitsDir = "/pbunits/";
 
 struct ZipFileClose {
   void operator()(zip_file_t* file) {
@@ -99,7 +99,7 @@ class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
 };
 
 struct KzipOptions {
-  absl::string_view root;
+  std::string_view root;
   KzipEncoding encoding;
 };
 
@@ -109,18 +109,18 @@ absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
   }
 
   // Pull the root directory from an arbitrary entry.
-  absl::string_view root = zip_get_name(archive, 0, 0);
+  std::string_view root = zip_get_name(archive, 0, 0);
   auto slashpos = root.find('/');
-  if (slashpos == 0 || slashpos == absl::string_view::npos) {
+  if (slashpos == 0 || slashpos == std::string_view::npos) {
     return absl::InvalidArgumentError(
         absl::StrCat("Malformed kzip: invalid root: ", root));
   }
   root.remove_suffix(root.size() - slashpos);
   DLOG(LEVEL(-1)) << "Using archive root: " << root;
-  std::set<absl::string_view> proto_units;
-  std::set<absl::string_view> json_units;
+  std::set<std::string_view> proto_units;
+  std::set<std::string_view> json_units;
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {
-    absl::string_view name = zip_get_name(archive, i, 0);
+    std::string_view name = zip_get_name(archive, i, 0);
     if (!absl::ConsumePrefix(&name, root)) {
       return absl::InvalidArgumentError(
           absl::StrCat("Malformed kzip: invalid entry: ", name));
@@ -135,7 +135,7 @@ absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
   if (json_units.empty()) {
     encoding = KzipEncoding::kProto;
   } else if (!proto_units.empty()) {
-    std::vector<absl::string_view> diff;
+    std::vector<std::string_view> diff;
     std::set_symmetric_difference(json_units.begin(), json_units.end(),
                                   proto_units.begin(), proto_units.end(),
                                   std::inserter(diff, diff.end()));
@@ -180,7 +180,7 @@ absl::StatusOr<std::string> ReadTextFile(zip_t* archive,
   return absl::UnknownError(absl::StrCat("Unable to read: ", path));
 }
 
-absl::string_view DirNameForEncoding(KzipEncoding encoding) {
+std::string_view DirNameForEncoding(KzipEncoding encoding) {
   switch (encoding) {
     case KzipEncoding::kJson:
       return kJsonUnitsDir;
@@ -194,8 +194,7 @@ absl::string_view DirNameForEncoding(KzipEncoding encoding) {
 
 }  // namespace
 
-absl::optional<absl::string_view> KzipReader::UnitDigest(
-    absl::string_view path) {
+absl::optional<std::string_view> KzipReader::UnitDigest(std::string_view path) {
   if (!absl::ConsumePrefix(&path, unit_prefix_) || path.empty()) {
     return absl::nullopt;
   }
@@ -203,7 +202,7 @@ absl::optional<absl::string_view> KzipReader::UnitDigest(
 }
 
 /* static */
-absl::StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
+absl::StatusOr<IndexReader> KzipReader::Open(std::string_view path) {
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
@@ -235,7 +234,7 @@ absl::StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
   return error.ToStatus();
 }
 
-KzipReader::KzipReader(ZipHandle archive, absl::string_view root,
+KzipReader::KzipReader(ZipHandle archive, std::string_view root,
                        KzipEncoding encoding)
     : archive_(std::move(archive)),
       encoding_(encoding),
@@ -243,7 +242,7 @@ KzipReader::KzipReader(ZipHandle archive, absl::string_view root,
       unit_prefix_(absl::StrCat(root, DirNameForEncoding(encoding))) {}
 
 absl::StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
-    absl::string_view digest) {
+    std::string_view digest) {
   std::string path = absl::StrCat(unit_prefix_, digest);
 
   if (auto file = ZipFile(zip_fopen(archive(), path.c_str(), 0))) {
@@ -275,7 +274,7 @@ absl::StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
   return absl::UnknownError(absl::StrCat("Unable to open unit ", digest));
 }
 
-absl::StatusOr<std::string> KzipReader::ReadFile(absl::string_view digest) {
+absl::StatusOr<std::string> KzipReader::ReadFile(std::string_view digest) {
   return ReadTextFile(archive(), absl::StrCat(files_prefix_, digest));
 }
 

@@ -19,11 +19,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <string_view>
+
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/proto/analysis.pb.h"
@@ -64,7 +65,7 @@ KzipWriter* KzipWriter_Create(const char* path, const size_t path_len,
   CHECK(path != nullptr);
   *create_status = 0;
   KzipEncoding kzip_encoding = ToKzipEncoding(encoding);
-  const absl::string_view path_view(path, path_len);
+  const std::string_view path_view(path, path_len);
 
   absl::StatusOr<IndexWriter> writer =
       kythe::KzipWriter::Create(path_view, kzip_encoding);

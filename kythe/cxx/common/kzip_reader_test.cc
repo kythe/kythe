@@ -18,12 +18,12 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
@@ -64,7 +64,7 @@ zip_source_t* ZipSourceFunctionCreate(ZipCallback* callback,
                                     static_cast<void*>(callback), error);
 }
 
-std::string TestFile(absl::string_view basename) {
+std::string TestFile(std::string_view basename) {
   return absl::StrCat(TestSourceRoot(), "kythe/testdata/platform/",
                       absl::StripPrefix(basename, "/"));
 }
@@ -104,7 +104,7 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
       KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
-                  ->Scan([&](absl::string_view digest) {
+                  ->Scan([&](std::string_view digest) {
                     auto unit = reader->ReadUnit(digest);
                     if (unit.ok()) {
                       for (const auto& file : unit->unit().required_input()) {
@@ -184,7 +184,7 @@ TEST(KzipReaderTest, SourceFreedOnEmptyFile) {
 // file, the reference count is maintained correctly.
 TEST(KzipReaderTest, SourceFreedOnInvalidFile) {
   bool freed = false;
-  const absl::string_view buf = "this is not a valid zip file";
+  const std::string_view buf = "this is not a valid zip file";
   zip_source_t* buf_src =
       zip_source_buffer_create(buf.data(), buf.size(), false, nullptr);
   ASSERT_NE(buf_src, nullptr);
@@ -350,7 +350,7 @@ TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
 
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
-                  ->Scan([&](absl::string_view digest) {
+                  ->Scan([&](std::string_view digest) {
                     auto unit = reader->ReadUnit(digest);
                     if (unit.ok()) {
                       for (const auto& file : unit->unit().required_input()) {
