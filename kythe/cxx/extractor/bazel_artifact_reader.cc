@@ -34,7 +34,7 @@ void BazelArtifactReader::Select() {
   for (; !event_reader_->Done(); event_reader_->Next()) {
     const auto& event = event_reader_->Ref();
     for (auto& selector : selectors_) {
-      if (absl::optional<BazelArtifact> artifact = selector.Select(event)) {
+      if (std::optional<BazelArtifact> artifact = selector.Select(event)) {
         value_ = *std::move(artifact);
         return;
       }

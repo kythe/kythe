@@ -207,13 +207,13 @@ void CanonicalizeHashes(kpb::CompilationUnit* unit) {
   }
 }
 
-absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
+std::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
     ExtractorOptions options) {
   gpb::LinkMessageReflection<kpb::CxxCompilationUnitDetails>();
 
   options.environment.insert({"KYTHE_EXCLUDE_EMPTY_DIRS", "1"});
   options.environment.insert({"KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES", "1"});
-  if (absl::optional<std::string> extractor = ResolveRunfiles(kExtractorPath)) {
+  if (std::optional<std::string> extractor = ResolveRunfiles(kExtractorPath)) {
     TemporaryKzipFile output_file;
     options.environment.insert({"KYTHE_OUTPUT_FILE", output_file.filename()});
 
@@ -223,7 +223,7 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
                        FlattenEnvironment(options.environment),
                        options.working_directory)) {
       if (auto reader = KzipReader::Open(output_file.filename()); reader.ok()) {
-        absl::optional<std::vector<kpb::CompilationUnit>> result(
+        std::optional<std::vector<kpb::CompilationUnit>> result(
             absl::in_place);  // Default construct a result vector.
 
         auto status = reader->Scan([&](absl::string_view digest) {
@@ -239,38 +239,38 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
         });
         if (!status.ok()) {
           LOG(ERROR) << "Unable to read compilations: " << status;
-          return absl::nullopt;
+          return std::nullopt;
         }
         return result;
       } else {
         LOG(ERROR) << "Unable to open " << output_file.filename() << ": "
                    << reader.status();
       }
-      return absl::nullopt;
+      return std::nullopt;
     }
 
   } else {
     LOG(ERROR) << "Unable to resolve extractor path";
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<std::string> ResolveRunfiles(absl::string_view path) {
+std::optional<std::string> ResolveRunfiles(absl::string_view path) {
   std::string error;
   std::unique_ptr<Runfiles> runfiles(Runfiles::CreateForTest(&error));
   if (runfiles == nullptr) {
     LOG(ERROR) << error;
-    return absl::nullopt;
+    return std::nullopt;
   }
   std::string resolved = runfiles->Rlocation(JoinPath(kWorkspaceRoot, path));
   if (resolved.empty()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   return resolved;
 }
 
 kpb::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options) {
-  if (absl::optional<std::vector<kpb::CompilationUnit>> result =
+  if (std::optional<std::vector<kpb::CompilationUnit>> result =
           ExtractCompilations(std::move(options))) {
     CHECK(result->size() == 1)
         << "unexpected number of extracted compilations: " << result->size();

@@ -35,7 +35,7 @@ static inline std::pair<uint64_t, uint64_t> PairFromUid(
   return {uid.getDevice(), uid.getFile()};
 }
 
-absl::optional<llvm::sys::path::Style>
+std::optional<llvm::sys::path::Style>
 IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
   if (llvm::sys::path::is_absolute(awd, llvm::sys::path::Style::posix)) {
     return llvm::sys::path::Style::posix;
@@ -44,7 +44,7 @@ IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
     return llvm::sys::path::Style::windows;
   }
   absl::FPrintF(stderr, "warning: could not detect path style for %s\n", awd);
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 namespace {

@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -30,7 +31,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/dynamic_message.h"
@@ -850,8 +850,8 @@ void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
 
 // Find and return the argument after given argname. Removes the flag and
 // argument from @args if found.
-absl::optional<std::string> FindArg(std::vector<std::string>* args,
-                                    std::string argname) {
+std::optional<std::string> FindArg(std::vector<std::string>* args,
+                                   std::string argname) {
   for (auto iter = args->begin(); iter != args->end(); iter++) {
     if (*iter == argname) {
       if (iter + 1 < args->end()) {
@@ -859,10 +859,10 @@ absl::optional<std::string> FindArg(std::vector<std::string>* args,
         args->erase(iter, iter + 2);
         return v;
       }
-      return absl::nullopt;
+      return std::nullopt;
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 /// Given a full file path, returns a path relative to a directory in the
@@ -1005,7 +1005,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
 
   // Only recordio format specifies record_separator.
   // Presense of record_separator flag indicates it's recordio file format.
-  absl::optional<std::string> record_separator =
+  std::optional<std::string> record_separator =
       FindArg(&args, "--record_separator");
   for (auto& [filepath, filecontent] : file_data_by_path) {
     // Use reflection to create an instance of the top-level proto message.

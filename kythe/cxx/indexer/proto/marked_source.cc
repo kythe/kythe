@@ -46,7 +46,7 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
   return true;
 }
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor) {
   // EnumValueDescriptor::full_name leaves off the parent enum's name.
   std::string full_name =
@@ -55,10 +55,10 @@ absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
   if (GenerateMarkedSourceForDottedName(full_name, &ms)) {
     return ms;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor) {
   std::string full_name;
   if (const google::protobuf::OneofDescriptor* oneof =
@@ -71,7 +71,7 @@ absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
   if (GenerateMarkedSourceForDottedName(full_name, &ms)) {
     return ms;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 }  // namespace kythe

@@ -20,12 +20,12 @@
 /// \file
 /// \brief Defines the class kythe::GraphObserver
 
+#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -392,8 +392,8 @@ class GraphObserver {
   /// \param MarkedSource marked source for the alias.
   /// \return the `NodeId` for the type alias node this definition defines.
   NodeId recordTypeAliasNode(const NameId& AliasName, const NodeId& AliasedType,
-                             const absl::optional<NodeId>& RootAliasedType,
-                             const absl::optional<MarkedSource>& MarkedSource) {
+                             const std::optional<NodeId>& RootAliasedType,
+                             const std::optional<MarkedSource>& MarkedSource) {
     return recordTypeAliasNode(nodeIdForTypeAliasNode(AliasName, AliasedType),
                                AliasedType, RootAliasedType, MarkedSource);
   }
@@ -408,8 +408,8 @@ class GraphObserver {
   /// \return the `NodeId` for the type alias node this definition defines.
   virtual NodeId recordTypeAliasNode(
       const NodeId& AliasId, const NodeId& AliasedType,
-      const absl::optional<NodeId>& RootAliasedType,
-      const absl::optional<MarkedSource>& MarkedSource) = 0;
+      const std::optional<NodeId>& RootAliasedType,
+      const std::optional<MarkedSource>& MarkedSource) = 0;
 
   /// \brief Returns the ID for a nominal type node (such as a struct,
   /// typedef or enum).
@@ -424,8 +424,8 @@ class GraphObserver {
   /// \param Parent if non-null, the parent node of this nominal type.
   /// \return the `NodeId` for the type node corresponding to `TypeName`.
   NodeId recordNominalTypeNode(const NameId& TypeName,
-                               const absl::optional<MarkedSource>& MarkedSource,
-                               const absl::optional<NodeId>& Parent) {
+                               const std::optional<MarkedSource>& MarkedSource,
+                               const std::optional<NodeId>& Parent) {
     return recordNominalTypeNode(nodeIdForNominalTypeNode(TypeName),
                                  MarkedSource, Parent);
   }
@@ -437,8 +437,8 @@ class GraphObserver {
   /// \param Parent if non-null, the parent node of this nominal type.
   /// \return the `NodeId` for the type node.
   virtual NodeId recordNominalTypeNode(
-      const NodeId& TypeNode, const absl::optional<MarkedSource>& MarkedSource,
-      const absl::optional<NodeId>& Parent) = 0;
+      const NodeId& TypeNode, const std::optional<MarkedSource>& MarkedSource,
+      const std::optional<NodeId>& Parent) = 0;
 
   /// \brief Returns a type application node ID.
   /// \note This is the elimination form for the `abs` node.
@@ -552,7 +552,7 @@ class GraphObserver {
   /// \param Node The NodeId of the record.
   /// \param MarkedSource marked source for this interface.
   virtual void recordInterfaceNode(
-      const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
+      const NodeId& Node, const std::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Records a node representing a record type (such as a class or
   /// struct).
@@ -562,7 +562,7 @@ class GraphObserver {
   /// \param MarkedSource marked source for this record.
   virtual void recordRecordNode(
       const NodeId& Node, RecordKind Kind, Completeness RecordCompleteness,
-      const absl::optional<MarkedSource>& MarkedSource) {}
+      const std::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Records a node representing a function.
   /// \param Node The NodeId of the function.
@@ -572,7 +572,7 @@ class GraphObserver {
   virtual void recordFunctionNode(
       const NodeId& Node, Completeness FunctionCompleteness,
       FunctionSubkind Subkind,
-      const absl::optional<MarkedSource>& MarkedSource) {}
+      const std::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Assigns a USR to node.
   /// \param Node The target node.
@@ -589,14 +589,15 @@ class GraphObserver {
 
   /// \brief Explicitly record marked source for some `Node`.
   virtual void recordMarkedSource(
-      const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
+      const NodeId& Node, const std::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Records a node representing a variable in a dependent type
   /// abstraction.
   /// \param Node The `NodeId` of the variable.
   /// \param MarkedSource marked source for this variable.
-  virtual void recordTVarNode(
-      const NodeId& Node, const absl::optional<MarkedSource>& MarkedSource) {}
+  virtual void recordTVarNode(const NodeId& Node,
+                              const std::optional<MarkedSource>& MarkedSource) {
+  }
 
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.
@@ -646,14 +647,14 @@ class GraphObserver {
   // type.
   virtual void recordVariableNode(
       const NodeId& DeclNode, Completeness Compl, VariableSubkind Subkind,
-      const absl::optional<MarkedSource>& MarkedSource) {}
+      const std::optional<MarkedSource>& MarkedSource) {}
 
   /// \brief Records that a namespace has been declared.
   /// \param DeclNode The identifier for this particular element.
   /// \param MarkedSource marked source for this namespace.
   virtual void recordNamespaceNode(
-      const NodeId& DeclNode,
-      const absl::optional<MarkedSource>& MarkedSource) {}
+      const NodeId& DeclNode, const std::optional<MarkedSource>& MarkedSource) {
+  }
 
   // TODO(zarko): recordExpandedTypeEdge -- records that a type was seen
   // to have some canonical type during a compilation. (This is a 'canonical'
@@ -666,7 +667,7 @@ class GraphObserver {
   /// identified node.
   virtual void recordFullDefinitionRange(
       const Range& SourceRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId = absl::nullopt) {}
+      const std::optional<NodeId>& DefnId = std::nullopt) {}
 
   /// \brief Should an anchor be stamped
   enum class Stamping { Unstamped, Stamped };
@@ -679,7 +680,7 @@ class GraphObserver {
   /// we would `recordDefinitionBindingRange` on the range for `C`.
   virtual void recordDefinitionBindingRange(
       const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId = absl::nullopt,
+      const std::optional<NodeId>& DefnId = std::nullopt,
       Stamping stamping = Stamping::Stamped) {}
 
   /// \brief Records that a particular `Range` contains the declaration
@@ -692,7 +693,7 @@ class GraphObserver {
   /// identified node.
   virtual void recordDefinitionRangeWithBinding(
       const Range& SourceRange, const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId = absl::nullopt) {}
+      const std::optional<NodeId>& DefnId = std::nullopt) {}
 
   /// \brief Records that a particular string contains documentation for
   /// the node called `DocId`, possibly containing inner links to other nodes.
@@ -825,8 +826,8 @@ class GraphObserver {
   /// that can be blamed for a call at `CallSite`.
   /// \param CallSite The call site that needs a routine to blame.
   /// \return The `NodeId` for the routine to blame.
-  virtual absl::optional<NodeId> recordFileInitializer(const Range& CallSite) {
-    return absl::nullopt;
+  virtual std::optional<NodeId> recordFileInitializer(const Range& CallSite) {
+    return std::nullopt;
   }
 
   /// \brief Records a child-to-parent relationship as an edge in the graph.
@@ -858,8 +859,7 @@ class GraphObserver {
   /// \param NodeKind The kind of the node ("google/protobuf")
   /// \param Compl Whether this node is complete.
   virtual void recordUserDefinedNode(const NodeId& Id, llvm::StringRef NodeKind,
-                                     const absl::optional<Completeness> Compl) {
-  }
+                                     const std::optional<Completeness> Compl) {}
 
   /// \brief Records a use site for some decl.
   virtual void recordDeclUseLocation(const Range& SourceRange,
@@ -1177,8 +1177,8 @@ class NullGraphObserver : public GraphObserver {
 
   NodeId recordTypeAliasNode(
       const NodeId& AliasId, const NodeId& AliasedType,
-      const absl::optional<NodeId>& RootAliasedType,
-      const absl::optional<MarkedSource>& MarkedSource) override {
+      const std::optional<NodeId>& RootAliasedType,
+      const std::optional<MarkedSource>& MarkedSource) override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
@@ -1187,8 +1187,8 @@ class NullGraphObserver : public GraphObserver {
   }
 
   NodeId recordNominalTypeNode(const NodeId& TypeNode,
-                               const absl::optional<MarkedSource>& MarkedSource,
-                               const absl::optional<NodeId>& Parent) override {
+                               const std::optional<MarkedSource>& MarkedSource,
+                               const std::optional<NodeId>& Parent) override {
     return NodeId::CreateUncompressed(getDefaultClaimToken(), "");
   }
 
