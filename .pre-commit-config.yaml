@@ -60,7 +60,7 @@ repos:
         name: Format w/ clang-format
         description: Formats files using clang-format
         language: system
-        entry: clang-format-11 --style=file -i
+        entry: clang-format-14 --style=file -i
         files: '\.(c|cc|h|i|m|js|proto)$'
     -   id: gofmt
         name: Format w/ gofmt
