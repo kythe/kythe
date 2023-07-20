@@ -171,11 +171,6 @@ load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
 
-# Register our Rust protobuf toolchain from the BUILD file
-register_toolchains(
-    ":rust_proto_toolchain",
-)
-
 http_archive(
     name = "aspect_bazel_lib",
     sha256 = "e3151d87910f69cf1fc88755392d7c878034a69d6499b287bcfc00b1cf9bb415",

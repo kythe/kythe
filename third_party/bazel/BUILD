@@ -1,6 +1,6 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
-load("@rules_rust//proto:proto.bzl", "rust_proto_library")
+load("@rules_rust//proto/prost:defs.bzl", "rust_prost_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -33,9 +33,9 @@ java_proto_library(
     deps = [":extra_actions_base_proto"],
 )
 
-rust_proto_library(
+rust_prost_library(
     name = "extra_actions_base_rust_proto",
-    deps = [":extra_actions_base_proto"],
+    proto = ":extra_actions_base_proto",
 )
 
 proto_library(
