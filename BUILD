@@ -27,9 +27,17 @@ sh_test(
 )
 
 # gazelle:build_file_name BUILD
+# gazelle:go_naming_convention import
 # gazelle:exclude kythe
 # gazelle:exclude **/*_go_proto/
 # gazelle:exclude **/*_rust_proto/
+# gazelle:exclude **/testdata/
+# gazelle:exclude kythe/go/
+# gazelle:exclude kythe/proto
+# gazelle:exclude kythe/examples/
+# gazelle:exclude kythe/extractors/
+# gazelle:exclude kythe/release/
+# gazelle:exclude tools/platforms/configs/
 # gazelle:prefix kythe.io
 gazelle(name = "gazelle")
 
