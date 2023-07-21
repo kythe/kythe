@@ -21,9 +21,18 @@ filegroup(
 
 copy_to_directory(
     name = "proto_srcs",
-    srcs = ["@io_bazel_files//:proto_srcs"],
+    srcs = [
+        # We need to include the Gazelle-generated BUILD files in the original bundle to avoid test failures.
+        "//third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto:BUILD",
+        "//third_party/bazel/src/main/java/com/google/devtools/build/lib/packages/metrics:BUILD",
+        "//third_party/bazel/src/main/protobuf:BUILD",
+        "@io_bazel_files//:proto_srcs",
+    ],
     include_external_repositories = ["io_bazel_files"],
-    root_paths = ["src"],
+    replace_prefixes = {
+        "src/": "",
+        "third_party/bazel/": "",
+    },
     visibility = ["//visibility:private"],
 )
 
@@ -31,6 +40,7 @@ write_source_file(
     name = "proto_srcs_sync",
     in_file = ":proto_srcs",
     out_file = "src",
+    tags = ["local"],  # Fails spuriously remotely.
     visibility = ["//visibility:private"],
 )
 
