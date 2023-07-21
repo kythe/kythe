@@ -30,7 +30,6 @@ load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencie
 load("@rules_rust//proto/prost:transitive_repositories.bzl", "rust_prost_transitive_repositories")
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_deps")
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 load("@rules_rust//proto/prost/private:repositories.bzl", "rust_prost_dependencies", "rust_prost_register_toolchains")
 
 def _rule_dependencies():

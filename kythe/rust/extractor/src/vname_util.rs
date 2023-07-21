@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use analysis_rust_proto::VName;
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
+use storage_proto::proto::VName;
 
 /// The String forms of the vname field patterns
 #[derive(Deserialize)]
