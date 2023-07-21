@@ -2613,6 +2613,9 @@ class Visitor {
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
       case ts.SyntaxKind.JsxAttribute:
+        // TODO: go/ts51upgrade - Auto-added to unblock TS5.1 migration.
+        //   TS2345: Argument of type 'JsxAttribute' is not assignable to parameter of type '{ name: ObjectBindingPattern | ArrayBindingPattern | Identifier | StringLiteral | NumericLiteral | ComputedPropertyName | PrivateIdentifier; type?: TypeNode | undefined; initializer?: Expression | undefined; kind: SyntaxKind; } & Node'.
+        // @ts-ignore
         this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
       case ts.SyntaxKind.Identifier:
