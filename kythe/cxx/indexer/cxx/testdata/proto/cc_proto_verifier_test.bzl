@@ -32,7 +32,6 @@ def cc_proto_verifier_test(
             "--convert_marked_source",
         ],
         size = "small",
-        experimental_guess_proto_semantics = False,
         experimental_record_dataflow_edges = False,
         minimal_claiming = True):
     """Verify cross-language references between C++ and Proto.
@@ -45,7 +44,6 @@ def cc_proto_verifier_test(
       cc_indexer: The cc indexer to use
       verifier_opts: List of options passed to the verifier tool
       size: Size of the test.
-      experimental_guess_proto_semantics: guess proto semantics?
       experimental_record_dataflow_edges: record dataflow edges?
       minimal_claiming: If true, only index the `srcs` and protobuf header files.
 
@@ -110,8 +108,6 @@ def cc_proto_verifier_test(
         claim_deps = [claim_file]
 
     guess_opt = []
-    if experimental_guess_proto_semantics:
-        guess_opt = ["--experimental_guess_proto_semantics"]
     df_opt = []
     if experimental_record_dataflow_edges:
         df_opt = ["--experimental_record_dataflow_edges"]

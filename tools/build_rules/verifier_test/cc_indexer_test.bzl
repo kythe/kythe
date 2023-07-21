@@ -68,7 +68,6 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
-    "experimental_guess_proto_semantics": False,
     "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
     "emit_usr_corpus": False,
