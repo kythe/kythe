@@ -15,7 +15,6 @@ load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//:setup.bzl", "remote_jdk20_repos", "remote_jdk21_repos")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
-load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
@@ -70,20 +69,28 @@ def _rule_dependencies():
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
 
-def _proto_dependencies():
+def _common_dependencies():
     # Rather than pull down the entire Bazel source repository for a single file,
-    # just grab the file we need and use it locally.
+    # just grab the files we need and use them locally.
     maybe(
-        build_event_stream_repository,
-        name = "build_event_stream_proto",
-        revision = "7fa5796de6094ff529ceb17ee73c7eac9e42eb15",
-        sha256s = {
-            "build_event_stream.proto": "286464b08a271e7146a965c349d000ca2cf3dc2a054cf5355137ae3f31a0f70e",
-            "command_line.proto": "a6fb6591aa50794431787169bc4fae16105ef5c401e7c30ecf0f775e0ab25c2c",
-            "invocation_policy.proto": "7a1f9074d64aaea2c5fc01df093a25fbbd68d84db63fbfb355f5aa15683a75cd",
-            "option_filters.proto": "fc09a26d6a342d9866bc74985ec87c9fadda6fb12b8069383ddfefd91b98f373",
-            "failure_details.proto": "dafee3c11b245fcfad2c2251bb8ddf256edf2b0c403654872dd121e20b0fcf6c",
-            "package_load_metrics.proto": "9dfdd36b1bdb15e7e0b212cd15d2f31c1e21607e4ba25afd334e33dd46feaef5",
+        bazel_repository_files,
+        name = "io_bazel_files",
+        commit = "7fa5796de6094ff529ceb17ee73c7eac9e42eb15",
+        files = [
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/JavacOptions.java",
+            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/WerrorCustomOption.java",
+            "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto",
+            "src/main/java/com/google/devtools/build/lib/packages/metrics/package_load_metrics.proto",
+            "src/main/protobuf/command_line.proto",
+            "src/main/protobuf/extra_actions_base.proto",
+            "src/main/protobuf/failure_details.proto",
+            "src/main/protobuf/invocation_policy.proto",
+            "src/main/protobuf/option_filters.proto",
+            "src/main/protobuf/test_status.proto",
+        ],
+        overlay = {
+            "@io_kythe//third_party/bazel:root.BUILD": "BUILD",
+            "@io_kythe//third_party/bazel:javac_options.BUILD": "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/BUILD",
         },
     )
 
@@ -306,18 +313,6 @@ def _cc_dependencies():
     cxx_extractor_register_toolchains()
 
 def _java_dependencies():
-    maybe(
-        bazel_repository_files,
-        name = "io_bazel_files",
-        commit = "20c4596365d6e198ce9e4559a372190ceedff3f5",
-        files = [
-            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/JavacOptions.java",
-            "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/javac/WerrorCustomOption.java",
-        ],
-        overlay = {
-            "@io_kythe//third_party/bazel:javac_options.BUILD": "src/java_tools/buildjar/java/com/google/devtools/build/buildjar/BUILD",
-        },
-    )
     maven_install(
         name = "maven",
         artifacts = [
@@ -1790,7 +1785,7 @@ def kythe_dependencies():
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
     bazel_skylib_workspace()
-    _proto_dependencies()
+    _common_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()

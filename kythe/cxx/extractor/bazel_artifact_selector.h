@@ -35,7 +35,7 @@
 #include "kythe/cxx/common/regex.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "re2/re2.h"
-#include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 
