@@ -1,5 +1,7 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
+exports_files(["BUILD"])
+
 proto_library(
     name = "command_line_proto",
     srcs = ["command_line.proto"],

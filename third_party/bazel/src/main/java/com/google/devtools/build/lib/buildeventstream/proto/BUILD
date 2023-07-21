@@ -1,5 +1,7 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
+exports_files(["BUILD"])
+
 proto_library(
     name = "build_event_stream_proto",
     srcs = ["build_event_stream.proto"],
