@@ -57,8 +57,6 @@ ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(bool, experimental_record_dataflow_edges, false,
           "Emit experimental dataflow edges.");
-ABSL_FLAG(bool, experimental_guess_proto_semantics, false,
-          "Guess proto semantics.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
@@ -132,9 +130,6 @@ int main(int argc, char* argv[]) {
 
     kythe::MetadataSupports meta_supports;
     auto proto = std::make_unique<ProtobufMetadataSupport>();
-    if (absl::GetFlag(FLAGS_experimental_guess_proto_semantics)) {
-      proto->GuessSemantics(true);
-    }
     meta_supports.Add(std::move(proto));
     meta_supports.Add(std::make_unique<KytheMetadataSupport>());
 

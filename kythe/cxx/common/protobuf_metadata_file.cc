@@ -81,29 +81,17 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
         file_rule = rules.size() - 1;
       }
     }
-    if (should_guess_semantics_) {
-      if (rule.begin > target_buffer.size() ||
-          rule.end > target_buffer.size() || rule.end < rule.begin ||
-          annotation.path().size() < 2 ||
-          ((annotation.path().size() & 1) != 0) ||
-          (annotation.path()[annotation.path().size() - 2] != 2 &&
-           annotation.path()[annotation.path().size() - 2] != 8)) {
-        auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
-        rules.push_back(rule);
-        continue;
-      }
-      // token names something related to a field or a oneof.
-      auto token = target_buffer.substr(rule.begin, rule.end - rule.begin);
-      if (absl::StartsWith(token, "clear_") ||
-          absl::StartsWith(token, "set_") ||  // covers set_allocated_
-          absl::StartsWith(token, "add_") ||
-          absl::StartsWith(token, "release_")) {
+    switch (annotation.semantic()) {
+      case google::protobuf::GeneratedCodeInfo_Annotation_Semantic_SET:
         rule.semantic = kythe::MetadataFile::Semantic::kWrite;
-      } else if (absl::StartsWith(token, "mutable_")) {
+        break;
+      case google::protobuf::GeneratedCodeInfo_Annotation_Semantic_ALIAS:
         rule.semantic = set_aliases_as_writes_
                             ? kythe::MetadataFile::Semantic::kWrite
                             : kythe::MetadataFile::Semantic::kTakeAlias;
-      }
+        break;
+      default:
+        rule.semantic = kythe::MetadataFile::Semantic::kNone;
     }
     rules.push_back(rule);
   }

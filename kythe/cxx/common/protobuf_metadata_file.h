@@ -60,10 +60,6 @@ class ProtobufMetadataSupport : public MetadataSupport {
 
   void UseVNameLookup(VNameLookup lookup) override { vname_lookup_ = lookup; }
 
-  void GuessSemantics(bool should_guess_semantics) {
-    should_guess_semantics_ = should_guess_semantics;
-  };
-
   void SetAliasesAsWrites(bool set_aliases_as_writes) {
     set_aliases_as_writes_ = set_aliases_as_writes;
   }
@@ -81,9 +77,6 @@ class ProtobufMetadataSupport : public MetadataSupport {
   VNameLookup vname_lookup_ = [](const std::string& path, proto::VName* out) {
     return false;
   };
-
-  /// Guess semantics for proto methods.
-  bool should_guess_semantics_ = false;
 
   /// Use write semantics for aliases.
   bool set_aliases_as_writes_ = false;
