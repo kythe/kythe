@@ -18,6 +18,7 @@ package build_event_stream;
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "third_party/bazel/src/main/java/com/google/devtools/build/lib/packages/metrics/package_load_metrics.proto";
 import "third_party/bazel/src/main/protobuf/command_line.proto";
 import "third_party/bazel/src/main/protobuf/failure_details.proto";
 import "third_party/bazel/src/main/protobuf/invocation_policy.proto";
@@ -128,6 +129,9 @@ message BuildEventId {
     // Identifier of the configuration; users of the protocol should not make
     // any assumptions about it having any structure, or equality of the
     // identifier between different streams.
+    //
+    // A value of "none" means the null configuration. It is used for targets
+    // that are not configurable, for example, source files.
     string id = 1;
   }
 
@@ -222,6 +226,9 @@ message BuildEventId {
   // Identifier of an event providing convenience symlinks information.
   message ConvenienceSymlinksIdentifiedId {}
 
+  // Identifier of an event signalling that the coverage actions are finished.
+  message CoverageActionsFinishedId {}
+
   oneof id {
     UnknownBuildEventId unknown = 1;
     ProgressId progress = 2;
@@ -249,6 +256,7 @@ message BuildEventId {
     WorkspaceConfigId workspace = 23;
     BuildMetadataId build_metadata = 24;
     ConvenienceSymlinksIdentifiedId convenience_symlinks_identified = 25;
+    CoverageActionsFinishedId coverage_actions_finished = 27;
   }
 }
 
@@ -482,6 +490,8 @@ message File {
     string uri = 2;
     // The contents of the file, if they are guaranteed to be short.
     bytes contents = 3;
+    // The symlink target path, if the file is an unresolved symlink.
+    string symlink_target_path = 7;
   }
 
   // Digest of the file, using the build tool's configured digest algorithm,
@@ -862,6 +872,11 @@ message BuildMetrics {
       // When the last action of this type ended being executed, in
       // milliseconds from the epoch.
       int64 last_ended_ms = 4;
+
+      // Accumulated CPU time of all spawned actions of this type.
+      // This is only set if all the actions reported a time
+      google.protobuf.Duration system_time = 5;
+      google.protobuf.Duration user_time = 6;
     }
     // Contains the top N actions by number of actions executed.
     repeated ActionData action_data = 4;
@@ -872,6 +887,7 @@ message BuildMetrics {
     message RunnerCount {
       string name = 1;
       int32 count = 2;
+      string exec_kind = 3;
     }
     repeated RunnerCount runner_count = 6;
   }
@@ -938,6 +954,10 @@ message BuildMetrics {
     // After Feb 2022, this value is the number of packages successfully
     // loaded.
     int64 packages_loaded = 1;
+
+    // Loading time metrics per package.
+    repeated devtools.build.lib.packages.metrics.PackageLoadMetrics
+        package_load_metrics = 2;
   }
   PackageMetrics package_metrics = 4;
 
@@ -1054,6 +1074,9 @@ message BuildMetrics {
     bool is_sandbox = 5;
     // Shows is worker stats measured at the end of invocation.
     bool is_measurable = 6;
+    // Hash value of worker key. Needed to distinguish worker pools with same
+    // menmonic but with different worker keys.
+    int64 worker_key_hash = 9;
 
     // Information collected from worker at some point.
     message WorkerStats {
@@ -1098,6 +1121,29 @@ message BuildMetrics {
   }
 
   NetworkMetrics network_metrics = 10;
+
+  // Information about worker pool actions.
+  message WorkerPoolMetrics {
+    // Statistics of worker pool per worker pool hash. Basically it's a map from
+    // worker pool hash to statistics.
+    repeated WorkerPoolStats worker_pool_stats = 1;
+
+    message WorkerPoolStats {
+      // Hash of worker pool these stats are for. Contains information about
+      // startup flags.
+      int32 hash = 1;
+      // Mnemonic of workers these stats are for.
+      string mnemonic = 2;
+      // Number of workers created during a build.
+      int64 created_count = 3;
+      // Number of workers destroyed during a build.
+      int64 destroyed_count = 4;
+      // Number of workers evicted during a build.
+      int64 evicted_count = 5;
+    }
+  }
+
+  WorkerPoolMetrics worker_pool_metrics = 11;
 }
 
 // Event providing additional statistics/logs after completion of the build.

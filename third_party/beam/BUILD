@@ -1,3 +1,5 @@
+# gazelle:exclude *
+# gazelle:ignore
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])

@@ -1,3 +1,5 @@
+# gazelle:ignore
+# gazelle:exclude *
 # Targets related to platform configs.
 sh_binary(
     name = "rebuild",

@@ -35,7 +35,7 @@
 #include "kythe/proto/bazel_artifact_selector_v2.pb.h"
 #include "protobuf-matchers/protocol-buffer-matchers.h"
 #include "re2/re2.h"
-#include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 namespace {

@@ -705,7 +705,7 @@ proto_library(
     name = "bazel_artifact_selector_proto",
     srcs = ["bazel_artifact_selector.proto"],
     deps = [
-        "@build_event_stream_proto",
+        "//third_party/bazel:build_event_stream_proto",
     ],
 )
 
