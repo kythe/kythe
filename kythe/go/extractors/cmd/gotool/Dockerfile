@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/cloud-builders/go:debian-1.17
+FROM gcr.io/cloud-builders/go:debian-1.20
 
 RUN apt-get update && \
     apt-get install -y parallel && \
@@ -25,5 +25,8 @@ ADD kythe/go/extractors/cmd/gotool/analyze_packages.sh /usr/local/bin/analyze_pa
 ADD kythe/go/extractors/cmd/gotool/gotool /usr/local/bin/extract_go
 ADD kythe/go/platform/tools/kzip/kzip /usr/local/bin/
 ADD kythe/release/base/fix_permissions.sh /usr/local/bin/
+
+# running extract_go ensures that any glibc (or other library) incompatibilities are found at image build time rather than later when the image is deployed.
+RUN /usr/local/bin/extract_go --help
 
 ENTRYPOINT ["analyze_packages.sh"]
