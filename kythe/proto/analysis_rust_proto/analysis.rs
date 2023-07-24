@@ -4190,9 +4190,9 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x05files\"\xaa\x01\n\x12IndexedCompilation\x120\n\x04unit\x18\x01\x20\
     \x01(\x0b2\x1c.kythe.proto.CompilationUnitR\x04unit\x12;\n\x05index\x18\
     \x02\x20\x01(\x0b2%.kythe.proto.IndexedCompilation.IndexR\x05index\x1a%\
-    \n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\x03(\tR\trevisionsB7\n\x1fc\
-    om.google.devtools.kythe.protoZ\x11analysis_go_proto\xf8\x01\x01b\x06pro\
-    to3\
+    \n\x05Index\x12\x1c\n\trevisions\x18\x01\x20\x03(\tR\trevisionsBL\n\x1fc\
+    om.google.devtools.kythe.protoZ&kythe.io/kythe/proto/analysis_go_proto\
+    \xf8\x01\x01b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

@@ -20,7 +20,7 @@ package kythe.proto;
 
 import "kythe/proto/common.proto";
 
-option go_package = "link_go_proto";
+option go_package = "kythe.io/kythe/proto/link_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // A LinkService resolves "links" based on qualified names.  Given a qualified

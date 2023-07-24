@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.pipeline;
 
-option go_package = "pipeline_go_proto";
+option go_package = "kythe.io/kythe/proto/pipeline_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
