@@ -1,3 +1,5 @@
+# Multiple tests per directory confuses Gazelle
+# gazelle:ignore
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -8,6 +10,7 @@ go_library(
         "columnar.go",
         "graph.go",
     ],
+    importpath = "kythe.io/kythe/go/serving/graph",
     deps = [
         "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
@@ -25,9 +28,9 @@ go_library(
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:schema_go_proto",
         "//kythe/proto:serving_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
-        "@org_golang_x_net//trace:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_x_net//trace",
     ],
 )
 
@@ -35,7 +38,7 @@ go_test(
     name = "edges_test",
     size = "small",
     srcs = ["graph_test.go"],
-    library = "graph",
+    library = ":graph",
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/test/testutil",

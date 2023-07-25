@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "buildmetadata",
     srcs = ["buildmetadata.go"],
+    importpath = "kythe.io/kythe/go/platform/kzip/buildmetadata",
     deps = [
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",

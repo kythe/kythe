@@ -1,4 +1,4 @@
-# gazelle:ignore
+# Files beneath here are automatically generated.
 # gazelle:exclude *
 # Targets related to platform configs.
 sh_binary(

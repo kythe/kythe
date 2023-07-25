@@ -9,9 +9,5 @@ go_binary(
         "//kythe/go/extractors/bazel",
         "//kythe/go/extractors/bazel/extutil",
         "//kythe/go/util/log",
-        "//kythe/go/util/vnameutil",
-        "//third_party/bazel:extra_actions_base_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

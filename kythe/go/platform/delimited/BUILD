@@ -6,18 +6,16 @@ go_library(
     name = "delimited",
     srcs = [
         "copy.go",
-        ":delimited.go",
+        "delimited.go",
     ],
-    deps = [
-        "//kythe/go/util/dedup",
-        "@org_golang_google_protobuf//proto:go_default_library",
-    ],
+    importpath = "kythe.io/kythe/go/platform/delimited",
+    deps = ["@org_golang_google_protobuf//proto"],
 )
 
 go_test(
     name = "delimited_test",
     size = "small",
     srcs = ["delimited_test.go"],
-    library = "delimited",
+    library = ":delimited",
     visibility = ["//visibility:private"],
 )

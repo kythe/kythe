@@ -7,6 +7,6 @@ go_binary(
     srcs = ["extractschema.go"],
     deps = [
         "//kythe/go/util/log",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
     ],
 )

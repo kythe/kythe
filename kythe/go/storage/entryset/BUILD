@@ -5,14 +5,15 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "entryset",
     srcs = ["entryset.go"],
+    importpath = "kythe.io/kythe/go/storage/entryset",
     deps = [
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/edges",
         "//kythe/proto:entryset_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_pkg_errors//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@com_github_pkg_errors//:errors",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -20,12 +21,15 @@ go_test(
     name = "entryset_test",
     size = "small",
     srcs = ["entryset_test.go"],
-    library = "entryset",
+    library = ":entryset",
     deps = [
-        "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/log",
-        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "//kythe/proto:entryset_go_proto",
+        "//kythe/proto:internal_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//encoding/prototext",
+        "@org_golang_google_protobuf//proto",
     ],
 )

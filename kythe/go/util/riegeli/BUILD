@@ -1,5 +1,7 @@
+# Multiple tests per directory confuses Gazelle.
+# gazelle:ignore
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//kythe/proto:go.bzl", go_kythe_proto = "go_proto_library")
+load("//kythe/proto:go.bzl", "go_proto_library")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -16,6 +18,7 @@ go_library(
         "util.go",
         "writer.go",
     ],
+    importpath = "kythe.io/kythe/go/util/riegeli",
     deps = [
         "//third_party/riegeli:records_metadata_go_proto",
         "@com_github_datadog_zstd//:go_default_library",
@@ -84,7 +87,8 @@ proto_library(
     srcs = ["riegeli_test.proto"],
 )
 
-go_kythe_proto(
+go_proto_library(
+    name = "riegeli_test_go_proto",
     importpath = "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto",
     proto = ":riegeli_test_proto",
     suggested_update_target = None,

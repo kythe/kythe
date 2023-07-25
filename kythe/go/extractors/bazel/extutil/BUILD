@@ -9,10 +9,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "extutil",
     srcs = ["extutil.go"],
+    importpath = "kythe.io/kythe/go/extractors/bazel/extutil",
     visibility = [PUBLIC_VISIBILITY],
-    deps = [
-        "//kythe/go/extractors/bazel",
-        "//kythe/go/platform/kzip",
-        "//third_party/bazel:extra_actions_base_go_proto",
-    ],
+    deps = ["//kythe/go/extractors/bazel"],
 )

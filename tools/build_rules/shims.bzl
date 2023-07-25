@@ -47,7 +47,7 @@ def go_library(name, importpath = None, **kwargs):
         **kwargs
     )
 
-def go_test(name, library = None, **kwargs):
+def go_test(name, library = None, embed = None, **kwargs):
     """This macro wraps the go_test rule provided by the Bazel Go rules
     to silence a deprecation warning for use of the "library" attribute.
     It is otherwise equivalent in function to a go_test.
@@ -55,7 +55,8 @@ def go_test(name, library = None, **kwargs):
 
     # For internal tests (defined in the same package), we need to embed
     # the library under test, but this is not needed for external tests.
-    embed = [library] if library else []
+    if embed == None:
+        embed = [library] if library else []
 
     _go_test(
         name = name,

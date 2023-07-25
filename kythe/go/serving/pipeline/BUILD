@@ -1,3 +1,5 @@
+# Multiple test files confuse Gazelle
+# gazelle:ignore
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -10,6 +12,7 @@ go_library(
         "filetree.go",
         "pipeline.go",
     ],
+    importpath = "kythe.io/kythe/go/serving/pipeline",
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
@@ -42,10 +45,10 @@ go_library(
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
         "//kythe/proto:xref_serving_go_proto",
-        "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/transforms/filter:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
+        "@com_github_apache_beam//sdks/go/pkg/beam/transforms/filter",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 

@@ -8,6 +8,7 @@ go_library(
         "protodeps.go",
         "viewcmd.go",
     ],
+    importpath = "kythe.io/kythe/go/platform/tools/kzip/viewcmd",
     deps = [
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
@@ -17,10 +18,10 @@ go_library(
         "//kythe/proto:cxx_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:java_go_proto",
-        "@com_github_google_subcommands//:go_default_library",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
-        "@org_golang_x_sync//errgroup:go_default_library",
-        "@org_golang_x_sync//semaphore:go_default_library",
+        "@com_github_google_subcommands//:subcommands",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_x_sync//errgroup",
+        "@org_golang_x_sync//semaphore",
     ],
 )

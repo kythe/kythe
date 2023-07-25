@@ -1,3 +1,6 @@
+# The nested test/ directory with go files confuses gazelle.
+# gazelle:ignore
+# gazelle:exclude test/
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
 
@@ -9,11 +12,12 @@ go_library(
         "order.go",
         "rewrite.go",
     ],
+    importpath = "kythe.io/kythe/go/util/vnameutil",
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -21,7 +25,7 @@ go_test(
     name = "rewrite_test",
     size = "small",
     srcs = ["rewrite_test.go"],
-    library = "vnameutil",
+    embed = ["vnameutil"],
     deps = [
         "//kythe/proto:storage_go_proto",
         "@com_github_google_go_cmp//cmp:go_default_library",
@@ -33,7 +37,7 @@ go_test(
     name = "order_test",
     size = "small",
     srcs = ["order_test.go"],
-    library = "vnameutil",
+    embed = ["vnameutil"],
     deps = ["//kythe/proto:storage_go_proto"],
 )
 

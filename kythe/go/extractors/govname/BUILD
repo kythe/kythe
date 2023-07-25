@@ -9,12 +9,13 @@ go_library(
         "govname.go",
         "types.go",
     ],
+    importpath = "kythe.io/kythe/go/extractors/govname",
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_x_tools//go/vcs:go_default_library",
+        "@org_golang_x_tools//go/vcs",
     ],
 )
 
@@ -22,11 +23,14 @@ go_test(
     name = "govname_test",
     size = "small",
     srcs = ["govname_test.go"],
-    library = "govname",
+    library = ":govname",
     tags = ["local"],
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/util/kytheuri",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "//kythe/go/util/vnameutil",
+        "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_x_tools//go/vcs",
     ],
 )

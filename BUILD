@@ -29,16 +29,15 @@ sh_test(
 # gazelle:build_file_name BUILD
 # gazelle:go_naming_convention import
 # gazelle:proto file
+# gazelle:exclude **/examples/
 # gazelle:exclude **/testdata/
 # gazelle:exclude **/*_go_proto/
 # gazelle:exclude **/*_rust_proto/
-# gazelle:exclude kythe/go/
-# gazelle:exclude kythe/examples/
-# gazelle:exclude kythe/extractors/
-# gazelle:exclude kythe/release/
-# gazelle:exclude tools/platforms/configs/
 # gazelle:prefix kythe.io
-gazelle(name = "gazelle")
+gazelle(
+    name = "gazelle",
+    gazelle = "//tools/gazelle",
+)
 
 gazelle(
     name = "gazelle-update-repos",
