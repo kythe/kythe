@@ -6,6 +6,12 @@ func main() {
 	c.Get()
 	//- @Put ref Put
 	c.Put("yup")
+
+	//- @getter defines/binding Getter
+	//- @Get ref Get
+	getter := c.Get
+	//- @getter ref Getter
+	getter()
 }
 
 // - @Container defines/binding Container
