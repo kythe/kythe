@@ -30,7 +30,13 @@ func (l *goLang) Fix(c *config.Config, f *rule.File) {
 }
 
 func (l *goLang) ApparentLoads(moduleToApparentName func(string) string) []rule.LoadInfo {
-	return l.Language.(language.ModuleAwareLanguage).ApparentLoads(moduleToApparentName)
+	loads := l.Language.(language.ModuleAwareLanguage).ApparentLoads(moduleToApparentName)
+	for i := range loads {
+		if loads[i].Name == "io_bazel_rules_go//go:def.bzl" {
+			loads[i].Name = "//tools:build_rules/shims.bzl"
+		}
+	}
+	return loads
 }
 
 func moveTestEmbedToLibrary(res *language.GenerateResult) {
