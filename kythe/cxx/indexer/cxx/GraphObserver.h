@@ -736,19 +736,15 @@ class GraphObserver {
     Speculative
   };
 
-  /// \brief Records that a particular `Range` contains a completion
-  /// for the node named `DefnId`.
-  /// \param SourceRange The source range containing the completion.
+  /// \brief Records that a particular `CompletingNode` completing the node
+  /// named `DefnId`.
   /// \param DefnId The `NodeId` for the node being completed.
-  /// \param Spec the specificity of the relationship beween the `Range`
-  /// and the `DefnId`.
   /// \param CompletingNode The node completing DefnId. This refers to, for
   /// example, the function definition that completes a declaration. In the case
   /// where there are multiple possible nodes, like when the function is
   /// actually a function template, pass the ID for the outer (abs) node.
-  virtual void recordCompletionRange(const Range& SourceRange,
-                                     const NodeId& DefnId,
-                                     const NodeId& CompletingNode) {}
+  virtual void recordCompletion(const NodeId& DefnId,
+                                const NodeId& CompletingNode) {}
 
   /// \brief Records the type of a node as an edge in the graph.
   /// \param TermNodeId The identifier for the node to be given a type.

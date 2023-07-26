@@ -206,8 +206,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
           if (NextDeclRange.isValid()) {
             clang::FileID NextDeclFile =
                 GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
-            GO.recordCompletionRange(*RCC, NodeIdForFlag(GO, C.DeclId),
-                                     FlagNodeId);
+            GO.recordCompletion(NodeIdForFlag(GO, C.DeclId), FlagNodeId);
           }
         }
       }
