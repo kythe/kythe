@@ -60,7 +60,7 @@ clang-format -i --style=file <filename>
 If you forgot to do this for a commit, you can amend it easily:
 
 {% highlight bash %}
-clang-format i --style=file $(git show --pretty="" --name-only <SHA1>)
+clang-format -i --style=file $(git show --pretty="" --name-only <SHA1>)
 git commit --amend
 {% endhighlight %}
 
