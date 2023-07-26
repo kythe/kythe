@@ -1,5 +1,6 @@
 # gazelle:proto file
 # gazelle:go_generate_proto false
+# Ignore this file, but generate build files for descendants.
 # gazelle:ignore
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")

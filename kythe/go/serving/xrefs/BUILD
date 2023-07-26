@@ -1,5 +1,6 @@
 # Multiple test files confuse Gazelle
-# gazelle:ignore
+# #gazelle:ignore
+# gazelle:go_test file
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -78,8 +79,18 @@ go_test(
     library = ":xrefs",
     visibility = ["//visibility:private"],
     deps = [
+        "//kythe/go/services/xrefs",
+        "//kythe/go/serving/xrefs/columnar",
         "//kythe/go/storage/inmemory",
+        "//kythe/go/storage/keyvalue",
         "//kythe/go/util/compare",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema/facts",
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
+        "//kythe/proto:xref_go_proto",
+        "//kythe/proto:xref_serving_go_proto",
     ],
 )

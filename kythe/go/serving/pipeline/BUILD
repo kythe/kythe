@@ -1,5 +1,6 @@
 # Multiple test files confuse Gazelle
 # gazelle:ignore
+# #gazelle:go_test file
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -59,11 +60,17 @@ go_test(
     deps = [
         "//kythe/go/serving/pipeline/beamtest",
         "//kythe/proto:common_go_proto",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
-        "@com_github_google_go_cmp//cmp:go_default_library",
-        "@com_github_google_go_cmp//cmp/cmpopts:go_default_library",
+        "//kythe/proto:pipeline_go_proto",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:serving_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug",
+        "@com_github_google_go_cmp//cmp",
+        "@com_github_google_go_cmp//cmp/cmpopts",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -74,13 +81,23 @@ go_test(
     deps = [
         "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
+        "//kythe/go/serving/graph",
+        "//kythe/go/serving/xrefs",
         "//kythe/go/storage/inmemory",
+        "//kythe/go/storage/keyvalue",
+        "//kythe/go/util/compare",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/facts",
+        "//kythe/go/util/schema/nodes",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:storage_go_proto",
         "//kythe/proto:xref_go_proto",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -89,8 +106,12 @@ go_test(
     srcs = ["filetree_test.go"],
     library = ":pipeline",
     deps = [
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:serving_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug",
     ],
 )
