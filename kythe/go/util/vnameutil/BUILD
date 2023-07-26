@@ -1,6 +1,4 @@
-# Multiple test files confuse gazelle.
-# gazelle:ignore
-# #gazelle:go_test file
+# gazelle:go_test file
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
 

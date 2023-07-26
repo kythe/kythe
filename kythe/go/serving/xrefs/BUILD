@@ -1,5 +1,3 @@
-# Multiple test files confuse Gazelle
-# #gazelle:ignore
 # gazelle:go_test file
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 

@@ -1,6 +1,4 @@
-# Multiple tests per directory confuses Gazelle
-# gazelle:ignore
-# #gazelle:go_test file
+# gazelle:go_test file
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])

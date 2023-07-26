@@ -78,6 +78,11 @@ def kythe_rule_repositories():
             "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
             "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
         ],
+        patch_args = ["-p1"],
+        patches = [
+            # Add support for per-file go_test targets.
+            "//third_party:gazelle-0.32.0-go_test_mode.patch",
+        ],
     )
 
     maybe(
