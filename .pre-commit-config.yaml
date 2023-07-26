@@ -93,6 +93,7 @@ repos:
         description: Clean build dependencies with gazelle
         language: system
         entry: bazel run //:gazelle
+        stages: [push]
     -   id: rustfmt
         name: Format w/ rustfmt
         description: Runs `rustfmt` on Rust files
