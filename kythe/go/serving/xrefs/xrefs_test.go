@@ -3323,6 +3323,10 @@ func TestCorpusPathFilters(t *testing.T) {
 		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "^kythe3/branch/genfiles/"}`),
 			[]string{cps("kythe3//branch", "genfiles", "any/path"), cps("kythe3//branch", "genfiles/more", "any/path")},
 			[]string{cps("kythe3", "bin", "any/path"), cps("kythe3", "genfiles", "some/path")}},
+		// The filter should only apply when the corpus matches.
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" path: ".*k.*" corpus_specific_filter: true}`),
+			[]string{cps("kythe3", "", "k1.cc"), cps("kythe3//branch", "", "k3.cc"), cps("other", "", "file.cc")},
+			[]string{cps("kythe3", "", "file.cc")}},
 	}
 
 	for i, test := range tests {
