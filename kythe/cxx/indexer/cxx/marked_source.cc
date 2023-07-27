@@ -32,11 +32,6 @@
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
-ABSL_FLAG(bool, reformat_marked_source, false,
-          "Reformat source code used in MarkedSource (experimental).");
-ABSL_FLAG(bool, pretty_print_function_prototypes, false,
-          "Synthesize new function prototypes (experimental).");
-
 // TODO(shahms): This is part of the Abseil logging migration.
 // Support for VLOG is planned, but not yet implemented.
 // Elsewhere, VLOG(1) maps to DLOG(LEVEL(-1)) until it is,
@@ -80,48 +75,6 @@ llvm::StringRef GetTextRange(const clang::SourceManager& source_manager,
     return llvm::StringRef();
   }
   return llvm::StringRef(begin, end - begin);
-}
-
-/// \brief The filename to use to refer to code being formatted.
-constexpr char kReplacementFile[] = "x.cc";
-
-/// \brief Reformats `source_text`.
-/// \param replacements the set of transformations applied to `source_text`.
-/// \param incomplete set to true if reformatting failed.
-/// \return the reformatted text buffer (or the empty string).
-std::string Reformat(const clang::LangOptions& lang_options,
-                     llvm::StringRef source_text,
-                     clang::tooling::Replacements* replacements,
-                     bool* incomplete) {
-  clang::format::FormatStyle style =
-      clang::format::getGoogleStyle(clang::format::FormatStyle::LK_Cpp);
-  std::vector<clang::tooling::Range> ranges = {
-      clang::tooling::Range(0, source_text.size())};
-  *replacements = clang::format::reformat(style, source_text, ranges,
-                                          kReplacementFile, incomplete);
-  if (*incomplete) {
-    return "";
-  }
-  llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
-      new llvm::vfs::InMemoryFileSystem);
-  clang::FileManager Files(clang::FileSystemOptions(), InMemoryFileSystem);
-  clang::DiagnosticsEngine Diagnostics(
-      llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs),
-      new clang::DiagnosticOptions);
-  clang::SourceManager Sources(Diagnostics, Files);
-  auto Source = llvm::MemoryBuffer::getMemBuffer(source_text);
-  InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, *Source);
-  clang::FileID ID =
-      Sources.createFileID(*Files.getFile(kReplacementFile),
-                           clang::SourceLocation(), clang::SrcMgr::C_User);
-  clang::Rewriter Rewrite(Sources, lang_options);
-  clang::tooling::applyAllReplacements(*replacements, Rewrite);
-  std::string result_string;
-  {
-    llvm::raw_string_ostream result_stream(result_string);
-    Rewrite.getEditBuffer(ID).write(result_stream);
-  }
-  return result_string;
 }
 
 /// \brief A span of source text with some attached properties.
@@ -837,42 +790,12 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     return std::nullopt;
   }
   MarkedSource out_sig;
-  if (absl::GetFlag(FLAGS_reformat_marked_source)) {
-    clang::tooling::Replacements replacements;
-    bool incomplete = false;
-    // Weirdly, Clang tooling complains if we don't make a copy of `range` here.
-    auto formatted_range = Reformat(cache_->lang_options(), range.str(),
-                                    &replacements, &incomplete);
-    if (incomplete) {
-      DLOG(LEVEL(-1)) << "Incomplete reformatting for "
-                      << decl_id.getRawIdentity() << " ("
-                      << decl_->getQualifiedNameAsString() << ")";
-      return std::nullopt;
-    }
-    DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,
-                            &out_sig, name_range_);
-    annotator.Annotate(decl_);
-    ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
-  } else {
-    auto range_string = range.str();
-    DeclAnnotator annotator(cache_, nullptr, start_loc, range_string, &out_sig,
-                            name_range_);
-    annotator.Annotate(decl_);
-    ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
-  }
+  auto range_string = range.str();
+  DeclAnnotator annotator(cache_, nullptr, start_loc, range_string, &out_sig,
+                          name_range_);
+  annotator.Annotate(decl_);
+  ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
   return out_sig;
-}
-
-MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForFunction(
-    const clang::FunctionDecl* func) {
-  MarkedSource out;
-  ReplaceMarkedSourceWithQualifiedName(out.add_child());
-  auto* child = out.add_child();
-  child->set_kind(MarkedSource::PARAMETER_LOOKUP_BY_PARAM);
-  child->set_pre_text("(");
-  child->set_post_child_text(", ");
-  child->set_post_text(")");
-  return out;
 }
 
 MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl() {
@@ -892,11 +815,7 @@ std::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (const auto* func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
-    if (absl::GetFlag(FLAGS_pretty_print_function_prototypes)) {
-      return GenerateMarkedSourceForFunction(func);
-    } else {
-      return GenerateMarkedSourceUsingSource(decl_id);
-    }
+    return GenerateMarkedSourceUsingSource(decl_id);
   } else if (llvm::isa<clang::ObjCPropertyDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (llvm::isa<clang::ObjCMethodDecl>(decl_)) {
