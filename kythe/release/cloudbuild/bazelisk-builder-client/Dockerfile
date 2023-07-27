@@ -15,7 +15,7 @@
 # A minimal image for building Kythe with Bazelisk
 
 # docker build -t gcr.io/kythe-repo/bazelisk-builder-client .
-FROM ubuntu:focal
+FROM ubuntu:23.04
 
 RUN apt-get update \
         && apt-get upgrade -y \
