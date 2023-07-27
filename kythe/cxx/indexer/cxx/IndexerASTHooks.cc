@@ -1226,6 +1226,16 @@ bool IndexerASTVisitor::TraverseCXXConstructorDecl(
          TraverseDeclarationNameInfo(DNI);
 }
 
+bool IndexerASTVisitor::TraverseCXXDefaultInitExpr(
+    const clang::CXXDefaultInitExpr*) {
+  // Due to the complicated way in which we visit constructors, we end up
+  // redundantly visiting this node from both the constructor initializer and
+  // field.  Avoid doing so here.
+  // It's likely we could simplify some of the constructor visitation logic by
+  // moving it here.
+  return true;
+}
+
 namespace {
 
 /// \return the location of the template `Decl` implicitly instantiates,
