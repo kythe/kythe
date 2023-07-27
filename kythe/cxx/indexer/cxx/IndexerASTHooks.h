@@ -246,6 +246,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
   bool TraverseDecl(clang::Decl* Decl);
   bool TraverseCXXConstructorDecl(clang::CXXConstructorDecl* CD);
+  bool TraverseCXXDefaultInitExpr(const clang::CXXDefaultInitExpr* E);
 
   bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
