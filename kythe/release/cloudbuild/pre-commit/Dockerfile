@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/pre-commit .
-FROM ubuntu:23.04
+FROM gcr.io/kythe-repo/bazelisk-builder-client:latest
 
 RUN apt-get update \
         && apt-get upgrade -y \
