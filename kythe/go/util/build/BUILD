@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "build",
     srcs = ["build.go"],
+    importpath = "kythe.io/kythe/go/util/build",
     x_defs = {
         "kythe.io/kythe/go/util/build._BUILD_SCM_REVISION": "{STABLE_BUILD_SCM_REVISION}",
         "kythe.io/kythe/go/util/build._BUILD_SCM_STATUS": "{STABLE_BUILD_SCM_STATUS}",

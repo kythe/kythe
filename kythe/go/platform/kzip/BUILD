@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "kzip",
     srcs = ["kzip.go"],
+    importpath = "kythe.io/kythe/go/platform/kzip",
     deps = [
         "//kythe/go/platform/kcd/kythe",
         "//kythe/go/util/log",
@@ -17,10 +18,9 @@ go_library(
         "//kythe/proto:java_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
-        "@org_golang_x_sync//errgroup:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_x_sync//errgroup",
     ],
 )
 
@@ -36,6 +36,6 @@ go_test(
         "//kythe/go/test/testutil",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto",
     ],
 )

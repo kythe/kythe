@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto;
 
-option go_package = "extraction_config_go_proto";
+option go_package = "kythe.io/kythe/proto/extraction_config_go_proto";
 
 // Represents configuration data necessary to construct an extraction image.
 // Dockerfile reference: https://docs.docker.com/engine/reference/builder/

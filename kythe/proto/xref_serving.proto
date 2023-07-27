@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving.xrefs;
 
-option go_package = "xref_serving_go_proto";
+option go_package = "kythe.io/kythe/proto/xref_serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";

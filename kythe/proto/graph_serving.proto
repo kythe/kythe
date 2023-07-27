@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving.graph;
 
-option go_package = "graph_serving_go_proto";
+option go_package = "kythe.io/kythe/proto/graph_serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/schema.proto";

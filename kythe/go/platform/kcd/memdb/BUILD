@@ -5,17 +5,15 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "memdb",
     srcs = ["memdb.go"],
-    deps = [
-        "//kythe/go/platform/kcd",
-        "@org_golang_google_protobuf//proto:go_default_library",
-    ],
+    importpath = "kythe.io/kythe/go/platform/kcd/memdb",
+    deps = ["//kythe/go/platform/kcd"],
 )
 
 go_test(
     name = "memdb_test",
     size = "small",
     srcs = ["memdb_test.go"],
-    library = "memdb",
+    library = ":memdb",
     visibility = ["//visibility:private"],
     deps = ["//kythe/go/platform/kcd/testutil"],
 )

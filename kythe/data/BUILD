@@ -1,7 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 load(":vnames.bzl", "construct_vnames_config")
-load("//kythe/go/util/vnameutil:test/macros.bzl", "test_vname_rules")
+load("//kythe/go/util/vnameutil/test:macros.bzl", "test_vname_rules")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

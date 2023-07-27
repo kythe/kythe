@@ -8,6 +8,7 @@ go_library(
         "golang.go",
         "packages.go",
     ],
+    importpath = "kythe.io/kythe/go/extractors/golang",
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/analysis",
@@ -18,7 +19,7 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@com_github_golang_protobuf//ptypes/any",
+        "@org_bitbucket_creachadair_stringset//:stringset",
     ],
 )

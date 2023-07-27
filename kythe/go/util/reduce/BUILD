@@ -6,12 +6,13 @@ go_library(
     name = "reduce",
     srcs = [
         "reduce.go",
-        ":reduce_sort.go",
+        "reduce_sort.go",
     ],
+    importpath = "kythe.io/kythe/go/util/reduce",
     deps = [
         "//kythe/go/util/disksort",
         "//kythe/proto:internal_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -19,7 +20,10 @@ go_test(
     name = "reduce_test",
     size = "small",
     srcs = ["reduce_test.go"],
-    library = "reduce",
+    library = ":reduce",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/go/test/testutil"],
+    deps = [
+        "//kythe/go/test/testutil",
+        "//kythe/proto:internal_go_proto",
+    ],
 )

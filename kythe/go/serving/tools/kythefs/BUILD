@@ -14,9 +14,8 @@ go_binary(
         "//kythe/proto:filetree_go_proto",
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:xref_go_proto",
-        "@com_github_hanwen_go_fuse//fuse:go_default_library",
-        "@com_github_hanwen_go_fuse//fuse/nodefs:go_default_library",
-        "@com_github_hanwen_go_fuse//fuse/pathfs:go_default_library",
-        "@org_golang_x_net//http2:go_default_library",
+        "@com_github_hanwen_go_fuse//fuse",
+        "@com_github_hanwen_go_fuse//fuse/nodefs",
+        "@com_github_hanwen_go_fuse//fuse/pathfs",
     ],
 )

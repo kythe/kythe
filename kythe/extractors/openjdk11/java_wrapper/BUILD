@@ -8,8 +8,8 @@ go_binary(
     ],
     deps = [
         "//kythe/go/util/log",
-        "@org_bitbucket_creachadair_shell//:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_x_sys//unix:go_default_library",
+        "@org_bitbucket_creachadair_shell//:shell",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_x_sys//unix",
     ],
 )

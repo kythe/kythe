@@ -10,6 +10,6 @@ go_binary(
         "//kythe/go/extractors/config/runextractor/compdbcmd",
         "//kythe/go/extractors/config/runextractor/gradlecmd",
         "//kythe/go/extractors/config/runextractor/mavencmd",
-        "@com_github_google_subcommands//:go_default_library",
+        "@com_github_google_subcommands//:subcommands",
     ],
 )

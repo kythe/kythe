@@ -9,6 +9,7 @@ def go_proto_library(
         deps = [],
         importpath = None,
         visibility = None,
+        compilers = None,
         suggested_update_target = "//{package}:update"):
     """Helper for go_proto_library for kythe project.
 

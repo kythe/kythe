@@ -5,14 +5,15 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "kythe",
     srcs = ["units.go"],
+    importpath = "kythe.io/kythe/go/platform/kcd/kythe",
     deps = [
         "//kythe/go/platform/kcd",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -25,12 +26,16 @@ go_test(
         "//kythe/testdata/platform:bb761979683e7c268e967eb5bcdedaa7fa5d1d472b0826b00b69acafbaad7ee6.pbtxt",
         "//kythe/testdata/platform:e9e170dcfca53c8126755bbc8b703994dedd3af32584291e01fba164ab5d3f32.pbtxt",
     ],
-    library = "kythe",
+    library = ":kythe",
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
-        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "//kythe/go/util/ptypes",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:buildinfo_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//ptypes/any",
+        "@org_golang_google_protobuf//encoding/prototext",
     ],
 )

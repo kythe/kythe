@@ -4,7 +4,19 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "cli",
-    srcs = glob(["*.go"]),
+    srcs = [
+        "cli.go",
+        "command_decor.go",
+        "command_diagnostics.go",
+        "command_docs.go",
+        "command_edges.go",
+        "command_identifiers.go",
+        "command_ls.go",
+        "command_nodes.go",
+        "command_source.go",
+        "commands_xrefs.go",
+    ],
+    importpath = "kythe.io/kythe/go/services/cli",
     deps = [
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
@@ -12,7 +24,6 @@ go_library(
         "//kythe/go/services/web",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/identifiers",
-        "//kythe/go/util/build",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/log",
@@ -24,8 +35,8 @@ go_library(
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:identifier_go_proto",
         "//kythe/proto:xref_go_proto",
-        "@com_github_google_subcommands//:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@com_github_google_subcommands//:subcommands",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_google_protobuf//proto",
     ],
 )

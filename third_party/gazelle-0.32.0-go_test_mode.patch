@@ -1,0 +1,268 @@
+diff -ur bazel-gazelle-v0.32.0.orig/language/go/config.go bazel-gazelle-v0.32.0/language/go/config.go
+--- bazel-gazelle-v0.32.0.orig/language/go/config.go	2023-07-11 08:37:32.000000000 -0700
++++ bazel-gazelle-v0.32.0/language/go/config.go	2023-07-26 10:25:00.065863627 -0700
+@@ -19,7 +19,6 @@
+ 	"errors"
+ 	"flag"
+ 	"fmt"
+-	"github.com/bazelbuild/bazel-gazelle/internal/module"
+ 	"go/build"
+ 	"io/ioutil"
+ 	"log"
+@@ -30,6 +29,8 @@
+ 	"strconv"
+ 	"strings"
+ 
++	"github.com/bazelbuild/bazel-gazelle/internal/module"
++
+ 	"github.com/bazelbuild/bazel-gazelle/config"
+ 	gzflag "github.com/bazelbuild/bazel-gazelle/flag"
+ 	"github.com/bazelbuild/bazel-gazelle/internal/version"
+@@ -126,6 +127,9 @@
+ 	// in internal packages.
+ 	submodules []moduleRepo
+ 
++	// testMode determines how go_test targets are generated.
++	testMode testMode
++
+ 	// buildDirectives, buildExternalAttr, buildExtraArgsAttr,
+ 	// buildFileGenerationAttr, buildFileNamesAttr, buildFileProtoModeAttr and
+ 	// buildTagsAttr are attributes for go_repository rules, set on the command
+@@ -133,11 +137,45 @@
+ 	buildDirectivesAttr, buildExternalAttr, buildExtraArgsAttr, buildFileGenerationAttr, buildFileNamesAttr, buildFileProtoModeAttr, buildTagsAttr string
+ }
+ 
++// testMode determines how go_test rules are generated.
++type testMode int
++
++const (
++	// defaultTestMode generates a go_test for the primary package in a directory.
++	defaultTestMode = iota
++
++	// fileTestMode generates a go_test for each Go test file.
++	fileTestMode
++)
++
+ var (
+ 	defaultGoProtoCompilers = []string{"@io_bazel_rules_go//proto:go_proto"}
+ 	defaultGoGrpcCompilers  = []string{"@io_bazel_rules_go//proto:go_grpc"}
+ )
+ 
++func (m testMode) String() string {
++	switch m {
++	case defaultTestMode:
++		return "default"
++	case fileTestMode:
++		return "file"
++	default:
++		log.Panicf("unknown mode %d", m)
++		return ""
++	}
++}
++
++func testModeFromString(s string) (testMode, error) {
++	switch s {
++	case "default":
++		return defaultTestMode, nil
++	case "file":
++		return fileTestMode, nil
++	default:
++		return 0, fmt.Errorf("unrecognized go_test mode: %q", s)
++	}
++}
++
+ func newGoConfig() *goConfig {
+ 	gc := &goConfig{
+ 		goProtoCompilers: defaultGoProtoCompilers,
+@@ -351,6 +389,7 @@
+ 		"go_naming_convention",
+ 		"go_naming_convention_external",
+ 		"go_proto_compilers",
++		"go_test",
+ 		"go_visibility",
+ 		"importmap_prefix",
+ 		"prefix",
+@@ -592,6 +631,14 @@
+ 					gc.goProtoCompilers = splitValue(d.Value)
+ 				}
+ 
++			case "go_test":
++				mode, err := testModeFromString(d.Value)
++				if err != nil {
++					log.Print(err)
++					continue
++				}
++				gc.testMode = mode
++
+ 			case "go_visibility":
+ 				gc.goVisibility = append(gc.goVisibility, strings.TrimSpace(d.Value))
+ 
+diff -ur bazel-gazelle-v0.32.0.orig/language/go/generate.go bazel-gazelle-v0.32.0/language/go/generate.go
+--- bazel-gazelle-v0.32.0.orig/language/go/generate.go	2023-07-11 08:37:32.000000000 -0700
++++ bazel-gazelle-v0.32.0/language/go/generate.go	2023-07-26 11:33:39.427666524 -0700
+@@ -282,9 +282,8 @@
+ 			g.maybePublishToolLib(r, pkg)
+ 			rules = append(rules, r)
+ 		}
+-		rules = append(rules,
+-			g.generateBin(pkg, libName),
+-			g.generateTest(pkg, libName))
++		rules = append(rules, g.generateBin(pkg, libName))
++		rules = append(rules, g.generateTests(pkg, libName)...)
+ 	}
+ 
+ 	for _, r := range rules {
+@@ -517,22 +516,48 @@
+ 	return goBinary
+ }
+ 
+-func (g *generator) generateTest(pkg *goPackage, library string) *rule.Rule {
++func (g *generator) generateTests(pkg *goPackage, library string) []*rule.Rule {
+ 	gc := getGoConfig(g.c)
+-	name := testNameByConvention(gc.goNamingConvention, pkg.importPath)
+-	goTest := rule.NewRule("go_test", name)
+-	if !pkg.test.sources.hasGo() {
+-		return goTest // empty
+-	}
+-	var embed string
+-	if pkg.test.hasInternalTest {
+-		embed = library
+-	}
+-	g.setCommonAttrs(goTest, pkg.rel, nil, pkg.test, embed)
+-	if pkg.hasTestdata {
+-		goTest.SetAttr("data", rule.GlobValue{Patterns: []string{"testdata/**"}})
++	tests := pkg.tests
++	if len(tests) == 0 && gc.testMode == defaultTestMode {
++		tests = []goTarget{goTarget{}}
++	}
++	var name func(goTarget) string
++	switch gc.testMode {
++	case defaultTestMode:
++		name = func(goTarget) string {
++			return testNameByConvention(gc.goNamingConvention, pkg.importPath)
++		}
++	case fileTestMode:
++		name = func(test goTarget) string {
++			if test.sources.hasGo() {
++				if srcs := test.sources.buildFlat(); len(srcs) == 1 {
++					return testNameFromSingleSource(srcs[0])
++				}
++			}
++			return testNameByConvention(gc.goNamingConvention, pkg.importPath)
++		}
+ 	}
+-	return goTest
++	var res []*rule.Rule
++	for i, test := range tests {
++		goTest := rule.NewRule("go_test", name(test))
++		hasGo := test.sources.hasGo()
++		if hasGo || i == 0 {
++			res = append(res, goTest)
++			if !hasGo {
++				continue
++			}
++		}
++		var embed string
++		if test.hasInternalTest {
++			embed = library
++		}
++		g.setCommonAttrs(goTest, pkg.rel, nil, test, embed)
++		if pkg.hasTestdata {
++			goTest.SetAttr("data", rule.GlobValue{Patterns: []string{"testdata/**"}})
++		}
++	}
++	return res
+ }
+ 
+ // maybePublishToolLib makes the given go_library rule public if needed for nogo.
+diff -ur bazel-gazelle-v0.32.0.orig/language/go/package.go bazel-gazelle-v0.32.0/language/go/package.go
+--- bazel-gazelle-v0.32.0.orig/language/go/package.go	2023-07-11 08:37:32.000000000 -0700
++++ bazel-gazelle-v0.32.0/language/go/package.go	2023-07-26 11:33:59.781631059 -0700
+@@ -32,11 +32,12 @@
+ // goPackage contains metadata for a set of .go and .proto files that can be
+ // used to generate Go rules.
+ type goPackage struct {
+-	name, dir, rel        string
+-	library, binary, test goTarget
+-	proto                 protoTarget
+-	hasTestdata           bool
+-	importPath            string
++	name, dir, rel  string
++	library, binary goTarget
++	tests           []goTarget
++	proto           protoTarget
++	hasTestdata     bool
++	importPath      string
+ }
+ 
+ // goTarget contains information used to generate an individual Go rule
+@@ -107,9 +108,14 @@
+ 		if info.isCgo {
+ 			return fmt.Errorf("%s: use of cgo in test not supported", info.path)
+ 		}
+-		pkg.test.addFile(c, er, info)
++		var test *goTarget
++		if getGoConfig(c).testMode == fileTestMode || len(pkg.tests) == 0 {
++			pkg.tests = append(pkg.tests, goTarget{})
++		}
++		test = &pkg.tests[len(pkg.tests)-1]
++		test.addFile(c, er, info)
+ 		if !info.isExternalTest {
+-			pkg.test.hasInternalTest = true
++			test.hasInternalTest = true
+ 		}
+ 	default:
+ 		pkg.library.addFile(c, er, info)
+@@ -136,8 +142,11 @@
+ 	goSrcs := []platformStringsBuilder{
+ 		pkg.library.sources,
+ 		pkg.binary.sources,
+-		pkg.test.sources,
+ 	}
++	for _, test := range pkg.tests {
++		goSrcs = append(goSrcs, test.sources)
++	}
++
+ 	for _, sb := range goSrcs {
+ 		if sb.strs != nil {
+ 			for s := range sb.strs {
+@@ -151,7 +160,15 @@
+ }
+ 
+ func (pkg *goPackage) haveCgo() bool {
+-	return pkg.library.cgo || pkg.binary.cgo || pkg.test.cgo
++	if pkg.library.cgo || pkg.binary.cgo {
++		return true
++	}
++	for _, t := range pkg.tests {
++		if t.cgo {
++			return true
++		}
++	}
++	return false
+ }
+ 
+ func (pkg *goPackage) inferImportPath(c *config.Config) error {
+@@ -216,6 +233,22 @@
+ 	}
+ 	return libName + "_test"
+ }
++
++// testNameFromSingleSource returns a suitable name for a go_test using the
++// single Go source file name.
++func testNameFromSingleSource(src string) string {
++	if i := strings.LastIndexByte(src, '.'); i >= 0 {
++		src = src[0:i]
++	}
++	libName := libNameFromImportPath(src)
++	if libName == "" {
++		return ""
++	}
++	if strings.HasSuffix(libName, "_test") {
++		return libName
++	}
++	return libName + "_test"
++}
+ 
+ // binName returns a suitable name for a go_binary.
+ func binName(rel, prefix, repoRoot string) string {

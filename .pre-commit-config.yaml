@@ -88,6 +88,11 @@ repos:
         language: script
         entry: tools/git/test-affected-targets.sh
         stages: [push]
+    -   id: gazelle
+        name: Build Cleaner
+        description: Clean build dependencies with gazelle
+        language: system
+        entry: bazel run //:gazelle
     -   id: rustfmt
         name: Format w/ rustfmt
         description: Runs `rustfmt` on Rust files

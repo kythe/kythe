@@ -13,6 +13,7 @@ go_library(
         "indexer.go",
         "markedsource.go",
     ],
+    importpath = "kythe.io/kythe/go/indexer",
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/util/kytheuri",
@@ -28,9 +29,9 @@ go_library(
         "//kythe/proto:metadata_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_x_tools//go/gcexportdata:go_default_library",
-        "@org_golang_x_tools//go/types/typeutil:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_x_tools//go/gcexportdata",
+        "@org_golang_x_tools//go/types/typeutil",
     ],
 )
 
@@ -43,6 +44,14 @@ go_test(
     library = ":indexer",
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/log",
+        "//kythe/go/util/metadata",
+        "//kythe/go/util/ptypes",
+        "//kythe/go/util/schema/edges",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:go_go_proto",
+        "//kythe/proto:metadata_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

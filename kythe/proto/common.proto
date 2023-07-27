@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.common;
 
-option go_package = "common_go_proto";
+option go_package = "kythe.io/kythe/proto/common_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 

@@ -20,7 +20,7 @@ package kythe.proto;
 
 import "kythe/proto/common.proto";
 
-option go_package = "graph_go_proto";
+option go_package = "kythe.io/kythe/proto/graph_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // This file defines a graph service interface, based on Kythe data.

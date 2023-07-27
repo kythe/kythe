@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package kythe.proto.metadata;
 
-option go_package = "metadata_go_proto";
+option go_package = "kythe.io/kythe/proto/metadata_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/storage.proto";

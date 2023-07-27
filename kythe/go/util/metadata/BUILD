@@ -5,11 +5,12 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "metadata",
     srcs = ["metadata.go"],
+    importpath = "kythe.io/kythe/go/util/metadata",
     deps = [
         "//kythe/go/util/schema/edges",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
-        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//types/descriptorpb",
     ],
 )
 
@@ -20,6 +21,9 @@ go_test(
     library = ":metadata",
     deps = [
         "//kythe/go/util/compare",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "//kythe/go/util/schema/edges",
+        "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/descriptorpb",
     ],
 )

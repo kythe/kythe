@@ -10,6 +10,6 @@ go_binary(
         "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson",
     ],
 )
