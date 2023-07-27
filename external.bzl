@@ -18,8 +18,6 @@ load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repositor
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
-load("@llvm-raw//utils/bazel:terminfo.bzl", "llvm_terminfo_disable")
-load("@llvm-raw//utils/bazel:zlib.bzl", "llvm_zlib_external")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
@@ -107,19 +105,11 @@ def _cc_dependencies():
     )
 
     maybe(
-        llvm_terminfo_disable,
-        name = "llvm_terminfo",
-    )
-
-    maybe(
-        llvm_zlib_external,
-        name = "llvm_zlib",
-        external_zlib = "@net_zlib//:zlib",
-    )
-
-    maybe(
         llvm_configure,
         name = "llvm-project",
+        repo_mapping = {
+            "@llvm_zlib": "@net_zlib",
+        },
     )
 
     maybe(
