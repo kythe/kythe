@@ -1,5 +1,7 @@
 # Remote Build Execution requires a strong hash function, such as SHA256.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
+# Bazel commands in the GCB (google-cloud-build) configuration as remote
+common:gcb --config=remote
 
 # Disable persistent workers for Typescript (#3816)
 build --strategy=TsProject=remote,sandboxed,local

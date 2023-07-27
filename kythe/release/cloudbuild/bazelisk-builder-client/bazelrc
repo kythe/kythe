@@ -1,3 +1,6 @@
-build --noshow_loading_progress
-test --test_output=errors --test_summary=terse --test_verbose_timeout_warnings
-test --test_tag_filters=-flaky
+# Define and use a named configuration to allow customization from within workspace .bazelrc files.
+common --config=gcb
+
+common:gcb --noshow_loading_progress
+test:gcb --test_output=errors --test_summary=terse --test_verbose_timeout_warnings
+test:gcb --test_tag_filters=-flaky
