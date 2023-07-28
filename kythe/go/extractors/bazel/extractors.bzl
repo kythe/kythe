@@ -28,7 +28,8 @@ def kzip_extractor(
         source_args = "",
         scoped = True,
         encoding = None,
-        extractor = "//kythe/go/extractors/cmd/bazel:extract_kzip"):
+        extractor = "//kythe/go/extractors/cmd/bazel:extract_kzip",
+        max_file_size = None):
     """This macro creates extra_action and action_listener for extract_kzip.
 
     This macro expands to an extra action listener that invokes extract_kzip
@@ -49,6 +50,7 @@ def kzip_extractor(
       scoped: optional boolean whether to match source paths only in target pkg
       encoding: optional encoding (proto|json) for the generated kzip
       extractor: optional label of the extract_kzip tool to use
+      max_file_size: optional maximum size of required_input files to include
     """
 
     if not mnemonics:
@@ -77,6 +79,8 @@ def kzip_extractor(
         xa_args["args"] = _quote_re(source_args)
     if rules:
         xa_args["rules"] = "$(location %s)" % rules
+    if max_file_size:
+        xa_args["max_file_size"] = max_file_size
     cmdprefix = ""
     if encoding:
         cmdprefix = "env KYTHE_KZIP_ENCODING=%s " % encoding
