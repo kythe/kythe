@@ -150,7 +150,7 @@ func CheckFileSize(path string, maxSize datasize.Size) bool {
 		return false
 	}
 	sz := info.Size()
-	if sz < 0 {
+	if sz <= 0 {
 		return true
 	}
 	return datasize.Size(sz) < maxSize
