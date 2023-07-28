@@ -327,6 +327,7 @@ func compileCorpusPathFilter(f *xpb.CorpusPathFilter, pr PathResolver) (*corpusP
 	if f.GetType() == xpb.CorpusPathFilter_EXCLUDE {
 		p.inverse = true
 	}
+	p.corpusSpecificFilter = f.GetCorpusSpecificFilter()
 	var err error
 	if corpus := f.GetCorpus(); corpus != "" {
 		p.corpus, err = regexp.Compile(corpus)
@@ -362,6 +363,21 @@ type corpusPathPattern struct {
 	resolvedPath *regexp.Regexp
 
 	inverse bool
+
+	// If true, this pattern should only be used when the corpus matches or otherwise we should
+	// include the corpus in the filter like any other field.
+	//
+	// The list of patterns in corpusPathFilter are ANDed together and that is usually what we want.
+	// However, sometimes we don't know the corpus of the data being filtered and we need to pass
+	// patterns for multiple corpora. In that case, we only want to apply the pattern that is
+	// applicable for the corpus the CorpusPath belongs to.
+	//
+	// For example, if we want to *exclude* test files, we can set this to allCorpusPatterns because if
+	// any pattern matches we should remove the file. However, if we wanted to *include* test files
+	// only, we should only apply the pattern for the correct corpus, we do not care if other corpora
+	// would or would not allow the file. Furthermore, since their corpus wouldn't match, the would
+	// always say the file should not be allowed.
+	corpusSpecificFilter bool
 }
 
 func (p *corpusPathPattern) Allow(c *cpb.CorpusPath) bool {
@@ -383,8 +399,17 @@ func (f *corpusPathFilter) Allow(c *cpb.CorpusPath) bool {
 	}
 
 	for _, p := range f.pattern {
-		if !p.Allow(c) {
-			return false
+		if p.corpusSpecificFilter {
+			// Ignore p when the corpus does not match.
+			if p.corpus != nil && p.corpus.MatchString(c.GetCorpus()) {
+				if !p.Allow(c) {
+					return false
+				}
+			}
+		} else {
+			if !p.Allow(c) {
+				return false
+			}
 		}
 	}
 	return true

@@ -460,6 +460,9 @@ message CorpusPathFilter {
 
   // Corpus pattern to match against.
   string corpus = 2;
+  // If true, only use filter if the corpus matches. If false, include corpus
+  // in the normal pattern matching behavior for this filter.
+  bool corpus_specific_filter = 6;
   // Root pattern to match against.
   string root = 3;
   // Path pattern to match against.
