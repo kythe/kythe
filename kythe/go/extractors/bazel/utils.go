@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/ptypes"
 
@@ -137,4 +138,20 @@ func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
 		cu.SourceFile = srcs.Elements()
 		return nil
 	}
+}
+
+// CheckFileSize returns true if maxSize == 0 or the size of the file at path exists and is less than maxSize.
+func CheckFileSize(path string, maxSize datasize.Size) bool {
+	if maxSize == 0 {
+		return true
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	sz := info.Size()
+	if sz < 0 {
+		return true
+	}
+	return datasize.Size(sz) < maxSize
 }

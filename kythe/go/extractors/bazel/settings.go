@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/vnameutil"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
@@ -41,8 +42,9 @@ type Settings struct {
 	SourceFiles string // mark files matching this RE2 as sources ("" marks none)
 	SourceArgs  string // mark arguments matching this RE2 as sources ("" marks none)
 
-	Scoped  bool // only match source paths within the target package
-	Verbose bool // enable verbose per-file logging
+	Scoped  bool          // only match source paths within the target package
+	Verbose bool          // enable verbose per-file logging
+	MaxSize datasize.Size // maximum file size (0 marks no maximum)
 }
 
 // SetFlags adds flags to f for each of the fields of s.  The specified prefix
@@ -73,6 +75,8 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 		"Only match source paths within the target package")
 	f.BoolVar(&s.Verbose, p("verbose"), false,
 		"Enable verbose (per-file) logging")
+	datasize.FlagVar(f, &s.MaxSize, p("max_file_size"), 0,
+		"Maximum size of files to include (if 0, include all files)")
 
 	// A default usage message the caller may use to populate flag.Usage.
 	return func() {
@@ -169,6 +173,17 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 		config.CheckInput = func(path string) (string, bool) {
 			if path, ok := base(path); ok {
 				return path, !r.MatchString(path)
+			}
+			return "", false
+		}
+	}
+
+	// If there is a maximum file size, add it to the input filter.
+	if s.MaxSize != 0 {
+		base := config.CheckInput
+		config.CheckInput = func(path string) (string, bool) {
+			if path, ok := base(path); ok {
+				return path, CheckFileSize(path, s.MaxSize)
 			}
 			return "", false
 		}
