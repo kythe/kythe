@@ -140,7 +140,8 @@ func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
 	}
 }
 
-// CheckFileSize returns true if maxSize == 0 or the size of the file at path exists and is less than maxSize.
+// CheckFileSize returns true if maxSize == 0 or
+// the size of the file at path exists and is less than or equal to maxSize.
 func CheckFileSize(path string, maxSize datasize.Size) bool {
 	if maxSize == 0 {
 		return true
@@ -153,5 +154,5 @@ func CheckFileSize(path string, maxSize datasize.Size) bool {
 	if sz <= 0 {
 		return true
 	}
-	return datasize.Size(sz) < maxSize
+	return datasize.Size(sz) <= maxSize
 }
