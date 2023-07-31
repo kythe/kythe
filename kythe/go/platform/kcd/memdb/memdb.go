@@ -51,12 +51,13 @@ type Index map[string][]string
 
 // String tags for index keys matching the fields of a kcd.FindFilter.
 const (
-	RevisionKey = "revision"
-	CorpusKey   = "corpus"
-	OutputKey   = "output"
-	LanguageKey = "language"
-	TargetKey   = "target"
-	SourceKey   = "source"
+	RevisionKey   = "revision"
+	CorpusKey     = "corpus"
+	UnitCorpusKey = "unit_corpus"
+	OutputKey     = "output"
+	LanguageKey   = "language"
+	TargetKey     = "target"
+	SourceKey     = "source"
 )
 
 // SetIndex sets an index term for the given digest.
@@ -104,7 +105,8 @@ func (db DB) Find(_ context.Context, filter *kcd.FindFilter, f func(string) erro
 
 	for digest, index := range db.Index {
 		if cf.RevisionMatches(index[RevisionKey]...) &&
-			cf.CorpusMatches(index[CorpusKey]...) &&
+			cf.BuildCorpusMatches(index[CorpusKey]...) &&
+			cf.UnitCorpusMatches(index[UnitCorpusKey]...) &&
 			cf.LanguageMatches(index[LanguageKey]...) &&
 			cf.TargetMatches(index[TargetKey]...) &&
 			cf.OutputMatches(index[OutputKey]...) &&
@@ -201,6 +203,9 @@ func (db *DB) WriteUnit(_ context.Context, rev kcd.Revision, formatKey string, u
 		db.SetIndex(digest, CorpusKey, corpus)
 	}
 	idx := unit.Index()
+	if idx.Corpus != "" {
+		db.SetIndex(digest, UnitCorpusKey, idx.Corpus)
+	}
 	if idx.Language != "" {
 		db.SetIndex(digest, LanguageKey, idx.Language)
 	}
