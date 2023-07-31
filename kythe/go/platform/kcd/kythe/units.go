@@ -64,6 +64,7 @@ func (u Unit) Index() kcd.Index {
 		v = new(spb.VName)
 	}
 	idx := kcd.Index{
+		Corpus:   v.Corpus,
 		Language: v.Language,
 		Output:   u.Proto.OutputKey,
 		Sources:  u.Proto.SourceFile,

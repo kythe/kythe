@@ -246,8 +246,8 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 	check("basic filters match index terms", func(fail failer) {
 		tests := []*kcd.FindFilter{
 			{Revisions: []string{Revision}},
-			{Corpus: []string{Corpus}},
-			{Revisions: []string{Revision}, Corpus: []string{Corpus}},
+			{BuildCorpus: []string{Corpus}},
+			{Revisions: []string{Revision}, BuildCorpus: []string{Corpus}},
 			{Languages: []string{Language}},
 			{Targets: regexps(`//foo/bar/baz:\w+`)},
 			{Sources: regexps("quux.*")},

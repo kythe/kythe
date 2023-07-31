@@ -55,7 +55,7 @@ func TestIsEmpty(t *testing.T) {
 		{&FindFilter{Languages: []string{""}}, false},
 		{&FindFilter{Sources: regexps("foo")}, false},
 		{&FindFilter{Outputs: regexps("foo")}, false},
-		{&FindFilter{Corpus: []string{"google3", "foo", "bar"}}, false},
+		{&FindFilter{BuildCorpus: []string{"google3", "foo", "bar"}}, false},
 	}
 	for _, test := range tests {
 		if got := test.input.IsEmpty(); got != test.want {
