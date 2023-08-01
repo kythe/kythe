@@ -16,7 +16,7 @@ def genlex(name, src, out, includes = []):
         srcs = [src] + includes,
         cmd = cmd,
         toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
-        exec_tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 def genyacc(name, src, header_out, source_out, extra_outs = []):
@@ -36,7 +36,7 @@ def genyacc(name, src, header_out, source_out, extra_outs = []):
         srcs = [src],
         cmd = cmd,
         toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
-        exec_tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        tools = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 LexYaccInfo = provider(
