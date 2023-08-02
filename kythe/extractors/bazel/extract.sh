@@ -55,6 +55,7 @@ if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   # TODO(jaysachs): unclear if we should bail if any packages fail to install
   apt-get update && \
   apt-get upgrade -y && \
+  apt-get --fix-broken install -y && \
   apt-get install -y $KYTHE_SYSTEM_DEPS && \
   apt-get clean
 fi
