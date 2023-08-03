@@ -177,7 +177,7 @@ func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 		return PrintJSONMessage(reply)
 	}
 
-	fmt.Fprintf(out, "Totals:\n%v\n\n", reply.GetTotal())
+	fmt.Fprintf(out, "Totals:\n%s\n\n", reply.GetTotal())
 
 	if c.totalsOnly {
 		return nil
