@@ -55,6 +55,8 @@ type xrefsCommand struct {
 	resolvedPathFilters flagutil.StringList
 
 	excludeGenerated bool
+
+	totalsOnly bool
 }
 
 func (xrefsCommand) Name() string     { return "xrefs" }
@@ -75,15 +77,18 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.semanticScopes, "semantic_scopes", false, "Whether to include semantic scopes")
 	flag.BoolVar(&c.excludeGenerated, "exclude_generated", false, "Whether to exclude anchors with non-empty roots")
 
+	flag.BoolVar(&c.totalsOnly, "totals_only", false, "Only output total count of xrefs")
+
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
 }
 func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	req := &xpb.CrossReferencesRequest{
-		Ticket:    flag.Args(),
-		PageToken: c.pageToken,
-		PageSize:  int32(c.pageSize),
-		Snippets:  xpb.SnippetsKind_DEFAULT,
+		Ticket:        flag.Args(),
+		PageToken:     c.pageToken,
+		PageSize:      int32(c.pageSize),
+		Snippets:      xpb.SnippetsKind_DEFAULT,
+		TotalsQuality: xpb.CrossReferencesRequest_APPROXIMATE_TOTALS,
 
 		SemanticScopes:  c.semanticScopes,
 		AnchorText:      c.anchorText,
@@ -170,6 +175,12 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 	if DisplayJSON {
 		return PrintJSONMessage(reply)
+	}
+
+	fmt.Fprintf(out, "Totals:\n%v\n\n", reply.GetTotal())
+
+	if c.totalsOnly {
+		return nil
 	}
 
 	for _, xr := range reply.CrossReferences {
