@@ -1476,7 +1476,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
       }
-      if (options_.DataflowEdges && !Job->InfluenceSets.empty()) {
+      if (!Job->InfluenceSets.empty()) {
         Job->InfluenceSets.back().insert(FieldDecl);
       }
       if (isa<clang::CXXMethodDecl>(FieldDecl)) {
@@ -1738,9 +1738,8 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
 
 bool IndexerASTVisitor::TraverseCXXOperatorCallExpr(
     clang::CXXOperatorCallExpr* E) {
-  if (!options_.DataflowEdges ||
-      (!E->isAssignmentOp() && E->getOperator() != clang::OO_PlusPlus &&
-       E->getOperator() != clang::OO_MinusMinus))
+  if (!E->isAssignmentOp() && E->getOperator() != clang::OO_PlusPlus &&
+      E->getOperator() != clang::OO_MinusMinus)
     return Base::TraverseCXXOperatorCallExpr(E);
   if (!WalkUpFromCXXOperatorCallExpr(E)) return false;
   auto arg_begin = E->arg_begin();
@@ -1821,10 +1820,8 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
       }
     }
   }
-  if (options_.DataflowEdges) {
-    if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
-      Job->InfluenceSets.back().insert(E->getDirectCallee());
-    }
+  if (!Job->InfluenceSets.empty() && E->getDirectCallee() != nullptr) {
+    Job->InfluenceSets.back().insert(E->getDirectCallee());
   }
   return true;
 }
@@ -2298,9 +2295,6 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
 }
 
 bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseCallExpr(CE);
-  }
   auto callee = CE->getDirectCallee();
   auto callee_exp = CE->getCallee();
   bool valid = callee != nullptr && callee_exp != nullptr &&
@@ -2331,9 +2325,6 @@ bool IndexerASTVisitor::TraverseCallExpr(clang::CallExpr* CE) {
 }
 
 bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseReturnStmt(RS);
-  }
   if (auto rv = RS->getRetValue(); rv != nullptr && !Job->BlameStack.empty()) {
     if (!WalkUpFromReturnStmt(RS)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
@@ -2349,9 +2340,6 @@ bool IndexerASTVisitor::TraverseReturnStmt(clang::ReturnStmt* RS) {
 }
 
 bool IndexerASTVisitor::TraverseVarDecl(clang::VarDecl* Decl) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseVarDecl(Decl);
-  }
   auto scope_guard = PushScope(Job->InfluenceSets, {});
   if (!Base::TraverseVarDecl(Decl)) {
     return false;
@@ -2371,9 +2359,6 @@ bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
     // caused the capture (for implicit captures).
     return true;
   }
-  if (!options_.DataflowEdges) {
-    return Base::TraverseFieldDecl(Decl);
-  }
   auto scope_guard = PushScope(Job->InfluenceSets, {});
   // Note that this will report a field's bitfield width as influencing that
   // field.
@@ -2388,9 +2373,6 @@ bool IndexerASTVisitor::TraverseFieldDecl(clang::FieldDecl* Decl) {
 }
 
 bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseBinaryOperator(BO);
-  }
   if (BO->getOpcode() != clang::BO_Assign)
     return Base::TraverseBinaryOperator(BO);
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
@@ -2419,9 +2401,6 @@ bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
 
 bool IndexerASTVisitor::TraverseCompoundAssignOperator(
     clang::CompoundAssignOperator* CAO) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseCompoundAssignOperator(CAO);
-  }
   if (auto rhs = CAO->getRHS(), lhs = CAO->getLHS();
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromCompoundAssignOperator(CAO)) return false;
@@ -2448,9 +2427,6 @@ bool IndexerASTVisitor::TraverseCompoundAssignOperator(
 }
 
 bool IndexerASTVisitor::TraverseUnaryOperator(clang::UnaryOperator* UO) {
-  if (!options_.DataflowEdges) {
-    return Base::TraverseUnaryOperator(UO);
-  }
   if (UO->getOpcode() != clang::UO_PostDec &&
       UO->getOpcode() != clang::UO_PreDec &&
       UO->getOpcode() != clang::UO_PostInc &&
@@ -2577,12 +2553,10 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
       RecordBlame(FoundDecl, *RCC);
-      if (options_.DataflowEdges) {
-        if (!Job->InfluenceSets.empty() &&
-            (FoundDecl->getKind() == clang::Decl::Kind::Var ||
-             FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
-          Job->InfluenceSets.back().insert(FoundDecl);
-        }
+      if (!Job->InfluenceSets.empty() &&
+          (FoundDecl->getKind() == clang::Decl::Kind::Var ||
+           FoundDecl->getKind() == clang::Decl::Kind::ParmVar)) {
+        Job->InfluenceSets.back().insert(FoundDecl);
       }
       if (isa<clang::FunctionDecl>(FoundDecl)) {
         if (const auto* semantic = AlternateSemanticForDecl(FoundDecl);
@@ -3645,17 +3619,15 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         Observer.recordCompletion(TargetDecl, OuterNode);
         Completions.push_back(LibrarySupport::Completion{NextDecl, TargetDecl});
 
-        if (options_.DataflowEdges) {
-          Observer.recordInfluences(OuterNode, TargetDecl);
+        Observer.recordInfluences(OuterNode, TargetDecl);
 
-          if (Decl->param_size() == NextDecl->param_size()) {
-            for (size_t param = 0; param < Decl->param_size(); ++param) {
-              auto lhs = NextDecl->getParamDecl(param);
-              auto rhs = Decl->getParamDecl(param);
-              if (lhs != nullptr && rhs != nullptr) {
-                Observer.recordInfluences(BuildNodeIdForDecl(lhs),
-                                          BuildNodeIdForDecl(rhs));
-              }
+        if (Decl->param_size() == NextDecl->param_size()) {
+          for (size_t param = 0; param < Decl->param_size(); ++param) {
+            auto lhs = NextDecl->getParamDecl(param);
+            auto rhs = Decl->getParamDecl(param);
+            if (lhs != nullptr && rhs != nullptr) {
+              Observer.recordInfluences(BuildNodeIdForDecl(lhs),
+                                        BuildNodeIdForDecl(rhs));
             }
           }
         }
@@ -5905,7 +5877,6 @@ void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
 }
 
 void IndexerASTVisitor::PrepareAlternateSemanticCache() {
-  if (!options_.DataflowEdges) return;
   for (const auto& meta : Observer.GetMetadataFiles()) {
     for (const auto& rule : meta.second->rules()) {
       GraphObserver::UseKind kind = GraphObserver::UseKind::kUnknown;
@@ -5937,7 +5908,6 @@ void IndexerASTVisitor::PrepareAlternateSemanticCache() {
 
 kythe::IndexerASTVisitor::AlternateSemantic*
 IndexerASTVisitor::AlternateSemanticForDecl(const clang::Decl* decl) {
-  if (!options_.DataflowEdges) return nullptr;
   const auto* canonical = decl->getCanonicalDecl();
   if (auto found = alternate_semantics_.find(canonical);
       found != alternate_semantics_.end()) {

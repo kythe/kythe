@@ -70,12 +70,6 @@ struct MiniAnchor {
   GraphObserver::NodeId AnchoredTo;
 };
 
-/// \brief Specifies whether dataflow edges should be emitted.
-enum EmitDataflowEdges : bool {
-  No = false,  ///< Don't emit dataflow edges.
-  Yes = true   ///< Emit dataflow edges.
-};
-
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
@@ -114,8 +108,6 @@ struct IndexerOptions {
   int UsrByteSize = 0;
   /// \brief Whether to use the default corpus when emitting USRs.
   bool EmitUsrCorpus = false;
-  /// \brief Controls whether dataflow edges are emitted.
-  EmitDataflowEdges DataflowEdges = EmitDataflowEdges::No;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
   std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
