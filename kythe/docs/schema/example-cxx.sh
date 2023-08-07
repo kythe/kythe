@@ -86,7 +86,7 @@ do
   # shellcheck disable=SC2086
   "$CXX_INDEXER_BIN" --ignore_unimplemented=false \
       --record_call_directness=true \
-      --experimental_record_dataflow_edges -i "${TEST_CC}" -- $CXX_ARGS \
+      -i "${TEST_CC}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
 done
 "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
