@@ -407,6 +407,9 @@ class Verifier {
   /// Identifier for MarkedSource INITIALIZER kinds.
   AstNode* marked_source_initializer_id_;
 
+  /// Identifier for MarkedSource MODIFIER kinds.
+  AstNode* marked_source_modifier_id_;
+
   /// Identifier for MarkedSource PARAMETER_LOOKUP_BY_PARAM kinds.
   AstNode* marked_source_parameter_lookup_by_param_id_;
 

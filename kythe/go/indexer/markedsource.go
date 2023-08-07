@@ -81,8 +81,12 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		// Methods:   func (R) Name(p1, ...) (r0, ...)
 		// Functions: func Name(p0, ...) (r0, ...)
 		fn := &cpb.MarkedSource{
-			Kind:  cpb.MarkedSource_BOX,
-			Child: []*cpb.MarkedSource{{PreText: "func "}},
+			Kind: cpb.MarkedSource_BOX,
+			Child: []*cpb.MarkedSource{{
+				Kind:     cpb.MarkedSource_MODIFIER,
+				PreText:  "func",
+				PostText: " ",
+			}},
 		}
 		sig := t.Type().(*types.Signature)
 		firstParam := 0

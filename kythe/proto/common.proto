@@ -128,6 +128,8 @@ message MarkedSource {
     CONTEXT = 4;
     // This node dominates nodes that should be classified as initializers.
     INITIALIZER = 5;
+    // This node dominates nodes that should be classified as modifiers.
+    MODIFIER = 12;
     // Substitute this node with a PARAMETER formed from the param edges from
     // the context node starting with `lookup_index`.
     PARAMETER_LOOKUP_BY_PARAM = 6;

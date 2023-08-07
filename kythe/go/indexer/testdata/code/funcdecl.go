@@ -37,7 +37,9 @@ package funcdecl
 // - PosCode child.3 PCResult // result
 // -
 // - //--------------------------------------------------
-// - PCFunc.pre_text "func "
+// - PCFunc.kind "MODIFIER"
+// - PCFunc.pre_text "func"
+// - PCFunc.post_text " "
 // -
 // - PCName child.0 PCContext
 // - PCName child.1 PCIdent
@@ -75,7 +77,9 @@ func Positive(x int) bool {
 // - TrueCode child.2 TCParams
 // - TrueCode child.3 TCResult
 // -
-// - TCFunc.pre_text "func "
+// - TCFunc.kind "MODIFIER"
+// - TCFunc.pre_text "func"
+// - TCFunc.post_text " "
 // -
 // - TCName child.0 _TCContext
 // - TCName child.1 _TCIdent
