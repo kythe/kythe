@@ -14,7 +14,6 @@ cc_proto_verifier_test(
     name = "proto_semantic_test",
     size = "medium",
     srcs = ["proto_semantic.cc"],
-    experimental_record_dataflow_edges = True,
     proto_libs = ["//kythe/testdata/indexers/proto:testdata_proto"],
     verifier_opts = [
         "--ignore_dups",

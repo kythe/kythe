@@ -27,7 +27,8 @@ void fn() {
   nested.nested_bool();
 
 
-  //- @mutable_nested_message ref CxxSetNestedMessageField
+  //- @"msg.mutable_nested_message()" ref/call CxxSetNestedMessageField
+  //- @mutable_nested_message ref/writes NestedMessageField
   *msg.mutable_nested_message() = nested;
   //- @nested_message ref CxxGetNestedMessageField
   msg.nested_message();
