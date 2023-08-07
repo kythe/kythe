@@ -21,7 +21,9 @@ type Thinger interface {
 	//- MCode child.2 MName
 	//- MCode child.3 MParams
 	//-
-	//- MFunc.pre_text "func "
+	//- MFunc.kind "MODIFIER"
+	//- MFunc.pre_text "func"
+	//- MFunc.post_text " "
 	//-
 	//- MRecv.kind "PARAMETER"
 	//- MRecv.pre_text "("

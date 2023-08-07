@@ -12,7 +12,9 @@ type w struct{}
 // - LTCode child.3 LTParams
 // - LTCode child.4 LTResult
 // -
-// - LTFunc.pre_text "func "
+// - LTFunc.kind "MODIFIER"
+// - LTFunc.pre_text "func"
+// - LTFunc.post_text " "
 // -
 // - LTRecv.kind "PARAMETER"
 // - LTRecv.pre_text "("
@@ -80,7 +82,9 @@ type API struct{}
 // - RFCode child.3 RFParams
 // - RFCode child.4 RFResult
 // -
-// - RFFunc.pre_text "func "
+// - RFFunc.kind "MODIFIER"
+// - RFFunc.pre_text "func"
+// - RFFunc.post_text " "
 // -
 // - RFRecv.kind "PARAMETER"
 // - RFRecv.pre_text "("

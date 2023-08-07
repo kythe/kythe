@@ -653,6 +653,7 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   marked_source_context_id_ = IdentifierFor(builtin_location_, "CONTEXT");
   marked_source_initializer_id_ =
       IdentifierFor(builtin_location_, "INITIALIZER");
+  marked_source_modifier_id_ = IdentifierFor(builtin_location_, "MODIFIER");
   marked_source_parameter_lookup_by_param_id_ =
       IdentifierFor(builtin_location_, "PARAMETER_LOOKUP_BY_PARAM");
   marked_source_lookup_by_param_id_ =
@@ -1419,6 +1420,9 @@ AstNode* Verifier::ConvertMarkedSource(
       break;
     case proto::common::MarkedSource::INITIALIZER:
       emit_fact(marked_source_kind_id_, marked_source_initializer_id_);
+      break;
+    case proto::common::MarkedSource::MODIFIER:
+      emit_fact(marked_source_kind_id_, marked_source_modifier_id_);
       break;
     case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM:
       emit_fact(marked_source_kind_id_,
