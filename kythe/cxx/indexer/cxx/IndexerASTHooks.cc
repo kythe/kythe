@@ -1467,11 +1467,16 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       RecordBlame(FieldDecl, *RCC);
-      auto [use_kind, target] =
-          UseKindFor(E, BuildNodeIdForRefToDecl(FieldDecl));
+      auto decl_id = BuildNodeIdForRefToDecl(FieldDecl);
+      auto [use_kind, target] = UseKindFor(E, decl_id);
       Observer.recordSemanticDeclUseLocation(
           *RCC, target, use_kind, GraphObserver::Claimability::Unclaimable,
           IsImplicit(*RCC));
+      if (target != decl_id) {
+        Observer.recordDeclUseLocation(*RCC, decl_id,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       IsImplicit(*RCC));
+      }
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         BuildTemplateArgumentList(E->template_arguments());
@@ -2571,6 +2576,11 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       Observer.recordSemanticDeclUseLocation(
           *RCC, target, use_kind, GraphObserver::Claimability::Unclaimable,
           this->IsImplicit(*RCC));
+      if (target != DeclId) {
+        Observer.recordDeclUseLocation(*RCC, DeclId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       this->IsImplicit(*RCC));
+      }
       for (const auto& S : Supports) {
         S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl, Expr);
       }

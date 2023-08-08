@@ -64,6 +64,8 @@ ABSL_FLAG(bool, record_call_directness, false,
           "Record directness of function calls.");
 ABSL_FLAG(bool, emit_usr_corpus, false,
           "Use the default corpus when emitting USR nodes.");
+ABSL_FLAG(bool, experimental_set_aliases_as_writes, false,
+          "Set protobuf aliases as writes.");
 
 namespace kythe {
 
@@ -124,6 +126,8 @@ int main(int argc, char* argv[]) {
 
     kythe::MetadataSupports meta_supports;
     auto proto = std::make_unique<ProtobufMetadataSupport>();
+    proto->SetAliasesAsWrites(
+        absl::GetFlag(FLAGS_experimental_set_aliases_as_writes));
     meta_supports.Add(std::move(proto));
     meta_supports.Add(std::make_unique<KytheMetadataSupport>());
 
