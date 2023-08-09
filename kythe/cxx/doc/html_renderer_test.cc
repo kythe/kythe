@@ -232,12 +232,10 @@ child {
   kind: PARAMETER
   pre_text: "("
   child {
+    post_child_text: " "
     child {
       kind: TYPE
       pre_text: "TypeOne*"
-    }
-    child {
-      pre_text: " "
     }
     child {
       child {
@@ -268,12 +266,10 @@ child {
     }
   }
   child {
+    post_child_text: " "
     child {
       kind: TYPE
       pre_text: "TypeTwo*"
-    }
-    child {
-      pre_text: " "
     }
     child {
       child {

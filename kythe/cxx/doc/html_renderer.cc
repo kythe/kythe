@@ -235,11 +235,13 @@ struct RenderSimpleIdentifierState {
   bool render_types = false;
   bool render_parameters = false;
   bool render_initializer = false;
+  bool render_modifier = false;
   bool in_identifier = false;
   bool in_context = false;
   bool in_parameter = false;
   bool in_type = false;
   bool in_initializer = false;
+  bool in_modifier = false;
   bool linkify = false;
   std::string base_ticket;
   std::string get_link(const proto::common::MarkedSource& sig) {
@@ -270,13 +272,36 @@ struct RenderSimpleIdentifierState {
   }
   bool should_infer_link() const {
     return (in_identifier && !base_ticket.empty() && !in_context &&
-            !in_parameter && !in_type && !in_initializer);
+            !in_parameter && !in_type && !in_initializer && !in_modifier);
   }
-  bool should_render() const {
+  bool should_render(const proto::common::MarkedSource& node) const {
     return (render_context && in_context) ||
            (render_identifier && in_identifier) ||
            (render_parameters && in_parameter) || (render_types && in_type) ||
-           (render_initializer && in_initializer);
+           (render_initializer && in_initializer) ||
+           (render_modifier && in_modifier) ||
+           node.kind() == proto::common::MarkedSource::BOX;
+  }
+  bool will_render(const proto::common::MarkedSource& child, size_t depth) {
+    if (depth >= kMaxRenderDepth) return false;
+    switch (child.kind()) {
+      case proto::common::MarkedSource::IDENTIFIER:
+        return true;
+      case proto::common::MarkedSource::BOX:
+        return true;
+      case proto::common::MarkedSource::PARAMETER:
+        return render_parameters;
+      case proto::common::MarkedSource::TYPE:
+        return render_types;
+      case proto::common::MarkedSource::CONTEXT:
+        return render_context;
+      case proto::common::MarkedSource::INITIALIZER:
+        return render_initializer;
+      case proto::common::MarkedSource::MODIFIER:
+        return render_modifier;
+      default:
+        return false;
+    }
   }
 };
 
@@ -316,11 +341,17 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
       break;
     case proto::common::MarkedSource::BOX:
       break;
+    case proto::common::MarkedSource::MODIFIER:
+      if (!state.render_modifier) {
+        return;
+      }
+      state.in_modifier = true;
+      break;
     default:
       return;
   }
   bool has_open_link = false;
-  if (state.should_render()) {
+  if (state.should_render(sig)) {
     std::string link_text = state.get_link(sig);
     if (!link_text.empty()) {
       out->AppendRaw("<a href=\"");
@@ -339,18 +370,22 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
       has_open_link = true;
     }
     out->Append(sig.pre_text());
-  }
-  for (int child = 0; child < sig.child_size(); ++child) {
-    RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
-    if (state.should_render()) {
-      if (child + 1 != sig.child_size()) {
-        out->Append(sig.post_child_text());
-      } else if (sig.add_final_list_token()) {
-        out->AppendFinalListToken(sig.post_child_text());
+    int last_rendered_child = -1;
+    for (int child = 0; child < sig.child_size(); ++child) {
+      if (state.will_render(sig.child(child), depth + 1)) {
+        last_rendered_child = child;
       }
     }
-  }
-  if (state.should_render()) {
+    for (int child = 0; child < sig.child_size(); ++child) {
+      if (state.will_render(sig.child(child), depth + 1)) {
+        RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
+        if (last_rendered_child > child) {
+          out->Append(sig.post_child_text());
+        } else if (sig.add_final_list_token()) {
+          out->AppendFinalListToken(sig.post_child_text());
+        }
+      }
+    }
     out->Append(sig.post_text());
     if (has_open_link) {
       out->AppendRaw("</a>");
