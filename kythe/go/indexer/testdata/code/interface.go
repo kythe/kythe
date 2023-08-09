@@ -25,19 +25,15 @@ type Thinger interface {
 	//- MFunc.pre_text "func"
 	//- MFunc.post_text " "
 	//-
-	//- MRecv.kind "PARAMETER"
+	//- MRecv.kind "LOOKUP_BY_PARAM"
 	//- MRecv.pre_text "("
 	//- MRecv.post_text ") "
-	//- MRecv child.0 MRType
 	//-
 	//- MName child.0 MContext
 	//- MName child.1 MIdent
 	//-
 	//- MParams.kind "PARAMETER"
 	//- MParams.pre_text "()"
-	//-
-	//- MRType.kind "TYPE"
-	//- MRType.pre_text "Thinger"
 	//-
 	//- MContext.kind "CONTEXT"
 	//- MContext.post_child_text "."
