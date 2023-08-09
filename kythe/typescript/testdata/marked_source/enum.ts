@@ -23,12 +23,8 @@ enum MyEnum {
     //- MyValueCode child.1 MyValueId
     //- MyValueId.kind "IDENTIFIER"
     //- MyValueId.pre_text "MY_VALUE"
-    //- 
-    //- MyValueCode child.2 MyValueEqual
-    //- MyValueEqual.kind "BOX"
-    //- MyValueEqual.pre_text " = "
     //-
-    //- MyValueCode child.3 MyValueInitializer
+    //- MyValueCode child.2 MyValueInitializer
     //- MyValueInitializer.kind "INITIALIZER"
     //- MyValueInitializer.pre_text "123"
     MY_VALUE = 123,

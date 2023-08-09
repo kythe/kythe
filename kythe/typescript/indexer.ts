@@ -1788,7 +1788,6 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' = '});
       codeParts.push(
         {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
     }

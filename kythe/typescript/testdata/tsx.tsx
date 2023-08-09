@@ -13,9 +13,7 @@ function render() {
     //- AttrName.pre_text "attr"
     //- AttrCode child.1 AttrTy
     //- AttrTy.post_text "string"
-    //- AttrCode child.2 AttrEq
-    //- AttrEq.pre_text " = "
-    //- AttrCode child.3 AttrInit
+    //- AttrCode child.2 AttrInit
     //- AttrInit.pre_text "{value}"
     //- @+4"src" defines/binding _Src1
     //- @+3"value" ref Value
