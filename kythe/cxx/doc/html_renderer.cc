@@ -372,18 +372,19 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
   }
   int last_rendered_child = -1;
   for (int child = 0; child < sig.child_size(); ++child) {
-    if (state.will_render(sig.child(child), depth + 1) &&
-        state.should_render(sig)) {
+    if (state.will_render(sig.child(child), depth + 1)) {
       last_rendered_child = child;
     }
   }
   for (int child = 0; child < sig.child_size(); ++child) {
     if (state.will_render(sig.child(child), depth + 1)) {
       RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
-      if (last_rendered_child > child) {
-        out->Append(sig.post_child_text());
-      } else if (sig.add_final_list_token()) {
-        out->AppendFinalListToken(sig.post_child_text());
+      if (state.should_render(sig)) {
+        if (last_rendered_child > child) {
+          out->Append(sig.post_child_text());
+        } else if (sig.add_final_list_token()) {
+          out->AppendFinalListToken(sig.post_child_text());
+        }
       }
     }
   }
