@@ -9,10 +9,7 @@ export {}
 //- ATy.kind "TYPE"
 //- ATy.pre_text ": "
 //- ATy.post_text "string"
-//- ACode child.2 AEq
-//- AEq.kind "BOX"
-//- AEq.pre_text " = "
-//- ACode child.3 AInit
+//- ACode child.2 AInit
 //- AInit.kind "INITIALIZER"
 //- AInit.pre_text "'text'"
 const a: string = 'text';
@@ -23,9 +20,7 @@ const a: string = 'text';
 //- BName.pre_text "b"
 //- BCode child.1 BTy
 //- BTy.post_text "\"text\""
-//- BCode child.2 BEq
-//- BEq.pre_text " = "
-//- BCode child.3 BInit
+//- BCode child.2 BInit
 //- BInit.pre_text "'text'"
 const b = 'text';
 
@@ -35,9 +30,7 @@ const b = 'text';
 //- CName.pre_text "c"
 //- CCode child.1 CTy
 //- CTy.post_text "string"
-//- CCode child.2 CEq
-//- CEq.pre_text " = "
-//- CCode child.3 CInit
+//- CCode child.2 CInit
 //- CInit.pre_text "'text'"
 let c = 'text';
 
@@ -67,9 +60,7 @@ try {
 //- FName.pre_text "f"
 //- FCode child.1 FTy
 //- FTy.post_text "number"
-//- FCode child.2 FEq
-//- FEq.pre_text " = "
-//- FCode child.3 FInit
+//- FCode child.2 FInit
 //- FInit.pre_text "0"
 //- @halias defines/binding H
 //- H code HCode
@@ -77,9 +68,7 @@ try {
 //- HName.pre_text "halias"
 //- HCode child.1 HTy
 //- HTy.post_text "number"
-//- HCode child.2 HEq
-//- HEq.pre_text " = "
-//- HCode child.3 HInit
+//- HCode child.2 HInit
 //- HInit.pre_text "1"
 //- @#0redcat defines/binding Redcat
 //- Redcat code RedcatCode
@@ -87,9 +76,7 @@ try {
 //- RedcatName.pre_text "redcat"
 //- RedcatCode child.1 RedcatTy
 //- RedcatTy.post_text "number"
-//- RedcatCode child.2 RedcatEq
-//- RedcatEq.pre_text " = "
-//- RedcatCode child.3 RedcatInit
+//- RedcatCode child.2 RedcatInit
 //- RedcatInit.pre_text "2"
 let {f, g: {h: halias}, redcat} = {f: 0, g: {h: 1}, ['redcat']: 2};
 
@@ -99,9 +86,7 @@ let {f, g: {h: halias}, redcat} = {f: 0, g: {h: 1}, ['redcat']: 2};
 //- IName.pre_text "i"
 //- ICode child.1 ITy
 //- ITy.post_text "number"
-//- ICode child.2 IEq
-//- IEq.pre_text " = "
-//- ICode child.3 IInit
+//- ICode child.2 IInit
 //- IInit.pre_text "3"
 let [_, [i]] = [2, [3]];
 
@@ -109,7 +94,7 @@ let [_, [i]] = [2, [3]];
 // whole RHS of the variable declaration.
 //- @#0j defines/binding J
 //- J code JCode
-//- JCode child.3 JInit
+//- JCode child.2 JInit
 //- JInit.pre_text "(() => {\n  return {j: 1};\n})()"
 let {j} = (() => {
   return {j: 1};

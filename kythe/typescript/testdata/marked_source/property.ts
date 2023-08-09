@@ -13,9 +13,7 @@ class A {
   //- MemberName.pre_text "member"
   //- MemberCode child.2 MemberTy
   //- MemberTy.post_text "string"
-  //- MemberCode child.3 MemberEq
-  //- MemberEq.pre_text " = "
-  //- MemberCode child.4 MemberInit
+  //- MemberCode child.3 MemberInit
   //- MemberInit.pre_text "'member'"
   member = 'member';
 
@@ -33,9 +31,7 @@ class A {
   //- StaticMemberName.pre_text "staticmember"
   //- StaticMemberCode child.2 StaticMemberTy
   //- StaticMemberTy.post_text "string"
-  //- StaticMemberCode child.3 StaticMemberEq
-  //- StaticMemberEq.pre_text " = "
-  //- StaticMemberCode child.4 StaticMemberInit
+  //- StaticMemberCode child.3 StaticMemberInit
   //- StaticMemberInit.pre_text "'staticmember'"
   static staticmember = 'staticmember';
 }
@@ -47,9 +43,7 @@ let b = {
   //- BPropName.pre_text "bprop"
   //- BPropCode child.1 BPropTy
   //- BPropTy.post_text "number"
-  //- BPropCode child.2 BPropEq
-  //- BPropEq.pre_text " = "
-  //- BPropCode child.3 BPropInit
+  //- BPropCode child.2 BPropInit
   //- BPropInit.pre_text "1"
   bprop: 1,
 };
