@@ -203,6 +203,15 @@ public class MarkedSourceRenderer {
       }
     }
 
+    private static boolean willRender(
+        MarkedSource node, ImmutableSet<MarkedSource.Kind> enabled, int level) {
+      MarkedSource.Kind kind = node.getKind();
+      return level < MAX_RENDER_DEPTH
+          && (kind.equals(MarkedSource.Kind.BOX)
+              || kind.equals(MarkedSource.Kind.IDENTIFIER)
+              || enabled.contains(kind));
+    }
+
     private void renderChild(
         MarkedSource node,
         ImmutableSet<MarkedSource.Kind> enabled,
@@ -227,10 +236,17 @@ public class MarkedSourceRenderer {
         }
         append(node.getPreText());
       }
+      int lastRenderedChild = -1;
       for (int child = 0; child < node.getChildCount(); ++child) {
-        renderChild(node.getChild(child), enabled, under, level + 1);
-        if (shouldRender(enabled, under)) {
-          if (child + 1 != node.getChildCount()) {
+        if (willRender(node.getChild(child), enabled, level + 1)) {
+          lastRenderedChild = child;
+        }
+      }
+      for (int child = 0; child < node.getChildCount(); ++child) {
+        MarkedSource c = node.getChild(child);
+        if (willRender(c, enabled, level + 1)) {
+          renderChild(c, enabled, under, level + 1);
+          if (lastRenderedChild > child) {
             append(node.getPostChildText());
           } else if (node.getAddFinalListToken()) {
             appendFinalListToken(node.getPostChildText());
