@@ -16,10 +16,9 @@ type w struct{}
 // - LTFunc.pre_text "func"
 // - LTFunc.post_text " "
 // -
-// - LTRecv.kind "PARAMETER"
+// - LTRecv.kind "LOOKUP_BY_PARAM"
 // - LTRecv.pre_text "("
 // - LTRecv.post_text ") "
-// - LTRecv child.0 LTRType
 // -
 // - LTName child.0 LTContext
 // - LTName child.1 LTIdent
@@ -34,9 +33,6 @@ type w struct{}
 // - LTResult.kind "TYPE"
 // - LTResult child.0 LTReturn
 // - LTReturn.pre_text "bool"
-// -
-// - LTRType.kind "TYPE"
-// - LTRType.pre_text "*w"
 // -
 // - LTContext.kind "CONTEXT"
 // - LTContext.post_child_text "."
@@ -86,10 +82,9 @@ type API struct{}
 // - RFFunc.pre_text "func"
 // - RFFunc.post_text " "
 // -
-// - RFRecv.kind "PARAMETER"
+// - RFRecv.kind "LOOKUP_BY_PARAM"
 // - RFRecv.pre_text "("
 // - RFRecv.post_text ") "
-// - RFRecv child.0 RFRType
 // -
 // - RFName child.0 RFContext
 // - RFName child.1 RFIdent
@@ -104,9 +99,6 @@ type API struct{}
 // - RFResult.kind "TYPE"
 // - RFResult child.0 RFReturn
 // - RFReturn.pre_text "error"
-// -
-// - RFRType.kind "TYPE"
-// - RFRType.pre_text "decorCommand"
 // -
 // - RFContext.kind "CONTEXT"
 // - RFContext.post_child_text "."
