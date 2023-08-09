@@ -101,4 +101,34 @@ public class MarkedSourceRendererTest extends TestCase {
                 .getSafeHtmlString())
         .isEqualTo("<span>a, b</span>");
   }
+
+  public void testPostChildText() throws IOException {
+    MarkedSource markedSource0 =
+        MarkedSource.newBuilder()
+            .setKind(MarkedSource.Kind.BOX)
+            .setPostChildText(" ")
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText("a"))
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText("b"))
+            .build();
+    assertThat(
+            MarkedSourceRenderer.renderSignature(MarkedSourceRendererTest::makeLink, markedSource0)
+                .getSafeHtmlString())
+        .isEqualTo("<span>a b</span>");
+
+    MarkedSource markedSource1 =
+        MarkedSource.newBuilder()
+            .setKind(MarkedSource.Kind.BOX)
+            .setPostChildText(" ")
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.INITIALIZER).setPreText("a"))
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText("b"))
+            .build();
+    assertThat(
+            MarkedSourceRenderer.renderSignature(MarkedSourceRendererTest::makeLink, markedSource1)
+                .getSafeHtmlString())
+        .isEqualTo("<span>b</span>");
+  }
 }
