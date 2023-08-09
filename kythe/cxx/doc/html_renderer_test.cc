@@ -303,6 +303,7 @@ child {
   post_text: ")"
 }
 )"";
+
 TEST_F(HtmlRendererTest, RenderSimpleParams) {
   proto::common::MarkedSource marked;
   ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
@@ -326,6 +327,46 @@ TEST_F(HtmlRendererTest, RenderSimpleQualifiedName) {
             kythe::RenderSimpleQualifiedName(marked, false));
   EXPECT_EQ("namespace::(anonymous namespace)::ClassContainer::FunctionName",
             kythe::RenderSimpleQualifiedName(marked, true));
+}
+
+constexpr char kGoMarkedSource[] = R""(
+	kind: PARAMETER
+  child {
+    kind: TYPE
+    pre_text: "*pkg.receiver"
+	}
+  child {
+		kind: BOX
+		post_child_text: "."
+    child {
+      kind: BOX
+			child {
+        kind: CONTEXT
+        pre_text: "pkg"
+      }
+			child {
+			  kind: IDENTIFIER
+				pre_text: "param"
+			}
+    }
+    child {
+      kind: BOX
+      pre_text: " "
+    }
+    child {
+      kind: TYPE
+      pre_text: "string"
+    }
+	}
+)"";
+
+TEST_F(HtmlRendererTest, RenderSimpleParamsGo) {
+  proto::common::MarkedSource marked;
+  ASSERT_TRUE(TextFormat::ParseFromString(kGoMarkedSource, &marked))
+      << "(invalid ascii protobuf)";
+  auto params = kythe::RenderSimpleParams(marked);
+  ASSERT_EQ(2, params.size());
+  EXPECT_EQ("param", params[1]);
 }
 }  // anonymous namespace
 }  // namespace kythe

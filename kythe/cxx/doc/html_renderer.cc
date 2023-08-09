@@ -279,8 +279,7 @@ struct RenderSimpleIdentifierState {
            (render_identifier && in_identifier) ||
            (render_parameters && in_parameter) || (render_types && in_type) ||
            (render_initializer && in_initializer) ||
-           (render_modifier && in_modifier) ||
-           node.kind() == proto::common::MarkedSource::BOX;
+           (render_modifier && in_modifier);
   }
   bool will_render(const proto::common::MarkedSource& child, size_t depth) {
     if (depth >= kMaxRenderDepth) return false;
@@ -370,22 +369,25 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
       has_open_link = true;
     }
     out->Append(sig.pre_text());
-    int last_rendered_child = -1;
-    for (int child = 0; child < sig.child_size(); ++child) {
-      if (state.will_render(sig.child(child), depth + 1)) {
-        last_rendered_child = child;
+  }
+  int last_rendered_child = -1;
+  for (int child = 0; child < sig.child_size(); ++child) {
+    if (state.will_render(sig.child(child), depth + 1) &&
+        state.should_render(sig)) {
+      last_rendered_child = child;
+    }
+  }
+  for (int child = 0; child < sig.child_size(); ++child) {
+    if (state.will_render(sig.child(child), depth + 1)) {
+      RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
+      if (last_rendered_child > child) {
+        out->Append(sig.post_child_text());
+      } else if (sig.add_final_list_token()) {
+        out->AppendFinalListToken(sig.post_child_text());
       }
     }
-    for (int child = 0; child < sig.child_size(); ++child) {
-      if (state.will_render(sig.child(child), depth + 1)) {
-        RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
-        if (last_rendered_child > child) {
-          out->Append(sig.post_child_text());
-        } else if (sig.add_final_list_token()) {
-          out->AppendFinalListToken(sig.post_child_text());
-        }
-      }
-    }
+  }
+  if (state.should_render(sig)) {
     out->Append(sig.post_text());
     if (has_open_link) {
       out->AppendRaw("</a>");
