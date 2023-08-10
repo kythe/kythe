@@ -655,9 +655,9 @@ func (c xrefCategory) AddCount(reply *xpb.CrossReferencesReply, idx *srvpb.Paged
 		}
 	case xrefCategoryRef:
 		if pageSet.Contains(idx) {
-			reply.Total.References += int64(idx.Count)
+			reply.Total.RefEdgeToCount[idx.Kind] += int64(idx.Count)
 		} else {
-			reply.Filtered.References += int64(idx.Count)
+			reply.Filtered.RefEdgeToCount[idx.Kind] += int64(idx.Count)
 		}
 	case xrefCategoryRelated:
 		if pageSet.Contains(idx) {
@@ -758,8 +758,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
 		Nodes:           make(map[string]*cpb.NodeInfo, len(req.Ticket)),
 
-		Total: &xpb.CrossReferencesReply_Total{},
+		Total: &xpb.CrossReferencesReply_Total{
+			RefEdgeToCount: make(map[string]int64),
+		},
 		Filtered: &xpb.CrossReferencesReply_Total{
+			RefEdgeToCount:         make(map[string]int64),
 			RelatedNodesByRelation: make(map[string]int64),
 		},
 	}
@@ -908,9 +911,9 @@ readLoop:
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				filtered := filter.FilterGroup(grp)
-				reply.Total.References += int64(len(grp.Anchor))
-				reply.Total.References += int64(countRefs(grp.GetScopedReference()))
-				reply.Filtered.References += int64(filtered)
+				reply.Total.RefEdgeToCount[grp.Kind] += int64(len(grp.Anchor))
+				reply.Total.RefEdgeToCount[grp.Kind] += int64(countRefs(grp.GetScopedReference()))
+				reply.Filtered.RefEdgeToCount[grp.Kind] += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
 				}
@@ -1048,8 +1051,8 @@ readLoop:
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					reply.Total.References -= int64(filtered) // update counts to reflect filtering
-					reply.Filtered.References += int64(filtered)
+					reply.Total.RefEdgeToCount[idx.Kind] -= int64(filtered) // update counts to reflect filtering
+					reply.Filtered.RefEdgeToCount[idx.Kind] += int64(filtered)
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
 			case xrefCategoryRelated, xrefCategoryIndirection:
@@ -1261,11 +1264,20 @@ func nodeKind(n *srvpb.Node) string {
 }
 
 func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
+	var refs int
+	for _, cnt := range ts.RefEdgeToCount {
+		refs += int(cnt)
+	}
 	var relatedNodes int
 	for _, cnt := range ts.RelatedNodesByRelation {
 		relatedNodes += int(cnt)
 	}
-	return int(ts.Callers) + int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
+	return int(ts.Callers) +
+		int(ts.Definitions) +
+		int(ts.Declarations) +
+		refs +
+		int(ts.Documentation) +
+		relatedNodes
 }
 
 type refOptions struct {
