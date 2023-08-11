@@ -655,9 +655,11 @@ func (c xrefCategory) AddCount(reply *xpb.CrossReferencesReply, idx *srvpb.Paged
 		}
 	case xrefCategoryRef:
 		if pageSet.Contains(idx) {
-			reply.Total.RefEdgeToCount[idx.Kind] += int64(idx.Count)
+			reply.Total.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(idx.Count)
+			reply.Total.References += int64(idx.Count)
 		} else {
-			reply.Filtered.RefEdgeToCount[idx.Kind] += int64(idx.Count)
+			reply.Filtered.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(idx.Count)
+			reply.Filtered.References += int64(idx.Count)
 		}
 	case xrefCategoryRelated:
 		if pageSet.Contains(idx) {
@@ -911,9 +913,12 @@ readLoop:
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				filtered := filter.FilterGroup(grp)
-				reply.Total.RefEdgeToCount[grp.Kind] += int64(len(grp.Anchor))
-				reply.Total.RefEdgeToCount[grp.Kind] += int64(countRefs(grp.GetScopedReference()))
-				reply.Filtered.RefEdgeToCount[grp.Kind] += int64(filtered)
+				reply.Total.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(len(grp.Anchor))
+				reply.Total.References += int64(len(grp.Anchor))
+				reply.Total.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(countRefs(grp.GetScopedReference()))
+				reply.Total.References += int64(countRefs(grp.GetScopedReference()))
+				reply.Filtered.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(filtered)
+				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
 				}
@@ -1051,8 +1056,10 @@ readLoop:
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					reply.Total.RefEdgeToCount[idx.Kind] -= int64(filtered) // update counts to reflect filtering
-					reply.Filtered.RefEdgeToCount[idx.Kind] += int64(filtered)
+					reply.Total.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] -= int64(filtered) // update counts to reflect filtering
+					reply.Total.References -= int64(filtered)                                        // update counts to reflect filtering
+					reply.Filtered.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(filtered)
+					reply.Filtered.References += int64(filtered)
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
 			case xrefCategoryRelated, xrefCategoryIndirection:
