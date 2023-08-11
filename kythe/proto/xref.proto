@@ -566,10 +566,16 @@ message CrossReferencesReply {
   message Total {
     int64 definitions = 1;
     int64 declarations = 2;
-    int64 references = 3;
+    int64 references = 3 [deprecated = true];
     int64 documentation = 4;
     int64 callers = 5;
 
+    // Map from ref edge type to count.
+    //
+    // Example
+    // /kythe/edge/ref -> 20,
+    // /kythe/edge/ref/writes -> 50
+    map<string, int64> ref_edge_to_count = 7;
     map<string, int64> related_nodes_by_relation = 6;
   }
   // Total number of cross-references on all pages matching requested kinds,
