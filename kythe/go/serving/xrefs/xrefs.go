@@ -768,6 +768,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			RelatedNodesByRelation: make(map[string]int64),
 		},
 	}
+	// Before we return reply, remove all RefEdgeToCount map entries that point to a 0 count.
+	defer cleanupRefEdgeToCount(reply)
+
 	if len(req.Filter) > 0 {
 		reply.Total.RelatedNodesByRelation = make(map[string]int64)
 	}
@@ -1239,6 +1242,22 @@ readLoop:
 	}
 
 	return reply, nil
+}
+
+// cleanupRefEdgeToCount removes all the keys from r.Total.RefEdgeToCount and
+// r.Filtered.RefEdgeToCount that have a value of 0.
+func cleanupRefEdgeToCount(r *xpb.CrossReferencesReply) {
+	for k, v := range r.Total.RefEdgeToCount {
+		if v == 0 {
+			delete(r.Total.RefEdgeToCount, k)
+		}
+	}
+	for k, v := range r.Filtered.RefEdgeToCount {
+		if v == 0 {
+			delete(r.Filtered.RefEdgeToCount, k)
+		}
+	}
+
 }
 
 func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mergeNode string) []string {

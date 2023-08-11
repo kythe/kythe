@@ -1337,11 +1337,7 @@ func TestCrossReferences(t *testing.T) {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	wantFiltered := &xpb.CrossReferencesReply_Total{
-		RefEdgeToCount: map[string]int64{
-			"/kythe/edge/ref": 0,
-		},
-	}
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
 	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
@@ -1508,11 +1504,7 @@ func TestCrossReferencesScoped(t *testing.T) {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	wantFiltered := &xpb.CrossReferencesReply_Total{
-		RefEdgeToCount: map[string]int64{
-			"/kythe/edge/ref": 0,
-		},
-	}
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
 	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
@@ -1810,11 +1802,7 @@ func TestCrossReferencesReadAhead(t *testing.T) {
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	wantFiltered := &xpb.CrossReferencesReply_Total{
-		RefEdgeToCount: map[string]int64{
-			"/kythe/edge/ref": 0,
-		},
-	}
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
 	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
@@ -2933,11 +2921,7 @@ func TestCrossReferencesRevisions(t *testing.T) {
 				"/kythe/edge/ref": 1,
 			},
 		},
-		Filtered: &xpb.CrossReferencesReply_Total{
-			RefEdgeToCount: map[string]int64{
-				"/kythe/edge/ref": 0,
-			},
-		},
+		Filtered: &xpb.CrossReferencesReply_Total{},
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: &xpb.CrossReferencesReply_CrossReferenceSet{
 				Ticket: ticket,
