@@ -3971,177 +3971,166 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
 
   // find, not insert, since we might generate other IDs in the process of
   // generating this one (thus invalidating the iterator insert returns).
-  const auto Cached = DeclToNodeId.find(Decl);
-  if (Cached != DeclToNodeId.end()) {
+  if (const auto Cached = DeclToNodeId.find(Decl);
+      Cached != DeclToNodeId.end()) {
     return Cached->second;
   }
-  const auto* Token = Observer.getClaimTokenForLocation(Decl->getLocation());
-  std::string Identity;
-  llvm::raw_string_ostream Ostream(Identity);
-  Ostream << BuildNameIdForDecl(Decl);
 
-  // First, check to see if this thing is a builtin Decl. These things can
-  // pick up weird declaration locations that aren't stable enough for us.
-  if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
-    if (unsigned BuiltinID = FD->getBuiltinID()) {
-      // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
-      // additional definitions (like fread in bits/stdio2.h). These
-      // definitions have declarations that differ from their non-fortified
-      // versions (in the sense that they're different sequences of tokens),
-      // which leads us to generate different code facts for the same node.
-      // This upsets our testing infrastructure. Similarly, some standard
-      // libraries redeclare various builtin function with different aliased
-      // names.  To workaround both of these, include all of the explicit
-      // attributes in the ID unless this is the canonical decl.
-      if (FD != FD->getCanonicalDecl()) {
-        clang::AttrVec attrs;
-        for (clang::Attr* attr : FD->attrs()) {
-          if (!(attr->isImplicit() || attr->isInherited())) {
-            attrs.push_back(attr);
+  auto build_node_id = [&] {
+    const auto* Token = Observer.getClaimTokenForLocation(Decl->getLocation());
+    std::string Identity;
+    llvm::raw_string_ostream Ostream(Identity);
+    Ostream << BuildNameIdForDecl(Decl);
+
+    // First, check to see if this thing is a builtin Decl. These things can
+    // pick up weird declaration locations that aren't stable enough for us.
+    if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
+      if (unsigned BuiltinID = FD->getBuiltinID()) {
+        // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
+        // additional definitions (like fread in bits/stdio2.h). These
+        // definitions have declarations that differ from their non-fortified
+        // versions (in the sense that they're different sequences of tokens),
+        // which leads us to generate different code facts for the same node.
+        // This upsets our testing infrastructure. Similarly, some standard
+        // libraries redeclare various builtin function with different aliased
+        // names.  To workaround both of these, include all of the explicit
+        // attributes in the ID unless this is the canonical decl.
+        if (FD != FD->getCanonicalDecl()) {
+          clang::AttrVec attrs;
+          for (clang::Attr* attr : FD->attrs()) {
+            if (!(attr->isImplicit() || attr->isInherited())) {
+              attrs.push_back(attr);
+            }
+          }
+          if (!attrs.empty()) {
+            Ostream << absl::StrFormat(
+                "#attrs(%s)",
+                absl::StrJoin(attrs, "|",
+                              [](std::string* out, const clang::Attr* attr) {
+                                absl::StrAppend(out, attr->getSpelling());
+                              }));
           }
         }
-        if (!attrs.empty()) {
-          Ostream << absl::StrFormat(
-              "#attrs(%s)",
-              absl::StrJoin(attrs, "|",
-                            [](std::string* out, const clang::Attr* attr) {
-                              absl::StrAppend(out, attr->getSpelling());
-                            }));
+        Ostream << "#builtin";
+        return Observer.MakeNodeId(Observer.getClaimTokenForBuiltin(),
+                                   Identity);
+      }
+    }
+
+    if (const auto* BTD = dyn_cast<clang::BuiltinTemplateDecl>(Decl)) {
+      Ostream << "#builtin";
+      return Observer.MakeNodeId(Observer.getClaimTokenForBuiltin(), Identity);
+    }
+
+    const clang::TypedefNameDecl* TND;
+    if ((TND = dyn_cast<clang::TypedefNameDecl>(Decl)) &&
+        !isa<clang::ObjCTypeParamDecl>(Decl)) {
+      // There's a special way to name type aliases but we want to handle type
+      // parameters for Objective-C as "normal" named decls.
+      if (auto AliasedTypeId =
+              BuildNodeIdForType(TND->getTypeSourceInfo()->getTypeLoc())) {
+        return Observer.nodeIdForTypeAliasNode(BuildNameIdForDecl(TND),
+                                               *AliasedTypeId);
+      }
+    } else if (const auto* NS = dyn_cast<clang::NamespaceDecl>(Decl)) {
+      // Namespaces are named according to their NameIDs.
+      Ostream << "#namespace";
+      return Observer.MakeNodeId(
+          NS->isAnonymousNamespace()
+              ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
+              : Observer.getNamespaceClaimToken(NS->getLocation()),
+          Identity);
+    }
+
+    // Disambiguate nodes underneath template instances.
+    // TODO(shahms): While this is ostensibly about disambiguating nodes from
+    // within template instantiations, a fair number of non-template tests rely
+    // on it to avoid producing duplicate nodes.
+    if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
+      if (const auto* CTSD =
+              dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
+        Ostream << "#"
+                << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
+      } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
+        Ostream << "#"
+                << HashToString(
+                       Hash(clang::QualType(FD->getFunctionType(), 0)));
+        if (const auto* TemplateArgs = FD->getTemplateSpecializationArgs()) {
+          Ostream << "#" << HashToString(Hash(TemplateArgs));
+        }
+      } else if (const auto* VD =
+                     dyn_cast<clang::VarTemplateSpecializationDecl>(Decl)) {
+        if (VD->isImplicit()) {
+          Ostream << "#"
+                  << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
         }
       }
-      Ostream << "#builtin";
-      GraphObserver::NodeId Id = Observer.MakeNodeId(
-          Observer.getClaimTokenForBuiltin(), Ostream.str());
-      DeclToNodeId.insert({Decl, Id});
-      return Id;
+
+      if (const auto* parent =
+              FindDisambiguationParent(*getAllParents(), Decl)) {
+        Ostream << "#" << BuildNodeIdForDecl(parent);
+      }
     }
-  }
 
-  if (const auto* BTD = dyn_cast<clang::BuiltinTemplateDecl>(Decl)) {
-    Ostream << "#builtin";
-    GraphObserver::NodeId Id =
-        Observer.MakeNodeId(Observer.getClaimTokenForBuiltin(), Ostream.str());
-    DeclToNodeId.insert({Decl, Id});
-    return Id;
-  }
-
-  const clang::TypedefNameDecl* TND;
-  if ((TND = dyn_cast<clang::TypedefNameDecl>(Decl)) &&
-      !isa<clang::ObjCTypeParamDecl>(Decl)) {
-    // There's a special way to name type aliases but we want to handle type
-    // parameters for Objective-C as "normal" named decls.
-    if (auto AliasedTypeId =
-            BuildNodeIdForType(TND->getTypeSourceInfo()->getTypeLoc())) {
-      GraphObserver::NodeId Id = Observer.nodeIdForTypeAliasNode(
-          BuildNameIdForDecl(TND), *AliasedTypeId);
-      DeclToNodeId.insert({Decl, Id});
-      return Id;
-    }
-  } else if (const auto* NS = dyn_cast<clang::NamespaceDecl>(Decl)) {
-    // Namespaces are named according to their NameIDs.
-    Ostream << "#namespace";
-    GraphObserver::NodeId Id = Observer.MakeNodeId(
-        NS->isAnonymousNamespace()
-            ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
-            : Observer.getNamespaceClaimToken(NS->getLocation()),
-        Ostream.str());
-    DeclToNodeId.insert({Decl, Id});
-    return Id;
-  }
-
-  // Disambiguate nodes underneath template instances.
-  // TODO(shahms): While this is ostensibly about disambiguating nodes from
-  // within template instantiations, a fair number of non-template tests rely on
-  // it to avoid producing duplicate nodes.
-  if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
-    if (const auto* CTSD =
-            dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
-      Ostream << "#"
-              << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
+    // Use hashes to unify otherwise unrelated enums and records across
+    // translation units.
+    if (const auto* Rec = dyn_cast<clang::RecordDecl>(Decl)) {
+      if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
+        Ostream << "#" << HashToString(Hash(Rec));
+        return Observer.MakeNodeId(Token, Identity);
+      }
+    } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
+      if (Enum->getDefinition() == Enum) {
+        Ostream << "#" << HashToString(Hash(Enum));
+        return Observer.MakeNodeId(Token, Identity);
+      }
+    } else if (const auto* ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
+      if (const auto* E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
+        if (E->getDefinition() == E) {
+          Ostream << "#" << HashToString(Hash(E));
+          return Observer.MakeNodeId(Token, Identity);
+        }
+      }
     } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
-      Ostream << "#"
-              << HashToString(Hash(clang::QualType(FD->getFunctionType(), 0)));
-      if (const auto* TemplateArgs = FD->getTemplateSpecializationArgs()) {
-        Ostream << "#" << HashToString(Hash(TemplateArgs));
+      if (IsDefinition(FD)) {
+        // TODO(zarko): Investigate why Clang colocates incomplete and
+        // definition instances of FunctionDecls. This may have been masked
+        // for enums and records because of the code above.
+        Ostream << "#D";
       }
-    } else if (const auto* VD =
-                   dyn_cast<clang::VarTemplateSpecializationDecl>(Decl)) {
-      if (VD->isImplicit()) {
-        Ostream << "#"
-                << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
+    } else if (const auto* VD = dyn_cast<clang::VarDecl>(Decl)) {
+      if (IsDefinition(VD)) {
+        // TODO(zarko): Investigate why Clang colocates incomplete and
+        // definition instances of VarDecls. This may have been masked
+        // for enums and records because of the code above.
+        Ostream << "#D";
       }
-    }
-
-    if (const auto* parent = FindDisambiguationParent(*getAllParents(), Decl)) {
-      Ostream << "#" << BuildNodeIdForDecl(parent);
-    }
-  }
-
-  // Use hashes to unify otherwise unrelated enums and records across
-  // translation units.
-  if (const auto* Rec = dyn_cast<clang::RecordDecl>(Decl)) {
-    if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
-      Ostream << "#" << HashToString(Hash(Rec));
-      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
-      DeclToNodeId.insert({Decl, Id});
-      return Id;
-    }
-  } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
-    if (Enum->getDefinition() == Enum) {
-      Ostream << "#" << HashToString(Hash(Enum));
-      GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
-      DeclToNodeId.insert({Decl, Id});
-      return Id;
-    }
-  } else if (const auto* ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
-    if (const auto* E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
-      if (E->getDefinition() == E) {
-        Ostream << "#" << HashToString(Hash(E));
-        GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
-        DeclToNodeId.insert({Decl, Id});
-        return Id;
+    } else if (const auto* OD = dyn_cast<clang::ObjCInterfaceDecl>(Decl)) {
+      if (OD->isThisDeclarationADefinition()) {
+        // TODO(zarko): Investigate why Clang colocates incomplete and
+        // definition instances of VarDecls. This may have been masked
+        // for enums and records because of the code above.
+        Ostream << "#D";
       }
     }
-  } else if (const auto* FD = dyn_cast<clang::FunctionDecl>(Decl)) {
-    if (IsDefinition(FD)) {
-      // TODO(zarko): Investigate why Clang colocates incomplete and
-      // definition instances of FunctionDecls. This may have been masked
-      // for enums and records because of the code above.
-      Ostream << "#D";
+    SourceRange DeclRange;
+    if (const auto* named_decl = dyn_cast<clang::NamedDecl>(Decl)) {
+      DeclRange = RangeForNameOfDeclaration(named_decl);
     }
-  } else if (const auto* VD = dyn_cast<clang::VarDecl>(Decl)) {
-    if (IsDefinition(VD)) {
-      // TODO(zarko): Investigate why Clang colocates incomplete and
-      // definition instances of VarDecls. This may have been masked
-      // for enums and records because of the code above.
-      Ostream << "#D";
+    if (!DeclRange.isValid()) {
+      DeclRange = SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
     }
-  } else if (const auto* OD = dyn_cast<clang::ObjCInterfaceDecl>(Decl)) {
-    if (OD->isThisDeclarationADefinition()) {
-      // TODO(zarko): Investigate why Clang colocates incomplete and
-      // definition instances of VarDecls. This may have been masked
-      // for enums and records because of the code above.
-      Ostream << "#D";
+    Ostream << "@";
+    if (DeclRange.getBegin().isValid()) {
+      Observer.AppendRangeToStream(
+          Ostream, GraphObserver::Range(
+                       DeclRange, Observer.getClaimTokenForRange(DeclRange)));
+    } else {
+      Ostream << "invalid";
     }
-  }
-  SourceRange DeclRange;
-  if (const auto* named_decl = dyn_cast<clang::NamedDecl>(Decl)) {
-    DeclRange = RangeForNameOfDeclaration(named_decl);
-  }
-  if (!DeclRange.isValid()) {
-    DeclRange = SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
-  }
-  Ostream << "@";
-  if (DeclRange.getBegin().isValid()) {
-    Observer.AppendRangeToStream(
-        Ostream, GraphObserver::Range(
-                     DeclRange, Observer.getClaimTokenForRange(DeclRange)));
-  } else {
-    Ostream << "invalid";
-  }
-  GraphObserver::NodeId Id = Observer.MakeNodeId(Token, Ostream.str());
-  DeclToNodeId.insert({Decl, Id});
-  return Id;
+    return Observer.MakeNodeId(Token, Identity);
+  };
+  return DeclToNodeId.insert({Decl, build_node_id()}).first->second;
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::FunctionDecl* FunctionDecl) {
