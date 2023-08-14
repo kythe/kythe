@@ -375,16 +375,22 @@ using Database = std::vector<AstNode*>;
 using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
 
 /// An EVar whose assignment is interesting to display.
-struct Inspection {
+class Inspection {
+ public:
   enum class Kind {
     EXPLICIT,  ///< The user requested this inspection (with "?").
     IMPLICIT   ///< This inspection was added by default.
   };
   std::string label;  ///< A label for user reference.
-  EVar* evar;         ///< The EVar to inspect.
   Kind kind;          ///< Whether this inspection was added by default.
   Inspection(const std::string& label, EVar* evar, Kind kind)
-      : label(label), evar(evar), kind(kind) {}
+      : label(label), kind(kind), evar(evar) {}
+
+ private:
+  friend class Verifier;
+
+ public:
+  EVar* evar;  ///< The EVar to inspect.
 };
 
 }  // namespace verifier
