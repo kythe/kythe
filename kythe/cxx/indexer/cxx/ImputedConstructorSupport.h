@@ -42,7 +42,7 @@ class ImputedConstructorSupport : public LibrarySupport {
   void InspectCallExpr(IndexerASTVisitor& visitor,
                        const clang::CallExpr* call_expr,
                        const GraphObserver::Range& range,
-                       GraphObserver::NodeId& callee_id) override;
+                       const GraphObserver::NodeId& callee_id) override;
 
  private:
   const std::function<bool(absl::string_view)> allow_constructor_name_;

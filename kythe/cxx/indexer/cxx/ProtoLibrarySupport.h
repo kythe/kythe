@@ -30,7 +30,7 @@ class GoogleProtoLibrarySupport : public LibrarySupport {
 
   void InspectCallExpr(IndexerASTVisitor& V, const clang::CallExpr* CallExpr,
                        const GraphObserver::Range& Range,
-                       GraphObserver::NodeId& CalleeId) override;
+                       const GraphObserver::NodeId& CalleeId) override;
 
  private:
   // Lazily initializes ParseProtoHelperDecl, and returns true if
