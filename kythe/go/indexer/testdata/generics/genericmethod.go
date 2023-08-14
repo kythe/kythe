@@ -43,7 +43,8 @@ func (c *Container[T]) Get() T {
 //- Get code GetCode
 //- GetCode.kind "BOX"
 //- GetCode child.1 RecvCode
-//- RecvCode.kind "LOOKUP_BY_PARAM"
+//- RecvCode child.0 LookupCode
+//- LookupCode.kind "LOOKUP_BY_PARAM"
 
 // And can technically be renamed
 // - @Put defines/binding Put

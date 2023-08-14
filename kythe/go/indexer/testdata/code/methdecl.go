@@ -16,9 +16,11 @@ type w struct{}
 // - LTFunc.pre_text "func"
 // - LTFunc.post_text " "
 // -
-// - LTRecv.kind "LOOKUP_BY_PARAM"
+// - LTRecv.kind "PARAMETER"
 // - LTRecv.pre_text "("
 // - LTRecv.post_text ") "
+// - LTRecv child.0 LTLookup
+// - LTLookup.kind "LOOKUP_BY_PARAM"
 // -
 // - LTName child.0 LTContext
 // - LTName child.1 LTIdent
@@ -82,9 +84,11 @@ type API struct{}
 // - RFFunc.pre_text "func"
 // - RFFunc.post_text " "
 // -
-// - RFRecv.kind "LOOKUP_BY_PARAM"
+// - RFRecv.kind "PARAMETER"
 // - RFRecv.pre_text "("
 // - RFRecv.post_text ") "
+// - RFRecv child.0 RFLookup
+// - RFLookup.kind "LOOKUP_BY_PARAM"
 // -
 // - RFName child.0 RFContext
 // - RFName child.1 RFIdent
