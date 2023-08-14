@@ -336,7 +336,7 @@ bool GoogleProtoLibrarySupport::CompilationUnitHasParseProtoHelperDecl(
 
 void GoogleProtoLibrarySupport::InspectCallExpr(
     IndexerASTVisitor& V, const clang::CallExpr* CallExpr,
-    const GraphObserver::Range& Range, GraphObserver::NodeId& CalleeId) {
+    const GraphObserver::Range& Range, const GraphObserver::NodeId& CalleeId) {
   if (!CompilationUnitHasParseProtoHelperDecl(V.getASTContext(), *CallExpr)) {
     // Return early if there is no ParseProtoHelper in the compilation unit.
     return;

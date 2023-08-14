@@ -151,7 +151,7 @@ ImputedConstructorSupport::ImputedConstructorSupport(
 
 void ImputedConstructorSupport::InspectCallExpr(
     IndexerASTVisitor& visitor, const clang::CallExpr* call_expr,
-    const GraphObserver::Range& range, GraphObserver::NodeId& callee_id) {
+    const GraphObserver::Range& range, const GraphObserver::NodeId& callee_id) {
   const auto* callee = call_expr->getDirectCallee();
   if (callee == nullptr) return;
 

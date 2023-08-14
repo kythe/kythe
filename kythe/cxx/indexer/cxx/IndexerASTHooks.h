@@ -236,6 +236,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitEnumDecl(const clang::EnumDecl* Decl);
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl* Decl);
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
+
   bool TraverseDecl(clang::Decl* Decl);
   bool TraverseCXXConstructorDecl(clang::CXXConstructorDecl* CD);
   bool TraverseCXXDefaultInitExpr(const clang::CXXDefaultInitExpr* E);
@@ -855,12 +856,11 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// Filled on the first call to `getIndexedParents`.
   LazyIndexedParentMap AllParents{[this] { return BuildIndexedParentMap(); }};
 
-  /// Records information about the template `Template` wrapping the node
-  /// `BodyId`, including the edge linking the template and its body. Returns
-  /// the `NodeId` for the dominating template.
+  /// Records information about the template `Template` for the node
+  /// `DeclNode`, including the edges linking the template with its parameters.
   template <typename TemplateDeclish>
-  GraphObserver::NodeId RecordTemplate(
-      const TemplateDeclish* Decl, const GraphObserver::NodeId& BodyDeclNode);
+  void RecordTemplate(const TemplateDeclish* Decl,
+                      const GraphObserver::NodeId& DeclNode);
 
   /// Records information about the generic class by wrapping the node
   /// `BodyId`. Returns the `NodeId` for the dominating generic type.
