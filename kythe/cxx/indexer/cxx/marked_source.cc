@@ -39,6 +39,9 @@
 // until VLOG is supported properly, at which point this will be removed.
 #define VLOG_IS_ON(x) false
 
+ABSL_FLAG(bool, experimental_new_marked_source, false,
+          "Use new signature generation.");
+
 namespace kythe {
 namespace {
 /// \return true if `range` is valid for use in annotations.
@@ -83,7 +86,8 @@ struct Annotation {
     TokenText,
     ArgListWithParens,
     Type,
-    QualifiedName
+    QualifiedName,
+    Init
   };
   Kind kind;
   size_t begin;
@@ -152,6 +156,9 @@ class NodeStack {
         }
         case Annotation::Type:
           child->set_kind(MarkedSource::TYPE);
+          break;
+        case Annotation::Init:
+          child->set_kind(MarkedSource::INITIALIZER);
           break;
         case Annotation::QualifiedName:
           child->set_kind(MarkedSource::BOX);
@@ -333,6 +340,14 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
             NormalizeRange(cache_->source_manager(), cache_->lang_options(),
                            type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
+      }
+    }
+    if (absl::GetFlag(FLAGS_experimental_new_marked_source)) {
+      if (const auto* init = decl->getInit()) {
+        auto init_range =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           init->getSourceRange());
+        InsertAnnotation(init_range, Annotation{Annotation::Init});
       }
     }
   }
@@ -520,7 +535,7 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
     switch (name.getCXXOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
   case clang::OO_##Name:                                                      \
-    return "operator " #Name;
+    return "operator" #Spelling;
 #include "clang/Basic/OperatorKinds.def"
 #undef OVERLOADED_OPERATOR
       default:
@@ -549,6 +564,23 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
     return sel.getAsString();
   }
   return "";
+}
+
+void CleanMarkedSource(MarkedSource* to_clean) {
+  switch (to_clean->kind()) {
+    case MarkedSource::BOX: {
+      if (to_clean->post_child_text().empty()) {
+        to_clean->set_post_child_text(" ");
+      }
+      to_clean->clear_pre_text();
+      to_clean->clear_post_text();
+    } break;
+    default:
+      break;
+  }
+  for (auto& child : *to_clean->mutable_child()) {
+    CleanMarkedSource(&child);
+  }
 }
 
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
@@ -795,6 +827,9 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                           name_range_);
   annotator.Annotate(decl_);
   ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
+  if (absl::GetFlag(FLAGS_experimental_new_marked_source)) {
+    CleanMarkedSource(&out_sig);
+  }
   return out_sig;
 }
 
