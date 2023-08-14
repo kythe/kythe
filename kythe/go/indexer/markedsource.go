@@ -93,9 +93,12 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		if recv := sig.Recv(); recv != nil {
 			// Parenthesized receiver type, e.g. (R).
 			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				Kind:     cpb.MarkedSource_LOOKUP_BY_PARAM,
+				Kind:     cpb.MarkedSource_PARAMETER,
 				PreText:  "(",
 				PostText: ") ",
+				Child: []*cpb.MarkedSource{{
+					Kind: cpb.MarkedSource_LOOKUP_BY_PARAM,
+				}},
 			})
 			firstParam = 1
 		}
