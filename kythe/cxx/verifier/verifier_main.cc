@@ -194,6 +194,9 @@ Example:
   int result = 0;
 
   if (!v.VerifyAllGoals()) {
+    // Flush stdout in case any data is stuck in buffers, to avoid mangling a
+    // joined output stream.
+    fflush(stdout);
     absl::FPrintF(
         stderr, "Could not verify all goals. The furthest we reached was:\n  ");
     v.DumpErrorGoal(v.highest_group_reached(), v.highest_goal_reached());
