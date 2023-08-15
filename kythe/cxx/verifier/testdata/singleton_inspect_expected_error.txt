@@ -1,5 +1,5 @@
+Singleton: <null>
+Something: <null>
 Could not verify all goals. The furthest we reached was:
   singleton_inspect_input.txt:1:5-1:34 Nonsingleton ref Nonsingleton
   Goal: fact(<null>, /kythe/edge/ref, <null>, /, "")
-Singleton: <null>
-Something: <null>
