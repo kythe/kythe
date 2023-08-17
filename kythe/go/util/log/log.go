@@ -45,3 +45,9 @@ func Fatal(args ...any) { log.Fatal(args...) }
 
 // Fatalln logs to the error log and panics.
 func Fatalln(args ...any) { log.Fatalln(args...) }
+
+// Exit logs to the error log and exits.
+func Exit(args ...any) { log.Fatal(args...) }
+
+// Exitf logs to the error log and panics.
+func Exitf(msg string, args ...any) { log.Fatalf(msg, args...) }

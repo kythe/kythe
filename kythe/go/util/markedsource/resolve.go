@@ -106,7 +106,7 @@ func ensureKind(ms *cpb.MarkedSource, k cpb.MarkedSource_Kind) *cpb.MarkedSource
 	if ms.GetKind() == k {
 		return ms
 	}
-	if ms.GetKind() == cpb.MarkedSource_BOX {
+	if ms != nil && ms.GetKind() == cpb.MarkedSource_BOX {
 		ret := proto.Clone(ms).(*cpb.MarkedSource)
 		ret.Kind = k
 		return ret
@@ -117,19 +117,26 @@ func ensureKind(ms *cpb.MarkedSource, k cpb.MarkedSource_Kind) *cpb.MarkedSource
 	}
 }
 
+var invalidLookupReplacement = &cpb.MarkedSource{PreText: "???"}
+
 func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
 	if ms == nil {
 		return ms
 	}
 	switch ms.GetKind() {
 	case cpb.MarkedSource_LOOKUP_BY_PARAM:
-		// TODO: determine what to do when a lookup isn't found
 		params := r.params[ticket]
+		if int(ms.GetLookupIndex()) >= len(params) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
 		if p := params[ms.GetLookupIndex()]; p != "" {
 			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TPARAM:
 		tparams := r.tparams[ticket]
+		if int(ms.GetLookupIndex()) >= len(tparams) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
 		if p := tparams[ms.GetLookupIndex()]; p != "" {
 			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
 		}
@@ -137,11 +144,17 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 		return ensureKind(r.ResolveTicket(r.typed[ticket]), cpb.MarkedSource_TYPE)
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM:
 		// TODO: handle param/default
-		params := r.params[ticket][ms.GetLookupIndex():]
-		return r.resolveParameters(ms, params)
+		params := r.params[ticket]
+		if int(ms.GetLookupIndex()) >= len(params) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
+		return r.resolveParameters(ms, params[ms.GetLookupIndex():])
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM:
-		tparams := r.tparams[ticket][ms.GetLookupIndex():]
-		return r.resolveParameters(ms, tparams)
+		tparams := r.tparams[ticket]
+		if int(ms.GetLookupIndex()) >= len(tparams) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
+		return r.resolveParameters(ms, tparams[ms.GetLookupIndex():])
 	}
 	return r.resolveChildren(ticket, ms)
 }

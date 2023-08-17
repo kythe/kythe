@@ -310,15 +310,20 @@ def _verifier_test_impl(ctx):
             # If failure is expected, invert the sense of the verifier return.
             "@INVERT@": "!" if not ctx.attr.expect_success else "",
             "@VERIFIER@": shell.quote(ctx.executable._verifier.short_path),
+            "@REWRITE@": "1" if not ctx.attr.resolve_code_facts else "",
+            "@MARKEDSOURCE@": shell.quote(ctx.executable._markedsource.short_path),
             "@WORKSPACE_NAME@": ctx.workspace_name,
         },
     )
+    tools = [
+        ctx.outputs.executable,
+        ctx.executable._verifier,
+    ]
+    if ctx.attr.resolve_code_facts:
+        tools += [ctx.executable._markedsource]
     return [
         DefaultInfo(
-            runfiles = ctx.runfiles(files = sources + entries + entries_gz + [
-                ctx.outputs.executable,
-                ctx.executable._verifier,
-            ]).merge_all(runfiles),
+            runfiles = ctx.runfiles(files = sources + entries + entries_gz + tools).merge_all(runfiles),
             executable = ctx.outputs.executable,
         ),
     ]
@@ -330,6 +335,7 @@ verifier_test = rule(
             allow_files = True,
             providers = [KytheVerifierSources],
         ),
+        "resolve_code_facts": attr.bool(default = False),
         # Arguably, "expect_failure" is more natural, but that
         # attribute is used by Skylark.
         "expect_success": attr.bool(default = True),
@@ -344,6 +350,11 @@ verifier_test = rule(
         ),
         "_verifier": attr.label(
             default = Label("//kythe/cxx/verifier"),
+            executable = True,
+            cfg = "target",
+        ),
+        "_markedsource": attr.label(
+            default = Label("//kythe/go/util/tools/markedsource"),
             executable = True,
             cfg = "target",
         ),
