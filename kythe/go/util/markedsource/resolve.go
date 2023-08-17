@@ -102,6 +102,21 @@ func (r *Resolver) ResolveTicket(ticket string) *cpb.MarkedSource {
 	return r.resolve(ticket, r.nodes[ticket])
 }
 
+func ensureKind(ms *cpb.MarkedSource, k cpb.MarkedSource_Kind) *cpb.MarkedSource {
+	if ms.GetKind() == k {
+		return ms
+	}
+	if ms.GetKind() == cpb.MarkedSource_BOX {
+		ret := proto.Clone(ms).(*cpb.MarkedSource)
+		ret.Kind = k
+		return ret
+	}
+	return &cpb.MarkedSource{
+		Kind:  k,
+		Child: []*cpb.MarkedSource{ms},
+	}
+}
+
 func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
 	if ms == nil {
 		return ms
@@ -111,15 +126,15 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 		// TODO: determine what to do when a lookup isn't found
 		params := r.params[ticket]
 		if p := params[ms.GetLookupIndex()]; p != "" {
-			return r.ResolveTicket(p)
+			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TPARAM:
 		tparams := r.tparams[ticket]
 		if p := tparams[ms.GetLookupIndex()]; p != "" {
-			return r.ResolveTicket(p)
+			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TYPED:
-		return r.ResolveTicket(r.typed[ticket])
+		return ensureKind(r.ResolveTicket(r.typed[ticket]), cpb.MarkedSource_TYPE)
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM:
 		// TODO: handle param/default
 		params := r.params[ticket][ms.GetLookupIndex():]
