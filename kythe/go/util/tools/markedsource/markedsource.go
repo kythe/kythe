@@ -18,9 +18,10 @@
 // for any ticket from a delimited stream of wire-encoded kythe.proto.Entry
 // messages.
 //
-// Example usage:
+// Example usages:
 //
 //	markedsource kythe://kythe#myTicket < entries
+//	markedsource --rewrite < entries > rewritten.entries
 package main
 
 import (
@@ -28,13 +29,20 @@ import (
 	"flag"
 	"os"
 
+	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
+)
+
+var (
+	rewrite = flag.Bool("rewrite", false, "Rewrite all code facts to be fully resolved")
 )
 
 func main() {
@@ -48,25 +56,51 @@ func main() {
 		entries = append(entries, e)
 		return nil
 	}); err != nil {
-		log.Fatalf("Failed to read entrystream: %v", err)
+		log.Exitf("Failed to read entrystream: %v", err)
 	}
 
 	r, err := markedsource.NewResolver(entries)
 	if err != nil {
-		log.Fatalf("Failed to construct MarkedSource Resolver: %v", err)
+		log.Exitf("Failed to construct MarkedSource Resolver: %v", err)
+	}
+
+	if *rewrite {
+		var rewritten int
+		out := bufio.NewWriter(os.Stdout)
+		wr := delimited.NewWriter(out)
+		for _, e := range entries {
+			if e.GetFactName() == facts.Code {
+				resolved := r.Resolve(e.GetSource())
+				e = proto.Clone(e).(*spb.Entry)
+				rec, err := proto.Marshal(resolved)
+				if err != nil {
+					log.Exitf("Error marshalling resolved MarkedSource: %v", err)
+				}
+				e.FactValue = rec
+				rewritten++
+			}
+			if err := wr.PutProto(e); err != nil {
+				log.Exit(err)
+			}
+		}
+		if err := out.Flush(); err != nil {
+			log.Exit(err)
+		}
+		log.Infof("Rewrote %d code facts", rewritten)
+		return
 	}
 
 	wr := bufio.NewWriter(os.Stdout)
 	for _, ticket := range flag.Args() {
 		rec, err := protojson.Marshal(r.ResolveTicket(ticket))
 		if err != nil {
-			log.Fatalf("Error encoding MarkedSource: %v", err)
+			log.Exitf("Error encoding MarkedSource: %v", err)
 		}
 		if _, err := wr.Write(rec); err != nil {
-			log.Fatalf("Error writing MarkedSource: %v", err)
+			log.Exitf("Error writing MarkedSource: %v", err)
 		}
 	}
 	if err := wr.Flush(); err != nil {
-		log.Fatalf("Error flushing stdout: %v", err)
+		log.Exitf("Error flushing stdout: %v", err)
 	}
 }
