@@ -320,7 +320,7 @@ def _verifier_test_impl(ctx):
         ctx.executable._verifier,
     ]
     if ctx.attr.resolve_code_facts:
-        tools += [ctx.executable._markedsource]
+        tools.append(ctx.executable._markedsource)
     return [
         DefaultInfo(
             runfiles = ctx.runfiles(files = sources + entries + entries_gz + tools).merge_all(runfiles),
