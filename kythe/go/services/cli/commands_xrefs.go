@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
+
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
@@ -283,8 +284,8 @@ func showSignature(signature *cpb.MarkedSource) string {
 	if signature == nil {
 		return "(nil)"
 	}
-	ident := markedsource.RenderSimpleIdentifier(signature)
-	params := markedsource.RenderSimpleParams(signature)
+	ident := markedsource.RenderSimpleIdentifier(signature, markedsource.PlaintextContent, nil)
+	params := markedsource.RenderSimpleParams(signature, markedsource.PlaintextContent, nil)
 	if len(params) == 0 {
 		return ident
 	}
