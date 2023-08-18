@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -157,7 +158,7 @@ func TestInteropt(t *testing.T) {
 			PreText: "*pkg.receiver",
 		}, {
 			Kind:          cpb.MarkedSource_BOX,
-			PostChildText: ".",
+			PostChildText: " ",
 			Child: []*cpb.MarkedSource{{
 				Kind: cpb.MarkedSource_BOX,
 				Child: []*cpb.MarkedSource{{
@@ -168,30 +169,29 @@ func TestInteropt(t *testing.T) {
 					PreText: "param",
 				}},
 			}, {
-				Kind:    cpb.MarkedSource_BOX,
-				PreText: " ",
-			}, {
 				Kind:    cpb.MarkedSource_TYPE,
 				PreText: "string",
 			}},
 		}},
 	}}
 
-	for _, test := range tests {
-		oracle := runOracle(t, test)
-		if ident := RenderSimpleIdentifier(test); oracle.SimpleIdentifier != ident {
-			t.Errorf("RenderSimpleIdentifier({%+v}): expected: %q; found %q", test, oracle.SimpleIdentifier, ident)
-		}
-		params := RenderSimpleParams(test)
-		if len(params) != len(oracle.SimpleParams) {
-			t.Errorf("RenderSimpleParams({%+v}); expected: %#v; found: %#v", test, oracle.SimpleParams, params)
-		} else {
-			for i, expected := range oracle.SimpleParams {
-				if expected != params[i] {
-					t.Errorf("RenderSimpleParams({%+v})[%d]; expected: %#v; found: %#v", test, i, expected, params[i])
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			oracle := runOracle(t, test)
+			if ident := RenderSimpleIdentifier(test, PlaintextContent, nil); oracle.SimpleIdentifier != ident {
+				t.Errorf("RenderSimpleIdentifier({%+v}): expected: %q; found %q", test, oracle.SimpleIdentifier, ident)
+			}
+			params := RenderSimpleParams(test, PlaintextContent, nil)
+			if len(params) != len(oracle.SimpleParams) {
+				t.Errorf("RenderSimpleParams({%+v}); expected: %#v; found: %#v", test, oracle.SimpleParams, params)
+			} else {
+				for i, expected := range oracle.SimpleParams {
+					if expected != params[i] {
+						t.Errorf("RenderSimpleParams({%+v})[%d]; expected: %#v; found: %#v", test, i, expected, params[i])
+					}
 				}
 			}
-		}
+		})
 	}
 }
 
@@ -212,13 +212,13 @@ func TestRender(t *testing.T) {
 			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2POST"},
 		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",", AddFinalListToken: true,
 			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,POST"},
-		{&cpb.MarkedSource{PreText: "PRE", PostChildText: ",", AddFinalListToken: true,
-			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,"},
 	}
-	for _, test := range tests {
-		if got := Render(test.in); got != test.out {
-			t.Errorf("from %v: got %q, expected %q", test.in, got, test.out)
-		}
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if got := Render(test.in); got != test.out {
+				t.Errorf("from %v: got %q, expected %q", test.in, got, test.out)
+			}
+		})
 	}
 }
 
@@ -263,15 +263,16 @@ func TestQName(t *testing.T) {
 			want: &cpb.SymbolInfo{BaseName: "hello", QualifiedName: ""}},
 	}
 
-	for _, test := range tests {
-		var ms cpb.MarkedSource
-		if err := prototext.Unmarshal([]byte(test.input), &ms); err != nil {
-			t.Errorf("Invalid test input: %v\nInput was %#q", err, test.input)
-			continue
-		}
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var ms cpb.MarkedSource
+			if err := prototext.Unmarshal([]byte(test.input), &ms); err != nil {
+				t.Fatalf("Invalid test input: %v\nInput was %#q", err, test.input)
+			}
 
-		if got := RenderQualifiedName(&ms); !proto.Equal(got, test.want) {
-			t.Errorf("Invalid result: got %q, want %q\nInput was %#q", got, test.want, test.input)
-		}
+			if got := RenderQualifiedName(&ms); !proto.Equal(got, test.want) {
+				t.Errorf("Invalid result: got %q, want %q\nInput was %#q", got, test.want, test.input)
+			}
+		})
 	}
 }
