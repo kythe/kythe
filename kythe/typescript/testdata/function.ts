@@ -95,4 +95,18 @@ let ev, an;
 let ev;
 //- @an ref An
 an;
-})()
+})();
+
+//- AnonymousArrowDef defines _
+//- AnonymousArrowDef.node/kind anchor
+//- AnonymousArrowDef.loc/start @^"arg"
+//- AnonymousArrowDef.loc/end @$"42"
+(arg => 42)();
+
+//- AnonymousFunctionDef defines _
+//- AnonymousFunctionDef.node/kind anchor
+//- AnonymousFunctionDef.loc/start @^"function"
+(function() {
+  return 42;
+//- AnonymousFunctionDef.loc/end @$"}"
+})();
