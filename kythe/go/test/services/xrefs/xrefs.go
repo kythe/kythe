@@ -119,9 +119,9 @@ func (a Atomizer) CrossReferences(ctx context.Context, xrefs *xpb.CrossReference
 
 			rendered := markedsource.Render(xrs.MarkedSource)
 			a.emitFact(ctx, src, facts.Code+"/rendered", []byte(rendered))
-			ident := markedsource.RenderSimpleIdentifier(xrs.MarkedSource)
+			ident := markedsource.RenderSimpleIdentifier(xrs.MarkedSource, markedsource.PlaintextContent, nil)
 			a.emitFact(ctx, src, facts.Code+"/rendered/identifier", []byte(ident))
-			params := markedsource.RenderSimpleParams(xrs.MarkedSource)
+			params := markedsource.RenderSimpleParams(xrs.MarkedSource, markedsource.PlaintextContent, nil)
 			if len(params) > 0 {
 				a.emitFact(ctx, src, facts.Code+"/rendered/params", []byte(strings.Join(params, ",")))
 			}

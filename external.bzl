@@ -1685,6 +1685,12 @@ def _go_dependencies():
         sum = "h1:H2TDz8ibqkAF6YGhCdN3jS9O0/s90v0rJh3X/OLHEUk=",
         version = "v0.0.0-20220907171357-04be3eba64a2",
     )
+    go_repository(
+        name = "com_github_html2markdown",
+        importpath = "github.com/JohannesKaufmann/html-to-markdown",
+        sum = "h1:i3Ma4RmIU97gqArbxZXbFqbWKm7XtImlMwVNUouQ7Is=",
+        version = "v1.3.6",
+    )
 
     # gazelle:repository go_repository name=org_golang_x_tools importpath=golang.org/x/tools
     http_archive(

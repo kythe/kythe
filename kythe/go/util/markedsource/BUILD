@@ -11,10 +11,12 @@ go_library(
     importpath = "kythe.io/kythe/go/util/markedsource",
     deps = [
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/md",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_html2markdown//escape",
         "@org_golang_google_protobuf//proto",
     ],
 )
