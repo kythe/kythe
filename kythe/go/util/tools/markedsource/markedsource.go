@@ -43,7 +43,12 @@ import (
 
 var (
 	rewrite = flag.Bool("rewrite", false, "Rewrite all code facts to be fully resolved")
+
+	renderCallsiteSignature = flag.Bool("render_callsite_signatures", false, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
+	renderQualifiedName     = flag.Bool("render_qualified_names", false, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
 )
+
+const renderFactPrefix = facts.Code + "/rendered/"
 
 func main() {
 	flag.Parse()
@@ -60,9 +65,7 @@ func main() {
 	}
 
 	r, err := markedsource.NewResolver(entries)
-	if err != nil {
-		log.Exitf("Failed to construct MarkedSource Resolver: %v", err)
-	}
+	exitOnErrf("Failed to construct MarkedSource Resolver: %v", err)
 
 	if *rewrite {
 		var rewritten int
@@ -73,19 +76,30 @@ func main() {
 				resolved := r.Resolve(e.GetSource())
 				e = proto.Clone(e).(*spb.Entry)
 				rec, err := proto.Marshal(resolved)
-				if err != nil {
-					log.Exitf("Error marshalling resolved MarkedSource: %v", err)
-				}
+				exitOnErrf("Error marshalling resolved MarkedSource: %v", err)
 				e.FactValue = rec
 				rewritten++
+
+				if *renderQualifiedName {
+					val := markedsource.RenderSimpleQualifiedName(resolved, true, markedsource.PlaintextContent, nil)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "qualified_name",
+						FactValue: []byte(val),
+					}))
+				}
+				if *renderCallsiteSignature {
+					val := markedsource.RenderCallSiteSignature(resolved)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "callsite_signature",
+						FactValue: []byte(val),
+					}))
+				}
 			}
-			if err := wr.PutProto(e); err != nil {
-				log.Exit(err)
-			}
+			exitOnErr(wr.PutProto(e))
 		}
-		if err := out.Flush(); err != nil {
-			log.Exit(err)
-		}
+		exitOnErr(out.Flush())
 		log.Infof("Rewrote %d code facts", rewritten)
 		return
 	}
@@ -93,14 +107,22 @@ func main() {
 	wr := bufio.NewWriter(os.Stdout)
 	for _, ticket := range flag.Args() {
 		rec, err := protojson.Marshal(r.ResolveTicket(ticket))
-		if err != nil {
-			log.Exitf("Error encoding MarkedSource: %v", err)
-		}
+		exitOnErrf("Error encoding MarkedSource: %v", err)
 		if _, err := wr.Write(rec); err != nil {
 			log.Exitf("Error writing MarkedSource: %v", err)
 		}
 	}
-	if err := wr.Flush(); err != nil {
-		log.Exitf("Error flushing stdout: %v", err)
+	exitOnErrf("Error flushing stdout: %v", wr.Flush())
+}
+
+func exitOnErrf(msg string, err error) {
+	if err != nil {
+		log.Exitf(msg, err)
+	}
+}
+
+func exitOnErr(err error) {
+	if err != nil {
+		log.Exit(err)
 	}
 }

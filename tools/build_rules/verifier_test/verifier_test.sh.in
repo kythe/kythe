@@ -27,7 +27,7 @@ ENTRIES_GZ=(@ENTRIES_GZ@)
   if (( ${#ENTRIES_GZ[@]} )); then gunzip -c "${ENTRIES_GZ[@]}"; fi
 ) | (
   if [[ -z "@REWRITE@" ]]; then
-    @MARKEDSOURCE@ --rewrite
+    @MARKEDSOURCE@ --rewrite --render_callsite_signatures --render_qualified_names
   else
     cat
   fi

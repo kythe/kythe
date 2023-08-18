@@ -197,6 +197,14 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "code_rendered_test",
+    srcs = ["testdata/code/rendered.go"],
+    has_marked_source = True,
+    import_path = "rendered",
+    resolve_code_facts = True,
+)
+
+go_indexer_test(
     name = "code_function_test",
     srcs = ["testdata/code/funcdecl.go"],
     has_marked_source = True,

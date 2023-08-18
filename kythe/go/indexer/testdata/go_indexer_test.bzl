@@ -235,6 +235,7 @@ def go_verifier_test(
         tags = [],
         log_entries = False,
         has_marked_source = False,
+        resolve_code_facts = False,
         allow_duplicates = False):
     opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
     if log_entries:
@@ -250,6 +251,7 @@ def go_verifier_test(
         size = size,
         opts = opts,
         tags = tags,
+        resolve_code_facts = resolve_code_facts,
         deps = [entries] + deps,
     )
 
@@ -311,6 +313,7 @@ def go_indexer_test(
         log_entries = False,
         data = None,
         has_marked_source = False,
+        resolve_code_facts = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_for_all = False,
@@ -341,6 +344,7 @@ def go_indexer_test(
         entries = ":" + entries,
         deps = [dep + "_entries" for dep in deps],
         has_marked_source = has_marked_source,
+        resolve_code_facts = resolve_code_facts,
         log_entries = log_entries,
         tags = tags,
     )
