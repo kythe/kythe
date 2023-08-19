@@ -234,7 +234,7 @@ class StandardIndexerContext implements IndexerHost {
     }
     // Sad hack. Nodes have symbol property but it's not exposed in the API.
     // We could create our own Symbol instance to avoid depending on non-public API.
-    // But it's not clear whether it will be more maintainance.
+    // But it's not clear whether it will be less maintainance.
     return (node as any).symbol;
   }
 
