@@ -865,7 +865,13 @@ class Visitor {
       this.visitDynamicImportCall(node);
       return;
     }
-    const symbol = this.host.getSymbolAtLocationFollowingAliases(node.expression);
+    // Handle case of immediately-invoked functions like:
+    // (() => do stuff... )();
+    let expression: ts.Node = node.expression;
+    while (ts.isParenthesizedExpression(expression)) {
+      expression = expression.expression;
+    }
+    const symbol = this.host.getSymbolAtLocationFollowingAliases(expression);
     if (!symbol) {
       return;
     }
