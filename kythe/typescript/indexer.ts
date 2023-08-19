@@ -225,6 +225,8 @@ class StandardIndexerContext implements IndexerHost {
     // anonymous nodes as well. So we do hacks here.
     // See similar bugs that hasn't been resolved though propely:
     // https://github.com/microsoft/TypeScript/issues/26511
+    //
+    // Open FR: https://github.com/microsoft/TypeScript/issues/55433
     let sym = this.typeChecker.getSymbolAtLocation(node);
     if (sym) return sym;
     // Check if it's named node.
