@@ -216,11 +216,30 @@ class StandardIndexerContext implements IndexerHost {
   }
 
   getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
-    return this.typeChecker.getSymbolAtLocation(node);
+    // Practically any interesting node has a Symbol: variables, classes, functions.
+    // Both named and anonymous have Symbols. We tie Symbols to Vnames so its
+    // important to get Symbol object for as many nodes as possible. Unfortunately
+    // Typescript doesn't provide good API for extracting Symbol from Nodes.
+    // It is supported well for named nodes, probably logic being that if you can't
+    // refer to a node then no need to have Symbol. But for Kythe we need to handle
+    // anonymous nodes as well. So we do hacks here.
+    // See similar bugs that hasn't been resolved though propely:
+    // https://github.com/microsoft/TypeScript/issues/26511
+    let sym = this.typeChecker.getSymbolAtLocation(node);
+    if (sym) return sym;
+    // Check if it's named node.
+    if ('name' in node) {
+      sym = this.typeChecker.getSymbolAtLocation((node as ts.NamedDeclaration).name!);
+      if (sym) return sym;
+    }
+    // Sad hack. Nodes have symbol property but it's not exposed in the API.
+    // We could create our own Symbol instance to avoid depending on non-public API.
+    // But it's not clear whether it will be more maintainance.
+    return (node as any).symbol;
   }
 
   getSymbolAtLocationFollowingAliases(node: ts.Node): ts.Symbol|undefined {
-    let sym = this.typeChecker.getSymbolAtLocation(node);
+    let sym = this.getSymbolAtLocation(node);
     while (sym && (sym.flags & ts.SymbolFlags.Alias) > 0) {
       // a hack to prevent following aliases in cases like:
       // import * as fooNamespace from './foo';
@@ -1106,16 +1125,12 @@ class Visitor {
     } else if (ts.isSetAccessor(node)) {
       context = Context.Setter;
     }
-    if (node.name) {
-      const sym = this.host.getSymbolAtLocationFollowingAliases(node.name);
-      if (!sym) {
-        return {};
-      }
-      const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
-      return {sym, vname};
-    } else {
-      return {vname: this.host.scopedSignature(node)};
+    const sym = this.host.getSymbolAtLocationFollowingAliases(node);
+    if (!sym) {
+      return {};
     }
+    const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
+    return {sym, vname};
   }
 
   /**
@@ -1136,6 +1151,7 @@ class Visitor {
     for (; node.kind !== ts.SyntaxKind.SourceFile; node = node.parent) {
       const kind = node.kind;
       if (kind === ts.SyntaxKind.FunctionDeclaration ||
+          kind === ts.SyntaxKind.FunctionExpression ||
           kind === ts.SyntaxKind.ArrowFunction ||
           kind === ts.SyntaxKind.MethodDeclaration ||
           kind === ts.SyntaxKind.Constructor ||
@@ -1416,7 +1432,7 @@ class Visitor {
   emitModuleAnchor(sf: ts.SourceFile) {
     const kMod =
         this.newVName('module', this.host.moduleName(this.file.fileName));
-    this.emitFact(kMod, FactName.NODE_KIND, 'record');
+    this.emitFact(kMod, FactName.NODE_KIND, NodeKind.RECORD);
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
@@ -2648,7 +2664,7 @@ class Visitor {
 
   /** index is the main entry point, starting the recursive visit. */
   index() {
-    this.emitFact(this.kFile, FactName.NODE_KIND, 'file');
+    this.emitFact(this.kFile, FactName.NODE_KIND, NodeKind.FILE);
     this.emitFact(this.kFile, FactName.TEXT, this.file.text);
 
     this.emitModuleAnchor(this.file);
@@ -2656,7 +2672,7 @@ class Visitor {
     // Emit file-level init function to contain all call anchors that
     // don't have parent functions.
     const fileInitFunc = this.getSyntheticFileInitVName();
-    this.emitFact(fileInitFunc, FactName.NODE_KIND, 'function');
+    this.emitFact(fileInitFunc, FactName.NODE_KIND, NodeKind.FUNCTION);
     this.emitEdge(
         this.newAnchor(this.file, 0, 0), EdgeKind.DEFINES, fileInitFunc);
 

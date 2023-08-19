@@ -44,3 +44,17 @@ function doNothing() {
 //- DoNothingCall=@"doNothing()" ref/call DoNothing
 //- DoNothingCall childof FileInitFunc
 doNothing();
+
+//- GetAreaCallInAnonArrow=@"square.getArea()" ref/call GetArea
+//- GetAreaCallInAnonArrow childof AnonArrow
+//- AnonArrowCall ref/call AnonArrow
+//- AnonArrowCall childof FileInitFunc
+(() => square.getArea())();
+
+//- AnonFunctionCall ref/call AnonFunction
+//- AnonFunctionCall childof FileInitFunc
+(function() {
+  //- GetAreaCallInAnonFunction=@"square.getArea()" ref/call GetArea
+  //- GetAreaCallInAnonFunction childof AnonFunction
+  square.getArea();
+})();
