@@ -32,8 +32,10 @@ TEST(SouffleInterpreterTest, SmokeTest) {
   AnchorMap anchors;
   std::vector<GoalGroup> groups;
   std::vector<Inspection> inspections;
-  auto result = RunSouffle(symbols, groups, db, anchors, inspections,
-                           [](const Inspection&) { return true; });
+  auto result = RunSouffle(
+      symbols, groups, db, anchors, inspections,
+      [](const Inspection&, std::optional<std::string_view>) { return true; },
+      [](size_t) { return std::string(""); });
   ASSERT_TRUE(result.success);
 }
 }  // namespace kythe::verifier

@@ -184,8 +184,6 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                            const std::vector<GoalGroup>& goal_groups,
                            const std::vector<Inspection>& inspections) {
   code_.clear();
-  if (emit_prelude_) {
-  }
   for (const auto& group : goal_groups) {
     if (!LowerGoalGroup(symbol_table, group)) return false;
   }

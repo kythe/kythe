@@ -383,14 +383,9 @@ class Inspection {
   };
   std::string label;  ///< A label for user reference.
   Kind kind;          ///< Whether this inspection was added by default.
+  EVar* evar;         ///< The EVar to inspect.
   Inspection(const std::string& label, EVar* evar, Kind kind)
       : label(label), kind(kind), evar(evar) {}
-
- private:
-  friend class Verifier;
-
- public:
-  EVar* evar;  ///< The EVar to inspect.
 };
 
 }  // namespace verifier

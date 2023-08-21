@@ -154,7 +154,6 @@ class KytheWriteStream : public souffle::WriteStream {
       const std::vector<EVarType>& output_types,
       const std::function<std::string(size_t)>& get_symbol, KytheOutput* output)
       : souffle::WriteStream(rw_operation, symbol_table, record_table),
-        record_table_(record_table),
         output_types_(output_types),
         get_symbol_(get_symbol),
         output_(output) {}
@@ -177,7 +176,7 @@ class KytheWriteStream : public souffle::WriteStream {
       }
       switch (type) {
         case EVarType::kVName: {
-          const auto* v = record_table_.unpack(tuple[ox], 5);
+          const auto* v = recordTable.unpack(tuple[ox], 5);
           absl::StrAppend(o, "vname(", get_symbol_(v[0]), ", ",
                           get_symbol_(v[1]), ", ", get_symbol_(v[3]), ", ",
                           get_symbol_(v[2]), ", ", get_symbol_(v[4]), ")");
@@ -192,9 +191,8 @@ class KytheWriteStream : public souffle::WriteStream {
   }
 
  private:
-  const souffle::RecordTable& record_table_;
-  const std::vector<EVarType>& output_types_;
-  const std::function<std::string(size_t)>& get_symbol_;
+  std::vector<EVarType> output_types_;
+  std::function<std::string(size_t)> get_symbol_;
   KytheOutput* output_;
 };
 
@@ -232,7 +230,7 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
  private:
   std::vector<KytheOutput> outputs_;
   std::vector<EVarType> output_types_;
-  const std::function<std::string(size_t)>& get_symbol_;
+  std::function<std::string(size_t)> get_symbol_;
 };
 }  // anonymous namespace
 
