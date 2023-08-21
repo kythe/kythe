@@ -223,7 +223,7 @@ class StandardIndexerContext implements IndexerHost {
     // It is supported well for named nodes, probably logic being that if you can't
     // refer to a node then no need to have Symbol. But for Kythe we need to handle
     // anonymous nodes as well. So we do hacks here.
-    // See similar bugs that hasn't been resolved though propely:
+    // See similar bugs that haven't been resolved properly:
     // https://github.com/microsoft/TypeScript/issues/26511
     //
     // Open FR: https://github.com/microsoft/TypeScript/issues/55433
