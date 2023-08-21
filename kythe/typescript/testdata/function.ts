@@ -86,7 +86,7 @@ function bindingTest({aa, bb: {cc, dd}}, [ee, [ff]]: NestedArray) {
   dd = ff;
 }
 
-// Test function expressions introducing an anonymous scope
+// Test function expressions introducing an Anon scope
 //- @ev defines/binding Ev
 //- @an defines/binding An
 let ev, an;
@@ -95,4 +95,18 @@ let ev, an;
 let ev;
 //- @an ref An
 an;
-})()
+})();
+
+//- AnonArrowDef defines _
+//- AnonArrowDef.node/kind anchor
+//- AnonArrowDef.loc/start @^"arg"
+//- AnonArrowDef.loc/end @$"42"
+(arg => 42)();
+
+//- AnonFunctionDef defines _
+//- AnonFunctionDef.node/kind anchor
+//- AnonFunctionDef.loc/start @^"function"
+(function() {
+  return 42;
+//- AnonFunctionDef.loc/end @$"}"
+})();
