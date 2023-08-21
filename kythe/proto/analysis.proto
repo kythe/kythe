@@ -42,6 +42,9 @@ message AnalysisRequest {
 
   // An identifier for the current analysis.
   string build_id = 4;
+
+  // A digest of the CompilationUnit used for identification.
+  string compilation_digest = 5;
 }
 
 // AnalysisOutput contains an output artifact for the current analysis taking
