@@ -1856,8 +1856,7 @@ fact_value: ""
   ASSERT_EQ(2, inspect_count);
 }
 
-TEST(VerifierUnitTest, InspectionCalledCorrectly) {
-  Verifier v;
+TEST_P(VerifierTest, InspectionCalledCorrectly) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor? defines SomeNode
 source { root:"1" }
@@ -1870,39 +1869,21 @@ fact_value: ""
   size_t call_count = 0;
   bool key_was_someanchor = false;
   bool evar_init = false;
-  bool evar_init_to_correct_vname = false;
-  ASSERT_TRUE(v.VerifyAllGoals(
-      [&call_count, &key_was_someanchor, &evar_init_to_correct_vname](
-          Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        // Check for equivalence to `App(#vname, (#"", #"", 1, #"", #""))`
-        key_was_someanchor = (inspection.label == "SomeAnchor");
-        if (AstNode* node = inspection.evar->current()) {
-          if (App* app = node->AsApp()) {
-            if (Tuple* tuple = app->rhs()->AsTuple()) {
-              if (app->lhs() == cxt->vname_id() && tuple->size() == 5 &&
-                  tuple->element(0) == cxt->empty_string_id() &&
-                  tuple->element(1) == cxt->empty_string_id() &&
-                  tuple->element(3) == cxt->empty_string_id() &&
-                  tuple->element(4) == cxt->empty_string_id()) {
-                if (Identifier* identifier =
-                        tuple->element(2)->AsIdentifier()) {
-                  evar_init_to_correct_vname =
-                      cxt->symbol_table()->text(identifier->symbol()) == "1";
-                }
-              }
-            }
-          }
-        }
-        return true;
-      }));
+  std::string istr;
+  ASSERT_TRUE(v.VerifyAllGoals([&](Verifier* cxt, const Inspection& inspection,
+                                   std::optional<std::string_view> s) {
+    ++call_count;
+    // Check for equivalence to `App(#vname, (#"", #"", 1, #"", #""))`
+    key_was_someanchor = (inspection.label == "SomeAnchor");
+    istr = s ? *s : v.InspectionString(inspection);
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
+  EXPECT_EQ(R"(vname("", "", "1", "", ""))", istr);
   EXPECT_TRUE(key_was_someanchor);
-  EXPECT_TRUE(evar_init_to_correct_vname);
 }
 
-TEST(VerifierUnitTest, FactsAreNotLinear) {
-  Verifier v;
+TEST_P(VerifierTest, FactsAreNotLinear) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor? defines SomeNode?
 #- AnotherAnchor? defines AnotherNode?
@@ -1913,28 +1894,23 @@ fact_name: "/"
 fact_value: ""
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  AstNode* some_anchor = nullptr;
-  AstNode* some_node = nullptr;
-  AstNode* another_anchor = nullptr;
-  AstNode* another_node = nullptr;
+  std::string some_anchor, some_node, another_anchor, another_node;
   ASSERT_TRUE(v.VerifyAllGoals(
       [&some_anchor, &some_node, &another_anchor, &another_node](
-          Verifier* cxt, const Inspection& inspection) {
-        if (AstNode* node = inspection.evar->current()) {
-          if (inspection.label == "SomeAnchor") {
-            some_anchor = node;
-          } else if (inspection.label == "SomeNode") {
-            some_node = node;
-          } else if (inspection.label == "AnotherAnchor") {
-            another_anchor = node;
-          } else if (inspection.label == "AnotherNode") {
-            another_node = node;
-          } else {
-            return false;
-          }
-          return true;
+          Verifier* cxt, const Inspection& inspection,
+          std::optional<std::string_view> s) {
+        if (inspection.label == "SomeAnchor") {
+          some_anchor = s ? *s : cxt->InspectionString(inspection);
+        } else if (inspection.label == "SomeNode") {
+          some_node = s ? *s : cxt->InspectionString(inspection);
+        } else if (inspection.label == "AnotherAnchor") {
+          another_anchor = s ? *s : cxt->InspectionString(inspection);
+        } else if (inspection.label == "AnotherNode") {
+          another_node = s ? *s : cxt->InspectionString(inspection);
+        } else {
+          return false;
         }
-        return false;
+        return true;
       }));
   EXPECT_EQ(some_anchor, another_anchor);
   EXPECT_EQ(some_node, another_node);
@@ -1942,8 +1918,7 @@ fact_value: ""
   EXPECT_NE(another_anchor, another_node);
 }
 
-TEST(VerifierUnitTest, OrdinalsGetUnified) {
-  Verifier v;
+TEST_P(VerifierTest, OrdinalsGetUnified) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor is_param.Ordinal? SomeNode
 source { root:"1" }
@@ -1957,21 +1932,24 @@ fact_value: "42"
   bool key_was_ordinal = false;
   bool evar_init = false;
   bool evar_init_to_correct_ordinal = false;
-  ASSERT_TRUE(
-      v.VerifyAllGoals([&call_count, &key_was_ordinal, &evar_init,
-                        &evar_init_to_correct_ordinal](
-                           Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        key_was_ordinal = (inspection.label == "Ordinal");
-        if (AstNode* node = inspection.evar->current()) {
-          evar_init = true;
-          if (Identifier* identifier = node->AsIdentifier()) {
-            evar_init_to_correct_ordinal =
-                cxt->symbol_table()->text(identifier->symbol()) == "42";
-          }
-        }
-        return true;
-      }));
+  ASSERT_TRUE(v.VerifyAllGoals([&call_count, &key_was_ordinal, &evar_init,
+                                &evar_init_to_correct_ordinal](
+                                   Verifier* cxt, const Inspection& inspection,
+                                   std::optional<std::string_view> s) {
+    ++call_count;
+    key_was_ordinal = (inspection.label == "Ordinal");
+    if (s) {
+      evar_init = true;
+      evar_init_to_correct_ordinal = *s == "\"42\"";
+    } else if (AstNode* node = inspection.evar->current()) {
+      evar_init = true;
+      if (Identifier* identifier = node->AsIdentifier()) {
+        evar_init_to_correct_ordinal =
+            cxt->symbol_table()->text(identifier->symbol()) == "42";
+      }
+    }
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
   EXPECT_TRUE(key_was_ordinal);
   EXPECT_TRUE(evar_init_to_correct_ordinal);
@@ -2297,12 +2275,7 @@ target { root:"3" }
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-// TODO(zarko): this test fails with the new solver; fix and check the other
-// EqualityConstraint tests.
 TEST_P(VerifierTest, TransitiveIdentityEqualityConstraintFails) {
-  if (GetParam() == Solver::New) {
-    GTEST_SKIP();
-  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two = Dos = Two,_,_)
 source { root:"1" }
@@ -2318,7 +2291,12 @@ edge_kind: "/kythe/edge/is"
 target { root:"3" }
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(v.VerifyAllGoals());
+  if (GetParam() == Solver::New) {
+    // The new solver can handle cycles in equality constraints.
+    ASSERT_TRUE(v.VerifyAllGoals());
+  } else {
+    ASSERT_FALSE(v.VerifyAllGoals());
+  }
 }
 
 TEST_P(VerifierTest, GraphEqualityConstraintFails) {

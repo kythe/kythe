@@ -36,12 +36,12 @@ constexpr absl::string_view kGlobalDecls = R"(
 at(s, e, v) :- entry(v, $0, nil, $1, $2),
                entry(v, $0, nil, $3, s),
                entry(v, $0, nil, $4, e).
-.decl result()
-result() :- true
+.decl result($5)
+result($6) :- true
 )";
 }
 
-bool SouffleProgram::LowerSubexpression(AstNode* node) {
+bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
   if (auto* app = node->AsApp()) {
     auto* tup = app->rhs()->AsTuple();
     absl::StrAppend(&code_, "[");
@@ -49,7 +49,7 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
       if (p != 0) {
         absl::StrAppend(&code_, ", ");
       }
-      if (!LowerSubexpression(tup->element(p))) {
+      if (!LowerSubexpression(tup->element(p), type)) {
         return false;
       }
     }
@@ -59,14 +59,33 @@ bool SouffleProgram::LowerSubexpression(AstNode* node) {
     absl::StrAppend(&code_, id->symbol());
     return true;
   } else if (auto* evar = node->AsEVar()) {
+    if (!AssignEVarType(evar, type)) return false;
     if (auto* evc = evar->current()) {
-      return LowerSubexpression(evc);
+      return LowerSubexpression(evc, type);
     }
     absl::StrAppend(&code_, "v", FindEVar(evar));
     return true;
   } else {
     LOG(ERROR) << "unknown subexpression kind";
     return false;
+  }
+}
+
+bool SouffleProgram::AssignEVarType(EVar* evar, EVarType type) {
+  auto t = evar_types_.insert({evar, type});
+  if (t.second) return true;
+  return t.first->second == type;
+}
+
+bool SouffleProgram::AssignEVarType(EVar* evar, EVar* oevar) {
+  auto t = evar_types_.find(evar);
+  if (t == evar_types_.end()) {
+    auto s = evar_types_.find(oevar);
+    if (s != evar_types_.end()) return AssignEVarType(evar, s->second);
+    // A fancier implementation would keep track of these relations.
+    return true;
+  } else {
+    return AssignEVarType(oevar, t->second);
   }
 }
 
@@ -127,6 +146,7 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
                         FindEVar(evar), ")");
       }
+      return AssignEVarType(evar, EVarType::kVName);
     } else {
       auto* oevar = tup->element(0)->AsEVar();
       if (oevar == nullptr) {
@@ -134,6 +154,7 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         return false;
       }
       absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));
+      return AssignEVarType(evar, oevar);
     }
   } else {
     // This is an edge or fact pattern.
@@ -148,7 +169,9 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         absl::StrAppend(&code_, "nil");
         continue;
       }
-      if (!LowerSubexpression(tup->element(p))) {
+      if (!LowerSubexpression(tup->element(p), p == 0 || p == 2
+                                                   ? EVarType::kVName
+                                                   : EVarType::kSymbol)) {
         return false;
       }
     }
@@ -158,17 +181,45 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
 }
 
 bool SouffleProgram::Lower(const SymbolTable& symbol_table,
-                           const std::vector<GoalGroup>& goal_groups) {
+                           const std::vector<GoalGroup>& goal_groups,
+                           const std::vector<Inspection>& inspections) {
   code_.clear();
+  for (const auto& group : goal_groups) {
+    if (!LowerGoalGroup(symbol_table, group)) return false;
+  }
   if (emit_prelude_) {
+    std::string code;
+    code_.swap(code);
+    std::string result_tyspec;
+    std::string result_spec;
+    for (const auto& i : inspections) {
+      auto type = evar_types_.find(i.evar);
+      if (type == evar_types_.end()) {
+        StringPrettyPrinter sp;
+        i.evar->Dump(symbol_table, &sp);
+        LOG(ERROR) << "evar typing missing for " << sp.str();
+        return false;
+      }
+      if (type->second == EVarType::kUnknown) {
+        StringPrettyPrinter sp;
+        i.evar->Dump(symbol_table, &sp);
+        LOG(ERROR) << "evar typing unknown for " << sp.str();
+        return false;
+      }
+      auto id = FindEVar(i.evar);
+      absl::StrAppend(&result_spec, result_spec.empty() ? "" : ", ", "v", id);
+      absl::StrAppend(&result_tyspec, result_tyspec.empty() ? "" : ", ", "v",
+                      id, ":",
+                      type->second == EVarType::kVName ? "vname" : "number");
+      inspections_.push_back(i.evar);
+    }
     code_ = absl::Substitute(kGlobalDecls, symbol_table.MustIntern(""),
                              symbol_table.MustIntern("/kythe/node/kind"),
                              symbol_table.MustIntern("anchor"),
                              symbol_table.MustIntern("/kythe/loc/start"),
-                             symbol_table.MustIntern("/kythe/loc/end"));
-  }
-  for (const auto& group : goal_groups) {
-    if (!LowerGoalGroup(symbol_table, group)) return false;
+                             symbol_table.MustIntern("/kythe/loc/end"),
+                             result_tyspec, result_spec);
+    absl::StrAppend(&code_, code);
   }
   absl::StrAppend(&code_, ".\n");
 #ifdef DEBUG_LOWERING

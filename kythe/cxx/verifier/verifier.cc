@@ -966,12 +966,17 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier*, const Inspection&)> inspect) {
+    std::function<bool(Verifier*, const Inspection&,
+                       std::optional<std::string_view>)>
+        inspect) {
   if (use_fast_solver_) {
-    auto result = RunSouffle(symbol_table_, parser_.groups(), facts_, anchors_,
-                             parser_.inspections(), [&](const Inspection& i) {
-                               return inspect(this, i);
-                             });
+    auto result = RunSouffle(
+        symbol_table_, parser_.groups(), facts_, anchors_,
+        parser_.inspections(),
+        [&](const Inspection& i, std::optional<std::string_view> o) {
+          return inspect(this, i, o);
+        },
+        [&](Symbol s) { return symbol_table_.PrettyText(s); });
     highest_goal_reached_ = result.highest_goal_reached;
     highest_group_reached_ = result.highest_group_reached;
     return result.success;
@@ -979,7 +984,11 @@ bool Verifier::VerifyAllGoals(
     if (!PrepareDatabase()) {
       return false;
     }
-    Solver solver(this, facts_, anchors_, inspect);
+    std::function<bool(Verifier*, const Inspection&)> wi =
+        [&](Verifier* v, const Inspection& i) {
+          return inspect(v, i, std::nullopt);
+        };
+    Solver solver(this, facts_, anchors_, wi);
     bool result = solver.Solve();
     highest_goal_reached_ = solver.highest_goal_reached();
     highest_group_reached_ = solver.highest_group_reached();
@@ -1321,6 +1330,16 @@ bool Verifier::PrepareDatabase() {
   }
   database_prepared_ = is_ok;
   return is_ok;
+}
+
+std::string Verifier::InspectionString(const Inspection& i) {
+  StringPrettyPrinter printer;
+  if (i.evar == nullptr) {
+    printer.Print("nil");
+  } else {
+    i.evar->Dump(symbol_table_, &printer);
+  }
+  return printer.str();
 }
 
 AstNode* Verifier::ConvertVName(const yy::location& loc,

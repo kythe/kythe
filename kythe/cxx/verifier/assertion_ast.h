@@ -376,6 +376,7 @@ using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
 
 /// An EVar whose assignment is interesting to display.
 struct Inspection {
+ public:
   enum class Kind {
     EXPLICIT,  ///< The user requested this inspection (with "?").
     IMPLICIT   ///< This inspection was added by default.
