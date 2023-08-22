@@ -17,12 +17,17 @@
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
 #include <array>
+#include <cstddef>
 #include <memory>
+#include <optional>
+#include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "interpreter/Engine.h"
+#include "kythe/cxx/verifier/assertion_ast.h"
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 #include "souffle/RamTypes.h"
 #include "souffle/io/IOSystem.h"
@@ -282,7 +287,7 @@ SouffleResult RunSouffle(
                  << i.label;
     }
   }
-  result.success = (actual.outputs.size() != 0);
+  result.success = (!actual.outputs.empty());
   return result;
 }
 }  // namespace kythe::verifier
