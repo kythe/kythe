@@ -1738,7 +1738,4 @@ void KytheGraphObserver::EmitMetaNodes() {
   tapp_body->set_post_text(">");
   EmitNode("tapp", tapp_signature);
 }
-
-void* KytheClaimToken::clazz_ = nullptr;
-
 }  // namespace kythe

@@ -66,6 +66,7 @@ ABSL_FLAG(bool, emit_anchors_on_builtins, true,
           "Emit anchors on builtin types like int and float.");
 
 namespace kythe {
+namespace {
 
 using ::clang::dyn_cast;
 using ::clang::dyn_cast_or_null;
@@ -77,9 +78,6 @@ using ::clang::SourceRange;
 using Claimability = GraphObserver::Claimability;
 using NodeId = GraphObserver::NodeId;
 
-void* NullGraphObserver::NullClaimToken::NullClaimTokenClass = nullptr;
-
-namespace {
 /// Decides whether `Tok` can be used to quote an identifier.
 bool TokenQuotesIdentifier(const clang::SourceManager& SM,
                            const clang::Token& Tok) {
