@@ -111,7 +111,7 @@ class GraphObserver {
     /// token.
     virtual std::string StampIdentity(const std::string& Identity) const = 0;
     /// \brief Returns a value unique to each implementation of `ClaimToken`.
-    virtual void* GetClass() const = 0;
+    virtual uintptr_t GetClass() const = 0;
     /// \brief Checks for equality.
     ///
     /// `ClaimTokens` are only equal if they have the same value for `GetClass`.
@@ -1150,7 +1150,7 @@ class NullGraphObserver : public GraphObserver {
     std::string StampIdentity(const std::string& Identity) const override {
       return Identity;
     }
-    void* GetClass() const override { return &NullClaimTokenClass; }
+    uintptr_t GetClass() const override { return kNullClaimTokenClass; }
     bool operator==(const ClaimToken& RHS) const override {
       return RHS.GetClass() == GetClass();
     }
@@ -1159,7 +1159,8 @@ class NullGraphObserver : public GraphObserver {
     }
 
    private:
-    static void* NullClaimTokenClass;
+    static inline const uintptr_t kNullClaimTokenClass =
+        reinterpret_cast<uintptr_t>(&kNullClaimTokenClass);
   };
 
   NodeId getNodeIdForBuiltinType(llvm::StringRef Spelling) const override {
