@@ -338,7 +338,9 @@ class GraphObserver {
                                  const clang::FileEntry* TargetFile) {}
 
   /// \param LO the language options in use.
-  virtual void setLangOptions(clang::LangOptions* LO) { LangOptions = LO; }
+  virtual void setLangOptions(const clang::LangOptions* LO) {
+    LangOptions = LO;
+  }
 
   /// \param PP The `Preprocessor` to use.
   virtual void setPreprocessor(clang::Preprocessor* PP) { Preprocessor = PP; }
@@ -1116,7 +1118,7 @@ class GraphObserver {
 
   clang::SourceManager* getSourceManager() const { return SourceManager; }
 
-  clang::LangOptions* getLangOptions() const { return LangOptions; }
+  const clang::LangOptions* getLangOptions() const { return LangOptions; }
 
   clang::Preprocessor* getPreprocessor() const { return Preprocessor; }
 
@@ -1135,7 +1137,7 @@ class GraphObserver {
 
  protected:
   clang::SourceManager* SourceManager = nullptr;
-  clang::LangOptions* LangOptions = nullptr;
+  const clang::LangOptions* LangOptions = nullptr;
   clang::Preprocessor* Preprocessor = nullptr;
   ProfilingCallback ReportProfileEvent = [](const char*, ProfilingEvent) {};
   HashRecorder* hash_recorder_ = nullptr;
