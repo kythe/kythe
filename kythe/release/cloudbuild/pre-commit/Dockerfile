@@ -55,15 +55,6 @@ RUN curl -s https://api.github.com/repos/google/google-java-format/releases/late
         && /bin/echo -e '#!/bin/sh\nexec java -jar /usr/bin/google-java-format.jar "$@"' >/usr/bin/google-java-format \
         && chmod +x /usr/bin/google-java-format
 
-# Fetch the rustup installer and install the nightly standard toolchain.
-# We can't rely on the default $HOME for these as they differ between container build
-# ($HOME=/root) and GCB ($HOME=/builder/home).
-ENV RUSTUP_HOME=/root/.rustup
-ENV CARGO_HOME=/root/.cargo
-RUN curl -o /tmp/rustup.sh --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs && \
-        /bin/bash /tmp/rustup.sh --default-toolchain nightly-2022-07-27 --profile default -y && \
-        rm /tmp/rustup.sh
-
 # Install go wrapper script
 ADD go /usr/local/bin/go
 ENV PATH=$PATH:/root/go/bin:$CARGO_HOME/bin

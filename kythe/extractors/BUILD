@@ -189,21 +189,6 @@ extractor_action(
     output = "$(ACTION_ID).protobuf.kzip",
 )
 
-extractor_action(
-    name = "extract_kzip_rust",
-    args = [
-        "--extra_action=$(EXTRA_ACTION_FILE)",
-        "--output=$(output $(ACTION_ID).rust.kzip)",
-        "--vnames_config=$(location //external:vnames_config)",
-    ],
-    data = ["//external:vnames_config"],
-    extractor = "@io_kythe//kythe/rust/extractor:extractor_script",
-    mnemonics = [
-        "Rustc",
-    ],
-    output = "$(ACTION_ID).rust.kzip",
-)
-
 bzl_library(
     name = "extractors_bzl",
     srcs = ["extractors.bzl"],
