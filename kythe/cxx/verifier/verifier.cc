@@ -22,6 +22,8 @@
 #include <unistd.h>
 
 #include <memory>
+#include <optional>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"

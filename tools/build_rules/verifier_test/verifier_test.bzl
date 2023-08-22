@@ -194,6 +194,7 @@ def extract(
         executable = extractor,
         arguments = [args],
         env = final_env,
+        toolchain = None,
     )
     return kzip
 
@@ -221,6 +222,7 @@ def _index_compilation_impl(ctx):
                 arguments = [args],
                 command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") > "${@:${#@}}"',
                 mnemonic = "IndexCompilation",
+                toolchain = None,
             )
 
     args = ctx.actions.args()

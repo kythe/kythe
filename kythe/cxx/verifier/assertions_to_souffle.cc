@@ -16,7 +16,12 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include <vector>
+
+#include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
+#include "kythe/cxx/verifier/assertion_ast.h"
+#include "kythe/cxx/verifier/pretty_printer.h"
 
 namespace kythe::verifier {
 namespace {

@@ -16,6 +16,10 @@
 
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
 #include "absl/log/log.h"
 #include "gtest/gtest.h"
 
