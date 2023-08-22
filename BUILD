@@ -1,7 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@rules_rust//proto:toolchain.bzl", "rust_proto_toolchain")
+load("@rules_rust//proto/protobuf:toolchain.bzl", "rust_proto_toolchain")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 package(default_visibility = ["//visibility:private"])
@@ -80,7 +80,7 @@ rust_proto_toolchain(
 toolchain(
     name = "rust_proto_toolchain",
     toolchain = ":rust_proto_toolchain_impl",
-    toolchain_type = "@rules_rust//proto:toolchain",
+    toolchain_type = "@rules_rust//proto/protobuf:toolchain_type",
 )
 
 refresh_compile_commands(
