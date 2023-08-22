@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/log/check.h"
 #include "absl/strings/strip.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"

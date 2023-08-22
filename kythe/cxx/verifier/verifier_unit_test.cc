@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include <optional>
 #include <regex>
+#include <string_view>
 
 #include "absl/log/initialize.h"
 #include "google/protobuf/text_format.h"
