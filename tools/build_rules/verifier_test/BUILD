@@ -49,12 +49,3 @@ bzl_library(
     name = "kzip_archive_bzl",
     srcs = ["kzip_archive.bzl"],
 )
-
-bzl_library(
-    name = "rust_indexer_test_bzl",
-    srcs = ["rust_indexer_test.bzl"],
-    deps = [
-        ":verifier_test_bzl",
-        "@bazel_skylib//lib:paths",
-    ],
-)

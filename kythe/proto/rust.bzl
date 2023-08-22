@@ -1,6 +1,6 @@
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_file")
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
-load("@rules_rust//proto:proto.bzl", _rust_proto_library = "rust_proto_library")
+load("@rules_rust//proto/protobuf:defs.bzl", _rust_proto_library = "rust_proto_library")
 load("@rules_rust//rust:rust_common.bzl", "CrateInfo")
 
 def _rust_proto_sources_impl(ctx):
