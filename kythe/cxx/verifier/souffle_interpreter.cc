@@ -18,8 +18,10 @@
 
 #include <array>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
