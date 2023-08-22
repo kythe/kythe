@@ -4,7 +4,6 @@
 # gazelle:ignore
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
-load("@rules_rust//proto:proto.bzl", "rust_proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_file")
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
@@ -63,11 +62,6 @@ go_proto_library(
 
 java_proto_library(
     name = "extra_actions_base_java_proto",
-    deps = [":extra_actions_base_proto"],
-)
-
-rust_proto_library(
-    name = "extra_actions_base_rust_proto",
     deps = [":extra_actions_base_proto"],
 )
 

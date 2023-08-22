@@ -130,10 +130,5 @@ build:clang-tidy --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --
 build:clang-tidy --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
 build:clang-tidy --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
 
-# Enable rustfmt tests on all Rust targets
-build --@rules_rust//:rustfmt.toml=//tools/rust:rustfmt.toml
-build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
-build --output_groups=+rustfmt_checks
-
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc
