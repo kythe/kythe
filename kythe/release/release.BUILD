@@ -149,16 +149,6 @@ filegroup(
     srcs = ["extractors/bazel_proto_extractor"],
 )
 
-filegroup(
-    name = "bazel_rust_extractor",
-    srcs = ["extractors/bazel_rust_extractor"],
-)
-
-filegroup(
-    name = "bazel_rust_extractor_script",
-    srcs = ["extractors/bazel_rust_extractor_script.sh"],
-)
-
 extractor_action(
     name = "extract_kzip_cxx",
     args = [
