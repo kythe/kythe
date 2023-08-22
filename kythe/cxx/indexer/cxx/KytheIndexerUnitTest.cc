@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <string>
