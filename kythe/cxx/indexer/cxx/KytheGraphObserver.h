@@ -64,9 +64,11 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
     return stamped;
   }
 
-  void* GetClass() const override { return &clazz_; }
+  uintptr_t GetClass() const final { return kTokenClass; }
 
-  static bool classof(const ClaimToken* t) { return t->GetClass() == &clazz_; }
+  static bool classof(const ClaimToken* t) {
+    return t->GetClass() == kTokenClass;
+  }
 
   /// \brief Marks a VNameRef as belonging to this token.
   /// This token must outlive the VNameRef.
@@ -125,7 +127,9 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   }
 
  private:
-  static void* clazz_;
+  static inline const uintptr_t kTokenClass =
+      reinterpret_cast<uintptr_t>(&kTokenClass);
+
   /// The prototypical VName to use for claimed objects.
   kythe::proto::VName vname_;
   bool rough_claimed_ = true;

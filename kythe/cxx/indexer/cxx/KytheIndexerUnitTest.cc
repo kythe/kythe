@@ -51,7 +51,7 @@ class AnchorMarkTest : public ::testing::Test {
   class EmptyToken : public GraphObserver::ClaimToken {
    public:
     std::string StampIdentity(const std::string&) const override { return ""; }
-    void* GetClass() const override { return nullptr; }
+    uintptr_t GetClass() const override { return 0; }
     bool operator==(const ClaimToken&) const override { return false; }
     bool operator!=(const ClaimToken&) const override { return true; }
   };
