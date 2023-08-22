@@ -200,6 +200,7 @@ cc_library(
     deps = [
         ":clang_range_finder",
         ":clang_utils",
+        ":decl_printer",
         ":graph_observer",
         ":indexed_parent_iterator",
         ":indexed_parent_map",
@@ -657,5 +658,39 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_library(
+    name = "decl_printer",
+    srcs = ["decl_printer.cc"],
+    hdrs = ["decl_printer.h"],
+    deps = [
+        ":graph_observer",
+        ":indexed_parent_iterator",
+        ":indexed_parent_map",
+        ":semantic_hash",
+        "@com_google_absl//absl/base:core_headers",
+        "@llvm-project//clang:ast",
+        "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_test(
+    name = "decl_printer_test",
+    srcs = ["decl_printer_test.cc"],
+    deps = [
+        ":decl_printer",
+        ":graph_observer",
+        ":indexed_parent_map",
+        ":semantic_hash",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/strings",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:ast_matchers",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:tooling",
     ],
 )
