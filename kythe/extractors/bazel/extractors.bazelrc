@@ -26,5 +26,4 @@ build --experimental_action_listener=@kythe_release//:extract_kzip_go
 build --experimental_action_listener=@kythe_release//:extract_kzip_java
 build --experimental_action_listener=@kythe_release//:extract_kzip_jvm
 build --experimental_action_listener=@kythe_release//:extract_kzip_protobuf
-build --experimental_action_listener=@kythe_release//:extract_kzip_rust
 build --experimental_action_listener=@kythe_release//:extract_kzip_typescript
