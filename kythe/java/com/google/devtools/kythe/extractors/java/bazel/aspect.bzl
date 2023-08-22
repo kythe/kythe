@@ -79,6 +79,7 @@ def _extract_java(target, ctx):
         inputs = [text_xa],
         arguments = [xa_args],
         executable = ctx.executable._write_extra_action,
+        toolchain = None,
     )
 
     extract_args = ctx.actions.args()
@@ -90,6 +91,7 @@ def _extract_java(target, ctx):
         executable = ctx.executable._java_bazel_extractor,
         arguments = [extract_args],
         tools = ctx.attr._java_runtime[java_common.JavaRuntimeInfo].files,
+        toolchain = None,
     )
 
     return kzip
