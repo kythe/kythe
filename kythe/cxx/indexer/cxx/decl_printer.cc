@@ -192,7 +192,9 @@ bool DeclPrinter::PrintDeclarationName(const clang::DeclarationName& name,
       [[fallthrough]];
     case DeclarationName::CXXConstructorName:
       if (const auto type = name.getCXXNameType(); !type.isNull()) {
-        return PrintNamedDecl(*type->getAsCXXRecordDecl(), out);
+        // UnresolvedUsingValueDecl (and potentially others) result in a
+        // non-null QualType, but a null CXXRecordDecl.
+        return PrintName(type->getAsCXXRecordDecl(), out);
       }
       break;
     // These will be given parent-relative identifiers.
