@@ -16,11 +16,17 @@
 
 #include "kythe/cxx/indexer/cxx/decl_printer.h"
 
+#include <cstdint>
+#include <optional>
 #include <string>
 
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclarationName.h"
+#include "clang/Basic/LangOptions.h"
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
@@ -71,7 +77,7 @@ void DeclPrinter::PrintQualifiedId(const RootTraversal& path,
       // extern "C" in #ifdef __cplusplus.
       continue;
     } else if (missing_separator &&
-               clang::isa_and_nonnull<clang::TemplateDecl>(context.decl)) {
+               clang::isa_and_present<clang::TemplateDecl>(context.decl)) {
       // We would rather name 'template <etc> class C' as C, not C:C, but
       // we also want to be able to give useful names to templates when they're
       // explicitly requested. Therefore:
