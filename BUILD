@@ -34,6 +34,9 @@ sh_test(
 # gazelle:exclude **/*_go_proto/
 # gazelle:exclude **/*_rust_proto/
 # gazelle:prefix kythe.io
+# gazelle:map_kind go_binary go_binary //tools:build_rules/shims.bzl
+# gazelle:map_kind go_library go_library //tools:build_rules/shims.bzl
+# gazelle:map_kind go_test go_test //tools:build_rules/shims.bzl
 gazelle(
     name = "gazelle",
     gazelle = "//tools/gazelle",
