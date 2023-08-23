@@ -22,7 +22,7 @@
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
-#include "indexed_parent_map.h"
+#include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 
 namespace kythe {
 
@@ -30,7 +30,7 @@ namespace kythe {
 class RootTraversal {
  public:
   // Type containing the values used during root traversal iterator.
-  struct value_type {
+  struct Context {
     // The current node in the traversal.
     clang::DynTypedNode node;
     // A pointer to the `clang::Decl` of the node, if any.
@@ -39,16 +39,30 @@ class RootTraversal {
     // This will be next current node.
     const IndexedParent* indexed_parent;
 
+    // Convenience accessor for the traversal index of this node
+    // within its parent, if any.
+    std::optional<size_t> parent_index() const {
+      if (indexed_parent == nullptr) {
+        return std::nullopt;
+      }
+      return indexed_parent->index;
+    }
+
     // The values are EqComparable and only care about node.
-    bool operator==(const value_type& rhs) const { return node == rhs.node; }
-    bool operator!=(const value_type& rhs) const { return !(*this == rhs); }
+    bool operator==(const Context& rhs) const { return node == rhs.node; }
+    bool operator!=(const Context& rhs) const { return !(*this == rhs); }
   };
+  using value_type = Context;
 
   // Root iteration state, modeling standard iterators in all their awkwardness.
-  class iterator : public std::iterator<std::forward_iterator_tag, value_type,
-                                        std::ptrdiff_t, const value_type*,
-                                        const value_type&> {
+  class iterator {
    public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Context;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const value_type*;
+    using reference = const value_type&;
+
     iterator() = default;
     reference operator*() const { return *current_; }
     pointer operator->() const { return &*current_; }

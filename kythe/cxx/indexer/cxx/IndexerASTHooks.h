@@ -786,11 +786,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// attaching a `childof` relationship.
   std::optional<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl* D);
 
-  /// \brief Attempts to add some representation of `ND` to `Ostream`.
-  /// \return true on success; false on failure.
-  bool AddNameToStream(llvm::raw_string_ostream& Ostream,
-                       const clang::NamedDecl* ND) const;
-
   /// \brief Assign `ND` (whose node ID is `TargetNode`) a USR if USRs are
   /// enabled.
   ///

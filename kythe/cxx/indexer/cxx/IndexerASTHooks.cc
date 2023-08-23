@@ -53,6 +53,7 @@
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
+#include "kythe/cxx/indexer/cxx/decl_printer.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
@@ -3737,71 +3738,6 @@ std::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
   return std::nullopt;
 }
 
-/// \brief Attempts to add some representation of `ND` to `Ostream`.
-/// \return true on success; false on failure.
-bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream& Ostream,
-                                        const clang::NamedDecl* ND) const {
-  // NamedDecls without names exist--e.g., unnamed namespaces.
-  auto Name = ND->getDeclName();
-  auto II = Name.getAsIdentifierInfo();
-  if (II && !II->getName().empty()) {
-    Ostream << II->getName();
-  } else {
-    if (isa<clang::NamespaceDecl>(ND)) {
-      // This is an anonymous namespace. We have two cases:
-      // If there is any file that is not a textual include (.inc,
-      //     or explicitly marked as such in a module) between the declaration
-      //     site and the main source file, then the namespace's identifier is
-      //     the shared anonymous namespace identifier "@#anon"
-      // Otherwise, it's the anonymous namespace identifier associated with the
-      //     main source file.
-      if (Observer.isMainSourceFileRelatedLocation(ND->getLocation())) {
-        Observer.AppendMainSourceFileIdentifierToStream(Ostream);
-      }
-      Ostream << "@#anon";
-    } else if (Name.getCXXOverloadedOperator() != clang::OO_None) {
-      switch (Name.getCXXOverloadedOperator()) {
-#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
-  case clang::OO_##Name:                                                      \
-    Ostream << "OO#" << #Name;                                                \
-    break;
-#include "clang/Basic/OperatorKinds.def"
-#undef OVERLOADED_OPERATOR
-        default:
-          return false;
-          break;
-      }
-    } else if (const auto* RD = dyn_cast<clang::RecordDecl>(ND)) {
-      Ostream << HashToString(Hash(RD));
-    } else if (const auto* ED = dyn_cast<clang::EnumDecl>(ND)) {
-      Ostream << HashToString(Hash(ED));
-    } else if (const auto* MD = dyn_cast<clang::CXXMethodDecl>(ND)) {
-      if (isa<clang::CXXConstructorDecl>(MD)) {
-        return AddNameToStream(Ostream, MD->getParent());
-      } else if (isa<clang::CXXDestructorDecl>(MD)) {
-        Ostream << "~";
-        // Append the parent name or a dependent index if the parent is
-        // nameless.
-        return AddNameToStream(Ostream, MD->getParent());
-      } else if (const auto* CD = dyn_cast<clang::CXXConversionDecl>(MD)) {
-        auto ToType = CD->getConversionType();
-        if (ToType.isNull()) {
-          return false;
-        }
-        ToType.print(Ostream,
-                     clang::PrintingPolicy(*Observer.getLangOptions()));
-        return true;
-      }
-    } else if (isObjCSelector(Name)) {
-      Ostream << HashToString(Hash(Name.getObjCSelector()));
-    } else {
-      // Other NamedDecls-sans-names are given parent-dependent names.
-      return false;
-    }
-  }
-  return true;
-}
-
 void IndexerASTVisitor::AssignUSR(const GraphObserver::NodeId& TargetNode,
                                   const clang::NamedDecl* ND) {
   if (options_.UsrByteSize <= 0 || Job->UnderneathImplicitTemplateInstantiation)
@@ -3815,88 +3751,10 @@ void IndexerASTVisitor::AssignUSR(const GraphObserver::NodeId& TargetNode,
 
 GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     const clang::Decl* Decl) {
-  GraphObserver::NameId Id;
-  Id.EqClass = BuildNameEqClassForDecl(Decl);
-  // Cons onto the end of the name instead of the beginning to optimize for
-  // prefix search.
-  llvm::raw_string_ostream Ostream(Id.Path);
-  bool MissingSeparator = false;
-  for (const auto& Current : RootTraversal(getAllParents(), Decl)) {
-    // TODO(zarko): Do we need to deal with nodes with no memoization data?
-    // According to ASTTypeTrates.h:205, only Stmt, Decl, Type and
-    // NestedNameSpecifier return memoization data. Can we claim an invariant
-    // that if we start at any Decl, we will always encounter nodes with
-    // memoization data?
-    const IndexedParent* IP = Current.indexed_parent;
-    if (IP == nullptr) {
-      // Make sure that we don't miss out on implicit nodes.
-      if (Current.decl && Current.decl->isImplicit()) {
-        if (const clang::NamedDecl* ND =
-                dyn_cast<clang::NamedDecl>(Current.decl)) {
-          if (!AddNameToStream(Ostream, ND)) {
-            if (const clang::DeclContext* DC = ND->getDeclContext()) {
-              if (DC->isFunctionOrMethod()) {
-                // Heroically try to come up with a disambiguating identifier,
-                // even when the IndexedParentVector is empty. This can happen
-                // in anonymous parameter declarations that belong to function
-                // prototypes.
-                const clang::FunctionDecl* FD =
-                    static_cast<const clang::FunctionDecl*>(DC);
-                int param_count = 0, found_param = -1;
-                for (const auto* P : FD->parameters()) {
-                  if (ND == P) {
-                    found_param = param_count;
-                    break;
-                  }
-                  ++param_count;
-                }
-                Ostream << "@#" << found_param;
-              }
-            }
-            Ostream << "@unknown@";
-          }
-        }
-      }
-      break;
-    }
-    // We would rather name 'template <etc> class C' as C, not C::C, but
-    // we also want to be able to give useful names to templates when they're
-    // explicitly requested. Therefore:
-    if (MissingSeparator && Current.decl &&
-        isa<clang::ClassTemplateDecl>(Current.decl)) {
-      continue;
-    }
-    if (MissingSeparator &&
-        !dyn_cast_or_null<clang::LinkageSpecDecl>(Current.decl)) {
-      Ostream << ":";
-    } else {
-      MissingSeparator = true;
-    }
-    if (Current.decl) {
-      // TODO(zarko): check for other specializations and emit accordingly
-      // Alternately, maybe it would be better to just always emit the hash?
-      // At any rate, a hash cache might be a good idea.
-      if (const clang::NamedDecl* ND =
-              dyn_cast<clang::NamedDecl>(Current.decl)) {
-        if (!AddNameToStream(Ostream, ND)) {
-          Ostream << IP->index;
-        }
-      } else if (const auto* LSD =
-                     dyn_cast<clang::LinkageSpecDecl>(Current.decl)) {
-        // Doing anything here breaks C headers that wrap extern "C" in
-        // #ifdef __cplusplus.
-      } else {
-        // If there's no good name for this Decl, name it after its child
-        // index wrt its parent node.
-        Ostream << IP->index;
-      }
-    } else if (auto* S = Current.node.get<clang::Stmt>()) {
-      // This is a Stmt--we can name it by its index wrt its parent node.
-      Ostream << IP->index;
-    }
-  }
-  Ostream.flush();
-  return Id;
+  return {
+      .Path = DeclPrinter(Observer, Hash, AllParents).QualifiedId(*Decl),
+      .EqClass = BuildNameEqClassForDecl(Decl),
+  };
 }
 
 std::optional<GraphObserver::NodeId>
