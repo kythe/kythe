@@ -308,7 +308,7 @@ TEST(DeclPrinterTest, UnresolvedUsingValueDecl) {
       unresolvedUsingValueDecl(), unit.ast_context());
 
   EXPECT_THAT(decl,
-              Pointee(HasQualifiedId(printer, MatchesRegex(R"(\d:Child)"))));
+              Pointee(HasQualifiedId(printer, MatchesRegex(R"([0-9]:Child)"))));
 }
 
 }  // namespace
