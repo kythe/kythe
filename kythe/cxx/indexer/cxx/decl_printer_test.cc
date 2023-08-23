@@ -291,5 +291,25 @@ TEST(DeclPrinterTest, AnonymousNamespace) {
   EXPECT_THAT(decl, Pointee(HasQualifiedId(printer, "foo:@#anon")));
 }
 
+TEST(DeclPrinterTest, UnresolvedUsingValueDecl) {
+  using ::clang::ast_matchers::unresolvedUsingValueDecl;
+  constexpr std::string_view code = R"c++(
+    template <typename>
+    struct Base {};
+    template <typename T>
+    struct Child : Base<T> {
+      using Base<T>::Base;
+    };
+  )c++";
+
+  ParsedUnit unit(buildASTFromCode(code, "input.cc"));
+  DeclPrinter printer = unit.CreateDeclPrinter();
+  const auto* decl = FindSingleDeclOrDie<clang::UnresolvedUsingValueDecl>(
+      unresolvedUsingValueDecl(), unit.ast_context());
+
+  EXPECT_THAT(decl,
+              Pointee(HasQualifiedId(printer, MatchesRegex(R"([0-9]:Child)"))));
+}
+
 }  // namespace
 }  // namespace kythe
