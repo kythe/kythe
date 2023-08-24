@@ -139,20 +139,6 @@ func TestNotStandardLib(t *testing.T) {
 	}
 }
 
-func TestForBuiltin(t *testing.T) {
-	const signature = "blah"
-	want := &spb.VName{
-		Corpus:    GolangCorpus,
-		Language:  Language,
-		Root:      "ref/spec",
-		Signature: signature,
-	}
-	got := ForBuiltin("blah")
-	if !proto.Equal(got, want) {
-		t.Errorf("ForBuiltin(%q): got %+v, want %+v", signature, got, want)
-	}
-}
-
 func TestForStandardLibrary(t *testing.T) {
 	tests := []struct {
 		input string

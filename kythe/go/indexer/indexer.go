@@ -486,7 +486,7 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	if base := pi.PackageVName[pkg]; base != nil {
 		vname = proto.Clone(base).(*spb.VName)
 	} else if pkg == nil {
-		return govname.ForBuiltin(sig)
+		return govname.Builtin(obj.Name())
 	} else {
 		// This is an indirect import, that is, a name imported but not
 		// mentioned explicitly by the package being indexed.

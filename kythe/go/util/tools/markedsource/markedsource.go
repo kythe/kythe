@@ -44,6 +44,7 @@ import (
 var (
 	rewrite = flag.Bool("rewrite", false, "Rewrite all code facts to be fully resolved")
 
+	renderSignature         = flag.Bool("render_signatures", false, "Whether to emit /kythe/code/rendered/signature facts (requires --rewrite)")
 	renderCallsiteSignature = flag.Bool("render_callsite_signatures", false, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
 	renderQualifiedName     = flag.Bool("render_qualified_names", false, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
 )
@@ -93,6 +94,14 @@ func main() {
 					exitOnErr(wr.PutProto(&spb.Entry{
 						Source:    e.Source,
 						FactName:  renderFactPrefix + "callsite_signature",
+						FactValue: []byte(val),
+					}))
+				}
+				if *renderSignature {
+					val := markedsource.RenderSignature(resolved, markedsource.PlaintextContent, nil)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "signature",
 						FactValue: []byte(val),
 					}))
 				}

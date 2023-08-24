@@ -145,13 +145,13 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM:
 		// TODO: handle param/default
 		params := r.params[ticket]
-		if int(ms.GetLookupIndex()) >= len(params) {
+		if int(ms.GetLookupIndex()) > len(params) {
 			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
 		}
 		return r.resolveParameters(ms, params[ms.GetLookupIndex():])
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM:
 		tparams := r.tparams[ticket]
-		if int(ms.GetLookupIndex()) >= len(tparams) {
+		if int(ms.GetLookupIndex()) > len(tparams) {
 			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
 		}
 		return r.resolveParameters(ms, tparams[ms.GetLookupIndex():])
