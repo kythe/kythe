@@ -119,16 +119,27 @@ build:prepush --verbose_failures --noshow_loading_progress --noshow_progress
 test:prepush --test_summary=terse --test_output=errors
 test:prepush --test_tag_filters=-manual,-broken,-arc-ignore,-docker
 
-# For clang tidy and related builds, include additional flags for use in compile_commands.json
-build:clang-tidy --features=-layering_check --copt=-Wno-everything --copt=-Wno-error
-build:clang-tidy --copt=-Wdeprecated-declarations --copt=-D_LIBCPP_DISABLE_DEPRECATION_WARNINGS
-build:clang-tidy --copt=-Wdeprecated-register --copt=-Wexpansion-to-defined
-build:clang-tidy --copt=-Wignored-attributes --copt=-Wnon-pod-varargs --copt=-Wshadow-field
-build:clang-tidy --copt=-Wshift-sign-overflow --copt=-Wtautological-undefined-compare
-build:clang-tidy --copt=-Wthread-safety-analysis --copt=-Wthread-safety-beta --copt=-Wthread-safety-reference
-build:clang-tidy --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --copt=-Wunused-const-variable
-build:clang-tidy --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
-build:clang-tidy --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
+# Include additional flags for use in compile_commands.json
+build:compile-commands --features=-layering_check --copt=-Wno-everything --copt=-Wno-error
+build:compile-commands --copt=-Wdeprecated-declarations --copt=-D_LIBCPP_DISABLE_DEPRECATION_WARNINGS
+build:compile-commands --copt=-Wdeprecated-register --copt=-Wexpansion-to-defined
+build:compile-commands --copt=-Wignored-attributes --copt=-Wnon-pod-varargs --copt=-Wshadow-field
+build:compile-commands --copt=-Wshift-sign-overflow --copt=-Wtautological-undefined-compare
+build:compile-commands --copt=-Wthread-safety-analysis --copt=-Wthread-safety-beta --copt=-Wthread-safety-reference
+build:compile-commands --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --copt=-Wunused-const-variable
+build:compile-commands --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
+build:compile-commands --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
+
+# Applies clang-tidy to targets without building them.
+build:clang-tidy --config=compile-commands
+build:clang-tidy --output_groups=report
+build:clang-tidy --aspects=@bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+build:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//:clang_tidy_config
+
+# Compiles and runs the in-tree clang-tidy over targets.
+build:clang-tidy-from-source --config=clang-tidy
+build:clang-tidy-from-source --noincompatible_disallow_empty_glob
+build:clang-tidy-from-source --@bazel_clang_tidy//:clang_tidy_executable=@llvm-project//clang-tools-extra/clang-tidy
 
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc
