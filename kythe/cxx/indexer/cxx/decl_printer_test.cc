@@ -17,16 +17,21 @@
 #include "kythe/cxx/indexer/cxx/decl_printer.h"
 
 #include <memory>
+#include <string_view>
+#include <utility>
 
+#include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/strings/strip.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Tooling/Tooling.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/indexer/cxx/GraphObserver.h"
 #include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 #include "kythe/cxx/indexer/cxx/semantic_hash.h"
 
@@ -41,17 +46,13 @@ using ::clang::ast_matchers::varDecl;
 using ::clang::tooling::buildASTFromCode;
 using ::testing::ElementsAre;
 using ::testing::MatchesRegex;
-using ::testing::Ne;
 using ::testing::Pointee;
-using ::testing::ResultOf;
-using ::testing::SizeIs;
 
 class ParsedUnit {
  public:
   explicit ParsedUnit(std::unique_ptr<clang::ASTUnit> unit)
       : unit_(ABSL_DIE_IF_NULL(std::move(unit))) {
-    observer_.setLangOptions(
-        const_cast<clang::LangOptions*>(&unit_->getLangOpts()));
+    observer_.setLangOptions(&unit_->getLangOpts());
   }
 
   DeclPrinter CreateDeclPrinter() const {
@@ -90,7 +91,7 @@ MATCHER_P2(HasQualifiedId, printer, matcher, "") {
 }
 
 TEST(DeclPrinterTest, LinkageChildNames) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     extern "C" {
     namespace bork {
     extern "C" {
@@ -109,7 +110,7 @@ TEST(DeclPrinterTest, LinkageChildNames) {
 }
 
 TEST(DeclPrinterTest, TypeofFunctionParams) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     void foo(int a, int b);
     extern typeof(foo) bar;
   )c++";
@@ -124,7 +125,7 @@ TEST(DeclPrinterTest, TypeofFunctionParams) {
 }
 
 TEST(DeclPrinterTest, UnnamedFunctionParams) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     void foo(int, int);
   )c++";
   ParsedUnit unit(buildASTFromCode(code, "input.cc"));
@@ -138,7 +139,7 @@ TEST(DeclPrinterTest, UnnamedFunctionParams) {
 }
 
 TEST(DeclPrinterTest, NamedFunctionParams) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     void foo(int a, int b);
   )c++";
   ParsedUnit unit(buildASTFromCode(code, "input.cc"));
@@ -152,7 +153,7 @@ TEST(DeclPrinterTest, NamedFunctionParams) {
 }
 
 TEST(DeclPrinterTest, DirectClassTemplate) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     namespace ns {
     template <typename>
     class Foo {};
@@ -167,7 +168,7 @@ TEST(DeclPrinterTest, DirectClassTemplate) {
 }
 
 TEST(DeclPrinterTest, ClassTemplateAncestor) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     namespace ns {
     template <typename>
     class Foo {
@@ -184,7 +185,7 @@ TEST(DeclPrinterTest, ClassTemplateAncestor) {
 }
 
 TEST(DeclPrinterTest, LambdaAncestor) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     auto a = [] { int foo; };
   )c++";
 
@@ -199,7 +200,7 @@ TEST(DeclPrinterTest, LambdaAncestor) {
 }
 
 TEST(DeclPrinterTest, AnonymousStruct) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     struct Outer {
       struct {
         char foo;
@@ -228,7 +229,7 @@ TEST(DeclPrinterTest, AnonymousStruct) {
 // Disabled because the compiler-generated class for lambdas
 // presently all have the same hash.
 TEST(DeclPrinterTest, DISABLED_DistinctLambdaTypes) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     void wrapper() {
       [] { int foo; }();
       [] { int bar; }();
@@ -251,7 +252,7 @@ TEST(DeclPrinterTest, DISABLED_DistinctLambdaTypes) {
 
 TEST(DeclPrinterTest, UnnamedDecl) {
   using ::clang::ast_matchers::staticAssertDecl;
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     template <bool valid>
     void wrapper() {
       static_assert(valid, "");
@@ -273,7 +274,7 @@ TEST(DeclPrinterTest, UnnamedDecl) {
 }
 
 TEST(DeclPrinterTest, AnonymousNamespace) {
-  constexpr absl::string_view code = R"c++(
+  constexpr std::string_view code = R"c++(
     namespace {
     void foo();
     }
@@ -287,6 +288,26 @@ TEST(DeclPrinterTest, AnonymousNamespace) {
   // The observer is responsible for the "isMainSourceFile" check and
   // adding the corresponding chunk to the stream, so will be empty here.
   EXPECT_THAT(decl, Pointee(HasQualifiedId(printer, "foo:@#anon")));
+}
+
+TEST(DeclPrinterTest, UnresolvedUsingValueDecl) {
+  using ::clang::ast_matchers::unresolvedUsingValueDecl;
+  constexpr std::string_view code = R"c++(
+    template <typename>
+    struct Base {};
+    template <typename T>
+    struct Child : Base<T> {
+      using Base<T>::Base;
+    };
+  )c++";
+
+  ParsedUnit unit(buildASTFromCode(code, "input.cc"));
+  DeclPrinter printer = unit.CreateDeclPrinter();
+  const auto* decl = FindSingleDeclOrDie<clang::UnresolvedUsingValueDecl>(
+      unresolvedUsingValueDecl(), unit.ast_context());
+
+  EXPECT_THAT(decl,
+              Pointee(HasQualifiedId(printer, MatchesRegex(R"([0-9]:Child)"))));
 }
 
 }  // namespace

@@ -128,3 +128,15 @@ http_archive(
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
 
 aspect_bazel_lib_dependencies()
+
+# clang-tidy aspect wrapper
+load(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+git_repository(
+    name = "bazel_clang_tidy",
+    commit = "133d89a6069ce253a92d32a93fdb7db9ef100e9d",
+    remote = "https://github.com/erenon/bazel_clang_tidy.git",
+)

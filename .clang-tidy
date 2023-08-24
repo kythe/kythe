@@ -69,6 +69,7 @@ Checks: >
   google-runtime-int,
   google-runtime-memset,
   google-runtime-operator,
+  misc-include-cleaner,
   misc-definitions-in-headers,
   misc-static-assert,
   misc-unconventional-assign-operator,
@@ -106,7 +107,6 @@ Checks: >
 
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
-AnalyzeTemporaryDtors: false
 FormatStyle:     file
 CheckOptions:
   - key:             llvm-else-after-return.WarnOnConditionVariables
