@@ -629,6 +629,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	e.writeDef(spec, target)
 	e.writeDoc(specComment(spec, stack), target)
 
+	if e.pi.ImportPath == "builtin" {
+		// Ignore everything but defs/docs in special builtin package
+		return
+	}
+
 	mapFields(spec.TypeParams, func(i int, id *ast.Ident) {
 		v := e.writeBinding(id, nodes.TVar, nil)
 		e.writeEdge(target, v, edges.TParamIndex(i))
@@ -1207,6 +1212,11 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		return nil
 	}
 	target := e.pi.ObjectVName(obj)
+	if e.pi.ImportPath == "builtin" && parent != nil && parent.GetSignature() == "package" {
+		// Special-case top-level builtin bindings: https://pkg.go.dev/builtin
+		target = govname.Builtin(id.String())
+		kind = "tbuiltin"
+	}
 	if kind != "" {
 		e.writeFact(target, facts.NodeKind, kind)
 	}
