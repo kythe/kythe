@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/indexer/cxx/decl_printer.h"
 
-#include <cstdint>
+#include <cstddef>
 #include <optional>
 #include <string>
 
@@ -72,12 +72,12 @@ void DeclPrinter::PrintQualifiedId(const RootTraversal& path,
                                    llvm::raw_ostream& out) const {
   bool missing_separator = false;
   for (const auto& context : path) {
-    if (clang::isa_and_present<clang::LinkageSpecDecl>(context.decl)) {
+    if (llvm::isa_and_present<clang::LinkageSpecDecl>(context.decl)) {
       // Ignore linkage specification blocks to support C headers that wrap
       // extern "C" in #ifdef __cplusplus.
       continue;
     } else if (missing_separator &&
-               clang::isa_and_present<clang::TemplateDecl>(context.decl)) {
+               llvm::isa_and_present<clang::TemplateDecl>(context.decl)) {
       // We would rather name 'template <etc> class C' as C, not C:C, but
       // we also want to be able to give useful names to templates when they're
       // explicitly requested. Therefore:
@@ -92,7 +92,7 @@ void DeclPrinter::PrintQualifiedId(const RootTraversal& path,
     const std::optional<size_t> index = context.parent_index();
     if (!index.has_value()) {
       if (const auto* named =
-              clang::dyn_cast_or_null<clang::NamedDecl>(context.decl);
+              llvm::dyn_cast_or_null<clang::NamedDecl>(context.decl);
           // Make sure that we don't miss out on implicit nodes.
           named != nullptr && named->isImplicit()) {
         if (!PrintNamedDecl(*named, out)) {
@@ -101,7 +101,7 @@ void DeclPrinter::PrintQualifiedId(const RootTraversal& path,
           // in anonymous parameter declarations that belong to function
           // prototypes.
           const auto* parent =
-              clang::dyn_cast<clang::FunctionDecl>(named->getDeclContext());
+              llvm::dyn_cast<clang::FunctionDecl>(named->getDeclContext());
           if (parent != nullptr) {
             out << FindParameterParentIndex(*parent, *named) << ":";
             // Resume printing parent context from our DeclContext rather than
@@ -135,7 +135,7 @@ void DeclPrinter::PrintQualifiedId(const RootTraversal& path,
 
 bool DeclPrinter::PrintName(const clang::Decl* decl,
                             llvm::raw_ostream& out) const {
-  if (const auto* named = clang::dyn_cast_or_null<clang::NamedDecl>(decl)) {
+  if (const auto* named = llvm::dyn_cast_or_null<clang::NamedDecl>(decl)) {
     return PrintNamedDecl(*named, out);
   }
   return false;
@@ -148,7 +148,7 @@ bool DeclPrinter::PrintNamedDecl(const clang::NamedDecl& decl,
   }
 
   // NamedDecls with empty names, e.g. unnamed namespaces, enums, structs, etc.
-  if (clang::isa<clang::NamespaceDecl>(decl)) {
+  if (llvm::isa<clang::NamespaceDecl>(decl)) {
     // This is an anonymous namespace. We have two cases:
     // If there is any file that is not a textual include (.inc,
     //     or explicitly marked as such in a module) between the declaration
@@ -161,10 +161,10 @@ bool DeclPrinter::PrintNamedDecl(const clang::NamedDecl& decl,
     }
     out << "@#anon";
     return true;
-  } else if (const auto* recdecl = clang::dyn_cast<clang::RecordDecl>(&decl)) {
+  } else if (const auto* recdecl = llvm::dyn_cast<clang::RecordDecl>(&decl)) {
     out << HashToString(hasher().Hash(recdecl));
     return true;
-  } else if (const auto* enumdecl = clang::dyn_cast<clang::EnumDecl>(&decl)) {
+  } else if (const auto* enumdecl = llvm::dyn_cast<clang::EnumDecl>(&decl)) {
     out << HashToString(hasher().Hash(enumdecl));
     return true;
   }

@@ -13,6 +13,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "clang_tidy_config",
+    srcs = [".clang-tidy"],
+    visibility = ["//visibility:public"],
+)
+
 sh_test(
     name = "check_bazel_versions",
     srcs = ["//tools:check_bazel_versions.sh"],
@@ -93,7 +99,7 @@ refresh_compile_commands(
     # If clangd is complaining about missing headers (and all that goes along with it),
     # and you're using remote builds, rebuild with --remote_download_outputs=all
     # With layering_check enabled, clangd warns about missing dependencies on standard library headers.
-    targets = {"//kythe/cxx/...": "--config=clang-tidy"},
+    targets = {"//kythe/cxx/...": "--config=compile-commands"},
 )
 
 load("@npm//:defs.bzl", "npm_link_all_packages")
