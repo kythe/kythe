@@ -16,14 +16,24 @@
 
 #include "file_vname_generator.h"
 
+#include <algorithm>
+#include <memory>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
+#include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "re2/re2.h"
+#include "re2/stringpiece.h"
 
 namespace kythe {
 namespace {

@@ -16,10 +16,17 @@
 
 #include "kythe/cxx/common/kythe_metadata_file.h"
 
+#include <cctype>
+#include <cstddef>
+#include <memory>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/log/log.h"
 #include "absl/strings/escaping.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/json_proto.h"

@@ -19,6 +19,7 @@
 #include <libmemcached-1.0/memcached.h>
 
 #include <iostream>
+#include <string>
 
 namespace kythe {
 

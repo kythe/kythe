@@ -16,11 +16,15 @@
 
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
-#include <algorithm>
-#include <sstream>
+#include <cassert>
+#include <cstddef>
+#include <cstdio>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "google/protobuf/io/coded_stream.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 

@@ -16,24 +16,33 @@
 
 #include "kythe/cxx/common/path_utils.h"
 
-#include <stdlib.h>
 #include <unistd.h>
 
+#include <cerrno>
+#include <cstring>
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/synchronization/mutex.h"
 #include "kythe/cxx/common/status.h"
 
 namespace kythe {
 namespace {
+
+struct FreeDeleter {
+  void operator()(void* pointer) const { free(pointer); }
+};
 
 // Predicate used in CleanPath for skipping empty components
 // and components consistening of a single '.'.
@@ -319,12 +328,12 @@ absl::StatusOr<std::string> RealPath(absl::string_view path) {
   // checking whether or not it is null-terminated is potentially UB.
   std::string zpath(path);
 
-  std::string result(PATH_MAX, '\0');
-  if (::realpath(zpath.c_str(), &result.front()) == nullptr) {
+  std::unique_ptr<char, FreeDeleter> resolved(
+      ::realpath(zpath.c_str(), nullptr));
+  if (resolved == nullptr) {
     return ErrnoToStatus(errno);
   }
-  result.resize(::strlen(result.c_str()));
-  return result;
+  return std::string(resolved.get());
 }
 
 }  // namespace kythe

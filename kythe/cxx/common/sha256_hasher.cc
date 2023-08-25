@@ -21,10 +21,9 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <utility>
 
 #include "absl/strings/escaping.h"
-#include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 
 namespace kythe {
 Sha256Hasher::Sha256Hasher() { ::SHA256_Init(&context_); }
