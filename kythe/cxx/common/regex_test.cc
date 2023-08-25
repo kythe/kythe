@@ -15,6 +15,8 @@
  */
 #include "kythe/cxx/common/regex.h"
 
+#include <utility>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "re2/re2.h"

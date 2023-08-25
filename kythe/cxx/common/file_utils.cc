@@ -16,6 +16,9 @@
 
 #include "file_utils.h"
 
+#include <cstdio>
+#include <string>
+
 #include "absl/log/check.h"
 
 namespace kythe {

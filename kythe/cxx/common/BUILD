@@ -13,6 +13,7 @@ cc_library(
     hdrs = ["re2_flag.h"],
     deps = [
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -402,6 +403,7 @@ cc_test(
         "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
+        ":index_reader",
         ":kzip_reader",
         ":libzip/error",
         ":testutil",
@@ -412,6 +414,7 @@ cc_test(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@org_libzip//:zip",
     ],
 )
 
@@ -498,6 +501,7 @@ cc_test(
         ":kzip_reader",
         ":kzip_writer_c_api",
         ":libzip/error",
+        "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest",
         "//third_party:gtest_main",

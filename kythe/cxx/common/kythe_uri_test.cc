@@ -16,11 +16,13 @@
 
 #include "kythe/cxx/common/kythe_uri.h"
 
+#include <string>
+
 #include "absl/log/initialize.h"
-#include "absl/log/log.h"
 #include "gmock/gmock.h"
+#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/vname_ordering.h"
+#include "kythe/proto/storage.pb.h"
 #include "protobuf-matchers/protocol-buffer-matchers.h"
 
 namespace kythe {
@@ -67,7 +69,7 @@ struct MakeURI {
 
   URI uri() const { return URI(v_name()); }
 
-  operator URI() const { return URI(v_name()); }
+  operator URI() const { return URI(v_name()); }  // NOLINT
 };
 
 TEST(KytheUri, Parse) {

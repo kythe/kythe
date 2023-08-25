@@ -15,9 +15,8 @@
  */
 #include "kythe/cxx/common/testutil.h"
 
-#include <unistd.h>
-
 #include <cstdlib>
+#include <string>
 
 #include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"

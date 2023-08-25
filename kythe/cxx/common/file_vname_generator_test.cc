@@ -16,8 +16,11 @@
 
 #include "kythe/cxx/common/file_vname_generator.h"
 
+#include <string>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "kythe/proto/storage.pb.h"
 #include "protobuf-matchers/protocol-buffer-matchers.h"
 
 extern const char kTestFile[];

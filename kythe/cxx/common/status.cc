@@ -18,6 +18,8 @@
 
 #include <errno.h>
 
+#include <cstring>
+
 #include "absl/status/status.h"
 
 namespace kythe {

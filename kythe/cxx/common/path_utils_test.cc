@@ -17,10 +17,14 @@
 #include "kythe/cxx/common/path_utils.h"
 
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <cerrno>
 #include <string>
 #include <system_error>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"

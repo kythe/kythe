@@ -16,15 +16,17 @@
 
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 
-#include <sstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "google/protobuf/io/zero_copy_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/common/schema/edges.h"
-#include "kythe/cxx/common/vname_ordering.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 proto::VName ProtobufMetadataSupport::VNameForAnnotation(

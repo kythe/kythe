@@ -16,9 +16,13 @@
 
 #include "json_proto.h"
 
+#include <string>
+
 #include "absl/log/initialize.h"
+#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace {
