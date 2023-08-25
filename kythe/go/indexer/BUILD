@@ -66,7 +66,9 @@ go_indexer_test(
     name = "builtin_test",
     srcs = ["testdata/builtin.go"],
     extra_goals = ["testdata/builtin.go"],
+    has_marked_source = True,
     import_path = "builtin",
+    resolve_code_facts = True,
 )
 
 go_indexer_test(
