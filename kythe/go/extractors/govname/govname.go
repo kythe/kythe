@@ -185,16 +185,6 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	return v
 }
 
-// ForBuiltin returns a VName for a Go built-in with the given signature.
-func ForBuiltin(signature string) *spb.VName {
-	return &spb.VName{
-		Corpus:    GolangCorpus,
-		Language:  Language,
-		Root:      "ref/spec",
-		Signature: signature,
-	}
-}
-
 // ForStandardLibrary returns a VName for a standard library package with the
 // given import path.
 func ForStandardLibrary(importPath string) *spb.VName {

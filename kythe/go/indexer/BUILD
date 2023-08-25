@@ -63,6 +63,15 @@ bzl_library(
 )
 
 go_indexer_test(
+    name = "builtin_test",
+    srcs = ["testdata/builtin.go"],
+    extra_goals = ["testdata/builtin.go"],
+    has_marked_source = True,
+    import_path = "builtin",
+    resolve_code_facts = True,
+)
+
+go_indexer_test(
     name = "genericstruct_test",
     srcs = ["testdata/generics/genericstruct.go"],
     has_marked_source = True,
@@ -202,6 +211,7 @@ go_indexer_test(
     has_marked_source = True,
     import_path = "rendered",
     resolve_code_facts = True,
+    deps = [":builtin_test"],
 )
 
 go_indexer_test(
