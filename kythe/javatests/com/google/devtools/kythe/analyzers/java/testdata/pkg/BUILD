@@ -249,6 +249,17 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "rendered_code_tests",
+    size = "small",
+    srcs = ["RenderedCode.java"],
+    resolve_code_facts = True,
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+    ],
+)
+
+java_verifier_test(
     name = "methods_tests",
     size = "small",
     srcs = ["Methods.java"],
