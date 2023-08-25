@@ -211,6 +211,7 @@ go_indexer_test(
     has_marked_source = True,
     import_path = "rendered",
     resolve_code_facts = True,
+    deps = [":builtin_test"],
 )
 
 go_indexer_test(

@@ -80,6 +80,9 @@ type EmitOptions struct {
 	// over function identifiers (or the legacy behavior of over the entire
 	// callsite).
 	EmitRefCallOverIdentifier bool
+
+	// Verbose determines whether verbose logging is enabled.
+	Verbose bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -130,6 +133,13 @@ func (e *EmitOptions) docURL(pi *PackageInfo) string {
 	u := *e.DocBase
 	u.Path = path.Join(u.Path, pi.ImportPath)
 	return u.String()
+}
+
+func (e *EmitOptions) verbose() bool {
+	if e == nil {
+		return false
+	}
+	return e.Verbose
 }
 
 // An impl records that a type A implements an interface B.
@@ -210,8 +220,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	e.emitSatisfactions()
 
 	// TODO(fromberger): Add diagnostics for type-checker errors.
-	for _, err := range pi.Errors {
-		log.Warningf("Type resolution error: %v", err)
+	if opts.verbose() {
+		for _, err := range pi.Errors {
+			log.Warningf("Type resolution error: %v", err)
+		}
 	}
 	return e.firstErr
 }
