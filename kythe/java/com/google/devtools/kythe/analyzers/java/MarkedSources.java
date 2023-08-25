@@ -132,7 +132,7 @@ public final class MarkedSources {
       @Nullable Iterable<MarkedSource> postChildren,
       @Nullable MarkedSource markedType) {
     MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
-    if (markedType != null) {
+    if (markedType != null && sym.getKind() != ElementKind.CONSTRUCTOR) {
       markedSource.addChild(markedType);
     }
     String identToken = buildContext(markedSource.addChildBuilder(), sym, signatureGenerator);
@@ -141,7 +141,7 @@ public final class MarkedSources {
         markedSource
             .addChildBuilder()
             .setKind(MarkedSource.Kind.IDENTIFIER)
-            .setPreText("<" + sym.getSimpleName() + ">");
+            .setPreText("" + sym.getSimpleName());
         break;
       case CONSTRUCTOR:
       case METHOD:
@@ -159,6 +159,19 @@ public final class MarkedSources {
             .setPreText("(")
             .setPostChildText(", ")
             .setPostText(")");
+        break;
+      case ENUM:
+      case CLASS:
+      case INTERFACE:
+        markedSource.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
+        if (!sym.getTypeParameters().isEmpty()) {
+          markedSource
+              .addChildBuilder()
+              .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_TPARAM)
+              .setPreText("<")
+              .setPostText(">")
+              .setPostChildText(", ");
+        }
         break;
       default:
         markedSource.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);

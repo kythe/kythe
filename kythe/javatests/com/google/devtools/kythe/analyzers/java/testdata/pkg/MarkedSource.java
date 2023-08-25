@@ -65,12 +65,9 @@ public class MarkedSource {
   //- Ctor typed CType
   //- CType param.1 Class
   //- Ctor code CtorTypeCxtId
-  //- CtorTypeCxtId child.0 CtorType
-  //- CtorTypeCxtId child.1 CtorCxt
-  //- CtorTypeCxtId child.2 CtorTok
-  //- CtorTypeCxtId child.3 CtorParams
-  //- CtorType child.0 CtorVoid
-  //- CtorVoid.pre_text "void"
+  //- CtorTypeCxtId child.0 CtorCxt
+  //- CtorTypeCxtId child.1 CtorTok
+  //- CtorTypeCxtId child.2 CtorParams
   //- CtorCxt child.1 CtorCxtClass
   //- CtorCxtClass.pre_text "MarkedSource"
   //- CtorTok.pre_text "MarkedSource"
@@ -230,7 +227,9 @@ public class MarkedSource {
 
   // Ensure documentation is emitted for nodes referenced before their definitions.
   //- @Inner ref InnerClass
-  static Inner refClassBeforeDef() { return null; }
+  static Inner refClassBeforeDef() {
+    return null;
+  }
 
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
@@ -311,51 +310,54 @@ public class MarkedSource {
   //- TAppParams.lookup_index "1"
   static InnerStatic<MarkedSource> staticTApplyVar;
 
-  Object o = new Object() {
-    //- @field defines/binding AnonField
-    //- AnonField childof AnonClass
-    //- AnonClass code AnonId
-    //- AnonId child.0 AnonCxt
-    //- AnonCxt.kind "CONTEXT"
-    //- AnonCxt child.0 PkgToken
-    //- PkgToken.pre_text pkg
-    //- AnonCxt child.1 MksToken
-    //- MksToken.pre_text "MarkedSource"
-    //- AnonId child.1 AnonToken
-    //- AnonToken.kind "IDENTIFIER"
-    //- AnonToken.pre_text "(anon 1)"
-    int field;
-  };
+  Object o =
+      new Object() {
+        //- @field defines/binding AnonField
+        //- AnonField childof AnonClass
+        //- AnonClass code AnonId
+        //- AnonId child.0 AnonCxt
+        //- AnonCxt.kind "CONTEXT"
+        //- AnonCxt child.0 PkgToken
+        //- PkgToken.pre_text pkg
+        //- AnonCxt child.1 MksToken
+        //- MksToken.pre_text "MarkedSource"
+        //- AnonId child.1 AnonToken
+        //- AnonToken.kind "IDENTIFIER"
+        //- AnonToken.pre_text "(anon 1)"
+        int field;
+      };
 
   void methodWithInnerAnon() {
-    Object o = new Object() {
-      //- @field defines/binding IAField
-      //- IAField code CIAField
-      //- CIAField child.1 CIACxt
-      //- CIACxt child.0 CIAPkg
-      //- CIACxt child.1 CIAMs
-      //- CIACxt child.2 CIAMethod
-      //- CIACxt child.3 CIAAnon
-      //- !{CIACxt child.4 _}
-      //- CIAPkg.pre_text "pkg"
-      //- CIAMs.pre_text "MarkedSource"
-      //- CIAMethod.pre_text "methodWithInnerAnon"
-      //- CIAAnon.pre_text "(anon 2)"
-      int field;
-    };
+    Object o =
+        new Object() {
+          //- @field defines/binding IAField
+          //- IAField code CIAField
+          //- CIAField child.1 CIACxt
+          //- CIACxt child.0 CIAPkg
+          //- CIACxt child.1 CIAMs
+          //- CIACxt child.2 CIAMethod
+          //- CIACxt child.3 CIAAnon
+          //- !{CIACxt child.4 _}
+          //- CIAPkg.pre_text "pkg"
+          //- CIAMs.pre_text "MarkedSource"
+          //- CIAMethod.pre_text "methodWithInnerAnon"
+          //- CIAAnon.pre_text "(anon 2)"
+          int field;
+        };
   }
 
   public static class InnerAnon {
-    Object o = new Object() {
-      //- @field defines/binding IIAField
-      //- IIAField code CIIAField
-      //- CIIAField child.1 CIIACxt
-      //- CIIACxt child.2 CIIAInnerCls
-      //- CIIACxt child.3 CIIAInnerAnon
-      //- CIIAInnerCls.pre_text "InnerAnon"
-      //- CIIAInnerAnon.pre_text "(anon 1)"
-      int field;
-    };
+    Object o =
+        new Object() {
+          //- @field defines/binding IIAField
+          //- IIAField code CIIAField
+          //- CIIAField child.1 CIIACxt
+          //- CIIACxt child.2 CIIAInnerCls
+          //- CIIACxt child.3 CIIAInnerAnon
+          //- CIIAInnerCls.pre_text "InnerAnon"
+          //- CIIAInnerAnon.pre_text "(anon 1)"
+          int field;
+        };
   }
 
   //- @func defines/binding Func
@@ -417,7 +419,7 @@ public class MarkedSource {
   //- TVarContext.kind "CONTEXT"
   //- TVarCode child.1 TVarIdent
   //- TVarIdent.kind "IDENTIFIER"
-  //- TVarIdent.pre_text "<T>"
+  //- TVarIdent.pre_text "T"
   static class Generic<T> {}
 
   //- Void code VoidId
