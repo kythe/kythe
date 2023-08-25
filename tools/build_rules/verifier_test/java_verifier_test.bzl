@@ -150,6 +150,7 @@ def java_verifier_test(
         timeout = None,
         tags = [],
         extractor = None,
+        resolve_code_facts = False,
         extractor_opts = _default_java_extractor_opts,
         indexer_opts = ["--verbose"],
         verifier_opts = ["--ignore_dups"],
@@ -227,9 +228,12 @@ def java_verifier_test(
         size = size,
         timeout = timeout,
         srcs = goals,
-        opts = verifier_opts,
+        opts = verifier_opts + [
+            "--goal_regex='\\s*//\\s*-(.*)'",
+        ],
         tags = tags,
         visibility = visibility,
+        resolve_code_facts = resolve_code_facts,
         deps = [entries] + [dep + "_entries" for dep in verifier_deps],
     )
 
