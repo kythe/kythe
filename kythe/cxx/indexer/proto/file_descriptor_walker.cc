@@ -34,10 +34,10 @@
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 #include "kythe/proto/generated_message_info.pb.h"
 #include "re2/re2.h"
-#include "re2/stringpiece.h"
 
 namespace kythe {
 namespace lang_proto {
+namespace {
 
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::DescriptorProto;
@@ -55,14 +55,6 @@ using ::google::protobuf::ServiceDescriptor;
 using ::google::protobuf::ServiceDescriptorProto;
 using ::google::protobuf::SourceCodeInfo;
 using ::kythe::proto::VName;
-
-namespace {
-
-// TODO(justbuchanan): remove all re2::StringPiece code once re2 is compatible
-// with absl::string_view.
-re2::StringPiece ToStringPiece(absl::string_view v) {
-  return {v.data(), v.size()};
-}
 
 // Pushes a value onto a proto location lookup path, and automatically
 // removes it when destroyed.  See the documentation for
@@ -148,8 +140,7 @@ Location FileDescriptorWalker::LocationOfLeadingComments(
   comment_location.end = entity_location.begin - line_offset_of_entity - 1;
   int next_line_number = entity_start_line - 1;
   absl::string_view bottom_line = line_index_.GetLine(next_line_number);
-  while (
-      RE2::FullMatch(ToStringPiece(bottom_line), R"((\s*\*/?\s*)|(\s*//\n))")) {
+  while (RE2::FullMatch(bottom_line, R"((\s*\*/?\s*)|(\s*//\n))")) {
     comment_location.begin -= bottom_line.size();
     --next_line_number;
     bottom_line = line_index_.GetLine(next_line_number);
@@ -164,7 +155,7 @@ Location FileDescriptorWalker::LocationOfLeadingComments(
     std::string comment_re =
         absl::StrCat(R"(\s*(?://|/?\*\s*))", RE2::QuoteMeta(comment_line),
                      R"(\s*(?:\*/)?\s*)");
-    if (!RE2::FullMatch(ToStringPiece(actual_line), comment_re)) {
+    if (!RE2::FullMatch(actual_line, comment_re)) {
       LOG(ERROR) << "Leading comment line mismatch: [" << comment_line
                  << "] vs. [" << actual_line << "]"
                  << "(line " << next_line_number << ")";
@@ -195,14 +186,13 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
   int line_number = entity_start_line;
   for (; line_number <= line_index_.line_count(); ++line_number) {
     absl::string_view entity_line = line_index_.GetLine(line_number);
-    re2::StringPiece comment_start;
-    if (RE2::PartialMatch(ToStringPiece(entity_line), R"((\s*(?:/\*|//)))",
-                          &comment_start)) {
+    absl::string_view comment_start;
+    if (RE2::PartialMatch(entity_line, R"((\s*(?:/\*|//)))", &comment_start)) {
       comment_location.begin = line_index_.ComputeByteOffset(line_number, 0) +
                                (comment_start.data() - entity_line.data());
       comment_location.end =
           line_index_.ComputeByteOffset(line_number + 1, 0) - 1;
-      if (RE2::PartialMatch(ToStringPiece(entity_line), top_comment_line_re)) {
+      if (RE2::PartialMatch(entity_line, top_comment_line_re)) {
         comment_lines.erase(comment_lines.begin());
       }
       break;
@@ -218,7 +208,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
     std::string comment_re =
         absl::StrCat(R"(\s*(?://|/?\*\s*))", RE2::QuoteMeta(comment_line),
                      R"(\s*(?:\*/)?\s*)");
-    if (!RE2::FullMatch(ToStringPiece(actual_line), comment_re)) {
+    if (!RE2::FullMatch(actual_line, comment_re)) {
       LOG(ERROR) << "Trailing comment line mismatch: [" << comment_line
                  << "] vs. [" << actual_line << "]"
                  << "(line " << line_number << ")";
@@ -229,7 +219,7 @@ Location FileDescriptorWalker::LocationOfTrailingComments(
   }
 
   absl::string_view bottom_line = line_index_.GetLine(line_number);
-  while (RE2::FullMatch(ToStringPiece(bottom_line), R"(\s*\*/?\s*)")) {
+  while (RE2::FullMatch(bottom_line, R"(\s*\*/?\s*)")) {
     comment_location.end += bottom_line.size();
     ++line_number;
     bottom_line = line_index_.GetLine(line_number);
@@ -487,10 +477,9 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
     absl::string_view content = absl::string_view(content_);
     absl::string_view type_name = content.substr(
         type_location.begin, type_location.end - type_location.begin);
-    re2::StringPiece key, val;
-    if (RE2::FullMatch(ToStringPiece(type_name),
-                       R"(\s*map\s*<\s*(\S+)\s*,\s*(\S+)\s*>\s*)", &key,
-                       &val)) {
+    absl::string_view key, val;
+    if (RE2::FullMatch(type_name, R"(\s*map\s*<\s*(\S+)\s*,\s*(\S+)\s*>\s*)",
+                       &key, &val)) {
       // Add references to map type components.
       if (auto key_type = VNameForFieldType(field->message_type()->field(0))) {
         size_t key_start = key.data() - content.data();

@@ -16,9 +16,8 @@
 
 #include "assertions.h"
 
-#include <sstream>
-
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "verifier.h"
 
@@ -518,10 +517,10 @@ void AssertionParser::ScanBeginString(const RE2& goal_comment_regex,
   std::string yy_buf;
   size_t next_line_begin = 0;
   auto append_line = [&](size_t line_end) {
-    re2::StringPiece match_region;
+    absl::string_view match_region;
     size_t line_length = line_end - next_line_begin;
     auto is_goal = RE2::FullMatch(
-        re2::StringPiece(data.data() + next_line_begin, line_length),
+        absl::string_view(data.data() + next_line_begin, line_length),
         goal_comment_regex, &match_region);
     if (is_goal == 1) {
       yy_buf.push_back('-');

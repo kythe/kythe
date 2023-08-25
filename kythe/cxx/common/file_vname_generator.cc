@@ -33,7 +33,6 @@
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 #include "re2/re2.h"
-#include "re2/stringpiece.h"
 
 namespace kythe {
 namespace {
@@ -46,9 +45,9 @@ std::string EscapeBackslashes(absl::string_view value) {
 
 std::optional<absl::string_view> FindMatch(absl::string_view text,
                                            const RE2& pattern) {
-  re2::StringPiece match;
+  absl::string_view match;
   if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
-    return absl::string_view(match.data(), match.size());
+    return match;
   }
   return std::nullopt;
 }
@@ -102,7 +101,7 @@ absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
     absl::string_view path) const {
   for (const auto& rule : rules_) {
-    std::vector<re2::StringPiece> captures(
+    std::vector<absl::string_view> captures(
         1 +
         std::max({RE2::MaxSubmatch(rule.corpus), RE2::MaxSubmatch(rule.root),
                   RE2::MaxSubmatch(rule.path)}));
@@ -131,7 +130,7 @@ kythe::proto::VName FileVNameGenerator::LookupVName(
     absl::string_view path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
-    vname.set_path(path.data(), path.size());
+    vname.set_path(path);
   }
   return vname;
 }
