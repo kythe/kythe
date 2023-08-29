@@ -1224,7 +1224,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		return nil
 	}
 	target := e.pi.ObjectVName(obj)
-	if e.pi.ImportPath == "builtin" && parent != nil && parent.GetSignature() == "package" {
+	if e.pi.ImportPath == "builtin" && parent != nil && (parent.GetSignature() == "package" || parent.GetSignature() == "") {
 		// Special-case top-level builtin bindings: https://pkg.go.dev/builtin
 		target = govname.Builtin(id.String())
 		kind = "tbuiltin"

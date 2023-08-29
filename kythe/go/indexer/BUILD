@@ -69,6 +69,7 @@ go_indexer_test(
     has_marked_source = True,
     import_path = "builtin",
     resolve_code_facts = True,
+    use_file_as_top_level_scope = True,
 )
 
 go_indexer_test(
