@@ -2002,8 +2002,6 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals(
       [&signature, &root, &path, &language](
           Verifier* cxt, const Inspection& inspection, std::string_view s) {
-        fprintf(stderr, "%s %s\n", inspection.label.c_str(),
-                std::string(s).c_str());
         if (inspection.label == "Signature") signature = s == "Signature";
         if (inspection.label == "Root") root = s == "Root";
         if (inspection.label == "Path") path = s == "Path";
