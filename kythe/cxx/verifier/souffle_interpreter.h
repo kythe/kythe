@@ -39,7 +39,7 @@ struct SouffleResult {
 /// \param inspect the inspection callback that will be used against the
 /// provided list of inspections; a false return value stops iterating through
 /// inspection results and fails the solution, while a true result continues.
-/// If set, `value` is a string representation of the assignment of the EVar to
+/// `value` is a string representation of the assignment of the EVar to
 /// which the inspection refers.
 /// \param get_symbol returns a string representation of the given symbol
 /// \return a `SouffleResult` describing how the run went.
@@ -47,9 +47,7 @@ SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
     const Database& database, const AnchorMap& anchors,
     const std::vector<Inspection>& inspections,
-    std::function<bool(const Inspection&,
-                       std::optional<std::string_view> value)>
-        inspect,
+    std::function<bool(const Inspection&, std::string_view value)> inspect,
     std::function<std::string(size_t)> get_symbol);
 }  // namespace kythe::verifier
 

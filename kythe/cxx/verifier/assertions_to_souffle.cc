@@ -29,8 +29,8 @@ constexpr absl::string_view kGlobalDecls = R"(
 .type vname = [
   signature:number,
   corpus:number,
-  path:number,
   root:number,
+  path:number,
   language:number
 ]
 .decl entry(source:vname, kind:number, target:vname, name:number, value:number)
@@ -54,7 +54,7 @@ bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
       if (p != 0) {
         absl::StrAppend(&code_, ", ");
       }
-      if (!LowerSubexpression(tup->element(p), type)) {
+      if (!LowerSubexpression(tup->element(p), EVarType::kSymbol)) {
         return false;
       }
     }
@@ -147,7 +147,7 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         absl::StrAppend(&code_, ", false");
       } else {
         absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ", range->corpus(),
-                        ", ", range->path(), ", ", range->root(), ", _]");
+                        ", ", range->root(), ", ", range->path(), ", _]");
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
                         FindEVar(evar), ")");
       }
