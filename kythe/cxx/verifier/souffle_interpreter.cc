@@ -108,12 +108,11 @@ class KytheReadStream : public souffle::ReadStream {
  private:
   void CopyVName(kythe::verifier::Tuple* vname,
                  souffle::RamDomain (&target)[5]) {
-    // output: sig, corp, path, root, lang
-    // input: sig, corp, root, path, lang
+    // sig, corp, root, path, lang
     target[0] = vname->element(0)->AsIdentifier()->symbol();
     target[1] = vname->element(1)->AsIdentifier()->symbol();
-    target[2] = vname->element(3)->AsIdentifier()->symbol();
-    target[3] = vname->element(2)->AsIdentifier()->symbol();
+    target[2] = vname->element(2)->AsIdentifier()->symbol();
+    target[3] = vname->element(3)->AsIdentifier()->symbol();
     target[4] = vname->element(4)->AsIdentifier()->symbol();
   }
   const AnchorMap& anchors_;
@@ -185,8 +184,8 @@ class KytheWriteStream : public souffle::WriteStream {
         case EVarType::kVName: {
           const auto* v = recordTable.unpack(tuple[ox], 5);
           absl::StrAppend(o, "vname(", get_symbol_(v[0]), ", ",
-                          get_symbol_(v[1]), ", ", get_symbol_(v[3]), ", ",
-                          get_symbol_(v[2]), ", ", get_symbol_(v[4]), ")");
+                          get_symbol_(v[1]), ", ", get_symbol_(v[2]), ", ",
+                          get_symbol_(v[3]), ", ", get_symbol_(v[4]), ")");
         } break;
         case EVarType::kSymbol: {
           *o = get_symbol_(tuple[ox]);
@@ -245,8 +244,7 @@ SouffleResult RunSouffle(
     const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
     const Database& database, const AnchorMap& anchors,
     const std::vector<Inspection>& inspections,
-    std::function<bool(const Inspection&, std::optional<std::string_view>)>
-        inspect,
+    std::function<bool(const Inspection&, std::string_view)> inspect,
     std::function<std::string(size_t)> get_symbol) {
   SouffleResult result{};
   SouffleProgram program;

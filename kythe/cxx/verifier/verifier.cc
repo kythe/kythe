@@ -968,14 +968,13 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier*, const Inspection&,
-                       std::optional<std::string_view>)>
+    std::function<bool(Verifier*, const Inspection&, std::string_view)>
         inspect) {
   if (use_fast_solver_) {
     auto result = RunSouffle(
         symbol_table_, parser_.groups(), facts_, anchors_,
         parser_.inspections(),
-        [&](const Inspection& i, std::optional<std::string_view> o) {
+        [&](const Inspection& i, std::string_view o) {
           return inspect(this, i, o);
         },
         [&](Symbol s) { return symbol_table_.PrettyText(s); });
@@ -988,7 +987,7 @@ bool Verifier::VerifyAllGoals(
     }
     std::function<bool(Verifier*, const Inspection&)> wi =
         [&](Verifier* v, const Inspection& i) {
-          return inspect(v, i, std::nullopt);
+          return inspect(v, i, v->InspectionString(i));
         };
     Solver solver(this, facts_, anchors_, wi);
     bool result = solver.Solve();

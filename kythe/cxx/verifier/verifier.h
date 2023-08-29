@@ -96,7 +96,7 @@ class Verifier {
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
   bool VerifyAllGoals(std::function<bool(Verifier* context, const Inspection&,
-                                         std::optional<std::string_view>)>
+                                         std::string_view)>
                           inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
@@ -104,10 +104,8 @@ class Verifier {
   /// \return true if all goals could be satisfied.
   bool VerifyAllGoals(
       std::function<bool(Verifier* context, const Inspection&)> inspect) {
-    return VerifyAllGoals(
-        [&](Verifier* v, const Inspection& i, std::optional<std::string_view>) {
-          return inspect(v, i);
-        });
+    return VerifyAllGoals([&](Verifier* v, const Inspection& i,
+                              std::string_view) { return inspect(v, i); });
   }
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
