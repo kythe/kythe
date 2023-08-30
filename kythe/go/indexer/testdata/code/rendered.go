@@ -11,6 +11,7 @@ type S struct{}
 
 // - @M defines/binding M
 // - M.code/rendered/qualified_name "rendered.S.M"
+// - M.code/rendered/signature "func (s *S) M()"
 // - M.code/rendered/callsite_signature "(s) M()"
 func (s *S) M() {}
 
@@ -28,5 +29,5 @@ func (s *S) MArg(arg int) {}
 
 // - @H defines/binding H?
 // - H.code/rendered/callsite_signature "H(param)"
-// - H.code/rendered/signature "H(param func() (string, error)) error"
+// - H.code/rendered/signature "func H(param func() (string, error)) error"
 func H(param func() (string, error)) error { return nil }

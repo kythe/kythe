@@ -449,6 +449,7 @@ std::string RenderSignature(const HtmlRendererOptions& options,
   state.render_identifier = true;
   state.render_types = true;
   state.render_parameters = true;
+  state.render_modifier = true;
   state.linkify = linkify;
   state.options = &options;
   state.base_ticket = base_ticket;

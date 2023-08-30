@@ -61,7 +61,10 @@ public class MarkedSourceRenderer {
         .renderText(
             signature,
             Sets.immutableEnumSet(
-                MarkedSource.Kind.IDENTIFIER, MarkedSource.Kind.TYPE, MarkedSource.Kind.PARAMETER),
+                MarkedSource.Kind.IDENTIFIER,
+                MarkedSource.Kind.TYPE,
+                MarkedSource.Kind.PARAMETER,
+                MarkedSource.Kind.MODIFIER),
             0);
   }
 

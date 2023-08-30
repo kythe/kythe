@@ -16,6 +16,9 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Sets;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link MarkedSource} utility class. */
@@ -132,6 +136,21 @@ public final class MarkedSources {
       @Nullable Iterable<MarkedSource> postChildren,
       @Nullable MarkedSource markedType) {
     MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
+    ImmutableSortedSet<Modifier> modifiers = getModifiers(sym);
+    MarkedSource.Builder mods = null;
+    if (!modifiers.isEmpty()
+        || ImmutableSet.of(
+                ElementKind.CLASS, ElementKind.ENUM, ElementKind.INTERFACE, ElementKind.PACKAGE)
+            .contains(sym.getKind())) {
+      mods = markedSource.addChildBuilder().setPostChildText(" ").setAddFinalListToken(true);
+      for (Modifier m : modifiers) {
+        mods.addChild(
+            MarkedSource.newBuilder()
+                .setKind(MarkedSource.Kind.MODIFIER)
+                .setPreText(m.toString())
+                .build());
+      }
+    }
     if (markedType != null && sym.getKind() != ElementKind.CONSTRUCTOR) {
       markedSource.addChild(markedType);
     }
@@ -163,6 +182,11 @@ public final class MarkedSources {
       case ENUM:
       case CLASS:
       case INTERFACE:
+        mods.addChild(
+            MarkedSource.newBuilder()
+                .setKind(MarkedSource.Kind.MODIFIER)
+                .setPreText(sym.getKind().toString().toLowerCase())
+                .build());
         markedSource.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
         if (!sym.getTypeParameters().isEmpty()) {
           markedSource
@@ -181,6 +205,27 @@ public final class MarkedSources {
       postChildren.forEach(markedSource::addChild);
     }
     return markedSource.build();
+  }
+
+  private static ImmutableSortedSet<Modifier> getModifiers(Symbol sym) {
+    ImmutableSortedSet<Modifier> modifiers = ImmutableSortedSet.copyOf(sym.getModifiers());
+    switch (sym.getKind()) {
+      case ENUM:
+        // Remove synthesized enum modifiers
+        return ImmutableSortedSet.copyOf(
+            Sets.difference(modifiers, ImmutableSet.of(Modifier.STATIC, Modifier.FINAL)));
+      case INTERFACE:
+        // Remove synthesized interface modifiers
+        return ImmutableSortedSet.copyOf(
+            Sets.difference(modifiers, ImmutableSet.of(Modifier.ABSTRACT, Modifier.STATIC)));
+      case ENUM_CONSTANT:
+        // Remove synthesized enum constantc modifiers
+        return ImmutableSortedSet.copyOf(
+            Sets.difference(
+                modifiers, ImmutableSet.of(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)));
+      default:
+        return modifiers;
+    }
   }
 
   /**
