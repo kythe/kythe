@@ -1,5 +1,6 @@
 //- @pkg ref Package
-//- Package code PackageId
+//- Package code PackageCode
+//- PackageCode child.1 PackageId
 //- PackageId.kind "IDENTIFIER"
 //- PackageId.pre_text "pkg"
 package pkg;
@@ -10,10 +11,10 @@ import java.util.List;
 //- @MarkedSource defines/binding Class
 //- Class childof Package
 //- Class code ClassId
-//- ClassId child.0 ClassCxt
+//- ClassId child.1 ClassCxt
 //- ClassCxt child.0 ClassCxtPackage
 //- ClassCxtPackage.pre_text "pkg"
-//- ClassId child.1 ClassTok
+//- ClassId child.2 ClassTok
 //- ClassTok.kind "IDENTIFIER"
 //- ClassTok.pre_text "MarkedSource"
 public class MarkedSource {
@@ -32,13 +33,13 @@ public class MarkedSource {
 
   //- @CONSTANT defines/binding Constant
   //- Constant code CMS
-  //- CMS child.0 ConstantType
+  //- CMS child.1 ConstantType
   //- ConstantType.kind "TYPE"
-  //- CMS child.1 ConstantCtx
+  //- CMS child.2 ConstantCtx
   //- ConstantCtx.kind "CONTEXT"
-  //- CMS child.2 ConstantIdent
+  //- CMS child.3 ConstantIdent
   //- ConstantIdent.kind "IDENTIFIER"
-  //- CMS child.3 ConstantInit
+  //- CMS child.4 ConstantInit
   //- ConstantInit.kind "INITIALIZER"
   //- ConstantInit.pre_text "\"value\""
   public static final String CONSTANT = "value";
@@ -65,9 +66,9 @@ public class MarkedSource {
   //- Ctor typed CType
   //- CType param.1 Class
   //- Ctor code CtorTypeCxtId
-  //- CtorTypeCxtId child.0 CtorCxt
-  //- CtorTypeCxtId child.1 CtorTok
-  //- CtorTypeCxtId child.2 CtorParams
+  //- CtorTypeCxtId child.1 CtorCxt
+  //- CtorTypeCxtId child.2 CtorTok
+  //- CtorTypeCxtId child.3 CtorParams
   //- CtorCxt child.1 CtorCxtClass
   //- CtorCxtClass.pre_text "MarkedSource"
   //- CtorTok.pre_text "MarkedSource"
@@ -315,13 +316,13 @@ public class MarkedSource {
         //- @field defines/binding AnonField
         //- AnonField childof AnonClass
         //- AnonClass code AnonId
-        //- AnonId child.0 AnonCxt
+        //- AnonId child.1 AnonCxt
         //- AnonCxt.kind "CONTEXT"
         //- AnonCxt child.0 PkgToken
         //- PkgToken.pre_text pkg
         //- AnonCxt child.1 MksToken
         //- MksToken.pre_text "MarkedSource"
-        //- AnonId child.1 AnonToken
+        //- AnonId child.2 AnonToken
         //- AnonToken.kind "IDENTIFIER"
         //- AnonToken.pre_text "(anon 1)"
         int field;
@@ -367,7 +368,7 @@ public class MarkedSource {
     //- @LocalClass defines/binding LocalClass
     //- LocalClass childof Func
     //- LocalClass code LocalClassId
-    //- LocalClassId child.0 LocalClassCxt
+    //- LocalClassId child.1 LocalClassCxt
     //- LocalClassCxt child.0 LocalClassCxtPackage
     //- LocalClassCxtPackage.pre_text "pkg"
     //- LocalClassCtx child.1 LocalClassOuter
@@ -376,7 +377,7 @@ public class MarkedSource {
     //- LocalClassCtx child.2 LocalClassFuncOuter
     //- LocalClassFuncOuter.kind "IDENTIFIER"
     //- LocalClassFuncOuter.pre_text "func"
-    //- LocalClassId child.1 LocalClassName
+    //- LocalClassId child.2 LocalClassName
     //- LocalClassName.kind "IDENTIFIER"
     //- LocalClassName.pre_text "LocalClass"
     class LocalClass {}
@@ -432,10 +433,10 @@ public class MarkedSource {
 
   //- String code StringId
   //- StringId.kind "BOX"
-  //- StringId child.0 StringCxt
+  //- StringId child.1 StringCxt
   //- StringCxt.post_child_text "."
   //- StringCxt.add_final_list_token true
-  //- StringId child.1 StringIdToken
+  //- StringId child.2 StringIdToken
   //- StringCxt.kind "CONTEXT"
   //- StringCxt child.0 JavaId
   //- JavaId.kind "IDENTIFIER"

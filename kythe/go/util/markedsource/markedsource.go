@@ -108,6 +108,7 @@ func RenderSignature(node *cpb.MarkedSource, format ContentType, linkify func(st
 		cpb.MarkedSource_IDENTIFIER: true,
 		cpb.MarkedSource_TYPE:       true,
 		cpb.MarkedSource_PARAMETER:  true,
+		cpb.MarkedSource_MODIFIER:   true,
 	}
 	r := &renderer{
 		buffer:  &content{},
