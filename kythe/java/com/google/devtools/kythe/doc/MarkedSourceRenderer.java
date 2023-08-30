@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /** Renders MarkedSource messages into user-printable {@link SafeHtml}. */
 public class MarkedSourceRenderer {
   private MarkedSourceRenderer() {}
+
   /** Don't recurse more than this many times when rendering MarkedSource. */
   private static final int MAX_RENDER_DEPTH = 10;
 
@@ -314,6 +315,7 @@ public class MarkedSourceRenderer {
         bufferIsNonempty = true;
       }
     }
+
     /**
      * Escapes and adds {@code text} before the (non-empty) text that would be added by the next
      * call to {@link append}.
@@ -324,6 +326,7 @@ public class MarkedSourceRenderer {
       }
       prependBuffer.append(text);
     }
+
     /**
      * Make sure there's a space between the current content of the buffer and whatever is appended
      * to it later on.
@@ -333,14 +336,19 @@ public class MarkedSourceRenderer {
         appendFinalListToken(" ");
       }
     }
+
     /** The buffer used to hold escaped HTML data. */
     private SafeHtmlBuilder htmlBuffer;
+
     /** The buffer used to hold text data. */
     private StringBuilder textBuffer;
+
     /** True if the last character in buffer is a space. */
     private boolean bufferEndsInSpace;
+
     /** True if the buffer is non-empty. */
     private boolean bufferIsNonempty;
+
     /**
      * Unescaped text that should be escaped and appended before any other text is appended to the
      * buffer.
