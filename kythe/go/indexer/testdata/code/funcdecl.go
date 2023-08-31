@@ -91,3 +91,19 @@ func Positive(x int) bool {
 // - TCResult child.0 TCReturn
 // - TCReturn.pre_text "bool"
 func True() bool { return true }
+
+// - @N defines/binding N
+// - N code NCode
+// - NCode child.3 Ret
+// - Ret.pre_text " ("
+// - Ret.post_child_text ", "
+// - Ret.post_text ")"
+// - Ret child.0 ErrRet
+// - ErrRet.post_child_text " "
+// - ErrRet child.0 ErrVar
+// - ErrVar.pre_text "err"
+// - ErrVar link Err
+// - ErrRet child.1 ErrType
+// - ErrType.pre_text "error"
+// - @#0err defines/binding Err
+func N() (err error) { return nil }
