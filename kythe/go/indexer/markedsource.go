@@ -206,6 +206,21 @@ func typeName(typ types.Type) string {
 		return "interface {...}"
 	case *types.Pointer:
 		return "*" + typeName(t.Elem())
+	case *types.Chan:
+		switch t.Dir() {
+		case types.SendOnly:
+			return "chan<- " + typeName(t.Elem())
+		case types.RecvOnly:
+			return "<-chan " + typeName(t.Elem())
+		default:
+			return "chan " + typeName(t.Elem())
+		}
+	case *types.Array:
+		return fmt.Sprintf("[%d]%s", t.Len(), typeName(t.Elem()))
+	case *types.Map:
+		return fmt.Sprintf("map[%s]%s", typeName(t.Key()), typeName(t.Elem()))
+	case *types.Slice:
+		return "[]" + typeName(t.Elem())
 	}
 	return typ.String()
 }
