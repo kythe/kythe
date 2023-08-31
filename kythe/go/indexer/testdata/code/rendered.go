@@ -1,5 +1,7 @@
 package rendered
 
+import "math/rand"
+
 // - @F defines/binding F
 // - F.code/rendered/qualified_name "rendered.F"
 // - F.code/rendered/callsite_signature "F()"
@@ -27,7 +29,14 @@ func (s *S) MArg(arg int) {}
 //- ErrorBuiltin=vname("error#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 //- ErrorBuiltin.code/rendered/callsite_signature "error"
 
-// - @H defines/binding H?
+// - @H defines/binding H
 // - H.code/rendered/callsite_signature "H(param)"
 // - H.code/rendered/signature "func H(param func() (string, error)) error"
 func H(param func() (string, error)) error { return nil }
+
+// - @N defines/binding N
+// - N.code/rendered/callsite_signature "N()"
+// - N.code/rendered/signature "func N() (_ []*math/rand.Rand, err error)"
+func N() (_ []*rand.Rand, err error) {
+	return nil, nil
+}

@@ -132,16 +132,31 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		}
 		if res := sig.Results(); res != nil && res.Len() > 0 {
 			rms := &cpb.MarkedSource{Kind: cpb.MarkedSource_TYPE, PreText: " "}
-			if res.Len() > 1 {
-				// If there is more than one result type, parenthesize.
+			var hasNamedReturn bool
+			for i := 0; i < res.Len(); i++ {
+				if v := res.At(i); v.Name() == "" {
+					rms.Child = append(rms.Child, &cpb.MarkedSource{
+						PreText: typeName(v.Type()),
+					})
+				} else {
+					hasNamedReturn = true
+					rms.Child = append(rms.Child, &cpb.MarkedSource{
+						PostChildText: " ",
+						Child: []*cpb.MarkedSource{{
+							Kind:    cpb.MarkedSource_IDENTIFIER,
+							PreText: v.Name(),
+						}, {
+							Kind:    cpb.MarkedSource_TYPE,
+							PreText: typeName(v.Type()),
+						}},
+					})
+				}
+			}
+			if res.Len() > 1 || hasNamedReturn {
+				// If there is more than one result type (or the return is named), parenthesize.
 				rms.PreText = " ("
 				rms.PostText = ")"
 				rms.PostChildText = ", "
-			}
-			for i := 0; i < res.Len(); i++ {
-				rms.Child = append(rms.Child, &cpb.MarkedSource{
-					PreText: objectName(res.At(i)),
-				})
 			}
 			fn.Child = append(fn.Child, rms)
 		}
