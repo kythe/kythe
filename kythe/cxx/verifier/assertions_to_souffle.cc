@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
@@ -134,12 +135,7 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
   auto* app = goal->AsApp();
   auto* tup = app->rhs()->AsTuple();
   if (app->lhs()->AsIdentifier()->symbol() == eq_sym) {
-    auto* evar = tup->element(1)->AsEVar();
-    if (evar == nullptr) {
-      LOG(ERROR) << "expected evar on rhs of eq";
-      return false;
-    }
-    if (auto* range = tup->element(0)->AsRange()) {
+    auto EqEvarRange = [&](EVar* evar, Range* range) {
       auto beginsym = symbol_table.FindInterned(std::to_string(range->begin()));
       auto endsym = symbol_table.FindInterned(std::to_string(range->end()));
       if (!beginsym || !endsym) {
@@ -148,18 +144,44 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
       } else {
         absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ", range->corpus(),
                         ", ", range->root(), ", ", range->path(), ", _]");
+        // TODO(zarko): there might be a cleaner way to handle eq_sym; it would
+        // need LowerSubexpression to be able to emit this as a side-clause.
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
                         FindEVar(evar), ")");
       }
       return AssignEVarType(evar, EVarType::kVName);
-    } else {
-      auto* oevar = tup->element(0)->AsEVar();
-      if (oevar == nullptr) {
-        LOG(ERROR) << "expected evar or range on lhs of eq";
+    };
+    auto EqEvarSubexp = [&](EVar* evar, AstNode* subexp) {
+      absl::StrAppend(&code_, ", v", FindEVar(evar), "=");
+      if (auto* app = subexp->AsApp()) {
+        AssignEVarType(evar, EVarType::kVName);
+        return LowerSubexpression(app, EVarType::kVName);
+      } else if (auto* ident = subexp->AsIdentifier()) {
+        AssignEVarType(evar, EVarType::kSymbol);
+        return LowerSubexpression(ident, EVarType::kSymbol);
+      } else if (auto* oevar = subexp->AsEVar()) {
+        absl::StrAppend(&code_, "v", FindEVar(oevar));
+        return AssignEVarType(evar, oevar);
+      } else {
+        LOG(ERROR) << "expected equality on evar, app, ident, or range";
         return false;
       }
-      absl::StrAppend(&code_, ", v", FindEVar(evar), "=v", FindEVar(oevar));
-      return AssignEVarType(evar, oevar);
+    };
+    auto* revar = tup->element(1)->AsEVar();
+    auto* rrange = tup->element(1)->AsRange();
+    auto* levar = tup->element(0)->AsEVar();
+    auto* lrange = tup->element(0)->AsRange();
+    if (revar != nullptr && lrange != nullptr) {
+      return EqEvarRange(revar, lrange);
+    } else if (levar != nullptr && lrange != nullptr) {
+      return EqEvarRange(levar, rrange);
+    } else if (levar != nullptr) {
+      return EqEvarSubexp(levar, tup->element(1));
+    } else if (revar != nullptr) {
+      return EqEvarSubexp(revar, tup->element(0));
+    } else {
+      LOG(ERROR) << "expected eqality with evar on some side";
+      return false;
     }
   } else {
     // This is an edge or fact pattern.
@@ -197,6 +219,7 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
     code_.swap(code);
     std::string result_tyspec;
     std::string result_spec;
+    absl::flat_hash_set<size_t> inspected_vars;
     for (const auto& i : inspections) {
       auto type = evar_types_.find(i.evar);
       if (type == evar_types_.end()) {
@@ -212,11 +235,13 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
         return false;
       }
       auto id = FindEVar(i.evar);
-      absl::StrAppend(&result_spec, result_spec.empty() ? "" : ", ", "v", id);
-      absl::StrAppend(&result_tyspec, result_tyspec.empty() ? "" : ", ", "v",
-                      id, ":",
-                      type->second == EVarType::kVName ? "vname" : "number");
-      inspections_.push_back(i.evar);
+      if (inspected_vars.insert(id).second) {
+        absl::StrAppend(&result_spec, result_spec.empty() ? "" : ", ", "v", id);
+        absl::StrAppend(&result_tyspec, result_tyspec.empty() ? "" : ", ", "v",
+                        id, ":",
+                        type->second == EVarType::kVName ? "vname" : "number");
+        inspections_.push_back(i.evar);
+      }
     }
     code_ = absl::Substitute(kGlobalDecls, symbol_table.MustIntern(""),
                              symbol_table.MustIntern("/kythe/node/kind"),
