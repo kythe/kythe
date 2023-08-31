@@ -39,6 +39,9 @@
 // until VLOG is supported properly, at which point this will be removed.
 #define VLOG_IS_ON(x) false
 
+ABSL_FLAG(bool, experimental_new_marked_source, false,
+          "Use new signature generation.");
+
 namespace kythe {
 namespace {
 /// \return true if `range` is valid for use in annotations.
@@ -83,7 +86,8 @@ struct Annotation {
     TokenText,
     ArgListWithParens,
     Type,
-    QualifiedName
+    QualifiedName,
+    Init
   };
   Kind kind;
   size_t begin;
@@ -152,6 +156,9 @@ class NodeStack {
         }
         case Annotation::Type:
           child->set_kind(MarkedSource::TYPE);
+          break;
+        case Annotation::Init:
+          child->set_kind(MarkedSource::INITIALIZER);
           break;
         case Annotation::QualifiedName:
           child->set_kind(MarkedSource::BOX);
@@ -335,6 +342,14 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
+    if (absl::GetFlag(FLAGS_experimental_new_marked_source)) {
+      if (const auto* init = decl->getInit()) {
+        auto init_range =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           init->getSourceRange());
+        InsertAnnotation(init_range, Annotation{Annotation::Init});
+      }
+    }
   }
   void VisitFieldDecl(clang::FieldDecl* decl) {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
@@ -486,29 +501,6 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   MarkedSource* ident_node_ = nullptr;
   std::vector<Annotation> annotations_;
 };
-}  // anonymous namespace
-
-bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
-  // Be conservative in which kinds of marked source we'll generate.
-  // We can enable more AST node flavors as necessary.
-  if (decl_->isImplicit() || implicit_) {
-    return false;
-  }
-  return llvm::isa<clang::FunctionDecl>(decl_) ||
-         llvm::isa<clang::VarDecl>(decl_) ||
-         llvm::isa<clang::NamespaceDecl>(decl_) ||
-         llvm::isa<clang::TagDecl>(decl_) ||
-         llvm::isa<clang::TypedefNameDecl>(decl_) ||
-         llvm::isa<clang::FieldDecl>(decl_) ||
-         llvm::isa<clang::EnumConstantDecl>(decl_) ||
-         llvm::isa<clang::ObjCMethodDecl>(decl_) ||
-         llvm::isa<clang::ObjCContainerDecl>(decl_) ||
-         llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||
-         llvm::isa<clang::NonTypeTemplateParmDecl>(decl_) ||
-         llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
-         llvm::isa<clang::ObjCTypeParamDecl>(decl_) ||
-         llvm::isa<clang::ObjCPropertyDecl>(decl_);
-}
 
 std::string GetDeclName(const clang::LangOptions& lang_options,
                         const clang::NamedDecl* decl) {
@@ -517,15 +509,7 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   if (identifier_info && !identifier_info->getName().empty()) {
     return std::string(identifier_info->getName());
   } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
-    switch (name.getCXXOverloadedOperator()) {
-#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
-  case clang::OO_##Name:                                                      \
-    return "operator " #Name;
-#include "clang/Basic/OperatorKinds.def"
-#undef OVERLOADED_OPERATOR
-      default:
-        break;
-    }
+    return name.getAsString();
   } else if (const auto* method_decl =
                  llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
     if (llvm::isa<clang::CXXConstructorDecl>(method_decl)) {
@@ -549,6 +533,46 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
     return sel.getAsString();
   }
   return "";
+}
+
+void CleanMarkedSource(MarkedSource* to_clean) {
+  switch (to_clean->kind()) {
+    case MarkedSource::BOX: {
+      if (to_clean->post_child_text().empty()) {
+        to_clean->set_post_child_text(" ");
+      }
+      to_clean->clear_pre_text();
+      to_clean->clear_post_text();
+    } break;
+    default:
+      break;
+  }
+  for (auto& child : *to_clean->mutable_child()) {
+    CleanMarkedSource(&child);
+  }
+}
+}  // anonymous namespace
+
+bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
+  // Be conservative in which kinds of marked source we'll generate.
+  // We can enable more AST node flavors as necessary.
+  if (decl_->isImplicit() || implicit_) {
+    return false;
+  }
+  return llvm::isa<clang::FunctionDecl>(decl_) ||
+         llvm::isa<clang::VarDecl>(decl_) ||
+         llvm::isa<clang::NamespaceDecl>(decl_) ||
+         llvm::isa<clang::TagDecl>(decl_) ||
+         llvm::isa<clang::TypedefNameDecl>(decl_) ||
+         llvm::isa<clang::FieldDecl>(decl_) ||
+         llvm::isa<clang::EnumConstantDecl>(decl_) ||
+         llvm::isa<clang::ObjCMethodDecl>(decl_) ||
+         llvm::isa<clang::ObjCContainerDecl>(decl_) ||
+         llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||
+         llvm::isa<clang::NonTypeTemplateParmDecl>(decl_) ||
+         llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
+         llvm::isa<clang::ObjCTypeParamDecl>(decl_) ||
+         llvm::isa<clang::ObjCPropertyDecl>(decl_);
 }
 
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
@@ -795,6 +819,9 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                           name_range_);
   annotator.Annotate(decl_);
   ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
+  if (absl::GetFlag(FLAGS_experimental_new_marked_source)) {
+    CleanMarkedSource(&out_sig);
+  }
   return out_sig;
 }
 
