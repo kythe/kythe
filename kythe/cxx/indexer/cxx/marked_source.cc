@@ -501,6 +501,23 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   MarkedSource* ident_node_ = nullptr;
   std::vector<Annotation> annotations_;
 };
+
+void CleanMarkedSource(MarkedSource* to_clean) {
+  switch (to_clean->kind()) {
+    case MarkedSource::BOX: {
+      if (to_clean->post_child_text().empty()) {
+        to_clean->set_post_child_text(" ");
+      }
+      to_clean->clear_pre_text();
+      to_clean->clear_post_text();
+    } break;
+    default:
+      break;
+  }
+  for (auto& child : *to_clean->mutable_child()) {
+    CleanMarkedSource(&child);
+  }
+}
 }  // anonymous namespace
 
 bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
@@ -532,15 +549,7 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   if (identifier_info && !identifier_info->getName().empty()) {
     return std::string(identifier_info->getName());
   } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
-    switch (name.getCXXOverloadedOperator()) {
-#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \
-  case clang::OO_##Name:                                                      \
-    return "operator" #Spelling;
-#include "clang/Basic/OperatorKinds.def"
-#undef OVERLOADED_OPERATOR
-      default:
-        break;
-    }
+    return name.getAsString();
   } else if (const auto* method_decl =
                  llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
     if (llvm::isa<clang::CXXConstructorDecl>(method_decl)) {
@@ -564,23 +573,6 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
     return sel.getAsString();
   }
   return "";
-}
-
-void CleanMarkedSource(MarkedSource* to_clean) {
-  switch (to_clean->kind()) {
-    case MarkedSource::BOX: {
-      if (to_clean->post_child_text().empty()) {
-        to_clean->set_post_child_text(" ");
-      }
-      to_clean->clear_pre_text();
-      to_clean->clear_post_text();
-    } break;
-    default:
-      break;
-  }
-  for (auto& child : *to_clean->mutable_child()) {
-    CleanMarkedSource(&child);
-  }
 }
 
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
