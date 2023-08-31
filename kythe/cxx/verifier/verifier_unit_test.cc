@@ -2014,8 +2014,7 @@ fact_value: ""
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, EvarsAndIdentifiersCanHaveTheSameTextAndAreNotRebound) {
-  Verifier v;
+TEST_P(VerifierTest, EvarsAndIdentifiersCanHaveTheSameTextAndAreNotRebound) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, "Signature", Signature?, Path?, Language?) defines SomeNode
 source {
@@ -2034,29 +2033,24 @@ fact_value: ""
   bool signature = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if (ident_content == inspection.label) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (s == inspection.label) {
           if (inspection.label == "Signature") signature = true;
           if (inspection.label == "Path") path = true;
           if (inspection.label == "Language") language = true;
+        } else {
+          return false;
         }
-      }
-      return true;
-    }
-    return false;
-  }));
+        return true;
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(path);
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, EqualityConstraintWorks) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorks) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two? = "2",_,_)
 source { root:"1" }
@@ -2072,14 +2066,10 @@ edge_kind: "/kythe/edge/is"
 target { root:"3" }
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        return cxt->symbol_table()->text(ident->symbol()) == "2";
-      }
-    }
-    return false;
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, absl::string_view s) {
+        return (inspection.label == "Two" && s == "\"2\"");
+      }));
 }
 
 TEST(VerifierUnitTest, EqualityConstraintWorksOnAnchors) {
