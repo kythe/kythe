@@ -36,7 +36,7 @@ func H(param func() (string, error)) error { return nil }
 
 // - @N defines/binding N
 // - N.code/rendered/callsite_signature "N()"
-// - N.code/rendered/signature "func N() (_ []*math/rand.Rand, err error)"
+// - N.code/rendered/signature "func N() (_ []*Rand, err error)"
 func N() (_ []*rand.Rand, err error) {
 	return nil, nil
 }
