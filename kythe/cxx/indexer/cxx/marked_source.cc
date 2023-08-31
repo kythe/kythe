@@ -502,6 +502,39 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   std::vector<Annotation> annotations_;
 };
 
+std::string GetDeclName(const clang::LangOptions& lang_options,
+                        const clang::NamedDecl* decl) {
+  auto name = decl->getDeclName();
+  auto identifier_info = name.getAsIdentifierInfo();
+  if (identifier_info && !identifier_info->getName().empty()) {
+    return std::string(identifier_info->getName());
+  } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
+    return name.getAsString();
+  } else if (const auto* method_decl =
+                 llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
+    if (llvm::isa<clang::CXXConstructorDecl>(method_decl)) {
+      return "(ctor)";
+    } else if (llvm::isa<clang::CXXDestructorDecl>(method_decl)) {
+      return "(dtor)";
+    } else if (const auto* conv_decl =
+                   llvm::dyn_cast<clang::CXXConversionDecl>(method_decl)) {
+      auto to_type = conv_decl->getConversionType();
+      if (!to_type.isNull()) {
+        std::string substring;
+        llvm::raw_string_ostream substream(substring);
+        substream << "operator ";
+        to_type.print(substream, clang::PrintingPolicy(lang_options));
+        substream.flush();
+        return substring;
+      }
+    }
+  } else if (isObjCSelector(name)) {
+    const auto sel = name.getObjCSelector();
+    return sel.getAsString();
+  }
+  return "";
+}
+
 void CleanMarkedSource(MarkedSource* to_clean) {
   switch (to_clean->kind()) {
     case MarkedSource::BOX: {
@@ -540,39 +573,6 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
          llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
          llvm::isa<clang::ObjCTypeParamDecl>(decl_) ||
          llvm::isa<clang::ObjCPropertyDecl>(decl_);
-}
-
-std::string GetDeclName(const clang::LangOptions& lang_options,
-                        const clang::NamedDecl* decl) {
-  auto name = decl->getDeclName();
-  auto identifier_info = name.getAsIdentifierInfo();
-  if (identifier_info && !identifier_info->getName().empty()) {
-    return std::string(identifier_info->getName());
-  } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
-    return name.getAsString();
-  } else if (const auto* method_decl =
-                 llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
-    if (llvm::isa<clang::CXXConstructorDecl>(method_decl)) {
-      return "(ctor)";
-    } else if (llvm::isa<clang::CXXDestructorDecl>(method_decl)) {
-      return "(dtor)";
-    } else if (const auto* conv_decl =
-                   llvm::dyn_cast<clang::CXXConversionDecl>(method_decl)) {
-      auto to_type = conv_decl->getConversionType();
-      if (!to_type.isNull()) {
-        std::string substring;
-        llvm::raw_string_ostream substream(substring);
-        substream << "operator ";
-        to_type.print(substream, clang::PrintingPolicy(lang_options));
-        substream.flush();
-        return substring;
-      }
-    }
-  } else if (isObjCSelector(name)) {
-    const auto sel = name.getObjCSelector();
-    return sel.getAsString();
-  }
-  return "";
 }
 
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
