@@ -145,6 +145,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 						Child: []*cpb.MarkedSource{{
 							Kind:    cpb.MarkedSource_IDENTIFIER,
 							PreText: v.Name(),
+							Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(v))}}},
 						}, {
 							Kind:    cpb.MarkedSource_TYPE,
 							PreText: typeName(v.Type()),
