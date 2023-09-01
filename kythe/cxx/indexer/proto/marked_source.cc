@@ -48,7 +48,7 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
 }
 
 template <typename T>
-std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+static std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     absl::string_view kind, const T* descriptor) {
   MarkedSource ms;
   auto* mod = ms.add_child();
