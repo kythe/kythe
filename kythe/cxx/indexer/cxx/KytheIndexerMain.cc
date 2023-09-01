@@ -47,13 +47,13 @@ ABSL_FLAG(bool, experimental_drop_instantiation_independent_data, false,
           "instantiation-independent.");
 ABSL_FLAG(bool, report_profiling_events, false,
           "Write profiling events to standard error.");
-ABSL_FLAG(bool, experimental_drop_objc_fwd_class_docs, false,
+ABSL_FLAG(bool, experimental_drop_objc_fwd_class_docs, true,
           "Drop comments for Objective-C forward class declarations.");
-ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
+ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, true,
           "Drop comments for C++ forward declarations.");
 ABSL_FLAG(int, experimental_usr_byte_size, 0,
           "Use this many bytes to represent a USR (or don't at all if 0).");
-ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
+ABSL_FLAG(bool, use_compilation_corpus_as_default, true,
           "Use the CompilationUnit VName corpus as the default.");
 ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
