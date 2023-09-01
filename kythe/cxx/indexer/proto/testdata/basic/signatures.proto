@@ -6,7 +6,7 @@ package proto_kythe_test;
 
 //- @Message defines/binding Message
 //- Message.code/rendered/qualified_name "proto_kythe_test.Message"
-//- Message.code/rendered/signature "Message"
+//- Message.code/rendered/signature "message Message"
 message Message {
   //- @R defines/binding R
   //- R.code/rendered/qualified_name "proto_kythe_test.Message.R"
@@ -26,7 +26,7 @@ message Message {
 
 //- @Enum defines/binding Enum
 //- Enum.code/rendered/qualified_name "proto_kythe_test.Enum"
-//- Enum.code/rendered/signature "Enum"
+//- Enum.code/rendered/signature "enum Enum"
 enum Enum {
   //- @DEFAULT defines/binding Default
   //- Default.code/rendered/qualified_name "proto_kythe_test.Enum.DEFAULT"
@@ -36,10 +36,10 @@ enum Enum {
 
 //- @Service defines/binding Service
 //- Service.code/rendered/qualified_name "proto_kythe_test.Service"
-//- Service.code/rendered/signature "Service"
+//- Service.code/rendered/signature "service Service"
 service Service {
   //- @Method defines/binding M
   //- M.code/rendered/qualified_name "proto_kythe_test.Service.Method"
-  //- M.code/rendered/signature "Method"
+  //- M.code/rendered/signature "rpc Method"
   rpc Method(Message) returns (Message) {}
 }

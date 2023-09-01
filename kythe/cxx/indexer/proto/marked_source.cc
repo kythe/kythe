@@ -17,6 +17,7 @@
 #include "kythe/cxx/indexer/proto/marked_source.h"
 
 #include "absl/strings/str_split.h"
+#include "marked_source.h"
 
 namespace kythe {
 bool GenerateMarkedSourceForDottedName(absl::string_view name,
@@ -46,6 +47,31 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
   return true;
 }
 
+template <typename T>
+static std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    absl::string_view kind, const T* descriptor) {
+  MarkedSource ms;
+  auto* mod = ms.add_child();
+  mod->set_kind(MarkedSource::MODIFIER);
+  mod->set_pre_text(kind);
+  mod->set_post_text(" ");
+  if (GenerateMarkedSourceForDottedName(descriptor->full_name(),
+                                        ms.add_child())) {
+    return ms;
+  }
+  return std::nullopt;
+}
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::Descriptor* descriptor) {
+  return GenerateMarkedSourceForDescriptor("message", descriptor);
+}
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::EnumDescriptor* descriptor) {
+  return GenerateMarkedSourceForDescriptor("enum", descriptor);
+}
+
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor) {
   // EnumValueDescriptor::full_name leaves off the parent enum's name.
@@ -72,6 +98,16 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     return ms;
   }
   return std::nullopt;
+}
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::ServiceDescriptor* descriptor) {
+  return GenerateMarkedSourceForDescriptor("service", descriptor);
+}
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::MethodDescriptor* descriptor) {
+  return GenerateMarkedSourceForDescriptor("rpc", descriptor);
 }
 
 }  // namespace kythe
