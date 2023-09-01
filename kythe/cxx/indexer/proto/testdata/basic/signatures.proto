@@ -1,0 +1,45 @@
+// Test proto for signatures.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+//- @Message defines/binding Message
+//- Message.code/rendered/qualified_name "proto_kythe_test.Message"
+//- Message.code/rendered/signature "Message"
+message Message {
+  //- @R defines/binding R
+  //- R.code/rendered/qualified_name "proto_kythe_test.Message.R"
+  //- R.code/rendered/signature "R"
+  required string R = 1;
+
+  //- @I defines/binding I
+  //- I.code/rendered/qualified_name "proto_kythe_test.Message.I"
+  //- I.code/rendered/signature "I"
+  optional int32 I = 2;
+
+  //- @L defines/binding L
+  //- L.code/rendered/qualified_name "proto_kythe_test.Message.L"
+  //- L.code/rendered/signature "L"
+  repeated Message L = 3;
+}
+
+//- @Enum defines/binding Enum
+//- Enum.code/rendered/qualified_name "proto_kythe_test.Enum"
+//- Enum.code/rendered/signature "Enum"
+enum Enum {
+  //- @DEFAULT defines/binding Default
+  //- Default.code/rendered/qualified_name "proto_kythe_test.Enum.DEFAULT"
+  //- Default.code/rendered/signature "DEFAULT"
+  DEFAULT = 0;
+}
+
+//- @Service defines/binding Service
+//- Service.code/rendered/qualified_name "proto_kythe_test.Service"
+//- Service.code/rendered/signature "Service"
+service Service {
+  //- @Method defines/binding M
+  //- M.code/rendered/qualified_name "proto_kythe_test.Service.Method"
+  //- M.code/rendered/signature "Method"
+  rpc Method(Message) returns (Message) {}
+}
