@@ -9,8 +9,11 @@ option java_package = "io.kythe";
 //- @ParentMessage defines/binding ParentMessageNode
 //- ParentMessageNode childof ThePackage
 //- ParentMessageNode code PMRoot
-//- PMRoot child.0 PMContext
-//- PMRoot child.1 PMIdent
+//- PMRoot child.0 PMKind
+//- PMKind.pre_text "message"
+//- PMRoot child.1 PMName
+//- PMName child.0 PMContext
+//- PMName child.1 PMIdent
 //- PMIdent.kind "IDENTIFIER"
 //- PMIdent.pre_text "ParentMessage"
 //- PMContext.kind "CONTEXT"
@@ -20,8 +23,9 @@ message ParentMessage {
   //- @NestedMessage defines/binding NestedMessageNode
   //- NestedMessageNode childof ParentMessageNode
   //- NestedMessageNode code NMRoot
-  //- NMRoot child.0 NMContext
-  //- NMRoot child.1 NMIdent
+  //- NMRoot child.1 NMName
+  //- NMName child.0 NMContext
+  //- NMName child.1 NMIdent
   //- NMIdent.pre_text "NestedMessage"
   //- NMContext child.1 NMContext1
   //- NMContext1.pre_text "ParentMessage"
@@ -35,4 +39,3 @@ message ParentMessage {
   //- NamedFieldNode childof ParentMessageNode
   optional NestedMessage field_name = 1;
 }
-

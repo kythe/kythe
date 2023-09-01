@@ -11,8 +11,11 @@ message EnumMessage {
   //- EnumTestNode childof EnumMessageNode
   //- EnumTestNode.node/kind sum
   //- EnumTest code ETRoot
-  //- ETRoot child.0 ETContext
-  //- ETRoot child.1 ETIdent
+  //- ETRoot child.0 ETKind
+  //- ETKind.pre_text "enum"
+  //- ETRoot child.1 ETName
+  //- ETName child.0 ETContext
+  //- ETName child.1 ETIdent
   //- ETContext child.1 ETContext1
   //- ETContext1.pre_text "EnumMessage"
   //- ETIdent.pre_text "EnumTest"
@@ -52,8 +55,9 @@ message EnumMessage {
 //- TopLevelNode childof PackageNode
 //- TopLevelNode.node/kind sum
 //- TopLevelNode code TLRoot
-//- TLRoot child.0 TLContext
-//- TLRoot child.1 TLIdent
+//- TLRoot child.1 TLName
+//- TLName child.0 TLContext
+//- TLName child.1 TLIdent
 //- TLIdent.pre_text "TopLevel"
 //- TLContext child.0 TLContext0
 //- TLContext0.pre_text "proto_kythe_test"
@@ -79,4 +83,3 @@ enum TopLevel {
   //- ValueWestNode childof TopLevelNode
   WEST = 4;
 }
-

@@ -19,8 +19,11 @@ message TestReply {
 //- ServiceNode childof _PackageNode
 //- ServiceNode.node/kind interface
 //- ServiceNode code SNRoot
-//- SNRoot child.0 SNContext
-//- SNRoot child.1 SNIdent
+//- SNRoot child.0 SNKind
+//- SNKind.pre_text "service"
+//- SNRoot child.1 SNName
+//- SNName child.0 SNContext
+//- SNName child.1 SNIdent
 //- SNIdent.pre_text "TestService"
 //- SNContext child.0 SNContext0
 //- SNContext0.pre_text "proto_kythe_test"
@@ -31,8 +34,11 @@ service TestService {
   //- @TestRequest ref RequestNode
   //- @TestReply ref ReplyNode
   //- MethodNode code MNRoot
-  //- MNRoot child.0 MNContext
-  //- MNRoot child.1 MNIdent
+  //- MNRoot child.0 MNKind
+  //- MNKind.pre_text "rpc"
+  //- MNRoot child.1 MNName
+  //- MNName child.0 MNContext
+  //- MNName child.1 MNIdent
   //- MNIdent.pre_text "TestMethod"
   //- MNContext child.0 MNContext0
   //- MNContext child.1 MNContext1
@@ -40,10 +46,8 @@ service TestService {
   //- MNContext1.pre_text "TestService"
   rpc TestMethod(TestRequest) returns (TestReply);
 
-  //- @+3"TestRequest" ref RequestNode
-  //- @+4"TestReply" ref ReplyNode
-  rpc FullTestMethod(proto_kythe_test.
-      TestRequest) returns (
-          proto_kythe_test.
-          TestReply);
+  //- @TestRequest ref RequestNode
+  //- @+2"TestReply" ref ReplyNode
+  rpc FullTestMethod(proto_kythe_test.TestRequest)
+      returns (proto_kythe_test.TestReply);
 }

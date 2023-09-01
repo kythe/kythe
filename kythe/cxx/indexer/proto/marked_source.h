@@ -44,10 +44,22 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::Descriptor* descriptor);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::EnumDescriptor* descriptor);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::ServiceDescriptor* descriptor);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::MethodDescriptor* descriptor);
 
 }  // namespace kythe
 
