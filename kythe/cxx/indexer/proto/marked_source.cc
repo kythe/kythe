@@ -16,7 +16,10 @@
 
 #include "kythe/cxx/indexer/proto/marked_source.h"
 
+#include <optional>
+
 #include "absl/strings/str_split.h"
+#include "google/protobuf/descriptor.h"
 
 namespace kythe {
 bool GenerateMarkedSourceForDottedName(absl::string_view name,
