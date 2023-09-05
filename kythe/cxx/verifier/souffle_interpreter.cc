@@ -276,6 +276,8 @@ SouffleResult RunSouffle(
       souffle::mk<souffle::interpreter::Engine>(*ram_tu));
   interpreter->executeMain();
   const auto& actual = write_stream_factory->GetOutput(output_id);
+  result.success = (!actual.outputs.empty());
+  if (!result.success) return result;
   for (const auto& i : inspections) {
     auto ix = output_indices.find(i.evar);
     if (ix != output_indices.end()) {
@@ -287,7 +289,6 @@ SouffleResult RunSouffle(
                  << i.label;
     }
   }
-  result.success = (!actual.outputs.empty());
   return result;
 }
 }  // namespace kythe::verifier

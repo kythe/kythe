@@ -142,8 +142,11 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         // TODO(zarko): emit a warning here (if we're in a positive goal)?
         absl::StrAppend(&code_, ", false");
       } else {
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[_, ", range->corpus(),
-                        ", ", range->root(), ", ", range->path(), ", _]");
+        // We need to name the elements of the range; otherwise the compiler
+        // will complain that they are ungrounded in certain cases.
+        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[v", FindEVar(evar),
+                        "r1, ", range->corpus(), ", ", range->root(), ", ",
+                        range->path(), ", v", FindEVar(evar), "r2]");
         // TODO(zarko): there might be a cleaner way to handle eq_sym; it would
         // need LowerSubexpression to be able to emit this as a side-clause.
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
@@ -223,15 +226,11 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
     for (const auto& i : inspections) {
       auto type = evar_types_.find(i.evar);
       if (type == evar_types_.end()) {
-        StringPrettyPrinter sp;
-        i.evar->Dump(symbol_table, &sp);
-        LOG(ERROR) << "evar typing missing for " << sp.str();
+        LOG(ERROR) << "evar typing missing for v" << FindEVar(i.evar);
         return false;
       }
       if (type->second == EVarType::kUnknown) {
-        StringPrettyPrinter sp;
-        i.evar->Dump(symbol_table, &sp);
-        LOG(ERROR) << "evar typing unknown for " << sp.str();
+        LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
         return false;
       }
       auto id = FindEVar(i.evar);

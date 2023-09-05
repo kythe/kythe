@@ -2072,8 +2072,7 @@ target { root:"3" }
       }));
 }
 
-TEST(VerifierUnitTest, EqualityConstraintWorksOnAnchors) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchors) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- Tx?=@text defines SomeNode
 ##text (line 3 column 2 offset 42-46)
@@ -2097,11 +2096,50 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection) {
-    return (inspection.label == "Tx" && inspection.evar->current() != nullptr);
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        return (inspection.label == "Tx" && !s.empty());
+      }));
+}
+
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchorsRev) {
+  if (GetParam() == Solver::New) {
+    // TODO: Turns out that we do need to propagate (type) equality constraints.
+    GTEST_SKIP();
+  }
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @text=Tx? defines SomeNode
+##text (line 3 column 2 offset 42-46)
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "42"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "46"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})",
+                                    "", "1"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        return (inspection.label == "Tx" && !s.empty());
+      }));
 }
 
 // It's possible to match Tx against {root:7}:
