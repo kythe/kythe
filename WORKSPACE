@@ -22,6 +22,14 @@ rules_ts_dependencies(
     ts_version_from = "//:package.json",
 )
 
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
+
+rules_js_dependencies()
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
 load("@aspect_rules_jasmine//jasmine:dependencies.bzl", "rules_jasmine_dependencies")
 
 # Fetch dependencies which users need as well
@@ -45,14 +53,6 @@ npm_translate_lock(
 load("@npm//:repositories.bzl", "npm_repositories")
 
 npm_repositories()
-
-load("@aspect_rules_jasmine//jasmine:repositories.bzl", "jasmine_repositories")
-
-jasmine_repositories(name = "jasmine")
-
-load("@jasmine//:npm_repositories.bzl", jasmine_npm_repositories = "npm_repositories")
-
-jasmine_npm_repositories()
 
 # END rules_ts setup
 ###

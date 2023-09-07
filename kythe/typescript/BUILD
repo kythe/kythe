@@ -20,7 +20,7 @@ ts_project(
     srcs = ["kythe.ts"],
     declaration = True,
     source_map = True,
-    supports_workers = False,
+    supports_workers = 0,
 )
 
 ts_project(
@@ -32,7 +32,7 @@ ts_project(
     ],
     declaration = True,
     source_map = True,
-    supports_workers = False,
+    supports_workers = 0,
     deps = [
         ":kythe",
         "//:node_modules/@types/node",
@@ -45,7 +45,7 @@ ts_project(
     srcs = ["test.ts"],
     declaration = True,
     source_map = True,
-    supports_workers = False,
+    supports_workers = 0,
     deps = [
         ":indexer",
         ":kythe",
@@ -62,7 +62,7 @@ ts_project(
     srcs = ["utf8_test.ts"],
     declaration = True,
     source_map = True,
-    supports_workers = False,
+    supports_workers = 0,
     deps = [
         ":indexer",
         "//:node_modules/@types/jasmine",
@@ -107,5 +107,6 @@ jasmine_test(
     include_npm_linked_packages = True,
     include_transitive_sources = True,
     log_level = "debug",
+    node_modules = "//:node_modules",
     patch_node_fs = True,
 )

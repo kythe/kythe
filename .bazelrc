@@ -8,7 +8,8 @@ build --strategy=TsProject=remote,sandboxed,local
 
 # Compatibility flags to avoid regressions.
 common --incompatible_disallow_empty_glob
-build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
+# TODO: https://github.com/aspect-build/rules_js/issues/1256 - reenable when fixed
+#build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
 
 build --workspace_status_command tools/buildstamp/get_workspace_status
 
@@ -31,6 +32,14 @@ build --host_copt=-w
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
+
+# aspect_rules_js configuration
+build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+build --@aspect_rules_ts//ts:default_to_tsc_transpiler
+fetch --@aspect_rules_ts//ts:default_to_tsc_transpiler
+query --@aspect_rules_ts//ts:default_to_tsc_transpiler
 
 # By default, compile for Java 11, run on Java 11
 build --java_language_version=11
