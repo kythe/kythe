@@ -176,22 +176,22 @@ class KytheWriteStream : public souffle::WriteStream {
       output_->outputs.push_back("");
       auto* o = &output_->outputs.back();
       auto type = output_types_[ox];
-      if (tuple[ox] == 0) {
-        absl::StrAppend(o, "nil");
-        continue;
-      }
       switch (type) {
         case EVarType::kVName: {
-          const auto* v = recordTable.unpack(tuple[ox], 5);
-          absl::StrAppend(o, "vname(", get_symbol_(v[0]), ", ",
-                          get_symbol_(v[1]), ", ", get_symbol_(v[2]), ", ",
-                          get_symbol_(v[3]), ", ", get_symbol_(v[4]), ")");
+          if (tuple[ox] == 0) {
+            absl::StrAppend(o, "#nil-vname");
+          } else {
+            const auto* v = recordTable.unpack(tuple[ox], 5);
+            absl::StrAppend(o, "vname(", get_symbol_(v[0]), ", ",
+                            get_symbol_(v[1]), ", ", get_symbol_(v[2]), ", ",
+                            get_symbol_(v[3]), ", ", get_symbol_(v[4]), ")");
+          }
         } break;
         case EVarType::kSymbol: {
           *o = get_symbol_(tuple[ox]);
         } break;
         default:
-          *o = "unknown-type";
+          *o = "#unknown-type";
       }
     }
   }
