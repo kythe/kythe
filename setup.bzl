@@ -26,6 +26,16 @@ def kythe_rule_repositories():
     """
     maybe(
         http_archive,
+        name = "platforms",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.7/platforms-0.0.7.tar.gz",
+            "https://github.com/bazelbuild/platforms/releases/download/0.0.7/platforms-0.0.7.tar.gz",
+        ],
+        sha256 = "3a561c99e7bdbe9173aa653fd579fe849f1d8d67395780ab4770b1f381431d51",
+    )
+
+    maybe(
+        http_archive,
         name = "bazel_skylib",
         urls = [
             "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.2/bazel-skylib-1.4.2.tar.gz",
@@ -103,17 +113,17 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "aspect_rules_ts",
-        sha256 = "6406905c5f7c5ca6dedcca5dacbffbf32bb2a5deb77f50da73e7195b2b7e8cbc",
-        strip_prefix = "rules_ts-1.0.5",
-        url = "https://github.com/aspect-build/rules_ts/archive/refs/tags/v1.0.5.tar.gz",
+        sha256 = "6f715bd3d525c1be062d4663caf242ea549981c0dbcc2e410456dc9c8cfd7bd4",
+        strip_prefix = "rules_ts-2.0.0-rc1",
+        url = "https://github.com/aspect-build/rules_ts/releases/download/v2.0.0-rc1/rules_ts-v2.0.0-rc1.tar.gz",
     )
 
     maybe(
         http_archive,
         name = "aspect_rules_jasmine",
-        sha256 = "0357d45b5dba77004931db83ced43c6c432eee658a51d1876a9f2b57838e4080",
-        strip_prefix = "rules_jasmine-0.2.1",
-        url = "https://github.com/aspect-build/rules_jasmine/archive/refs/tags/v0.2.1.tar.gz",
+        sha256 = "4c16ef202d1e53fd880e8ecc9e0796802201ea9c89fa32f52d5d633fff858cac",
+        strip_prefix = "rules_jasmine-1.1.1",
+        url = "https://github.com/aspect-build/rules_jasmine/releases/download/v1.1.1/rules_jasmine-v1.1.1.tar.gz",
     )
 
     maybe(
@@ -130,8 +140,8 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_rust",
-        sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
-        urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
+        sha256 = "db89135f4d1eaa047b9f5518ba4037284b43fc87386d08c1d1fe91708e3730ae",
+        urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.27.0/rules_rust-v0.27.0.tar.gz"],
     )
 
     maybe(
@@ -180,11 +190,19 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "1ff680568f8e537bb4be9813bac0c1d87848d5be9d000ebe30f0bc2d7aabe045",
-        strip_prefix = "protobuf-22.2",
+        sha256 = "39b52572da90ad54c883a828cb2ca68e5ac918aa75d36c3e55c9c76b94f0a4f7",
+        strip_prefix = "protobuf-24.2",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/releases/download/v22.2/protobuf-22.2.tar.gz",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v24.2/protobuf-24.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v24.2/protobuf-24.2.tar.gz",
+        ],
+        patches = [
+            # Use the rules_rust provided proto plugin, rather than the native one
+            # which hijacks the --rust_out command line and is incompatible.
+            "//third_party:protobuf-no-rust.patch",
+        ],
+        patch_args = [
+            "-p1",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
