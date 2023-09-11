@@ -41,8 +41,12 @@ func N() (_ []*rand.Rand, err error) {
 	return nil, nil
 }
 
+// - @Set defines/binding Set
+// - Set.code/rendered/signature "Set"
+type Set[T comparable] struct{}
+
 // - @G defines/binding G
 // - G.code/rendered/qualified_name "rendered.G"
 // - G.code/rendered/callsite_signature "G[T](t)"
-// - G.code/rendered/signature "func G[T comparable](t T)"
-func G[T comparable](t T) {}
+// - G.code/rendered/signature "func G[T comparable](t T) *Set[T]"
+func G[T comparable](t T) *Set[T] { return nil }
