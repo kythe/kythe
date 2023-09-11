@@ -211,7 +211,7 @@ func objectName(obj types.Object) string {
 func typeName(typ types.Type) string {
 	switch t := typ.(type) {
 	case *types.Named:
-		return t.Obj().Name()
+		return t.Obj().Name() + typeArgs(typ)
 	case *types.Basic:
 		return t.Name()
 	case *types.Struct:
