@@ -16,8 +16,9 @@ message MessageFields {
   //- FieldNameNode.subkind field
   //- FieldNameNode typed Type1Node
   //- FieldNameNode code FNRoot
-  //- FNRoot child.0 FNQualName
-  //- FNRoot child.1 FNIdent
+  //- FNRoot child.1 FNName
+  //- FNName child.0 FNQualName
+  //- FNName child.1 FNIdent
   //- FNIdent.pre_text field_name
   //- FNIdent.kind "IDENTIFIER"
   //- FNQualName.kind "CONTEXT"

@@ -26,8 +26,12 @@ message Container {
     //- TextVariant childof ContainerMessage
     //- TextVariant childof NamedVariantType
     //- TextVariant code TVRoot
-    //- TVRoot child.0 TVContext
-    //- TVRoot child.1 TVIdent
+    //- TVRoot child.0 TVType
+    //- TVType.kind "TYPE"
+    //- TVType.pre_text "string"
+    //- TVRoot child.1 TVName
+    //- TVName child.0 TVContext
+    //- TVName child.1 TVIdent
     //- TVIdent.pre_text "text"
     //- TVContext child.0 TVContext0
     //- TVContext child.1 TVContext1
