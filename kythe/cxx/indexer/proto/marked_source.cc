@@ -96,7 +96,27 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     full_name = descriptor->full_name();
   }
   MarkedSource ms;
-  if (GenerateMarkedSourceForDottedName(full_name, &ms)) {
+  auto* type = ms.add_child();
+  type->set_kind(MarkedSource::TYPE);
+  switch (descriptor->type()) {
+    case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
+      if (!GenerateMarkedSourceForDottedName(
+              descriptor->message_type()->full_name(), type->add_child())) {
+        return std::nullopt;
+      }
+      break;
+    case google::protobuf::FieldDescriptor::TYPE_ENUM:
+      if (!GenerateMarkedSourceForDottedName(
+              descriptor->enum_type()->full_name(), type->add_child())) {
+        return std::nullopt;
+      }
+      break;
+    default:
+      type->set_pre_text(descriptor->type_name());
+      break;
+  }
+  type->set_post_text(" ");
+  if (GenerateMarkedSourceForDottedName(full_name, ms.add_child())) {
     return ms;
   }
   return std::nullopt;

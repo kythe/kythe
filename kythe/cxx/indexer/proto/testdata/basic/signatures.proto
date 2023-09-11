@@ -10,18 +10,23 @@ package proto_kythe_test;
 message Message {
   //- @R defines/binding R
   //- R.code/rendered/qualified_name "proto_kythe_test.Message.R"
-  //- R.code/rendered/signature "R"
+  //- R.code/rendered/signature "string R"
   required string R = 1;
 
   //- @I defines/binding I
   //- I.code/rendered/qualified_name "proto_kythe_test.Message.I"
-  //- I.code/rendered/signature "I"
+  //- I.code/rendered/signature "int32 I"
   optional int32 I = 2;
 
   //- @L defines/binding L
   //- L.code/rendered/qualified_name "proto_kythe_test.Message.L"
-  //- L.code/rendered/signature "L"
+  //- L.code/rendered/signature "Message L"
   repeated Message L = 3;
+
+  //- @#1E defines/binding E
+  //- E.code/rendered/qualified_name "proto_kythe_test.Message.E"
+  //- E.code/rendered/signature "Enum E"
+  optional Enum E = 4;
 }
 
 //- @Enum defines/binding Enum
