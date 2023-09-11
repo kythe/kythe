@@ -27,6 +27,10 @@ message Message {
   //- E.code/rendered/qualified_name "proto_kythe_test.Message.E"
   //- E.code/rendered/signature "optional Enum E"
   optional Enum E = 4;
+
+  //- @#1M defines/binding Map
+  //- Map.code/rendered/signature "map<string, Message> M"
+  map<string, Message> M = 5;
 }
 
 //- @Enum defines/binding Enum

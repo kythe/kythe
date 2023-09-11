@@ -86,6 +86,46 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
   return std::nullopt;
 }
 
+std::optional<MarkedSource> GenerateMarkedSourceForType(
+    const google::protobuf::FieldDescriptor* descriptor) {
+  MarkedSource type;
+  type.set_kind(MarkedSource::TYPE);
+  switch (descriptor->type()) {
+    case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
+      if (descriptor->is_map()) {
+        type.set_pre_text("map<");
+        type.set_post_child_text(", ");
+        type.set_post_text(">");
+
+        auto key =
+            GenerateMarkedSourceForType(descriptor->message_type()->map_key());
+        auto val = GenerateMarkedSourceForType(
+            descriptor->message_type()->map_value());
+        if (!key || !val) {
+          return std::nullopt;
+        }
+
+        *type.add_child() = *key;
+        *type.add_child() = *val;
+      } else if (!GenerateMarkedSourceForDottedName(
+                     descriptor->message_type()->full_name(),
+                     type.add_child())) {
+        return std::nullopt;
+      }
+      break;
+    case google::protobuf::FieldDescriptor::TYPE_ENUM:
+      if (!GenerateMarkedSourceForDottedName(
+              descriptor->enum_type()->full_name(), type.add_child())) {
+        return std::nullopt;
+      }
+      break;
+    default:
+      type.set_pre_text(descriptor->type_name());
+      break;
+  }
+  return type;
+}
+
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor) {
   std::string full_name;
@@ -96,7 +136,9 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     full_name = descriptor->full_name();
   }
   MarkedSource ms;
-  if (!descriptor->containing_oneof() && descriptor->label()) {
+  ms.set_post_child_text(" ");
+  if (!descriptor->containing_oneof() && !descriptor->is_map() &&
+      descriptor->label()) {
     auto* mod = ms.add_child();
     mod->set_kind(MarkedSource::MODIFIER);
     switch (descriptor->label()) {
@@ -110,28 +152,11 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
         mod->set_pre_text("repeated");
         break;
     }
-    mod->set_post_text(" ");
   }
-  auto* type = ms.add_child();
-  type->set_kind(MarkedSource::TYPE);
-  switch (descriptor->type()) {
-    case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
-      if (!GenerateMarkedSourceForDottedName(
-              descriptor->message_type()->full_name(), type->add_child())) {
-        return std::nullopt;
-      }
-      break;
-    case google::protobuf::FieldDescriptor::TYPE_ENUM:
-      if (!GenerateMarkedSourceForDottedName(
-              descriptor->enum_type()->full_name(), type->add_child())) {
-        return std::nullopt;
-      }
-      break;
-    default:
-      type->set_pre_text(descriptor->type_name());
-      break;
+  if (const std::optional<MarkedSource> t =
+          GenerateMarkedSourceForType(descriptor)) {
+    *ms.add_child() = *t;
   }
-  type->set_post_text(" ");
   if (GenerateMarkedSourceForDottedName(full_name, ms.add_child())) {
     return ms;
   }
