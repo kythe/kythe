@@ -105,12 +105,26 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		fn.Child = append(fn.Child, ms)
 
 		if sig.TypeParams().Len() > 0 {
-			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+			tps := &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_PARAMETER,
 				PreText:       "[",
 				PostText:      "]",
 				PostChildText: ", ",
-			})
+			}
+			for i := 0; i < sig.TypeParams().Len(); i++ {
+				tp := sig.TypeParams().At(i)
+				tps.Child = append(tps.Child, &cpb.MarkedSource{
+					PostChildText: " ",
+					Child: []*cpb.MarkedSource{{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
+						PreText: tp.String(),
+					}, {
+						Kind:    cpb.MarkedSource_TYPE,
+						PreText: tp.Constraint().String(),
+					}},
+				})
+			}
+			fn.Child = append(fn.Child, tps)
 		}
 
 		// If there are no parameters, the lookup will not produce anything.

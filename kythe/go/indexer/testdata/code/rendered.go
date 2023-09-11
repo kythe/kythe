@@ -40,3 +40,9 @@ func H(param func() (string, error)) error { return nil }
 func N() (_ []*rand.Rand, err error) {
 	return nil, nil
 }
+
+// - @G defines/binding G
+// - G.code/rendered/qualified_name "rendered.G"
+// - G.code/rendered/callsite_signature "G[T](t)"
+// - G.code/rendered/signature "func G[T comparable](t T)"
+func G[T comparable](t T) {}
