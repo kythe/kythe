@@ -16,7 +16,10 @@ message MessageFields {
   //- FieldNameNode.subkind field
   //- FieldNameNode typed Type1Node
   //- FieldNameNode code FNRoot
-  //- FNRoot child.1 FNName
+  //- FNRoot child.0 FNLabel
+  //- FNLabel.kind "MODIFIER"
+  //- FNLabel.pre_text "optional"
+  //- FNRoot child.2 FNName
   //- FNName child.0 FNQualName
   //- FNName child.1 FNIdent
   //- FNIdent.pre_text field_name

@@ -96,6 +96,22 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     full_name = descriptor->full_name();
   }
   MarkedSource ms;
+  if (!descriptor->containing_oneof() && descriptor->label()) {
+    auto* mod = ms.add_child();
+    mod->set_kind(MarkedSource::MODIFIER);
+    switch (descriptor->label()) {
+      case google::protobuf::FieldDescriptor::Label::LABEL_OPTIONAL:
+        mod->set_pre_text("optional");
+        break;
+      case google::protobuf::FieldDescriptor::Label::LABEL_REQUIRED:
+        mod->set_pre_text("required");
+        break;
+      case google::protobuf::FieldDescriptor::Label::LABEL_REPEATED:
+        mod->set_pre_text("repeated");
+        break;
+    }
+    mod->set_post_text(" ");
+  }
   auto* type = ms.add_child();
   type->set_kind(MarkedSource::TYPE);
   switch (descriptor->type()) {
