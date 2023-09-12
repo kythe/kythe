@@ -596,7 +596,10 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	info.vname.Language = govname.Language
 	info.vname.Signature += "$" + strconv.Itoa(fi.numAnons)
 	e.pi.function[flit] = info
-	e.writeDef(flit, info.vname)
+	def := e.writeDef(flit, info.vname)
+	if e.opts.emitAnchorScopes() {
+		e.writeEdge(def, fi.vname, edges.ChildOf)
+	}
 	e.writeFact(info.vname, facts.NodeKind, nodes.Function)
 
 	if sig, ok := e.pi.Info.Types[flit].Type.(*types.Signature); ok {
@@ -1247,8 +1250,8 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 
 // writeDef emits a spanning anchor and defines edge for the specified node.
 // This function does not create the target node.
-func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
-	e.writeRef(node, target, edges.Defines)
+func (e *emitter) writeDef(node ast.Node, target *spb.VName) *spb.VName {
+	return e.writeRef(node, target, edges.Defines)
 }
 
 // writeDoc adds associations between comment groups and a documented node.
