@@ -256,6 +256,7 @@ export enum MarkedSourceKind {
   LOOKUP_BY_TYPED,
   PARAMETER_LOOKUP_BY_TPARAM,
   LOOKUP_BY_TPARAM,
+  MODIFIER,
 }
 
 

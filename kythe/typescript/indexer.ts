@@ -1791,6 +1791,14 @@ class Visitor {
     if (context != null) {
       codeParts.push(context);
     }
+    if (ts.isParameter(varDecl) && varDecl.dotDotDotToken) {
+      codeParts.push({
+        // TODO: this should probably be TYPE but the current renderer adds an
+        // unnecessary space after TYPEs
+        kind: MarkedSourceKind.MODIFIER,
+        pre_text: '...',
+      });
+    }
     codeParts.push({
       kind: MarkedSourceKind.IDENTIFIER,
       pre_text: fmtMarkedSource(this.getIdentifierForMarkedSourceNode(decl)),
