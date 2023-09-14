@@ -23,6 +23,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -52,6 +53,13 @@ func NewResolver(entries []*spb.Entry) (*Resolver, error) {
 			var ms cpb.MarkedSource
 			if err := proto.Unmarshal(e.GetFactValue(), &ms); err != nil {
 				return nil, fmt.Errorf("error unmarshalling code for %s: %v", ticket, err)
+			}
+			r.nodes[ticket] = &ms
+		} else if e.GetFactName() == facts.Code+"/json" {
+			ticket := kytheuri.ToString(e.GetSource())
+			var ms cpb.MarkedSource
+			if err := protojson.Unmarshal(e.GetFactValue(), &ms); err != nil {
+				return nil, fmt.Errorf("error unmarshalling code/json for %s: %v", ticket, err)
 			}
 			r.nodes[ticket] = &ms
 		} else if e.GetEdgeKind() != "" {

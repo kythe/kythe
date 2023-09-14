@@ -73,9 +73,10 @@ func main() {
 		out := bufio.NewWriter(os.Stdout)
 		wr := delimited.NewWriter(out)
 		for _, e := range entries {
-			if e.GetFactName() == facts.Code {
+			if e.GetFactName() == facts.Code || e.GetFactName() == facts.Code+"/json" {
 				resolved := r.Resolve(e.GetSource())
 				e = proto.Clone(e).(*spb.Entry)
+				e.FactName = facts.Code
 				rec, err := proto.Marshal(resolved)
 				exitOnErrf("Error marshalling resolved MarkedSource: %v", err)
 				e.FactValue = rec

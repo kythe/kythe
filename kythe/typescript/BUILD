@@ -91,6 +91,7 @@ js_test(
     ) + [
         "//kythe/cxx/verifier",
         "//kythe/go/platform/tools/entrystream",
+        "//kythe/go/util/tools/markedsource",
     ],
     entry_point = ":test.js",
 )
