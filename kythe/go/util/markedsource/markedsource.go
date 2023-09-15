@@ -371,7 +371,7 @@ func (r renderer) linkForSource(node *cpb.MarkedSource) string {
 	return ""
 }
 
-var excludedSpaceCharacters = regexp.MustCompile(`^[),\]>\s].*`)
+var excludedSpaceCharacters = regexp.MustCompile(`^(\\)?[),\]>\s].*`)
 
 // add appends s to the current buffer text.
 func (r *renderer) add(s string) {
