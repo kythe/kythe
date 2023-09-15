@@ -120,7 +120,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 						PreText: tp.String(),
 					}, {
 						Kind:    cpb.MarkedSource_TYPE,
-						PreText: tp.Constraint().String(),
+						PreText: typeName(tp.Constraint()),
 					}},
 				})
 			}
@@ -217,6 +217,9 @@ func typeName(typ types.Type) string {
 	case *types.Struct:
 		return "struct {...}"
 	case *types.Interface:
+		if t.String() == "any" {
+			return t.String()
+		}
 		return "interface {...}"
 	case *types.Pointer:
 		return "*" + typeName(t.Elem())
