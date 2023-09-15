@@ -153,13 +153,14 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts = &EmitOptions{}
 	}
 	e := &emitter{
-		ctx:      ctx,
-		pi:       pi,
-		sink:     sink,
-		opts:     opts,
-		impl:     make(map[impl]struct{}),
-		anchored: make(map[ast.Node]struct{}),
-		fmeta:    make(map[*ast.File]bool),
+		ctx:       ctx,
+		pi:        pi,
+		sink:      sink,
+		opts:      opts,
+		impl:      make(map[impl]struct{}),
+		anchored:  make(map[ast.Node]struct{}),
+		fmeta:     make(map[*ast.File]bool),
+		variadics: make(map[*types.Slice]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -239,6 +240,8 @@ type emitter struct {
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
+
+	variadics map[*types.Slice]bool
 }
 
 type refKind int
@@ -474,7 +477,11 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	case *types.Array:
 		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
 	case *types.Slice:
-		v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+		if e.variadics[typ] {
+			v = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(typ.Elem()))
+		} else {
+			v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+		}
 	case *types.Pointer:
 		v = e.emitTApp(pointerTAppMS, nodes.TBuiltin, govname.PointerConstructorType(), e.emitType(typ.Elem()))
 	case *types.Chan:
@@ -495,14 +502,14 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			}},
 		}
 
-		params := e.visitTuple(typ.Params())
-		if typ.Variadic() && len(params) > 0 {
-			// Convert last parameter type from slice type to variadic type.
-			last := len(params) - 1
+		if typ.Variadic() {
+			// Mark last parameter type as variadic.
+			last := typ.Params().Len() - 1
 			if slice, ok := typ.Params().At(last).Type().(*types.Slice); ok {
-				params[last] = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(slice.Elem()))
+				e.variadics[slice] = true
 			}
 		}
+		params := e.visitTuple(typ.Params())
 
 		var ret *spb.VName
 		if typ.Results().Len() == 1 {

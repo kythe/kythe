@@ -59,3 +59,8 @@ func G[T comparable](t T) *Set[T] { return nil }
 // - StrF.code/rendered/callsite_signature "Str[T](t)"
 // - StrF.code/rendered/signature "func Str[T Stringer](t T) string"
 func Str[T fmt.Stringer](t T) string { return t.String() }
+
+// - @VA defines/binding VA
+// - VA.code/rendered/callsite_signature "VA(args)"
+// - VA.code/rendered/signature "func VA(args ...any)"
+func VA(args ...any) {}
