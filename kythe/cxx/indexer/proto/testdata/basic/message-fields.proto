@@ -24,6 +24,7 @@ message MessageFields {
   //- FNName child.1 FNIdent
   //- FNIdent.pre_text field_name
   //- FNIdent.kind "IDENTIFIER"
+  //- FNIdent link FieldNameNode
   //- FNQualName.kind "CONTEXT"
   //- FNQualName.post_child_text "."
   //- FNQualName.add_final_list_token true

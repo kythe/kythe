@@ -20,10 +20,12 @@
 
 #include "absl/strings/str_split.h"
 #include "google/protobuf/descriptor.h"
+#include "kythe/cxx/common/kythe_uri.h"
 
 namespace kythe {
 bool GenerateMarkedSourceForDottedName(absl::string_view name,
-                                       MarkedSource* root) {
+                                       MarkedSource* root,
+                                       std::optional<proto::VName> vname) {
   std::vector<absl::string_view> tokens = absl::StrSplit(name, '.');
   if (tokens.empty()) {
     return false;
@@ -31,11 +33,17 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
   if (tokens.size() == 1) {
     root->set_kind(MarkedSource::IDENTIFIER);
     root->set_pre_text(std::string(tokens[0]));
+    if (vname) {
+      root->add_link()->add_definition(URI(*vname).ToString());
+    }
   } else {
     auto* context = root->add_child();
     auto* ident = root->add_child();
     ident->set_kind(MarkedSource::IDENTIFIER);
     ident->set_pre_text(std::string(tokens.back()));
+    if (vname) {
+      ident->add_link()->add_definition(URI(*vname).ToString());
+    }
     tokens.pop_back();
     context->set_kind(MarkedSource::CONTEXT);
     context->set_post_child_text(".");
@@ -127,7 +135,9 @@ std::optional<MarkedSource> GenerateMarkedSourceForType(
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::FieldDescriptor* descriptor) {
+    const google::protobuf::FieldDescriptor* descriptor,
+    const std::function<proto::VName(const google::protobuf::FieldDescriptor*)>&
+        vname_for_desc) {
   std::string full_name;
   if (const google::protobuf::OneofDescriptor* oneof =
           descriptor->containing_oneof()) {
@@ -157,7 +167,8 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
           GenerateMarkedSourceForType(descriptor)) {
     *ms.add_child() = *t;
   }
-  if (GenerateMarkedSourceForDottedName(full_name, ms.add_child())) {
+  if (GenerateMarkedSourceForDottedName(full_name, ms.add_child(),
+                                        vname_for_desc(descriptor))) {
     return ms;
   }
   return std::nullopt;
