@@ -200,6 +200,9 @@ def kythe_rule_repositories():
             # Use the rules_rust provided proto plugin, rather than the native one
             # which hijacks the --rust_out command line and is incompatible.
             "//third_party:protobuf-no-rust.patch",
+            # Patch https://github.com/protocolbuffers/protobuf/commit/5b6c2459b57c23669d6efc5a14a874c693004eec
+            # until it gets included in a release.
+            "//third_party:protobuf-nowkt.patch",
         ],
         patch_args = [
             "-p1",
