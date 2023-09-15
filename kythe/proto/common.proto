@@ -171,6 +171,9 @@ message MarkedSource {
   bool add_final_list_token = 10;
   // Annotations covering this subtree's full span.
   repeated Link link = 11;
+
+  // Exclude this MarkedSource when being included in a parent of these kinds.
+  repeated Kind exclude_on_include = 12;
 }
 
 // Contains symbol information for Kythe graph nodes.

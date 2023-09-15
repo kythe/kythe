@@ -125,6 +125,27 @@ func ensureKind(ms *cpb.MarkedSource, k cpb.MarkedSource_Kind) *cpb.MarkedSource
 	}
 }
 
+func removeExcluded(kind cpb.MarkedSource_Kind, ms *cpb.MarkedSource) *cpb.MarkedSource {
+	for _, k := range ms.GetExcludeOnInclude() {
+		if k == kind {
+			return nil
+		}
+	}
+	if len(ms.GetChild()) == 0 {
+		return ms
+	}
+
+	children := make([]*cpb.MarkedSource, 0, len(ms.GetChild()))
+	for _, c := range ms.GetChild() {
+		if e := removeExcluded(kind, c); e != nil {
+			children = append(children, e)
+		}
+	}
+	res := proto.Clone(ms).(*cpb.MarkedSource)
+	res.Child = children
+	return res
+}
+
 var invalidLookupReplacement = &cpb.MarkedSource{PreText: "???"}
 
 func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
@@ -138,7 +159,7 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
 		}
 		if p := params[ms.GetLookupIndex()]; p != "" {
-			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
+			return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER))
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TPARAM:
 		tparams := r.tparams[ticket]
@@ -146,10 +167,10 @@ func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSourc
 			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
 		}
 		if p := tparams[ms.GetLookupIndex()]; p != "" {
-			return ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER)
+			return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER))
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TYPED:
-		return ensureKind(r.ResolveTicket(r.typed[ticket]), cpb.MarkedSource_TYPE)
+		return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(r.typed[ticket]), cpb.MarkedSource_TYPE))
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM:
 		// TODO: handle param/default
 		params := r.params[ticket]
@@ -171,18 +192,22 @@ func (r *Resolver) resolveParameters(base *cpb.MarkedSource, params []string) *c
 	n := proto.Clone(base).(*cpb.MarkedSource)
 	n.LookupIndex = 0
 	n.Kind = cpb.MarkedSource_PARAMETER
-	n.Child = make([]*cpb.MarkedSource, len(params))
-	for i, p := range params {
-		n.Child[i] = r.ResolveTicket(p)
+	n.Child = make([]*cpb.MarkedSource, 0, len(params))
+	for _, p := range params {
+		if c := removeExcluded(base.GetKind(), r.ResolveTicket(p)); c != nil {
+			n.Child = append(n.Child, c)
+		}
 	}
 	return n
 }
 
 func (r *Resolver) resolveChildren(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
 	n := proto.Clone(ms).(*cpb.MarkedSource)
-	children := make([]*cpb.MarkedSource, len(n.GetChild()))
-	for i, ms := range n.GetChild() {
-		children[i] = r.resolve(ticket, ms)
+	children := make([]*cpb.MarkedSource, 0, len(n.GetChild()))
+	for _, ms := range n.GetChild() {
+		if c := r.resolve(ticket, ms); c != nil {
+			children = append(children, c)
+		}
 	}
 	n.Child = children
 	return n
