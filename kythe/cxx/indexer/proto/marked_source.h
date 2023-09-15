@@ -27,9 +27,11 @@ namespace kythe {
 // `name` is a proto-style dotted qualified name
 // `root` is the node to turn into a (box (context) (identifier)) or an
 // identifier, depending on the structure of `name`.
+// If given a vname, it will be added as a definition for the identifier.
 // Returns true if at least one token was found.
-bool GenerateMarkedSourceForDottedName(absl::string_view name,
-                                       MarkedSource* root);
+bool GenerateMarkedSourceForDottedName(
+    absl::string_view name, MarkedSource* root,
+    std::optional<proto::VName> vname = std::nullopt);
 
 // Given a proto descriptor, generates an appropriate code fact. Returns
 // `None` if a code fact couldn't be generated.
@@ -53,7 +55,9 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::FieldDescriptor* descriptor);
+    const google::protobuf::FieldDescriptor* descriptor,
+    const std::function<proto::VName(const google::protobuf::FieldDescriptor*)>&
+        vname_for_desc);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::ServiceDescriptor* descriptor);
