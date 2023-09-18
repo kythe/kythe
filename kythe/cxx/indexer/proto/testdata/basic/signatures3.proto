@@ -1,0 +1,17 @@
+// Test proto3 for signatures.
+
+syntax = "proto3";
+
+package proto_kythe_test;
+
+message Message3 {
+  //- @O defines/binding O
+  //- O.code/rendered/qualified_name "proto_kythe_test.Message3.O"
+  //- O.code/rendered/signature "optional string O"
+  optional string O = 1;
+
+  //- @F defines/binding F
+  //- F.code/rendered/qualified_name "proto_kythe_test.Message3.F"
+  //- F.code/rendered/signature "int32 F"
+  int32 F = 2;
+}

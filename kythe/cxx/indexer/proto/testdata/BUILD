@@ -14,6 +14,13 @@ proto_verifier_test(
 )
 
 proto_verifier_test(
+    name = "signatures3",
+    srcs = [":signatures3_proto"],
+    resolve_code_facts = True,
+    tags = ["basic"],
+)
+
+proto_verifier_test(
     name = "file_node_existence",
     srcs = [":basic_file_node_proto"],
     tags = ["basic"],
@@ -180,6 +187,11 @@ proto_library(
 proto_library(
     name = "signatures_proto",
     srcs = ["basic/signatures.proto"],
+)
+
+proto_library(
+    name = "signatures3_proto",
+    srcs = ["basic/signatures3.proto"],
 )
 
 proto_library(
