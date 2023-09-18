@@ -4666,6 +4666,16 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
   return BuildNodeSetForType(T.getPointeeType());
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForAdjusted(
+    const clang::AdjustedType& T) {
+  if (auto S = T.getAdjustedType(); !S.isNull()) {
+    return BuildNodeSetForType(S);
+  } else if (auto U = T.getOriginalType(); !U.isNull()) {
+    return BuildNodeSetForType(U);
+  }
+  return NodeSet::Empty();
+}
+
 GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
     const clang::NamedDecl* Decl) {
   // TODO(shahms): Separate building the node id from emitting it.
@@ -4802,6 +4812,11 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
 #define DELEGATE_TYPE(t) \
   case clang::Type::t:   \
     return BuildNodeSetFor##t(clang::cast<clang::t##Type>(T));
+
+#define DELEGATE_TYPE_TO_BASE(t, b) \
+  case clang::Type::t:              \
+    return BuildNodeSetFor##b(clang::cast<clang::b##Type>(T));
+
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
   switch (T.getTypeClass()) {
@@ -4843,6 +4858,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(DependentAddressSpace);
     DELEGATE_TYPE(BitInt);
     DELEGATE_TYPE(DependentBitInt);
+    DELEGATE_TYPE(Adjusted);
+    DELEGATE_TYPE_TO_BASE(Decayed, Adjusted);
     UNSUPPORTED_CLANG_TYPE(BTFTagAttributed);
     UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(Complex);
@@ -4850,8 +4867,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
     UNSUPPORTED_CLANG_TYPE(Vector);
     UNSUPPORTED_CLANG_TYPE(ExtVector);
-    UNSUPPORTED_CLANG_TYPE(Adjusted);
-    UNSUPPORTED_CLANG_TYPE(Decayed);
     UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
     UNSUPPORTED_CLANG_TYPE(TypeOf);
     UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
@@ -4876,6 +4891,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
   }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE
+#undef DELEGATE_TYPE_TO_BASE
 }
 
 std::optional<GraphObserver::NodeId>

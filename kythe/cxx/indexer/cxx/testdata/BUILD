@@ -302,6 +302,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "decayed_type",
+    srcs = ["basic/decayed_type.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "decltype_auto",
     srcs = ["basic/decltype_auto.cc"],
     check_for_singletons = True,
