@@ -66,7 +66,7 @@ proto_lang_toolchain(
     name = "cc_proto_toolchain",
     command_line = "--$(PLUGIN_OUT)=:$(OUT)",
     plugin = ":cc_proto_metadata_plugin",
-    runtime = "@com_google_protobuf//:protobuf",
+    runtime = "@com_google_protobuf//:protobuf_nowkt",
 )
 
 # Alternatively, if the plugin doesn't work you can use the default code generator
@@ -78,7 +78,7 @@ proto_lang_toolchain(
 proto_lang_toolchain(
     name = "cc_native_proto_toolchain",
     command_line = "--cpp_out=annotate_headers,annotation_pragma_name=kythe_metadata,annotation_guard_name=KYTHE_IS_RUNNING:$(OUT)",
-    runtime = "@com_google_protobuf//:protobuf",
+    runtime = "@com_google_protobuf//:protobuf_nowkt",
 )
 
 filegroup(
