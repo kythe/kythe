@@ -143,27 +143,24 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
         vname_for_desc) {
   std::string full_name;
   if (const google::protobuf::OneofDescriptor* oneof =
-          descriptor->containing_oneof()) {
+          descriptor->real_containing_oneof()) {
     full_name = oneof->full_name() + "." + descriptor->name();
   } else {
     full_name = descriptor->full_name();
   }
   MarkedSource ms;
   ms.set_post_child_text(" ");
-  if (!descriptor->containing_oneof() && !descriptor->is_map() &&
-      descriptor->label()) {
+  if (!descriptor->real_containing_oneof() && !descriptor->is_map() &&
+      (descriptor->has_optional_keyword() || descriptor->is_required() ||
+       descriptor->is_repeated())) {
     auto* mod = ms.add_child();
     mod->set_kind(MarkedSource::MODIFIER);
-    switch (descriptor->label()) {
-      case google::protobuf::FieldDescriptor::Label::LABEL_OPTIONAL:
-        mod->set_pre_text("optional");
-        break;
-      case google::protobuf::FieldDescriptor::Label::LABEL_REQUIRED:
-        mod->set_pre_text("required");
-        break;
-      case google::protobuf::FieldDescriptor::Label::LABEL_REPEATED:
-        mod->set_pre_text("repeated");
-        break;
+    if (descriptor->has_optional_keyword()) {
+      mod->set_pre_text("optional");
+    } else if (descriptor->is_required()) {
+      mod->set_pre_text("required");
+    } else if (descriptor->is_repeated()) {
+      mod->set_pre_text("repeated");
     }
   }
   if (const std::optional<MarkedSource> t =
