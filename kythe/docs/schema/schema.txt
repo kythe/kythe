@@ -1255,6 +1255,18 @@ void i() {
 }
 --------------------------------------------------------------------------------
 
+[kythe,Java,"Java method references make thunks."]
+--------------------------------------------------------------------------------
+import java.util.function.Consumer;
+public class E {
+  //- @f defines/binding FnF
+  void f(Object v) { }
+  //- @f ref FnF
+  //- // @"this::f" ref/call/thunk FnF -- currently unsupported
+  Consumer<Object> myF = this::f;
+}
+--------------------------------------------------------------------------------
+
 [[refdoc]]
 ref/doc
 ~~~~~~~
