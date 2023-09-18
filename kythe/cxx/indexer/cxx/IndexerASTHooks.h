@@ -372,6 +372,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForAttributed(const clang::AttributedType& T);
   NodeSet BuildNodeSetForDependentAddressSpace(
       const clang::DependentAddressSpaceType& T);
+  NodeSet BuildNodeSetForAdjusted(const clang::AdjustedType& T);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
