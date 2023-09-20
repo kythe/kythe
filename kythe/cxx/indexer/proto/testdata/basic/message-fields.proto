@@ -19,6 +19,12 @@ message MessageFields {
   //- FNRoot child.0 FNLabel
   //- FNLabel.kind "MODIFIER"
   //- FNLabel.pre_text "optional"
+  //- FNRoot child.1 FNType
+  //- FNType.kind "TYPE"
+  //- FNType child.0 FNTypeName
+  //- FNTypeName child.1 FNTypeIdent
+  //- FNTypeIdent.pre_text "Type1"
+  //- FNTypeIdent link Type1Node
   //- FNRoot child.2 FNName
   //- FNName child.0 FNQualName
   //- FNName child.1 FNIdent
