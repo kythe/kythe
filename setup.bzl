@@ -322,7 +322,7 @@ def remote_jdk21_repos():
         os = "linux",
         cpu = "x86_64",
         version = "21.28.85-ca-jre21.0.0",
-        sha256 = "fb103e1a437c66b457e9d78facd1e2568b71e9f137f835d57263bf80fea8635a",
+        sha256 = "283ed539e0fb8ae9b53de3e949e7d7e29100c05d1128a5b280b10aef44591430",
     )
 
     maybe(
