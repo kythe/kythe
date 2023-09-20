@@ -321,7 +321,7 @@ def remote_jdk21_repos():
         name = "remotejdk21_linux",
         os = "linux",
         cpu = "x86_64",
-        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        version = "21.28.85-ca-jre21.0.0",
         sha256 = "fb103e1a437c66b457e9d78facd1e2568b71e9f137f835d57263bf80fea8635a",
     )
 
@@ -330,7 +330,7 @@ def remote_jdk21_repos():
         name = "remotejdk21_macos",
         os = "macos",
         cpu = "x86_64",
-        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        version = "21.28.85-ca-jre21.0.0",
     )
 
     maybe(
@@ -338,7 +338,7 @@ def remote_jdk21_repos():
         name = "remotejdk21_macos_aarch64",
         os = "macos",
         cpu = "aarch64",
-        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        version = "21.28.85-ca-jre21.0.0",
     )
 
     maybe(
@@ -346,5 +346,5 @@ def remote_jdk21_repos():
         name = "remotejdk21_win",
         os = "windows",
         cpu = "x86_64",
-        version = "21.0.65-ea-jdk21.0.0-ea.26",
+        version = "21.28.85-ca-jre21.0.0",
     )
