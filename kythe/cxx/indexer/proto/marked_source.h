@@ -21,6 +21,7 @@
 
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 
 namespace kythe {
 
@@ -33,18 +34,6 @@ bool GenerateMarkedSourceForDottedName(
     absl::string_view name, MarkedSource* root,
     std::optional<proto::VName> vname = std::nullopt);
 
-// Given a proto descriptor, generates an appropriate code fact. Returns
-// `None` if a code fact couldn't be generated.
-template <typename T>
-std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const T* descriptor) {
-  MarkedSource ms;
-  if (GenerateMarkedSourceForDottedName(descriptor->full_name(), &ms)) {
-    return ms;
-  }
-  return std::nullopt;
-}
-
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::Descriptor* descriptor);
 
@@ -56,14 +45,16 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor,
-    const std::function<proto::VName(const google::protobuf::FieldDescriptor*)>&
-        vname_for_desc);
+    ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::ServiceDescriptor* descriptor);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::MethodDescriptor* descriptor);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::OneofDescriptor* descriptor);
 
 }  // namespace kythe
 

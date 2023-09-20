@@ -18,7 +18,6 @@
 
 #include <optional>
 
-#include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
@@ -439,12 +438,8 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
                                 v_name, location);
   }
 
-  AttachMarkedSource(
-      v_name,
-      GenerateMarkedSourceForDescriptor(
-          field, absl::bind_front(&ProtoGraphBuilder::VNameForDescriptor<
-                                      google::protobuf::FieldDescriptor>,
-                                  builder_)));
+  AttachMarkedSource(v_name,
+                     GenerateMarkedSourceForDescriptor(field, builder_));
 
   // Check for [deprecated=true] annotations and emit deprecation tags.
   if (field->options().deprecated()) {

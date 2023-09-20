@@ -16,13 +16,13 @@
 
 #include "kythe/cxx/indexer/proto/marked_source.h"
 
-#include <functional>
 #include <optional>
 
 #include "absl/strings/str_split.h"
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 #include "kythe/proto/common.pb.h"
 
 namespace kythe {
@@ -98,7 +98,8 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForType(
-    const google::protobuf::FieldDescriptor* descriptor) {
+    const google::protobuf::FieldDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
   MarkedSource type;
   type.set_kind(MarkedSource::TYPE);
   switch (descriptor->type()) {
@@ -108,10 +109,10 @@ std::optional<MarkedSource> GenerateMarkedSourceForType(
         type.set_post_child_text(", ");
         type.set_post_text(">");
 
-        auto key =
-            GenerateMarkedSourceForType(descriptor->message_type()->map_key());
+        auto key = GenerateMarkedSourceForType(
+            descriptor->message_type()->map_key(), builder);
         auto val = GenerateMarkedSourceForType(
-            descriptor->message_type()->map_value());
+            descriptor->message_type()->map_value(), builder);
         if (!key || !val) {
           return std::nullopt;
         }
@@ -119,14 +120,15 @@ std::optional<MarkedSource> GenerateMarkedSourceForType(
         *type.add_child() = *key;
         *type.add_child() = *val;
       } else if (!GenerateMarkedSourceForDottedName(
-                     descriptor->message_type()->full_name(),
-                     type.add_child())) {
+                     descriptor->message_type()->full_name(), type.add_child(),
+                     builder->VNameForDescriptor(descriptor->message_type()))) {
         return std::nullopt;
       }
       break;
     case google::protobuf::FieldDescriptor::TYPE_ENUM:
       if (!GenerateMarkedSourceForDottedName(
-              descriptor->enum_type()->full_name(), type.add_child())) {
+              descriptor->enum_type()->full_name(), type.add_child(),
+              builder->VNameForDescriptor(descriptor->enum_type()))) {
         return std::nullopt;
       }
       break;
@@ -139,8 +141,7 @@ std::optional<MarkedSource> GenerateMarkedSourceForType(
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor,
-    const std::function<proto::VName(const google::protobuf::FieldDescriptor*)>&
-        vname_for_desc) {
+    ProtoGraphBuilder* builder) {
   std::string full_name;
   if (const google::protobuf::OneofDescriptor* oneof =
           descriptor->real_containing_oneof()) {
@@ -167,11 +168,11 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     }
   }
   if (const std::optional<MarkedSource> t =
-          GenerateMarkedSourceForType(descriptor)) {
+          GenerateMarkedSourceForType(descriptor, builder)) {
     *ms.add_child() = *t;
   }
-  if (GenerateMarkedSourceForDottedName(full_name, ms.add_child(),
-                                        vname_for_desc(descriptor))) {
+  if (GenerateMarkedSourceForDottedName(
+          full_name, ms.add_child(), builder->VNameForDescriptor(descriptor))) {
     return ms;
   }
   return std::nullopt;
@@ -185,6 +186,15 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::MethodDescriptor* descriptor) {
   return GenerateMarkedSourceForDescriptor("rpc", descriptor);
+}
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::OneofDescriptor* descriptor) {
+  MarkedSource ms;
+  if (GenerateMarkedSourceForDottedName(descriptor->full_name(), &ms)) {
+    return ms;
+  }
+  return std::nullopt;
 }
 
 }  // namespace kythe
