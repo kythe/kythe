@@ -33,7 +33,7 @@ import (
 // maxRenderDepth cuts the render algorithm if it recurses too deeply into a
 // nested MarkedSource.  The resulting identifiers will thus be partial.  This
 // value matches the kMaxRenderDepth in the C++ implementation.
-const maxRenderDepth = 10
+const maxRenderDepth = 20
 
 const invalidLookupMarker = "???"
 
