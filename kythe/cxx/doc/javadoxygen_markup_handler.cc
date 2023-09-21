@@ -16,8 +16,11 @@
 
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 
+#include <cstddef>
+#include <string>
+
 #include "absl/log/check.h"
-#include "absl/log/log.h"
+#include "kythe/cxx/doc/markup_handler.h"
 
 // See
 // <http://docs.oracle.com/javase/7/docs/technotes/tools/windows/javadoc.html>

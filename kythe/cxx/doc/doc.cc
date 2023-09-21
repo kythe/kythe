@@ -18,8 +18,9 @@
 // extracted from the Kythe graph.
 
 #include <fcntl.h>
-#include <sys/stat.h>
+#include <unistd.h>
 
+#include <cstdio>
 #include <memory>
 #include <string>
 
@@ -27,10 +28,9 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kythe_uri.h"
@@ -40,7 +40,9 @@
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/html_renderer.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
-#include "kythe/cxx/doc/markup_handler.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/storage.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 ABSL_FLAG(std::string, xrefs, "http://localhost:8080",
           "Base URI for xrefs service");

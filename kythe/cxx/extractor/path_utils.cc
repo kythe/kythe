@@ -16,12 +16,16 @@
 
 #include "path_utils.h"
 
+#include <cstdio>
+
 #include "absl/strings/str_format.h"
-#include "clang/Basic/FileManager.h"
+#include "clang/Basic/FileEntry.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Lex/HeaderSearch.h"
-#include "clang/Lex/LexDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Tooling/Tooling.h"
+#include "clang/Lex/Token.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 
 namespace kythe {

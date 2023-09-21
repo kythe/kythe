@@ -16,12 +16,18 @@
 
 #include "kythe/cxx/doc/html_renderer.h"
 
+#include <map>
+#include <string>
+
 #include "absl/log/initialize.h"
+#include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
+#include "kythe/cxx/doc/markup_handler.h"
 #include "kythe/proto/common.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace {

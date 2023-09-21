@@ -23,18 +23,18 @@
 //   textproto_extractor foo.pbtxt
 //   textproto_extractor foo.pbtxt -- --proto_path dir/with/proto/deps
 
+#include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
-#include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/file_utils.h"
+#include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/init.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -42,6 +42,7 @@
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 ABSL_FLAG(std::string, proto_message, "",
           "namespace-qualified message name for the textproto.");

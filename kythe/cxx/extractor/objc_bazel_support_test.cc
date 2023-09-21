@@ -16,8 +16,13 @@
 
 #include "objc_bazel_support.h"
 
+#include <string>
+#include <vector>
+
 #include "absl/log/initialize.h"
+#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
+#include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 namespace kythe {
 namespace {

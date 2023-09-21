@@ -16,14 +16,18 @@
 
 #include "kythe/cxx/doc/markup_handler.h"
 
+#include <cstddef>
+#include <initializer_list>
 #include <stack>
+#include <string>
 
 #include "absl/log/initialize.h"
-#include "absl/log/log.h"
-#include "google/protobuf/text_format.h"
+#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace {

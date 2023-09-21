@@ -106,7 +106,6 @@ cc_binary(
     ],
     deps = [
         ":html_renderer",
-        ":markup_handler",
         "//kythe/cxx/common:init",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
@@ -116,9 +115,7 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
         "@com_google_protobuf//src/google/protobuf/io",

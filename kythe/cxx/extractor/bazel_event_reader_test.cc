@@ -16,6 +16,8 @@
 #include "kythe/cxx/extractor/bazel_event_reader.h"
 
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
