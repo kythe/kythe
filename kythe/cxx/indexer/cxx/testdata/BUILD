@@ -2225,6 +2225,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_dependent_template_specialization_type",
+    srcs = ["template/template_dependent_template_specialization_type.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_depexpr_field_ref",
     srcs = ["template/template_depexpr_field_ref.cc"],
     ignore_dups = True,

@@ -4568,22 +4568,47 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
   return BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
 }
 
+std::vector<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdsForTemplateArgs(
+    clang::ArrayRef<clang::TemplateArgument> args) {
+  std::vector<GraphObserver::NodeId> ids;
+  ids.reserve(args.size());
+  for (const auto& arg : args) {
+    if (std::optional<GraphObserver::NodeId> arg_id =
+            BuildNodeIdForTemplateArgument(arg)) {
+      ids.push_back(*arg_id);
+    } else {
+      // If we can't produce an ID for any template argument (e.g., because
+      // some argument kind was unimplemented and the indexer is being run with
+      // --ignore_unimplemented), return nothing.
+      return {};
+    }
+  }
+  return ids;
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentTemplateSpecialization(
+    const clang::DependentTemplateSpecializationType& T) {
+  auto dep_name =
+      BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
+  std::vector<GraphObserver::NodeId> arg_ids =
+      BuildNodeIdsForTemplateArgs(T.template_arguments());
+  return arg_ids.size() == T.template_arguments().size()
+             ? Observer.recordTappNode(dep_name, arg_ids)
+             : NodeSet::Empty();
+}
+
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
     const clang::TemplateSpecializationType& T) {
   // This refers to a particular class template, type alias template,
   // or template template parameter. Non-dependent template
   // specializations appear as different types.
-  if (auto TemplateName = BuildNodeIdForTemplateName(T.getTemplateName())) {
-    std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(T.template_arguments().size());
-    for (const auto& arg : T.template_arguments()) {
-      if (auto ArgId = BuildNodeIdForTemplateArgument(arg)) {
-        TemplateArgs.push_back(*ArgId);
-      } else {
-        return NodeSet::Empty();
-      }
-    }
-    return Observer.recordTappNode(*TemplateName, TemplateArgs);
+  if (auto template_name = BuildNodeIdForTemplateName(T.getTemplateName())) {
+    std::vector<GraphObserver::NodeId> arg_ids =
+        BuildNodeIdsForTemplateArgs(T.template_arguments());
+    return arg_ids.size() == T.template_arguments().size()
+               ? Observer.recordTappNode(*template_name, arg_ids)
+               : NodeSet::Empty();
   }
   return NodeSet::Empty();
 }
@@ -4860,8 +4885,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(DependentBitInt);
     DELEGATE_TYPE(Adjusted);
     DELEGATE_TYPE_TO_BASE(Decayed, Adjusted);
+    DELEGATE_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(BTFTagAttributed);
-    UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(VariableArray);
     UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
