@@ -16,43 +16,56 @@
 
 #include "cxx_extractor.h"
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
+#include <stack>
+#include <string>
 #include <string_view>
+#include <system_error>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "clang/Basic/FileEntry.h"
 #include "clang/Basic/Module.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
+#include "clang/Lex/Pragma.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
+#include "google/protobuf/any.pb.h"
 #include "kythe/cxx/common/file_utils.h"
+#include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/sha256_hasher.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
+#include "kythe/cxx/extractor/cxx_details.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
@@ -60,6 +73,10 @@
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
+#include "kythe/proto/storage.pb.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/VirtualFileSystem.h"
@@ -372,7 +389,7 @@ struct FileState {
 /// \brief Hooks the Clang preprocessor to detect required include files.
 class ExtractorPPCallbacks : public clang::PPCallbacks {
  public:
-  ExtractorPPCallbacks(ExtractorState state);
+  explicit ExtractorPPCallbacks(ExtractorState state);
 
   /// \brief Common utility to pop a file off the file stack.
   ///
@@ -546,7 +563,7 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
           state.main_source_file_stdin_alternate) {
   class ClaimPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
-    ClaimPragmaHandlerWrapper(ExtractorPPCallbacks* context)
+    explicit ClaimPragmaHandlerWrapper(ExtractorPPCallbacks* context)
         : PragmaHandler("kythe_claim"), context_(context) {}
     void HandlePragma(clang::Preprocessor& preprocessor,
                       clang::PragmaIntroducer introducer,
@@ -563,7 +580,7 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
 
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
-    MetadataPragmaHandlerWrapper(ExtractorPPCallbacks* context)
+    explicit MetadataPragmaHandlerWrapper(ExtractorPPCallbacks* context)
         : PragmaHandler("kythe_metadata"), context_(context) {}
     void HandlePragma(clang::Preprocessor& preprocessor,
                       clang::PragmaIntroducer introducer,
@@ -1060,7 +1077,7 @@ void KzipWriterSink::OpenIndex(const std::string& unit_hash) {
   std::string path = path_type_ == OutputPathType::SingleFile
                          ? path_
                          : JoinPath(path_, unit_hash + ".kzip");
-  writer_ = IndexWriter(OpenKzipWriterOrDie(path));
+  writer_ = OpenKzipWriterOrDie(path);
 }
 
 void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {

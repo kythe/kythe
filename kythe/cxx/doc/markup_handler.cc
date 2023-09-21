@@ -17,7 +17,13 @@
 #include "kythe/cxx/doc/markup_handler.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <stack>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 

@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cassert>
 #include <mutex>
 #include <string>
 #include <string_view>

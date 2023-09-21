@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <optional>
 #include <string>
+#include <utility>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

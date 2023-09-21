@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-#include "kythe/cxx/common/index_reader.h"
+#include "kythe/cxx/common/index_reader.h"  // NOLINT(misc-include-cleaner)
 
 // This file intentionally left blank.

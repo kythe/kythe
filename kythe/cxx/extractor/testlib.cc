@@ -17,18 +17,23 @@
 #include "kythe/cxx/extractor/testlib.h"
 
 #include <errno.h>
-#include <stdlib.h>
+#include <unistd.h>
 
-#include <iostream>
+#include <cstddef>
+#include <cstring>
+#include <memory>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "gmock/gmock.h"
+#include "absl/utility/utility.h"
+#include "google/protobuf/any.pb.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
@@ -37,6 +42,7 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Program.h"
 #include "tools/cpp/runfiles/runfiles.h"
 

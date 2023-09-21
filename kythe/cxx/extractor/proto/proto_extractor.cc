@@ -16,18 +16,25 @@
 
 #include "proto_extractor.h"
 
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/compiler/importer.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/file_vname_generator.h"
+#include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace lang_proto {

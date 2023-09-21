@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

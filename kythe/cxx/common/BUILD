@@ -453,6 +453,9 @@ cc_test(
         "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
+        ":index_reader",
+        ":index_writer",
+        ":kzip_encoding",
         ":kzip_reader",
         ":kzip_writer",
         ":libzip/error",
