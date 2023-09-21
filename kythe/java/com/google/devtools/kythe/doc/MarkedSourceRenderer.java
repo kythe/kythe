@@ -33,7 +33,7 @@ public class MarkedSourceRenderer {
   private MarkedSourceRenderer() {}
 
   /** Don't recurse more than this many times when rendering MarkedSource. */
-  private static final int MAX_RENDER_DEPTH = 10;
+  private static final int MAX_RENDER_DEPTH = 20;
 
   /**
    * Render {@code signature} as a full signature.

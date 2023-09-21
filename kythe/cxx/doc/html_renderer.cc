@@ -23,7 +23,7 @@
 namespace kythe {
 namespace {
 /// Don't recurse more than this many times when rendering MarkedSource.
-constexpr size_t kMaxRenderDepth = 10;
+constexpr size_t kMaxRenderDepth = 20;
 
 /// \brief A RAII class to deal with styled div/span tags.
 class CssTag {
