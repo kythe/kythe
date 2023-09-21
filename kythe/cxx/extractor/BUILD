@@ -160,8 +160,12 @@ cc_library(
     name = "objc_bazel_support_library",
     srcs = ["objc_bazel_support.cc"],
     hdrs = ["objc_bazel_support.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "//third_party/bazel:extra_actions_base_cc_proto",
+        "@com_google_protobuf//:protobuf_lite",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//llvm:Support",
     ],
@@ -171,11 +175,16 @@ cc_test(
     name = "objc_bazel_support_library_test",
     size = "small",
     srcs = ["objc_bazel_support_test.cc"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         ":objc_bazel_support_library",
         "//third_party:gtest",
+        "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:initialize",
+        "@com_google_protobuf//:protobuf_lite",
     ],
 )
 

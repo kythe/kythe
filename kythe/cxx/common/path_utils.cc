@@ -16,9 +16,11 @@
 
 #include "kythe/cxx/common/path_utils.h"
 
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <optional>

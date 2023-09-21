@@ -15,11 +15,15 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
+#include <algorithm>
+#include <functional>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"

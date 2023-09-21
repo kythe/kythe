@@ -16,18 +16,30 @@
 
 #include "cxx_extractor.h"
 
-#include <map>
+#include <unistd.h>
+
 #include <memory>
+#include <set>
+#include <string>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/initialize.h"
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
-#include "clang/Frontend/FrontendActions.h"
+#include "clang/Basic/FileSystemOptions.h"
 #include "clang/Tooling/Tooling.h"
+#include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/extractor/cxx_details.h"
+#include "kythe/cxx/extractor/language.h"
 #include "kythe/proto/analysis.pb.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
@@ -45,7 +57,7 @@ class CxxExtractorTest : public testing::Test {
     directories_to_remove_.insert(std::string(root_.str()));
   }
 
-  ~CxxExtractorTest() {
+  ~CxxExtractorTest() override {
     // Do the best we can to clean up the temporary files we've made.
     std::error_code err;
     for (const auto& file : files_to_remove_) {
@@ -161,7 +173,7 @@ class CxxExtractorTest : public testing::Test {
   /// \brief An `CompilationWriterSink` that forwards all calls to another sink.
   class ForwardingCompilationWriterSink : public kythe::CompilationWriterSink {
    public:
-    ForwardingCompilationWriterSink(
+    explicit ForwardingCompilationWriterSink(
         kythe::CompilationWriterSink* underlying_sink)
         : underlying_sink_(underlying_sink) {}
     void OpenIndex(const std::string& unit_hash) override {

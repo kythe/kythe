@@ -1,18 +1,21 @@
-#include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/log/check.h"
 #include "gmock/gmock.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/field_comparator.h"
 #include "google/protobuf/util/message_differencer.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/cxx_extractor.h"
 #include "kythe/cxx/extractor/language.h"
+#include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 
 namespace kythe {
 namespace {

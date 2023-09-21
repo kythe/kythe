@@ -16,9 +16,16 @@
 
 #include "kythe/cxx/doc/html_renderer.h"
 
+#include <cstddef>
+#include <map>
 #include <stack>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "kythe/cxx/doc/markup_handler.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace {
@@ -717,7 +724,7 @@ std::string RenderDocument(
     if (!initializer.empty()) {
       CssTag init_div(CssTag::Kind::Div, options.initializer_div, &text_out);
       text_out.append("Initializer: ");
-      bool multiline = initializer.find("\n") != decltype(initializer)::npos;
+      bool multiline = initializer.find('\n') != decltype(initializer)::npos;
       CssTag code_div(CssTag::Kind::Pre,
                       multiline ? options.initializer_multiline_pre
                                 : options.initializer_pre,

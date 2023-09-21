@@ -15,11 +15,15 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
@@ -33,11 +37,14 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "kythe/proto/bazel_artifact_selector.pb.h"
 #include "kythe/proto/bazel_artifact_selector_v2.pb.h"
 #include "re2/re2.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 namespace {
@@ -85,19 +92,6 @@ template <typename T>
 T& GetOrConstruct(std::optional<T>& value) {
   return value.has_value() ? *value : value.emplace();
 }
-
-template <typename T>
-struct FromRange {
-  template <typename U>
-  operator U() {
-    return U(range.begin(), range.end());
-  }
-
-  const T& range;
-};
-
-template <typename T>
-FromRange(const T&) -> FromRange<T>;
 
 template <typename T>
 const T& AsConstRef(const T& value) {
@@ -428,7 +422,7 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
                                                                     raw)) {
         return false;
       }
-      state.PackFrom(std::move(raw));
+      state.PackFrom(raw);
       return true;
     }
     case AspectArtifactSelectorSerializationFormat::kV1: {
@@ -453,7 +447,7 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
           file_entry->set_uri(file->uri);
         }
       }
-      state.PackFrom(std::move(raw));
+      state.PackFrom(raw);
       return true;
     }
   }
