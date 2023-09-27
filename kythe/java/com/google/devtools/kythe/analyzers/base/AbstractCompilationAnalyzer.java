@@ -64,8 +64,7 @@ public abstract class AbstractCompilationAnalyzer {
       }
       logger.atInfo().log(
           "Analyzing compilation: %s {%s}",
-          req.getCompilationDigest(),
-          TextFormat.shortDebugString(req.getCompilation().getVName()));
+          req.getCompilationDigest(), TextFormat.shortDebugString(req.getCompilation().getVName()));
       analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
     } catch (InterruptedException e) {
       throw e;
