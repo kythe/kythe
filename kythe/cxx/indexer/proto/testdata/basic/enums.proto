@@ -19,6 +19,7 @@ message EnumMessage {
   //- ETContext child.1 ETContext1
   //- ETContext1.pre_text "EnumMessage"
   //- ETIdent.pre_text "EnumTest"
+  //- ETIdent link EnumTestNode
   enum EnumTest {
     //- @PROTO defines/binding ValueProtoNode
     //- ValueProtoNode childof EnumTest
@@ -29,6 +30,7 @@ message EnumMessage {
     //- VKRoot child.0 VKContext
     //- VKRoot child.1 VKIdent
     //- VKIdent.pre_text "KYTHE"
+    //- VKIdent link ValueKytheNode
     //- VKContext child.0 VKContext0
     //- VKContext child.1 VKContext1
     //- VKContext child.2 VKContext2

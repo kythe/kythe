@@ -16,6 +16,7 @@ option java_package = "io.kythe";
 //- PMName child.1 PMIdent
 //- PMIdent.kind "IDENTIFIER"
 //- PMIdent.pre_text "ParentMessage"
+//- PMIdent link ParentMessageNode
 //- PMContext.kind "CONTEXT"
 //- PMContext child.0 PMContext0
 //- PMContext0.pre_text "proto_kythe_test"
@@ -27,6 +28,7 @@ message ParentMessage {
   //- NMName child.0 NMContext
   //- NMName child.1 NMIdent
   //- NMIdent.pre_text "NestedMessage"
+  //- NMIdent link NestedMessageNode
   //- NMContext child.1 NMContext1
   //- NMContext1.pre_text "ParentMessage"
   message NestedMessage {

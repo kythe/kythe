@@ -566,8 +566,8 @@ void FileDescriptorWalker::VisitNestedEnumTypes(const std::string& message_name,
       if (nested_proto->options().deprecated()) {
         builder_->SetDeprecated(v_name);
       }
-      AttachMarkedSource(v_name,
-                         GenerateMarkedSourceForDescriptor(nested_proto));
+      AttachMarkedSource(
+          v_name, GenerateMarkedSourceForDescriptor(nested_proto, builder_));
     }
 
     // Visit values
@@ -611,8 +611,8 @@ void FileDescriptorWalker::VisitNestedTypes(const std::string& message_name,
       if (nested_proto->options().deprecated()) {
         builder_->SetDeprecated(v_name);
       }
-      AttachMarkedSource(v_name,
-                         GenerateMarkedSourceForDescriptor(nested_proto));
+      AttachMarkedSource(
+          v_name, GenerateMarkedSourceForDescriptor(nested_proto, builder_));
     }
 
     // Need to visit nested enum and message types first!
@@ -646,7 +646,8 @@ void FileDescriptorWalker::VisitOneofs(const std::string& message_name,
       InitializeLocation(span, &location);
 
       builder_->AddOneofToMessage(message, v_name, location);
-      AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(oneof));
+      AttachMarkedSource(v_name,
+                         GenerateMarkedSourceForDescriptor(oneof, builder_));
     }
 
     // No need to add fields; they're also fields of the message
@@ -679,7 +680,8 @@ void FileDescriptorWalker::VisitMessagesAndEnums(const std::string* ns_name,
       InitializeLocation(span, &location);
 
       builder_->AddMessageType(ns, v_name, location);
-      AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(dp));
+      AttachMarkedSource(v_name,
+                         GenerateMarkedSourceForDescriptor(dp, builder_));
       if (dp->options().deprecated()) {
         builder_->SetDeprecated(v_name);
       }
@@ -713,7 +715,8 @@ void FileDescriptorWalker::VisitMessagesAndEnums(const std::string* ns_name,
       InitializeLocation(span, &location);
 
       builder_->AddEnumType(ns, v_name, location);
-      AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(dp));
+      AttachMarkedSource(v_name,
+                         GenerateMarkedSourceForDescriptor(dp, builder_));
     }
 
     // Visit enum values and add kythe bindings for them
@@ -742,7 +745,8 @@ void FileDescriptorWalker::VisitEnumValues(const EnumDescriptor* dp,
     if (val_dp->options().deprecated()) {
       builder_->SetDeprecated(v_name);
     }
-    AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(val_dp));
+    AttachMarkedSource(v_name,
+                       GenerateMarkedSourceForDescriptor(val_dp, builder_));
   }
 }
 
@@ -893,7 +897,8 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
       InitializeLocation(span, &location);
 
       builder_->AddService(ns, v_name, location);
-      AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(dp));
+      AttachMarkedSource(v_name,
+                         GenerateMarkedSourceForDescriptor(dp, builder_));
     }
 
     // Visit methods
@@ -913,8 +918,8 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
                               MethodDescriptorProto::kNameFieldNumber);
         Location method_location;
         InitializeLocation(location_map_[lookup_path], &method_location);
-        AttachMarkedSource(method,
-                           GenerateMarkedSourceForDescriptor(method_dp));
+        AttachMarkedSource(
+            method, GenerateMarkedSourceForDescriptor(method_dp, builder_));
         builder_->AddMethodToService(v_name, method, method_location);
       }
 

@@ -17,6 +17,7 @@ message Container {
   //- NVRoot child.0 NVContext
   //- NVRoot child.1 NVIdent
   //- NVIdent.pre_text "variant_name"
+  //- NVIdent link NamedVariantType
   //- NVContext child.0 NVContext0
   //- NVContext child.1 NVContext1
   //- NVContext0.pre_text "proto_kythe_test"
