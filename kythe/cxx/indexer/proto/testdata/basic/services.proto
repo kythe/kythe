@@ -25,6 +25,7 @@ message TestReply {
 //- SNName child.0 SNContext
 //- SNName child.1 SNIdent
 //- SNIdent.pre_text "TestService"
+//- SNIdent link ServiceNode
 //- SNContext child.0 SNContext0
 //- SNContext0.pre_text "proto_kythe_test"
 service TestService {
@@ -40,6 +41,7 @@ service TestService {
   //- MNName child.0 MNContext
   //- MNName child.1 MNIdent
   //- MNIdent.pre_text "TestMethod"
+  //- MNIdent link MethodNode
   //- MNContext child.0 MNContext0
   //- MNContext child.1 MNContext1
   //- MNContext0.pre_text "proto_kythe_test"

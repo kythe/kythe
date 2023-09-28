@@ -62,36 +62,44 @@ bool GenerateMarkedSourceForDottedName(absl::string_view name,
 
 template <typename T>
 static std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    absl::string_view kind, const T* descriptor) {
+    absl::string_view kind, const T* descriptor, ProtoGraphBuilder* builder) {
   MarkedSource ms;
   auto* mod = ms.add_child();
   mod->set_kind(MarkedSource::MODIFIER);
   mod->set_pre_text(kind);
   mod->set_post_text(" ");
-  if (GenerateMarkedSourceForDottedName(descriptor->full_name(),
-                                        ms.add_child())) {
+  std::optional<proto::VName> vname;
+  if (builder) {
+    vname = builder->VNameForDescriptor(descriptor);
+  }
+  if (GenerateMarkedSourceForDottedName(descriptor->full_name(), ms.add_child(),
+                                        vname)) {
     return ms;
   }
   return std::nullopt;
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::Descriptor* descriptor) {
-  return GenerateMarkedSourceForDescriptor("message", descriptor);
+    const google::protobuf::Descriptor* descriptor,
+    ProtoGraphBuilder* builder) {
+  return GenerateMarkedSourceForDescriptor("message", descriptor, builder);
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::EnumDescriptor* descriptor) {
-  return GenerateMarkedSourceForDescriptor("enum", descriptor);
+    const google::protobuf::EnumDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
+  return GenerateMarkedSourceForDescriptor("enum", descriptor, builder);
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::EnumValueDescriptor* descriptor) {
+    const google::protobuf::EnumValueDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
   // EnumValueDescriptor::full_name leaves off the parent enum's name.
   std::string full_name =
       descriptor->type()->full_name() + "." + descriptor->name();
   MarkedSource ms;
-  if (GenerateMarkedSourceForDottedName(full_name, &ms)) {
+  if (GenerateMarkedSourceForDottedName(
+          full_name, &ms, builder->VNameForDescriptor(descriptor))) {
     return ms;
   }
   return std::nullopt;
@@ -179,19 +187,24 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::ServiceDescriptor* descriptor) {
-  return GenerateMarkedSourceForDescriptor("service", descriptor);
+    const google::protobuf::ServiceDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
+  return GenerateMarkedSourceForDescriptor("service", descriptor, builder);
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::MethodDescriptor* descriptor) {
-  return GenerateMarkedSourceForDescriptor("rpc", descriptor);
+    const google::protobuf::MethodDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
+  return GenerateMarkedSourceForDescriptor("rpc", descriptor, builder);
 }
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::OneofDescriptor* descriptor) {
+    const google::protobuf::OneofDescriptor* descriptor,
+    ProtoGraphBuilder* builder) {
   MarkedSource ms;
-  if (GenerateMarkedSourceForDottedName(descriptor->full_name(), &ms)) {
+  if (GenerateMarkedSourceForDottedName(
+          descriptor->full_name(), &ms,
+          builder->VNameForDescriptor(descriptor))) {
     return ms;
   }
   return std::nullopt;

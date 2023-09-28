@@ -35,26 +35,31 @@ bool GenerateMarkedSourceForDottedName(
     std::optional<proto::VName> vname = std::nullopt);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::Descriptor* descriptor);
+    const google::protobuf::Descriptor* descriptor, ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::EnumDescriptor* descriptor);
+    const google::protobuf::EnumDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::EnumValueDescriptor* descriptor);
+    const google::protobuf::EnumValueDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::FieldDescriptor* descriptor,
     ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::ServiceDescriptor* descriptor);
+    const google::protobuf::ServiceDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::MethodDescriptor* descriptor);
+    const google::protobuf::MethodDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::OneofDescriptor* descriptor);
+    const google::protobuf::OneofDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 }  // namespace kythe
 
