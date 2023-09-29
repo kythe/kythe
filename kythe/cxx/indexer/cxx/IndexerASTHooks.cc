@@ -5363,6 +5363,7 @@ bool IndexerASTVisitor::VisitObjCProtocolDecl(
   ConnectToProtocols(DeclNode, Decl->protocol_loc_begin(),
                      Decl->protocol_loc_end(), Decl->protocol_begin(),
                      Decl->protocol_end());
+  AssignUSR(DeclNode, Decl);
   return true;
 }
 
