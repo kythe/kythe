@@ -223,7 +223,7 @@ public class JCTreeScanner<R, P> extends SimpleTreeVisitor<R, P> {
   }
 
   public R visitImport(JCImport tree, P p) {
-    return scan(tree.qualid, p);
+    return scan(shims.getQualifiedIdentifier(tree), p);
   }
 
   @Override
