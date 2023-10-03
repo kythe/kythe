@@ -188,9 +188,9 @@ class KytheGraphObserver : public GraphObserver {
     return &vname_token_;
   }
 
-  void applyMetadataFile(clang::FileID ID, const clang::FileEntry* file,
+  void applyMetadataFile(clang::FileID ID, clang::FileEntryRef file,
                          const std::string& search_string,
-                         const clang::FileEntry* target_file) override;
+                         clang::FileEntryRef target_file) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
   void DropRedundantWraiths() { drop_redundant_wraiths_ = true; }
   void Delimit() override { recorder_->PushEntryGroup(); }
@@ -371,7 +371,7 @@ class KytheGraphObserver : public GraphObserver {
                             const NodeId& macro_id) override;
 
   void recordIncludesRange(const Range& source_range,
-                           const clang::FileEntry* file) override;
+                           clang::FileEntryRef file) override;
 
   void recordBoundQueryRange(const Range& source_range,
                              const NodeId& macro_id) override;
@@ -506,8 +506,7 @@ class KytheGraphObserver : public GraphObserver {
                                          llvm::raw_ostream& Ostream) const;
 
   VNameRef VNameRefFromNodeId(const GraphObserver::NodeId& node_id) const;
-  kythe::proto::VName VNameFromFileEntry(
-      const clang::FileEntry* file_entry) const;
+  kythe::proto::VName VNameFromFileEntry(clang::FileEntryRef file_entry) const;
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID& file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range& range);
   kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range& range,

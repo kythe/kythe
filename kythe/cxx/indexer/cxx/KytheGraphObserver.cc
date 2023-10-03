@@ -207,16 +207,16 @@ static const char* FunctionSubkindToString(
 }
 
 kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
-    const clang::FileEntry* file_entry) const {
+    clang::FileEntryRef file_entry) const {
   kythe::proto::VName out_name;
   if (!vfs_->get_vname(file_entry, &out_name)) {
     llvm::StringRef working_directory = vfs_->working_directory();
-    llvm::StringRef file_name(file_entry->getName());
+    llvm::StringRef file_name(file_entry.getName());
     if (file_name.startswith(working_directory)) {
       out_name.set_path(
           RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
-      out_name.set_path(std::string(file_entry->getName()));
+      out_name.set_path(std::string(file_entry.getName()));
     }
     out_name.set_corpus(claimant_.corpus());
   }
@@ -251,8 +251,8 @@ void KytheGraphObserver::AppendFullLocationToStream(
   }
   if (loc.isFileID()) {
     clang::FileID file_id = SourceManager->getFileID(loc);
-    const clang::FileEntry* file_entry =
-        SourceManager->getFileEntryForID(file_id);
+    const clang::OptionalFileEntryRef file_entry =
+        SourceManager->getFileEntryRefForID(file_id);
     // Don't use getPresumedLoc() since we want to ignore #line-style
     // directives.
     if (file_entry) {
@@ -273,7 +273,7 @@ void KytheGraphObserver::AppendFullLocationToStream(
     }
     posted_fileids->push_back(file_id);
     if (file_entry) {
-      kythe::proto::VName file_vname(VNameFromFileEntry(file_entry));
+      kythe::proto::VName file_vname(VNameFromFileEntry(*file_entry));
       if (!file_vname.corpus().empty()) {
         Ostream << file_vname.corpus() << "/";
       }
@@ -312,12 +312,13 @@ void KytheGraphObserver::AppendRangeToStream(llvm::raw_ostream& Ostream,
 /// \param loc The location to associate. Any `SourceLocation` is acceptable.
 /// \param source_manager The `SourceManager` that generated `loc`.
 /// \return a `FileEntry` if one was found, null otherwise.
-static const clang::FileEntry* SearchForFileEntry(
+static clang::OptionalFileEntryRef SearchForFileEntry(
     clang::SourceLocation loc, clang::SourceManager* source_manager) {
   clang::FileID file_id = source_manager->getFileID(loc);
-  const clang::FileEntry* out = loc.isFileID() && loc.isValid()
-                                    ? source_manager->getFileEntryForID(file_id)
-                                    : nullptr;
+  clang::OptionalFileEntryRef out =
+      loc.isFileID() && loc.isValid()
+          ? source_manager->getFileEntryRefForID(file_id)
+          : clang::OptionalFileEntryRef();
   if (out) {
     return out;
   }
@@ -364,9 +365,9 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     if (end.isMacroID()) {
       end = SourceManager->getExpansionLoc(end);
     }
-    if (const clang::FileEntry* file_entry =
+    if (const clang::OptionalFileEntryRef file_entry =
             SearchForFileEntry(begin, SourceManager)) {
-      out_name.CopyFrom(VNameFromFileEntry(file_entry));
+      out_name.CopyFrom(VNameFromFileEntry(*file_entry));
     } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
       VNameRefFromNodeId(range.Context).Expand(&out_name);
     } else {
@@ -432,7 +433,7 @@ void KytheGraphObserver::recordBoundQueryRange(const Range& source_range,
 }
 
 void KytheGraphObserver::recordIncludesRange(const Range& source_range,
-                                             const clang::FileEntry* File) {
+                                             clang::FileEntryRef File) {
   RecordAnchor(source_range, VNameFromFileEntry(File), EdgeKindID::kRefIncludes,
                Claimability::Claimable);
 }
@@ -1301,25 +1302,26 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
   return info->second.node_id;
 }
 
-void KytheGraphObserver::applyMetadataFile(
-    clang::FileID id, const clang::FileEntry* file,
-    const std::string& search_string, const clang::FileEntry* target_file) {
+void KytheGraphObserver::applyMetadataFile(clang::FileID id,
+                                           clang::FileEntryRef file,
+                                           const std::string& search_string,
+                                           clang::FileEntryRef target_file) {
   const std::optional<llvm::MemoryBufferRef> buffer =
       SourceManager->getMemoryBufferForFileOrNone(file);
   if (!buffer) {
     absl::FPrintF(stderr, "Couldn't get content for %s\n",
-                  file->getName().str());
+                  file.getName().str());
     return;
   }
   const std::optional<llvm::MemoryBufferRef> target_buffer =
       SourceManager->getMemoryBufferForFileOrNone(target_file);
   if (!target_buffer) {
     absl::FPrintF(stderr, "Couldn't get content for %s\n",
-                  target_file->getName().str());
+                  target_file.getName().str());
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(
-          std::string(file->getName()),
+          std::string(file.getName()),
           absl::string_view(buffer->getBuffer().data(),
                             buffer->getBufferSize()),
           search_string,
@@ -1353,7 +1355,8 @@ bool KytheGraphObserver::isMainSourceFileRelatedLocation(
   if (file.isInvalid()) {
     return true;
   }
-  if (const clang::FileEntry* entry = SourceManager->getFileEntryForID(file)) {
+  if (const clang::OptionalFileEntryRef entry =
+          SourceManager->getFileEntryRefForID(file)) {
     return transitively_reached_through_header_.find(entry->getUniqueID()) ==
            transitively_reached_through_header_.end();
   }
@@ -1399,10 +1402,11 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
     if (file.isInvalid()) {
       // An actually invalid location.
     } else {
-      const clang::FileEntry* entry = SourceManager->getFileEntryForID(file);
+      const clang::OptionalFileEntryRef entry =
+          SourceManager->getFileEntryRefForID(file);
       if (entry) {
         // An actual file.
-        state.vname = state.base_vname = VNameFromFileEntry(entry);
+        state.vname = state.base_vname = VNameFromFileEntry(*entry);
         state.uid = entry->getUniqueID();
         // TODO(zarko): If modules are enabled, check there to see whether
         // `entry` is a textual header.
@@ -1454,9 +1458,9 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         state.vname.set_signature(absl::StrCat(
             state.context, state.vname.signature(), build_config_));
         if (client_->Claim(claimant_, state.vname)) {
-          if (recorded_files_.insert(entry).second) {
+          if (recorded_files_.insert(&entry->getFileEntry()).second) {
             const std::optional<llvm::MemoryBufferRef> buf =
-                SourceManager->getMemoryBufferForFileOrNone(entry);
+                SourceManager->getMemoryBufferForFileOrNone(*entry);
             if (!buf) {
               // TODO(zarko): diagnostic logging.
             } else {
@@ -1561,10 +1565,11 @@ const KytheClaimToken* KytheGraphObserver::getClaimTokenForLocation(
   if (token == claim_checked_files_.end()) {
     if (SourceManager->isLoadedFileID(file)) {
       // This is the first time we've encountered a file loaded from a pch/pcm.
-      if (auto* entry = SourceManager->getFileEntryForID(file)) {
-        auto vname = VNameFromFileEntry(entry);
+      if (clang::OptionalFileEntryRef entry =
+              SourceManager->getFileEntryRefForID(file)) {
+        auto vname = VNameFromFileEntry(*entry);
         KytheClaimToken new_token;
-        new_token.set_vname(VNameFromFileEntry(entry));
+        new_token.set_vname(VNameFromFileEntry(*entry));
         new_token.set_rough_claimed(false);
         token = claim_checked_files_.emplace(file, new_token).first;
       }

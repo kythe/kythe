@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "clang/Basic/FileEntry.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -36,7 +37,7 @@ namespace cxx_extractor {
 /// \param relative_path The path to the file, relative to search_path.
 /// \param filename The filename used to consult the filesystem.
 /// \return The FileEntry we found or null if we didn't find one.
-const clang::FileEntry* LookupFileForIncludePragma(
+clang::OptionalFileEntryRef LookupFileForIncludePragma(
     clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
     llvm::SmallVectorImpl<char>* relative_path,
     llvm::SmallVectorImpl<char>* filename);
