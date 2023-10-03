@@ -41,7 +41,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   @SuppressWarnings({"CheckedExceptionNotThrown", "unchecked"}) // Safe by specification.
   public List<String> parseCompilerArguments(String[] args) throws IOException {
     try {
-      Class commandLine = loadCommandLineClass();
+      Class<?> commandLine = loadCommandLineClass();
       try {
         // JDK15+: the signature is
         //     List<String> parse(List<String> args)
@@ -88,7 +88,7 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
     }
   }
 
-  private static Class loadCommandLineClass() throws ClassNotFoundException {
+  private static Class<?> loadCommandLineClass() throws ClassNotFoundException {
     ImmutableList<String> classNames =
         // < JDK21 the class is known as com.sun.tools.java.main.CommandLine
         // >= JDK21 it's known as jdk.internal.opt.CommandLine
