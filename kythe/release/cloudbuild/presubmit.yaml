@@ -17,7 +17,7 @@ steps:
       - '--config=remote'
       - //...
   - name: gcr.io/kythe-repo/bazelisk-builder-client
-    id: bazel
+    id: bazel-java21
     args:
       - bazel
       - test
