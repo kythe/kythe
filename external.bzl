@@ -12,14 +12,19 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
-load("@io_kythe//:setup.bzl", "remote_jdk20_repos", "remote_jdk21_repos")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-load("@rules_java//java:repositories.bzl", "remote_jdk19_repos", "rules_java_dependencies")
+load(
+    "@rules_java//java:repositories.bzl",
+    "remote_jdk17_repos",
+    "remote_jdk20_repos",
+    "rules_java_dependencies",
+)
+load("@rules_java//toolchains:remote_java_repository.bzl", "remote_java_repository")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
@@ -33,22 +38,18 @@ def _rule_dependencies():
     gazelle_dependencies()
     rules_java_dependencies()
 
-    # Using rule_java_toolchains() registers @rules_java//toolchains:all first, which
-    # causes toolchain resolution to select the wrong toolchain:
-    # https://github.com/bazelbuild/rules_java/issues/95
-    # Work around this by registering only the JDK toolchain we actually support.
+    # Specifically define and register only Java toolchains we intend to support.
+    remote_jdk17_repos()
     remote_jdk19_repos()
     remote_jdk20_repos()
     remote_jdk21_repos()
     native.register_toolchains("@local_jdk//:runtime_toolchain_definition")
-    for version in ("11", "17", "19"):
+    for version in ("11", "17", "19", "20", "21"):
         for platform in ("linux", "macos", "win"):
             native.register_toolchains("@remotejdk{version}_{platform}_toolchain_config_repo//:toolchain".format(
                 version = version,
                 platform = platform,
             ))
-
-    # Bazel does not yet provide a "default_java_toolchain" target for JDK19 so configure our own.
     native.register_toolchains("//buildenv/java:all")
 
     protobuf_deps()
@@ -315,7 +316,7 @@ def _java_dependencies():
             "com.google.code.findbugs:jsr305:3.0.2",
             "com.google.code.gson:gson:2.8.9",
             "com.google.common.html.types:types:1.0.8",
-            "com.google.errorprone:error_prone_annotations:2.6.0",
+            "com.google.errorprone:error_prone_annotations:2.22.0",
             "com.google.guava:guava:31.1-jre",
             "com.google.jimfs:jimfs:1.2",
             "com.google.re2j:re2j:1.6",
@@ -1801,4 +1802,113 @@ def kythe_dependencies():
         ],
         sha256 = "1206e8a79b41cb22524f73afa4f4ee648478f46ef6990d78e7cc953665a1db89",
         executable = True,
+    )
+
+def _remote_jdk_repository(name, version, os, cpu, sha256 = None):
+    jdk = version.split(".")[0]
+    jdk_cpu = {
+        "x86_64": "x64",
+    }.get(cpu, cpu)
+    jdk_os = {
+        "macos": "macosx",
+        "windows": "win",
+    }.get(os, os)
+
+    basename = "zulu{version}-{os}_{cpu}".format(
+        version = version,
+        jdk = jdk,
+        os = jdk_os,
+        cpu = jdk_cpu,
+    )
+
+    remote_java_repository(
+        name = name,
+        target_compatible_with = [
+            c.format(os = os, cpu = cpu)
+            for c in [
+                "@platforms//os:{os}",
+                "@platforms//cpu:{cpu}",
+            ]
+        ],
+        sha256 = sha256,
+        strip_prefix = basename,
+        urls = [
+            url.format(basename = basename)
+            for url in [
+                "https://mirror.bazel.build/cdn.azul.com/zulu/bin/{basename}.tar.gz",
+                "https://cdn.azul.com/zulu/bin/{basename}.tar.gz",
+            ]
+        ],
+        version = jdk,
+    )
+
+def remote_jdk19_repos():
+    """Imports OpenJDK 19 repositories."""
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk19_linux",
+        os = "linux",
+        cpu = "x86_64",
+        version = "19.32.13-ca-jdk19.0.2",
+        sha256 = "4a994aded1d9b35258d543a59d4963d2687a1094a818b79a21f00273fbbc5bca",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk19_macos",
+        os = "macos",
+        cpu = "x86_64",
+        version = "19.32.13-ca-jdk19.0.2",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk19_macos_aarch64",
+        os = "macos",
+        cpu = "aarch64",
+        version = "19.32.13-ca-jdk19.0.2",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk19_win",
+        os = "windows",
+        cpu = "x86_64",
+        version = "19.32.13-ca-jdk19.0.2",
+    )
+
+def remote_jdk21_repos():
+    """Imports OpenJDK 21 repositories."""
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_linux",
+        os = "linux",
+        cpu = "x86_64",
+        version = "21.28.85-ca-jdk21.0.0",
+        sha256 = "0c0eadfbdc47a7ca64aeab51b9c061f71b6e4d25d2d87674512e9b6387e9e3a6",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos",
+        os = "macos",
+        cpu = "x86_64",
+        version = "21.28.85-ca-jdk21.0.0",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_macos_aarch64",
+        os = "macos",
+        cpu = "aarch64",
+        version = "21.28.85-ca-jdk21.0.0",
+    )
+
+    maybe(
+        _remote_jdk_repository,
+        name = "remotejdk21_win",
+        os = "windows",
+        cpu = "x86_64",
+        version = "21.28.85-ca-jdk21.0.0",
     )

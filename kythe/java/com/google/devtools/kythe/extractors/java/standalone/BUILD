@@ -159,12 +159,18 @@ java_library(
     srcs = ["ReflectiveJdkCompatibilityShims.java"],
     javacopts = [
         "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-    ],
+    ] + select_with_or({
+        (
+            "//buildenv/java:language_version_21",
+        ): ["--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:private"],
     deps = [
         ":jdk_compatibility_shims",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
         "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+        "//third_party/guava",
     ],
 )
 

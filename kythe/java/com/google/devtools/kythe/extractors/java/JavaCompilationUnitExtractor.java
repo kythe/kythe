@@ -16,9 +16,7 @@
 
 package com.google.devtools.kythe.extractors.java;
 
-import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -124,7 +122,6 @@ public class JavaCompilationUnitExtractor {
   private static final ClassLoader moduleClassLoader = findModuleClassLoader();
 
   private static final String JAR_SCHEME = "jar";
-  private final String jdkJar;
   private final String rootDirectory;
   private final FileVNames fileVNames;
   private String systemDir;
@@ -262,17 +259,6 @@ public class JavaCompilationUnitExtractor {
   public JavaCompilationUnitExtractor(FileVNames fileVNames, String rootDirectory)
       throws ExtractionException {
     this.fileVNames = fileVNames;
-
-    Path javaHome = Paths.get(JAVA_HOME.value()).getParent();
-    try {
-      // Remove trailing dots.  Interesting trivia: in some build systems,
-      // the java.home variable is terminated with "/bin/..".
-      // However, this is not the case for the class files
-      // that we are trying to filter.
-      this.jdkJar = javaHome.toRealPath(NOFOLLOW_LINKS).toString();
-    } catch (IOException e) {
-      throw new ExtractionException("JDK path not found: " + javaHome, e, false);
-    }
 
     try {
       this.rootDirectory = Paths.get(rootDirectory).toRealPath().toString();
@@ -616,7 +602,6 @@ public class JavaCompilationUnitExtractor {
       throws ExtractionException {
     URI uri = requiredInput.toUri();
     String entryPath;
-    String jarPath = null;
     boolean isJarPath = false;
 
     {
@@ -631,7 +616,6 @@ public class JavaCompilationUnitExtractor {
       if (conn instanceof JarURLConnection) {
         isJarPath = true;
         JarURLConnection jarConn = ((JarURLConnection) conn);
-        jarPath = jarConn.getJarFileURL().getFile();
         // jar entries don't have a leading '/', and we expect
         // paths like "!CLASS_PATH_JAR!/com/foo/Bar.class"
         entryPath = "/" + jarConn.getEntryName();
@@ -663,8 +647,9 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if ((isJarPath && jarPath.startsWith(jdkJar))
-        || (location != null && location.getName().startsWith("SYSTEM_MODULES"))) {
+    // TODO: This is not entirely true any longer. We can run the extractor on
+    // one JDK but the indexer on a newer version.
+    if (location != null && location.getName().startsWith("SYSTEM_MODULES")) {
       return;
     }
 
