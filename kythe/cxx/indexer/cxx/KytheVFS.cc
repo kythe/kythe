@@ -143,9 +143,8 @@ void IndexVFS::SetVName(const std::string& path, const proto::VName& vname) {
   }
 }
 
-bool IndexVFS::get_vname(const clang::FileEntry* entry,
-                         proto::VName* merge_with) {
-  auto record = uid_to_record_map_.find(PairFromUid(entry->getUniqueID()));
+bool IndexVFS::get_vname(clang::FileEntryRef entry, proto::VName* merge_with) {
+  auto record = uid_to_record_map_.find(PairFromUid(entry.getUniqueID()));
   if (record != uid_to_record_map_.end()) {
     if (record->second->status.getType() ==
             llvm::sys::fs::file_type::regular_file &&

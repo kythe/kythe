@@ -70,7 +70,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param entry The `FileEntry` to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool get_vname(const clang::FileEntry* entry, proto::VName* merge_with);
+  bool get_vname(clang::FileEntryRef entry, proto::VName* merge_with);
   /// \brief Returns the vname associated with some `path`.
   /// \param path The path to look up.
   /// \param merge_with The `VName` to copy the vname onto.

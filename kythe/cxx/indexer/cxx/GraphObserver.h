@@ -333,9 +333,9 @@ class GraphObserver {
   /// \param SearchString if non-empty, is used to locate a C-style comment
   /// inside `FE` that contains metadata.
   /// \param TargetFile the file to which the metadata is being applied.
-  virtual void applyMetadataFile(clang::FileID ID, const clang::FileEntry* FE,
+  virtual void applyMetadataFile(clang::FileID ID, clang::FileEntryRef FE,
                                  const std::string& SearchString,
-                                 const clang::FileEntry* TargetFile) {}
+                                 clang::FileEntryRef TargetFile) {}
 
   /// \param LO the language options in use.
   virtual void setLangOptions(const clang::LangOptions* LO) {
@@ -948,7 +948,7 @@ class GraphObserver {
   /// \param SourceRange The `Range` covering the text causing the inclusion.
   /// \param File The resource being included.
   virtual void recordIncludesRange(const Range& SourceRange,
-                                   const clang::FileEntry* File) {}
+                                   clang::FileEntryRef File) {}
 
   /// \brief Records that the specified variable is static.
   /// \param VarNodeId The `NodeId` of the static variable.

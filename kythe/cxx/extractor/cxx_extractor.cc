@@ -402,7 +402,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   std::string AddFile(const clang::FileEntry* file, llvm::StringRef path);
 
   /// \brief Records the content of `file` if it has not already been recorded.
-  std::string AddFile(const clang::FileEntry* file, llvm::StringRef file_name,
+  std::string AddFile(clang::FileEntryRef file, llvm::StringRef file_name,
                       llvm::StringRef search_path,
                       llvm::StringRef relative_path);
 
@@ -920,11 +920,11 @@ void ExtractorPPCallbacks::InclusionDirective(
     return;
   }
   last_inclusion_directive_path_ =
-      AddFile(&File->getFileEntry(), FileName, SearchPath, RelativePath);
+      AddFile(*File, FileName, SearchPath, RelativePath);
   last_inclusion_offset_ = source_manager_->getFileOffset(HashLoc);
 }
 
-std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
+std::string ExtractorPPCallbacks::AddFile(clang::FileEntryRef file,
                                           llvm::StringRef file_name,
                                           llvm::StringRef search_path,
                                           llvm::StringRef relative_path) {
@@ -932,10 +932,9 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   CHECK(!top_path.empty());
   const auto search_path_entry =
       source_manager_->getFileManager().getDirectory(search_path);
-  llvm::ErrorOr<const clang::FileEntry*> file_or =
-      source_manager_->getFileManager().getFile(top_path);
-  const auto current_file_parent_entry =
-      file_or.getError() ? nullptr : (*file_or)->getDir();
+  llvm::Expected<clang::FileEntryRef> file_or =
+      source_manager_->getFileManager().getFileRef(top_path);
+  const auto current_file_parent_entry = file_or ? file_or->getDir() : nullptr;
   // If the include file was found relatively to the current file's parent
   // directory or a search path, we need to normalize it. This is necessary
   // because llvm internalizes the path by which an inode was first accessed,
@@ -992,9 +991,9 @@ void ExtractorPPCallbacks::HandleKytheMetadataPragma(
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
-  if (const clang::FileEntry* file = LookupFileForIncludePragma(
+  if (clang::OptionalFileEntryRef file = LookupFileForIncludePragma(
           &preprocessor, &search_path, &relative_path, &filename)) {
-    AddFile(file, filename, search_path, relative_path);
+    AddFile(*file, file->getNameAsRequested(), search_path, relative_path);
   }
 }
 
