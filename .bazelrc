@@ -41,6 +41,13 @@ build --@aspect_rules_ts//ts:default_to_tsc_transpiler
 fetch --@aspect_rules_ts//ts:default_to_tsc_transpiler
 query --@aspect_rules_ts//ts:default_to_tsc_transpiler
 
+# Older versions of HotSpot get really crabby when they can't write
+# to /tmp/hsperfdata_{user}/{pid} and sandboxing+persistent workers
+# means all tasks share a PID. This failure is then logged this to stdout,
+# which breaks verifier tests that expect stdout to contain only entry data.
+# See: https://github.com/bazelbuild/bazel/issues/3236
+build --incompatible_sandbox_hermetic_tmp
+
 # By default, compile for Java 11, run on Java 11
 build --java_language_version=11
 build --tool_java_language_version=11
@@ -67,8 +74,6 @@ build:java20 --tool_java_language_version=20
 build:java20 --java_runtime_version=remotejdk_20
 build:java20 --tool_java_runtime_version=remotejdk_20
 
-# Note: Bazel won't work with JDK21 until
-# https://github.com/bazelbuild/bazel/pull/18742 is fixed
 build:java21 --java_language_version=21
 build:java21 --tool_java_language_version=21
 build:java21 --java_runtime_version=remotejdk_21

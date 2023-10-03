@@ -96,6 +96,10 @@ java_binary(
         "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
+        # Avoid writing hsperdata logs to stdout and breaking everyting.
+        # https://github.com/bazelbuild/bazel/issues/3236
+        "-Xlog:disable",
+        "-Xlog:all=warning:stderr:uptime,level,tags",
     ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [

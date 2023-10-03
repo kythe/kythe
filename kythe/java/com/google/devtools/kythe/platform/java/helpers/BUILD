@@ -120,6 +120,27 @@ java_library(
     target_compatible_with = select_with_or({
         (
             "//buildenv/java:language_version_20",
+        ): [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
+)
+
+java_library(
+    name = "jdk21_compatibility_shims",
+    srcs = ["21/JdkCompatibilityShimsImpl.java"],
+    javacopts = [
+        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "-Xep:PackageLocation:OFF",
+    ],
+    tags = ["manual"],
+    target_compatible_with = select_with_or({
+        (
             "//buildenv/java:language_version_21",
         ): [],
         "//conditions:default": ["@platforms//:incompatible"],
