@@ -1216,57 +1216,6 @@ struct S { static int foo(); };
 C<S> cs;
 --------------------------------------------------------------------------------
 
-[[refcallthunk]]
-ref/call/thunk
-~~~~~~~~~~~~~~
-
-Brief description::
-  A *ref/call/thunk* F if A is an anchor that may allow F to be called in the
-  future.
-Points from::
-  anchors
-Points toward::
-  <<function,functions>>
-Ordinals are used::
-  never
-See also::
-  <<refcall,[ref/call]>>
-Notes::
-  This is an experimental definition and is expected to undergo refinement.
-
-This edge is meant to represent delayed calls to functions, such as when a
-thread procedure is passed to a threading library.
-
-[kythe,C++,"In some contexts, uses of functions as values are thunks."]
---------------------------------------------------------------------------------
-//- @f defines/binding FnF
-void f();
-//- @g defines/binding FnG
-void g(void (*h)());
-void i() {
-    //- @f ref FnF
-    //- @"g(f)" ref/call FnG
-    //- // @f ref/call/thunk FnF -- currently unsupported
-    //- !{ @f ref/call FnF }
-    g(f);
-    //- @f ref FnF
-    //- // @f ref/call/thunk FnF -- currently unsupported
-    auto j = f;
-}
---------------------------------------------------------------------------------
-
-[kythe,Java,"Java method references make thunks."]
---------------------------------------------------------------------------------
-import java.util.function.Consumer;
-public class E {
-  //- @f defines/binding FnF
-  void f(Object v) { }
-  //- @f ref FnF
-  //- // @"this::f" ref/call/thunk FnF -- currently unsupported
-  Consumer<Object> myF = this::f;
-}
---------------------------------------------------------------------------------
-
 [[refdoc]]
 ref/doc
 ~~~~~~~
