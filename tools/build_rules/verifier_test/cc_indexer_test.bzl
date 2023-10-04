@@ -56,6 +56,7 @@ _VERIFIER_FLAGS = {
     "convert_marked_source": False,
     "goal_prefix": "//-",
     "ignore_dups": False,
+    "ignore_code_conflicts": False,
 }
 
 _INDEXER_LOGGING_ENV = {
@@ -824,6 +825,7 @@ def cc_indexer_test(
       experimental_drop_instantiation_independent_data: Whether the indexer should
         drop extraneous instantiation independent data.
       experimental_usr_byte_size: How many bytes of a USR to use.
+      ignore_code_conflicts: Ignore conflicting /kythe/code facts during verification.
     """
     _indexer_test(
         name = name,

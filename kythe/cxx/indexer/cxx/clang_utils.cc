@@ -107,6 +107,24 @@ const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl) {
   return DereferenceMemberTemplatesDeclVisitor().Visit(decl);
 }
 
+bool IsExplicitOrInstantiatedFromPartialSpecialization(
+    const clang::CXXRecordDecl* decl) {
+  if (const auto* template_decl =
+          clang::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(
+              decl)) {
+    if (template_decl->isExplicitSpecialization()) {
+      return true;
+    }
+    auto instantiated_from = template_decl->getInstantiatedFrom();
+    if (!instantiated_from.isNull() &&
+        instantiated_from
+            .is<clang::ClassTemplatePartialSpecializationDecl*>()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
   if (const auto* FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
     if (auto* ftsi = FD->getTemplateSpecializationInfo()) {
