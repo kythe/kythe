@@ -65,6 +65,8 @@ ABSL_FLAG(bool, experimental_threaded_claiming, false,
           "Defer answering claims and submit them in bulk when possible.");
 ABSL_FLAG(bool, emit_anchors_on_builtins, true,
           "Emit anchors on builtin types like int and float.");
+ABSL_FLAG(bool, experimental_alias_ref_fix, true,
+          "Fix template references when aliasing is turned on.");
 
 namespace kythe {
 namespace {
@@ -2054,6 +2056,9 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
+// NB: This function is *not* used for definition/declaration sites.
+// Resolved is either a TemplateSpecializationType or a
+// DeducedTemplateSpecializationType.
 template <typename TypeLoc, typename Type>
 bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
     TypeLoc Written, const Type* Resolved) {
@@ -2064,7 +2069,15 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
               BuildNodeIdForTemplateName(Resolved->getTemplateName())) {
         NodeId DeclNode = [&] {
           if (const auto* Decl = Resolved->getAsCXXRecordDecl()) {
-            return BuildNodeIdForDecl(Decl);
+            // When aliasing is on, we need to point at the decls of total
+            // explicit specializations or partial specializations. Otherwise,
+            // we need to use the template name for primary templates.
+            if (!absl::GetFlag(
+                    FLAGS_experimental_alias_template_instantiations) ||
+                !absl::GetFlag(FLAGS_experimental_alias_ref_fix) ||
+                IsExplicitOrInstantiatedFromPartialSpecialization(Decl)) {
+              return BuildNodeIdForDecl(Decl);
+            }
           }
           return TemplateName.value();
         }();
