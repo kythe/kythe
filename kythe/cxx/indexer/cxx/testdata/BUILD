@@ -2131,6 +2131,15 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_class_inst_explicit_aliasing",
+    srcs = ["template/template_class_inst_explicit_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_class_inst_implicit",
     srcs = ["template/template_class_inst_implicit.cc"],
     # Type alias alias inside a class template gets the same documentation text.
@@ -2156,6 +2165,15 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_class_ref",
     srcs = ["template/template_class_ref.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_class_ref_aliasing",
+    srcs = ["template/template_class_ref_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
     ignore_dups = True,
     tags = ["template"],
 )
@@ -2502,6 +2520,16 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_nested_name_aliasing",
+    srcs = ["template/template_nested_name_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_code_conflicts = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_multilevel_argument",
     srcs = ["template/template_multilevel_argument.cc"],
     ignore_dups = True,
@@ -2587,8 +2615,26 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_rec_inherit_aliasing",
+    srcs = ["template/template_rec_inherit_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_rec_override",
     srcs = ["template/template_rec_override.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_rec_override_aliasing",
+    srcs = ["template/template_rec_override_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
     ignore_dups = True,
     tags = ["template"],
 )
