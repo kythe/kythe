@@ -3,7 +3,8 @@
 package iface
 
 // - @Thinger defines/binding Thinger
-// - Thinger code TName
+// - Thinger code TCode
+// - TCode child.1 TName
 // -
 // - TName child.0 TContext
 // - TContext.kind "CONTEXT"
