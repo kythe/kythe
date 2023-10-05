@@ -5,14 +5,14 @@ func main() {
 	Map([]string{}, func(s string) string { return s })
 }
 
-//- @Map defines/binding Func
-//- Func.node/kind function
-//- @#0T defines/binding TVar
-//- TVar.node/kind tvar
-//- @#0U defines/binding UVar
-//- UVar.node/kind tvar
-//- Func tparam.0 TVar
-//- Func tparam.1 UVar
+// - @Map defines/binding Func
+// - Func.node/kind function
+// - @#0T defines/binding TVar
+// - TVar.node/kind tvar
+// - @#0U defines/binding UVar
+// - UVar.node/kind tvar
+// - Func tparam.0 TVar
+// - Func tparam.1 UVar
 func Map[T any, U comparable](l []T, f func(T) U) []U {
 	//- @U ref UVar
 	res := make([]U, len(l))
