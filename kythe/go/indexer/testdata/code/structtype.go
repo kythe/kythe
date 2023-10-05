@@ -2,7 +2,8 @@
 package structtype
 
 // - @T defines/binding Type
-// - Type code TName
+// - Type code TCode
+// - TCode child.1 TName
 // -
 // - TName child.0 TContext
 // - TName child.1 TIdent
