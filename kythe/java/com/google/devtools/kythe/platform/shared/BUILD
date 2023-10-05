@@ -27,6 +27,7 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
