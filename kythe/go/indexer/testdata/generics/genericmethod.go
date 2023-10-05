@@ -78,8 +78,9 @@ type Interface interface {
 // kythe/go/indexer/genericmethod_test.Container.Get.T
 //- GetTVar code TVarCode
 //- TVarCode.kind "BOX"
-//- TVarCode child.0 C
-//- TVarCode child.1 I
+//- TVarCode child.0 TVarName
+//- TVarName child.0 C
+//- TVarName child.1 I
 //- C.kind "CONTEXT"
 //- C.post_child_text "."
 //- C.add_final_list_token "true"

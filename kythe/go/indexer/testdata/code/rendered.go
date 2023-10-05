@@ -12,6 +12,7 @@ func F() {}
 
 // - @S defines/binding S
 // - S.code/rendered/qualified_name "rendered.S"
+// - S.code/rendered/signature "type S"
 type S struct{}
 
 // - @M defines/binding M
@@ -45,8 +46,12 @@ func N() (_ []*rand.Rand, err error) {
 }
 
 // - @Set defines/binding Set
-// - Set.code/rendered/signature "Set"
+// - Set.code/rendered/signature "type Set[T comparable]"
 type Set[T comparable] struct{}
+
+// - @Insert defines/binding Insert
+// - Insert.code/rendered/signature "func (s *Set[T]) Insert(t T)"
+func (s *Set[T]) Insert(t T) {}
 
 // - @G defines/binding G
 // - G.code/rendered/qualified_name "rendered.G"

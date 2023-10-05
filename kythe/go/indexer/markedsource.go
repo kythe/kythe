@@ -106,23 +106,10 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 
 		if sig.TypeParams().Len() > 0 {
 			tps := &cpb.MarkedSource{
-				Kind:          cpb.MarkedSource_PARAMETER,
+				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
 				PreText:       "[",
 				PostText:      "]",
 				PostChildText: ", ",
-			}
-			for i := 0; i < sig.TypeParams().Len(); i++ {
-				tp := sig.TypeParams().At(i)
-				tps.Child = append(tps.Child, &cpb.MarkedSource{
-					PostChildText: " ",
-					Child: []*cpb.MarkedSource{{
-						Kind:    cpb.MarkedSource_IDENTIFIER,
-						PreText: tp.String(),
-					}, {
-						Kind:    cpb.MarkedSource_TYPE,
-						PreText: typeName(tp.Constraint()),
-					}},
-				})
 			}
 			fn.Child = append(fn.Child, tps)
 		}
@@ -188,6 +175,59 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			},
 		}
 		ms = repl
+
+	case *types.TypeName:
+		switch tt := t.Type().(type) {
+		case *types.Named:
+			if tt.Obj().Pkg().Name() == "builtin" {
+				return ms
+			}
+			ms = &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_BOX,
+				PostChildText: " ",
+				Child: []*cpb.MarkedSource{
+					{
+						Kind:    cpb.MarkedSource_MODIFIER,
+						PreText: "type",
+						ExcludeOnInclude: []cpb.MarkedSource_Kind{
+							cpb.MarkedSource_LOOKUP_BY_TYPED,
+						},
+					},
+					ms,
+				},
+			}
+			if tt.TypeParams().Len() > 0 {
+				tps := &cpb.MarkedSource{
+					Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+					PreText:       "[",
+					PostText:      "]",
+					PostChildText: ", ",
+					ExcludeOnInclude: []cpb.MarkedSource_Kind{
+						cpb.MarkedSource_LOOKUP_BY_TYPED,
+					},
+				}
+				ms.Child = append(ms.Child[:len(ms.Child)-1], &cpb.MarkedSource{
+					Child: []*cpb.MarkedSource{ms.GetChild()[len(ms.GetChild())-1], tps},
+				})
+			}
+
+		case *types.TypeParam:
+			repl := &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_BOX,
+				PostChildText: " ",
+				Child: []*cpb.MarkedSource{
+					ms,
+					{
+						Kind:    cpb.MarkedSource_TYPE,
+						PreText: typeName(tt.Constraint()),
+						ExcludeOnInclude: []cpb.MarkedSource_Kind{
+							cpb.MarkedSource_LOOKUP_BY_TYPED,
+						},
+					},
+				},
+			}
+			ms = repl
+		}
 
 	default:
 		// TODO(fromberger): Handle other variations from go/types.
