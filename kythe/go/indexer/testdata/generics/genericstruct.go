@@ -53,8 +53,9 @@ type Pair[T any, U any] struct {
 // kythe/go/indexer/genericstruct_test.Container.T
 //- TVar code TVarCode
 //- TVarCode.kind "BOX"
-//- TVarCode child.0 C
-//- TVarCode child.1 I
+//- TVarCode child.0 TVarName
+//- TVarName child.0 C
+//- TVarName child.1 I
 //- C.kind "CONTEXT"
 //- C.post_child_text "."
 //- C.add_final_list_token "true"
