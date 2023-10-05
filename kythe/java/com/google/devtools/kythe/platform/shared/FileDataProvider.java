@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Arbitrary provider of file data that could be backed by local/networked filesystems, cloud
@@ -33,7 +34,7 @@ public interface FileDataProvider extends AutoCloseable {
    * encounters incomplete data (null for any of the arguments it requires), it returns an
    * IllegalArgumentException in the future.
    */
-  ListenableFuture<byte[]> startLookup(String path, String digest);
+  ListenableFuture<byte[]> startLookup(@Nullable String path, @Nullable String digest);
 
   /**
    * Returns a {@link Future} for the contents of the file described by the given {@link FileInfo}.
