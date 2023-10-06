@@ -12,12 +12,28 @@ public final class RenderedCode {
   // - Constructor.code/rendered/callsite_signature "RenderedCode()"
   private RenderedCode() {}
 
+  // - @create defines/binding Create
+  // - Create.code/rendered/qualified_name "pkg.RenderedCode.create"
+  // - Create.code/rendered/signature "public static RenderedCode create()"
+  // - Create.code/rendered/callsite_signature "create()"
+  public static RenderedCode create() {
+    return null;
+  }
+
   // - @Inner defines/binding Inner
   // - Inner.code/rendered/qualified_name "pkg.RenderedCode.Inner"
   // - Inner.code/rendered/signature "public static class Inner<T, U>"
   // - Inner tparam.0 T
   // - T.code/rendered/qualified_name "pkg.RenderedCode.Inner.T"
-  public static class Inner<T, U> {}
+  public static class Inner<T, U> {
+    // - @create defines/binding CreateInner
+    // - CreateInner.code/rendered/qualified_name "pkg.RenderedCode.Inner.create"
+    // - CreateInner.code/rendered/signature "public static <A, B> Inner<A, B> create()"
+    // - CreateInner.code/rendered/callsite_signature "create()"
+    public static <A, B> Inner<A, B> create() {
+      return null;
+    }
+  }
 
   // - @CONSTANT defines/binding Constant
   // - Constant.code/rendered/signature "public static final String CONSTANT"
