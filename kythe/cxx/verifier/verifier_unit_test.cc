@@ -1168,6 +1168,32 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, DontCareInNegativeIsGroundedPass) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{X typed vname(_,"","3","","")}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST_P(VerifierTest, DontCareInNegativeIsGroundedFail) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{X typed vname(_,"","2","","")}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, EVarsUnsetAfterNegatedBlock) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {

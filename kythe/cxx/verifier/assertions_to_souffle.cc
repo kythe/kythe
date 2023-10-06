@@ -34,6 +34,9 @@ constexpr absl::string_view kGlobalDecls = R"(
   path:number,
   language:number
 ]
+.decl sym(id:number)
+sym(0).
+sym(n + 1) :- sym(n), n >= 1.
 .decl entry(source:vname, kind:number, target:vname, name:number, value:number)
 .input entry(IO=kythe)
 .decl anchor(begin:number, end:number, vname:vname)
@@ -115,7 +118,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
     }
     absl::StrAppend(&code_, ")\n");
   } else {
-    absl::StrAppend(&code_, ", 0 = count:{true");
+    absl::StrAppend(&code_, ", 0 = count:{true, sym(_)");
     for (const auto& goal : group.goals) {
       if (!LowerGoal(symbol_table, goal)) return false;
     }
