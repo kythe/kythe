@@ -34,8 +34,12 @@ common --host_copt=-w
 common --experimental_strict_action_env
 
 # aspect_rules_js configuration
-common --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
-common --@aspect_rules_ts//ts:default_to_tsc_transpiler
+build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+build --@aspect_rules_ts//ts:default_to_tsc_transpiler
+fetch --@aspect_rules_ts//ts:default_to_tsc_transpiler
+query --@aspect_rules_ts//ts:default_to_tsc_transpiler
 
 # Older versions of HotSpot get really crabby when they can't write
 # to /tmp/hsperfdata_{user}/{pid} and sandboxing+persistent workers
