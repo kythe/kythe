@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
 #include <string>
@@ -68,6 +69,11 @@ ABSL_FLAG(bool, use_fast_solver, false,
           "SUPPORTED.");
 ABSL_FLAG(bool, print_timing_information, false,
           "Print timing information for profiling.");
+
+namespace {
+// The fast solver needs extra stack space for modest programs.
+constexpr rlim_t kSolverStack = 64L * 1024L * 1024L;
+}  // namespace
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -138,6 +144,23 @@ Example:
   }
 
   v.UseFastSolver(absl::GetFlag(FLAGS_use_fast_solver));
+
+  if (absl::GetFlag(FLAGS_use_fast_solver)) {
+    struct rlimit rl;
+    int r = getrlimit(RLIMIT_STACK, &rl);
+    if (r != 0) {
+      perror("failed getting solver stack size");
+      return 1;
+    }
+    if (rl.rlim_cur < kSolverStack) {
+      rl.rlim_cur = kSolverStack;
+      r = setrlimit(RLIMIT_STACK, &rl);
+      if (r != 0) {
+        perror("failed increasing solver stack size");
+        return 1;
+      }
+    }
+  }
 
   std::string dbname = "database";
   size_t facts = 0;
