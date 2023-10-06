@@ -151,6 +151,22 @@ public final class MarkedSources {
                 .build());
       }
     }
+    if (sym.getKind() == ElementKind.METHOD && !sym.getTypeParameters().isEmpty()) {
+      MarkedSource.Builder typeParams =
+          markedSource
+              .addChildBuilder()
+              .setKind(MarkedSource.Kind.TYPE)
+              .setPostChildText(" ")
+              .setAddFinalListToken(true)
+              .addChildBuilder()
+              .setKind(MarkedSource.Kind.PARAMETER)
+              .setPreText("<")
+              .setPostText(">")
+              .setPostChildText(", ");
+      for (Symbol t : sym.getTypeParameters()) {
+        typeParams.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(t.toString());
+      }
+    }
     if (markedType != null && sym.getKind() != ElementKind.CONSTRUCTOR) {
       markedSource.addChild(markedType);
     }
