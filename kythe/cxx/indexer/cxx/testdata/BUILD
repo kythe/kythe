@@ -3597,6 +3597,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "df_fncall_influence_vararg_fs",
+    srcs = ["df/df_fncall_influence_vararg.cc"],
+    ignore_dups = True,
+    use_fast_solver = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_operatoreq",
     srcs = ["df/df_operatoreq.cc"],
     ignore_dups = True,
