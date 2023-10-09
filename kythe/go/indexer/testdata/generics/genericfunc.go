@@ -13,6 +13,7 @@ func main() {
 // - UVar.node/kind tvar
 // - Func tparam.0 TVar
 // - Func tparam.1 UVar
+// - @comparable ref Comparable
 func Map[T any, U comparable](l []T, f func(T) U) []U {
 	//- @U ref UVar
 	res := make([]U, len(l))
@@ -23,6 +24,18 @@ func Map[T any, U comparable](l []T, f func(T) U) []U {
 	}
 	return res
 }
+
+//- UVar code UCode
+//- UCode.kind "BOX"
+//- UCode child.0 UVarName
+//- UCode child.1 UVarConstraint
+//- UVarName child.1 UVarIdent
+//- UVarIdent.kind "IDENTIFIER"
+//- UVarIdent.pre_text "U"
+//- UVarIdent link UVar
+//- UVarConstraint.kind "TYPE"
+//- UVarConstraint.pre_text "comparable"
+//- UVarConstraint link Comparable
 
 //- Func code FuncCode
 //- FuncCode.kind "BOX"

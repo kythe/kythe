@@ -1249,7 +1249,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
 	if e.opts.emitMarkedSource() {
-		e.emitCode(target, e.pi.MarkedSource(obj))
+		e.emitCode(target, e.MarkedSource(obj))
 	}
 	e.writeEdge(target, e.emitTypeOf(id), edges.Typed)
 	return target

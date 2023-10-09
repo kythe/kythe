@@ -33,7 +33,8 @@ import (
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
+func (e *emitter) MarkedSource(obj types.Object) *cpb.MarkedSource {
+	pi := e.pi
 	ms := &cpb.MarkedSource{
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
@@ -220,6 +221,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 					{
 						Kind:    cpb.MarkedSource_TYPE,
 						PreText: typeName(tt.Constraint()),
+						Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(e.emitType(tt.Constraint()))}}},
 						ExcludeOnInclude: []cpb.MarkedSource_Kind{
 							cpb.MarkedSource_LOOKUP_BY_TYPED,
 						},
