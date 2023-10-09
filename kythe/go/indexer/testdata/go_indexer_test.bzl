@@ -237,7 +237,8 @@ def go_verifier_test(
         log_entries = False,
         has_marked_source = False,
         resolve_code_facts = False,
-        allow_duplicates = False):
+        allow_duplicates = False,
+        use_fast_solver = False):
     opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
@@ -249,6 +250,8 @@ def go_verifier_test(
     # If the test wants marked source, enable support for it in the verifier.
     if has_marked_source:
         opts.append("--convert_marked_source")
+    if use_fast_solver:
+        opts.append("--use_fast_solver")
     return verifier_test(
         name = name,
         size = size,
@@ -326,7 +329,8 @@ def go_indexer_test(
         metadata_suffix = "",
         extra_goals = [],
         extra_indexer_args = [],
-        extra_extractor_args = []):
+        extra_extractor_args = [],
+        use_fast_solver = False):
     entries = _go_indexer(
         name = name,
         srcs = srcs,
@@ -353,6 +357,7 @@ def go_indexer_test(
         resolve_code_facts = resolve_code_facts,
         log_entries = log_entries,
         tags = tags,
+        use_fast_solver = use_fast_solver,
     )
 
 # A convenience macro to generate a test library, pass it to the Go indexer,

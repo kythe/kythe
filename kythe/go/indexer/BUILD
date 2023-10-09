@@ -308,6 +308,13 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "types_test_fs",
+    srcs = ["testdata/types.go"],
+    has_marked_source = True,
+    use_fast_solver = True,
+)
+
+go_indexer_test(
     name = "dep.v2",
     srcs = ["testdata/dep.v2.go"],
 )
