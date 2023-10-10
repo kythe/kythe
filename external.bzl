@@ -224,7 +224,6 @@ def _cc_dependencies():
         name = "com_google_riegeli",
         repo_name = "google/riegeli",
         commit = "e68237a48ad60896e18d7899b01293751960c1d2",
-        sha256 = "fa22ce5dd42712dad6f9d47ffe0d416461ec4f8b8ad7def4fad12dbb0614e59f",
     )
 
     maybe(
@@ -275,7 +274,6 @@ def _cc_dependencies():
         name = "com_github_google_snappy",
         repo_name = "google/snappy",
         build_file = "@io_kythe//third_party:snappy.BUILD",
-        sha256 = "38b4aabf88eb480131ed45bfb89c19ca3e2a62daeb081bdf001cfb17ec4cd303",
         commit = "1.1.8",
     )
 
