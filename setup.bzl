@@ -4,6 +4,9 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
     """Defines a GitHub commit-based repository rule."""
     project = repo_name[repo_name.index("/"):]
+    if "sha256" in kwargs:
+        print("Ignoring unstable GitHub sha256 argument in", name)
+        kwargs.pop("sha256")
     http_archive(
         name = name,
         strip_prefix = "{project}-{commit}/{prefix}".format(
@@ -15,6 +18,7 @@ def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **k
             "https://mirror.bazel.build/github.com/{repo_name}/archive/{commit}.{kind}",
             "https://github.com/{repo_name}/archive/{commit}.{kind}",
         ]],
+        canonical_id = commit,
         **kwargs
     )
 
@@ -169,8 +173,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "3661a48a84731ab5086bf1fca8f7e6b9f294225a",
-        sha256 = "33ac9070619a7ebb02321814e06ba819f9ce6219dd202e1c87f46792d3bb74b2",
+        commit = "42c564df2f479efb38e6f02340e370815b439eb1",
         name = "llvm-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
@@ -182,7 +185,6 @@ def kythe_rule_repositories():
         repo_name = "hedronvision/bazel-compile-commands-extractor",
         name = "hedron_compile_commands",
         commit = "d6734f1d7848800edc92de48fb9d9b82f2677958",
-        sha256 = "0dfe793b5779855cf73b3ee9f430e00225f51f38c70555936d4dd6f1b3c65e66",
     )
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly

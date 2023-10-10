@@ -1917,11 +1917,10 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
                      FTSI->getPointOfInstantiation());
   } else if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
-    ArgsAsWritten = DFTSI->getTemplateArgs();
-    NumArgsAsWritten = DFTSI->getNumTemplateArgs();
-    for (unsigned T = 0; T < DFTSI->getNumTemplates(); ++T) {
-      TNs.emplace_back(clang::TemplateName(DFTSI->getTemplate(T)),
-                       FD->getLocation());
+    for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
+      TNs.emplace_back(
+          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
+          FD->getLocation());
     }
   }
   // We can't do anything useful if we don't have type arguments.
@@ -3058,9 +3057,8 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl* FD) {
     // TODO(shahms): Fix this upstream by getting TraverseFunctionHelper to
     // do the right thing.
     if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
-      auto Count = DFTSI->getNumTemplateArgs();
-      for (int i = 0; i < Count; i++) {
-        if (!TraverseTemplateArgumentLoc(DFTSI->getTemplateArg(i))) {
+      for (const auto arg : DFTSI->TemplateArgumentsAsWritten->arguments()) {
+        if (!TraverseTemplateArgumentLoc(arg)) {
           return false;
         }
       }
@@ -3381,11 +3379,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // specialize primary template f applied to no arguments. If instead the
     // code read `friend void f<T>(T t)`, we would record that it specializes
     // the primary template with type variable T.
-    ArgsAsWritten = DFTSI->getTemplateArgs();
-    NumArgsAsWritten = DFTSI->getNumTemplateArgs();
-    for (unsigned T = 0; T < DFTSI->getNumTemplates(); ++T) {
-      TNs.emplace_back(clang::TemplateName(DFTSI->getTemplate(T)),
-                       Decl->getLocation());
+    ArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->getTemplateArgs();
+    NumArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+    for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
+      TNs.emplace_back(
+          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
+          Decl->getLocation());
     }
     DeclNode = BuildNodeIdForDecl(Decl);
   } else {
