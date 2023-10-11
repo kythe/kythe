@@ -387,7 +387,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	if sig.Recv() != nil {
 		// The receiver is treated as parameter 0.
 		if names := decl.Recv.List[0].Names; names != nil {
-			if recv := e.writeBinding(names[0], nodes.Variable, info.vname); recv != nil {
+			if recv := e.writeVarBinding(names[0], nodes.LocalParameter, info.vname); recv != nil {
 				e.writeEdge(info.vname, recv, edges.ParamIndex(0))
 			}
 		}
@@ -622,7 +622,11 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 	doc := specComment(spec, stack)
 	for _, id := range spec.Names {
-		target := e.writeBinding(id, kind, e.nameContext(stack))
+		ctx := e.nameContext(stack)
+		target := e.writeBinding(id, kind, ctx)
+		if kind == nodes.Variable && e.isNonFileOrPackage(ctx) {
+			e.writeFact(target, facts.Subkind, nodes.Local)
+		}
 		if target == nil {
 			continue // type error (reported elsewhere)
 		}
@@ -638,6 +642,10 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 			e.emitAnonMembers(lit.Type)
 		}
 	}
+}
+
+func (e *emitter) isNonFileOrPackage(v *spb.VName) bool {
+	return v.GetSignature() != "" && e.pi.VName != v
 }
 
 // visitTypeSpec handles type declarations, including the bindings for fields
@@ -773,7 +781,11 @@ func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, stack stackFunc) {
 		if id, _ := expr.(*ast.Ident); id != nil {
 			// Add a binding only if this is the definition site for the name.
 			if obj := e.pi.Info.Defs[id]; obj != nil && obj.Pos() == id.Pos() {
-				e.mustWriteBinding(id, nodes.Variable, up)
+				var subkind string
+				if e.isNonFileOrPackage(up) {
+					subkind = nodes.Local
+				}
+				e.writeVarBinding(id, subkind, up)
 			}
 		}
 	}
@@ -790,10 +802,10 @@ func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, stack stackFunc) {
 	// In a well-typed program, the key and value will always be identifiers.
 	up := e.nameContext(stack)
 	if key, _ := stmt.Key.(*ast.Ident); key != nil {
-		e.writeBinding(key, nodes.Variable, up)
+		e.writeVarBinding(key, "", up)
 	}
 	if val, _ := stmt.Value.(*ast.Ident); val != nil {
-		e.writeBinding(val, nodes.Variable, up)
+		e.writeVarBinding(val, "", up)
 	}
 }
 
@@ -887,7 +899,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Emit bindings and parameter edges for the parameters.
 	mapFields(ftype.Params, func(i int, id *ast.Ident) {
 		if sig.Params().At(i) != nil {
-			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
+			if param := e.writeVarBinding(id, nodes.LocalParameter, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
 
 				field := ftype.Params.List[i]
@@ -902,7 +914,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Emit bindings for any named result variables.
 	// Results are not considered parameters.
 	mapFields(ftype.Results, func(i int, id *ast.Ident) {
-		e.writeBinding(id, nodes.Variable, info.vname)
+		e.writeVarBinding(id, "", info.vname)
 	})
 	// Emit bindings for type parameters
 	mapFields(ftype.TypeParams, func(i int, id *ast.Ident) {
