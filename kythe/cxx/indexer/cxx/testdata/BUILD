@@ -959,6 +959,12 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
+cc_indexer_test(
+    name = "scopes_test",
+    srcs = ["basic/scopes.cc"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
