@@ -23,6 +23,8 @@ var _ = func(z int) {}
 // - @F defines/binding Fun
 // -
 // - @input defines/binding FunInput
+// - FunInput.node/kind variable
+// - FunInput.subkind local/parameter
 // - Fun param.0 FunInput
 // - FunInput childof Fun
 // -
