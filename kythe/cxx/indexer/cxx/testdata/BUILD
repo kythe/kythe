@@ -959,6 +959,12 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
+cc_indexer_test(
+    name = "lambda_test",
+    srcs = ["basic/lambda.cc"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
