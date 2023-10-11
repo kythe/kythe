@@ -960,8 +960,8 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "scopes_test",
-    srcs = ["basic/scopes.cc"],
+    name = "lambda_test",
+    srcs = ["basic/lambda.cc"],
     tags = ["basic"],
 )
 
