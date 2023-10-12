@@ -1,8 +1,6 @@
 package path.sub;
 
-/**
- * Test helper
- */
+/** Test helper */
 public class A {
   public B b;
 }

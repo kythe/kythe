@@ -49,6 +49,7 @@ public class CompilationUnits {
   private static final byte[] TAG_ENV = "ENV".getBytes(CHARSET);
   private static final byte NL = 10;
   private static final byte NULL = 0;
+
   /**
    * Computes the standard digest for the specified {@link CompilationUnit} in stringified
    * hexidecimal form.

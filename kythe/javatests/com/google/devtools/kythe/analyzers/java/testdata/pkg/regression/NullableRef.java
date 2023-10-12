@@ -4,7 +4,7 @@ public class NullableRef {
   private NullableRef() {}
 
   static {
-    //- @genericT ref GenericT
+    // - @genericT ref GenericT
     TestNullable.genericT("");
   }
 }

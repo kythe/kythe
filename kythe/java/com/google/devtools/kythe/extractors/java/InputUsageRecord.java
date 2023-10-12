@@ -34,7 +34,9 @@ public class InputUsageRecord {
 
   private boolean isUsed = false;
 
-  /** @param location of a java file object, if known. */
+  /**
+   * @param location of a java file object, if known.
+   */
   public InputUsageRecord(JavaFileObject fileObject, Optional<Location> location) {
     this.fileObject = checkNotNull(fileObject);
     this.location = checkNotNull(location);

@@ -39,10 +39,13 @@ public final class Normalizer {
 
   /** Total length of file text in bytes. */
   private final int textLength;
+
   /** Whether the file has a trailing newline. */
   private final boolean trailingNewline;
+
   /** List of ordered line lengths (index N -> line N+1's length). */
   private final List<Integer> lineLength;
+
   /** List of prefix lengths (index N -> length of file behind line N+1). */
   private final List<Integer> prefixLength;
 

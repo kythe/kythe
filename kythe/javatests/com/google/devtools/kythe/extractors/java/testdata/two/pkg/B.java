@@ -1,8 +1,6 @@
 package pkg;
 
-/**
- * Test helper
- */
+/** Test helper */
 public class B {
   public A a;
 }
