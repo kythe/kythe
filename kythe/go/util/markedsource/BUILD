@@ -16,7 +16,7 @@ go_library(
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_html2markdown//escape",
+        "@com_github_johanneskaufmann_html_to_markdown//escape",
         "@org_golang_google_protobuf//encoding/protojson",
         "@org_golang_google_protobuf//proto",
     ],
