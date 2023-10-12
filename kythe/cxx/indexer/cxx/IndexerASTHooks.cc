@@ -3469,10 +3469,21 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
 
   if (IsFunctionDefinition && !Decl->isImplicit() &&
       Decl->getBody() != nullptr) {
+    // For lambdas, Decl does not contain the correct SourceRange directly.
+    // Instead, we look at the "synthesized" lambda class and use it's beginning
+    // location as the start of the source range.
+    clang::SourceRange Range = Decl->getSourceRange();
+    if (clang::CXXMethodDecl* MethodDecl =
+            llvm::dyn_cast<clang::CXXMethodDecl>(Decl)) {
+      const clang::CXXRecordDecl* Parent = MethodDecl->getParent();
+      if (Parent->isLambda()) {
+        Range.setBegin(Parent->getSourceRange().getBegin());
+      }
+    }
+
     SourceRange DefinitionRange = NormalizeRange(
-        {TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
-                                      : Decl->getSourceRange().getBegin(),
-         Decl->getSourceRange().getEnd()});
+        {TemplateKeywordLoc.isValid() ? TemplateKeywordLoc : Range.getBegin(),
+         Range.getEnd()});
     auto DefinitionRangeInContext =
         RangeInCurrentContext(Decl->isImplicit(), DeclNode, DefinitionRange);
     MaybeRecordFullDefinitionRange(DefinitionRangeInContext, DeclNode,

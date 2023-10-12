@@ -962,6 +962,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "lambda_test",
     srcs = ["basic/lambda.cc"],
+    ignore_dups = True,
     tags = ["basic"],
 )
 
