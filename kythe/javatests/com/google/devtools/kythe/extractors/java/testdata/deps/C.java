@@ -1,8 +1,6 @@
 package deps;
 
-/**
- * Test helper
- */
+/** Test helper */
 public class C {
   public B b;
   public A a;

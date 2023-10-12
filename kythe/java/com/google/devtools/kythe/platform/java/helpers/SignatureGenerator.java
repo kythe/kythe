@@ -142,6 +142,7 @@ public class SignatureGenerator
   public boolean getUseJvmSignatures() {
     return useJvmSignatures;
   }
+
   // Do not decrease this number.
   private static final int STRING_BUILDER_INIT_CAPACITY = 512;
 

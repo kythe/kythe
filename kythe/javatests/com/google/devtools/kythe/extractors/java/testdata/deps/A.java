@@ -1,7 +1,4 @@
 package deps;
 
-/**
- * Test helper
- */
-public class A {
-}
+/** Test helper */
+public class A {}

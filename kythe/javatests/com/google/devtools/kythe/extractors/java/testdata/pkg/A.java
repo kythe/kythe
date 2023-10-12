@@ -1,8 +1,7 @@
 package pkg;
 
-/**
- * Test helper
- */
+/** Test helper */
 public class A {
-// Semicolon will end up as JCSkip node in ast.
-};
+  // Semicolon will end up as JCSkip node in ast.
+}
+;

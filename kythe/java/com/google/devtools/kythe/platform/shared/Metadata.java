@@ -41,12 +41,16 @@ public class Metadata {
   public static class Rule {
     /** The starting byte offset in the source file. */
     public int begin;
+
     /** The ending byte offset in the source file. */
     public int end;
+
     /** The VName to emit if the rule matches. */
     public VName vname;
+
     /** The edge kind to emit if the rule matches. */
     public EdgeKind edgeOut;
+
     /**
      * If false, draw the edge to the VName; if true, draw it from the VName. For example, if we
      * emit an {@code Anchor defines/binding Node} edge, our range matches the anchor's, and
