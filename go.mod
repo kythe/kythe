@@ -5,7 +5,8 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.9
 	github.com/DataDog/zstd v1.4.8
 	github.com/apache/beam v2.31.0+incompatible
-	github.com/bazelbuild/rules_go v0.28.0
+	github.com/bazelbuild/bazel-gazelle v0.33.0
+	github.com/bazelbuild/rules_go v0.41.0
 	github.com/beevik/etree v1.1.0
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
@@ -22,16 +23,21 @@ require (
 	github.com/sourcegraph/go-langserver v2.0.0+incompatible
 	github.com/sourcegraph/jsonrpc2 v0.1.0
 	github.com/syndtr/goleveldb v1.0.0
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.4.0
-	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.5.0
-	golang.org/x/text v0.7.0
-	golang.org/x/tools v0.1.12
+	golang.org/x/sync v0.3.0
+	golang.org/x/sys v0.13.0
+	golang.org/x/text v0.13.0
+	golang.org/x/tools v0.6.0
 	google.golang.org/api v0.103.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.30.0
 	sigs.k8s.io/yaml v1.2.0
+)
+
+require (
+	github.com/bazelbuild/buildtools v0.0.0-20230831140646-386244e73fc4 // indirect
+	golang.org/x/mod v0.12.0 // indirect
 )
 
 require (
