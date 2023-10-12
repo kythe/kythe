@@ -13,7 +13,9 @@ public @interface Nullable {}
 class TestNullable {
   private TestNullable() {}
 
-  //- @genericT defines/binding GenericT
-  //- GenericT.node/kind function
-  static <T> @Nullable T genericT(@Nullable T x) { return x; }
+  // - @genericT defines/binding GenericT
+  // - GenericT.node/kind function
+  static <T> @Nullable T genericT(@Nullable T x) {
+    return x;
+  }
 }

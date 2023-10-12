@@ -1,10 +1,7 @@
 package hitchhikers;
 
-/**
- * Test helper
- */
-public class B {
-}
+/** Test helper */
+public class B {}
 
 enum Hike {
   Car,
