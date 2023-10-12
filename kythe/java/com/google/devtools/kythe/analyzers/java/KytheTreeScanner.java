@@ -1488,6 +1488,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     return emitAnchor(anchor, kind, node, scope);
   }
+
   // Creates/emits an anchor and an associated edge
   private @Nullable EntrySet emitAnchor(
       EntrySet anchor, EdgeKind kind, VName node, List<VName> scope) {

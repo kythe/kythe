@@ -1,14 +1,14 @@
-//- @+5pkg defines/binding Package
-//- @+3ParametersAreNonnullByDefault ref Annotation
+// - @+5pkg defines/binding Package
+// - @+3ParametersAreNonnullByDefault ref Annotation
 
 /** Classes used to verify the Kythe Java indexer and its output. */
 @ParametersAreNonnullByDefault
 package pkg;
 
-//- Package annotatedby Annotation
+// - Package annotatedby Annotation
 
-//- PkgDoc documents Package
-//- PkgDoc.node/kind doc
-//- PkgDoc.text "Classes used to verify the Kythe Java indexer and its output. "
+// - PkgDoc documents Package
+// - PkgDoc.node/kind doc
+// - PkgDoc.text "Classes used to verify the Kythe Java indexer and its output. "
 
 import javax.annotation.ParametersAreNonnullByDefault;
