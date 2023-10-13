@@ -77,7 +77,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     }
   }
 
-  public DocCommentVisitResult visitDocComment(TreePath treePath, VName node, VName absNode) {
+  public DocCommentVisitResult visitDocComment(TreePath treePath, VName node) {
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
       return DocCommentVisitResult.UNDOCUMENTED;
@@ -101,7 +101,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(JAVADOC, bracketed, anchoredTo, node, absNode);
+    treeScanner.emitDoc(JAVADOC, bracketed, anchoredTo, node);
     return DocCommentVisitResult.create(deprecation);
   }
 
