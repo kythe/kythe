@@ -8,17 +8,18 @@ import org.xml.sax.SAXException;
 public class SunSource {
 
   @SuppressWarnings("ClassCanBeStatic")
-  class SomeUserClass {};
+  class SomeUserClass {}
+  ;
 
-  //- @s defines/binding S
-  //- S typed vname(_,"override","","","java")
+  // - @s defines/binding S
+  // - S typed vname(_,"override","","","java")
   String s;
 
-  //- @se defines/binding SE
-  //- SE typed vname(_,"override","","","java")
+  // - @se defines/binding SE
+  // - SE typed vname(_,"override","","","java")
   SAXException se;
 
-  //- @suc defines/binding SUC
-  //- !{ SUC typed vname(_,"override","","","java") }
+  // - @suc defines/binding SUC
+  // - !{ SUC typed vname(_,"override","","","java") }
   SomeUserClass suc;
 }

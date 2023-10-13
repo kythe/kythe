@@ -838,6 +838,62 @@ though the edge A' *generates* B were produced. This edge is useful in cases
 where it isn't otherwise possible to produce the VName for A' and where the
 span A in source text can uniquely identify A' by the *defines/binding* edge.
 
+[[narrows]]
+narrows
+~~~~~~~
+
+Brief description::
+  A *narrows* B if A identifies the same target language object as B but is
+  subject to additional constraints.
+Commonly arises from::
+  type refinement
+Points from::
+  variables
+Points toward::
+  variables
+Ordinals are used::
+  never
+See also::
+  <<generates>>, <<typed>>
+
+Some languages allow the types of variables to change over the course of a
+program. For example, a type test can be used to narrow the type of a variable:
+
+[source,java]
+----
+Object x;  // x : Object
+if (x instanceof String) {
+  x;  // x : String
+}
+----
+
+In this example, every `x` refers to the same variable `x`, but the `x` in
+the body of the conditional has a different static type than both the `x`
+in the conditional expression and the `x` declared at the top. This program
+is represented in the following way:
+
+[source,java]
+----
+//- @x defines/binding XObject
+//- XObject typed Object
+Object x;
+//- @x ref XObject
+if (x instanceof String) {
+  //- @x ref XString
+  //- XString narrows XObject
+  //- XString typed String
+  x;
+}
+----
+
+The `x` with type `String` has no `defines/binding` edge, but is associated
+with the `x` with type `Object` with the `narrows` edge. Clients should
+interpret these variables as the same (in the way that nodes associated with
+the `generates` edge are the same), but should prefer facts and edges from the
+particular `x` being identified. In particular, `documents` edges and `code`
+facts should be chosen from the particular node that is the target of a `ref`
+when that node is in a `narrows` relationship.
+
 [[named]]
 named
 ~~~~~
@@ -1440,8 +1496,6 @@ Points toward::
   semantic nodes
 Ordinals are used::
   never
-Notes::
-  This is an experimental definition and is expected to undergo refinement.
 
 [kythe,C++,"Various assignment expressions are writes"]
 --------------------------------------------------------------------------------
@@ -1457,6 +1511,44 @@ void f() {
   // Not all forms are supported.
   //- @x ref VarX
   *(&x + 1) = 1;
+}
+--------------------------------------------------------------------------------
+
+[[refwritesthunk]]
+ref/writes/thunk
+~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *ref/writes/thunk* B if A refers to B in an expression that is likely to
+  cause a later update the value of B.
+Commonly arises from::
+  value uses of setter functions, alias passing
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<refwrites,[ref/writes]>>
+Notes::
+  This is an experimental definition and is expected to undergo refinement.
+
+[kythe,C++,"Various assignment expressions are thunkful writes"]
+--------------------------------------------------------------------------------
+void f(int* x_out, int& y_out, const int& z);
+void g() {
+  //- @x defines/binding VarX
+  //- @y defines/binding VarY
+  //- @z defines/binding VarZ
+  int x, y, z;
+  //- @x ref VarX
+  //- @y ref VarY
+  //- @z ref VarZ
+  //- // @x ref/writes/thunk VarX -- currently unsupported
+  //- // @y ref/writes/thunk VarY -- currently unsupported
+  //- !{ @z ref/writes/thunk VarZ }
+  f(&x, y, z);
 }
 --------------------------------------------------------------------------------
 

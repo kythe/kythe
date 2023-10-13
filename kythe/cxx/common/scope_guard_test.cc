@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/common/scope_guard.h"
 
+#include <string>
 #include <vector>
 
 #include "gtest/gtest.h"

@@ -33,7 +33,8 @@ import (
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
+func (e *emitter) MarkedSource(obj types.Object) *cpb.MarkedSource {
+	pi := e.pi
 	ms := &cpb.MarkedSource{
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
@@ -81,22 +82,23 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		// Methods:   func (R) Name(p1, ...) (r0, ...)
 		// Functions: func Name(p0, ...) (r0, ...)
 		fn := &cpb.MarkedSource{
-			Kind:  cpb.MarkedSource_BOX,
-			Child: []*cpb.MarkedSource{{PreText: "func "}},
+			Kind: cpb.MarkedSource_BOX,
+			Child: []*cpb.MarkedSource{{
+				Kind:     cpb.MarkedSource_MODIFIER,
+				PreText:  "func",
+				PostText: " ",
+			}},
 		}
 		sig := t.Type().(*types.Signature)
 		firstParam := 0
 		if recv := sig.Recv(); recv != nil {
 			// Parenthesized receiver type, e.g. (R).
 			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				// TODO(schroederc): use LOOKUP_BY_PARAM
 				Kind:     cpb.MarkedSource_PARAMETER,
 				PreText:  "(",
 				PostText: ") ",
 				Child: []*cpb.MarkedSource{{
-					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(recv.Type()) + typeArgs(recv.Type()),
-					Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(recv))}}},
+					Kind: cpb.MarkedSource_LOOKUP_BY_PARAM,
 				}},
 			})
 			firstParam = 1
@@ -104,12 +106,13 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		fn.Child = append(fn.Child, ms)
 
 		if sig.TypeParams().Len() > 0 {
-			fn.Child = append(fn.Child, &cpb.MarkedSource{
+			tps := &cpb.MarkedSource{
 				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
 				PreText:       "[",
 				PostText:      "]",
 				PostChildText: ", ",
-			})
+			}
+			fn.Child = append(fn.Child, tps)
 		}
 
 		// If there are no parameters, the lookup will not produce anything.
@@ -131,16 +134,32 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		}
 		if res := sig.Results(); res != nil && res.Len() > 0 {
 			rms := &cpb.MarkedSource{Kind: cpb.MarkedSource_TYPE, PreText: " "}
-			if res.Len() > 1 {
-				// If there is more than one result type, parenthesize.
+			var hasNamedReturn bool
+			for i := 0; i < res.Len(); i++ {
+				if v := res.At(i); v.Name() == "" {
+					rms.Child = append(rms.Child, &cpb.MarkedSource{
+						PreText: typeName(v.Type()),
+					})
+				} else {
+					hasNamedReturn = true
+					rms.Child = append(rms.Child, &cpb.MarkedSource{
+						PostChildText: " ",
+						Child: []*cpb.MarkedSource{{
+							Kind:    cpb.MarkedSource_IDENTIFIER,
+							PreText: v.Name(),
+							Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(pi.ObjectVName(v))}}},
+						}, {
+							Kind:    cpb.MarkedSource_TYPE,
+							PreText: typeName(v.Type()),
+						}},
+					})
+				}
+			}
+			if res.Len() > 1 || hasNamedReturn {
+				// If there is more than one result type (or the return is named), parenthesize.
 				rms.PreText = " ("
 				rms.PostText = ")"
 				rms.PostChildText = ", "
-			}
-			for i := 0; i < res.Len(); i++ {
-				rms.Child = append(rms.Child, &cpb.MarkedSource{
-					PreText: objectName(res.At(i)),
-				})
 			}
 			fn.Child = append(fn.Child, rms)
 		}
@@ -157,6 +176,60 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			},
 		}
 		ms = repl
+
+	case *types.TypeName:
+		switch tt := t.Type().(type) {
+		case *types.Named:
+			if tt.Obj().Pkg().Name() == "builtin" {
+				return ms
+			}
+			ms = &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_BOX,
+				PostChildText: " ",
+				Child: []*cpb.MarkedSource{
+					{
+						Kind:    cpb.MarkedSource_MODIFIER,
+						PreText: "type",
+						ExcludeOnInclude: []cpb.MarkedSource_Kind{
+							cpb.MarkedSource_LOOKUP_BY_TYPED,
+						},
+					},
+					ms,
+				},
+			}
+			if tt.TypeParams().Len() > 0 {
+				tps := &cpb.MarkedSource{
+					Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+					PreText:       "[",
+					PostText:      "]",
+					PostChildText: ", ",
+					ExcludeOnInclude: []cpb.MarkedSource_Kind{
+						cpb.MarkedSource_LOOKUP_BY_TYPED,
+					},
+				}
+				ms.Child = append(ms.Child[:len(ms.Child)-1], &cpb.MarkedSource{
+					Child: []*cpb.MarkedSource{ms.GetChild()[len(ms.GetChild())-1], tps},
+				})
+			}
+
+		case *types.TypeParam:
+			repl := &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_BOX,
+				PostChildText: " ",
+				Child: []*cpb.MarkedSource{
+					ms,
+					{
+						Kind:    cpb.MarkedSource_TYPE,
+						PreText: typeName(tt.Constraint()),
+						Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(e.emitType(tt.Constraint()))}}},
+						ExcludeOnInclude: []cpb.MarkedSource_Kind{
+							cpb.MarkedSource_LOOKUP_BY_TYPED,
+						},
+					},
+				},
+			}
+			ms = repl
+		}
 
 	default:
 		// TODO(fromberger): Handle other variations from go/types.
@@ -180,15 +253,33 @@ func objectName(obj types.Object) string {
 func typeName(typ types.Type) string {
 	switch t := typ.(type) {
 	case *types.Named:
-		return t.Obj().Name()
+		return t.Obj().Name() + typeArgs(typ)
 	case *types.Basic:
 		return t.Name()
 	case *types.Struct:
 		return "struct {...}"
 	case *types.Interface:
+		if t.String() == "any" {
+			return t.String()
+		}
 		return "interface {...}"
 	case *types.Pointer:
 		return "*" + typeName(t.Elem())
+	case *types.Chan:
+		switch t.Dir() {
+		case types.SendOnly:
+			return "chan<- " + typeName(t.Elem())
+		case types.RecvOnly:
+			return "<-chan " + typeName(t.Elem())
+		default:
+			return "chan " + typeName(t.Elem())
+		}
+	case *types.Array:
+		return fmt.Sprintf("[%d]%s", t.Len(), typeName(t.Elem()))
+	case *types.Map:
+		return fmt.Sprintf("map[%s]%s", typeName(t.Key()), typeName(t.Elem()))
+	case *types.Slice:
+		return "[]" + typeName(t.Elem())
 	}
 	return typ.String()
 }

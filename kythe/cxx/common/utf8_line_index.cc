@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/common/utf8_line_index.h"
 
+#include <cstdint>
 #include <ostream>
 
 #include "absl/algorithm/container.h"
@@ -99,7 +100,7 @@ CharacterPosition UTF8LineIndex::ComputePositionForByteOffset(
     position.character_number =
         line_begin_character_offset + position.column_number;
   } else if (byte_offset == content_.size()) {
-    // TODO: see if we can unify this with the previous case
+    // TODO(unknown): see if we can unify this with the previous case
     // in a less ugly manner.
     position = ComputePositionForByteOffset(byte_offset - 1);
     // For the past-the-end position, we want it to be on the same line as

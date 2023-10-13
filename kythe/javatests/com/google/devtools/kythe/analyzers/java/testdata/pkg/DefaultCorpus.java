@@ -7,22 +7,22 @@ import java.util.List;
 // should be given the "kythe" corpus.
 
 class DefaultCorpus {
-  //- @myvar defines/binding MyVar?
-  //- MyVar typed ListStringType=vname(_,"kythe",_,_,"java")
-  //- ListStringType.node/kind "tapp"
+  // - @myvar defines/binding MyVar?
+  // - MyVar typed ListStringType=vname(_,"kythe",_,_,"java")
+  // - ListStringType.node/kind "tapp"
   private List<String> myvar;
 
-  //- @objList defines/binding ObjListVar
-  //- ObjListVar typed TAppNode
-  //- TAppNode.node/kind tapp
-  //- TAppNode param.1 TVarNode=vname(_, "kythe", "", "", "java")
-  //- TVarNode.node/kind tvar
+  // - @objList defines/binding ObjListVar
+  // - ObjListVar typed TAppNode
+  // - TAppNode.node/kind tapp
+  // - TAppNode param.1 TVarNode=vname(_, "kythe", "", "", "java")
+  // - TVarNode.node/kind tvar
   private List<? extends Object> objList;
 
-  //- @myMethod defines/binding MyMethod
-  //- MyMethod typed MyMethodType=vname(_,"kythe",_,_,"java")
-  //- MyMethodType.node/kind "tapp"
-  //- MyMethodType param.0 FnBuiltin?=vname("fn#builtin","kythe",_,_,"java")
+  // - @myMethod defines/binding MyMethod
+  // - MyMethod typed MyMethodType=vname(_,"kythe",_,_,"java")
+  // - MyMethodType.node/kind "tapp"
+  // - MyMethodType param.0 FnBuiltin?=vname("fn#builtin","kythe",_,_,"java")
   String myMethod() {
     return "";
   }

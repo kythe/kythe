@@ -1331,10 +1331,14 @@ func TestCrossReferences(t *testing.T) {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Definitions: 1,
 		References:  2,
+		RefEdgeToCount: map[string]int64{
+			"/kythe/edge/ref": 2,
+		},
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
+	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -1494,10 +1498,14 @@ func TestCrossReferencesScoped(t *testing.T) {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Definitions: 1,
 		References:  2,
+		RefEdgeToCount: map[string]int64{
+			"/kythe/edge/ref": 2,
+		},
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
+	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -1788,10 +1796,14 @@ func TestCrossReferencesReadAhead(t *testing.T) {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Definitions: 1,
 		References:  2,
+		RefEdgeToCount: map[string]int64{
+			"/kythe/edge/ref": 2,
+		},
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
-	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{}, reply.Filtered); err != nil {
+	wantFiltered := &xpb.CrossReferencesReply_Total{}
+	if err := testutil.DeepEqual(wantFiltered, reply.Filtered); err != nil {
 		t.Error(err)
 	}
 
@@ -2188,11 +2200,17 @@ filter: {
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		Definitions: 1,
 		References:  1,
+		RefEdgeToCount: map[string]int64{
+			"/kythe/edge/ref": 1,
+		},
 	}, reply.Total); err != nil {
 		t.Error(err)
 	}
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		References: 1,
+		RefEdgeToCount: map[string]int64{
+			"/kythe/edge/ref": 1,
+		},
 	}, reply.Filtered); err != nil {
 		t.Error(err)
 	}
@@ -2477,6 +2495,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 1,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 1,
+			},
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
@@ -2543,6 +2564,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 3,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 3,
+			},
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
@@ -2612,6 +2636,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 3,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 3,
+			},
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
@@ -2664,6 +2691,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 2,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 2,
+			},
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
@@ -2742,6 +2772,9 @@ func TestCrossReferencesIndirection(t *testing.T) {
 
 		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 			References: 4,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 4,
+			},
 		}, reply.Total); err != nil {
 			t.Error(err)
 		}
@@ -2884,6 +2917,9 @@ func TestCrossReferencesRevisions(t *testing.T) {
 	expected := &xpb.CrossReferencesReply{
 		Total: &xpb.CrossReferencesReply_Total{
 			References: 1,
+			RefEdgeToCount: map[string]int64{
+				"/kythe/edge/ref": 1,
+			},
 		},
 		Filtered: &xpb.CrossReferencesReply_Total{},
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
@@ -3323,6 +3359,10 @@ func TestCorpusPathFilters(t *testing.T) {
 		{mustParseFilters(`filter: { type: INCLUDE_ONLY resolved_path: "^kythe3/branch/genfiles/"}`),
 			[]string{cps("kythe3//branch", "genfiles", "any/path"), cps("kythe3//branch", "genfiles/more", "any/path")},
 			[]string{cps("kythe3", "bin", "any/path"), cps("kythe3", "genfiles", "some/path")}},
+		// The filter should only apply when the corpus matches.
+		{mustParseFilters(`filter: { type: INCLUDE_ONLY corpus: "^kythe3" path: ".*k.*" corpus_specific_filter: true}`),
+			[]string{cps("kythe3", "", "k1.cc"), cps("kythe3//branch", "", "k3.cc"), cps("other", "", "file.cc")},
+			[]string{cps("kythe3", "", "file.cc")}},
 	}
 
 	for i, test := range tests {

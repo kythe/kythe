@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 
+#include "absl/log/check.h"
 #include "absl/strings/strip.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -66,7 +67,7 @@ class AstTest : public ::testing::Test {
 
   /// \return the generated program without boilerplate
   absl::string_view MustGenerateProgram() {
-    CHECK(p_.Lower(symbol_table_, {}));
+    CHECK(p_.Lower(symbol_table_, {}, {}));
     auto code = p_.code();
     CHECK(absl::ConsumeSuffix(&code, ".\n"));
     return code;

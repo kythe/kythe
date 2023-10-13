@@ -29,13 +29,12 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/cxx/common/regex.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "re2/re2.h"
-#include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 
@@ -49,7 +48,7 @@ class BazelArtifactSelector {
   /// \brief Selects matching BazelArtifacts from the provided event.
   /// Select() will be called for each message in the stream to allow
   /// implementations to update internal state.
-  virtual absl::optional<BazelArtifact> Select(
+  virtual std::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) = 0;
 
   /// \brief Encodes per-stream selector state into the Any protobuf.
@@ -112,7 +111,7 @@ class AnyArtifactSelector final : public BazelArtifactSelector {
   AnyArtifactSelector& operator=(AnyArtifactSelector&&) = default;
 
   /// \brief Forwards selection to the contained BazelArtifactSelector.
-  absl::optional<BazelArtifact> Select(
+  std::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) {
     return get_().Select(event);
   }
@@ -178,7 +177,7 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
 
   /// \brief Selects an artifact if the event matches an expected
   /// aspect-produced compilation unit.
-  absl::optional<BazelArtifact> Select(
+  std::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) final;
 
   /// \brief Serializes the accumulated state into the return value, which will
@@ -278,10 +277,10 @@ class AspectArtifactSelector final : public BazelArtifactSelector {
     // file set when it had not yet been seen.
     absl::flat_hash_map<FileSetId, std::string> pending;
   };
-  absl::optional<BazelArtifact> SelectFileSet(
+  std::optional<BazelArtifact> SelectFileSet(
       absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset);
 
-  absl::optional<BazelArtifact> SelectTargetCompleted(
+  std::optional<BazelArtifact> SelectTargetCompleted(
       const build_event_stream::BuildEventId::TargetCompletedId& id,
       const build_event_stream::TargetComplete& payload);
 
@@ -326,7 +325,7 @@ class ExtraActionSelector final : public BazelArtifactSelector {
   explicit ExtraActionSelector(const RE2* action_pattern);
 
   /// \brief Selects artifacts from ExtraAction-based extractors.
-  absl::optional<BazelArtifact> Select(
+  std::optional<BazelArtifact> Select(
       const build_event_stream::BuildEvent& event) final;
 
  private:

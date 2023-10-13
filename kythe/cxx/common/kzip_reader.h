@@ -58,12 +58,12 @@ class KzipReader : public IndexReaderInterface {
   };
   using ZipHandle = std::unique_ptr<zip_t, Discard>;
 
-  explicit KzipReader(ZipHandle archive, absl::string_view basename,
+  explicit KzipReader(ZipHandle archive, absl::string_view root,
                       KzipEncoding encoding);
 
   zip_t* archive() { return archive_.get(); }
 
-  absl::optional<absl::string_view> UnitDigest(absl::string_view path);
+  std::optional<absl::string_view> UnitDigest(absl::string_view path);
 
   ZipHandle archive_;
   KzipEncoding encoding_;

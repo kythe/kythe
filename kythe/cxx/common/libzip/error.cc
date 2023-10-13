@@ -16,6 +16,8 @@
 
 #include "kythe/cxx/common/libzip/error.h"
 
+#include <zip.h>
+
 #include "absl/status/status.h"
 #include "kythe/cxx/common/status.h"
 

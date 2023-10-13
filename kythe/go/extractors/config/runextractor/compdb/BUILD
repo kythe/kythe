@@ -5,11 +5,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "compdb",
     srcs = ["compdb.go"],
+    importpath = "kythe.io/kythe/go/extractors/config/runextractor/compdb",
     deps = [
         "//kythe/go/util/log",
-        "@org_bitbucket_creachadair_shell//:go_default_library",
-        "@org_golang_x_sync//errgroup:go_default_library",
-        "@org_golang_x_sync//semaphore:go_default_library",
+        "@org_bitbucket_creachadair_shell//:shell",
+        "@org_golang_x_sync//semaphore",
     ],
 )
 

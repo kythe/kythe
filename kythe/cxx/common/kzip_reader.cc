@@ -16,25 +16,33 @@
 
 #include "kythe/cxx/common/kzip_reader.h"
 
-#include <openssl/sha.h>
+#include <zip.h>
+#include <zipconf.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
+#include <iterator>
+#include <memory>
+#include <optional>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/escaping.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/io/zero_copy_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "kythe/cxx/common/index_reader.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -147,12 +155,12 @@ absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
   return KzipOptions{root, encoding};
 }
 
-absl::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
+std::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
   zip_stat_t sb;
   zip_stat_init(&sb);
 
   if (zip_stat_index(archive, index, ZIP_STAT_SIZE, &sb) < 0) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   return sb.size;
 }
@@ -194,10 +202,10 @@ absl::string_view DirNameForEncoding(KzipEncoding encoding) {
 
 }  // namespace
 
-absl::optional<absl::string_view> KzipReader::UnitDigest(
+std::optional<absl::string_view> KzipReader::UnitDigest(
     absl::string_view path) {
   if (!absl::ConsumePrefix(&path, unit_prefix_) || path.empty()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   return path;
 }

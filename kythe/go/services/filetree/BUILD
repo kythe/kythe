@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "filetree",
     srcs = ["filetree.go"],
+    importpath = "kythe.io/kythe/go/services/filetree",
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/web",
@@ -13,6 +14,6 @@ go_library(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:filetree_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto",
     ],
 )

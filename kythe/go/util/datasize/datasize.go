@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-type sizeFlag struct{ Size }
+type sizeFlag struct{ *Size }
 
 // Flag defines a Size flag with specified name, default value, and usage string.
 func Flag(name, value, description string) *Size {
@@ -35,14 +35,21 @@ func Flag(name, value, description string) *Size {
 	if err != nil {
 		panic(fmt.Sprintf("Invalid default Size value for flag --%q: %q", name, value))
 	}
-	f := &sizeFlag{sz}
-	flag.Var(f, name, description)
-	return &f.Size
+	return FlagVar(flag.CommandLine, &sz, name, sz, description)
+}
+
+// FlagVar defines a Size flag with specified name, default value, and usage string
+// into the provided FlagSet.
+func FlagVar(fs *flag.FlagSet, s *Size, name string, value Size, description string) *Size {
+	*s = value
+	f := &sizeFlag{s}
+	fs.Var(f, name, description)
+	return f.Size
 }
 
 // Get implements part of the flag.Getter interface.
 func (f *sizeFlag) Get() any {
-	return f.Size
+	return *f.Size
 }
 
 // Set implements part of the flag.Value interface.
@@ -51,7 +58,7 @@ func (f *sizeFlag) Set(s string) error {
 	if err != nil {
 		return err
 	}
-	f.Size = sz
+	*f.Size = sz
 	return nil
 }
 

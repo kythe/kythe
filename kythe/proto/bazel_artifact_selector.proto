@@ -17,8 +17,9 @@
 syntax = "proto3";
 
 package kythe.proto;
+option go_package = "kythe.io/kythe/proto/bazel_artifact_selector_go_proto";
 
-import "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto";
+import "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto";
 
 message BazelAspectArtifactSelectorState {
   // A list of fileset ids which have already been processed or skipped.

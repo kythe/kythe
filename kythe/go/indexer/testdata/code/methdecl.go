@@ -12,12 +12,15 @@ type w struct{}
 // - LTCode child.3 LTParams
 // - LTCode child.4 LTResult
 // -
-// - LTFunc.pre_text "func "
+// - LTFunc.kind "MODIFIER"
+// - LTFunc.pre_text "func"
+// - LTFunc.post_text " "
 // -
 // - LTRecv.kind "PARAMETER"
 // - LTRecv.pre_text "("
 // - LTRecv.post_text ") "
-// - LTRecv child.0 LTRType
+// - LTRecv child.0 LTLookup
+// - LTLookup.kind "LOOKUP_BY_PARAM"
 // -
 // - LTName child.0 LTContext
 // - LTName child.1 LTIdent
@@ -32,9 +35,6 @@ type w struct{}
 // - LTResult.kind "TYPE"
 // - LTResult child.0 LTReturn
 // - LTReturn.pre_text "bool"
-// -
-// - LTRType.kind "TYPE"
-// - LTRType.pre_text "*w"
 // -
 // - LTContext.kind "CONTEXT"
 // - LTContext.post_child_text "."
@@ -80,12 +80,15 @@ type API struct{}
 // - RFCode child.3 RFParams
 // - RFCode child.4 RFResult
 // -
-// - RFFunc.pre_text "func "
+// - RFFunc.kind "MODIFIER"
+// - RFFunc.pre_text "func"
+// - RFFunc.post_text " "
 // -
 // - RFRecv.kind "PARAMETER"
 // - RFRecv.pre_text "("
 // - RFRecv.post_text ") "
-// - RFRecv child.0 RFRType
+// - RFRecv child.0 RFLookup
+// - RFLookup.kind "LOOKUP_BY_PARAM"
 // -
 // - RFName child.0 RFContext
 // - RFName child.1 RFIdent
@@ -100,9 +103,6 @@ type API struct{}
 // - RFResult.kind "TYPE"
 // - RFResult child.0 RFReturn
 // - RFReturn.pre_text "error"
-// -
-// - RFRType.kind "TYPE"
-// - RFRType.pre_text "decorCommand"
 // -
 // - RFContext.kind "CONTEXT"
 // - RFContext.post_child_text "."
@@ -135,13 +135,14 @@ type API struct{}
 // -
 // - @Context ref CtxTypeValue
 // - CtxTypeValue code CtxTypeValueCode
-// - CtxTypeValueCode child.0 CtxTypeValueCodeCtx
+// - CtxTypeValueCode child.1 CtxTypeValueName
+// - CtxTypeValueName child.0 CtxTypeValueCodeCtx
 // - CtxTypeValueCodeCtx.kind "CONTEXT"
 // - CtxTypeValueCodeCtx.post_child_text "."
 // - CtxTypeValueCodeCtx child.0 CtxTypeValueCodeCtxChild
 // - CtxTypeValueCodeCtxChild.kind "IDENTIFIER"
 // - CtxTypeValueCodeCtxChild.pre_text "methdecl"
-// - CtxTypeValueCode child.1 CtxTypeValueCodeID
+// - CtxTypeValueName child.1 CtxTypeValueCodeID
 // - CtxTypeValueCodeID.kind "IDENTIFIER"
 // - CtxTypeValueCodeID.pre_text "Context"
 // -
@@ -165,8 +166,9 @@ type API struct{}
 // -
 // - @FlagSet ref FlagTypeValue
 // - FlagTypeValue code FlagTypeValueCode
-// - FlagTypeValueCode child.0 FlagTypeValueCodeCtx
-// - FlagTypeValueCode child.1 FlagTypeValueCodeID
+// - FlagTypeValueCode child.1 FlagTypeValueName
+// - FlagTypeValueName child.0 FlagTypeValueCodeCtx
+// - FlagTypeValueName child.1 FlagTypeValueCodeID
 // - FlagTypeValueCodeCtx.kind "CONTEXT"
 // - FlagTypeValueCodeCtx.post_child_text "."
 // - FlagTypeValueCodeCtx child.0 FlagTypeValueCodeCtxChild
@@ -195,8 +197,9 @@ type API struct{}
 // -
 // - @API ref ApiTypeValue
 // - ApiTypeValue code ApiTypeValueCode
-// - ApiTypeValueCode child.0 ApiTypeValueCodeCtx
-// - ApiTypeValueCode child.1 ApiTypeValueCodeID
+// - ApiTypeValueCode child.1 ApiTypeValueName
+// - ApiTypeValueName child.0 ApiTypeValueCodeCtx
+// - ApiTypeValueName child.1 ApiTypeValueCodeID
 // - ApiTypeValueCodeCtx.kind "CONTEXT"
 // - ApiTypeValueCodeCtx.post_child_text "."
 // - ApiTypeValueCodeCtx child.0 ApiTypeValueCodeCtxChild

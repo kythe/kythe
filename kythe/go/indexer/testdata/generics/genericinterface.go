@@ -37,8 +37,9 @@ func (c *Container[T]) Accept(t T) { c.Element = t }
 // kythe/go/indexer/genericinterface_test.Interface.T
 //- TVar code TVarCode
 //- TVarCode.kind "BOX"
-//- TVarCode child.0 C
-//- TVarCode child.1 I
+//- TVarCode child.0 TVarName
+//- TVarName child.0 C
+//- TVarName child.1 I
 //- C.kind "CONTEXT"
 //- C.post_child_text "."
 //- C.add_final_list_token "true"

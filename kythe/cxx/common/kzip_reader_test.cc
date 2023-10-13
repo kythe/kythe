@@ -16,6 +16,9 @@
 
 #include "kythe/cxx/common/kzip_reader.h"
 
+#include <zip.h>
+#include <zipconf.h>
+
 #include <functional>
 #include <string>
 
@@ -26,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/index_reader.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"
 #include "kythe/proto/go.pb.h"

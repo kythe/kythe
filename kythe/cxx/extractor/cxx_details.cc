@@ -16,7 +16,14 @@
 
 #include "kythe/cxx/extractor/cxx_details.h"
 
+#include <string>
+
 #include "absl/log/log.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Lex/DirectoryLookup.h"
+#include "clang/Lex/HeaderSearch.h"
+#include "clang/Lex/HeaderSearchOptions.h"
+#include "kythe/proto/cxx.pb.h"
 
 namespace kythe {
 

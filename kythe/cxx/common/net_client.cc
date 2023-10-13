@@ -17,11 +17,19 @@
 #include "kythe/cxx/common/net_client.h"
 
 #include <curl/curl.h>
+#include <curl/easy.h>
+#include <rapidjson/document.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstring>
+#include <string>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/message.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "rapidjson/error/en.h"
 #include "rapidjson/stringbuffer.h"

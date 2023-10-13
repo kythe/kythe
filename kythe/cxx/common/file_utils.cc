@@ -16,6 +16,9 @@
 
 #include "file_utils.h"
 
+#include <cstdio>
+#include <string>
+
 #include "absl/log/check.h"
 
 namespace kythe {
@@ -24,7 +27,8 @@ std::string LoadFileOrDie(const std::string& file) {
   FILE* handle = fopen(file.c_str(), "rb");
   CHECK(handle != nullptr) << "Couldn't open input file " << file;
   CHECK_EQ(fseek(handle, 0, SEEK_END), 0) << "Couldn't seek " << file;
-  long size = ftell(handle);
+  long size = ftell(handle);  // NOLINT(google-runtime-int): ftell is defined to
+                              // return `long`.
   CHECK_GE(size, 0) << "Bad size for " << file;
   CHECK_EQ(fseek(handle, 0, SEEK_SET), 0) << "Couldn't seek " << file;
   std::string content;

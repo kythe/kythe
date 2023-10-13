@@ -30,7 +30,6 @@ cc_test(
         "//third_party:gtest",
         "@com_github_inazarenko_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 

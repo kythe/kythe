@@ -51,7 +51,7 @@ func TestResolve(t *testing.T) {
 				code(t, "kythe:#param", `kind: IDENTIFIER pre_text: "param"`),
 			},
 			"kythe:#test",
-			`kind: BOX child: { kind: IDENTIFIER pre_text: "param" }`,
+			`kind: BOX child: { kind: PARAMETER child: { kind: IDENTIFIER pre_text: "param" } }`,
 		},
 		{
 			[]*spb.Entry{
@@ -62,7 +62,7 @@ func TestResolve(t *testing.T) {
 				code(t, "kythe:#paramLevel1", `kind: IDENTIFIER pre_text: "deep"`),
 			},
 			"kythe:#test",
-			`kind: BOX child: { kind: IDENTIFIER pre_text: "deep" }`,
+			`kind: BOX child: { kind: PARAMETER child: { kind: IDENTIFIER pre_text: "deep" } }`,
 		},
 		{
 			[]*spb.Entry{

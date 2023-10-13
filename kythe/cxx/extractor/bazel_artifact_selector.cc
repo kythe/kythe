@@ -15,11 +15,15 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
@@ -33,11 +37,14 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "google/protobuf/any.pb.h"
 #include "kythe/cxx/extractor/bazel_artifact.h"
 #include "kythe/proto/bazel_artifact_selector.pb.h"
 #include "kythe/proto/bazel_artifact_selector_v2.pb.h"
 #include "re2/re2.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 namespace {
@@ -85,19 +92,6 @@ template <typename T>
 T& GetOrConstruct(std::optional<T>& value) {
   return value.has_value() ? *value : value.emplace();
 }
-
-template <typename T>
-struct FromRange {
-  template <typename U>
-  operator U() {
-    return U(range.begin(), range.end());
-  }
-
-  const T& range;
-};
-
-template <typename T>
-FromRange(const T&) -> FromRange<T>;
 
 template <typename T>
 const T& AsConstRef(const T& value) {
@@ -161,9 +155,9 @@ absl::Status BazelArtifactSelector::Deserialize(
   return DeserializeInternal(*this, state);
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::Select(
+std::optional<BazelArtifact> AspectArtifactSelector::Select(
     const build_event_stream::BuildEvent& event) {
-  absl::optional<BazelArtifact> result = absl::nullopt;
+  std::optional<BazelArtifact> result = std::nullopt;
   if (event.id().has_named_set()) {
     result =
         SelectFileSet(event.id().named_set().id(), event.named_set_of_files());
@@ -428,7 +422,7 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
                                                                     raw)) {
         return false;
       }
-      state.PackFrom(std::move(raw));
+      state.PackFrom(raw);
       return true;
     }
     case AspectArtifactSelectorSerializationFormat::kV1: {
@@ -453,7 +447,7 @@ bool AspectArtifactSelector::SerializeInto(google::protobuf::Any& state) const {
           file_entry->set_uri(file->uri);
         }
       }
-      state.PackFrom(std::move(raw));
+      state.PackFrom(raw);
       return true;
     }
   }
@@ -636,7 +630,7 @@ std::string AspectArtifactSelector::FileSetTable::ToString(FileSetId id) const {
   return inverse_id_map_.at(id);
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
+std::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     absl::string_view id, const build_event_stream::NamedSetOfFiles& fileset) {
   std::optional<FileSetId> file_set_id = InternUnlessDisposed(id);
   if (!file_set_id.has_value()) {
@@ -663,10 +657,10 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectFileSet(
     return result;
   }
   InsertFileSet(*file_set_id, fileset);
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
+std::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
     const build_event_stream::BuildEventId::TargetCompletedId& id,
     const build_event_stream::TargetComplete& payload) {
   BazelArtifact result = {
@@ -684,7 +678,7 @@ absl::optional<BazelArtifact> AspectArtifactSelector::SelectTargetCompleted(
   if (!result.files.empty()) {
     return result;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 AspectArtifactSelector::PartitionFileSetsResult
@@ -784,7 +778,7 @@ ExtraActionSelector::ExtraActionSelector(const RE2* action_pattern)
       << action_pattern->error();
 }
 
-absl::optional<BazelArtifact> ExtraActionSelector::Select(
+std::optional<BazelArtifact> ExtraActionSelector::Select(
     const build_event_stream::BuildEvent& event) {
   if (event.id().has_action_completed() && event.action().success() &&
       action_matches_(event.action().type())) {
@@ -799,7 +793,7 @@ absl::optional<BazelArtifact> ExtraActionSelector::Select(
       };
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 }  // namespace kythe

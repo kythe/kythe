@@ -16,7 +16,13 @@
 
 #include "KytheGraphRecorder.h"
 
-#include "kythe/proto/storage.pb.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "absl/strings/string_view.h"
+#include "kythe/cxx/common/indexing/KytheOutputStream.h"
 
 namespace kythe {
 

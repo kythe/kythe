@@ -39,11 +39,7 @@
 //- ArgCodeType.pre_text ": "
 //- ArgCodeType.post_text "string"
 //-
-//- ArgCode child.3 ArgCodeEqual
-//- ArgCodeEqual.kind "BOX"
-//- ArgCodeEqual.pre_text " = "
-//-
-//- ArgCode child.4 ArgCodeDefaultValue
+//- ArgCode child.3 ArgCodeDefaultValue
 //- ArgCodeDefaultValue.kind "INITIALIZER"
 //- ArgCodeDefaultValue.pre_text "'0'"
 function myFunction(arg: string = '0'): number {

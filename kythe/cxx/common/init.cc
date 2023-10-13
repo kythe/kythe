@@ -37,16 +37,18 @@ extern "C" {
 //
 // We are replacing implementation-defined function (defined in glibc)
 // used by the expansion of system defined assert() macro.
-void __assert_fail(const char* assertion, const char* file, unsigned int line,
-                   const char* function) __THROW {
+void __assert_fail(
+    const char* assertion, const char* file, unsigned int line,
+    const char* function) __THROW {  // NOLINT(misc-include-cleaner)
   LOG(FATAL) << "assert.h assertion failed at " << file << ":" << line
              << (function ? " in " : "") << (function ? function : "") << ": "
              << assertion;
 }
 
 // Same as above, but for assert_perror.
-void __assert_perror_fail(int errnum, const char* file, unsigned int line,
-                          const char* function) __THROW {
+void __assert_perror_fail(
+    int errnum, const char* file, unsigned int line,
+    const char* function) __THROW {  // NOLINT(misc-include-cleaner)
   LOG(FATAL) << "assert.h assert_perror failed at " << file << ":" << line
              << " " << (function ? function : "") << ": "
              << std::strerror(errnum) << " [" << errnum << "]";

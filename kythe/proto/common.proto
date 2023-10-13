@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.common;
 
-option go_package = "common_go_proto";
+option go_package = "kythe.io/kythe/proto/common_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 
@@ -128,6 +128,8 @@ message MarkedSource {
     CONTEXT = 4;
     // This node dominates nodes that should be classified as initializers.
     INITIALIZER = 5;
+    // This node dominates nodes that should be classified as modifiers.
+    MODIFIER = 12;
     // Substitute this node with a PARAMETER formed from the param edges from
     // the context node starting with `lookup_index`.
     PARAMETER_LOOKUP_BY_PARAM = 6;
@@ -169,6 +171,9 @@ message MarkedSource {
   bool add_final_list_token = 10;
   // Annotations covering this subtree's full span.
   repeated Link link = 11;
+
+  // Exclude this MarkedSource when being included in a parent of these kinds.
+  repeated Kind exclude_on_include = 12;
 }
 
 // Contains symbol information for Kythe graph nodes.

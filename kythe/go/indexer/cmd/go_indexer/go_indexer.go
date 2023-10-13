@@ -167,6 +167,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
 		OverrideStdlibCorpus:           *overrideStdlibCorpus,
 		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
+		Verbose:                        *verbose,
 	})
 }
 

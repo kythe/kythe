@@ -471,16 +471,16 @@ void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
     clang::SourceManager* source_manager =
         &enclosing_pass_->getCompilerInstance().getSourceManager();
     clang::FileID loc_id = source_manager->getFileID(loc);
-    if (const clang::FileEntry* file_entry =
-            source_manager->getFileEntryForID(loc_id)) {
+    if (const clang::OptionalFileEntryRef file_entry =
+            source_manager->getFileEntryRefForID(loc_id)) {
       if (file_entry->getName() == enclosing_pass_->tracker()->filename()) {
         enclosing_pass_->tracker()->set_file_begin(loc);
         const auto buffer =
-            source_manager->getMemoryBufferForFileOrNone(file_entry);
+            source_manager->getMemoryBufferForFileOrNone(*file_entry);
         if (buffer) {
           enclosing_pass_->tracker()->SetInitialContent(buffer->getBuffer());
         }
-        tracked_file_ = file_entry;
+        tracked_file_ = &file_entry->getFileEntry();
       }
     }
   }

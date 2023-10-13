@@ -5,15 +5,17 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "compare",
     srcs = ["compare.go"],
+    importpath = "kythe.io/kythe/go/util/compare",
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@com_github_google_go_cmp//cmp:go_default_library",
-        "@org_golang_google_protobuf//testing/protocmp:go_default_library",
+        "@com_github_google_go_cmp//cmp",
+        "@org_golang_google_protobuf//testing/protocmp",
     ],
 )
 
 go_test(
     name = "compare_test",
     srcs = ["compare_test.go"],
-    library = "compare",
+    library = ":compare",
+    deps = ["//kythe/proto:storage_go_proto"],
 )

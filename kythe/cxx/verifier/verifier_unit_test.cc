@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include <optional>
 #include <regex>
+#include <string_view>
 
 #include "absl/log/initialize.h"
 #include "google/protobuf/text_format.h"
@@ -94,6 +96,8 @@ TEST(VerifierUnitTest, UnescapeStringLiterals) {
   EXPECT_TRUE(AssertionParser::Unescape(R"("\\")", &tmp));
   EXPECT_EQ("\\", tmp);
 }
+
+bool CheckEVarInit(std::string_view s) { return s != "nil" && !s.empty(); }
 
 enum class Solver { Old, New };
 
@@ -1164,6 +1168,32 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, DontCareInNegativeIsGroundedPass) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{X typed vname(_,"","3","","")}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST_P(VerifierTest, DontCareInNegativeIsGroundedFail) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{X typed vname(_,"","2","","")}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, EVarsUnsetAfterNegatedBlock) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -1856,8 +1886,7 @@ fact_value: ""
   ASSERT_EQ(2, inspect_count);
 }
 
-TEST(VerifierUnitTest, InspectionCalledCorrectly) {
-  Verifier v;
+TEST_P(VerifierTest, InspectionCalledCorrectly) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor? defines SomeNode
 source { root:"1" }
@@ -1870,39 +1899,21 @@ fact_value: ""
   size_t call_count = 0;
   bool key_was_someanchor = false;
   bool evar_init = false;
-  bool evar_init_to_correct_vname = false;
-  ASSERT_TRUE(v.VerifyAllGoals(
-      [&call_count, &key_was_someanchor, &evar_init_to_correct_vname](
-          Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        // Check for equivalence to `App(#vname, (#"", #"", 1, #"", #""))`
-        key_was_someanchor = (inspection.label == "SomeAnchor");
-        if (AstNode* node = inspection.evar->current()) {
-          if (App* app = node->AsApp()) {
-            if (Tuple* tuple = app->rhs()->AsTuple()) {
-              if (app->lhs() == cxt->vname_id() && tuple->size() == 5 &&
-                  tuple->element(0) == cxt->empty_string_id() &&
-                  tuple->element(1) == cxt->empty_string_id() &&
-                  tuple->element(3) == cxt->empty_string_id() &&
-                  tuple->element(4) == cxt->empty_string_id()) {
-                if (Identifier* identifier =
-                        tuple->element(2)->AsIdentifier()) {
-                  evar_init_to_correct_vname =
-                      cxt->symbol_table()->text(identifier->symbol()) == "1";
-                }
-              }
-            }
-          }
-        }
-        return true;
-      }));
+  std::string istr;
+  ASSERT_TRUE(v.VerifyAllGoals([&](Verifier* cxt, const Inspection& inspection,
+                                   std::optional<std::string_view> s) {
+    ++call_count;
+    // Check for equivalence to `App(#vname, (#"", #"", 1, #"", #""))`
+    key_was_someanchor = (inspection.label == "SomeAnchor");
+    istr = s ? *s : v.InspectionString(inspection);
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
+  EXPECT_EQ(R"(vname("", "", "1", "", ""))", istr);
   EXPECT_TRUE(key_was_someanchor);
-  EXPECT_TRUE(evar_init_to_correct_vname);
 }
 
-TEST(VerifierUnitTest, FactsAreNotLinear) {
-  Verifier v;
+TEST_P(VerifierTest, FactsAreNotLinear) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor? defines SomeNode?
 #- AnotherAnchor? defines AnotherNode?
@@ -1913,28 +1924,22 @@ fact_name: "/"
 fact_value: ""
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  AstNode* some_anchor = nullptr;
-  AstNode* some_node = nullptr;
-  AstNode* another_anchor = nullptr;
-  AstNode* another_node = nullptr;
+  std::string some_anchor, some_node, another_anchor, another_node;
   ASSERT_TRUE(v.VerifyAllGoals(
       [&some_anchor, &some_node, &another_anchor, &another_node](
-          Verifier* cxt, const Inspection& inspection) {
-        if (AstNode* node = inspection.evar->current()) {
-          if (inspection.label == "SomeAnchor") {
-            some_anchor = node;
-          } else if (inspection.label == "SomeNode") {
-            some_node = node;
-          } else if (inspection.label == "AnotherAnchor") {
-            another_anchor = node;
-          } else if (inspection.label == "AnotherNode") {
-            another_node = node;
-          } else {
-            return false;
-          }
-          return true;
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (inspection.label == "SomeAnchor") {
+          some_anchor = s;
+        } else if (inspection.label == "SomeNode") {
+          some_node = s;
+        } else if (inspection.label == "AnotherAnchor") {
+          another_anchor = s;
+        } else if (inspection.label == "AnotherNode") {
+          another_node = s;
+        } else {
+          return false;
         }
-        return false;
+        return true;
       }));
   EXPECT_EQ(some_anchor, another_anchor);
   EXPECT_EQ(some_node, another_node);
@@ -1942,8 +1947,7 @@ fact_value: ""
   EXPECT_NE(another_anchor, another_node);
 }
 
-TEST(VerifierUnitTest, OrdinalsGetUnified) {
-  Verifier v;
+TEST_P(VerifierTest, OrdinalsGetUnified) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeAnchor is_param.Ordinal? SomeNode
 source { root:"1" }
@@ -1957,19 +1961,14 @@ fact_value: "42"
   bool key_was_ordinal = false;
   bool evar_init = false;
   bool evar_init_to_correct_ordinal = false;
-  ASSERT_TRUE(
-      v.VerifyAllGoals([&call_count, &key_was_ordinal, &evar_init,
-                        &evar_init_to_correct_ordinal](
-                           Verifier* cxt, const Inspection& inspection) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&call_count, &key_was_ordinal, &evar_init,
+       &evar_init_to_correct_ordinal](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
         ++call_count;
         key_was_ordinal = (inspection.label == "Ordinal");
-        if (AstNode* node = inspection.evar->current()) {
-          evar_init = true;
-          if (Identifier* identifier = node->AsIdentifier()) {
-            evar_init_to_correct_ordinal =
-                cxt->symbol_table()->text(identifier->symbol()) == "42";
-          }
-        }
+        evar_init = CheckEVarInit(s);
+        evar_init_to_correct_ordinal = s == "\"42\"";
         return true;
       }));
   EXPECT_EQ(1, call_count);
@@ -1991,19 +1990,14 @@ fact_name: "/"
   bool key_was_ordinal = false;
   bool evar_init = false;
   bool evar_init_to_correct_ordinal = false;
-  ASSERT_TRUE(
-      v.VerifyAllGoals([&call_count, &key_was_ordinal, &evar_init,
-                        &evar_init_to_correct_ordinal](
-                           Verifier* cxt, const Inspection& inspection) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&call_count, &key_was_ordinal, &evar_init,
+       &evar_init_to_correct_ordinal](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
         ++call_count;
         key_was_ordinal = (inspection.label == "Ordinal");
-        if (AstNode* node = inspection.evar->current()) {
-          evar_init = true;
-          if (Identifier* identifier = node->AsIdentifier()) {
-            evar_init_to_correct_ordinal =
-                cxt->symbol_table()->text(identifier->symbol()) == "42";
-          }
-        }
+        evar_init = CheckEVarInit(s);
+        evar_init_to_correct_ordinal = s == "\"42\"";
         return true;
       }));
   EXPECT_EQ(1, call_count);
@@ -2011,8 +2005,7 @@ fact_name: "/"
   EXPECT_TRUE(evar_init_to_correct_ordinal);
 }
 
-TEST(VerifierUnitTest, EvarsAndIdentifiersCanHaveTheSameText) {
-  Verifier v;
+TEST_P(VerifierTest, EvarsAndIdentifiersCanHaveTheSameText) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, "Signature", Root?, Path?, Language?) defines SomeNode
 source {
@@ -2032,31 +2025,22 @@ fact_value: ""
   bool root = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &root, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if (ident_content == inspection.label) {
-          if (inspection.label == "Signature") signature = true;
-          if (inspection.label == "Root") root = true;
-          if (inspection.label == "Path") path = true;
-          if (inspection.label == "Language") language = true;
-        }
-      }
-      return true;
-    }
-    return false;
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &root, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (inspection.label == "Signature") signature = s == "Signature";
+        if (inspection.label == "Root") root = s == "Root";
+        if (inspection.label == "Path") path = s == "Path";
+        if (inspection.label == "Language") language = s == "Language";
+        return true;
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(root);
   EXPECT_TRUE(path);
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, EvarsAndIdentifiersCanHaveTheSameTextAndAreNotRebound) {
-  Verifier v;
+TEST_P(VerifierTest, EvarsAndIdentifiersCanHaveTheSameTextAndAreNotRebound) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, "Signature", Signature?, Path?, Language?) defines SomeNode
 source {
@@ -2075,29 +2059,24 @@ fact_value: ""
   bool signature = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if (ident_content == inspection.label) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (s == inspection.label) {
           if (inspection.label == "Signature") signature = true;
           if (inspection.label == "Path") path = true;
           if (inspection.label == "Language") language = true;
+        } else {
+          return false;
         }
-      }
-      return true;
-    }
-    return false;
-  }));
+        return true;
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(path);
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, EqualityConstraintWorks) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorks) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two? = "2",_,_)
 source { root:"1" }
@@ -2113,18 +2092,13 @@ edge_kind: "/kythe/edge/is"
 target { root:"3" }
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        return cxt->symbol_table()->text(ident->symbol()) == "2";
-      }
-    }
-    return false;
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, absl::string_view s) {
+        return (inspection.label == "Two" && s == "\"2\"");
+      }));
 }
 
-TEST(VerifierUnitTest, EqualityConstraintWorksOnAnchors) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchors) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- Tx?=@text defines SomeNode
 ##text (line 3 column 2 offset 42-46)
@@ -2148,11 +2122,50 @@ edge_kind: "/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
-})"));
+})",
+                                    "", "1"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection) {
-    return (inspection.label == "Tx" && inspection.evar->current() != nullptr);
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        return (inspection.label == "Tx" && !s.empty());
+      }));
+}
+
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchorsRev) {
+  if (GetParam() == Solver::New) {
+    // TODO: Turns out that we do need to propagate (type) equality constraints.
+    GTEST_SKIP();
+  }
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @text=Tx? defines SomeNode
+##text (line 3 column 2 offset 42-46)
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "42"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "46"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})",
+                                    "", "1"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        return (inspection.label == "Tx" && !s.empty());
+      }));
 }
 
 // It's possible to match Tx against {root:7}:
@@ -2194,8 +2207,7 @@ fact_value: ""
 
 // It's impossible to match Tx against {root:7} if we constrain Tx to equal
 // an anchor specifier.
-TEST(VerifierUnitTest, EqualityConstraintWorksOnAnchorsImpossibleConstraint) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorksOnAnchorsImpossibleConstraint) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- Tx?=@text defines SomeNode
 ##text (line 3 column 2 offset 42-46)
@@ -2230,8 +2242,7 @@ fact_value: ""
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, EqualityConstraintWorksWithOtherSortedRules) {
-  Verifier v;
+TEST_P(VerifierTest, EqualityConstraintWorksWithOtherSortedRules) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Three? = "3",_,_)
 source { root:"1" }
@@ -2247,14 +2258,9 @@ edge_kind: "/kythe/edge/is"
 target { root:"3" }
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        return cxt->symbol_table()->text(ident->symbol()) == "3";
-      }
-    }
-    return false;
-  }));
+  ASSERT_TRUE(
+      v.VerifyAllGoals([](Verifier* cxt, const Inspection& inspection,
+                          std::string_view s) { return s == "\"3\""; }));
 }
 
 TEST_P(VerifierTest, EqualityConstraintFails) {
@@ -2297,12 +2303,7 @@ target { root:"3" }
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-// TODO(zarko): this test fails with the new solver; fix and check the other
-// EqualityConstraint tests.
 TEST_P(VerifierTest, TransitiveIdentityEqualityConstraintFails) {
-  if (GetParam() == Solver::New) {
-    GTEST_SKIP();
-  }
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- One is vname(_,_,Two = Dos = Two,_,_)
 source { root:"1" }
@@ -2318,7 +2319,12 @@ edge_kind: "/kythe/edge/is"
 target { root:"3" }
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(v.VerifyAllGoals());
+  if (GetParam() == Solver::New) {
+    // The new solver can handle cycles in equality constraints.
+    ASSERT_TRUE(v.VerifyAllGoals());
+  } else {
+    ASSERT_FALSE(v.VerifyAllGoals());
+  }
 }
 
 TEST_P(VerifierTest, GraphEqualityConstraintFails) {
@@ -2340,8 +2346,7 @@ target { root:"3" }
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, UnifyVersusVname) {
-  Verifier v;
+TEST_P(VerifierTest, UnifyVersusVname) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, Corpus?, Root?, Path?, Language?) defines SomeNode
 source {
@@ -2362,24 +2367,16 @@ fact_value: ""
   bool root = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &corpus, &root, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if (ident_content == inspection.label) {
-          if (inspection.label == "Signature") signature = true;
-          if (inspection.label == "Corpus") corpus = true;
-          if (inspection.label == "Root") root = true;
-          if (inspection.label == "Path") path = true;
-          if (inspection.label == "Language") language = true;
-        }
-      }
-      return true;
-    }
-    return false;
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &corpus, &root, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (inspection.label == "Signature") signature = true;
+        if (inspection.label == "Corpus") corpus = true;
+        if (inspection.label == "Root") root = true;
+        if (inspection.label == "Path") path = true;
+        if (inspection.label == "Language") language = true;
+        return (s == inspection.label);
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(corpus);
   EXPECT_TRUE(root);
@@ -2387,8 +2384,7 @@ fact_value: ""
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, UnifyVersusVnameWithDontCare) {
-  Verifier v;
+TEST_P(VerifierTest, UnifyVersusVnameWithDontCare) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, Corpus?, Root?, _?, Language?) defines SomeNode
 source {
@@ -2409,25 +2405,20 @@ fact_value: ""
   bool root = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &corpus, &root, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if ((inspection.label != "Path" && ident_content == inspection.label) ||
-            (inspection.label == "_" && ident_content == "Path")) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &corpus, &root, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if ((inspection.label != "Path" && s == inspection.label) ||
+            (inspection.label == "_" && s == "Path")) {
           if (inspection.label == "Signature") signature = true;
           if (inspection.label == "Corpus") corpus = true;
           if (inspection.label == "Root") root = true;
           if (inspection.label == "_") path = true;
           if (inspection.label == "Language") language = true;
+          return true;
         }
-      }
-      return true;
-    }
-    return false;
-  }));
+        return false;
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(corpus);
   EXPECT_TRUE(root);
@@ -2435,8 +2426,7 @@ fact_value: ""
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, UnifyVersusVnameWithEmptyStringSpelledOut) {
-  Verifier v;
+TEST_P(VerifierTest, UnifyVersusVnameWithEmptyStringSpelledOut) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, Corpus?, Root?, "", Language?) defines SomeNode
 source {
@@ -2456,31 +2446,22 @@ fact_value: ""
   bool root = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &corpus, &root, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if (ident_content == inspection.label) {
-          if (inspection.label == "Signature") signature = true;
-          if (inspection.label == "Corpus") corpus = true;
-          if (inspection.label == "Root") root = true;
-          if (inspection.label == "Language") language = true;
-        }
-      }
-      return true;
-    }
-    return false;
-  }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &corpus, &root, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if (inspection.label == "Signature") signature = true;
+        if (inspection.label == "Corpus") corpus = true;
+        if (inspection.label == "Root") root = true;
+        if (inspection.label == "Language") language = true;
+        return (s == inspection.label);
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(corpus);
   EXPECT_TRUE(root);
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, UnifyVersusVnameWithEmptyStringBound) {
-  Verifier v;
+TEST_P(VerifierTest, UnifyVersusVnameWithEmptyStringBound) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- vname(Signature?, Corpus?, Root?, Path?, Language?) defines SomeNode
 source {
@@ -2500,25 +2481,21 @@ fact_value: ""
   bool root = false;
   bool path = false;
   bool language = false;
-  ASSERT_TRUE(v.VerifyAllGoals([&signature, &corpus, &root, &path, &language](
-                                   Verifier* cxt,
-                                   const Inspection& inspection) {
-    if (AstNode* node = inspection.evar->current()) {
-      if (Identifier* ident = node->AsIdentifier()) {
-        std::string ident_content = cxt->symbol_table()->text(ident->symbol());
-        if ((inspection.label != "Path" && ident_content == inspection.label) ||
-            (inspection.label == "Path" && ident == cxt->empty_string_id())) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&signature, &corpus, &root, &path, &language](
+          Verifier* cxt, const Inspection& inspection, std::string_view s) {
+        if ((inspection.label != "Path" && s == inspection.label) ||
+            (inspection.label == "Path" && s == "\"\"")) {
           if (inspection.label == "Signature") signature = true;
           if (inspection.label == "Corpus") corpus = true;
           if (inspection.label == "Root") root = true;
           if (inspection.label == "Path") path = true;
           if (inspection.label == "Language") language = true;
+          return true;
         }
-      }
-      return true;
-    }
-    return false;
-  }));
+
+        return false;
+      }));
   EXPECT_TRUE(signature);
   EXPECT_TRUE(corpus);
   EXPECT_TRUE(root);
@@ -2592,8 +2569,7 @@ fact_value: "//- A->node/kind file\n"
   ASSERT_FALSE(v.PrepareDatabase());
 }
 
-TEST(VerifierUnitTest, DontConvertMarkedSource) {
-  Verifier v;
+TEST_P(VerifierTest, DontConvertMarkedSource) {
   MarkedSource source;
   std::string source_string;
   ASSERT_TRUE(source.SerializeToString(&source_string));

@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <optional>
 #include <string>
+#include <utility>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -66,7 +69,7 @@ CompilationUnit ExpectedCompilation() {
 // Verifies that the extractor properly handles KYTHE_ROOT_DIRECTORY
 // other than the working directory.
 TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
-  absl::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
+  std::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
   ASSERT_TRUE(resolved_path.has_value());
 
   std::string filename(Basename(*resolved_path));
@@ -96,7 +99,7 @@ TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
 // compilation unit working_directory that doesn't conflict
 // with another compilation unit path.
 TEST(RootDirectoryTest, WorkingDirectoryAvoidsConflict) {
-  absl::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
+  std::optional<std::string> resolved_path = ResolveRunfiles(kFilePath);
   ASSERT_TRUE(resolved_path.has_value());
 
   std::string filename(Basename(*resolved_path));

@@ -17,18 +17,23 @@
 #include "kythe/cxx/extractor/testlib.h"
 
 #include <errno.h>
-#include <stdlib.h>
+#include <unistd.h>
 
-#include <iostream>
+#include <cstddef>
+#include <cstring>
+#include <memory>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "gmock/gmock.h"
+#include "absl/utility/utility.h"
+#include "google/protobuf/any.pb.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
@@ -37,6 +42,7 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Program.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
@@ -61,8 +67,9 @@ void CanonicalizeHash(HashMap* hashes, std::string* hash) {
 /// \brief Range wrapper around ContextDependentVersion, if any.
 class MutableContextRows {
  public:
-  using iterator = decltype(
-      std::declval<kpb::ContextDependentVersion>().mutable_row()->begin());
+  using iterator = decltype(std::declval<kpb::ContextDependentVersion>()
+                                .mutable_row()
+                                ->begin());
   explicit MutableContextRows(kpb::CompilationUnit::FileInput* file_input) {
     for (gpb::Any& detail : *file_input->mutable_details()) {
       if (detail.UnpackTo(&context_)) {
@@ -206,13 +213,13 @@ void CanonicalizeHashes(kpb::CompilationUnit* unit) {
   }
 }
 
-absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
+std::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
     ExtractorOptions options) {
   gpb::LinkMessageReflection<kpb::CxxCompilationUnitDetails>();
 
   options.environment.insert({"KYTHE_EXCLUDE_EMPTY_DIRS", "1"});
   options.environment.insert({"KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES", "1"});
-  if (absl::optional<std::string> extractor = ResolveRunfiles(kExtractorPath)) {
+  if (std::optional<std::string> extractor = ResolveRunfiles(kExtractorPath)) {
     TemporaryKzipFile output_file;
     options.environment.insert({"KYTHE_OUTPUT_FILE", output_file.filename()});
 
@@ -222,7 +229,7 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
                        FlattenEnvironment(options.environment),
                        options.working_directory)) {
       if (auto reader = KzipReader::Open(output_file.filename()); reader.ok()) {
-        absl::optional<std::vector<kpb::CompilationUnit>> result(
+        std::optional<std::vector<kpb::CompilationUnit>> result(
             absl::in_place);  // Default construct a result vector.
 
         auto status = reader->Scan([&](absl::string_view digest) {
@@ -238,38 +245,38 @@ absl::optional<std::vector<kpb::CompilationUnit>> ExtractCompilations(
         });
         if (!status.ok()) {
           LOG(ERROR) << "Unable to read compilations: " << status;
-          return absl::nullopt;
+          return std::nullopt;
         }
         return result;
       } else {
         LOG(ERROR) << "Unable to open " << output_file.filename() << ": "
                    << reader.status();
       }
-      return absl::nullopt;
+      return std::nullopt;
     }
 
   } else {
     LOG(ERROR) << "Unable to resolve extractor path";
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
-absl::optional<std::string> ResolveRunfiles(absl::string_view path) {
+std::optional<std::string> ResolveRunfiles(absl::string_view path) {
   std::string error;
   std::unique_ptr<Runfiles> runfiles(Runfiles::CreateForTest(&error));
   if (runfiles == nullptr) {
     LOG(ERROR) << error;
-    return absl::nullopt;
+    return std::nullopt;
   }
   std::string resolved = runfiles->Rlocation(JoinPath(kWorkspaceRoot, path));
   if (resolved.empty()) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   return resolved;
 }
 
 kpb::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options) {
-  if (absl::optional<std::vector<kpb::CompilationUnit>> result =
+  if (std::optional<std::vector<kpb::CompilationUnit>> result =
           ExtractCompilations(std::move(options))) {
     CHECK(result->size() == 1)
         << "unexpected number of extracted compilations: " << result->size();

@@ -16,7 +16,6 @@ go_binary(
         "//kythe/go/util/schema",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
-        "//kythe/go/util/schema/nodes",
         "//kythe/go/util/schema/tickets",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",

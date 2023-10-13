@@ -13,6 +13,7 @@ cc_library(
     hdrs = ["re2_flag.h"],
     deps = [
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -159,7 +160,6 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_google_protobuf//src/google/protobuf/io",
         "@com_googlesource_code_re2//:re2",
@@ -209,7 +209,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -387,7 +386,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_google_protobuf//src/google/protobuf/io",
         "@org_libzip//:zip",
@@ -405,6 +403,7 @@ cc_test(
         "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
+        ":index_reader",
         ":kzip_reader",
         ":libzip/error",
         ":testutil",
@@ -415,6 +414,7 @@ cc_test(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@org_libzip//:zip",
     ],
 )
 
@@ -453,6 +453,9 @@ cc_test(
         "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
+        ":index_reader",
+        ":index_writer",
+        ":kzip_encoding",
         ":kzip_reader",
         ":kzip_writer",
         ":libzip/error",
@@ -501,6 +504,7 @@ cc_test(
         ":kzip_reader",
         ":kzip_writer_c_api",
         ":libzip/error",
+        "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest",
         "//third_party:gtest_main",

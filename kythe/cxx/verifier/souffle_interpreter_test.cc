@@ -16,6 +16,10 @@
 
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
 #include "absl/log/log.h"
 #include "gtest/gtest.h"
 
@@ -32,8 +36,10 @@ TEST(SouffleInterpreterTest, SmokeTest) {
   AnchorMap anchors;
   std::vector<GoalGroup> groups;
   std::vector<Inspection> inspections;
-  auto result = RunSouffle(symbols, groups, db, anchors, inspections,
-                           [](const Inspection&) { return true; });
+  auto result = RunSouffle(
+      symbols, groups, db, anchors, inspections,
+      [](const Inspection&, std::optional<std::string_view>) { return true; },
+      [](size_t) { return std::string(""); });
   ASSERT_TRUE(result.success);
 }
 }  // namespace kythe::verifier

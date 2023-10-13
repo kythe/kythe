@@ -20,6 +20,7 @@
 #include <ctype.h>
 
 #include <algorithm>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -27,7 +28,6 @@
 #include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/optional.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 #include "re2/re2.h"
@@ -45,9 +45,9 @@ class SymbolTable {
   explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
 
   /// \brief Returns the `Symbol` associated with `string` or `nullopt`.
-  absl::optional<Symbol> FindInterned(absl::string_view string) const {
+  std::optional<Symbol> FindInterned(absl::string_view string) const {
     const auto old = symbols_.find(std::string(string));
-    if (old == symbols_.end()) return absl::nullopt;
+    if (old == symbols_.end()) return std::nullopt;
     return old->second;
   }
 
@@ -376,6 +376,7 @@ using AnchorMap = std::multimap<std::pair<size_t, size_t>, AstNode*>;
 
 /// An EVar whose assignment is interesting to display.
 struct Inspection {
+ public:
   enum class Kind {
     EXPLICIT,  ///< The user requested this inspection (with "?").
     IMPLICIT   ///< This inspection was added by default.

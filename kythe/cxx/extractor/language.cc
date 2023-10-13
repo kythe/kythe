@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "llvm/ADT/StringRef.h"
-
 namespace kythe {
 namespace supported_language {
 

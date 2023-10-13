@@ -302,6 +302,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "decayed_type",
+    srcs = ["basic/decayed_type.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "decltype_auto",
     srcs = ["basic/decltype_auto.cc"],
     check_for_singletons = True,
@@ -952,6 +959,13 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
+cc_indexer_test(
+    name = "lambda_test",
+    srcs = ["basic/lambda.cc"],
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -1360,7 +1374,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "metadata_semantic",
     srcs = ["metadata/metadata_semantic.cc"],
-    experimental_record_dataflow_edges = True,
     tags = ["metadata"],
     deps = ["metadata/semantic.meta"],
 )
@@ -1936,7 +1949,6 @@ cc_indexer_test(
     name = "rec_class_member_ptr",
     srcs = ["rec/rec_class_member_ptr.cc"],
     check_for_singletons = True,
-    experimental_record_dataflow_edges = True,
     tags = ["rec"],
 )
 
@@ -2126,6 +2138,15 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_class_inst_explicit_aliasing",
+    srcs = ["template/template_class_inst_explicit_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_class_inst_implicit",
     srcs = ["template/template_class_inst_implicit.cc"],
     # Type alias alias inside a class template gets the same documentation text.
@@ -2151,6 +2172,15 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_class_ref",
     srcs = ["template/template_class_ref.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_class_ref_aliasing",
+    srcs = ["template/template_class_ref_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
     ignore_dups = True,
     tags = ["template"],
 )
@@ -2215,6 +2245,13 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_dependent_sized_array",
     srcs = ["template/template_dependent_sized_array.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_dependent_template_specialization_type",
+    srcs = ["template/template_dependent_template_specialization_type.cc"],
     ignore_dups = True,
     tags = ["template"],
 )
@@ -2490,6 +2527,16 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_nested_name_aliasing",
+    srcs = ["template/template_nested_name_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_code_conflicts = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_multilevel_argument",
     srcs = ["template/template_multilevel_argument.cc"],
     ignore_dups = True,
@@ -2575,8 +2622,26 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_rec_inherit_aliasing",
+    srcs = ["template/template_rec_inherit_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_rec_override",
     srcs = ["template/template_rec_override.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_rec_override_aliasing",
+    srcs = ["template/template_rec_override_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
     ignore_dups = True,
     tags = ["template"],
 )
@@ -3077,7 +3142,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "extension_property",
     srcs = ["objc/categories/extension_property.m"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
     deps = ["objc/categories/extension_property.h"],
@@ -3285,7 +3349,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
-    experimental_record_dataflow_edges = True,
     tags = ["objc"],
 )
 
@@ -3379,7 +3442,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_decl_defn_synth",
     srcs = ["objc/property_decl_defn_synth.m"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -3480,7 +3542,6 @@ test_suite(
 cc_indexer_test(
     name = "df_binary",
     srcs = ["df/df_binary.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3488,7 +3549,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_field_ref_blame",
     srcs = ["df/df_field_ref_blame.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3496,21 +3556,18 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_field_rw",
     srcs = ["df/df_field_rw.cc"],
-    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
 cc_indexer_test(
     name = "df_field_influence",
     srcs = ["df/df_field_influence.cc"],
-    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
 cc_indexer_test(
     name = "df_fncall_influence",
     srcs = ["df/df_fncall_influence.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3518,7 +3575,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_fncall_influence_defaultargs",
     srcs = ["df/df_fncall_influence_defaultargs.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3527,23 +3583,37 @@ cc_indexer_test(
     name = "df_fncall_influence_pack",
     size = "medium",
     srcs = ["df/df_fncall_influence_pack.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_pack_fs",
+    size = "medium",
+    srcs = ["df/df_fncall_influence_pack.cc"],
+    ignore_dups = True,
+    use_fast_solver = True,
     tags = ["df"],
 )
 
 cc_indexer_test(
     name = "df_fncall_influence_vararg",
     srcs = ["df/df_fncall_influence_vararg.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_fncall_influence_vararg_fs",
+    srcs = ["df/df_fncall_influence_vararg.cc"],
+    ignore_dups = True,
+    use_fast_solver = True,
     tags = ["df"],
 )
 
 cc_indexer_test(
     name = "df_operatoreq",
     srcs = ["df/df_operatoreq.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3551,7 +3621,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_operatorpluseq",
     srcs = ["df/df_operatorpluseq.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3559,7 +3628,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_operatorplusplus",
     srcs = ["df/df_operatorplusplus.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3567,7 +3635,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_ta_var",
     srcs = ["df/df_ta_var.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3575,7 +3642,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_unary",
     srcs = ["df/df_unary.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )
@@ -3583,7 +3649,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_ref_blame",
     srcs = ["df/df_var_ref_blame.cc"],
-    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
@@ -3596,14 +3661,12 @@ cc_indexer_test(
 cc_indexer_test(
     name = "df_var_rw",
     srcs = ["df/df_var_rw.cc"],
-    experimental_record_dataflow_edges = True,
     tags = ["df"],
 )
 
 cc_indexer_test(
     name = "df_var_influence",
     srcs = ["df/df_var_influence.cc"],
-    experimental_record_dataflow_edges = True,
     ignore_dups = True,
     tags = ["df"],
 )

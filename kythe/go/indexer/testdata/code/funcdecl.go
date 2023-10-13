@@ -37,7 +37,9 @@ package funcdecl
 // - PosCode child.3 PCResult // result
 // -
 // - //--------------------------------------------------
-// - PCFunc.pre_text "func "
+// - PCFunc.kind "MODIFIER"
+// - PCFunc.pre_text "func"
+// - PCFunc.post_text " "
 // -
 // - PCName child.0 PCContext
 // - PCName child.1 PCIdent
@@ -75,7 +77,9 @@ func Positive(x int) bool {
 // - TrueCode child.2 TCParams
 // - TrueCode child.3 TCResult
 // -
-// - TCFunc.pre_text "func "
+// - TCFunc.kind "MODIFIER"
+// - TCFunc.pre_text "func"
+// - TCFunc.post_text " "
 // -
 // - TCName child.0 _TCContext
 // - TCName child.1 _TCIdent
@@ -87,3 +91,19 @@ func Positive(x int) bool {
 // - TCResult child.0 TCReturn
 // - TCReturn.pre_text "bool"
 func True() bool { return true }
+
+// - @N defines/binding N
+// - N code NCode
+// - NCode child.3 Ret
+// - Ret.pre_text " ("
+// - Ret.post_child_text ", "
+// - Ret.post_text ")"
+// - Ret child.0 ErrRet
+// - ErrRet.post_child_text " "
+// - ErrRet child.0 ErrVar
+// - ErrVar.pre_text "err"
+// - ErrVar link Err
+// - ErrRet child.1 ErrType
+// - ErrType.pre_text "error"
+// - @#0err defines/binding Err
+func N() (err error) { return nil }

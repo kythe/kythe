@@ -20,7 +20,7 @@
 #include "absl/status/status.h"
 #include "absl/types/variant.h"
 #include "google/protobuf/io/zero_copy_stream.h"
-#include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
+#include "third_party/bazel/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
 namespace kythe {
 

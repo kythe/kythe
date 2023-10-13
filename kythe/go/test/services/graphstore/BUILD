@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "graphstore",
     srcs = ["graphstore.go"],
+    importpath = "kythe.io/kythe/go/test/services/graphstore",
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/test/testutil",

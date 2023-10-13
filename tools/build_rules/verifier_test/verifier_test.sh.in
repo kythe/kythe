@@ -26,5 +26,11 @@ ENTRIES_GZ=(@ENTRIES_GZ@)
   if (( ${#ENTRIES[@]} )); then cat "${ENTRIES[@]}"; fi
   if (( ${#ENTRIES_GZ[@]} )); then gunzip -c "${ENTRIES_GZ[@]}"; fi
 ) | (
+  if [[ -z "@REWRITE@" ]]; then
+    @MARKEDSOURCE@ --rewrite --render_callsite_signatures --render_qualified_names --render_signatures
+  else
+    cat
+  fi
+) | (
   if @INVERT@ @VERIFIER@ @ARGS@ "$@"; then exit 0; else exit 1; fi
 )

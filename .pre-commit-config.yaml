@@ -60,7 +60,7 @@ repos:
         name: Format w/ clang-format
         description: Formats files using clang-format
         language: system
-        entry: clang-format-11 --style=file -i
+        entry: clang-format-14 --style=file -i
         files: '\.(c|cc|h|i|m|js|proto)$'
     -   id: gofmt
         name: Format w/ gofmt
@@ -88,11 +88,9 @@ repos:
         language: script
         entry: tools/git/test-affected-targets.sh
         stages: [push]
-    -   id: rustfmt
-        name: Format w/ rustfmt
-        description: Runs `rustfmt` on Rust files
+    -   id: gazelle
+        name: Build Cleaner
+        description: Clean build dependencies with gazelle
         language: system
-        entry: tools/rust/rustfmt.sh
-        types: [rust]
-        exclude: '^(kythe/proto/.*|third_party/.*)'
+        entry: bazel run //:gazelle
 exclude: '(.*/testdata/.*|third_party/.*|tools/platforms/configs/rbe_default/.*)$'

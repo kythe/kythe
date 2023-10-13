@@ -230,26 +230,35 @@ go_entries = rule(
 def go_verifier_test(
         name,
         entries,
+        srcs = [],
         deps = [],
         size = "small",
         tags = [],
         log_entries = False,
         has_marked_source = False,
-        allow_duplicates = False):
+        resolve_code_facts = False,
+        allow_duplicates = False,
+        use_fast_solver = False):
     opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
         opts.append("--ignore_dups")
+    if len(srcs) > 0:
+        opts.append("--nofile_vnames")
 
     # If the test wants marked source, enable support for it in the verifier.
     if has_marked_source:
         opts.append("--convert_marked_source")
+    if use_fast_solver:
+        opts.append("--use_fast_solver")
     return verifier_test(
         name = name,
         size = size,
         opts = opts,
         tags = tags,
+        resolve_code_facts = resolve_code_facts,
+        srcs = srcs,
         deps = [entries] + deps,
     )
 
@@ -311,14 +320,17 @@ def go_indexer_test(
         log_entries = False,
         data = None,
         has_marked_source = False,
+        resolve_code_facts = False,
         emit_anchor_scopes = False,
         allow_duplicates = False,
         use_compilation_corpus_for_all = False,
         use_file_as_top_level_scope = False,
         override_stdlib_corpus = "",
         metadata_suffix = "",
+        extra_goals = [],
         extra_indexer_args = [],
-        extra_extractor_args = []):
+        extra_extractor_args = [],
+        use_fast_solver = False):
     entries = _go_indexer(
         name = name,
         srcs = srcs,
@@ -336,13 +348,16 @@ def go_indexer_test(
     )
     go_verifier_test(
         name = name,
+        srcs = extra_goals,
         size = size,
         allow_duplicates = allow_duplicates,
         entries = ":" + entries,
         deps = [dep + "_entries" for dep in deps],
         has_marked_source = has_marked_source,
+        resolve_code_facts = resolve_code_facts,
         log_entries = log_entries,
         tags = tags,
+        use_fast_solver = use_fast_solver,
     )
 
 # A convenience macro to generate a test library, pass it to the Go indexer,

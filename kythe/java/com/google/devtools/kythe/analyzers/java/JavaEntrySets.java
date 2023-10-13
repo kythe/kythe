@@ -264,9 +264,23 @@ public class JavaEntrySets extends KytheEntrySets {
                 .setProperty(
                     "code",
                     MarkedSource.newBuilder()
-                        .setPreText(name)
-                        .setKind(MarkedSource.Kind.IDENTIFIER)
-                        .build()));
+                        .addChild(
+                            MarkedSource.newBuilder()
+                                .setPostChildText(" ")
+                                .setAddFinalListToken(true)
+                                .addChild(
+                                    MarkedSource.newBuilder()
+                                        .setPreText("package")
+                                        .setKind(MarkedSource.Kind.MODIFIER)
+                                        .build())
+                                .build())
+                        .addChild(
+                            MarkedSource.newBuilder()
+                                .setPreText(name)
+                                .setKind(MarkedSource.Kind.IDENTIFIER)
+                                .build())
+                        .build())
+                .build());
     return node;
   }
 
@@ -277,7 +291,13 @@ public class JavaEntrySets extends KytheEntrySets {
     return emitAndReturn(
         newNode(NodeKind.TVAR)
             .addSignatureSalt(sourcePath + counter)
-            .setCorpusPath(defaultCorpusPath()));
+            .setCorpusPath(defaultCorpusPath())
+            .setProperty(
+                "code",
+                MarkedSource.newBuilder()
+                    .setKind(MarkedSource.Kind.IDENTIFIER)
+                    .setPreText("?")
+                    .build()));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */

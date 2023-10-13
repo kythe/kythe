@@ -15,13 +15,12 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_reader.h"
 
-#include <string>
+#include <optional>
+#include <utility>
+#include <vector>
 
-#include "absl/strings/escaping.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
-#include "absl/strings/string_view.h"
-#include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
+#include "kythe/cxx/extractor/bazel_artifact.h"
+#include "kythe/cxx/extractor/bazel_artifact_selector.h"
 
 namespace kythe {
 
@@ -35,7 +34,7 @@ void BazelArtifactReader::Select() {
   for (; !event_reader_->Done(); event_reader_->Next()) {
     const auto& event = event_reader_->Ref();
     for (auto& selector : selectors_) {
-      if (absl::optional<BazelArtifact> artifact = selector.Select(event)) {
+      if (std::optional<BazelArtifact> artifact = selector.Select(event)) {
         value_ = *std::move(artifact);
         return;
       }

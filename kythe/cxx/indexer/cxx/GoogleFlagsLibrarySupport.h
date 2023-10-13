@@ -33,8 +33,8 @@ class GoogleFlagsLibrarySupport : public LibrarySupport {
   GoogleFlagsLibrarySupport() {}
 
   /// \brief Emits a google/gflag node if `Decl` is a flag.
-  void InspectVariable(IndexerASTVisitor& V, GraphObserver::NodeId& DeclNodeId,
-                       GraphObserver::NodeId& DeclBodyNodeId,
+  void InspectVariable(IndexerASTVisitor& V,
+                       const GraphObserver::NodeId& DeclNodeId,
                        const clang::VarDecl* Decl,
                        GraphObserver::Completeness Compl,
                        const std::vector<Completion>& Compls) override;
@@ -44,7 +44,7 @@ class GoogleFlagsLibrarySupport : public LibrarySupport {
   void InspectDeclRef(IndexerASTVisitor& V,
                       clang::SourceLocation DeclRefLocation,
                       const GraphObserver::Range& Ref,
-                      GraphObserver::NodeId& RefId,
+                      const GraphObserver::NodeId& RefId,
                       const clang::NamedDecl* TargetDecl) override;
 };
 

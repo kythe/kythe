@@ -17,10 +17,13 @@
 #include "kythe/cxx/common/kzip_writer.h"
 
 #include <openssl/sha.h>
+#include <zip.h>
 
 #include <array>
+#include <cstdlib>
+#include <ctime>
 #include <string>
-#include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -30,6 +33,9 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/libzip/error.h"

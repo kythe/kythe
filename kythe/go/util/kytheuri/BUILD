@@ -8,8 +8,9 @@ go_library(
     name = "kytheuri",
     srcs = [
         "escape.go",
-        ":uri.go",
+        "uri.go",
     ],
+    importpath = "kythe.io/kythe/go/util/kytheuri",
     deps = [
         "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
@@ -23,10 +24,11 @@ go_test(
         "bench_test.go",
         "uri_test.go",
     ],
-    library = "kytheuri",
+    library = ":kytheuri",
     visibility = ["//visibility:private"],
     deps = [
+        "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto",
     ],
 )

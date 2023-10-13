@@ -655,8 +655,10 @@ func (c xrefCategory) AddCount(reply *xpb.CrossReferencesReply, idx *srvpb.Paged
 		}
 	case xrefCategoryRef:
 		if pageSet.Contains(idx) {
+			reply.Total.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(idx.Count)
 			reply.Total.References += int64(idx.Count)
 		} else {
+			reply.Filtered.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(idx.Count)
 			reply.Filtered.References += int64(idx.Count)
 		}
 	case xrefCategoryRelated:
@@ -758,11 +760,17 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
 		Nodes:           make(map[string]*cpb.NodeInfo, len(req.Ticket)),
 
-		Total: &xpb.CrossReferencesReply_Total{},
+		Total: &xpb.CrossReferencesReply_Total{
+			RefEdgeToCount: make(map[string]int64),
+		},
 		Filtered: &xpb.CrossReferencesReply_Total{
+			RefEdgeToCount:         make(map[string]int64),
 			RelatedNodesByRelation: make(map[string]int64),
 		},
 	}
+	// Before we return reply, remove all RefEdgeToCount map entries that point to a 0 count.
+	defer cleanupRefEdgeToCount(reply)
+
 	if len(req.Filter) > 0 {
 		reply.Total.RelatedNodesByRelation = make(map[string]int64)
 	}
@@ -908,8 +916,11 @@ readLoop:
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				filtered := filter.FilterGroup(grp)
+				reply.Total.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(len(grp.Anchor))
 				reply.Total.References += int64(len(grp.Anchor))
+				reply.Total.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(countRefs(grp.GetScopedReference()))
 				reply.Total.References += int64(countRefs(grp.GetScopedReference()))
+				reply.Filtered.RefEdgeToCount[strings.TrimPrefix(grp.Kind, "%")] += int64(filtered)
 				reply.Filtered.References += int64(filtered)
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp)
@@ -1048,7 +1059,9 @@ readLoop:
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
-					reply.Total.References -= int64(filtered) // update counts to reflect filtering
+					reply.Total.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] -= int64(filtered) // update counts to reflect filtering
+					reply.Total.References -= int64(filtered)                                        // update counts to reflect filtering
+					reply.Filtered.RefEdgeToCount[strings.TrimPrefix(idx.Kind, "%")] += int64(filtered)
 					reply.Filtered.References += int64(filtered)
 					stats.addAnchors(&crs.Reference, p.Group)
 				}
@@ -1231,6 +1244,22 @@ readLoop:
 	return reply, nil
 }
 
+// cleanupRefEdgeToCount removes all the keys from r.Total.RefEdgeToCount and
+// r.Filtered.RefEdgeToCount that have a value of 0.
+func cleanupRefEdgeToCount(r *xpb.CrossReferencesReply) {
+	for k, v := range r.Total.RefEdgeToCount {
+		if v == 0 {
+			delete(r.Total.RefEdgeToCount, k)
+		}
+	}
+	for k, v := range r.Filtered.RefEdgeToCount {
+		if v == 0 {
+			delete(r.Filtered.RefEdgeToCount, k)
+		}
+	}
+
+}
+
 func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mergeNode string) []string {
 	if _, ok := mergeMap[mergeNode]; ok {
 		return allTickets
@@ -1261,11 +1290,20 @@ func nodeKind(n *srvpb.Node) string {
 }
 
 func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
+	var refs int
+	for _, cnt := range ts.RefEdgeToCount {
+		refs += int(cnt)
+	}
 	var relatedNodes int
 	for _, cnt := range ts.RelatedNodesByRelation {
 		relatedNodes += int(cnt)
 	}
-	return int(ts.Callers) + int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
+	return int(ts.Callers) +
+		int(ts.Definitions) +
+		int(ts.Declarations) +
+		refs +
+		int(ts.Documentation) +
+		relatedNodes
 }
 
 type refOptions struct {

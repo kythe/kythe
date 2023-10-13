@@ -9,7 +9,7 @@ go_binary(
         "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
     ],
 )
 

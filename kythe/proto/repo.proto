@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.repo;
 
-option go_package = "repo_go_proto";
+option go_package = "kythe.io/kythe/proto/repo_go_proto";
 
 // Represents configuration data on how to extract a repo.
 message Config {

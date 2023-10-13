@@ -37,23 +37,9 @@ java_library(
 # --proto_toolchain_for_cc=@io_kythe//kythe/extractors:cc_proto_toolchain
 proto_lang_toolchain(
     name = "cc_proto_toolchain",
-    blacklisted_protos = [
-        "@com_google_protobuf//:any_proto",
-        "@com_google_protobuf//:api_proto",
-        "@com_google_protobuf//:compiler_plugin_proto",
-        "@com_google_protobuf//:descriptor_proto",
-        "@com_google_protobuf//:duration_proto",
-        "@com_google_protobuf//:empty_proto",
-        "@com_google_protobuf//:field_mask_proto",
-        "@com_google_protobuf//:source_context_proto",
-        "@com_google_protobuf//:struct_proto",
-        "@com_google_protobuf//:timestamp_proto",
-        "@com_google_protobuf//:type_proto",
-        "@com_google_protobuf//:wrappers_proto",
-    ],
     command_line = "--PLUGIN_C++_out=:$(OUT)",
     plugin = "//kythe/cxx/tools:proto_metadata_plugin",
-    runtime = "@com_google_protobuf//:protobuf",
+    runtime = "@com_google_protobuf//:protobuf_nowkt",
 )
 
 # Alternatively, if the plugin doesn't work you can use the default code generator
@@ -64,22 +50,8 @@ proto_lang_toolchain(
 #   --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
 proto_lang_toolchain(
     name = "cc_native_proto_toolchain",
-    blacklisted_protos = [
-        "@com_google_protobuf//:any_proto",
-        "@com_google_protobuf//:api_proto",
-        "@com_google_protobuf//:compiler_plugin_proto",
-        "@com_google_protobuf//:descriptor_proto",
-        "@com_google_protobuf//:duration_proto",
-        "@com_google_protobuf//:empty_proto",
-        "@com_google_protobuf//:field_mask_proto",
-        "@com_google_protobuf//:source_context_proto",
-        "@com_google_protobuf//:struct_proto",
-        "@com_google_protobuf//:timestamp_proto",
-        "@com_google_protobuf//:type_proto",
-        "@com_google_protobuf//:wrappers_proto",
-    ],
     command_line = "--cpp_out=annotate_headers,annotation_pragma_name=kythe_metadata,annotation_guard_name=KYTHE_IS_RUNNING:$(OUT)",
-    runtime = "@com_google_protobuf//:protobuf",
+    runtime = "@com_google_protobuf//:protobuf_nowkt",
 )
 
 extractor_action(
@@ -187,21 +159,6 @@ extractor_action(
     extractor = "//kythe/go/extractors/proto:extract_proto_kzip",
     mnemonics = ["GenProtoDescriptorSet"],
     output = "$(ACTION_ID).protobuf.kzip",
-)
-
-extractor_action(
-    name = "extract_kzip_rust",
-    args = [
-        "--extra_action=$(EXTRA_ACTION_FILE)",
-        "--output=$(output $(ACTION_ID).rust.kzip)",
-        "--vnames_config=$(location //external:vnames_config)",
-    ],
-    data = ["//external:vnames_config"],
-    extractor = "@io_kythe//kythe/rust/extractor:extractor_script",
-    mnemonics = [
-        "Rustc",
-    ],
-    output = "$(ACTION_ID).rust.kzip",
 )
 
 bzl_library(

@@ -18,6 +18,7 @@
 #define KYTHE_CXX_VERIFIER_H_
 
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -94,8 +95,18 @@ class Verifier {
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
+  bool VerifyAllGoals(std::function<bool(Verifier* context, const Inspection&,
+                                         std::string_view)>
+                          inspect);
+
+  /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
+  /// \param inspect function to call on any inspection request
+  /// \return true if all goals could be satisfied.
   bool VerifyAllGoals(
-      std::function<bool(Verifier* context, const Inspection&)> inspect);
+      std::function<bool(Verifier* context, const Inspection&)> inspect) {
+    return VerifyAllGoals([&](Verifier* v, const Inspection& i,
+                              std::string_view) { return inspect(v, i); });
+  }
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.
@@ -214,6 +225,11 @@ class Verifier {
 
   /// \brief Use the fast solver.
   void UseFastSolver(bool value) { use_fast_solver_ = value; }
+
+  /// \brief Gets a string representation of `i`.
+  /// \deprecated Inspection callbacks will be provided with strings and
+  /// will no longer have access to the internal AST.
+  std::string InspectionString(const Inspection& i);
 
  private:
   using InternedVName = std::tuple<Symbol, Symbol, Symbol, Symbol, Symbol>;
@@ -406,6 +422,9 @@ class Verifier {
 
   /// Identifier for MarkedSource INITIALIZER kinds.
   AstNode* marked_source_initializer_id_;
+
+  /// Identifier for MarkedSource MODIFIER kinds.
+  AstNode* marked_source_modifier_id_;
 
   /// Identifier for MarkedSource PARAMETER_LOOKUP_BY_PARAM kinds.
   AstNode* marked_source_parameter_lookup_by_param_id_;

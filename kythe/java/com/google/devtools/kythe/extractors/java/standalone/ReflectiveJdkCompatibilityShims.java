@@ -17,8 +17,8 @@
 package com.google.devtools.kythe.extractors.java.standalone;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.main.Arguments;
-import com.sun.tools.javac.main.CommandLine;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -41,21 +41,20 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
   @SuppressWarnings({"CheckedExceptionNotThrown", "unchecked"}) // Safe by specification.
   public List<String> parseCompilerArguments(String[] args) throws IOException {
     try {
+      Class<?> commandLine = loadCommandLineClass();
       try {
         // JDK15+: the signature is
         //     List<String> parse(List<String> args)
         return (List<String>)
-            CommandLine.class
-                .getMethod("parse", List.class)
-                .invoke(null, (Object) Arrays.asList(args));
+            commandLine.getMethod("parse", List.class).invoke(null, (Object) Arrays.asList(args));
       } catch (NoSuchMethodException nsme) {
         // 9 <= JDK < 15: the signature is
         //     String[] parse(String[] args)
         return Arrays.asList(
-            (String[])
-                CommandLine.class.getMethod("parse", String[].class).invoke(null, (Object) args));
+            (String[]) commandLine.getMethod("parse", String[].class).invoke(null, (Object) args));
       }
     } catch (ClassCastException
+        | ClassNotFoundException
         | InvocationTargetException
         | IllegalAccessException
         | NoSuchMethodException ex) {
@@ -87,5 +86,20 @@ public final class ReflectiveJdkCompatibilityShims implements JdkCompatibilitySh
         | NoSuchMethodException ex) {
       throw new LinkageError(ex.getMessage(), ex);
     }
+  }
+
+  private static Class<?> loadCommandLineClass() throws ClassNotFoundException {
+    ImmutableList<String> classNames =
+        // < JDK21 the class is known as com.sun.tools.java.main.CommandLine
+        // >= JDK21 it's known as jdk.internal.opt.CommandLine
+        ImmutableList.of("com.sun.tools.javac.main.CommandLine", "jdk.internal.opt.CommandLine");
+    for (String name : classNames) {
+      try {
+        return ReflectiveJdkCompatibilityShims.class.getClassLoader().loadClass(name);
+      } catch (ClassNotFoundException unused) {
+        continue;
+      }
+    }
+    throw new ClassNotFoundException("unable to load JDK CommandLine class");
   }
 }

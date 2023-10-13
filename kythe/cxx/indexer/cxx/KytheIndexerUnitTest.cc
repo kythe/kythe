@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <string>
@@ -51,7 +52,7 @@ class AnchorMarkTest : public ::testing::Test {
   class EmptyToken : public GraphObserver::ClaimToken {
    public:
     std::string StampIdentity(const std::string&) const override { return ""; }
-    void* GetClass() const override { return nullptr; }
+    uintptr_t GetClass() const override { return 0; }
     bool operator==(const ClaimToken&) const override { return false; }
     bool operator!=(const ClaimToken&) const override { return true; }
   };
@@ -408,8 +409,8 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
     if (File.isInvalid()) {
       FileNames.push("invalid-file");
     }
-    if (const clang::FileEntry* file_entry =
-            SourceManager->getFileEntryForID(File)) {
+    if (const clang::OptionalFileEntryRef file_entry =
+            SourceManager->getFileEntryRefForID(File)) {
       FileNames.push(std::string(file_entry->getName()));
     } else {
       FileNames.push("null-file");

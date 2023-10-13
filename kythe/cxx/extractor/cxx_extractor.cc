@@ -16,43 +16,56 @@
 
 #include "cxx_extractor.h"
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <map>
 #include <memory>
+#include <optional>
+#include <set>
+#include <stack>
+#include <string>
 #include <string_view>
+#include <system_error>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
+#include "clang/Basic/FileEntry.h"
 #include "clang/Basic/Module.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
+#include "clang/Lex/Pragma.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
+#include "google/protobuf/any.pb.h"
 #include "kythe/cxx/common/file_utils.h"
+#include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/sha256_hasher.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
+#include "kythe/cxx/extractor/cxx_details.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
@@ -60,6 +73,10 @@
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
+#include "kythe/proto/storage.pb.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/VirtualFileSystem.h"
@@ -372,7 +389,7 @@ struct FileState {
 /// \brief Hooks the Clang preprocessor to detect required include files.
 class ExtractorPPCallbacks : public clang::PPCallbacks {
  public:
-  ExtractorPPCallbacks(ExtractorState state);
+  explicit ExtractorPPCallbacks(ExtractorState state);
 
   /// \brief Common utility to pop a file off the file stack.
   ///
@@ -382,10 +399,10 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
 
   /// \brief Records the content of `file` (with spelled path `path`)
   /// if it has not already been recorded.
-  std::string AddFile(const clang::FileEntry* file, llvm::StringRef path);
+  std::string AddFile(clang::FileEntryRef file, llvm::StringRef path);
 
   /// \brief Records the content of `file` if it has not already been recorded.
-  std::string AddFile(const clang::FileEntry* file, llvm::StringRef file_name,
+  std::string AddFile(clang::FileEntryRef file, llvm::StringRef file_name,
                       llvm::StringRef search_path,
                       llvm::StringRef relative_path);
 
@@ -492,7 +509,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
 
  private:
   /// \brief Returns the main file for this compile action.
-  const clang::FileEntry* GetMainFile();
+  clang::OptionalFileEntryRef GetMainFile();
 
   /// \brief Return the active `RunningHash` for preprocessor events.
   RunningHash* history();
@@ -508,7 +525,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// \param file The file entry of the main source file.
   /// \param path The path as known to Clang.
   /// \return The path that should be used to generate VNames.
-  std::string FixStdinPath(const clang::FileEntry* file, llvm::StringRef path);
+  std::string FixStdinPath(clang::FileEntryRef file, llvm::StringRef path);
 
   /// The `SourceManager` used for the compilation.
   clang::SourceManager* source_manager_;
@@ -546,7 +563,7 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
           state.main_source_file_stdin_alternate) {
   class ClaimPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
-    ClaimPragmaHandlerWrapper(ExtractorPPCallbacks* context)
+    explicit ClaimPragmaHandlerWrapper(ExtractorPPCallbacks* context)
         : PragmaHandler("kythe_claim"), context_(context) {}
     void HandlePragma(clang::Preprocessor& preprocessor,
                       clang::PragmaIntroducer introducer,
@@ -563,7 +580,7 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
 
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
-    MetadataPragmaHandlerWrapper(ExtractorPPCallbacks* context)
+    explicit MetadataPragmaHandlerWrapper(ExtractorPPCallbacks* context)
         : PragmaHandler("kythe_metadata"), context_(context) {}
     void HandlePragma(clang::Preprocessor& preprocessor,
                       clang::PragmaIntroducer introducer,
@@ -584,7 +601,7 @@ void ExtractorPPCallbacks::FileChanged(
     clang::SrcMgr::CharacteristicKind /*FileType*/, clang::FileID /*PrevFID*/) {
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
-      if (auto* mfile = GetMainFile()) {
+      if (clang::OptionalFileEntryRef mfile = GetMainFile()) {
         current_files_.push(FileState{NormalizePath(mfile->getName()),
                                       ClaimDirective::AlwaysClaim});
       } else {
@@ -653,13 +670,13 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
 }
 
 void ExtractorPPCallbacks::EndOfMainFile() {
-  if (auto* mfile = GetMainFile()) {
-    *main_source_file_ = AddFile(mfile, mfile->getName());
+  if (clang::OptionalFileEntryRef mfile = GetMainFile()) {
+    *main_source_file_ = AddFile(*mfile, mfile->getName());
     *main_source_file_transcript_ = PopFile();
   }
 }
 
-std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
+std::string ExtractorPPCallbacks::FixStdinPath(clang::FileEntryRef file,
                                                llvm::StringRef path) {
   if (IsStdinPath(path)) {
     if (main_source_file_stdin_alternate_->empty()) {
@@ -674,7 +691,7 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
   return std::string(path);
 }
 
-std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
+std::string ExtractorPPCallbacks::AddFile(clang::FileEntryRef file,
                                           llvm::StringRef path) {
   auto [iter, inserted] =
       source_files_->insert({NormalizePath(path), SourceFile{""}});
@@ -745,11 +762,11 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
       source_manager_->getFileID(loc) != preprocessor_->getPredefinesFileID()) {
     history()->Update(source_manager_->getFileOffset(loc));
     const auto filename_ref = source_manager_->getFilename(loc);
-    const auto* file_ref =
-        source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
+    const clang::OptionalFileEntryRef file_ref =
+        source_manager_->getFileEntryRefForID(source_manager_->getFileID(loc));
     if (file_ref) {
       auto vname =
-          index_writer_->VNameForPath(FixStdinPath(file_ref, filename_ref));
+          index_writer_->VNameForPath(FixStdinPath(*file_ref, filename_ref));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
       history()->Update(vname.root());
@@ -903,11 +920,11 @@ void ExtractorPPCallbacks::InclusionDirective(
     return;
   }
   last_inclusion_directive_path_ =
-      AddFile(&File->getFileEntry(), FileName, SearchPath, RelativePath);
+      AddFile(*File, FileName, SearchPath, RelativePath);
   last_inclusion_offset_ = source_manager_->getFileOffset(HashLoc);
 }
 
-std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
+std::string ExtractorPPCallbacks::AddFile(clang::FileEntryRef file,
                                           llvm::StringRef file_name,
                                           llvm::StringRef search_path,
                                           llvm::StringRef relative_path) {
@@ -915,10 +932,9 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   CHECK(!top_path.empty());
   const auto search_path_entry =
       source_manager_->getFileManager().getDirectory(search_path);
-  llvm::ErrorOr<const clang::FileEntry*> file_or =
-      source_manager_->getFileManager().getFile(top_path);
-  const auto current_file_parent_entry =
-      file_or.getError() ? nullptr : (*file_or)->getDir();
+  llvm::Expected<clang::FileEntryRef> file_or =
+      source_manager_->getFileManager().getFileRef(top_path);
+  const auto current_file_parent_entry = file_or ? file_or->getDir() : nullptr;
   // If the include file was found relatively to the current file's parent
   // directory or a search path, we need to normalize it. This is necessary
   // because llvm internalizes the path by which an inode was first accessed,
@@ -952,8 +968,9 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   return AddFile(file, out_name);
 }
 
-const clang::FileEntry* ExtractorPPCallbacks::GetMainFile() {
-  return source_manager_->getFileEntryForID(source_manager_->getMainFileID());
+clang::OptionalFileEntryRef ExtractorPPCallbacks::GetMainFile() {
+  return source_manager_->getFileEntryRefForID(
+      source_manager_->getMainFileID());
 }
 
 RunningHash* ExtractorPPCallbacks::history() {
@@ -975,9 +992,9 @@ void ExtractorPPCallbacks::HandleKytheMetadataPragma(
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
-  if (const clang::FileEntry* file = LookupFileForIncludePragma(
+  if (clang::OptionalFileEntryRef file = LookupFileForIncludePragma(
           &preprocessor, &search_path, &relative_path, &filename)) {
-    AddFile(file, filename, search_path, relative_path);
+    AddFile(*file, file->getNameAsRequested(), search_path, relative_path);
   }
 }
 
@@ -1060,7 +1077,7 @@ void KzipWriterSink::OpenIndex(const std::string& unit_hash) {
   std::string path = path_type_ == OutputPathType::SingleFile
                          ? path_
                          : JoinPath(path_, unit_hash + ".kzip");
-  writer_ = IndexWriter(OpenKzipWriterOrDie(path));
+  writer_ = OpenKzipWriterOrDie(path);
 }
 
 void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {

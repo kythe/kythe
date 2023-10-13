@@ -18,21 +18,21 @@
 
 #include <zip.h>
 
+#include <cstdint>
 #include <cstdlib>
-#include <unordered_map>
-#include <unordered_set>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include "absl/log/log.h"
-#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/libzip/error.h"
-#include "kythe/proto/go.pb.h"
+#include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
 namespace {

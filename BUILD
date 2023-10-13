@@ -1,7 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@rules_rust//proto:toolchain.bzl", "rust_proto_toolchain")
+load("@rules_rust//proto/protobuf:toolchain.bzl", "rust_proto_toolchain")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 package(default_visibility = ["//visibility:private"])
@@ -10,6 +10,12 @@ exports_files(glob(["*"]))
 
 filegroup(
     name = "nothing",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "clang_tidy_config",
+    srcs = [".clang-tidy"],
     visibility = ["//visibility:public"],
 )
 
@@ -27,10 +33,20 @@ sh_test(
 )
 
 # gazelle:build_file_name BUILD
-# gazelle:exclude kythe
-# gazelle:exclude third_party
+# gazelle:go_naming_convention import
+# gazelle:proto file
+# gazelle:exclude **/examples/
+# gazelle:exclude **/testdata/
+# gazelle:exclude **/*_go_proto/
+# gazelle:exclude **/*_rust_proto/
 # gazelle:prefix kythe.io
-gazelle(name = "gazelle")
+# gazelle:map_kind go_binary go_binary //tools:build_rules/shims.bzl
+# gazelle:map_kind go_library go_library //tools:build_rules/shims.bzl
+# gazelle:map_kind go_test go_test //tools:build_rules/shims.bzl
+gazelle(
+    name = "gazelle",
+    gazelle = "//tools/gazelle",
+)
 
 gazelle(
     name = "gazelle-update-repos",
@@ -73,7 +89,7 @@ rust_proto_toolchain(
 toolchain(
     name = "rust_proto_toolchain",
     toolchain = ":rust_proto_toolchain_impl",
-    toolchain_type = "@rules_rust//proto:toolchain",
+    toolchain_type = "@rules_rust//proto/protobuf:toolchain_type",
 )
 
 refresh_compile_commands(
@@ -83,7 +99,7 @@ refresh_compile_commands(
     # If clangd is complaining about missing headers (and all that goes along with it),
     # and you're using remote builds, rebuild with --remote_download_outputs=all
     # With layering_check enabled, clangd warns about missing dependencies on standard library headers.
-    targets = {"//kythe/cxx/...": "--config=clang-tidy"},
+    targets = {"//kythe/cxx/...": "--config=compile-commands"},
 )
 
 load("@npm//:defs.bzl", "npm_link_all_packages")

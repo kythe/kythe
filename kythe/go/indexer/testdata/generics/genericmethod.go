@@ -6,6 +6,12 @@ func main() {
 	c.Get()
 	//- @Put ref Put
 	c.Put("yup")
+
+	//- @getter defines/binding Getter
+	//- @Get ref Get
+	getter := c.Get
+	//- @getter ref Getter
+	getter()
 }
 
 // - @Container defines/binding Container
@@ -37,10 +43,8 @@ func (c *Container[T]) Get() T {
 //- Get code GetCode
 //- GetCode.kind "BOX"
 //- GetCode child.1 RecvCode
-//- RecvCode.kind "PARAMETER"
-//- RecvCode child.0 RecvType
-//- RecvType.kind "TYPE"
-//- RecvType.pre_text "*Container[T]"
+//- RecvCode child.0 LookupCode
+//- LookupCode.kind "LOOKUP_BY_PARAM"
 
 // And can technically be renamed
 // - @Put defines/binding Put
@@ -74,8 +78,9 @@ type Interface interface {
 // kythe/go/indexer/genericmethod_test.Container.Get.T
 //- GetTVar code TVarCode
 //- TVarCode.kind "BOX"
-//- TVarCode child.0 C
-//- TVarCode child.1 I
+//- TVarCode child.0 TVarName
+//- TVarName child.0 C
+//- TVarName child.1 I
 //- C.kind "CONTEXT"
 //- C.post_child_text "."
 //- C.add_final_list_token "true"

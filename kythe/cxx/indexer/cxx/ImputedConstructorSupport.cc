@@ -17,11 +17,11 @@
 #include "ImputedConstructorSupport.h"
 
 #include <memory>
+#include <optional>
 #include <queue>
 
 #include "IndexerASTHooks.h"
 #include "absl/strings/str_join.h"
-#include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -81,23 +81,23 @@ class TargetTypeVisitor : public clang::RecursiveASTVisitor<TargetTypeVisitor> {
   std::vector<const clang::CXXConstructorDecl*> matches_;
 };
 
-absl::optional<clang::QualType> FindTargetType(
+std::optional<clang::QualType> FindTargetType(
     const clang::FunctionDecl& callee) {
-  if (!callee.isFunctionTemplateSpecialization()) return absl::nullopt;
+  if (!callee.isFunctionTemplateSpecialization()) return std::nullopt;
 
   const auto* specialization_info = callee.getTemplateSpecializationInfo();
-  if (specialization_info == nullptr) return absl::nullopt;
+  if (specialization_info == nullptr) return std::nullopt;
 
   const auto* const template_args = specialization_info->TemplateArguments;
   if (template_args == nullptr || template_args->size() < 1)
-    return absl::nullopt;
+    return std::nullopt;
 
   // For all of the function templates supported by this function, the
   // first template parameter is the type that's being instantiated.
   // TODO(shahms): Expand this to cover things like `vector<T>::emplace`
   // where the target type is an argument to the class.
   const auto& target_arg = template_args->get(0);
-  if (target_arg.getKind() != target_arg.Type) return absl::nullopt;
+  if (target_arg.getKind() != target_arg.Type) return std::nullopt;
 
   return target_arg.getAsType()
       .getDesugaredType(callee.getASTContext())
@@ -151,7 +151,7 @@ ImputedConstructorSupport::ImputedConstructorSupport(
 
 void ImputedConstructorSupport::InspectCallExpr(
     IndexerASTVisitor& visitor, const clang::CallExpr* call_expr,
-    const GraphObserver::Range& range, GraphObserver::NodeId& callee_id) {
+    const GraphObserver::Range& range, const GraphObserver::NodeId& callee_id) {
   const auto* callee = call_expr->getDirectCallee();
   if (callee == nullptr) return;
 

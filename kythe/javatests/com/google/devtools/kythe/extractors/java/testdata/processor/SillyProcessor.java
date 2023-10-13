@@ -15,10 +15,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 
-/**
- * A silly annotation processor that generates source for SillyGenerator
- * when invoked.
- */
+/** A silly annotation processor that generates source for SillyGenerator when invoked. */
 public class SillyProcessor implements Processor {
   private static final String[] source = {
     "package processor;",
@@ -49,8 +46,8 @@ public class SillyProcessor implements Processor {
   }
 
   @Override
-  public Iterable<Completion> getCompletions(Element element, AnnotationMirror annotation,
-      ExecutableElement member, String userText) {
+  public Iterable<Completion> getCompletions(
+      Element element, AnnotationMirror annotation, ExecutableElement member, String userText) {
     return Collections.emptyList();
   }
 

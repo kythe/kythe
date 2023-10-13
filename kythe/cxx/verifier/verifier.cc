@@ -22,6 +22,8 @@
 #include <unistd.h>
 
 #include <memory>
+#include <optional>
+#include <string_view>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -653,6 +655,7 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   marked_source_context_id_ = IdentifierFor(builtin_location_, "CONTEXT");
   marked_source_initializer_id_ =
       IdentifierFor(builtin_location_, "INITIALIZER");
+  marked_source_modifier_id_ = IdentifierFor(builtin_location_, "MODIFIER");
   marked_source_parameter_lookup_by_param_id_ =
       IdentifierFor(builtin_location_, "PARAMETER_LOOKUP_BY_PARAM");
   marked_source_lookup_by_param_id_ =
@@ -965,12 +968,16 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier*, const Inspection&)> inspect) {
+    std::function<bool(Verifier*, const Inspection&, std::string_view)>
+        inspect) {
   if (use_fast_solver_) {
-    auto result = RunSouffle(symbol_table_, parser_.groups(), facts_, anchors_,
-                             parser_.inspections(), [&](const Inspection& i) {
-                               return inspect(this, i);
-                             });
+    auto result = RunSouffle(
+        symbol_table_, parser_.groups(), facts_, anchors_,
+        parser_.inspections(),
+        [&](const Inspection& i, std::string_view o) {
+          return inspect(this, i, o);
+        },
+        [&](Symbol s) { return symbol_table_.PrettyText(s); });
     highest_goal_reached_ = result.highest_goal_reached;
     highest_group_reached_ = result.highest_group_reached;
     return result.success;
@@ -978,7 +985,11 @@ bool Verifier::VerifyAllGoals(
     if (!PrepareDatabase()) {
       return false;
     }
-    Solver solver(this, facts_, anchors_, inspect);
+    std::function<bool(Verifier*, const Inspection&)> wi =
+        [&](Verifier* v, const Inspection& i) {
+          return inspect(v, i, v->InspectionString(i));
+        };
+    Solver solver(this, facts_, anchors_, wi);
     bool result = solver.Solve();
     highest_goal_reached_ = solver.highest_goal_reached();
     highest_group_reached_ = solver.highest_group_reached();
@@ -1322,6 +1333,16 @@ bool Verifier::PrepareDatabase() {
   return is_ok;
 }
 
+std::string Verifier::InspectionString(const Inspection& i) {
+  StringPrettyPrinter printer;
+  if (i.evar == nullptr) {
+    printer.Print("nil");
+  } else {
+    i.evar->Dump(symbol_table_, &printer);
+  }
+  return printer.str();
+}
+
 AstNode* Verifier::ConvertVName(const yy::location& loc,
                                 const kythe::proto::VName& vname) {
   AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
@@ -1419,6 +1440,9 @@ AstNode* Verifier::ConvertMarkedSource(
       break;
     case proto::common::MarkedSource::INITIALIZER:
       emit_fact(marked_source_kind_id_, marked_source_initializer_id_);
+      break;
+    case proto::common::MarkedSource::MODIFIER:
+      emit_fact(marked_source_kind_id_, marked_source_modifier_id_);
       break;
     case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM:
       emit_fact(marked_source_kind_id_,

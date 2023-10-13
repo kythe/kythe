@@ -1,40 +1,58 @@
 # Remote Build Execution requires a strong hash function, such as SHA256.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
+# Bazel commands in the GCB (google-cloud-build) configuration as remote
+common:gcb --config=remote
 
 # Disable persistent workers for Typescript (#3816)
-build --strategy=TsProject=remote,sandboxed,local
+common --strategy=TsProject=remote,sandboxed,local
 
 # Compatibility flags to avoid regressions.
 common --incompatible_disallow_empty_glob
-build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
+# TODO: https://github.com/aspect-build/rules_js/issues/1256 - reenable when fixed
+#build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
 
-build --workspace_status_command tools/buildstamp/get_workspace_status
+common --workspace_status_command tools/buildstamp/get_workspace_status
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
-build --client_env=CC=clang
+common --client_env=CC=clang
 # We require C++17, but bazel defaults to C++0x (pre-C++11).
-build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
+common --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
 # Don't warn on deprecations when compiling protobufs.
 # This generates a lot of spurious warnings when compiling the definitions of proto fields
 # which are marked deprecated.
-build --per_file_copt=.*\.pb\.cc@-Wno-deprecated-declarations
+common --per_file_copt=.*\.pb\.cc@-Wno-deprecated-declarations
 # Disable diagnostics on external repositories as we don't control them.
-build --per_file_copt=external/.*@-w
+common --per_file_copt=external/.*@-w
 # Disable diagnostics in host mode. There is no host_per_file_copt and
 # everything we build in the host configuration we either also build in the
 # target configuration or is external, so we can't control it.
 # If/when Bazel supports --host_per_file_copt, we could use that instead:
 # https://github.com/bazelbuild/bazel/issues/12406.
-build --host_copt=-w
+common --host_copt=-w
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
-build --experimental_strict_action_env
+common --experimental_strict_action_env
+
+# aspect_rules_js configuration
+build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+build --@aspect_rules_ts//ts:default_to_tsc_transpiler
+fetch --@aspect_rules_ts//ts:default_to_tsc_transpiler
+query --@aspect_rules_ts//ts:default_to_tsc_transpiler
+
+# Older versions of HotSpot get really crabby when they can't write
+# to /tmp/hsperfdata_{user}/{pid} and sandboxing+persistent workers
+# means all tasks share a PID. This failure is then logged this to stdout,
+# which breaks verifier tests that expect stdout to contain only entry data.
+# See: https://github.com/bazelbuild/bazel/issues/3236
+common --incompatible_sandbox_hermetic_tmp
 
 # By default, compile for Java 11, run on Java 11
-build --java_language_version=11
-build --tool_java_language_version=11
-build --java_runtime_version=remotejdk_11
-build --tool_java_runtime_version=remotejdk_11
+common --java_language_version=11
+common --tool_java_language_version=11
+common --java_runtime_version=remotejdk_11
+common --tool_java_runtime_version=remotejdk_11
 
 build:java11 --java_language_version=11
 build:java11 --tool_java_language_version=11
@@ -56,18 +74,10 @@ build:java20 --tool_java_language_version=20
 build:java20 --java_runtime_version=remotejdk_20
 build:java20 --tool_java_runtime_version=remotejdk_20
 
-# Note: Bazel won't work with JDK21 until
-# https://github.com/bazelbuild/bazel/pull/18742 is fixed
 build:java21 --java_language_version=21
 build:java21 --tool_java_language_version=21
 build:java21 --java_runtime_version=remotejdk_21
 build:java21 --tool_java_runtime_version=remotejdk_21
-
-# TODO(https://github.com/bazelbuild/bazel/issues/14502): remove this when
-# Bazel 6.2 is released and our .bazelminversion updated.
-test:java19 --jvmopt=-Djava.security.manager=allow
-test:java20 --jvmopt=-Djava.security.manager=allow
-test:java21 --jvmopt=-Djava.security.manager=allow
 
 # Import default javacopts
 import %workspace%/tools/javacopts.bazelrc
@@ -117,21 +127,27 @@ build:prepush --verbose_failures --noshow_loading_progress --noshow_progress
 test:prepush --test_summary=terse --test_output=errors
 test:prepush --test_tag_filters=-manual,-broken,-arc-ignore,-docker
 
-# For clang tidy and related builds, include additional flags for use in compile_commands.json
-build:clang-tidy --features=-layering_check --copt=-Wno-everything --copt=-Wno-error
-build:clang-tidy --copt=-Wdeprecated-declarations --copt=-D_LIBCPP_DISABLE_DEPRECATION_WARNINGS
-build:clang-tidy --copt=-Wdeprecated-register --copt=-Wexpansion-to-defined
-build:clang-tidy --copt=-Wignored-attributes --copt=-Wnon-pod-varargs --copt=-Wshadow-field
-build:clang-tidy --copt=-Wshift-sign-overflow --copt=-Wtautological-undefined-compare
-build:clang-tidy --copt=-Wthread-safety-analysis --copt=-Wthread-safety-beta --copt=-Wthread-safety-reference
-build:clang-tidy --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --copt=-Wunused-const-variable
-build:clang-tidy --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
-build:clang-tidy --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
+# Include additional flags for use in compile_commands.json
+build:compile-commands --features=-layering_check --copt=-Wno-everything --copt=-Wno-error
+build:compile-commands --copt=-Wdeprecated-declarations --copt=-D_LIBCPP_DISABLE_DEPRECATION_WARNINGS
+build:compile-commands --copt=-Wdeprecated-register --copt=-Wexpansion-to-defined
+build:compile-commands --copt=-Wignored-attributes --copt=-Wnon-pod-varargs --copt=-Wshadow-field
+build:compile-commands --copt=-Wshift-sign-overflow --copt=-Wtautological-undefined-compare
+build:compile-commands --copt=-Wthread-safety-analysis --copt=-Wthread-safety-beta --copt=-Wthread-safety-reference
+build:compile-commands --copt=-Wundefined-bool-conversion --copt=-Wunreachable-code --copt=-Wunused-const-variable
+build:compile-commands --copt=-Wunused-function --copt=-Wunused-lambda-capture --copt=-Wunused-local-typedef
+build:compile-commands --copt=-Wunused-private-field --copt=-Wuser-defined-warnings
 
-# Enable rustfmt tests on all Rust targets
-build --@rules_rust//:rustfmt.toml=//tools/rust:rustfmt.toml
-build --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
-build --output_groups=+rustfmt_checks
+# Applies clang-tidy to targets without building them.
+build:clang-tidy --config=compile-commands
+build:clang-tidy --output_groups=report
+build:clang-tidy --aspects=@bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+build:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//:clang_tidy_config
+
+# Compiles and runs the in-tree clang-tidy over targets.
+build:clang-tidy-from-source --config=clang-tidy
+build:clang-tidy-from-source --noincompatible_disallow_empty_glob
+build:clang-tidy-from-source --@bazel_clang_tidy//:clang_tidy_executable=@llvm-project//clang-tools-extra/clang-tidy
 
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc

@@ -16,6 +16,6 @@ go_binary(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:xref_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
     ],
 )

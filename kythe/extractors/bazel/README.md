@@ -9,7 +9,6 @@ to extract Kythe `.kzip` compilations from supported targets: `gcr.io/kythe-publ
 * go_{library,binary,test} (`GoCompile` action mnemonic)
 * java_{library,binary,test,import,proto_library} (`Javac` and `JavaIjar` action mnemonics)
 * proto_library (`GenProtoDescriptorSet` action mnemonic)
-* rust_{binary,library,test} (`Rustc` action mnemonic)
 * typescript_library (`TypeScriptCompile` action mnemonic)
 * ng_module (`AngularTemplateCompile` action mnemonic)
 

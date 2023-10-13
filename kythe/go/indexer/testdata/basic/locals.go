@@ -13,6 +13,7 @@ func foo() {
 	//
 	//- @bravo defines/binding Bravo
 	//- Bravo.node/kind variable
+	//- Bravo.subkind local
 	//- @alpha ref/writes Alpha1
 	//- !{@alpha defines/binding Alpha1}
 	alpha, bravo := 1, 2

@@ -22,7 +22,7 @@ import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "kythe/proto/storage.proto";
 
-option go_package = "analysis_go_proto";
+option go_package = "kythe.io/kythe/proto/analysis_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option cc_enable_arenas = true;
 
@@ -42,6 +42,9 @@ message AnalysisRequest {
 
   // An identifier for the current analysis.
   string build_id = 4;
+
+  // A digest of the CompilationUnit used for identification.
+  string compilation_digest = 5;
 }
 
 // AnalysisOutput contains an output artifact for the current analysis taking

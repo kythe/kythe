@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -30,7 +31,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/dynamic_message.h"
@@ -322,7 +322,7 @@ absl::StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   // Note that line is 1-indexed; a value of zero indicates an empty location.
   if (field_loc.line == 0) return absl::OkStatus();
 
-  re2::StringPiece sp(textproto_content_.data(), textproto_content_.size());
+  absl::string_view sp = textproto_content_;
   const int search_from = ComputeByteOffset(field_loc.line, field_loc.column);
   sp = sp.substr(search_from);
 
@@ -335,15 +335,14 @@ absl::StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   }
   // Regex for Any type url enclosed by square brackets, capturing just the
   // message name.
-  re2::StringPiece match;
+  absl::string_view match;
   if (!re2::RE2::PartialMatch(sp, R"(^\s*\[\s*[^/]+/([^\s\]]+)\s*\])",
                               &match)) {
     return absl::UnknownError("Unable to find type_url span for Any");
   }
 
   // Add anchor.
-  return CreateAndAddAnchorNode(file_vname,
-                                absl::string_view(match.data(), match.size()));
+  return CreateAndAddAnchorNode(file_vname, match);
 }
 
 // When the textproto parser finds an Any message in the input, it parses the
@@ -417,7 +416,7 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
 
 // Trims whitespace (including newlines) and comments from the start of the
 // input.
-void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
+void ConsumeTextprotoWhitespace(absl::string_view* sp) {
   re2::RE2::Consume(sp, R"((\s+|#[^\n]*)*)");
 }
 
@@ -427,7 +426,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
                                                  const FieldDescriptor& field,
                                                  int start_offset) {
   // Start after the last character of the field name.
-  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  absl::string_view input = textproto_content_;
   input = input.substr(start_offset);
 
   // Consume whitespace and colon after field name.
@@ -471,8 +470,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
     }
 
     // Add ref from matched text to enum value descriptor.
-    proto::VName anchor_vname = CreateAndAddAnchorNode(
-        file_vname, absl::string_view(match.data(), match.size()));
+    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, match);
     auto enum_vname = VNameForDescriptor(enum_val);
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                        VNameRef(enum_vname));
@@ -558,7 +556,7 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     const proto::VName& file_vname, const Message& proto,
     const FieldDescriptor& field, int start_offset) {
   // Start after the last character of the field name.
-  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  absl::string_view input = textproto_content_;
   input = input.substr(start_offset);
 
   // Consume rest of field name, colon (optional).
@@ -578,8 +576,7 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
       return absl::UnknownError("Can't find string");
     }
 
-    std::vector<StringToken> tokens =
-        ReadStringTokens(absl::string_view(input.data(), input.size()));
+    std::vector<StringToken> tokens = ReadStringTokens(input);
     if (tokens.empty()) {
       return absl::UnknownError("Unable to find a string value for field: " +
                                 field.name());
@@ -592,8 +589,8 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     }
     // Advance `input` past the last string token we just parsed.
     const char* search_from = tokens.back().source_text.end() + 1;
-    input = re2::StringPiece(search_from,
-                             textproto_content_.end() - search_from + 1);
+    input = absl::string_view(search_from,
+                              textproto_content_.end() - search_from + 1);
 
     if (!array_format) break;
 
@@ -612,7 +609,7 @@ absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
     const proto::VName& file_vname, const Message& proto,
     const FieldDescriptor& field, int start_offset) {
   // Start after the last character of the field name.
-  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  absl::string_view input = textproto_content_;
   input = input.substr(start_offset);
 
   // Consume whitespace and colon after field name.
@@ -850,8 +847,8 @@ void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
 
 // Find and return the argument after given argname. Removes the flag and
 // argument from @args if found.
-absl::optional<std::string> FindArg(std::vector<std::string>* args,
-                                    std::string argname) {
+std::optional<std::string> FindArg(std::vector<std::string>* args,
+                                   std::string argname) {
   for (auto iter = args->begin(); iter != args->end(); iter++) {
     if (*iter == argname) {
       if (iter + 1 < args->end()) {
@@ -859,10 +856,10 @@ absl::optional<std::string> FindArg(std::vector<std::string>* args,
         args->erase(iter, iter + 2);
         return v;
       }
-      return absl::nullopt;
+      return std::nullopt;
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 /// Given a full file path, returns a path relative to a directory in the
@@ -1005,7 +1002,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
 
   // Only recordio format specifies record_separator.
   // Presense of record_separator flag indicates it's recordio file format.
-  absl::optional<std::string> record_separator =
+  std::optional<std::string> record_separator =
       FindArg(&args, "--record_separator");
   for (auto& [filepath, filecontent] : file_data_by_path) {
     // Use reflection to create an instance of the top-level proto message.

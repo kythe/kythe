@@ -6,6 +6,6 @@ def update_generated_protos(name):
         additional_update_targets = [
             key
             for key, value in native.existing_rules().items()
-            if value["kind"] in ("write_source_file", "write_source_files")
+            if value["kind"] == "_write_source_file"
         ],
     )

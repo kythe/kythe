@@ -216,11 +216,32 @@ class StandardIndexerContext implements IndexerHost {
   }
 
   getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
-    return this.typeChecker.getSymbolAtLocation(node);
+    // Practically any interesting node has a Symbol: variables, classes, functions.
+    // Both named and anonymous have Symbols. We tie Symbols to Vnames so its
+    // important to get Symbol object for as many nodes as possible. Unfortunately
+    // Typescript doesn't provide good API for extracting Symbol from Nodes.
+    // It is supported well for named nodes, probably logic being that if you can't
+    // refer to a node then no need to have Symbol. But for Kythe we need to handle
+    // anonymous nodes as well. So we do hacks here.
+    // See similar bugs that haven't been resolved properly:
+    // https://github.com/microsoft/TypeScript/issues/26511
+    //
+    // Open FR: https://github.com/microsoft/TypeScript/issues/55433
+    let sym = this.typeChecker.getSymbolAtLocation(node);
+    if (sym) return sym;
+    // Check if it's named node.
+    if ('name' in node) {
+      sym = this.typeChecker.getSymbolAtLocation((node as ts.NamedDeclaration).name!);
+      if (sym) return sym;
+    }
+    // Sad hack. Nodes have symbol property but it's not exposed in the API.
+    // We could create our own Symbol instance to avoid depending on non-public API.
+    // But it's not clear whether it will be less maintainance.
+    return (node as any).symbol;
   }
 
   getSymbolAtLocationFollowingAliases(node: ts.Node): ts.Symbol|undefined {
-    let sym = this.typeChecker.getSymbolAtLocation(node);
+    let sym = this.getSymbolAtLocation(node);
     while (sym && (sym.flags & ts.SymbolFlags.Alias) > 0) {
       // a hack to prevent following aliases in cases like:
       // import * as fooNamespace from './foo';
@@ -846,7 +867,13 @@ class Visitor {
       this.visitDynamicImportCall(node);
       return;
     }
-    const symbol = this.host.getSymbolAtLocationFollowingAliases(node.expression);
+    // Handle case of immediately-invoked functions like:
+    // (() => do stuff... )();
+    let expression: ts.Node = node.expression;
+    while (ts.isParenthesizedExpression(expression)) {
+      expression = expression.expression;
+    }
+    const symbol = this.host.getSymbolAtLocationFollowingAliases(expression);
     if (!symbol) {
       return;
     }
@@ -1106,16 +1133,12 @@ class Visitor {
     } else if (ts.isSetAccessor(node)) {
       context = Context.Setter;
     }
-    if (node.name) {
-      const sym = this.host.getSymbolAtLocationFollowingAliases(node.name);
-      if (!sym) {
-        return {};
-      }
-      const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
-      return {sym, vname};
-    } else {
-      return {vname: this.host.scopedSignature(node)};
+    const sym = this.host.getSymbolAtLocationFollowingAliases(node);
+    if (!sym) {
+      return {};
     }
+    const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
+    return {sym, vname};
   }
 
   /**
@@ -1136,6 +1159,7 @@ class Visitor {
     for (; node.kind !== ts.SyntaxKind.SourceFile; node = node.parent) {
       const kind = node.kind;
       if (kind === ts.SyntaxKind.FunctionDeclaration ||
+          kind === ts.SyntaxKind.FunctionExpression ||
           kind === ts.SyntaxKind.ArrowFunction ||
           kind === ts.SyntaxKind.MethodDeclaration ||
           kind === ts.SyntaxKind.Constructor ||
@@ -1416,7 +1440,7 @@ class Visitor {
   emitModuleAnchor(sf: ts.SourceFile) {
     const kMod =
         this.newVName('module', this.host.moduleName(this.file.fileName));
-    this.emitFact(kMod, FactName.NODE_KIND, 'record');
+    this.emitFact(kMod, FactName.NODE_KIND, NodeKind.RECORD);
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
@@ -1767,6 +1791,14 @@ class Visitor {
     if (context != null) {
       codeParts.push(context);
     }
+    if (ts.isParameter(varDecl) && varDecl.dotDotDotToken) {
+      codeParts.push({
+        // TODO: this should probably be TYPE but the current renderer adds an
+        // unnecessary space after TYPEs
+        kind: MarkedSourceKind.MODIFIER,
+        pre_text: '...',
+      });
+    }
     codeParts.push({
       kind: MarkedSourceKind.IDENTIFIER,
       pre_text: fmtMarkedSource(this.getIdentifierForMarkedSourceNode(decl)),
@@ -1788,7 +1820,6 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push({kind: MarkedSourceKind.BOX, pre_text: ' = '});
       codeParts.push(
         {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
     }
@@ -2613,6 +2644,9 @@ class Visitor {
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
       case ts.SyntaxKind.JsxAttribute:
+        // TODO: go/ts51upgrade - Auto-added to unblock TS5.1 migration.
+        //   TS2345: Argument of type 'JsxAttribute' is not assignable to parameter of type '{ name: ObjectBindingPattern | ArrayBindingPattern | Identifier | StringLiteral | NumericLiteral | ComputedPropertyName | PrivateIdentifier; type?: TypeNode | undefined; initializer?: Expression | undefined; kind: SyntaxKind; } & Node'.
+        // @ts-ignore
         this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
       case ts.SyntaxKind.Identifier:
@@ -2646,7 +2680,7 @@ class Visitor {
 
   /** index is the main entry point, starting the recursive visit. */
   index() {
-    this.emitFact(this.kFile, FactName.NODE_KIND, 'file');
+    this.emitFact(this.kFile, FactName.NODE_KIND, NodeKind.FILE);
     this.emitFact(this.kFile, FactName.TEXT, this.file.text);
 
     this.emitModuleAnchor(this.file);
@@ -2654,7 +2688,7 @@ class Visitor {
     // Emit file-level init function to contain all call anchors that
     // don't have parent functions.
     const fileInitFunc = this.getSyntheticFileInitVName();
-    this.emitFact(fileInitFunc, FactName.NODE_KIND, 'function');
+    this.emitFact(fileInitFunc, FactName.NODE_KIND, NodeKind.FUNCTION);
     this.emitEdge(
         this.newAnchor(this.file, 0, 0), EdgeKind.DEFINES, fileInitFunc);
 

@@ -23,6 +23,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -52,6 +53,13 @@ func NewResolver(entries []*spb.Entry) (*Resolver, error) {
 			var ms cpb.MarkedSource
 			if err := proto.Unmarshal(e.GetFactValue(), &ms); err != nil {
 				return nil, fmt.Errorf("error unmarshalling code for %s: %v", ticket, err)
+			}
+			r.nodes[ticket] = &ms
+		} else if e.GetFactName() == facts.Code+"/json" {
+			ticket := kytheuri.ToString(e.GetSource())
+			var ms cpb.MarkedSource
+			if err := protojson.Unmarshal(e.GetFactValue(), &ms); err != nil {
+				return nil, fmt.Errorf("error unmarshalling code/json for %s: %v", ticket, err)
 			}
 			r.nodes[ticket] = &ms
 		} else if e.GetEdgeKind() != "" {
@@ -102,31 +110,80 @@ func (r *Resolver) ResolveTicket(ticket string) *cpb.MarkedSource {
 	return r.resolve(ticket, r.nodes[ticket])
 }
 
+func ensureKind(ms *cpb.MarkedSource, k cpb.MarkedSource_Kind) *cpb.MarkedSource {
+	if ms.GetKind() == k {
+		return ms
+	}
+	if ms != nil && ms.GetKind() == cpb.MarkedSource_BOX {
+		ret := proto.Clone(ms).(*cpb.MarkedSource)
+		ret.Kind = k
+		return ret
+	}
+	return &cpb.MarkedSource{
+		Kind:  k,
+		Child: []*cpb.MarkedSource{ms},
+	}
+}
+
+func removeExcluded(kind cpb.MarkedSource_Kind, ms *cpb.MarkedSource) *cpb.MarkedSource {
+	for _, k := range ms.GetExcludeOnInclude() {
+		if k == kind {
+			return nil
+		}
+	}
+	if len(ms.GetChild()) == 0 {
+		return ms
+	}
+
+	children := make([]*cpb.MarkedSource, 0, len(ms.GetChild()))
+	for _, c := range ms.GetChild() {
+		if e := removeExcluded(kind, c); e != nil {
+			children = append(children, e)
+		}
+	}
+	res := proto.Clone(ms).(*cpb.MarkedSource)
+	res.Child = children
+	return res
+}
+
+var invalidLookupReplacement = &cpb.MarkedSource{PreText: "???"}
+
 func (r *Resolver) resolve(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
 	if ms == nil {
 		return ms
 	}
 	switch ms.GetKind() {
 	case cpb.MarkedSource_LOOKUP_BY_PARAM:
-		// TODO: determine what to do when a lookup isn't found
 		params := r.params[ticket]
+		if int(ms.GetLookupIndex()) >= len(params) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
 		if p := params[ms.GetLookupIndex()]; p != "" {
-			return r.ResolveTicket(p)
+			return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER))
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TPARAM:
 		tparams := r.tparams[ticket]
+		if int(ms.GetLookupIndex()) >= len(tparams) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
 		if p := tparams[ms.GetLookupIndex()]; p != "" {
-			return r.ResolveTicket(p)
+			return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(p), cpb.MarkedSource_PARAMETER))
 		}
 	case cpb.MarkedSource_LOOKUP_BY_TYPED:
-		return r.ResolveTicket(r.typed[ticket])
+		return removeExcluded(ms.GetKind(), ensureKind(r.ResolveTicket(r.typed[ticket]), cpb.MarkedSource_TYPE))
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM:
 		// TODO: handle param/default
-		params := r.params[ticket][ms.GetLookupIndex():]
-		return r.resolveParameters(ms, params)
+		params := r.params[ticket]
+		if int(ms.GetLookupIndex()) > len(params) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
+		return r.resolveParameters(ms, params[ms.GetLookupIndex():])
 	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM:
-		tparams := r.tparams[ticket][ms.GetLookupIndex():]
-		return r.resolveParameters(ms, tparams)
+		tparams := r.tparams[ticket]
+		if int(ms.GetLookupIndex()) > len(tparams) {
+			return ensureKind(invalidLookupReplacement, cpb.MarkedSource_PARAMETER)
+		}
+		return r.resolveParameters(ms, tparams[ms.GetLookupIndex():])
 	}
 	return r.resolveChildren(ticket, ms)
 }
@@ -135,18 +192,22 @@ func (r *Resolver) resolveParameters(base *cpb.MarkedSource, params []string) *c
 	n := proto.Clone(base).(*cpb.MarkedSource)
 	n.LookupIndex = 0
 	n.Kind = cpb.MarkedSource_PARAMETER
-	n.Child = make([]*cpb.MarkedSource, len(params))
-	for i, p := range params {
-		n.Child[i] = r.ResolveTicket(p)
+	n.Child = make([]*cpb.MarkedSource, 0, len(params))
+	for _, p := range params {
+		if c := removeExcluded(base.GetKind(), r.ResolveTicket(p)); c != nil {
+			n.Child = append(n.Child, c)
+		}
 	}
 	return n
 }
 
 func (r *Resolver) resolveChildren(ticket string, ms *cpb.MarkedSource) *cpb.MarkedSource {
 	n := proto.Clone(ms).(*cpb.MarkedSource)
-	children := make([]*cpb.MarkedSource, len(n.GetChild()))
-	for i, ms := range n.GetChild() {
-		children[i] = r.resolve(ticket, ms)
+	children := make([]*cpb.MarkedSource, 0, len(n.GetChild()))
+	for _, ms := range n.GetChild() {
+		if c := r.resolve(ticket, ms); c != nil {
+			children = append(children, c)
+		}
 	}
 	n.Child = children
 	return n

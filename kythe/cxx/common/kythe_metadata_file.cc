@@ -16,10 +16,18 @@
 
 #include "kythe/cxx/common/kythe_metadata_file.h"
 
+#include <cctype>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "absl/log/log.h"
 #include "absl/strings/escaping.h"
+#include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/schema/edges.h"
@@ -43,9 +51,9 @@ bool CheckVName(const proto::VName& vname) {
 /// in buf_string
 /// \param data_start_pos the offset of the first byte of payload in
 /// buf_string
-absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
-                                                size_t comment_slash_pos,
-                                                size_t data_start_pos) {
+std::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
+                                               size_t comment_slash_pos,
+                                               size_t data_start_pos) {
   std::string raw_data;
   // Over-reserves--though we expect the comment to be the only thing in the
   // file or the last thing in the file, so this approximation is reasonable.
@@ -76,21 +84,21 @@ absl::optional<std::string> LoadCommentMetadata(absl::string_view buf_string,
   }
   std::string decoded;
   return absl::Base64Unescape(raw_data, &decoded)
-             ? absl::optional<std::string>(std::string(decoded))
-             : absl::nullopt;
+             ? std::optional<std::string>(std::string(decoded))
+             : std::nullopt;
 }
 
 /// \brief Attempts to load buffer as a header-style metadata file.
 /// \param buffer data to try and parse.
-/// \return the decoded metadata on success or absl::nullopt on failure.
-absl::optional<std::string> LoadHeaderMetadata(absl::string_view buffer) {
+/// \return the decoded metadata on success or std::nullopt on failure.
+std::optional<std::string> LoadHeaderMetadata(absl::string_view buffer) {
   if (buffer.size() < 2) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   auto buf_string = buffer.data();
   // If the header doesn't start with a comment, it's invalid.
   if (buf_string[0] != '/' || !(buf_string[1] == '*' || buf_string[1] == '/')) {
-    return absl::nullopt;
+    return std::nullopt;
   }
   return LoadCommentMetadata(buf_string, 0, 2);
 }
@@ -98,14 +106,14 @@ absl::optional<std::string> LoadHeaderMetadata(absl::string_view buffer) {
 /// \brief Attempts to load buffer as an inline metadata file
 /// \param buffer data to try and parse.
 /// \param search_string the string identifying the data.
-/// \return the decoded metadata on success or absl::nullopt on failure.
-absl::optional<std::string> FindCommentMetadata(
+/// \return the decoded metadata on success or std::nullopt on failure.
+std::optional<std::string> FindCommentMetadata(
     absl::string_view buffer, const std::string& search_string) {
   auto comment_start = buffer.find("/* " + search_string);
   if (comment_start == absl::string_view::npos) {
     comment_start = buffer.find("// " + search_string);
     if (comment_start == absl::string_view::npos) {
-      return absl::nullopt;
+      return std::nullopt;
     }
   }
   // Data starts after the comment token, a space, and the user-provided
@@ -115,7 +123,7 @@ absl::optional<std::string> FindCommentMetadata(
 }
 }  // anonymous namespace
 
-absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
+std::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
     const proto::metadata::MappingRule& mapping) {
   using ::kythe::proto::metadata::MappingRule;
   if (mapping.type() == MappingRule::NOP) {
@@ -126,12 +134,12 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
   if (edge_string.empty() && !(mapping.type() == MappingRule::ANCHOR_DEFINES &&
                                mapping.semantic() != MappingRule::SEMA_NONE)) {
     LOG(WARNING) << "When loading metadata: empty edge.";
-    return absl::nullopt;
+    return std::nullopt;
   }
   bool reverse_edge = absl::ConsumePrefix(&edge_string, "%");
   if (mapping.type() == MappingRule::ANCHOR_DEFINES) {
     if (!CheckVName(mapping.vname())) {
-      return absl::nullopt;
+      return std::nullopt;
     }
     Semantic sema;
     switch (mapping.semantic()) {
@@ -160,7 +168,7 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
                               sema};
   } else if (mapping.type() == MappingRule::ANCHOR_ANCHOR) {
     if (!CheckVName(mapping.source_vname())) {
-      return absl::nullopt;
+      return std::nullopt;
     }
     return MetadataFile::Rule{mapping.target_begin(),
                               mapping.target_end(),
@@ -174,7 +182,7 @@ absl::optional<MetadataFile::Rule> MetadataFile::LoadMetaElement(
   } else {
     LOG(WARNING) << "When loading metadata: unknown meta type "
                  << mapping.type();
-    return absl::nullopt;
+    return std::nullopt;
   }
 }
 
@@ -223,7 +231,7 @@ std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
     const std::string& filename, absl::string_view buffer,
     const std::string& search_string, absl::string_view target_buffer) const {
   std::string modified_filename = filename;
-  absl::optional<std::string> decoded_buffer_storage;
+  std::optional<std::string> decoded_buffer_storage;
   absl::string_view decoded_buffer = buffer;
   if (!search_string.empty()) {
     decoded_buffer_storage = FindCommentMetadata(buffer, search_string);

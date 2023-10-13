@@ -18,9 +18,10 @@
 // for any ticket from a delimited stream of wire-encoded kythe.proto.Entry
 // messages.
 //
-// Example usage:
+// Example usages:
 //
 //	markedsource kythe://kythe#myTicket < entries
+//	markedsource --rewrite < entries > rewritten.entries
 package main
 
 import (
@@ -28,14 +29,27 @@ import (
 	"flag"
 	"os"
 
+	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/markedsource"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
+
+var (
+	rewrite = flag.Bool("rewrite", false, "Rewrite all code facts to be fully resolved")
+
+	renderSignature         = flag.Bool("render_signatures", false, "Whether to emit /kythe/code/rendered/signature facts (requires --rewrite)")
+	renderCallsiteSignature = flag.Bool("render_callsite_signatures", false, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
+	renderQualifiedName     = flag.Bool("render_qualified_names", false, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
+)
+
+const renderFactPrefix = facts.Code + "/rendered/"
 
 func main() {
 	flag.Parse()
@@ -48,25 +62,77 @@ func main() {
 		entries = append(entries, e)
 		return nil
 	}); err != nil {
-		log.Fatalf("Failed to read entrystream: %v", err)
+		log.Exitf("Failed to read entrystream: %v", err)
 	}
 
 	r, err := markedsource.NewResolver(entries)
-	if err != nil {
-		log.Fatalf("Failed to construct MarkedSource Resolver: %v", err)
+	exitOnErrf("Failed to construct MarkedSource Resolver: %v", err)
+
+	if *rewrite {
+		var rewritten int
+		out := bufio.NewWriter(os.Stdout)
+		wr := delimited.NewWriter(out)
+		for _, e := range entries {
+			if e.GetFactName() == facts.Code || e.GetFactName() == facts.Code+"/json" {
+				resolved := r.Resolve(e.GetSource())
+				e = proto.Clone(e).(*spb.Entry)
+				e.FactName = facts.Code
+				rec, err := proto.Marshal(resolved)
+				exitOnErrf("Error marshalling resolved MarkedSource: %v", err)
+				e.FactValue = rec
+				rewritten++
+
+				if *renderQualifiedName {
+					val := markedsource.RenderSimpleQualifiedName(resolved, true, markedsource.PlaintextContent, nil)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "qualified_name",
+						FactValue: []byte(val),
+					}))
+				}
+				if *renderCallsiteSignature {
+					val := markedsource.RenderCallSiteSignature(resolved)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "callsite_signature",
+						FactValue: []byte(val),
+					}))
+				}
+				if *renderSignature {
+					val := markedsource.RenderSignature(resolved, markedsource.PlaintextContent, nil)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "signature",
+						FactValue: []byte(val),
+					}))
+				}
+			}
+			exitOnErr(wr.PutProto(e))
+		}
+		exitOnErr(out.Flush())
+		log.Infof("Rewrote %d code facts", rewritten)
+		return
 	}
 
 	wr := bufio.NewWriter(os.Stdout)
 	for _, ticket := range flag.Args() {
 		rec, err := protojson.Marshal(r.ResolveTicket(ticket))
-		if err != nil {
-			log.Fatalf("Error encoding MarkedSource: %v", err)
-		}
+		exitOnErrf("Error encoding MarkedSource: %v", err)
 		if _, err := wr.Write(rec); err != nil {
-			log.Fatalf("Error writing MarkedSource: %v", err)
+			log.Exitf("Error writing MarkedSource: %v", err)
 		}
 	}
-	if err := wr.Flush(); err != nil {
-		log.Fatalf("Error flushing stdout: %v", err)
+	exitOnErrf("Error flushing stdout: %v", wr.Flush())
+}
+
+func exitOnErrf(msg string, err error) {
+	if err != nil {
+		log.Exitf(msg, err)
+	}
+}
+
+func exitOnErr(err error) {
+	if err != nil {
+		log.Exit(err)
 	}
 }

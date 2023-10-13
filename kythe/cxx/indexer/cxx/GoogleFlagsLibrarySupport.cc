@@ -173,13 +173,9 @@ static GraphObserver::NodeId NodeIdForFlag(GraphObserver& Observer,
 }
 
 void GoogleFlagsLibrarySupport::InspectVariable(
-    IndexerASTVisitor& V, GraphObserver::NodeId& NodeId,
-    GraphObserver::NodeId& DeclBodyNodeId, const clang::VarDecl* Decl,
-    GraphObserver::Completeness Compl, const std::vector<Completion>& Compls) {
-  if (NodeId != DeclBodyNodeId) {
-    // Google flags aren't variable templates, so abort early.
-    return;
-  }
+    IndexerASTVisitor& V, const GraphObserver::NodeId& NodeId,
+    const clang::VarDecl* Decl, GraphObserver::Completeness Compl,
+    const std::vector<Completion>& Compls) {
   GraphObserver& GO = V.getGraphObserver();
   auto Range = GetVarDeclFlagDeclLoc(*GO.getLangOptions(), Decl);
   if (Range.isValid()) {
@@ -206,8 +202,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
           if (NextDeclRange.isValid()) {
             clang::FileID NextDeclFile =
                 GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
-            GO.recordCompletionRange(*RCC, NodeIdForFlag(GO, C.DeclId),
-                                     FlagNodeId);
+            GO.recordCompletion(NodeIdForFlag(GO, C.DeclId), FlagNodeId);
           }
         }
       }
@@ -217,7 +212,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
 
 void GoogleFlagsLibrarySupport::InspectDeclRef(
     IndexerASTVisitor& V, clang::SourceLocation DeclRefLocation,
-    const GraphObserver::Range& Ref, GraphObserver::NodeId& RefId,
+    const GraphObserver::Range& Ref, const GraphObserver::NodeId& RefId,
     const clang::NamedDecl* TargetDecl) {
   GraphObserver& GO = V.getGraphObserver();
   const auto* VD = llvm::dyn_cast<const clang::VarDecl>(TargetDecl);

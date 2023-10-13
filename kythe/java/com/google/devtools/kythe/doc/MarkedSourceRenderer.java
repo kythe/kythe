@@ -31,8 +31,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /** Renders MarkedSource messages into user-printable {@link SafeHtml}. */
 public class MarkedSourceRenderer {
   private MarkedSourceRenderer() {}
+
   /** Don't recurse more than this many times when rendering MarkedSource. */
-  private static final int MAX_RENDER_DEPTH = 10;
+  private static final int MAX_RENDER_DEPTH = 20;
 
   /**
    * Render {@code signature} as a full signature.
@@ -61,7 +62,10 @@ public class MarkedSourceRenderer {
         .renderText(
             signature,
             Sets.immutableEnumSet(
-                MarkedSource.Kind.IDENTIFIER, MarkedSource.Kind.TYPE, MarkedSource.Kind.PARAMETER),
+                MarkedSource.Kind.IDENTIFIER,
+                MarkedSource.Kind.TYPE,
+                MarkedSource.Kind.PARAMETER,
+                MarkedSource.Kind.MODIFIER),
             0);
   }
 
@@ -203,6 +207,15 @@ public class MarkedSourceRenderer {
       }
     }
 
+    private static boolean willRender(
+        MarkedSource node, ImmutableSet<MarkedSource.Kind> enabled, int level) {
+      MarkedSource.Kind kind = node.getKind();
+      return level < MAX_RENDER_DEPTH
+          && (kind.equals(MarkedSource.Kind.BOX)
+              || kind.equals(MarkedSource.Kind.IDENTIFIER)
+              || enabled.contains(kind));
+    }
+
     private void renderChild(
         MarkedSource node,
         ImmutableSet<MarkedSource.Kind> enabled,
@@ -227,10 +240,17 @@ public class MarkedSourceRenderer {
         }
         append(node.getPreText());
       }
+      int lastRenderedChild = -1;
       for (int child = 0; child < node.getChildCount(); ++child) {
-        renderChild(node.getChild(child), enabled, under, level + 1);
-        if (shouldRender(enabled, under)) {
-          if (child + 1 != node.getChildCount()) {
+        if (willRender(node.getChild(child), enabled, level + 1)) {
+          lastRenderedChild = child;
+        }
+      }
+      for (int child = 0; child < node.getChildCount(); ++child) {
+        MarkedSource c = node.getChild(child);
+        if (willRender(c, enabled, level + 1)) {
+          renderChild(c, enabled, under, level + 1);
+          if (lastRenderedChild > child) {
             append(node.getPostChildText());
           } else if (node.getAddFinalListToken()) {
             appendFinalListToken(node.getPostChildText());
@@ -295,6 +315,7 @@ public class MarkedSourceRenderer {
         bufferIsNonempty = true;
       }
     }
+
     /**
      * Escapes and adds {@code text} before the (non-empty) text that would be added by the next
      * call to {@link append}.
@@ -305,6 +326,7 @@ public class MarkedSourceRenderer {
       }
       prependBuffer.append(text);
     }
+
     /**
      * Make sure there's a space between the current content of the buffer and whatever is appended
      * to it later on.
@@ -314,14 +336,19 @@ public class MarkedSourceRenderer {
         appendFinalListToken(" ");
       }
     }
+
     /** The buffer used to hold escaped HTML data. */
     private SafeHtmlBuilder htmlBuffer;
+
     /** The buffer used to hold text data. */
     private StringBuilder textBuffer;
+
     /** True if the last character in buffer is a space. */
     private boolean bufferEndsInSpace;
+
     /** True if the buffer is non-empty. */
     private boolean bufferIsNonempty;
+
     /**
      * Unescaped text that should be escaped and appended before any other text is appended to the
      * buffer.

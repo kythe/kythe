@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package kythe.proto;
 
-option go_package = "xref_go_proto";
+option go_package = "kythe.io/kythe/proto/xref_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
 
@@ -460,6 +460,9 @@ message CorpusPathFilter {
 
   // Corpus pattern to match against.
   string corpus = 2;
+  // If true, only use filter if the corpus matches. If false, include corpus
+  // in the normal pattern matching behavior for this filter.
+  bool corpus_specific_filter = 6;
   // Root pattern to match against.
   string root = 3;
   // Path pattern to match against.
@@ -563,10 +566,16 @@ message CrossReferencesReply {
   message Total {
     int64 definitions = 1;
     int64 declarations = 2;
-    int64 references = 3;
+    int64 references = 3 [deprecated = true];
     int64 documentation = 4;
     int64 callers = 5;
 
+    // Map from ref edge type to count.
+    //
+    // Example
+    // /kythe/edge/ref -> 20,
+    // /kythe/edge/ref/writes -> 50
+    map<string, int64> ref_edge_to_count = 7;
     map<string, int64> related_nodes_by_relation = 6;
   }
   // Total number of cross-references on all pages matching requested kinds,

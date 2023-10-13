@@ -14,30 +14,35 @@
  * limitations under the License.
  */
 
-#include "path_utils.h"
+#include "kythe/cxx/extractor/path_utils.h"
+
+#include <cstdio>
+#include <optional>
 
 #include "absl/strings/str_format.h"
-#include "clang/Basic/FileManager.h"
+#include "clang/Basic/FileEntry.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Lex/HeaderSearch.h"
-#include "clang/Lex/LexDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Tooling/Tooling.h"
+#include "clang/Lex/Token.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 
 namespace kythe {
 namespace cxx_extractor {
 
-const clang::FileEntry* LookupFileForIncludePragma(
+clang::OptionalFileEntryRef LookupFileForIncludePragma(
     clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
     llvm::SmallVectorImpl<char>* relative_path,
     llvm::SmallVectorImpl<char>* result_filename) {
   clang::Token filename_token;
   if (preprocessor->LexHeaderName(filename_token)) {
-    return nullptr;
+    return std::nullopt;
   }
   if (!filename_token.isOneOf(clang::tok::header_name,
                               clang::tok::string_literal)) {
-    return nullptr;
+    return std::nullopt;
   }
   llvm::SmallString<128> filename_buffer;
   llvm::StringRef filename =
@@ -46,7 +51,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
       filename_token.getLocation(), filename);
   if (filename.empty()) {
     preprocessor->DiscardUntilEndOfDirective();
-    return nullptr;
+    return std::nullopt;
   }
   preprocessor->CheckEndOfDirective("pragma", true);
   if (preprocessor->getHeaderSearchInfo().HasIncludeAliasMap()) {
@@ -76,9 +81,8 @@ const clang::FileEntry* LookupFileForIncludePragma(
       nullptr /* IsFrameworkFound */, false /* SkipCache */);
   if (!file) {
     absl::FPrintF(stderr, "Missing required file %s.\n", filename.str());
-    return nullptr;
   }
-  return &file->getFileEntry();
+  return file;
 }
 
 }  // namespace cxx_extractor

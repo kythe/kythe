@@ -17,7 +17,8 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 #define KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 
-#include "absl/types/optional.h"
+#include <optional>
+
 #include "clang/AST/Decl.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Sema/Sema.h"
@@ -51,7 +52,7 @@ class MarkedSourceGenerator {
 
   /// Attempt to build a marked source given all available information. Assumes
   /// that `decl_`'s ID is `decl_id`.
-  absl::optional<MarkedSource> GenerateMarkedSource(
+  std::optional<MarkedSource> GenerateMarkedSource(
       const GraphObserver::NodeId& decl_id);
 
  private:
@@ -61,11 +62,8 @@ class MarkedSourceGenerator {
       : cache_(cache), decl_(decl) {}
 
   /// Attempt to generate marked source using the original source code.
-  absl::optional<MarkedSource> GenerateMarkedSourceUsingSource(
+  std::optional<MarkedSource> GenerateMarkedSourceUsingSource(
       const GraphObserver::NodeId& decl_id);
-
-  /// Generate marked source by pretty-printing a function's prototype.
-  MarkedSource GenerateMarkedSourceForFunction(const clang::FunctionDecl* decl);
 
   /// Generate marked source for this decl, which must be a NamedDecl.
   MarkedSource GenerateMarkedSourceForNamedDecl();

@@ -19,6 +19,7 @@ syntax = "proto3";
 package kythe.proto;
 
 option java_multiple_files = true;
+option go_package = "kythe.io/kythe/proto/bazel_artifact_selector_v2_go_proto";
 
 message BazelAspectArtifactSelectorStateV2 {
   message File {

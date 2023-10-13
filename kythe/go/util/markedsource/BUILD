@@ -8,13 +8,17 @@ go_library(
         "markedsource.go",
         "resolve.go",
     ],
+    importpath = "kythe.io/kythe/go/util/markedsource",
     deps = [
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/md",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@com_github_johanneskaufmann_html_to_markdown//escape",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
@@ -26,12 +30,17 @@ go_test(
         "resolve_test.go",
     ],
     data = ["//kythe/cxx/doc"],
-    library = "markedsource",
+    library = ":markedsource",
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/test/testutil",
         "//kythe/go/util/compare",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
-        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//encoding/prototext",
+        "@org_golang_google_protobuf//proto",
     ],
 )

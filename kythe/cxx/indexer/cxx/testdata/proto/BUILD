@@ -11,11 +11,34 @@ cc_proto_verifier_test(
 )
 
 cc_proto_verifier_test(
+    name = "proto_semantic_ref_test",
+    size = "medium",
+    srcs = ["proto_semantic_ref.cc"],
+    proto_libs = ["//kythe/testdata/indexers/proto:testdata_proto"],
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+        "--check_for_singletons=false",
+    ],
+)
+
+cc_proto_verifier_test(
+    name = "proto_semantic_ref_aw_test",
+    size = "medium",
+    srcs = ["proto_semantic_ref_aw.cc"],
+    experimental_set_aliases_as_writes = True,
+    proto_libs = ["//kythe/testdata/indexers/proto:testdata_proto"],
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+        "--check_for_singletons=false",
+    ],
+)
+
+cc_proto_verifier_test(
     name = "proto_semantic_test",
     size = "medium",
     srcs = ["proto_semantic.cc"],
-    experimental_guess_proto_semantics = True,
-    experimental_record_dataflow_edges = True,
     proto_libs = ["//kythe/testdata/indexers/proto:testdata_proto"],
     verifier_opts = [
         "--ignore_dups",

@@ -18,9 +18,14 @@
 package markedsource // import "kythe.io/kythe/go/util/markedsource"
 
 import (
-	"bytes"
-	"io"
+	"fmt"
+	"html"
+	"regexp"
 	"strings"
+
+	"kythe.io/kythe/go/util/md"
+
+	"github.com/JohannesKaufmann/html-to-markdown/escape"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 )
@@ -28,99 +33,368 @@ import (
 // maxRenderDepth cuts the render algorithm if it recurses too deeply into a
 // nested MarkedSource.  The resulting identifiers will thus be partial.  This
 // value matches the kMaxRenderDepth in the C++ implementation.
-const maxRenderDepth = 10
+const maxRenderDepth = 20
 
-type state struct {
-	w       io.Writer
-	depth   int
-	inIdent bool
+const invalidLookupMarker = "???"
+
+// ContentType is a type of rendering output.
+type ContentType string
+
+// Supported list of ContentTypes
+var (
+	PlaintextContent ContentType = "txt"
+	MarkdownContent  ContentType = "md"
+)
+
+// content holds text and a possible destination to help us build markdown links.
+type content struct {
+	text   string
+	target string
 }
 
-func render(ms *cpb.MarkedSource, st state) {
-	if st.depth > maxRenderDepth {
-		return
-	}
-	io.WriteString(st.w, ms.PreText)
-	st.depth++
-	for n, child := range ms.Child {
-		render(child, st)
-		if ms.AddFinalListToken || n < len(ms.Child)-1 {
-			io.WriteString(st.w, ms.PostChildText)
+// build creates markdown for c. If there is no target, the plain text is returned, if there is a
+// target, a markdown link is returned.
+func (c content) build(format ContentType) string {
+	if format == MarkdownContent {
+		if c.target == "" {
+			return c.text
 		}
+		return md.Link(c.text, c.target)
 	}
-	io.WriteString(st.w, ms.PostText)
+
+	// Assume plain text if markdown isn't set.
+	return c.text
+}
+
+// escapeMD escapes the signature so that 1) generics don't get parsed as HTML by
+// html-to-markdown in the Javadoc parser and 2) markdown characters in code (e.g. *) don't change
+// how the text is displayed.
+func escapeMD(s string) string {
+	return escape.MarkdownCharacters(html.EscapeString(s))
+}
+
+type renderer struct {
+	buffer            *content
+	prependBuffer     string
+	bufferIsNonempty  bool
+	bufferEndsInSpace bool
+	format            ContentType
+	prependSpace      bool
+
+	linkify func(string) string
 }
 
 // Render flattens MarkedSource to a string using reasonable defaults.
 func Render(ms *cpb.MarkedSource) string {
-	var buf bytes.Buffer
-	render(ms, state{w: &buf})
-	return buf.String()
-}
-
-// RenderSimpleIdentifier extracts and renders the simple identifier from a
-// MarkedSource.
-func RenderSimpleIdentifier(ms *cpb.MarkedSource) string {
-	var buf bytes.Buffer
-	renderIdent(ms, state{w: &buf})
-	return buf.String()
-}
-
-func renderIdent(ms *cpb.MarkedSource, st state) {
-	if st.depth >= maxRenderDepth {
-		return
+	enabled := map[cpb.MarkedSource_Kind]bool{}
+	for _, k := range cpb.MarkedSource_Kind_value {
+		enabled[cpb.MarkedSource_Kind(k)] = true
 	}
-	st.depth++
+	r := &renderer{
+		buffer: &content{},
+		format: PlaintextContent,
+	}
 
-	// Anything other than identifiers and boxes can be skipped.
-	switch ms.Kind {
-	case cpb.MarkedSource_IDENTIFIER:
-		st.inIdent = true
+	r.renderRoot(ms, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderSignature renders the full signature from node.
+// If not nil, linkify will be used to
+// generate link URIs from semantic node tickets. It may return an empty string if there is no
+// available URI.
+func RenderSignature(node *cpb.MarkedSource, format ContentType, linkify func(string) string) string {
+	enabled := map[cpb.MarkedSource_Kind]bool{
+		cpb.MarkedSource_IDENTIFIER: true,
+		cpb.MarkedSource_TYPE:       true,
+		cpb.MarkedSource_PARAMETER:  true,
+		cpb.MarkedSource_MODIFIER:   true,
+	}
+	r := &renderer{
+		buffer:  &content{},
+		linkify: linkify,
+		format:  format,
+	}
+
+	r.renderRoot(node, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderCallSiteSignature returns the text snippet for a callsite as plaintext.
+func RenderCallSiteSignature(node *cpb.MarkedSource) string {
+	// This is similar to RenderSignature but does not render types to keep the text a little more
+	// compact.
+	enabled := map[cpb.MarkedSource_Kind]bool{
+		cpb.MarkedSource_IDENTIFIER: true,
+		cpb.MarkedSource_PARAMETER:  true,
+	}
+	r := &renderer{
+		buffer:  &content{},
+		linkify: nil,
+		format:  PlaintextContent,
+	}
+
+	r.renderRoot(node, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderInitializer extracts and renders a plaintext initializer from node. If not nil, linkify
+// will be used to generate link URIs from semantic node tickets. It may return an empty string if
+// there is no available URI.
+func RenderInitializer(node *cpb.MarkedSource, format ContentType, linkify func(string) string) string {
+	enabled := map[cpb.MarkedSource_Kind]bool{
+		cpb.MarkedSource_INITIALIZER: true,
+	}
+	r := &renderer{
+		buffer:  &content{},
+		linkify: linkify,
+		format:  format,
+	}
+
+	r.renderRoot(node, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderSimpleQualifiedName extracts and renders the simple qualified name from node. If
+// includeIdentifier is true it includes the identifier on the qualified name. If not nil, linkify
+// will be used to generate link URIs from semantic node tickets. It may return an empty string if
+// there is no available URI.
+func RenderSimpleQualifiedName(node *cpb.MarkedSource, includeIdentifier bool, format ContentType, linkify func(string) string) string {
+	enabled := map[cpb.MarkedSource_Kind]bool{
+		cpb.MarkedSource_CONTEXT: true,
+	}
+	if includeIdentifier {
+		enabled[cpb.MarkedSource_IDENTIFIER] = true
+	}
+	r := &renderer{
+		buffer:  &content{},
+		linkify: linkify,
+		format:  format,
+	}
+
+	r.renderRoot(node, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderSimpleIdentifier extracts and renders a the simple identifier from node. If not nil,
+// linkify will be used to generate link URIs from semantic node tickets. It may return an empty
+// string if there is no available URI.
+func RenderSimpleIdentifier(node *cpb.MarkedSource, format ContentType, linkify func(string) string) string {
+	enabled := map[cpb.MarkedSource_Kind]bool{
+		cpb.MarkedSource_IDENTIFIER: true,
+	}
+	r := &renderer{
+		buffer:  &content{},
+		linkify: linkify,
+		format:  format,
+	}
+
+	r.renderRoot(node, enabled)
+	return r.buffer.build(r.format)
+}
+
+// RenderSimpleParams extracts and renders the simple identifiers for parameters in node. If not
+// nil, linkify will be used to generate link URIs from semantic node tickets. It may return an
+// empty string if there is no available URI.
+func RenderSimpleParams(node *cpb.MarkedSource, format ContentType, linkify func(string) string) []string {
+	return renderSimpleParams(node, format, linkify, 0)
+}
+
+func renderSimpleParams(node *cpb.MarkedSource, format ContentType, linkify func(string) string, level int) []string {
+	if level >= maxRenderDepth {
+		return nil
+	}
+
+	var out []string
+	switch node.GetKind() {
 	case cpb.MarkedSource_BOX:
-		// good; we can continue
-	default:
-		return
+		for _, child := range node.GetChild() {
+			out = append(out, renderSimpleParams(child, format, linkify, level+1)...)
+		}
+	case cpb.MarkedSource_PARAMETER:
+		for _, child := range node.GetChild() {
+			enabled := map[cpb.MarkedSource_Kind]bool{
+				cpb.MarkedSource_IDENTIFIER: true,
+			}
+			r := &renderer{
+				buffer:  &content{},
+				linkify: linkify,
+				format:  format,
+			}
+			r.renderChild(child, enabled, make(map[cpb.MarkedSource_Kind]bool), level+1)
+			out = append(out, r.buffer.build(r.format))
+		}
+	case
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS,
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM:
+		out = append(out, renderInvalidLookup(node, format))
 	}
 
-	if st.inIdent {
-		io.WriteString(st.w, ms.PreText)
+	return out
+}
+
+func shouldRenderInvalidLookup(k cpb.MarkedSource_Kind, enabled map[cpb.MarkedSource_Kind]bool) bool {
+	switch k {
+	case
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS,
+		cpb.MarkedSource_PARAMETER_LOOKUP_BY_TPARAM,
+		cpb.MarkedSource_LOOKUP_BY_PARAM,
+		cpb.MarkedSource_LOOKUP_BY_TPARAM:
+		return enabled[cpb.MarkedSource_PARAMETER]
+	case cpb.MarkedSource_LOOKUP_BY_TYPED:
+		return enabled[cpb.MarkedSource_TYPE]
+	default:
+		return false
 	}
-	for i, child := range ms.Child {
-		renderIdent(child, st)
-		if st.inIdent {
-			if ms.AddFinalListToken || i < len(ms.Child)-1 {
-				io.WriteString(st.w, ms.PostChildText)
+}
+
+func renderInvalidLookup(node *cpb.MarkedSource, format ContentType) string {
+	return fmt.Sprintf("%s%s%s", nodePreText(node, format), invalidLookupMarker, nodePostText(node, format))
+}
+
+func willRender(node *cpb.MarkedSource, enabled, under map[cpb.MarkedSource_Kind]bool, level int) bool {
+	kind := node.GetKind()
+	return level < maxRenderDepth && (kind == cpb.MarkedSource_BOX || kind == cpb.MarkedSource_IDENTIFIER || shouldRenderInvalidLookup(kind, enabled) || enabled[kind])
+}
+
+func (r *renderer) renderRoot(node *cpb.MarkedSource, enabled map[cpb.MarkedSource_Kind]bool) {
+	r.renderChild(node, enabled, map[cpb.MarkedSource_Kind]bool{}, 0)
+}
+
+// renderChild renders the children of node up to maxRenderDepth. It only renders nodes that are
+// present in enabled.
+func (r *renderer) renderChild(node *cpb.MarkedSource, enabled, under map[cpb.MarkedSource_Kind]bool, level int) {
+	if level >= maxRenderDepth {
+		return
+	}
+	kind := node.GetKind()
+	if kind != cpb.MarkedSource_BOX || enabled[cpb.MarkedSource_BOX] {
+		if shouldRenderInvalidLookup(kind, enabled) {
+			r.add(renderInvalidLookup(node, r.format))
+			return
+		}
+		if kind != cpb.MarkedSource_IDENTIFIER && !enabled[kind] {
+			return
+		}
+		// Make a copy of under for our recursive tree and add in our new kind.
+		newUnder := make(map[cpb.MarkedSource_Kind]bool)
+		for k, v := range under {
+			newUnder[k] = v
+		}
+		newUnder[kind] = true
+		under = newUnder
+	}
+	var savedContent *content
+	if shouldRender(enabled, under) {
+		l := r.linkForSource(node)
+		if l != "" && r.buffer != nil {
+			savedContent = r.buffer
+			r.buffer = &content{target: l}
+		}
+		r.add(nodePreText(node, r.format))
+	}
+	lastRenderedChild := -1
+	for i, c := range node.GetChild() {
+		if willRender(c, enabled, under, level+1) {
+			lastRenderedChild = i
+		}
+	}
+	for i, c := range node.GetChild() {
+		if willRender(c, enabled, under, level+1) {
+			r.renderChild(c, enabled, under, level+1)
+			if lastRenderedChild > i {
+				r.add(nodePostChildText(node, r.format))
+			} else if node.GetAddFinalListToken() {
+				r.addFinalListToken(nodePostChildText(node, r.format))
 			}
 		}
 	}
-	if st.inIdent {
-		io.WriteString(st.w, ms.PostText)
+	if shouldRender(enabled, under) {
+		r.add(nodePostText(node, r.format))
+		if savedContent != nil {
+			r.buffer = &content{
+				text: savedContent.build(r.format) + r.buffer.build(r.format),
+			}
+		}
+		if node.GetKind() == cpb.MarkedSource_TYPE {
+			r.prependSpace = true
+		}
 	}
 }
 
-// RenderSimpleParams extracts and renders the simple identifiers from a
-// MarkedSource's parameters.
-func RenderSimpleParams(ms *cpb.MarkedSource) []string { return renderParams(ms, state{}, nil) }
-
-func renderParams(ms *cpb.MarkedSource, st state, params []string) []string {
-	if st.depth >= maxRenderDepth {
-		return nil
+func nodePreText(node *cpb.MarkedSource, format ContentType) string {
+	if format == MarkdownContent {
+		return escapeMD(node.GetPreText())
 	}
-	st.depth++
+	return node.GetPreText()
+}
 
-	switch ms.Kind {
-	case cpb.MarkedSource_PARAMETER:
-		for _, child := range ms.Child {
-			params = append(params, RenderSimpleIdentifier(child))
-		}
-	case cpb.MarkedSource_BOX:
-		for _, child := range ms.Child {
-			params = append(params, renderParams(child, st, params)...)
-		}
-	default:
-		// do nothing
+func nodePostText(node *cpb.MarkedSource, format ContentType) string {
+	if format == MarkdownContent {
+		return escapeMD(node.GetPostText())
 	}
-	return params
+	return node.GetPostText()
+}
+
+func nodePostChildText(node *cpb.MarkedSource, format ContentType) string {
+	if format == MarkdownContent {
+		return escapeMD(node.GetPostChildText())
+	}
+	return node.GetPostChildText()
+}
+
+func shouldRender(enabled, under map[cpb.MarkedSource_Kind]bool) (v bool) {
+	for kind := range enabled {
+		if under[kind] {
+			return true
+		}
+	}
+	return false
+}
+
+// linkForSource uses linkify (if present) to turn the link in node into a like that can be used in
+// the documentation text.
+func (r renderer) linkForSource(node *cpb.MarkedSource) string {
+	if r.linkify == nil {
+		return ""
+	}
+
+	for _, link := range node.GetLink() {
+		for _, def := range link.GetDefinition() {
+			if l := r.linkify(def); l != "" {
+				return l
+			}
+		}
+	}
+	return ""
+}
+
+var excludedSpaceCharacters = regexp.MustCompile(`^(\\)?[),\]>\s].*`)
+
+// add appends s to the current buffer text.
+func (r *renderer) add(s string) {
+	if r.prependBuffer != "" && s != "" {
+		r.buffer.text += r.prependBuffer
+		r.bufferEndsInSpace = strings.HasSuffix(r.prependBuffer, " ")
+		r.prependBuffer = ""
+		r.bufferIsNonempty = true
+	}
+	if r.prependSpace && s != "" && r.bufferIsNonempty && !r.bufferEndsInSpace && !excludedSpaceCharacters.MatchString(s) {
+		r.buffer.text += " "
+		r.bufferEndsInSpace = true
+	}
+	r.buffer.text += s
+	if s != "" {
+		r.bufferEndsInSpace = strings.HasSuffix(s, " ")
+		r.bufferIsNonempty = true
+		r.prependSpace = false
+	}
+}
+
+func (r *renderer) addFinalListToken(s string) {
+	r.prependBuffer += s
 }
 
 // RenderQualifiedName renders a language-appropriate qualified name from a

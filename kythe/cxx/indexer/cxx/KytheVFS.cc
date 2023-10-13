@@ -35,7 +35,7 @@ static inline std::pair<uint64_t, uint64_t> PairFromUid(
   return {uid.getDevice(), uid.getFile()};
 }
 
-absl::optional<llvm::sys::path::Style>
+std::optional<llvm::sys::path::Style>
 IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
   if (llvm::sys::path::is_absolute(awd, llvm::sys::path::Style::posix)) {
     return llvm::sys::path::Style::posix;
@@ -44,7 +44,7 @@ IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
     return llvm::sys::path::Style::windows;
   }
   absl::FPrintF(stderr, "warning: could not detect path style for %s\n", awd);
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 namespace {
@@ -143,9 +143,8 @@ void IndexVFS::SetVName(const std::string& path, const proto::VName& vname) {
   }
 }
 
-bool IndexVFS::get_vname(const clang::FileEntry* entry,
-                         proto::VName* merge_with) {
-  auto record = uid_to_record_map_.find(PairFromUid(entry->getUniqueID()));
+bool IndexVFS::get_vname(clang::FileEntryRef entry, proto::VName* merge_with) {
+  auto record = uid_to_record_map_.find(PairFromUid(entry.getUniqueID()));
   if (record != uid_to_record_map_.end()) {
     if (record->second->status.getType() ==
             llvm::sys::fs::file_type::regular_file &&

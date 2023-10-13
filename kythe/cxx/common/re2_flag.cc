@@ -16,6 +16,12 @@
 
 #include "kythe/cxx/common/re2_flag.h"
 
+#include <memory>
+#include <string>
+
+#include "absl/strings/string_view.h"
+#include "re2/re2.h"
+
 namespace kythe {
 bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error) {
   if (text.empty()) {
@@ -23,8 +29,7 @@ bool AbslParseFlag(absl::string_view text, RE2Flag* value, std::string* error) {
   }
   re2::RE2::Options options;
   options.set_never_capture(true);
-  *value = {std::make_shared<re2::RE2>(
-      re2::StringPiece{text.data(), text.size()}, options)};
+  *value = {std::make_shared<re2::RE2>(text, options)};
   if (!value->value->ok()) {
     *error = value->value->error();
   }

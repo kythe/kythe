@@ -19,21 +19,32 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/log/log.h"
-#include "absl/memory/memory.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/synchronization/mutex.h"
 #include "kythe/cxx/common/status.h"
 
 namespace kythe {
 namespace {
+
+struct FreeDeleter {
+  void operator()(void* pointer) const { free(pointer); }
+};
 
 // Predicate used in CleanPath for skipping empty components
 // and components consistening of a single '.'.
@@ -68,11 +79,11 @@ absl::string_view TrimPathPrefix(const absl::string_view path,
   return path;
 }
 
-absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
+absl::StatusOr<std::optional<PathRealizer>> MaybeMakeRealizer(
     PathCanonicalizer::Policy policy, absl::string_view root) {
   switch (policy) {
     case PathCanonicalizer::Policy::kCleanOnly:
-      return {absl::nullopt};
+      return {std::nullopt};
     case PathCanonicalizer::Policy::kPreferRelative:
     case PathCanonicalizer::Policy::kPreferReal:
       if (auto realizer = PathRealizer::Create(root); realizer.ok()) {
@@ -81,11 +92,11 @@ absl::StatusOr<absl::optional<PathRealizer>> MaybeMakeRealizer(
         return realizer.status();
       }
   }
-  return {absl::nullopt};
+  return {std::nullopt};
 }
 
-absl::optional<std::string> MaybeRealPath(
-    const absl::optional<PathRealizer>& realizer, absl::string_view root) {
+std::optional<std::string> MaybeRealPath(
+    const std::optional<PathRealizer>& realizer, absl::string_view root) {
   if (realizer.has_value()) {
     if (auto result = realizer->Relativize(root); result.ok()) {
       return *std::move(result);
@@ -93,7 +104,7 @@ absl::optional<std::string> MaybeRealPath(
       LOG(ERROR) << "Unable to resolve " << root << ": " << result.status();
     }
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 struct PathParts {
@@ -179,7 +190,7 @@ absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
   if (!cleaner.ok()) {
     return cleaner.status();
   }
-  absl::StatusOr<absl::optional<PathRealizer>> realizer =
+  absl::StatusOr<std::optional<PathRealizer>> realizer =
       MaybeMakeRealizer(policy, root);
   if (!realizer.ok()) {
     return realizer.status();
@@ -209,7 +220,7 @@ absl::StatusOr<std::string> PathCanonicalizer::Relativize(
   return std::string(path);
 }
 
-absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+std::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
     absl::string_view policy) {
   using Policy = PathCanonicalizer::Policy;
   if (policy == "0" || policy == "clean-only") {
@@ -221,7 +232,7 @@ absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
   if (policy == "2" || policy == "prefer-real") {
     return Policy::kPreferReal;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
@@ -319,12 +330,12 @@ absl::StatusOr<std::string> RealPath(absl::string_view path) {
   // checking whether or not it is null-terminated is potentially UB.
   std::string zpath(path);
 
-  std::string result(PATH_MAX, '\0');
-  if (::realpath(zpath.c_str(), &result.front()) == nullptr) {
+  std::unique_ptr<char, FreeDeleter> resolved(
+      ::realpath(zpath.c_str(), nullptr));
+  if (resolved == nullptr) {
     return ErrnoToStatus(errno);
   }
-  result.resize(::strlen(result.c_str()));
-  return result;
+  return std::string(resolved.get());
 }
 
 }  // namespace kythe

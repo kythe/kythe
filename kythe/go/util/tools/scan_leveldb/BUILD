@@ -11,8 +11,8 @@ go_binary(
         "//kythe/go/util/log",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_google_protobuf//proto:go_default_library",
-        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
-        "@org_golang_google_protobuf//reflect/protoregistry:go_default_library",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//reflect/protoregistry",
     ],
 )

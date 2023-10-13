@@ -23,9 +23,7 @@
 #include "absl/flags/parse.h"
 #include "absl/log/check.h"
 #include "absl/log/initialize.h"
-#include "absl/log/log.h"
-#include "absl/memory/memory.h"
-#include "kythe/cxx/common/json_proto.h"
+#include "google/protobuf/stubs/common.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/graph.pb.h"
 

@@ -17,6 +17,8 @@
 #include "kythe/cxx/common/regex.h"
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"

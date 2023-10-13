@@ -33,7 +33,6 @@ cc_library(
         "//kythe/proto:storage_cc_proto",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -149,7 +148,6 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:ast",
     ],
@@ -177,7 +175,6 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/types:span",
         "@llvm-project//clang:basic",
         "@llvm-project//clang:lex",
@@ -203,6 +200,7 @@ cc_library(
     deps = [
         ":clang_range_finder",
         ":clang_utils",
+        ":decl_printer",
         ":graph_observer",
         ":indexed_parent_iterator",
         ":indexed_parent_map",
@@ -225,7 +223,6 @@ cc_library(
         "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:ast",
         "@llvm-project//clang:basic",
@@ -257,7 +254,6 @@ cc_library(
     hdrs = ["indexed_parent_iterator.h"],
     deps = [
         ":indexed_parent_map",
-        "@com_google_absl//absl/types:optional",
         "@llvm-project//clang:ast",
     ],
 )
@@ -453,7 +449,6 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:basic",
         "@llvm-project//llvm:Support",
@@ -564,7 +559,6 @@ cc_library(
     hdrs = ["node_set.h"],
     deps = [
         ":graph_observer",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -664,5 +658,42 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/functional:any_invocable",
         "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_library(
+    name = "decl_printer",
+    srcs = ["decl_printer.cc"],
+    hdrs = ["decl_printer.h"],
+    deps = [
+        ":graph_observer",
+        ":indexed_parent_iterator",
+        ":indexed_parent_map",
+        ":semantic_hash",
+        "@com_google_absl//absl/base:core_headers",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_test(
+    name = "decl_printer_test",
+    srcs = ["decl_printer_test.cc"],
+    deps = [
+        ":decl_printer",
+        ":graph_observer",
+        ":indexed_parent_map",
+        ":semantic_hash",
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:die_if_null",
+        "@com_google_absl//absl/strings",
+        "@llvm-project//clang:ast",
+        "@llvm-project//clang:ast_matchers",
+        "@llvm-project//clang:basic",
+        "@llvm-project//clang:frontend",
+        "@llvm-project//clang:tooling",
     ],
 )

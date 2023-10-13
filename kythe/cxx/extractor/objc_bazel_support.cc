@@ -16,18 +16,26 @@
 
 #include "objc_bazel_support.h"
 
-#include <llvm/ADT/StringRef.h>
+#include <stdio.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "google/protobuf/repeated_ptr_field.h"
+#include "llvm/ADT/StringRef.h"
 #include "re2/re2.h"
+#include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 namespace kythe {
 
 // This is inspiried by Python's commands.mkarg
 // https://hg.python.org/cpython/file/tip/Lib/commands.py#l81
 std::string SanitizeArgument(const std::string& s) {
-  if (s.find("'") == std::string::npos) {
+  if (s.find('\'') == std::string::npos) {
     // There are no single quotes, so we can make the string safe by putting it
     // in single quotes.
     return "'" + s + "'";
@@ -61,7 +69,7 @@ std::string RunScript(const std::string& cmd) {
     return output;
   }
   while (!feof(f)) {
-    if (fgets(buffer, 256, f) != NULL) {
+    if (fgets(buffer, 256, f) != nullptr) {
       output += buffer;
     }
   }

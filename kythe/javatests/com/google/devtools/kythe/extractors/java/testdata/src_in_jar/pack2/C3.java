@@ -1,4 +1,3 @@
 package pack2;
 
-public class C3 {
-}
+public class C3 {}

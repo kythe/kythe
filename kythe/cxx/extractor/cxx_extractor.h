@@ -18,12 +18,12 @@
 #define KYTHE_CXX_EXTRACTOR_EXTRACTOR_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 
 #include "absl/log/log.h"
-#include "absl/types/optional.h"
 #include "clang/Tooling/Tooling.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -139,7 +139,7 @@ class KzipWriterSink : public CompilationWriterSink {
  private:
   std::string path_;
   OutputPathType path_type_;
-  absl::optional<IndexWriter> writer_;
+  std::optional<IndexWriter> writer_;
 };
 
 /// \brief Collects information about compilation arguments and targets and
@@ -276,7 +276,7 @@ class CompilationWriter {
 
   /// The canonicalizer to use when constructing relative paths.
   /// Lazily built from policy and root above.
-  absl::optional<PathCanonicalizer> canonicalizer_;
+  std::optional<PathCanonicalizer> canonicalizer_;
 };
 
 /// \brief Creates a `FrontendAction` that records information about a

@@ -16,14 +16,21 @@
 
 #include "kythe/cxx/doc/html_renderer.h"
 
+#include <cstddef>
+#include <map>
 #include <stack>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "kythe/cxx/doc/markup_handler.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace {
 /// Don't recurse more than this many times when rendering MarkedSource.
-constexpr size_t kMaxRenderDepth = 10;
+constexpr size_t kMaxRenderDepth = 20;
 
 /// \brief A RAII class to deal with styled div/span tags.
 class CssTag {
@@ -235,11 +242,13 @@ struct RenderSimpleIdentifierState {
   bool render_types = false;
   bool render_parameters = false;
   bool render_initializer = false;
+  bool render_modifier = false;
   bool in_identifier = false;
   bool in_context = false;
   bool in_parameter = false;
   bool in_type = false;
   bool in_initializer = false;
+  bool in_modifier = false;
   bool linkify = false;
   std::string base_ticket;
   std::string get_link(const proto::common::MarkedSource& sig) {
@@ -270,13 +279,35 @@ struct RenderSimpleIdentifierState {
   }
   bool should_infer_link() const {
     return (in_identifier && !base_ticket.empty() && !in_context &&
-            !in_parameter && !in_type && !in_initializer);
+            !in_parameter && !in_type && !in_initializer && !in_modifier);
   }
-  bool should_render() const {
+  bool should_render(const proto::common::MarkedSource& node) const {
     return (render_context && in_context) ||
            (render_identifier && in_identifier) ||
            (render_parameters && in_parameter) || (render_types && in_type) ||
-           (render_initializer && in_initializer);
+           (render_initializer && in_initializer) ||
+           (render_modifier && in_modifier);
+  }
+  bool will_render(const proto::common::MarkedSource& child, size_t depth) {
+    if (depth >= kMaxRenderDepth) return false;
+    switch (child.kind()) {
+      case proto::common::MarkedSource::IDENTIFIER:
+        return true;
+      case proto::common::MarkedSource::BOX:
+        return true;
+      case proto::common::MarkedSource::PARAMETER:
+        return render_parameters;
+      case proto::common::MarkedSource::TYPE:
+        return render_types;
+      case proto::common::MarkedSource::CONTEXT:
+        return render_context;
+      case proto::common::MarkedSource::INITIALIZER:
+        return render_initializer;
+      case proto::common::MarkedSource::MODIFIER:
+        return render_modifier;
+      default:
+        return false;
+    }
   }
 };
 
@@ -316,11 +347,17 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
       break;
     case proto::common::MarkedSource::BOX:
       break;
+    case proto::common::MarkedSource::MODIFIER:
+      if (!state.render_modifier) {
+        return;
+      }
+      state.in_modifier = true;
+      break;
     default:
       return;
   }
   bool has_open_link = false;
-  if (state.should_render()) {
+  if (state.should_render(sig)) {
     std::string link_text = state.get_link(sig);
     if (!link_text.empty()) {
       out->AppendRaw("<a href=\"");
@@ -340,17 +377,25 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
     }
     out->Append(sig.pre_text());
   }
+  int last_rendered_child = -1;
   for (int child = 0; child < sig.child_size(); ++child) {
-    RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
-    if (state.should_render()) {
-      if (child + 1 != sig.child_size()) {
-        out->Append(sig.post_child_text());
-      } else if (sig.add_final_list_token()) {
-        out->AppendFinalListToken(sig.post_child_text());
+    if (state.will_render(sig.child(child), depth + 1)) {
+      last_rendered_child = child;
+    }
+  }
+  for (int child = 0; child < sig.child_size(); ++child) {
+    if (state.will_render(sig.child(child), depth + 1)) {
+      RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
+      if (state.should_render(sig)) {
+        if (last_rendered_child > child) {
+          out->Append(sig.post_child_text());
+        } else if (sig.add_final_list_token()) {
+          out->AppendFinalListToken(sig.post_child_text());
+        }
       }
     }
   }
-  if (state.should_render()) {
+  if (state.should_render(sig)) {
     out->Append(sig.post_text());
     if (has_open_link) {
       out->AppendRaw("</a>");
@@ -411,6 +456,7 @@ std::string RenderSignature(const HtmlRendererOptions& options,
   state.render_identifier = true;
   state.render_types = true;
   state.render_parameters = true;
+  state.render_modifier = true;
   state.linkify = linkify;
   state.options = &options;
   state.base_ticket = base_ticket;
@@ -678,7 +724,7 @@ std::string RenderDocument(
     if (!initializer.empty()) {
       CssTag init_div(CssTag::Kind::Div, options.initializer_div, &text_out);
       text_out.append("Initializer: ");
-      bool multiline = initializer.find("\n") != decltype(initializer)::npos;
+      bool multiline = initializer.find('\n') != decltype(initializer)::npos;
       CssTag code_div(CssTag::Kind::Pre,
                       multiline ? options.initializer_multiline_pre
                                 : options.initializer_pre,

@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "nodes",
     srcs = ["nodes.go"],
+    importpath = "kythe.io/kythe/go/serving/pipeline/nodes",
     deps = [
         "//kythe/go/util/compare",
         "//kythe/go/util/schema",
@@ -12,7 +13,7 @@ go_library(
         "//kythe/go/util/schema/facts",
         "//kythe/proto:schema_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
     ],
 )
 
@@ -21,9 +22,14 @@ go_test(
     srcs = ["nodes_test.go"],
     library = ":nodes",
     deps = [
+        "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_apache_beam//sdks/go/pkg/beam",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug",
     ],
 )

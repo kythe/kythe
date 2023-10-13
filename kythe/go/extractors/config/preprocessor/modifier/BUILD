@@ -8,8 +8,9 @@ go_library(
         "build_gradle_modifier.go",
         "pom_xml_modifier.go",
     ],
+    importpath = "kythe.io/kythe/go/extractors/config/preprocessor/modifier",
     deps = [
-        "@com_github_beevik_etree//:go_default_library",
+        "@com_github_beevik_etree//:etree",
     ],
 )
 

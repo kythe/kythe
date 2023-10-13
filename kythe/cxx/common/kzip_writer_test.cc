@@ -19,8 +19,10 @@
 #include <zip.h>
 
 #include <cstdlib>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -31,6 +33,9 @@
 #include "absl/strings/strip.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/index_reader.h"
+#include "kythe/cxx/common/index_writer.h"
+#include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"

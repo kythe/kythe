@@ -19,9 +19,14 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
+#include <algorithm>
+#include <climits>
+#include <cstdio>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -30,7 +35,6 @@
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
 #include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/init.h"

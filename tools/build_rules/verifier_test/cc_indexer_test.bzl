@@ -56,6 +56,11 @@ _VERIFIER_FLAGS = {
     "convert_marked_source": False,
     "goal_prefix": "//-",
     "ignore_dups": False,
+    "ignore_code_conflicts": False,
+    "use_fast_solver": False,
+    "show_protos": False,
+    "show_goals": False,
+    "show_anchors": False,
 }
 
 _INDEXER_LOGGING_ENV = {
@@ -68,8 +73,6 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
-    "experimental_guess_proto_semantics": False,
-    "experimental_record_dataflow_edges": False,
     "experimental_usr_byte_size": 0,
     "emit_usr_corpus": False,
     "template_instance_exclude_path_pattern": "",
@@ -826,6 +829,8 @@ def cc_indexer_test(
       experimental_drop_instantiation_independent_data: Whether the indexer should
         drop extraneous instantiation independent data.
       experimental_usr_byte_size: How many bytes of a USR to use.
+      ignore_code_conflicts: Ignore conflicting /kythe/code facts during verification.
+      use_fast_solver: Use the fast solver.
     """
     _indexer_test(
         name = name,

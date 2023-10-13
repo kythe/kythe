@@ -16,10 +16,15 @@
 
 #include "kythe/cxx/common/kythe_uri.h"
 
+#include <cstddef>
+#include <string>
 #include <utility>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace {

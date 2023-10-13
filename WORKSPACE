@@ -22,6 +22,14 @@ rules_ts_dependencies(
     ts_version_from = "//:package.json",
 )
 
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
+
+rules_js_dependencies()
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
 load("@aspect_rules_jasmine//jasmine:dependencies.bzl", "rules_jasmine_dependencies")
 
 # Fetch dependencies which users need as well
@@ -45,14 +53,6 @@ npm_translate_lock(
 load("@npm//:repositories.bzl", "npm_repositories")
 
 npm_repositories()
-
-load("@aspect_rules_jasmine//jasmine:repositories.bzl", "jasmine_repositories")
-
-jasmine_repositories(name = "jasmine")
-
-load("@jasmine//:npm_repositories.bzl", jasmine_npm_repositories = "npm_repositories")
-
-jasmine_npm_repositories()
 
 # END rules_ts setup
 ###
@@ -91,80 +91,22 @@ load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "rend
 # Run `CARGO_BAZEL_REPIN=1 bazel sync --only=crate_index` after updating
 crates_repository(
     name = "crate_index",
+    annotations = {
+        "protobuf-codegen": [crate.annotation(gen_binaries = True)],
+    },
     cargo_lockfile = "//:Cargo.Bazel.lock",
     lockfile = "//:cargo-bazel-lock.json",
     packages = {
-        "anyhow": crate.spec(
-            version = "1.0.58",
-        ),
-        "base64": crate.spec(
-            version = "0.13.0",
-        ),
-        "clap": crate.spec(
-            features = ["derive"],
-            version = "3.1.6",
-        ),
-        "colored": crate.spec(
-            version = "2.0.0",
-        ),
-        "glob": crate.spec(
-            version = "0.3.0",
-        ),
-        "hex": crate.spec(
-            version = "0.4.3",
-        ),
-        "lazy_static": crate.spec(
-            version = "1.4.0",
-        ),
-        "quick-error": crate.spec(
-            version = "2.0.1",
-        ),
-        "path-clean": crate.spec(
-            version = "0.1.0",
-        ),
-        "rayon": crate.spec(
-            version = "1.5.3",
-        ),
-        "regex": crate.spec(
-            version = "1.5.6",
-        ),
-        "rls-analysis": crate.spec(
-            version = "0.18.3",
-        ),
-        "rls-data": crate.spec(
-            version = "0.19.1",
-        ),
-        "serde": crate.spec(
-            version = "1.0.137",
-        ),
-        "serde_json": crate.spec(
-            version = "1.0.64",
-        ),
-        "sha2": crate.spec(
-            version = "0.10.2",
-        ),
-        "tempfile": crate.spec(
-            version = "3.3.0",
-        ),
-        "zip": crate.spec(
-            version = "0.5.11",
-        ),
-        # Dev dependency for fuchsia extractor
-        "serial_test": crate.spec(
-            version = "0.6.0",
-        ),
         # Dependencies for our Rust protobuf toolchain
         "protobuf": crate.spec(
             features = ["with-bytes"],
-            version = "=2.27.1",
+            version = "=2.28.0",
         ),
         "protobuf-codegen": crate.spec(
-            version = "=2.27.1",
+            version = "=2.28.0",
         ),
     },
-    render_config = render_config(
-        default_package_name = "",
-    ),
+    rust_version = "1.71.1",
 )
 
 load("@crate_index//:defs.bzl", "crate_repositories")
@@ -178,11 +120,23 @@ register_toolchains(
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "e3151d87910f69cf1fc88755392d7c878034a69d6499b287bcfc00b1cf9bb415",
-    strip_prefix = "bazel-lib-1.32.1",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.32.1/bazel-lib-v1.32.1.tar.gz",
+    sha256 = "d488d8ecca98a4042442a4ae5f1ab0b614f896c0ebf6e3eafff363bcc51c6e62",
+    strip_prefix = "bazel-lib-1.33.0",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.33.0/bazel-lib-v1.33.0.tar.gz",
 )
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
 
 aspect_bazel_lib_dependencies()
+
+# clang-tidy aspect wrapper
+load(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+git_repository(
+    name = "bazel_clang_tidy",
+    commit = "133d89a6069ce253a92d32a93fdb7db9ef100e9d",
+    remote = "https://github.com/erenon/bazel_clang_tidy.git",
+)

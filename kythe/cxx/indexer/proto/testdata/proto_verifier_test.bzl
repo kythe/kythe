@@ -107,6 +107,7 @@ def proto_verifier_test(
         indexer_opts = [],
         verifier_opts = [],
         convert_marked_source = False,
+        resolve_code_facts = False,
         vnames_config = None,
         visibility = None):
     """Extract, analyze, and verify a proto compilation.
@@ -158,6 +159,7 @@ def proto_verifier_test(
         srcs = [entries],
         opts = vopts,
         tags = tags,
+        resolve_code_facts = resolve_code_facts,
         visibility = visibility,
         deps = [entries],
     )

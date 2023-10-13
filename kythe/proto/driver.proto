@@ -20,7 +20,7 @@ import "kythe/proto/analysis.proto";
 import "kythe/proto/common.proto";
 import "kythe/proto/storage.proto";
 
-option go_package = "driver_go_proto";
+option go_package = "kythe.io/kythe/proto/driver_go_proto";
 
 // This package defines messages used to implement JSON-RPC 2.0 message
 // exchange between a Kythe analyzer and its pipeline driver.  These messages

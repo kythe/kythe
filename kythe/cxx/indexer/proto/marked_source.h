@@ -17,36 +17,49 @@
 #ifndef KYTHE_CXX_INDEXER_PROTO_MARKED_SOURCE_H_
 #define KYTHE_CXX_INDEXER_PROTO_MARKED_SOURCE_H_
 
-#include "absl/types/optional.h"
+#include <optional>
+
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 
 namespace kythe {
 
 // `name` is a proto-style dotted qualified name
 // `root` is the node to turn into a (box (context) (identifier)) or an
 // identifier, depending on the structure of `name`.
+// If given a vname, it will be added as a definition for the identifier.
 // Returns true if at least one token was found.
-bool GenerateMarkedSourceForDottedName(absl::string_view name,
-                                       MarkedSource* root);
+bool GenerateMarkedSourceForDottedName(
+    absl::string_view name, MarkedSource* root,
+    std::optional<proto::VName> vname = std::nullopt);
 
-// Given a proto descriptor, generates an appropriate code fact. Returns
-// `None` if a code fact couldn't be generated.
-template <typename T>
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const T* descriptor) {
-  MarkedSource ms;
-  if (GenerateMarkedSourceForDottedName(descriptor->full_name(), &ms)) {
-    return ms;
-  }
-  return absl::nullopt;
-}
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::Descriptor* descriptor, ProtoGraphBuilder* builder);
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::EnumValueDescriptor* descriptor);
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::EnumDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
-absl::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
-    const google::protobuf::FieldDescriptor* descriptor);
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::EnumValueDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::FieldDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::ServiceDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::MethodDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
+
+std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
+    const google::protobuf::OneofDescriptor* descriptor,
+    ProtoGraphBuilder* builder);
 
 }  // namespace kythe
 

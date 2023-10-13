@@ -80,6 +80,9 @@ type EmitOptions struct {
 	// over function identifiers (or the legacy behavior of over the entire
 	// callsite).
 	EmitRefCallOverIdentifier bool
+
+	// Verbose determines whether verbose logging is enabled.
+	Verbose bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -132,6 +135,13 @@ func (e *EmitOptions) docURL(pi *PackageInfo) string {
 	return u.String()
 }
 
+func (e *EmitOptions) verbose() bool {
+	if e == nil {
+		return false
+	}
+	return e.Verbose
+}
+
 // An impl records that a type A implements an interface B.
 type impl struct{ A, B types.Object }
 
@@ -143,13 +153,14 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts = &EmitOptions{}
 	}
 	e := &emitter{
-		ctx:      ctx,
-		pi:       pi,
-		sink:     sink,
-		opts:     opts,
-		impl:     make(map[impl]struct{}),
-		anchored: make(map[ast.Node]struct{}),
-		fmeta:    make(map[*ast.File]bool),
+		ctx:       ctx,
+		pi:        pi,
+		sink:      sink,
+		opts:      opts,
+		impl:      make(map[impl]struct{}),
+		anchored:  make(map[ast.Node]struct{}),
+		fmeta:     make(map[*ast.File]bool),
+		variadics: make(map[*types.Slice]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -210,8 +221,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	e.emitSatisfactions()
 
 	// TODO(fromberger): Add diagnostics for type-checker errors.
-	for _, err := range pi.Errors {
-		log.Warningf("Type resolution error: %v", err)
+	if opts.verbose() {
+		for _, err := range pi.Errors {
+			log.Warningf("Type resolution error: %v", err)
+		}
 	}
 	return e.firstErr
 }
@@ -227,6 +240,8 @@ type emitter struct {
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
+
+	variadics map[*types.Slice]bool
 }
 
 type refKind int
@@ -279,7 +294,7 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		return
 	}
 
-	if sig, ok := obj.Type().(*types.Signature); ok && sig.RecvTypeParams().Len() > 0 {
+	if sig, ok := obj.Type().(*types.Signature); ok && sig.Recv() != nil && sig.RecvTypeParams().Len() > 0 {
 		// Lookup the original non-instantiated method to reference.
 		if n, ok := deref(sig.Recv().Type()).(*types.Named); ok {
 			f, _, _ := types.LookupFieldOrMethod(n.Origin(), true, obj.Pkg(), obj.Name())
@@ -372,7 +387,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	if sig.Recv() != nil {
 		// The receiver is treated as parameter 0.
 		if names := decl.Recv.List[0].Names; names != nil {
-			if recv := e.writeBinding(names[0], nodes.Variable, info.vname); recv != nil {
+			if recv := e.writeVarBinding(names[0], nodes.LocalParameter, info.vname); recv != nil {
 				e.writeEdge(info.vname, recv, edges.ParamIndex(0))
 			}
 		}
@@ -462,7 +477,11 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	case *types.Array:
 		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
 	case *types.Slice:
-		v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+		if e.variadics[typ] {
+			v = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(typ.Elem()))
+		} else {
+			v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+		}
 	case *types.Pointer:
 		v = e.emitTApp(pointerTAppMS, nodes.TBuiltin, govname.PointerConstructorType(), e.emitType(typ.Elem()))
 	case *types.Chan:
@@ -483,14 +502,14 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			}},
 		}
 
-		params := e.visitTuple(typ.Params())
-		if typ.Variadic() && len(params) > 0 {
-			// Convert last parameter type from slice type to variadic type.
-			last := len(params) - 1
+		if typ.Variadic() {
+			// Mark last parameter type as variadic.
+			last := typ.Params().Len() - 1
 			if slice, ok := typ.Params().At(last).Type().(*types.Slice); ok {
-				params[last] = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(slice.Elem()))
+				e.variadics[slice] = true
 			}
 		}
+		params := e.visitTuple(typ.Params())
 
 		var ret *spb.VName
 		if typ.Results().Len() == 1 {
@@ -584,7 +603,10 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	info.vname.Language = govname.Language
 	info.vname.Signature += "$" + strconv.Itoa(fi.numAnons)
 	e.pi.function[flit] = info
-	e.writeDef(flit, info.vname)
+	def := e.writeDef(flit, info.vname)
+	if e.opts.emitAnchorScopes() {
+		e.writeEdge(def, fi.vname, edges.ChildOf)
+	}
 	e.writeFact(info.vname, facts.NodeKind, nodes.Function)
 
 	if sig, ok := e.pi.Info.Types[flit].Type.(*types.Signature); ok {
@@ -600,7 +622,11 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 	doc := specComment(spec, stack)
 	for _, id := range spec.Names {
-		target := e.writeBinding(id, kind, e.nameContext(stack))
+		ctx := e.nameContext(stack)
+		target := e.writeBinding(id, kind, ctx)
+		if kind == nodes.Variable && e.isNonFileOrPackage(ctx) {
+			e.writeFact(target, facts.Subkind, nodes.Local)
+		}
 		if target == nil {
 			continue // type error (reported elsewhere)
 		}
@@ -618,6 +644,10 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 }
 
+func (e *emitter) isNonFileOrPackage(v *spb.VName) bool {
+	return v.GetSignature() != "" && e.pi.VName != v
+}
+
 // visitTypeSpec handles type declarations, including the bindings for fields
 // of struct types and methods of interfaces.
 func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
@@ -628,6 +658,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	target := e.mustWriteBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
 	e.writeDoc(specComment(spec, stack), target)
+
+	if e.pi.ImportPath == "builtin" {
+		// Ignore everything but defs/docs in special builtin package
+		return
+	}
 
 	mapFields(spec.TypeParams, func(i int, id *ast.Ident) {
 		v := e.writeBinding(id, nodes.TVar, nil)
@@ -746,7 +781,11 @@ func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, stack stackFunc) {
 		if id, _ := expr.(*ast.Ident); id != nil {
 			// Add a binding only if this is the definition site for the name.
 			if obj := e.pi.Info.Defs[id]; obj != nil && obj.Pos() == id.Pos() {
-				e.mustWriteBinding(id, nodes.Variable, up)
+				var subkind string
+				if e.isNonFileOrPackage(up) {
+					subkind = nodes.Local
+				}
+				e.writeVarBinding(id, subkind, up)
 			}
 		}
 	}
@@ -763,10 +802,10 @@ func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, stack stackFunc) {
 	// In a well-typed program, the key and value will always be identifiers.
 	up := e.nameContext(stack)
 	if key, _ := stmt.Key.(*ast.Ident); key != nil {
-		e.writeBinding(key, nodes.Variable, up)
+		e.writeVarBinding(key, "", up)
 	}
 	if val, _ := stmt.Value.(*ast.Ident); val != nil {
-		e.writeBinding(val, nodes.Variable, up)
+		e.writeVarBinding(val, "", up)
 	}
 }
 
@@ -860,7 +899,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Emit bindings and parameter edges for the parameters.
 	mapFields(ftype.Params, func(i int, id *ast.Ident) {
 		if sig.Params().At(i) != nil {
-			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
+			if param := e.writeVarBinding(id, nodes.LocalParameter, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
 
 				field := ftype.Params.List[i]
@@ -875,7 +914,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Emit bindings for any named result variables.
 	// Results are not considered parameters.
 	mapFields(ftype.Results, func(i int, id *ast.Ident) {
-		e.writeBinding(id, nodes.Variable, info.vname)
+		e.writeVarBinding(id, "", info.vname)
 	})
 	// Emit bindings for type parameters
 	mapFields(ftype.TypeParams, func(i int, id *ast.Ident) {
@@ -1207,6 +1246,11 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		return nil
 	}
 	target := e.pi.ObjectVName(obj)
+	if e.pi.ImportPath == "builtin" && parent != nil && (parent.GetSignature() == "package" || parent.GetSignature() == "") {
+		// Special-case top-level builtin bindings: https://pkg.go.dev/builtin
+		target = govname.Builtin(id.String())
+		kind = "tbuiltin"
+	}
 	if kind != "" {
 		e.writeFact(target, facts.NodeKind, kind)
 	}
@@ -1217,7 +1261,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
 	if e.opts.emitMarkedSource() {
-		e.emitCode(target, e.pi.MarkedSource(obj))
+		e.emitCode(target, e.MarkedSource(obj))
 	}
 	e.writeEdge(target, e.emitTypeOf(id), edges.Typed)
 	return target
@@ -1225,8 +1269,8 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 
 // writeDef emits a spanning anchor and defines edge for the specified node.
 // This function does not create the target node.
-func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
-	e.writeRef(node, target, edges.Defines)
+func (e *emitter) writeDef(node ast.Node, target *spb.VName) *spb.VName {
+	return e.writeRef(node, target, edges.Defines)
 }
 
 // writeDoc adds associations between comment groups and a documented node.

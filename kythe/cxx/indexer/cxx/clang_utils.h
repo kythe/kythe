@@ -18,6 +18,7 @@
 #define KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
 
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
@@ -26,6 +27,11 @@
 namespace kythe {
 /// \return true if `DN` is an Objective-C selector.
 bool isObjCSelector(const clang::DeclarationName& DN);
+
+/// \return true if `decl` is an explicit template specialization or was
+/// instantiated from a partial specialization.
+bool IsExplicitOrInstantiatedFromPartialSpecialization(
+    const clang::CXXRecordDecl* decl);
 
 /// \brief If `decl` is an implicit template instantiation or specialization,
 /// returns the primary template or the partial specialization being

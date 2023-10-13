@@ -18,11 +18,11 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
 #include <memory>
+#include <optional>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/Path.h"
@@ -49,7 +49,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
                     llvm::sys::path::Style style);
   /// \return nullopt if `awd` is not absolute or its style could not be
   /// detected; otherwise, the style of `awd`.
-  static absl::optional<llvm::sys::path::Style>
+  static std::optional<llvm::sys::path::Style>
   DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
 
   // IndexVFS is neither copyable nor movable.
@@ -70,7 +70,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param entry The `FileEntry` to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool get_vname(const clang::FileEntry* entry, proto::VName* merge_with);
+  bool get_vname(clang::FileEntryRef entry, proto::VName* merge_with);
   /// \brief Returns the vname associated with some `path`.
   /// \param path The path to look up.
   /// \param merge_with The `VName` to copy the vname onto.

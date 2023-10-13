@@ -17,12 +17,19 @@
 #include "kythe/cxx/verifier/souffle_interpreter.h"
 
 #include <array>
+#include <cstddef>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <string_view>
+#include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "interpreter/Engine.h"
+#include "kythe/cxx/verifier/assertion_ast.h"
 #include "kythe/cxx/verifier/assertions_to_souffle.h"
 #include "souffle/RamTypes.h"
 #include "souffle/io/IOSystem.h"
@@ -101,12 +108,11 @@ class KytheReadStream : public souffle::ReadStream {
  private:
   void CopyVName(kythe::verifier::Tuple* vname,
                  souffle::RamDomain (&target)[5]) {
-    // output: sig, corp, path, root, lang
-    // input: sig, corp, root, path, lang
+    // sig, corp, root, path, lang
     target[0] = vname->element(0)->AsIdentifier()->symbol();
     target[1] = vname->element(1)->AsIdentifier()->symbol();
-    target[2] = vname->element(3)->AsIdentifier()->symbol();
-    target[3] = vname->element(2)->AsIdentifier()->symbol();
+    target[2] = vname->element(2)->AsIdentifier()->symbol();
+    target[3] = vname->element(3)->AsIdentifier()->symbol();
     target[4] = vname->element(4)->AsIdentifier()->symbol();
   }
   const AnchorMap& anchors_;
@@ -141,28 +147,66 @@ class KytheReadStreamFactory : public souffle::ReadStreamFactory {
   const SymbolTable& dst_;
 };
 
+struct KytheOutput {
+  std::vector<std::string> outputs;
+};
+
 class KytheWriteStream : public souffle::WriteStream {
  public:
   explicit KytheWriteStream(
       const std::map<std::string, std::string>& rw_operation,
       const souffle::SymbolTable& symbol_table,
-      const souffle::RecordTable& record_table, size_t* output)
+      const souffle::RecordTable& record_table,
+      const std::vector<EVarType>& output_types,
+      const std::function<std::string(size_t)>& get_symbol, KytheOutput* output)
       : souffle::WriteStream(rw_operation, symbol_table, record_table),
+        output_types_(output_types),
+        get_symbol_(get_symbol),
         output_(output) {}
 
  protected:
-  void writeNullary() override { (*output_)++; }
+  void writeNullary() override { output_->outputs.push_back(""); }
 
   void writeNextTuple(const souffle::RamDomain* tuple) override {
-    (*output_)++;
+    if (output_types_.empty()) {
+      output_->outputs.push_back("");
+      return;
+    }
+    for (size_t ox = 0; ox < output_types_.size(); ++ox) {
+      output_->outputs.push_back("");
+      auto* o = &output_->outputs.back();
+      auto type = output_types_[ox];
+      switch (type) {
+        case EVarType::kVName: {
+          if (tuple[ox] == 0) {
+            absl::StrAppend(o, "#nil-vname");
+          } else {
+            const auto* v = recordTable.unpack(tuple[ox], 5);
+            absl::StrAppend(o, "vname(", get_symbol_(v[0]), ", ",
+                            get_symbol_(v[1]), ", ", get_symbol_(v[2]), ", ",
+                            get_symbol_(v[3]), ", ", get_symbol_(v[4]), ")");
+          }
+        } break;
+        case EVarType::kSymbol: {
+          *o = get_symbol_(tuple[ox]);
+        } break;
+        default:
+          *o = "#unknown-type";
+      }
+    }
   }
 
  private:
-  size_t* output_;
+  std::vector<EVarType> output_types_;
+  std::function<std::string(size_t)> get_symbol_;
+  KytheOutput* output_;
 };
 
 class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
  public:
+  KytheWriteStreamFactory(const std::vector<EVarType>& output_types,
+                          const std::function<std::string(size_t)>& get_symbol)
+      : output_types_(output_types), get_symbol_(get_symbol) {}
   souffle::Own<souffle::WriteStream> getWriter(
       const std::map<std::string, std::string>& rw_operation,
       const souffle::SymbolTable& symbol_table,
@@ -173,7 +217,8 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
     CHECK(absl::SimpleAtoi(output->second, &output_id));
     CHECK(output_id < outputs_.size());
     return souffle::mk<KytheWriteStream>(rw_operation, symbol_table,
-                                         record_table, &outputs_[output_id]);
+                                         record_table, output_types_,
+                                         get_symbol_, &outputs_[output_id]);
   }
 
   const std::string& getName() const override {
@@ -182,28 +227,39 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
   }
 
   size_t NewOutput() {
-    outputs_.push_back(0);
+    outputs_.push_back({});
     return outputs_.size() - 1;
   }
 
-  size_t GetOutput(size_t id) const { return outputs_[id]; }
+  const KytheOutput& GetOutput(size_t id) const { return outputs_[id]; }
 
  private:
-  std::vector<size_t> outputs_;
+  std::vector<KytheOutput> outputs_;
+  std::vector<EVarType> output_types_;
+  std::function<std::string(size_t)> get_symbol_;
 };
 }  // anonymous namespace
 
-SouffleResult RunSouffle(const SymbolTable& symbol_table,
-                         const std::vector<GoalGroup>& goal_groups,
-                         const Database& database, const AnchorMap& anchors,
-                         const std::vector<Inspection>& inspections,
-                         std::function<bool(const Inspection&)> inspect) {
+SouffleResult RunSouffle(
+    const SymbolTable& symbol_table, const std::vector<GoalGroup>& goal_groups,
+    const Database& database, const AnchorMap& anchors,
+    const std::vector<Inspection>& inspections,
+    std::function<bool(const Inspection&, std::string_view)> inspect,
+    std::function<std::string(size_t)> get_symbol) {
   SouffleResult result{};
   SouffleProgram program;
-  if (!program.Lower(symbol_table, goal_groups)) {
+  if (!program.Lower(symbol_table, goal_groups, inspections)) {
     return result;
   }
-  auto write_stream_factory = std::make_shared<KytheWriteStreamFactory>();
+  std::vector<EVarType> output_types;
+  absl::flat_hash_map<EVar*, size_t> output_indices;
+  for (const auto& ev : program.inspections()) {
+    auto t = program.EVarTypeFor(ev);
+    output_indices[ev] = output_types.size();
+    output_types.push_back(t ? *t : EVarType::kUnknown);
+  }
+  auto write_stream_factory =
+      std::make_shared<KytheWriteStreamFactory>(output_types, get_symbol);
   size_t output_id = write_stream_factory->NewOutput();
   souffle::IOSystem::getInstance().registerWriteStreamFactory(
       write_stream_factory);
@@ -219,8 +275,20 @@ SouffleResult RunSouffle(const SymbolTable& symbol_table,
   souffle::Own<souffle::interpreter::Engine> interpreter(
       souffle::mk<souffle::interpreter::Engine>(*ram_tu));
   interpreter->executeMain();
-  size_t actual = write_stream_factory->GetOutput(output_id);
-  result.success = (actual != 0);
+  const auto& actual = write_stream_factory->GetOutput(output_id);
+  result.success = (!actual.outputs.empty());
+  if (!result.success) return result;
+  for (const auto& i : inspections) {
+    auto ix = output_indices.find(i.evar);
+    if (ix != output_indices.end()) {
+      if (!inspect(i, actual.outputs[ix->second])) {
+        break;
+      }
+    } else {
+      LOG(ERROR) << "missing output index for inspection with label "
+                 << i.label;
+    }
+  }
   return result;
 }
 }  // namespace kythe::verifier

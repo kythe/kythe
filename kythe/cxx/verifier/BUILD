@@ -47,7 +47,6 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -64,6 +63,7 @@ cc_library(
         ":assertions_to_souffle",
         ":lexparse",
         "//third_party/souffle:parse_transform",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@souffle",
@@ -94,7 +94,9 @@ cc_library(
     ],
     deps = [
         ":lexparse",
+        ":pretty_printer",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -111,6 +113,7 @@ cc_test(
         ":pretty_printer",
         "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
@@ -207,6 +210,7 @@ cc_binary(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
         "@com_google_protobuf//src/google/protobuf/io",
     ],

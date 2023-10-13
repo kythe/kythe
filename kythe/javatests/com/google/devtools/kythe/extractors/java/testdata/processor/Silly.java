@@ -1,7 +1,4 @@
 package processor;
 
-/**
- * A silly interface.
- */
-public @interface Silly {
-}
+/** A silly interface. */
+public @interface Silly {}

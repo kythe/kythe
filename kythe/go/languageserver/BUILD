@@ -2,16 +2,9 @@ load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_binary(
+alias(
     name = "kythe_languageserver",
-    srcs = ["bin/main.go"],
-    deps = [
-        ":languageserver",
-        "//kythe/go/services/xrefs",
-        "//kythe/proto:xref_go_proto",
-        "@com_github_sourcegraph_go_langserver//pkg/lsp:go_default_library",
-        "@com_github_sourcegraph_jsonrpc2//:go_default_library",
-    ],
+    actual = "//kythe/go/languageserver/bin",
 )
 
 go_library(
@@ -23,6 +16,7 @@ go_library(
         "settingsworkspace.go",
         "workspace.go",
     ],
+    importpath = "kythe.io/kythe/go/languageserver",
     deps = [
         "//kythe/go/languageserver/pathmap",
         "//kythe/go/services/xrefs",
@@ -30,13 +24,10 @@ go_library(
         "//kythe/go/util/log",
         "//kythe/go/util/markedsource",
         "//kythe/proto:common_go_proto",
-        "//kythe/proto:graph_go_proto",
         "//kythe/proto:xref_go_proto",
-        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
-        "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
-        "@com_github_sourcegraph_go_langserver//pkg/lsp:go_default_library",
-        "@com_github_sourcegraph_jsonrpc2//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@com_github_sergi_go_diff//diffmatchpatch",
+        "@com_github_sourcegraph_go_langserver//pkg/lsp",
+        "@com_github_sourcegraph_jsonrpc2//:jsonrpc2",
     ],
 )
 
@@ -48,9 +39,14 @@ go_test(
         "languageserver_test.go",
         "workspace_test.go",
     ],
-    library = "languageserver",
+    library = ":languageserver",
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/kytheuri",
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:graph_go_proto",
+        "//kythe/proto:xref_go_proto",
+        "@com_github_sourcegraph_go_langserver//pkg/lsp",
     ],
 )

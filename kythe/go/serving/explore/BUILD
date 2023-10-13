@@ -8,15 +8,12 @@ package(
 go_library(
     name = "explore",
     srcs = ["explore.go"],
+    importpath = "kythe.io/kythe/go/serving/explore",
     deps = [
-        "//kythe/go/services/explore",
         "//kythe/go/storage/table",
         "//kythe/proto:explore_go_proto",
         "//kythe/proto:serving_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_google_grpc//codes:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:stringset",
     ],
 )
 
@@ -24,14 +21,14 @@ go_test(
     name = "explore_test",
     size = "small",
     srcs = ["explore_test.go"],
-    library = "explore",
+    library = ":explore",
     visibility = ["//visibility:private"],
     deps = [
+        "//kythe/go/storage/table",
         "//kythe/go/test/testutil",
-        "//kythe/go/util/kytheuri",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-        "@org_golang_x_text//encoding:go_default_library",
-        "@org_golang_x_text//encoding/unicode:go_default_library",
-        "@org_golang_x_text//transform:go_default_library",
+        "//kythe/proto:explore_go_proto",
+        "//kythe/proto:serving_go_proto",
+        "@org_bitbucket_creachadair_stringset//:stringset",
+        "@org_golang_google_protobuf//proto",
     ],
 )

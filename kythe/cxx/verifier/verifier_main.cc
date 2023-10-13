@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
 #include <string>
@@ -24,6 +25,8 @@
 #include "absl/flags/usage.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "assertion_ast.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -64,6 +67,13 @@ ABSL_FLAG(bool, file_vnames, true,
 ABSL_FLAG(bool, use_fast_solver, false,
           "Use the fast solver. EXPERIMENTAL; NOT ALL FEATURES ARE CURRENTLY "
           "SUPPORTED.");
+ABSL_FLAG(bool, print_timing_information, false,
+          "Print timing information for profiling.");
+
+namespace {
+// The fast solver needs extra stack space for modest programs.
+constexpr rlim_t kSolverStack = 64L * 1024L * 1024L;
+}  // namespace
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -78,6 +88,7 @@ Example:
   cat foo.entries | ${VERIFIER_BIN} goals1.cc goals2.cc
   cat foo.entries | ${VERIFIER_BIN} --use_file_nodes
 )");
+  auto start_time = absl::Now();
   std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
 
   kythe::verifier::Verifier v;
@@ -134,8 +145,26 @@ Example:
 
   v.UseFastSolver(absl::GetFlag(FLAGS_use_fast_solver));
 
+  if (absl::GetFlag(FLAGS_use_fast_solver)) {
+    struct rlimit rl;
+    int r = getrlimit(RLIMIT_STACK, &rl);
+    if (r != 0) {
+      perror("failed getting solver stack size");
+      return 1;
+    }
+    if (rl.rlim_cur < kSolverStack) {
+      rl.rlim_cur = kSolverStack;
+      r = setrlimit(RLIMIT_STACK, &rl);
+      if (r != 0) {
+        perror("failed increasing solver stack size");
+        return 1;
+      }
+    }
+  }
+
   std::string dbname = "database";
   size_t facts = 0;
+  auto start_read_time = absl::Now();
   kythe::proto::Entry entry;
   uint32_t byte_size;
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
@@ -160,10 +189,12 @@ Example:
     }
     ++facts;
   }
+  auto done_read_time = absl::Now();
 
   if (!absl::GetFlag(FLAGS_use_fast_solver) && !v.PrepareDatabase()) {
     return 1;
   }
+  auto done_db_time = absl::Now();
 
   if (!absl::GetFlag(FLAGS_graphviz)) {
     std::vector<std::string> rule_files(remain.begin() + 1, remain.end());
@@ -193,17 +224,35 @@ Example:
 
   int result = 0;
 
+  auto pre_solve_time = absl::Now();
   if (!v.VerifyAllGoals()) {
+    // Flush stdout in case any data is stuck in buffers, to avoid mangling a
+    // joined output stream.
+    fflush(stdout);
     absl::FPrintF(
         stderr, "Could not verify all goals. The furthest we reached was:\n  ");
     v.DumpErrorGoal(v.highest_group_reached(), v.highest_goal_reached());
     result = 1;
   }
+  auto post_solve_time = absl::Now();
 
   if (absl::GetFlag(FLAGS_graphviz) ||
       absl::GetFlag(FLAGS_annotated_graphviz) ||
       absl::GetFlag(FLAGS_minimal_graphviz)) {
     v.DumpAsDot();
+  }
+
+  if (absl::GetFlag(FLAGS_print_timing_information)) {
+    auto print_timer = [](absl::Duration duration, absl::string_view name) {
+      absl::FPrintF(stderr, "%s took %ld msec\n", name,
+                    absl::ToInt64Milliseconds(duration));
+    };
+    print_timer(start_read_time - start_time, "startup");
+    print_timer(done_read_time - start_read_time, "read input stream");
+    print_timer(done_db_time - done_read_time, "database preparation");
+    print_timer(pre_solve_time - done_db_time, "other prep");
+    print_timer(post_solve_time - pre_solve_time, "solve");
+    print_timer(post_solve_time - start_time, "total elapsed");
   }
 
   return result;

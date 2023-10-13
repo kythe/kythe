@@ -16,13 +16,23 @@
 
 #include "file_vname_generator.h"
 
-#include "absl/log/log.h"
+#include <algorithm>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
-#include "absl/types/optional.h"
+#include "absl/strings/string_view.h"
+#include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace {
@@ -33,19 +43,19 @@ std::string EscapeBackslashes(absl::string_view value) {
   return absl::StrReplaceAll(value, {{R"(\)", R"(\\)"}});
 }
 
-absl::optional<absl::string_view> FindMatch(absl::string_view text,
-                                            const RE2& pattern) {
-  re2::StringPiece match;
+std::optional<absl::string_view> FindMatch(absl::string_view text,
+                                           const RE2& pattern) {
+  absl::string_view match;
   if (pattern.Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
-    return absl::string_view(match.data(), match.size());
+    return match;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
                                           absl::string_view input) {
   std::string result;
-  while (absl::optional<absl::string_view> match =
+  while (std::optional<absl::string_view> match =
              FindMatch(input, *kSubstitutionsPattern)) {
     absl::string_view group = match->substr(1, match->size() - 2);
 
@@ -91,7 +101,7 @@ absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
     absl::string_view path) const {
   for (const auto& rule : rules_) {
-    std::vector<re2::StringPiece> captures(
+    std::vector<absl::string_view> captures(
         1 +
         std::max({RE2::MaxSubmatch(rule.corpus), RE2::MaxSubmatch(rule.root),
                   RE2::MaxSubmatch(rule.path)}));
@@ -120,7 +130,7 @@ kythe::proto::VName FileVNameGenerator::LookupVName(
     absl::string_view path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
-    vname.set_path(path.data(), path.size());
+    vname.set_path(path);
   }
   return vname;
 }
