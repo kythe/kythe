@@ -46,6 +46,7 @@ import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo.Annotation.Semantic;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Scope;
@@ -1045,6 +1046,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return scanAll(owner.downAsSnippet(assgnOp), assgnOp.lhs, assgnOp.rhs);
   }
 
+  @CanIgnoreReturnValue
   private boolean visitDocComment(VName node, JCModifiers modifiers) {
     Optional<String> deprecation = Optional.empty();
     boolean documented = false;
