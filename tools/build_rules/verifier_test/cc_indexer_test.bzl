@@ -58,6 +58,9 @@ _VERIFIER_FLAGS = {
     "ignore_dups": False,
     "ignore_code_conflicts": False,
     "use_fast_solver": False,
+    "show_protos": False,
+    "show_goals": False,
+    "show_anchors": False,
 }
 
 _INDEXER_LOGGING_ENV = {
