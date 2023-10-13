@@ -10,27 +10,27 @@
     "fmt": "clang-format -i *.ts"
   },
   "dependencies": {
-    "balanced-match": "^2.0.0",
-    "brace-expansion": "^2.0.1",
+    "balanced-match": "^3.0.1",
+    "brace-expansion": "^3.0.0",
     "fs.realpath": "^1.0.0",
-    "glob": "^8.0.3",
+    "glob": "^10.3.10",
     "inflight": "^1.0.6",
     "inherits": "^2.0.4",
     "jasmine-reporters": "^2.5.2",
-    "minimatch": "^5.1.2",
+    "minimatch": "^9.0.3",
     "once": "^1.4.0",
     "source-map": "^0.7.4",
-    "source-map-support": "^0.4.11",
+    "source-map-support": "^0.5.21",
     "typescript": "5.1.6",
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.4.2",
-    "@commitlint/config-conventional": "^17.4.2",
-    "@types/jasmine": "^3.10.7",
-    "@types/node": "^10.15.3",
-    "jasmine": "^4.5.0",
-    "jasmine-core": "^4.5.0"
+    "@commitlint/cli": "^17.7.2",
+    "@commitlint/config-conventional": "^17.7.0",
+    "@types/jasmine": "^5.1.0",
+    "@types/node": "^20.8.5",
+    "jasmine": "^5.1.0",
+    "jasmine-core": "^5.1.1"
   },
   "license": "Apache-2.0"
 }
