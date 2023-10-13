@@ -117,9 +117,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "aspect_rules_ts",
-        sha256 = "6f715bd3d525c1be062d4663caf242ea549981c0dbcc2e410456dc9c8cfd7bd4",
-        strip_prefix = "rules_ts-2.0.0-rc1",
-        url = "https://github.com/aspect-build/rules_ts/releases/download/v2.0.0-rc1/rules_ts-v2.0.0-rc1.tar.gz",
+        sha256 = "8aabb2055629a7becae2e77ae828950d3581d7fc3602fe0276e6e039b65092cb",
+        strip_prefix = "rules_ts-2.0.0",
+        url = "https://github.com/aspect-build/rules_ts/releases/download/v2.0.0/rules_ts-v2.0.0.tar.gz",
     )
 
     maybe(
