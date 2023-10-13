@@ -39,7 +39,7 @@ We use [aspect-build/rules_ts](https://github.com/aspect-build/rules_ts) to hand
 TypeScript rules. Dependencies are specified in `package.json` file whick you can find
 in the top-level directory of this repo and not in the current package.
 
-We don't use `package-lock.json` and instead use use [pnpm](https://pnpm.io/motivation)
+We don't use `package-lock.json` and instead use [pnpm](https://pnpm.io/motivation)
 (pnpm-lock.yaml in the top-level directory) to pin dependencies. When updating
 dependencies in `package.json` you need to update `pnpm-lock.yaml` by
 running `npx pnpm update`.
