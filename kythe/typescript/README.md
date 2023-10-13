@@ -2,32 +2,13 @@
 
 ## Development
 
-### Dependencies
+### Building code
 
-Install [yarn](https://yarnpkg.com/), then run it with no arguments to download
-dependencies.
+```shell
+cd kythe/typescript
+bazel test :all
+```
 
-You also need an install of the kythe tools like `entrystream` and `verifier`,
-and point the `KYTHE` environment variable at the path to it.  You can either
-get these by [building Kythe](http://kythe.io/getting-started) or by downloading
-the Kythe binaries from the [Kythe
-releases](https://github.com/kythe/kythe/releases) page.
-
-### Commands
-
-Run `yarn run build` to compile the TypeScript once.
-
-Run `yarn run watch` to start the TypeScript compiler in watch mode, which keeps
-the built program up to date. Use this while developing.
-
-Run `yarn run browse` to run the main binary, which opens the Kythe browser
-against a sample file. (You might need to set `$KYTHE` to your Kythe path
-first.)
-
-Run `yarn test` to run the test suite. (You'll need to have built first.)
-
-Run `yarn run fmt` to autoformat the source code. (Better, configure your editor
-to run clang-format on save.)
 
 ### Running tests
 
@@ -51,6 +32,17 @@ global scope. If the file has any `import` or `export` declaration, they become
 a "module", where declarations are local. To make tests isolated from one
 another, prefix each test with an `export {}` to make them modules. In larger
 TypeScript projects this doesn't come up because all files are modules.
+
+### Build system and dependencies
+
+We use [aspect-build/rules_ts](https://github.com/aspect-build/rules_ts) to handle
+TypeScript rules. Dependencies are specified in `package.json` file whick you can find
+in the top-level directory of this repo and not in the current package.
+
+We don't use `package-lock.json` and instead use [pnpm](https://pnpm.io/motivation)
+(pnpm-lock.yaml in the top-level directory) to pin dependencies. When updating
+dependencies in `package.json` you need to update `pnpm-lock.yaml` by
+running `npx pnpm update`.
 
 ## Design notes
 

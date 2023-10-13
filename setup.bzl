@@ -101,9 +101,10 @@ def kythe_rule_repositories():
 
     maybe(
         http_archive,
-        name = "build_bazel_rules_nodejs",
-        sha256 = "dd7ea7efda7655c218ca707f55c3e1b9c68055a70c31a98f264b3445bc8f4cb1",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/3.2.3/rules_nodejs-3.2.3.tar.gz"],
+        name = "aspect_rules_js",
+        sha256 = "7ab9776bcca823af361577a1a2ebb9a30d2eb5b94ecc964b8be360f443f714b2",
+        strip_prefix = "rules_js-1.32.6",
+        url = "https://github.com/aspect-build/rules_js/releases/download/v1.32.6/rules_js-v1.32.6.tar.gz",
     )
 
     maybe(
