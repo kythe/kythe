@@ -291,7 +291,13 @@ public class JavaEntrySets extends KytheEntrySets {
     return emitAndReturn(
         newNode(NodeKind.TVAR)
             .addSignatureSalt(sourcePath + counter)
-            .setCorpusPath(defaultCorpusPath()));
+            .setCorpusPath(defaultCorpusPath())
+            .setProperty(
+                "code",
+                MarkedSource.newBuilder()
+                    .setKind(MarkedSource.Kind.IDENTIFIER)
+                    .setPreText("?")
+                    .build()));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
