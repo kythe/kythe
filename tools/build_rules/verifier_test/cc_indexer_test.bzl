@@ -74,6 +74,7 @@ _INDEXER_FLAGS = {
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
     "experimental_usr_byte_size": 0,
+    "emit_anchor_scopes": False,
     "emit_usr_corpus": False,
     "template_instance_exclude_path_pattern": "",
     "fail_on_unimplemented_builtin": True,

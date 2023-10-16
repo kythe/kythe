@@ -966,6 +966,14 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
+cc_indexer_test(
+    name = "scopes_test",
+    srcs = ["basic/scopes.cc"],
+    emit_anchor_scopes = True,
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -3592,8 +3600,8 @@ cc_indexer_test(
     size = "medium",
     srcs = ["df/df_fncall_influence_pack.cc"],
     ignore_dups = True,
-    use_fast_solver = True,
     tags = ["df"],
+    use_fast_solver = True,
 )
 
 cc_indexer_test(
@@ -3607,8 +3615,8 @@ cc_indexer_test(
     name = "df_fncall_influence_vararg_fs",
     srcs = ["df/df_fncall_influence_vararg.cc"],
     ignore_dups = True,
-    use_fast_solver = True,
     tags = ["df"],
+    use_fast_solver = True,
 )
 
 cc_indexer_test(

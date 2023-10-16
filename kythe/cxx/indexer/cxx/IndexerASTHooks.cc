@@ -67,6 +67,8 @@ ABSL_FLAG(bool, emit_anchors_on_builtins, true,
           "Emit anchors on builtin types like int and float.");
 ABSL_FLAG(bool, experimental_alias_ref_fix, true,
           "Fix template references when aliasing is turned on.");
+ABSL_FLAG(bool, emit_anchor_scopes, false,
+          "Emit childof edges to an anchor's semantic scope");
 
 namespace kythe {
 namespace {
@@ -3472,12 +3474,14 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // For lambdas, Decl does not contain the correct SourceRange directly.
     // Instead, we look at the "synthesized" lambda class and use it's beginning
     // location as the start of the source range.
+    bool lambda = false;
     clang::SourceRange Range = Decl->getSourceRange();
     if (clang::CXXMethodDecl* MethodDecl =
             llvm::dyn_cast<clang::CXXMethodDecl>(Decl)) {
       const clang::CXXRecordDecl* Parent = MethodDecl->getParent();
       if (Parent->isLambda()) {
         Range.setBegin(Parent->getSourceRange().getBegin());
+        lambda = true;
       }
     }
 
@@ -3488,6 +3492,22 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         RangeInCurrentContext(Decl->isImplicit(), DeclNode, DefinitionRange);
     MaybeRecordFullDefinitionRange(DefinitionRangeInContext, DeclNode,
                                    BuildNodeIdForDefnOfDecl(Decl));
+
+    // Record a childof edge from the anchor spanning the lambda's definition to
+    // the semantic node representing the enclosing function.
+    if (absl::GetFlag(FLAGS_emit_anchor_scopes) && lambda &&
+        DefinitionRangeInContext.has_value()) {
+      if (Job->BlameStack.size() < 2) {
+        // TODO(justbuchanan): add childof edge from the lambda to the file node
+      } else {
+        // The last entry in the blame stack is the lambda we're currently
+        // looking at. We need to go one up from that to find the enclosing
+        // function
+        for (const auto& Caller : Job->BlameStack.rbegin()[1]) {
+          Observer.recordChildOfEdge(DefinitionRangeInContext.value(), Caller);
+        }
+      }
+    }
   }
   unsigned ParamNumber = 0;
   for (const auto* Param : Decl->parameters()) {
