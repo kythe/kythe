@@ -755,7 +755,9 @@ func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
 	pkg := e.pi.Dependencies[ipath]
 	target := e.pi.PackageVName[pkg]
 	if target == nil {
-		log.Warningf("Unable to resolve import path %q", ipath)
+		if ipath != "C" {
+			log.Warningf("Unable to resolve import path %q", ipath)
+		}
 		return
 	}
 
