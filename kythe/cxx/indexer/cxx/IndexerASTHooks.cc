@@ -3504,7 +3504,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         // looking at. We need to go one up from that to find the enclosing
         // function
         for (const auto& Caller : Job->BlameStack.rbegin()[1]) {
-          Observer.recordChildOfEdge(DefinitionRangeInContext.value(), Caller);
+          Observer.recordChildOfEdge(*DefinitionRangeInContext, Caller);
         }
       }
     }

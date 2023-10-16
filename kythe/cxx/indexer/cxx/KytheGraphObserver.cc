@@ -760,8 +760,6 @@ void KytheGraphObserver::recordChildOfEdge(const Range& source_range,
                                            const NodeId& parent_id) {
   RecordAnchor(source_range, parent_id, EdgeKindID::kChildOf,
                Claimability::Claimable);
-  // TODO(justbuchanan): stamped?
-  // TODO(justbuchanan): claimable?
 }
 
 void KytheGraphObserver::recordTypeEdge(const NodeId& term_id,
