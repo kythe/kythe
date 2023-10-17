@@ -768,7 +768,7 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
     if (vname != content_to_vname_.end()) {
       return LoadInMemoryRuleFile(filename, vname->second, content_sym);
     }
-    if (warn_on_missing_file_vnames_) {
+    if (allow_missing_file_vnames_) {
       LOG(WARNING) << "Could not find a file node for " << filename
                    << "; using default.";
     } else {
