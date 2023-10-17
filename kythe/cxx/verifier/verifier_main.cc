@@ -66,7 +66,7 @@ ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
 ABSL_FLAG(bool, allow_missing_file_vnames, false,
           "If file_vnames is set, treat missing file vnames as non-fatal.");
-ABSL_FLAG(bool, use_fast_solver, true,
+ABSL_FLAG(bool, use_fast_solver, false,
           "Use the fast solver. EXPERIMENTAL; NOT ALL FEATURES ARE CURRENTLY "
           "SUPPORTED.");
 ABSL_FLAG(bool, print_timing_information, false,
