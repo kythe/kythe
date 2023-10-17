@@ -1,5 +1,5 @@
 package(
-    default_visibility = ["//visiblity:public"],
+    default_visibility = ["//visibility:public"],
 )
 
 exports_files(["setup-bazel-repo.sh"])
