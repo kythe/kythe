@@ -756,6 +756,12 @@ void KytheGraphObserver::recordChildOfEdge(const NodeId& child_id,
                      VNameRefFromNodeId(parent_id));
 }
 
+void KytheGraphObserver::recordChildOfEdge(const Range& source_range,
+                                           const NodeId& parent_id) {
+  RecordAnchor(source_range, parent_id, EdgeKindID::kChildOf,
+               Claimability::Claimable);
+}
+
 void KytheGraphObserver::recordTypeEdge(const NodeId& term_id,
                                         const NodeId& type_id) {
   recorder_->AddEdge(VNameRefFromNodeId(term_id), EdgeKindID::kHasType,

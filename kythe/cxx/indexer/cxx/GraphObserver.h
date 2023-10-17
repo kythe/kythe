@@ -834,6 +834,12 @@ class GraphObserver {
   virtual void recordChildOfEdge(const NodeId& ChildNodeId,
                                  const NodeId& ParentNodeId) {}
 
+  /// \brief Records a child-to-parent relationship as an edge in the graph.
+  /// \param SourceRange The source range for the child anchor.
+  /// \param ParentNodeId The identifier for the parent node.
+  virtual void recordChildOfEdge(const Range& SourceRange,
+                                 const NodeId& ParentNodeId) {}
+
   /// \brief Records that a record adds functionality to another record. In the
   /// case of Objective-C this occurs in a category where additional methods
   /// are added to a preexisting class.
