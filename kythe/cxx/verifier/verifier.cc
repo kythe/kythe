@@ -765,16 +765,20 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
   Symbol content_sym = symbol_table_.intern(content);
   if (file_vnames_) {
     auto vname = content_to_vname_.find(content_sym);
-    if (vname == content_to_vname_.end()) {
+    if (vname != content_to_vname_.end()) {
+      return LoadInMemoryRuleFile(filename, vname->second, content_sym);
+    }
+    if (allow_missing_file_vnames_) {
+      LOG(WARNING) << "Could not find a file node for " << filename
+                   << "; using default.";
+    } else {
       LOG(ERROR) << "Could not find a file node for " << filename;
       return false;
     }
-    return LoadInMemoryRuleFile(filename, vname->second, content_sym);
-  } else {
-    kythe::proto::VName empty;
-    auto* vname = ConvertVName(yy::location{}, empty);
-    return LoadInMemoryRuleFile(filename, vname, content_sym);
   }
+  kythe::proto::VName empty;
+  auto* vname = ConvertVName(yy::location{}, empty);
+  return LoadInMemoryRuleFile(filename, vname, content_sym);
 }
 
 bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,

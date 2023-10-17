@@ -201,6 +201,9 @@ class Verifier {
   /// \brief Look for assertions in file node text.
   void UseFileNodes() { assertions_from_file_nodes_ = true; }
 
+  /// \brief Only raise a warning if a file VName is missing.
+  void AllowMissingFileVNames() { allow_missing_file_vnames_ = true; }
+
   /// \brief Convert MarkedSource-valued facts to graphs.
   void ConvertMarkedSource() { convert_marked_source_ = true; }
 
@@ -479,6 +482,9 @@ class Verifier {
 
   /// Find file vnames by examining file content.
   bool file_vnames_ = true;
+
+  /// If file_vnames_ is true, only warn if we can't find a file's VName.
+  bool allow_missing_file_vnames_ = false;
 
   /// Use the fast solver.
   bool use_fast_solver_ = false;

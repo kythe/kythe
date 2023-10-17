@@ -64,6 +64,8 @@ ABSL_FLAG(bool, show_fact_prefix, true,
           "Include the /kythe or /kythe/edge prefix on facts and edges.");
 ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
+ABSL_FLAG(bool, allow_missing_file_vnames, false,
+          "If file_vnames is set, treat missing file vnames as non-fatal.");
 ABSL_FLAG(bool, use_fast_solver, false,
           "Use the fast solver. EXPERIMENTAL; NOT ALL FEATURES ARE CURRENTLY "
           "SUPPORTED.");
@@ -137,6 +139,14 @@ Example:
 
   if (!absl::GetFlag(FLAGS_file_vnames)) {
     v.IgnoreFileVnames();
+  }
+
+  if (absl::GetFlag(FLAGS_allow_missing_file_vnames)) {
+    if (!absl::GetFlag(FLAGS_file_vnames)) {
+      fprintf(stderr, "--allow_missing_file_vnames needs --file_vnames\n");
+      return 1;
+    }
+    v.AllowMissingFileVNames();
   }
 
   if (absl::GetFlag(FLAGS_show_fact_prefix)) {
