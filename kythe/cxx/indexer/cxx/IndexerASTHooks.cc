@@ -3056,7 +3056,8 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl* FD) {
     //   };
     // TODO(shahms): Fix this upstream by getting TraverseFunctionHelper to
     // do the right thing.
-    if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
+    if (auto* DFTSI = FD->getDependentSpecializationInfo();
+        DFTSI && DFTSI->TemplateArgumentsAsWritten) {
       for (const auto arg : DFTSI->TemplateArgumentsAsWritten->arguments()) {
         if (!TraverseTemplateArgumentLoc(arg)) {
           return false;
@@ -3321,8 +3322,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
-  const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
-  unsigned NumArgsAsWritten = 0;
+  llvm::ArrayRef<clang::TemplateArgumentLoc> ArgsAsWritten;
   const clang::TemplateArgumentList* Args = nullptr;
   std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
   bool TNsAreSpeculative = false;
@@ -3352,8 +3352,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
         GraphObserver::Confidence::NonSpeculative);
   } else if (auto* FTSI = Decl->getTemplateSpecializationInfo()) {
     if (FTSI->TemplateArgumentsAsWritten) {
-      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->getTemplateArgs();
-      NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
     Args = FTSI->TemplateArguments;
     TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
@@ -3379,8 +3378,9 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // specialize primary template f applied to no arguments. If instead the
     // code read `friend void f<T>(T t)`, we would record that it specializes
     // the primary template with type variable T.
-    ArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->getTemplateArgs();
-    NumArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+    if (DFTSI->TemplateArgumentsAsWritten) {
+      ArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->arguments();
+    }
     for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
       TNs.emplace_back(
           clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
@@ -3393,13 +3393,13 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   }
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                      IsImplicit);
-  if (ArgsAsWritten || Args) {
+  if (!ArgsAsWritten.empty() || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
-    if (ArgsAsWritten) {
-      NIDS.reserve(NumArgsAsWritten);
-      for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
+    if (!ArgsAsWritten.empty()) {
+      NIDS.reserve(ArgsAsWritten.size());
+      for (const auto& Arg : ArgsAsWritten) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(Arg)) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -3429,12 +3429,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           Observer.recordInstEdge(
               DeclNode,
               Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      NumArgsAsWritten),
+                                      ArgsAsWritten.size()),
               Confidence);
           Observer.recordSpecEdge(
               DeclNode,
               Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      NumArgsAsWritten),
+                                      ArgsAsWritten.size()),
               Confidence);
         }
       }
