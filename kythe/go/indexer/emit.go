@@ -624,11 +624,11 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	for _, id := range spec.Names {
 		ctx := e.nameContext(stack)
 		target := e.writeBinding(id, kind, ctx)
-		if kind == nodes.Variable && e.isNonFileOrPackage(ctx) {
-			e.writeFact(target, facts.Subkind, nodes.Local)
-		}
 		if target == nil {
 			continue // type error (reported elsewhere)
+		}
+		if kind == nodes.Variable && e.isNonFileOrPackage(ctx) {
+			e.writeFact(target, facts.Subkind, nodes.Local)
 		}
 		e.writeDoc(doc, target)
 	}
