@@ -3593,6 +3593,7 @@ cc_indexer_test(
     srcs = ["df/df_fncall_influence_pack.cc"],
     ignore_dups = True,
     tags = ["df"],
+    use_fast_solver = True,
 )
 
 cc_indexer_test(
@@ -3609,6 +3610,7 @@ cc_indexer_test(
     srcs = ["df/df_fncall_influence_vararg.cc"],
     ignore_dups = True,
     tags = ["df"],
+    use_fast_solver = True,
 )
 
 cc_indexer_test(
