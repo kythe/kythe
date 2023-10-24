@@ -104,6 +104,7 @@ cc_test(
     srcs = ["path_utils_test.cc"],
     deps = [
         ":path_utils",
+        ":regex",
         "//third_party:gtest",
         "//third_party:gtest_main",
         "@com_google_absl//absl/log:check",
