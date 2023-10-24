@@ -177,7 +177,7 @@ bool AbslParseFlag(absl::string_view text,
 /// \brief Returns the flag string representation of
 /// PathCanonicalizer::PathEntry.
 std::string AbslUnparseFlag(
-    const std::vector<PathCanonicalizer::PathEntry>& entry);
+    const std::vector<PathCanonicalizer::PathEntry>& entries);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(absl::string_view a, absl::string_view b);

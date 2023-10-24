@@ -31,6 +31,7 @@
 #include "absl/status/statusor.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/regex.h"
 
 namespace kythe {
 namespace {
