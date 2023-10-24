@@ -146,6 +146,10 @@ class KzipWriterSink : public CompilationWriterSink {
 /// writes it to an index file.
 class CompilationWriter {
  public:
+  CompilationWriter() = default;
+  CompilationWriter(const CompilationWriter&) = delete;
+  CompilationWriter& operator=(const CompilationWriter&) = delete;
+
   /// \brief Set the arguments to be used for this compilation.
   ///
   /// `args` should be the `argv` (without terminating null) that would be
@@ -185,6 +189,13 @@ class CompilationWriter {
     canonicalizer_.reset();
     path_policy_ = policy;
   }
+  /// \brief Configure the path canonicalization configuration.
+  void set_path_canonicalization_policy_overrides(
+      std::vector<PathCanonicalizer::PathEntry> entries) {
+    canonicalizer_.reset();
+    path_policy_overrides_ = std::move(entries);
+  }
+  /// \brief Configure per-path canonicalization overrides.
   /// \brief Don't include empty directories.
   void set_exclude_empty_dirs(bool exclude) { exclude_empty_dirs_ = exclude; }
   /// \brief Don't include files read during autoconfiguration.
@@ -254,6 +265,8 @@ class CompilationWriter {
   /// The policy to use when generating relative paths.
   PathCanonicalizer::Policy path_policy_ =
       PathCanonicalizer::Policy::kCleanOnly;
+  /// The per-path policy to use when generating relative paths.
+  std::vector<PathCanonicalizer::PathEntry> path_policy_overrides_;
   /// If nonempty, the name of the target that generated this compilation.
   std::string target_name_;
   /// If nonempty, the rule type that generated this compilation.
@@ -317,8 +330,12 @@ class ExtractorConfiguration {
     compilation_output_path_ = path;
   }
   /// \brief Sets the canonicalization policy to use for VName paths.
-  void SetPathCanonizalizationPolicy(PathCanonicalizer::Policy policy) {
+  void SetPathCanonizalizationPolicy(
+      PathCanonicalizer::Policy policy,
+      std::vector<PathCanonicalizer::PathEntry> overrides = {}) {
     index_writer_.set_path_canonicalization_policy(policy);
+    index_writer_.set_path_canonicalization_policy_overrides(
+        std::move(overrides));
   }
   /// \brief Executes the extractor with this configuration, returning true on
   /// success.

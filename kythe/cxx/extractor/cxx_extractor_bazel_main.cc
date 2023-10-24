@@ -48,6 +48,10 @@ ABSL_FLAG(kythe::PathCanonicalizer::Policy, canonicalize_vname_paths,
           kythe::PathCanonicalizer::Policy::kCleanOnly,
           "Policy to use when canonicalization VName paths: "
           "clean-only (default), prefer-relative, prefer-real.");
+ABSL_FLAG(std::vector<kythe::PathCanonicalizer::PathEntry>,
+          per_file_canonicalization_policy, {},
+          "Space-separated list of <pattern>@<policy> to use when "
+          "canonicalizing paths");
 
 static void LoadExtraAction(const std::string& path,
                             blaze::ExtraActionInfo* info,
@@ -108,7 +112,8 @@ int main(int argc, char* argv[]) {
   config.SetBuildConfig(absl::GetFlag(FLAGS_build_config));
   config.SetCompilationOutputPath(cpp_info.output_file());
   config.SetPathCanonizalizationPolicy(
-      absl::GetFlag(FLAGS_canonicalize_vname_paths));
+      absl::GetFlag(FLAGS_canonicalize_vname_paths),
+      absl::GetFlag(FLAGS_per_file_canonicalization_policy));
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;

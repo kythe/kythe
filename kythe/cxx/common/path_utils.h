@@ -21,11 +21,15 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
+#include "kythe/cxx/common/regex.h"
 
 namespace kythe {
 
@@ -97,9 +101,21 @@ class PathCanonicalizer {
     kPreferReal = 2,      ///< Use real path, except if errors.
   };
 
+  /// \brief An entry to use when overriding the default policy.
+  struct PathEntry {
+    /// \brief The path pattern to override.
+    std::variant<Regex, std::string> path;
+
+    /// \brief The policy to apply to matching paths.
+    Policy policy = Policy::kCleanOnly;
+  };
+
   /// \brief Creates a new PathCanonicalizer with the given root and policy.
+  /// \param root The root directory to use when relativizing paths.
+  /// \param policy The default policy to apply.
   static absl::StatusOr<PathCanonicalizer> Create(
-      absl::string_view root, Policy policy = Policy::kCleanOnly);
+      absl::string_view root, Policy policy = Policy::kCleanOnly,
+      absl::Span<const PathEntry> path_map = {});
 
   /// \brief Transforms the provided path into a relative path depending on
   ///        configured policy.
@@ -107,12 +123,22 @@ class PathCanonicalizer {
 
  private:
   explicit PathCanonicalizer(Policy policy, PathCleaner cleaner,
-                             std::optional<PathRealizer> realizer)
-      : policy_(policy), cleaner_(cleaner), realizer_(realizer) {}
+                             std::optional<PathRealizer> realizer,
+                             RegexSet override_set,
+                             std::vector<Policy> override_policy)
+      : policy_(policy),
+        cleaner_(std::move(cleaner)),
+        realizer_(std::move(realizer)),
+        override_set_(std::move(override_set)),
+        override_policy_(std::move(override_policy)) {}
+
+  absl::StatusOr<Policy> PolicyFor(absl::string_view path) const;
 
   Policy policy_;
   PathCleaner cleaner_;
   std::optional<PathRealizer> realizer_;
+  RegexSet override_set_;
+  std::vector<Policy> override_policy_;
 };
 
 /// \brief Parses a flag string as a PathCanonicalizer::Policy.
@@ -134,6 +160,24 @@ std::string AbslUnparseFlag(PathCanonicalizer::Policy policy);
 /// dash-separated names: "clean-only", "prefer-relative", "prefer-real".
 std::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
     absl::string_view policy);
+
+/// \brief Parses a single PathEntry flag value as `<pattern>@<policy>`
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::PathEntry* entry,
+                   std::string* error);
+
+/// \brief Returns the flag string representation of
+/// PathCanonicalizer::PathEntry.
+std::string AbslUnparseFlag(const PathCanonicalizer::PathEntry& entry);
+
+/// \brief Parses a space separated list of PathEntry flag values.
+bool AbslParseFlag(absl::string_view text,
+                   std::vector<PathCanonicalizer::PathEntry>* entries,
+                   std::string* error);
+
+/// \brief Returns the flag string representation of
+/// PathCanonicalizer::PathEntry.
+std::string AbslUnparseFlag(
+    const std::vector<PathCanonicalizer::PathEntry>& entry);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(absl::string_view a, absl::string_view b);

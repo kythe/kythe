@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef KYTHE_CXX_COMMON_REGEX_H_
+#define KYTHE_CXX_COMMON_REGEX_H_
 
 #include <memory>
 
@@ -21,9 +23,6 @@
 #include "absl/types/span.h"
 #include "re2/re2.h"
 #include "re2/set.h"
-
-#ifndef KYTHE_CXX_COMMON_REGEX_H_
-#define KYTHE_CXX_COMMON_REGEX_H_
 
 namespace kythe {
 
@@ -53,7 +52,10 @@ class Regex {
 
   /// \brief Retrieves the underlying RE2 object to be compatible with the RE2
   /// non-member functions.
-  operator const RE2&() const { return *re_; }
+  operator const RE2&() const { return *re_; }  // NOLINT
+
+  /// \brief Returns the string specification of the regular expression.
+  absl::string_view pattern() const { return re_->pattern(); }
 
  private:
   explicit Regex(std::shared_ptr<const RE2> re) : re_(std::move(re)) {}
