@@ -1140,7 +1140,8 @@ CompilationWriter::RootPath CompilationWriter::RootRelativePath(
 
   if (!canonicalizer_.has_value()) {
     if (absl::StatusOr<PathCanonicalizer> canonicalizer =
-            PathCanonicalizer::Create(root_directory_, path_policy_);
+            PathCanonicalizer::Create(root_directory_, path_policy_,
+                                      path_policy_overrides_);
         canonicalizer.ok()) {
       canonicalizer_ = *std::move(canonicalizer);
     } else {

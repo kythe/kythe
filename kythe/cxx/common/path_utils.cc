@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -37,6 +38,8 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
+#include "kythe/cxx/common/regex.h"
 #include "kythe/cxx/common/status.h"
 
 namespace kythe {
@@ -123,6 +126,15 @@ PathParts SplitPath(absl::string_view path) {
   return {path.substr(0, pos), absl::ClippedSubstr(path, pos + 1)};
 }
 
+constexpr struct VisitPattern {
+  absl::string_view operator()(absl::string_view pattern) const {
+    return pattern;
+  }
+  absl::string_view operator()(const Regex& pattern) const {
+    return pattern.pattern();
+  }
+} kVisitPattern;
+
 }  // namespace
 
 absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
@@ -185,7 +197,8 @@ absl::StatusOr<std::string> PathRealizer::Relativize(
 }
 
 absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
-    absl::string_view root, Policy policy) {
+    absl::string_view root, Policy policy,
+    absl::Span<const PathEntry> path_map) {
   absl::StatusOr<PathCleaner> cleaner = PathCleaner::Create(root);
   if (!cleaner.ok()) {
     return cleaner.status();
@@ -195,12 +208,34 @@ absl::StatusOr<PathCanonicalizer> PathCanonicalizer::Create(
   if (!realizer.ok()) {
     return realizer.status();
   }
-  return PathCanonicalizer(policy, *std::move(cleaner), *std::move(realizer));
+
+  std::vector<Policy> override_policies;
+  std::vector<absl::string_view> override_paths;
+  for (const auto& [path, policy] : path_map) {
+    if (!realizer->has_value()) {
+      realizer = MaybeMakeRealizer(policy, root);
+      if (!realizer.ok()) {
+        return realizer.status();
+      }
+    }
+    override_policies.push_back(policy);
+    override_paths.push_back(std::visit(kVisitPattern, path));
+  }
+  absl::StatusOr<RegexSet> override_set = RegexSet::Build(override_paths);
+  if (!override_set.ok()) {
+    return override_set.status();
+  }
+  return PathCanonicalizer(policy, *std::move(cleaner), *std::move(realizer),
+                           *std::move(override_set),
+                           std::move(override_policies));
 }
 
 absl::StatusOr<std::string> PathCanonicalizer::Relativize(
     absl::string_view path) const {
-  switch (policy_) {
+  absl::StatusOr<Policy> policy = PolicyFor(path);
+  if (!policy.ok()) return policy.status();
+
+  switch (*policy) {
     case Policy::kPreferRelative:
       if (auto resolved = MaybeRealPath(realizer_, path)) {
         if (!IsAbsolutePath(*resolved)) {
@@ -216,8 +251,20 @@ absl::StatusOr<std::string> PathCanonicalizer::Relativize(
     case Policy::kCleanOnly:
       return cleaner_.Relativize(path);
   }
-  LOG(FATAL) << "Unknown policy: " << static_cast<int>(policy_);
+  LOG(FATAL) << "Unknown policy: " << static_cast<int>(*policy);
   return std::string(path);
+}
+
+absl::StatusOr<PathCanonicalizer::Policy> PathCanonicalizer::PolicyFor(
+    absl::string_view path) const {
+  absl::StatusOr<std::vector<int>> match = override_set_.ExplainMatch(path);
+  if (!match.ok()) {
+    return match.status();
+  }
+  if (match->empty()) {
+    return policy_;
+  }
+  return override_policy_[*absl::c_min_element(*match)];
 }
 
 std::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
@@ -262,6 +309,46 @@ std::string AbslUnparseFlag(PathCanonicalizer::Policy policy) {
 std::string JoinPath(absl::string_view a, absl::string_view b) {
   return absl::StrCat(absl::StripSuffix(a, "/"), "/",
                       absl::StripPrefix(b, "/"));
+}
+
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::PathEntry* entry,
+                   std::string* error) {
+  size_t pos = text.find('@');
+  if (pos == text.npos) {
+    *error = "missing @ delimiter between path and policy";
+    return false;
+  }
+  absl::StatusOr<Regex> path = Regex::Compile(text.substr(0, pos));
+  if (!path.ok()) {
+    *error = path.status().message();
+    return false;
+  }
+  entry->path = *std::move(path);
+  return AbslParseFlag(text.substr(pos + 1), &entry->policy, error);
+}
+
+std::string AbslUnparseFlag(const PathCanonicalizer::PathEntry& entry) {
+  return absl::StrCat(std::visit(kVisitPattern, entry.path), "@",
+                      AbslUnparseFlag(entry.policy));
+}
+
+bool AbslParseFlag(absl::string_view text,
+                   std::vector<PathCanonicalizer::PathEntry>* entries,
+                   std::string* error) {
+  for (const auto& entry : absl::StrSplit(text, ' ')) {
+    if (!AbslParseFlag(entry, &entries->emplace_back(), error)) {
+      entries->pop_back();
+      return false;
+    }
+  }
+  return true;
+}
+
+std::string AbslUnparseFlag(
+    const std::vector<PathCanonicalizer::PathEntry>& entries) {
+  return absl::StrJoin(entries, " ", [](std::string* out, const auto& entry) {
+    absl::StrAppend(out, AbslUnparseFlag(entry));
+  });
 }
 
 std::string CleanPath(absl::string_view input) {

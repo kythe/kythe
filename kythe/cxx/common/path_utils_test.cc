@@ -29,10 +29,15 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace kythe {
 namespace {
+using ::testing::ElementsAre;
+using ::testing::FieldsAre;
+using ::testing::Property;
+using ::testing::VariantWith;
 
 std::error_code Symlink(const std::string& target,
                         const std::string& linkpath) {
@@ -152,6 +157,27 @@ TEST(PathUtilsTest, CanonicalizerPolicyParseTest) {
   EXPECT_NE("", error);
 }
 
+TEST(PathUtilsTest, CanonicalizerPathEntryParseTest) {
+  std::string error;
+  std::vector<PathCanonicalizer::PathEntry> entries;
+  ASSERT_TRUE(
+      AbslParseFlag("a@clean-only b@prefer-relative", &entries, &error));
+  EXPECT_THAT(
+      entries,
+      ElementsAre(FieldsAre(VariantWith<Regex>(Property(&Regex::pattern, "a")),
+                            PathCanonicalizer::Policy::kCleanOnly),
+                  FieldsAre(VariantWith<Regex>(Property(&Regex::pattern, "b")),
+                            PathCanonicalizer::Policy::kPreferRelative)));
+  EXPECT_EQ(AbslUnparseFlag(entries), "a@clean-only b@prefer-relative");
+}
+
+TEST(PathUtilsTest, CanonicalizerPathEntryParseFailuresTest) {
+  std::string error;
+  std::vector<PathCanonicalizer::PathEntry> entries;
+  ASSERT_FALSE(AbslParseFlag("clean-only b@prefer-relative", &entries, &error));
+  EXPECT_THAT(error, "missing @ delimiter between path and policy");
+}
+
 class CanonicalizerTest : public ::testing::Test {
  public:
   void SetUp() override {
@@ -252,6 +278,42 @@ TEST_F(CanonicalizerTest, CanonicalizerPreferReal) {
                 .value_or(""));
   // Unless the link is bad, then use the cleaned path.
   EXPECT_EQ("bad/file",
+            canonicalizer.Relativize(JoinPath(base, "bad/subdir/../file"))
+                .value_or(""));
+}
+
+TEST_F(CanonicalizerTest, CanonicalizerRealOverrideClean) {
+  AddDirectory("concrete");
+  AddDirectory("concrete/subdir");
+  AddDirectory("concrete/file");
+  AddSymlink("concrete", "link");
+
+  AddDirectory("base");
+  AddDirectory("elsewhere");
+  AddDirectory("elsewhere/subdir");
+  AddDirectory("elsewhere/file");
+  AddSymlink("../elsewhere", "base/link");
+
+  const std::string base = JoinPath(root(), "base");
+  PathCanonicalizer canonicalizer =
+      PathCanonicalizer::Create(
+          root(), PathCanonicalizer::Policy::kCleanOnly,
+          {{.path = ".*/base/link",
+            .policy = PathCanonicalizer::Policy::kPreferReal}})
+          .value();
+
+  // Use the default clean-only policy for links/paths which don't match.
+  EXPECT_EQ("link/file",
+            canonicalizer.Relativize(JoinPath(root(), "link/subdir/../file"))
+                .value_or(""));
+  EXPECT_EQ("link/file",
+            canonicalizer.Relativize(JoinPath(root(), "./link/subdir/../file"))
+                .value_or(""));
+  // And the prefer-real policy for those which do.
+  EXPECT_EQ("elsewhere/file",
+            canonicalizer.Relativize(JoinPath(base, "link/subdir/../file"))
+                .value_or(""));
+  EXPECT_EQ("base/bad/file",
             canonicalizer.Relativize(JoinPath(base, "bad/subdir/../file"))
                 .value_or(""));
 }
