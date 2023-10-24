@@ -216,6 +216,7 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 		}
 
 		unitDigest = digest
+		var foundUnit bool
 		if err := db.Units(ctx, []string{digest}, func(gotDigest, gotKey string, data []byte) error {
 			if gotDigest != digest {
 				fail("Units", fmt.Errorf("got digest %q, want %q", gotDigest, digest))
@@ -229,9 +230,13 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 			} else if !proto.Equal(&gotUnit, dummy.Proto) {
 				fail("Units", fmt.Errorf("got %+v, want %+v", &gotUnit, dummy.Proto))
 			}
+			foundUnit = true
 			return nil
 		}); err != nil {
 			fail("Units", err)
+		}
+		if !foundUnit {
+			fail("Units", fmt.Errorf("failed to find unit: %q", unitDigest))
 		}
 
 		// Check that required input digests do not exist until their contents are written.
