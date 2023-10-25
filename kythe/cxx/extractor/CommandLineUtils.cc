@@ -189,6 +189,18 @@ static std::vector<std::string> StripPrefix(
   return output;
 }
 
+static int ReplaceAllMatches(std::vector<std::string>& input,
+                             const FullMatchRegex& re, llvm::StringRef repl) {
+  int count = 0;
+  for (auto& arg : input) {
+    if (re.FullMatch(arg)) {
+      arg = repl;
+      ++count;
+    }
+  }
+  return count;
+}
+
 std::vector<std::string> GCCArgsToClangArgs(
     const std::vector<std::string>& gcc_args) {
   // These are GCC-specific arguments which Clang does not yet understand or
@@ -284,7 +296,6 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-W[al],.*"
       "|-Xlinker=.*"
       "|--for-linker=.*"
-      "|-c"
       "|-f(no-)?data-sections"
       "|-f(no-)?function-sections"
       "|-f(no-)?omit-frame-pointer"
@@ -293,7 +304,6 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-f(no-)?strict-aliasing"
       "|-f(no-)?test-coverage"
       "|-f(no-)?unroll-loops"
-      "|-fsyntax-only"  // We don't want multiple -fsyntax-only args.
       "|-g.+"
       "|-nostartfiles"
       "|-s"
@@ -322,7 +332,21 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
         return 0;
       });
 
-  result.push_back("-fsyntax-only");
+  const FullMatchRegex action_args(
+      "-E|--preprocess"
+      "|-S|--assemble"
+      "|-c|--compile"
+      "|-fdriver-only"
+      "|-fsyntax-only"
+      "--precompile");
+
+  // Attempt to preserve the location of any extant action args so that
+  // subsequent path arguments aren't misinterpreted as arguments to preceding
+  // flags.
+  if (ReplaceAllMatches(result, action_args, "-fsyntax-only") == 0) {
+    result.push_back("-fsyntax-only");
+  }
+
   return result;
 }
 
