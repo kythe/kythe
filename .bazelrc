@@ -11,6 +11,10 @@ common --incompatible_disallow_empty_glob
 # TODO: https://github.com/aspect-build/rules_js/issues/1256 - reenable when fixed
 #build --incompatible_config_setting_private_default_visibility  --incompatible_enforce_config_setting_visibility
 
+# We can't support bzlmod until (at least) protobuf does
+# https://github.com/kythe/kythe/issues/5893
+common --noenable_bzlmod
+
 common --workspace_status_command tools/buildstamp/get_workspace_status
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
