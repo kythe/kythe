@@ -296,6 +296,7 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-W[al],.*"
       "|-Xlinker=.*"
       "|--for-linker=.*"
+      "|--llvm=.*"
       "|-f(no-)?data-sections"
       "|-f(no-)?function-sections"
       "|-f(no-)?omit-frame-pointer"
@@ -313,7 +314,9 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "-M[FTQ]"
       "|-Xlinker"
       "|--for-linker"
-      "|-Xassembler");
+      "|-Xassembler"
+      "|-Xarch_.*"
+      "|-mllvm");
   // Arguments which may match one of the above lists which we want to keep
   // regardless.
   const FullMatchRegex keep_args("-X(clang|preprocessor).*");
