@@ -296,7 +296,7 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
       "|-W[al],.*"
       "|-Xlinker=.*"
       "|--for-linker=.*"
-      "|--llvm=.*"
+      "|--mllvm=.*"
       "|-f(no-)?data-sections"
       "|-f(no-)?function-sections"
       "|-f(no-)?omit-frame-pointer"
