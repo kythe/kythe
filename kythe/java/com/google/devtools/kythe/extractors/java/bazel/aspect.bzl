@@ -39,7 +39,9 @@ def _extract_java(target, ctx):
         source_files.append(src.path)
 
     classpath = [j.path for j in compilation.compilation_classpath.to_list()]
-    bootclasspath = [j.path for j in compilation.boot_classpath]
+    bootclasspath = []
+    if compilation.boot_classpath:
+        bootclasspath = [j.path for j in compilation.boot_classpath]
 
     processorpath = []
     processors = []
