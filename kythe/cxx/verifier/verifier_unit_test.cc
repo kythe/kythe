@@ -2503,8 +2503,7 @@ fact_value: ""
   EXPECT_TRUE(language);
 }
 
-TEST(VerifierUnitTest, LastGoalToFailIsSelected) {
-  Verifier v;
+TEST_P(VerifierTest, LastGoalToFailIsSelected) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- SomeNode.content 43
 #- SomeNode.content 43
@@ -2519,8 +2518,8 @@ fact_value: "43"
   ASSERT_EQ(2, v.highest_goal_reached());
 }
 
-TEST(VerifierUnitTest, ReadGoalsFromFileNodeFailure) {
-  Verifier v;
+TEST_P(VerifierTest, ReadGoalsFromFileNodeFailure) {
+  v.UseFileNodes();
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { path:"test" }
 fact_name: "/kythe/node/kind"
@@ -2531,13 +2530,13 @@ source { path:"test" }
 fact_name: "/kythe/text"
 fact_value: "//- A.node/kind file\n//- A.notafact yes\n"
 })"));
-  v.UseFileNodes();
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
   ASSERT_EQ(1, v.highest_goal_reached());
 }
 
 TEST_P(VerifierTest, ReadGoalsFromFileNodeSuccess) {
+  v.UseFileNodes();
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 source { path:"test" }
 fact_name: "/kythe/node/kind"
@@ -2548,14 +2547,13 @@ source { path:"test" }
 fact_name: "/kythe/text"
 fact_value: "//- A.node/kind file\n"
 })"));
-  v.UseFileNodes();
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
-TEST(VerifierUnitTest, ReadGoalsFromFileNodeFailParse) {
-  Verifier v;
-  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+TEST_P(VerifierTest, ReadGoalsFromFileNodeFailParse) {
+  v.UseFileNodes();
+  bool parsed = v.LoadInlineProtoFile(R"(entries {
 source { path:"test" }
 fact_name: "/kythe/node/kind"
 fact_value: "file"
@@ -2564,9 +2562,13 @@ entries {
 source { path:"test" }
 fact_name: "/kythe/text"
 fact_value: "//- A->node/kind file\n"
-})"));
-  v.UseFileNodes();
-  ASSERT_FALSE(v.PrepareDatabase());
+})");
+  if (GetParam() == Solver::Old) {
+    ASSERT_TRUE(parsed);
+    ASSERT_FALSE(v.PrepareDatabase());
+  } else {
+    ASSERT_FALSE(parsed);
+  }
 }
 
 TEST_P(VerifierTest, DontConvertMarkedSource) {

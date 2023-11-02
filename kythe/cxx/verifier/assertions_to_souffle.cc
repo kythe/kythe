@@ -50,6 +50,29 @@ result($6) :- true
 )";
 }
 
+bool SouffleErrorState::NextStep() {
+  if (goal_groups_->empty()) return false;
+  if (target_group_ < 0) {
+    target_group_ = static_cast<int>(goal_groups_->size()) - 1;
+    target_goal_ = (*goal_groups_)[target_group_].goals.size();
+  }
+  --target_goal_;
+  if (target_goal_ >= 0) {
+    return true;
+  }
+  // We need to handle empty groups.
+  while (target_goal_ < 0) {
+    --target_group_;
+    if (target_group_ < 0) {
+      return false;
+    }
+    target_goal_ =
+        static_cast<int>((*goal_groups_)[target_group_].goals.size()) - 1;
+  }
+  // target_group_ and target_goal_ >= 0.
+  return true;
+}
+
 bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
   if (auto* app = node->AsApp()) {
     auto* tup = app->rhs()->AsTuple();
@@ -99,7 +122,7 @@ bool SouffleProgram::AssignEVarType(EVar* evar, EVar* oevar) {
 }
 
 bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
-                                    const GoalGroup& group) {
+                                    const GoalGroup& group, int target_goal) {
 #ifdef DEBUG_LOWERING
   FileHandlePrettyPrinter dprinter(stderr);
   for (const auto& goal : group.goals) {
@@ -111,15 +134,20 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
 #endif
   if (group.goals.empty()) return true;
   bool pos = group.accept_if != GoalGroup::AcceptanceCriterion::kSomeMustFail;
+  int cur_goal = 0;
   if (pos) {
     absl::StrAppend(&code_, ", (true");
     for (const auto& goal : group.goals) {
+      if (target_goal >= 0 && cur_goal > target_goal) break;
+      ++cur_goal;
       if (!LowerGoal(symbol_table, goal)) return false;
     }
     absl::StrAppend(&code_, ")\n");
   } else {
     absl::StrAppend(&code_, ", 0 = count:{true, sym(_)");
     for (const auto& goal : group.goals) {
+      if (target_goal >= 0 && cur_goal > target_goal) break;
+      ++cur_goal;
       if (!LowerGoal(symbol_table, goal)) return false;
     }
     absl::StrAppend(&code_, "}\n");
@@ -215,10 +243,16 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
 
 bool SouffleProgram::Lower(const SymbolTable& symbol_table,
                            const std::vector<GoalGroup>& goal_groups,
-                           const std::vector<Inspection>& inspections) {
+                           const std::vector<Inspection>& inspections,
+                           const SouffleErrorState& error_state) {
   code_.clear();
+  int cur_group = 0;
   for (const auto& group : goal_groups) {
-    if (!LowerGoalGroup(symbol_table, group)) return false;
+    if (error_state.IsFinished(cur_group)) break;
+    if (!LowerGoalGroup(symbol_table, group,
+                        error_state.GoalForGroup(cur_group)))
+      return false;
+    ++cur_group;
   }
   if (emit_prelude_) {
     std::string code;

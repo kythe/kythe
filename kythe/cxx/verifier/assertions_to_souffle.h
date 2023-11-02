@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
@@ -27,6 +28,44 @@
 namespace kythe::verifier {
 /// \brief Inferred type for an EVar.
 enum class EVarType { kVName, kSymbol, kUnknown };
+
+/// The error recovery state for a particular list of goal groups.
+class SouffleErrorState {
+ public:
+  /// Creates a new error state for `goal_groups`. `goal_groups` should equal or
+  /// exceed the lifetime of any bound `SouffleErrorState`.
+  explicit SouffleErrorState(
+      const std::vector<GoalGroup>* goal_groups ABSL_ATTRIBUTE_LIFETIME_BOUND)
+      : goal_groups_(goal_groups) {}
+  SouffleErrorState(const SouffleErrorState&) = delete;
+  SouffleErrorState& operator=(const SouffleErrorState&) = delete;
+  /// Advances the error state by one step.
+  /// \return true if the solver should continue to run.
+  bool NextStep();
+  /// \return the current highest group to solve (or -1 if uninitialized).
+  int target_group() const { return target_group_; }
+  /// \return the current highest goal to solve (ignored if target_group is
+  /// invalid).
+  int target_goal() const { return target_goal_; }
+  /// \return whether `group` (and subsequent groups) have already been
+  /// explored during error recovery.
+  bool IsFinished(int group) const {
+    return target_group_ >= 0 && group > target_group_;
+  }
+  /// \return the target goal for `group`, or -1 if all goals should be
+  /// explored given a valid `group`.
+  int GoalForGroup(int group) const {
+    return group == target_group_ ? target_goal_ : -1;
+  }
+
+ private:
+  /// The goal groups being solved. Not owned.
+  const std::vector<GoalGroup>* goal_groups_;
+  /// The current highest group to solve (or -1 if uninitialized).
+  int target_group_ = -1;
+  /// The current highest goal to solve (ignored if target_group_ is invalid).
+  int target_goal_ = -1;
+};
 
 /// \brief Packages together for a possibly multistage Souffle program.
 class SouffleProgram {
@@ -37,7 +76,8 @@ class SouffleProgram {
   /// \param inspections inspections to perform.
   bool Lower(const SymbolTable& symbol_table,
              const std::vector<GoalGroup>& goal_groups,
-             const std::vector<Inspection>& inspections);
+             const std::vector<Inspection>& inspections,
+             const SouffleErrorState& error_state);
 
   /// \return the lowered Souffle code.
   absl::string_view code() { return code_; }
@@ -61,7 +101,8 @@ class SouffleProgram {
   bool LowerGoal(const SymbolTable& symbol_table, AstNode* goal);
 
   /// \brief Lowers `group`.
-  bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group);
+  bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group,
+                      int target_goal);
 
   /// \brief Assigns or checks `evar`'s type against `type`.
   bool AssignEVarType(EVar* evar, EVarType type);
