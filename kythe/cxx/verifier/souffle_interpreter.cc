@@ -26,6 +26,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "interpreter/Engine.h"
@@ -247,47 +248,65 @@ SouffleResult RunSouffle(
     std::function<bool(const Inspection&, std::string_view)> inspect,
     std::function<std::string(size_t)> get_symbol) {
   SouffleResult result{};
-  SouffleProgram program;
-  if (!program.Lower(symbol_table, goal_groups, inspections)) {
-    return result;
-  }
-  std::vector<EVarType> output_types;
-  absl::flat_hash_map<EVar*, size_t> output_indices;
-  for (const auto& ev : program.inspections()) {
-    auto t = program.EVarTypeFor(ev);
-    output_indices[ev] = output_types.size();
-    output_types.push_back(t ? *t : EVarType::kUnknown);
-  }
-  auto write_stream_factory =
-      std::make_shared<KytheWriteStreamFactory>(output_types, get_symbol);
-  size_t output_id = write_stream_factory->NewOutput();
-  souffle::IOSystem::getInstance().registerWriteStreamFactory(
-      write_stream_factory);
-  souffle::IOSystem::getInstance().registerReadStreamFactory(
-      std::make_shared<KytheReadStreamFactory>(anchors, database,
-                                               symbol_table));
-  auto ram_tu = souffle::ParseTransform(absl::StrCat(
-      program.code(), ".output result(IO=kythe, id=", output_id, ")\n"));
-  if (ram_tu == nullptr) {
-    LOG(ERROR) << "no ram_tu for program <" << program.code() << ">";
-    return result;
-  }
-  souffle::Own<souffle::interpreter::Engine> interpreter(
-      souffle::mk<souffle::interpreter::Engine>(*ram_tu));
-  interpreter->executeMain();
-  const auto& actual = write_stream_factory->GetOutput(output_id);
-  result.success = (!actual.outputs.empty());
-  if (!result.success) return result;
-  for (const auto& i : inspections) {
-    auto ix = output_indices.find(i.evar);
-    if (ix != output_indices.end()) {
-      if (!inspect(i, actual.outputs[ix->second])) {
-        break;
-      }
-    } else {
-      LOG(ERROR) << "missing output index for inspection with label "
-                 << i.label;
+  // Trivial cases (no goals, all empty groups, etc) should pass.
+  result.success = true;
+  SouffleErrorState error_state(&goal_groups);
+  bool first_pass = true;
+  while (error_state.NextStep()) {
+    SouffleProgram program;
+    if (!program.Lower(symbol_table, goal_groups, inspections, error_state)) {
+      // If we fail to lower a program, exit immediately.
+      result.success = false;
+      return result;
     }
+    std::vector<EVarType> output_types;
+    absl::flat_hash_map<EVar*, size_t> output_indices;
+    for (const auto& ev : program.inspections()) {
+      auto t = program.EVarTypeFor(ev);
+      output_indices[ev] = output_types.size();
+      output_types.push_back(t ? *t : EVarType::kUnknown);
+    }
+    auto write_stream_factory =
+        std::make_shared<KytheWriteStreamFactory>(output_types, get_symbol);
+    size_t output_id = write_stream_factory->NewOutput();
+    souffle::IOSystem::getInstance().registerWriteStreamFactory(
+        write_stream_factory);
+    souffle::IOSystem::getInstance().registerReadStreamFactory(
+        std::make_shared<KytheReadStreamFactory>(anchors, database,
+                                                 symbol_table));
+    auto ram_tu = souffle::ParseTransform(absl::StrCat(
+        program.code(), ".output result(IO=kythe, id=", output_id, ")\n"));
+    if (ram_tu == nullptr) {
+      LOG(ERROR) << "no ram_tu for program <" << program.code() << ">";
+      result.success = false;
+      return result;
+    }
+    souffle::Own<souffle::interpreter::Engine> interpreter(
+        souffle::mk<souffle::interpreter::Engine>(*ram_tu));
+    interpreter->executeMain();
+    const auto& actual = write_stream_factory->GetOutput(output_id);
+    bool succeeded = (!actual.outputs.empty());
+    // We shouldn't mark successes during error recovery as overall successes.
+    result.success = first_pass && succeeded;
+    first_pass = false;
+    if (!succeeded) {
+      // We want to identify the first goal to fail.
+      result.highest_goal_reached = error_state.target_goal();
+      result.highest_group_reached = error_state.target_group();
+      continue;
+    }
+    for (const auto& i : inspections) {
+      auto ix = output_indices.find(i.evar);
+      if (ix != output_indices.end()) {
+        if (!inspect(i, actual.outputs[ix->second])) {
+          break;
+        }
+      } else {
+        LOG(ERROR) << "missing output index for inspection with label "
+                   << i.label;
+      }
+    }
+    break;
   }
   return result;
 }
