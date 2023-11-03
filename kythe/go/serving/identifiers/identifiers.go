@@ -49,6 +49,11 @@ type Table struct {
 	table.Proto
 }
 
+type matchNode struct {
+	match           *ipb.FindReply_Match
+	canonicalTicket string
+}
+
 // Find implements the Service interface for Table
 func (it *Table) Find(ctx context.Context, req *ipb.FindRequest) (*ipb.FindReply, error) {
 	var (
@@ -58,25 +63,54 @@ func (it *Table) Find(ctx context.Context, req *ipb.FindRequest) (*ipb.FindReply
 		reply     ipb.FindReply
 	)
 
-	return &reply, it.LookupValues(ctx, []byte(qname), (*srvpb.IdentifierMatch)(nil), func(msg proto.Message) error {
+	// If clustering is done across language boundaries (e.g. proto), then it is possible the
+	// canonical node has a different qualified name (e.g. build_event_stream.BuildEvent vs
+	// build_event_stream::BuildEvent). If the user asked for the qualified name that isn't the
+	// canonical node, return all results since we won't be returning the canonical node.
+	allNodes := make(map[string]*matchNode)
+	var orderedTickets []string
+
+	if err := it.LookupValues(ctx, []byte(qname), (*srvpb.IdentifierMatch)(nil), func(msg proto.Message) error {
 		match := msg.(*srvpb.IdentifierMatch)
 		for _, node := range match.GetNode() {
 			if !validCorpusAndLang(corpora, languages, node) {
 				continue
 			}
 
-			matchNode := &ipb.FindReply_Match{
+			replyMatch := &ipb.FindReply_Match{
 				Ticket:        node.GetTicket(),
 				NodeKind:      node.GetNodeKind(),
 				NodeSubkind:   node.GetNodeSubkind(),
 				BaseName:      match.GetBaseName(),
 				QualifiedName: match.GetQualifiedName(),
 			}
-
-			reply.Matches = append(reply.GetMatches(), matchNode)
+			if n := allNodes[node.GetTicket()]; n != nil {
+				log.Errorf("Two matches found for the same ticket: %v, %v", n, node)
+			}
+			allNodes[node.GetTicket()] = &matchNode{
+				match:           replyMatch,
+				canonicalTicket: node.GetCanonicalNodeTicket(),
+			}
+			orderedTickets = append(orderedTickets, node.GetTicket())
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, err
+	}
+
+	for _, t := range orderedTickets {
+		ticketMatch := allNodes[t]
+		if req.GetPickCanonicalNodes() &&
+			ticketMatch.canonicalTicket != "" &&
+			ticketMatch.canonicalTicket != ticketMatch.match.GetTicket() &&
+			allNodes[ticketMatch.canonicalTicket] != nil {
+			continue
+		}
+
+		reply.Matches = append(reply.GetMatches(), ticketMatch.match)
+	}
+
+	return &reply, nil
 }
 
 func validCorpusAndLang(corpora, langs []string, node *srvpb.IdentifierMatch_Node) bool {

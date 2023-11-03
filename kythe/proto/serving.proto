@@ -412,6 +412,11 @@ message IdentifierMatch {
     // Kythe ticket for the matched node.
     string ticket = 1;
 
+    // Ticket for the canonical node, if there is one. For example, if there is
+    // a definition node and a declaration node only one will be the canonical
+    // node.
+    string canonical_node_ticket = 4;
+
     // Kind of the node being referenced.
     string node_kind = 2;
 
