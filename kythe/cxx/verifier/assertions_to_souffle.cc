@@ -24,6 +24,8 @@
 #include "kythe/cxx/verifier/assertion_ast.h"
 #include "kythe/cxx/verifier/pretty_printer.h"
 
+// Define DEBUG_LOWERING for debug output. This uses the pretty printer.
+
 namespace kythe::verifier {
 namespace {
 constexpr absl::string_view kGlobalDecls = R"(
@@ -48,7 +50,7 @@ at(s, e, v) :- entry(v, $0, nil, $1, $2),
 .decl result($5)
 result($6) :- true
 )";
-}
+}  // namespace
 
 bool SouffleErrorState::NextStep() {
   if (goal_groups_->empty()) return false;
@@ -73,7 +75,8 @@ bool SouffleErrorState::NextStep() {
   return true;
 }
 
-bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
+bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type,
+                                        bool positive_cxt) {
   if (auto* app = node->AsApp()) {
     auto* tup = app->rhs()->AsTuple();
     absl::StrAppend(&code_, "[");
@@ -81,7 +84,8 @@ bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
       if (p != 0) {
         absl::StrAppend(&code_, ", ");
       }
-      if (!LowerSubexpression(tup->element(p), EVarType::kSymbol)) {
+      if (!LowerSubexpression(tup->element(p), EVarType::kSymbol,
+                              positive_cxt)) {
         return false;
       }
     }
@@ -93,9 +97,13 @@ bool SouffleProgram::LowerSubexpression(AstNode* node, EVarType type) {
   } else if (auto* evar = node->AsEVar()) {
     if (!AssignEVarType(evar, type)) return false;
     if (auto* evc = evar->current()) {
-      return LowerSubexpression(evc, type);
+      return LowerSubexpression(evc, type, positive_cxt);
     }
-    absl::StrAppend(&code_, "v", FindEVar(evar));
+    auto fresh = FindFreshEVar(evar);
+    if (fresh.is_fresh && !positive_cxt) {
+      negated_evars_.insert(evar);
+    }
+    absl::StrAppend(&code_, "v", fresh.id);
     return true;
   } else {
     LOG(ERROR) << "unknown subexpression kind";
@@ -140,7 +148,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
     for (const auto& goal : group.goals) {
       if (target_goal >= 0 && cur_goal > target_goal) break;
       ++cur_goal;
-      if (!LowerGoal(symbol_table, goal)) return false;
+      if (!LowerGoal(symbol_table, goal, true)) return false;
     }
     absl::StrAppend(&code_, ")\n");
   } else {
@@ -148,7 +156,7 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
     for (const auto& goal : group.goals) {
       if (target_goal >= 0 && cur_goal > target_goal) break;
       ++cur_goal;
-      if (!LowerGoal(symbol_table, goal)) return false;
+      if (!LowerGoal(symbol_table, goal, false)) return false;
     }
     absl::StrAppend(&code_, "}\n");
   }
@@ -160,7 +168,8 @@ bool SouffleProgram::LowerGoalGroup(const SymbolTable& symbol_table,
   return true;
 }
 
-bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
+bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
+                               bool positive_cxt) {
   auto eq_sym = symbol_table.MustIntern("=");
   auto empty_sym = symbol_table.MustIntern("");
   auto* app = goal->AsApp();
@@ -189,10 +198,10 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
       absl::StrAppend(&code_, ", v", FindEVar(evar), "=");
       if (auto* app = subexp->AsApp()) {
         AssignEVarType(evar, EVarType::kVName);
-        return LowerSubexpression(app, EVarType::kVName);
+        return LowerSubexpression(app, EVarType::kVName, positive_cxt);
       } else if (auto* ident = subexp->AsIdentifier()) {
         AssignEVarType(evar, EVarType::kSymbol);
-        return LowerSubexpression(ident, EVarType::kSymbol);
+        return LowerSubexpression(ident, EVarType::kSymbol, positive_cxt);
       } else if (auto* oevar = subexp->AsEVar()) {
         absl::StrAppend(&code_, "v", FindEVar(oevar));
         return AssignEVarType(evar, oevar);
@@ -230,9 +239,10 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal) {
         absl::StrAppend(&code_, "nil");
         continue;
       }
-      if (!LowerSubexpression(tup->element(p), p == 0 || p == 2
-                                                   ? EVarType::kVName
-                                                   : EVarType::kSymbol)) {
+      if (!LowerSubexpression(
+              tup->element(p),
+              p == 0 || p == 2 ? EVarType::kVName : EVarType::kSymbol,
+              positive_cxt)) {
         return false;
       }
     }
@@ -268,6 +278,17 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
       }
       if (type->second == EVarType::kUnknown) {
         LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
+        return false;
+      }
+      if (negated_evars_.contains(i.evar)) {
+        // TODO(zarko): If we intend to preserve this restriction, it would be
+        // better to catch it earlier (possibly during goal parsing). It's
+        // possible to support it (e.g., an evar in a negative context with an
+        // inspection will be inspected if the negative context fails, giving a
+        // witness for *why* that negative goal group failed), but this will
+        // complicate error recovery. This message is still better than getting
+        // a diagnostic from Souffle about a leaky witness.
+        LOG(ERROR) << "can't inspect a negated evar";
         return false;
       }
       auto id = FindEVar(i.evar);
