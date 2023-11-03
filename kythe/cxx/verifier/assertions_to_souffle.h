@@ -17,11 +17,13 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_TO_SOUFFLE_
 
+#include <cstddef>
 #include <optional>
 #include <string>
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/verifier/assertion_ast.h"
 
@@ -95,10 +97,13 @@ class SouffleProgram {
 
  private:
   /// \brief Lowers `node`.
-  bool LowerSubexpression(AstNode* node, EVarType type);
+  /// \param positive_cxt whether we are in a positive goal context.
+  bool LowerSubexpression(AstNode* node, EVarType type, bool positive_cxt);
 
   /// \brief Lowers a goal from `goal`.
-  bool LowerGoal(const SymbolTable& symbol_table, AstNode* goal);
+  /// \param positive_cxt whether we are in a positive goal context.
+  bool LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
+                 bool positive_cxt);
 
   /// \brief Lowers `group`.
   bool LowerGoalGroup(const SymbolTable& symbol_table, const GoalGroup& group,
@@ -121,8 +126,26 @@ class SouffleProgram {
     return evars_.try_emplace(evar, evars_.size()).first->second;
   }
 
+  /// An association between an EVar and a Datalog variable.
+  struct FoundEVar {
+    /// The Datalog id of the EVar.
+    size_t id = 0;
+    /// Whether this was the first time this EVar was seen.
+    bool is_fresh = false;
+  };
+
+  /// \return a stable short name for `evar` and whether this was the first time
+  /// it was seen.
+  FoundEVar FindFreshEVar(EVar* evar) {
+    auto id = FindEVar(evar);
+    return {.id = id, .is_fresh = id == evars_.size() - 1};
+  }
+
   /// Known evars.
   absl::flat_hash_map<EVar*, size_t> evars_;
+
+  /// Evars that first appear in a negated context.
+  absl::flat_hash_set<EVar*> negated_evars_;
 
   /// EVars appearing in output positions (as inspections).
   std::vector<EVar*> inspections_;

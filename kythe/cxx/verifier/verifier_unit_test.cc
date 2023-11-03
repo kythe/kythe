@@ -1181,6 +1181,23 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, FastSolverCantInspectNegatedEvar) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{_? nottyped SomeType}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  if (GetParam() == Solver::New) {
+    ASSERT_FALSE(v.VerifyAllGoals());
+  } else {
+    ASSERT_TRUE(v.VerifyAllGoals());
+  }
+}
+
 TEST_P(VerifierTest, DontCareInNegativeIsGroundedFail) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{X typed vname(_,"","2","","")}

@@ -2,7 +2,7 @@ package scopes
 
 // - @Ident defines/binding Ident
 // - Ident.node/kind variable
-// - !{ Ident.subkind _? }
+// - !{ Ident.subkind _ }
 var Ident bool
 
 // - @F defines/binding F
