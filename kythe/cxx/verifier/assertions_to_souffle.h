@@ -129,9 +129,9 @@ class SouffleProgram {
   /// An association between an EVar and a Datalog variable.
   struct FoundEVar {
     /// The Datalog id of the EVar.
-    size_t id;
+    size_t id = 0;
     /// Whether this was the first time this EVar was seen.
-    bool is_fresh;
+    bool is_fresh = false;
   };
 
   /// \return a stable short name for `evar` and whether this was the first time

@@ -288,7 +288,8 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
         // witness for *why* that negative goal group failed), but this will
         // complicate error recovery. This message is still better than getting
         // a diagnostic from Souffle about a leaky witness.
-        LOG(ERROR) << "can't inspect a negated evar";
+        LOG(ERROR) << i.evar->location() << ": " << i.label
+                   << ": can't inspect a negated evar";
         return false;
       }
       auto id = FindEVar(i.evar);
