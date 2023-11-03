@@ -35,6 +35,11 @@ message FindRequest {
 
   // Restricts the match to the given languages.
   repeated string languages = 3;
+
+  // When two or more nodes are present for the same logical symbol (e.g. the
+  // definition and declaration of a field in C++) and if a canonical node is
+  // known, only return the canonical node.
+  bool pick_canonical_nodes = 4;
 }
 
 message FindReply {
