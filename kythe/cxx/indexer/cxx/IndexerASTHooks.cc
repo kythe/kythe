@@ -370,11 +370,11 @@ class NameEqClassDeclVisitor
 
   NameEqClass VisitTagDecl(const clang::TagDecl* decl) {
     switch (decl->getTagKind()) {
-      case clang::TTK_Struct:
+      case clang::TagTypeKind_Struct:
         return NameEqClass::Class;
-      case clang::TTK_Class:
+      case clang::TagTypeKind_Class:
         return NameEqClass::Class;
-      case clang::TTK_Union:
+      case clang::TagTypeKind_Union:
         return NameEqClass::Union;
       default:
         // TODO(zarko): Add classes for other tag kinds, like enums.
