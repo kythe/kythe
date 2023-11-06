@@ -1,3 +1,5 @@
+"""Rules for testing the c++ indexer"""
+
 #
 # Copyright 2017 The Kythe Authors. All rights reserved.
 #
