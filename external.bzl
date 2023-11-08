@@ -50,6 +50,11 @@ def _rule_dependencies():
                 version = version,
                 platform = platform,
             ))
+            if platform == "macos":
+                native.register_toolchains("@remotejdk{version}_{platform}_aarch64_toolchain_config_repo//:toolchain".format(
+                    version = version,
+                    platform = platform,
+                ))
     native.register_toolchains("//buildenv/java:all")
 
     protobuf_deps()
@@ -1867,6 +1872,7 @@ def _remote_jdk_repository(name, version, os, cpu, sha256 = None):
     jdk = version.split(".")[0]
     jdk_cpu = {
         "x86_64": "x64",
+        "arm64": "aarch64",
     }.get(cpu, cpu)
     jdk_os = {
         "macos": "macosx",
