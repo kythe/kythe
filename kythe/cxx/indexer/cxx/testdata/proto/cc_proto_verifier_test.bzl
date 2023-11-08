@@ -13,7 +13,7 @@
 # limitations under the License.
 """C++ protocol buffer metadata test rules."""
 
-load("//tools/build_rules/verifier_test:cc_indexer_test.bzl", "cc_extract_kzip", "cc_index", "cc_kythe_proto_library")
+load("//tools/build_rules/verifier_test:cc_indexer_test.bzl", "cc_index", "cc_kythe_proto_library", "cc_write_kzip")
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "index_compilation", "verifier_test")
 load(
     "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
@@ -74,7 +74,7 @@ def cc_proto_verifier_test(
     ]
 
     cc_kzip = _invoke(
-        cc_extract_kzip,
+        cc_write_kzip,
         name = name + "_cc_kzip",
         srcs = srcs,
         deps = cc_proto_libs + cc_deps,
@@ -106,7 +106,7 @@ def cc_proto_verifier_test(
             "--claim_unknown=false",
         ]
         claim_deps = [claim_file]
-    
+
     aw_opt = []
     if experimental_set_aliases_as_writes:
         aw_opt = ["--experimental_set_aliases_as_writes"]

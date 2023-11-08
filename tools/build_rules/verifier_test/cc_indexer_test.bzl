@@ -301,7 +301,7 @@ cc_kythe_proto_library = rule(
     implementation = _cc_kythe_proto_library,
 )
 
-def _cc_extract_kzip_impl(ctx):
+def _cc_write_kzip_impl(ctx):
     extractor_toolchain = find_extractor_toolchain(ctx)
     cpp = extractor_toolchain.cc_toolchain
     cc_info = cc_common.merge_cc_infos(cc_infos = [
@@ -348,7 +348,7 @@ def _cc_extract_kzip_impl(ctx):
         KytheVerifierSources(files = depset(ctx.files.srcs)),
     ]
 
-cc_extract_kzip = rule(
+cc_write_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             doc = "A list of C++ source files to extract.",
@@ -397,14 +397,14 @@ cc_extract_kzip = rule(
             providers = [CxxExtractorToolchainInfo],
         ),
     },
-    doc = """cc_extract_kzip extracts srcs into CompilationUnits.
+    doc = """cc_write_kzip extracts srcs into CompilationUnits.
 
     Each file in srcs will be extracted into a separate .kzip file, based on the name
     of the source.
     """,
     fragments = ["cpp"],
     toolchains = CXX_EXTRACTOR_TOOLCHAINS,
-    implementation = _cc_extract_kzip_impl,
+    implementation = _cc_write_kzip_impl,
 )
 
 def _extract_bundle_impl(ctx):
@@ -981,7 +981,7 @@ def cc_extractor_test(
         target_compatible_with = []):
     """C++ verifier test on an extracted source file."""
     args = ["-std=" + std, "-c"]
-    cc_extract_kzip(
+    cc_write_kzip(
         name = name + "_kzip",
         testonly = True,
         srcs = srcs,
