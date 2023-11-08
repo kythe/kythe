@@ -3,6 +3,10 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":extra_actions.bzl", "spawn_info_proto_writer")
 
+package(
+    default_visibility = ["//visibility:public"],
+)
+
 bzl_library(
     name = "actions",
     srcs = ["actions.bzl"],
