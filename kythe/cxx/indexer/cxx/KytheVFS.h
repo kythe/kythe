@@ -86,9 +86,12 @@ class IndexVFS : public llvm::vfs::FileSystem {
   IndexVFS(const IndexVFS&) = delete;
   IndexVFS& operator=(const IndexVFS&) = delete;
 
+  /// \brief Add the named directory to the file system, if not already present.
   bool AddDirectory(const llvm::Twine& path);
+  /// \brief Add the named file to the file system, if not already present.
   bool AddFile(const llvm::Twine& path,
                std::unique_ptr<llvm::MemoryBuffer> data);
+  /// \brief Add `path` as an alias of `target` which must already exist.
   bool AddLink(const llvm::Twine& path, const llvm::Twine& target);
 
   /// \brief Associates a vname with a path.
@@ -97,13 +100,18 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param entry The `FileEntry` to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool GetVName(clang::FileEntryRef entry, proto::VName& merge_with);
+  bool GetVName(clang::FileEntryRef entry, proto::VName& merge_with) const;
   /// \brief Returns the vname associated with some `path`.
   /// \param path The path to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool GetVName(const llvm::Twine& path, proto::VName& result);
-  proto::VName* GetVName(const llvm::Twine& path);
+  bool GetVName(const llvm::Twine& path, proto::VName& result) const;
+  const proto::VName* GetVName(const llvm::Twine& path) const;
+
+  /// \brief Returns a normalized, canonical root-relative path.
+  std::optional<std::string> GetRelativePath(const llvm::Twine& path) const;
+  /// \brief Returns a normalized, canonical absolute path.
+  std::optional<std::string> GetCanonicalPath(const llvm::Twine& path) const;
 
   /// \brief Returns a string representation of `uid` for error messages.
   std::string get_debug_uid_string(const llvm::sys::fs::UniqueID& uid);
@@ -136,87 +144,13 @@ class IndexVFS : public llvm::vfs::FileSystem {
   }
 
  private:
-  /// \brief Information kept on a file being tracked.
-  struct FileRecord {
-    /// Clang's VFS status record.
-    llvm::vfs::Status status;
-    /// Whether `vname` is valid.
-    bool has_vname;
-    /// This file's name, independent of path.
-    std::string label;
-    /// This file's VName, if set.
-    proto::VName vname;
-    /// This directory's children.
-    std::vector<FileRecord*> children;
-    /// This file's content.
-    llvm::StringRef data;
-  };
-
-  /// \brief A llvm::vfs::File that wraps a `FileRecord`.
-  class File : public llvm::vfs::File {
-   public:
-    explicit File(FileRecord* record) : record_(record) {}
-    llvm::ErrorOr<llvm::vfs::Status> status() override {
-      return record_->status;
-    }
-    std::error_code close() override { return std::error_code(); }
-    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> getBuffer(
-        const llvm::Twine& Name, int64_t FileSize, bool RequiresNullTerminator,
-        bool IsVolatile) override {
-      name_ = Name.str();
-      return llvm::MemoryBuffer::getMemBuffer(record_->data, name_,
-                                              RequiresNullTerminator);
-    }
-
-   private:
-    FileRecord* record_;
-    std::string name_;
-  };
-
-  /// \brief Controls what happens when a missing path node is encountered.
-  enum class BehaviorOnMissing {
-    kCreateFile,       ///< Create intermediate directories and a final file.
-    kCreateDirectory,  ///< Create intermediate and final directories.
-    kReturnError       ///< Abort.
-  };
-
-  /// \brief Returns a FileRecord for the root components of `path`.
-  /// \param path The path to investigate.
-  /// \param create_if_missing If the root is missing, create it.
-  /// \return A `FileRecord` or nullptr on abort.
-  FileRecord* FileRecordForPathRoot(const llvm::Twine& path,
-                                    bool create_if_missing);
-
-  /// \param path The path to investigate.
-  /// \param behavior What to do if `path` does not exist.
-  /// \param size The size of the file to use if kCreateFile is relevant.
-  /// \return A `FileRecord` or nullptr on abort.
-  FileRecord* FileRecordForPath(llvm::StringRef path,
-                                BehaviorOnMissing behavior, size_t size);
-
-  /// \brief Creates a new or returns an existing `FileRecord`.
-  /// \param parent The parent `FileRecord`.
-  /// \param create_if_missing Create a FileRecord if it's missing.
-  /// \param label The label to look for under `parent`.
-  /// \param type The type the record should have.
-  /// \param size The size that should be used if this is a file record.
-  FileRecord* AllocOrReturnFileRecord(FileRecord* parent,
-                                      bool create_if_missing,
-                                      llvm::StringRef label,
-                                      llvm::sys::fs::file_type type,
-                                      size_t size);
-
-  /// Maps root names to root nodes. For indexes captured from Unix
-  /// environments, there will be only one root name (the empty string).
-  absl::flat_hash_map<std::string, FileRecord*> root_name_to_root_map_;
-
   struct Entry {
     std::optional<proto::VName> vname;
     absl::flat_hash_map<std::string, Entry> children;
   };
 
-  // TODO(shahms): Remove these. The current uses assume there's a 1:1 mapping
-  // between IDs and paths, which is false.
+  // TODO(shahms): Remove these. This is only here to support
+  // get_debug_uid_string used by KytheGraphObserver
   struct UniqueIDHasher {
     size_t operator()(const llvm::sys::fs::UniqueID& id) const {
       return absl::HashOf(id.getDevice(), id.getFile());

@@ -108,15 +108,15 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
         data.info().digest(), data.info().path());
     PathString preferred(data.info().path());
     llvm::sys::path::make_preferred(preferred, style);
-    if (inserted) {
+    if (iter->first.empty() || inserted) {
       AddFile(preferred,
               llvm::MemoryBuffer::getMemBuffer(
                   data.content(), /* BufferName */ data.info().digest(),
                   /* RequiresNullTerminator */ false));
     } else {
-      // Treat files with identical digests as "identical" files for UniqueID
-      // purposes so that `#pragma once` works as expected for files with
-      // multiple paths.
+      // Treat files with identical, non-empty, digests as "identical" files for
+      // UniqueID purposes so that `#pragma once` works as expected for files
+      // with multiple paths.
       PathString target(iter->second);
       llvm::sys::path::make_preferred(target, style);
       AddLink(preferred, target);
@@ -194,7 +194,8 @@ bool IndexVFS::SetVName(const llvm::Twine& path, const proto::VName& vname) {
   return true;
 }
 
-bool IndexVFS::GetVName(clang::FileEntryRef entry, proto::VName& merge_with) {
+bool IndexVFS::GetVName(clang::FileEntryRef entry,
+                        proto::VName& merge_with) const {
   // VName's are mapped by path, but there may be multiple paths for the same
   // UniqueId. This can happen with symlinks/hardlinks. We need to have distinct
   // enrties for these to support `#pragma once` and accurately reflect builds
@@ -202,14 +203,14 @@ bool IndexVFS::GetVName(clang::FileEntryRef entry, proto::VName& merge_with) {
   return GetVName(entry.getNameAsRequested(), merge_with);
 }
 
-proto::VName* IndexVFS::GetVName(const llvm::Twine& path) {
+const proto::VName* IndexVFS::GetVName(const llvm::Twine& path) const {
   PathString realized;
   if (fs_.getRealPath(path, realized)) {
     return nullptr;
   }
 
-  Entry* entry = nullptr;
-  absl::flat_hash_map<std::string, Entry>* children = &roots_;
+  const Entry* entry = nullptr;
+  const absl::flat_hash_map<std::string, Entry>* children = &roots_;
   for (auto iter = llvm::sys::path::begin(realized),
             end = llvm::sys::path::end(realized);
        iter != end; ++iter) {
@@ -226,13 +227,36 @@ proto::VName* IndexVFS::GetVName(const llvm::Twine& path) {
   return entry->vname.has_value() ? &*entry->vname : nullptr;
 }
 
-bool IndexVFS::GetVName(const llvm::Twine& path, proto::VName& result) {
-  proto::VName* vname = GetVName(path);
+bool IndexVFS::GetVName(const llvm::Twine& path, proto::VName& result) const {
+  const proto::VName* vname = GetVName(path);
   if (vname == nullptr) {
     return false;
   }
   result = *vname;
   return true;
+}
+
+std::optional<std::string> IndexVFS::GetCanonicalPath(
+    const llvm::Twine& path) const {
+  PathString result;
+  if (!fs_.getRealPath(path, result)) {
+    return std::nullopt;
+  }
+  return std::string{result};
+}
+
+std::optional<std::string> IndexVFS::GetRelativePath(
+    const llvm::Twine& path) const {
+  PathString result;
+  if (!fs_.getRealPath(path, result)) {
+    return std::nullopt;
+  }
+  llvm::ErrorOr<std::string> root = getCurrentWorkingDirectory();
+  if (!root) {
+    return std::nullopt;
+  }
+  llvm::sys::path::replace_path_prefix(result, *root, "");
+  return std::string{result};
 }
 
 std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID& uid) {
