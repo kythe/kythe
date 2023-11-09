@@ -1,8 +1,8 @@
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
-    "cc_extract_kzip",
     "cc_extractor_test",
     "cc_indexer_test",
+    "cc_write_kzip",
     "objc_indexer_test",
 )
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
@@ -707,7 +707,7 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
-cc_extract_kzip(
+cc_write_kzip(
     name = "usr_macro_default_kzip",
     srcs = ["basic/usr_macro_default.cc"],
     corpus = "unit",
@@ -746,7 +746,7 @@ cc_indexer_test(
     tags = ["basic"],
 )
 
-cc_extract_kzip(
+cc_write_kzip(
     name = "usr_var_default_kzip",
     srcs = ["basic/usr_var_default.cc"],
     corpus = "unit",
@@ -922,7 +922,7 @@ cc_indexer_test(
     ],
 )
 
-cc_extract_kzip(
+cc_write_kzip(
     name = "vname_corpus_kzip",
     srcs = ["basic/vname_corpus.cc"],
     corpus = "unit",
