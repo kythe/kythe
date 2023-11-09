@@ -1774,45 +1774,38 @@ def _go_dependencies():
     )
 
 def _bindings():
-    maybe(
-        native.bind,
+    native.bind(
         name = "vnames_config",
         actual = "@io_kythe//kythe/data:vnames_config",
     )
 
-    maybe(
-        native.bind,
+    native.bind(
         name = "libuuid",
         actual = "@io_kythe//third_party:libuuid",
     )
 
-    maybe(
-        native.bind,
+    native.bind(
         name = "libmemcached",
         actual = "@org_libmemcached_libmemcached//:libmemcached",
     )
 
-    maybe(
-        native.bind,
+    native.bind(
         name = "guava",  # required by @com_google_protobuf
         actual = "@io_kythe//third_party/guava",
     )
 
-    maybe(
-        native.bind,
+    native.bind(
         name = "gson",  # required by @com_google_protobuf
         actual = "@maven//:com_google_code_gson_gson",
     )
 
-    maybe(
-        native.bind,
+    native.bind(
         name = "zlib",  # required by @com_google_protobuf
         actual = "@net_zlib//:zlib",
     )
 
     # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
-    maybe(
-        native.bind,
+    native.bind(
         name = "error_prone_annotations",
         actual = "@maven//:com_google_errorprone_error_prone_annotations",
     )
