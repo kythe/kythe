@@ -22,6 +22,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/strings/string_view.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
@@ -37,6 +38,34 @@ namespace kythe {
 /// same as foo/baz.
 class IndexVFS : public llvm::vfs::FileSystem {
  public:
+  /// \brief An opaque type for an absolute, POSIX-style path.
+  class RootDirectory {
+   public:
+    /// \brief Constructs a new RootDirectory for the given path.
+    /// \param path The path to use. If not already aboslute, a `/` will be
+    /// inserted making it so.
+    /// \param style The style from which to convert the path.
+    explicit RootDirectory(
+        const llvm::Twine& path,
+        llvm::sys::path::Style style = llvm::sys::path::Style::posix);
+
+    /// \brief Returns the current path value.
+    const std::string& value() const& { return value_; }
+    std::string&& value() && { return std::move(value_); }
+
+   private:
+    std::string value_;
+  };
+
+  struct RootStyle {
+    RootDirectory root;
+    llvm::sys::path::Style style;
+  };
+
+  static RootStyle DetectRootStyle(const llvm::Twine& working_directory);
+
+  explicit IndexVFS(RootDirectory root);
+
   /// \param working_directory The absolute path to the working directory.
   /// \param virtual_files Files to map.  File content must outlive IndexVFS.
   /// \param virtual_dirs Directories to map.
@@ -47,6 +76,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
                         ABSL_ATTRIBUTE_LIFETIME_BOUND,
                     const std::vector<llvm::StringRef>& virtual_dirs,
                     llvm::sys::path::Style style);
+
   /// \return nullopt if `awd` is not absolute or its style could not be
   /// detected; otherwise, the style of `awd`.
   static std::optional<llvm::sys::path::Style>
@@ -56,6 +86,31 @@ class IndexVFS : public llvm::vfs::FileSystem {
   IndexVFS(const IndexVFS&) = delete;
   IndexVFS& operator=(const IndexVFS&) = delete;
 
+  bool AddDirectory(const llvm::Twine& path);
+  bool AddFile(const llvm::Twine& path,
+               std::unique_ptr<llvm::MemoryBuffer> data);
+  bool AddLink(const llvm::Twine& path, const llvm::Twine& target);
+
+  /// \brief Associates a vname with a path.
+  bool SetVName(const llvm::Twine& path, const proto::VName& vname);
+  /// \brief Returns the vname associated with some `FileEntry`.
+  /// \param entry The `FileEntry` to look up.
+  /// \param merge_with The `VName` to copy the vname onto.
+  /// \return true if a match was found; false otherwise.
+  bool GetVName(clang::FileEntryRef entry, proto::VName& merge_with);
+  /// \brief Returns the vname associated with some `path`.
+  /// \param path The path to look up.
+  /// \param merge_with The `VName` to copy the vname onto.
+  /// \return true if a match was found; false otherwise.
+  bool GetVName(const llvm::Twine& path, proto::VName& result);
+  proto::VName* GetVName(const llvm::Twine& path);
+
+  /// \brief Returns a string representation of `uid` for error messages.
+  std::string get_debug_uid_string(const llvm::sys::fs::UniqueID& uid);
+  std::string working_directory() const {
+    return *getCurrentWorkingDirectory();
+  }
+
   /// \brief Implements llvm::vfs::FileSystem::status.
   llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override;
   /// \brief Implements llvm::vfs::FileSystem::openFileForRead.
@@ -64,28 +119,20 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \brief Unimplemented and unused.
   llvm::vfs::directory_iterator dir_begin(const llvm::Twine& dir,
                                           std::error_code& error_code) override;
-  /// \brief Associates a vname with a path.
-  void SetVName(const std::string& path, const proto::VName& vname);
-  /// \brief Returns the vname associated with some `FileEntry`.
-  /// \param entry The `FileEntry` to look up.
-  /// \param merge_with The `VName` to copy the vname onto.
-  /// \return true if a match was found; false otherwise.
-  bool get_vname(clang::FileEntryRef entry, proto::VName* merge_with);
-  /// \brief Returns the vname associated with some `path`.
-  /// \param path The path to look up.
-  /// \param merge_with The `VName` to copy the vname onto.
-  /// \return true if a match was found; false otherwise.
-  bool get_vname(llvm::StringRef path, proto::VName* merge_with);
 
-  /// \brief Returns a string representation of `uid` for error messages.
-  std::string get_debug_uid_string(const llvm::sys::fs::UniqueID& uid);
-  const std::string& working_directory() const { return working_directory_; }
+  /// \brief Implements FileSystem::getCurrentWorkingDirectory
   llvm::ErrorOr<std::string> getCurrentWorkingDirectory() const override {
-    return working_directory_;
+    return fs_.getCurrentWorkingDirectory();
   }
+  /// \brief Implements FileSystem::setCurrentWorkingDirectory
   std::error_code setCurrentWorkingDirectory(const llvm::Twine& Path) override {
-    working_directory_ = Path.str();
-    return std::error_code();
+    return fs_.setCurrentWorkingDirectory(Path);
+  }
+  /// \brief Implements FileSystem::getRealPath
+  std::error_code getRealPath(
+      const llvm::Twine& Path,
+      llvm::SmallVectorImpl<char>& Output) const override {
+    return fs_.getRealPath(Path, Output);
   }
 
  private:
@@ -126,28 +173,6 @@ class IndexVFS : public llvm::vfs::FileSystem {
     std::string name_;
   };
 
-  class DirectoryIteratorImpl : public ::llvm::vfs::detail::DirIterImpl {
-   public:
-    explicit DirectoryIteratorImpl(std::string path, const FileRecord* record)
-        : path_(std::move(path)), record_(record) {
-      CurrentEntry = GetEntry();
-    }
-
-    std::error_code increment() override {
-      ++curr_;
-      CurrentEntry = GetEntry();
-      return {};
-    }
-
-   private:
-    ::llvm::vfs::directory_entry GetEntry() const;
-
-    std::string path_;
-    const FileRecord* record_;
-    std::vector<FileRecord*>::const_iterator curr_ = record_->children.begin(),
-                                             end_ = record_->children.end();
-  };
-
   /// \brief Controls what happens when a missing path node is encountered.
   enum class BehaviorOnMissing {
     kCreateFile,       ///< Create intermediate directories and a final file.
@@ -181,15 +206,27 @@ class IndexVFS : public llvm::vfs::FileSystem {
                                       llvm::sys::fs::file_type type,
                                       size_t size);
 
-  /// The working directory. Must be absolute.
-  std::string working_directory_;
   /// Maps root names to root nodes. For indexes captured from Unix
   /// environments, there will be only one root name (the empty string).
   absl::flat_hash_map<std::string, FileRecord*> root_name_to_root_map_;
-  /// Maps unique IDs to file records.
-  absl::flat_hash_map<std::pair<uint64_t, uint64_t>,
-                      std::unique_ptr<FileRecord>>
-      uid_to_record_map_;
+
+  struct Entry {
+    std::optional<proto::VName> vname;
+    absl::flat_hash_map<std::string, Entry> children;
+  };
+
+  // TODO(shahms): Remove these. The current uses assume there's a 1:1 mapping
+  // between IDs and paths, which is false.
+  struct UniqueIDHasher {
+    size_t operator()(const llvm::sys::fs::UniqueID& id) const {
+      return absl::HashOf(id.getDevice(), id.getFile());
+    }
+  };
+  absl::flat_hash_map<llvm::sys::fs::UniqueID, std::string, UniqueIDHasher>
+      debug_uid_name_map_;
+
+  absl::flat_hash_map<std::string, Entry> roots_;
+  llvm::vfs::InMemoryFileSystem fs_;
 };
 
 }  // namespace kythe

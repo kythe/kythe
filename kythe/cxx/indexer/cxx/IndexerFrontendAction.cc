@@ -251,7 +251,7 @@ std::string IndexCompilationUnit(
   if (MetaSupports != nullptr) {
     MetaSupports->UseVNameLookup(
         [VFS](const std::string& path, proto::VName* out) {
-          return VFS->get_vname(path, out);
+          return VFS->GetVName(path, *ABSL_DIE_IF_NULL(out));
         });
   }
   std::unique_ptr<IndexerFrontendAction> Action =

@@ -47,7 +47,6 @@ cc_extract_kzip = rule(
         "deps": attr.label_list(
             mandatory = True,
             aspects = [extract_cxx_aspect],
-            cfg = _transition,
         ),
         "disable_modules": attr.bool(
             default = True,
@@ -56,4 +55,5 @@ cc_extract_kzip = rule(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),
     },
+    cfg = _transition,
 )

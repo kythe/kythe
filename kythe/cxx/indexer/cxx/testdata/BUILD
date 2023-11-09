@@ -1,11 +1,14 @@
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_extractor_test",
+    "cc_index",
     "cc_indexer_test",
     "cc_write_kzip",
     "objc_indexer_test",
 )
+load("//tools/build_rules/verifier_test:verifier_test.bzl", "verifier_test")
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
+load("//tools/build_rules/extra_aspects/cxx:rules.bzl", "cc_extract_kzip")
 
 package(
     default_visibility = ["//kythe:default_visibility"],
@@ -972,6 +975,33 @@ cc_indexer_test(
     emit_anchor_scopes = True,
     ignore_dups = True,
     tags = ["basic"],
+)
+
+cc_library(
+    name = "pragma_once_lib",
+    srcs = ["basic/pragma_once.cc"],
+    hdrs = ["basic/pragma_once.h"],
+    include_prefix = "kythe_indexer_test",
+    strip_include_prefix = "basic",
+)
+
+cc_extract_kzip(
+    name = "pragma_once_kzip",
+    deps = [":pragma_once_lib"],
+)
+
+cc_index(
+    name = "pragma_once_entries",
+    srcs = [":pragma_once_kzip"],
+)
+
+verifier_test(
+    name = "pragma_once_test",
+    srcs = [
+        "basic/pragma_once.cc",
+        "basic/pragma_once.h",
+    ],
+    deps = [":pragma_once_entries"],
 )
 
 test_suite(

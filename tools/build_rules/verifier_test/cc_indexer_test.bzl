@@ -686,7 +686,7 @@ cc_index = rule(
                 ".m",  # Objective-C is supported by the indexer as well.
                 ".kzip",
             ],
-            providers = [CxxCompilationUnits],
+            #providers = [CxxCompilationUnits],
         ),
         "copts": attr.string_list(
             doc = "Options to pass to the compiler while indexing.",
