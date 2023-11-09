@@ -103,12 +103,6 @@ def _extra_aspect_impl(target, ctx):
             ),
         ]
     if ctx.rule.kind == "extra_action":
-        print([_direct_label(d) for d in ctx.rule.attr.data])
-        print({
-            d.label: d.files.to_list()
-            for d in ctx.rule.attr.data
-        })
-
         # cmd needs to be expanded in the context of the extra_action itself
         # so that relative $(location :target) paths resolve correctly.  We
         # need to use ctx.resolve_command() to do so as ctx.expand_location()
