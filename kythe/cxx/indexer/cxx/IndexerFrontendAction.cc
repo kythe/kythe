@@ -22,6 +22,7 @@
 
 #include "KytheGraphObserver.h"
 #include "KytheVFS.h"
+#include "absl/log/die_if_null.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
