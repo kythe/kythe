@@ -17,15 +17,24 @@
 #include "kythe/cxx/indexer/cxx/KytheVFS.h"
 
 #include <memory>
+#include <optional>
 #include <system_error>
+#include <utility>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "clang/Basic/FileEntry.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/FileSystem/UniqueID.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 namespace kythe {
 namespace {
