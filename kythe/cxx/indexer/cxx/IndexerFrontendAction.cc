@@ -183,10 +183,8 @@ std::string IndexCompilationUnit(
     IndexerOptions& Options ABSL_ATTRIBUTE_LIFETIME_BOUND,
     const MetadataSupports* MetaSupports,
     const LibrarySupports* LibrarySupports) {
-  llvm::sys::path::Style Style =
-      kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
-          Unit.working_directory())
-          .value_or(llvm::sys::path::Style::posix);
+  auto [Root, Style] =
+      kythe::IndexVFS::DetectRootStyle(Unit.working_directory());
   HeaderSearchInfo HSI;
   proto::CxxCompilationUnitDetails Details;
   bool HSIValid = false;
@@ -202,15 +200,12 @@ std::string IndexCompilationUnit(
     FixupArgument.clear();
   }
   clang::FileSystemOptions FSO;
-  FSO.WorkingDir = Options.EffectiveWorkingDirectory;
-  if (Style == llvm::sys::path::Style::windows) {
-    FSO.WorkingDir = absl::StrCat("/", FSO.WorkingDir);
-  }
+  FSO.WorkingDir = Root.value();
   for (auto& Path : HSI.paths) {
     Dirs.push_back(Path.path);
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
-      new IndexVFS(Options.EffectiveWorkingDirectory, Files, Dirs, Style));
+      new IndexVFS(Root, Files, Dirs, Style));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserverOptions options;
   options.build_config = ExtractBuildConfig(Unit);

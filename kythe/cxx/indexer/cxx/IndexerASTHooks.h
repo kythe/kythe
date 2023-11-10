@@ -80,8 +80,6 @@ class PruneCheck;
 
 /// \brief Options that control how the indexer behaves.
 struct IndexerOptions {
-  /// \brief The directory to normalize paths against. Must be absolute.
-  std::string EffectiveWorkingDirectory = "/";
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
   /// \brief Whether to drop data found to be template instantiation

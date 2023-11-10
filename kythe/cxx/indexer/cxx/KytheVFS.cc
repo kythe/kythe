@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-#include "KytheVFS.h"
+#include "kythe/cxx/indexer/cxx/KytheVFS.h"
 
 #include <memory>
 #include <system_error>
 
-#include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
@@ -39,17 +35,6 @@ using ::llvm::sys::path::is_absolute;
 using ::llvm::sys::path::Style;
 
 }  // namespace
-
-std::optional<llvm::sys::path::Style>
-IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
-  if (is_absolute(awd, Style::posix)) {
-    return Style::posix;
-  } else if (is_absolute(awd, Style::windows)) {
-    return Style::windows;
-  }
-  absl::FPrintF(stderr, "warning: could not detect path style for %s\n", awd);
-  return std::nullopt;
-}
 
 IndexVFS::RootDirectory::RootDirectory(const llvm::Twine& path, Style style) {
   PathString preferred;
@@ -100,7 +85,14 @@ IndexVFS::IndexVFS(absl::string_view working_directory,
                    const std::vector<proto::FileData>& virtual_files,
                    const std::vector<llvm::StringRef>& virtual_dirs,
                    llvm::sys::path::Style style)
-    : IndexVFS(RootDirectory(working_directory, style)) {
+    : IndexVFS(RootDirectory(working_directory, style), virtual_files,
+               virtual_dirs, style) {}
+
+IndexVFS::IndexVFS(RootDirectory root,
+                   const std::vector<proto::FileData>& virtual_files,
+                   const std::vector<llvm::StringRef>& virtual_dirs,
+                   llvm::sys::path::Style style)
+    : IndexVFS(std::move(root)) {
   absl::flat_hash_map<absl::string_view, absl::string_view>
       canonical_digest_map;
   for (const auto& data : virtual_files) {

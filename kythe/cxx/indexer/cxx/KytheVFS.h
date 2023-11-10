@@ -54,16 +54,33 @@ class IndexVFS : public llvm::vfs::FileSystem {
     std::string&& value() && { return std::move(value_); }
 
    private:
+    friend bool operator==(const RootDirectory& lhs, const RootDirectory& rhs) {
+      return lhs.value_ == rhs.value_;
+    };
+    friend bool operator==(const RootDirectory& lhs, llvm::StringRef rhs) {
+      return lhs.value_ == rhs;
+    };
+    friend bool operator==(llvm::StringRef lhs, const RootDirectory& rhs) {
+      return lhs == rhs.value_;
+    };
+    template <typename T, typename U>
+    friend bool operator!=(const T& lhs, const T& rhs) {
+      return !(lhs == rhs);
+    }
     std::string value_;
   };
 
+  /// \brief The RootDirectory and detected path style.
   struct RootStyle {
     RootDirectory root;
     llvm::sys::path::Style style;
   };
 
+  /// \brief Detects the path style from `working_directory`, converts it to an
+  /// absolute directory in the preferred style and returns the pair.
   static RootStyle DetectRootStyle(const llvm::Twine& working_directory);
 
+  /// \brief Constructs a new IndexVFS from the given absolute root directory.
   explicit IndexVFS(RootDirectory root);
 
   /// \param working_directory The absolute path to the working directory.
@@ -76,11 +93,11 @@ class IndexVFS : public llvm::vfs::FileSystem {
                         ABSL_ATTRIBUTE_LIFETIME_BOUND,
                     const std::vector<llvm::StringRef>& virtual_dirs,
                     llvm::sys::path::Style style);
-
-  /// \return nullopt if `awd` is not absolute or its style could not be
-  /// detected; otherwise, the style of `awd`.
-  static std::optional<llvm::sys::path::Style>
-  DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
+  explicit IndexVFS(RootDirectory root,
+                    const std::vector<proto::FileData>& virtual_files
+                        ABSL_ATTRIBUTE_LIFETIME_BOUND,
+                    const std::vector<llvm::StringRef>& virtual_dirs,
+                    llvm::sys::path::Style style);
 
   // IndexVFS is neither copyable nor movable.
   IndexVFS(const IndexVFS&) = delete;

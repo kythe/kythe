@@ -29,6 +29,7 @@
 
 namespace kythe {
 namespace {
+using ::testing::FieldsAre;
 using ::testing::Optional;
 using ::testing::UnorderedElementsAre;
 
@@ -125,13 +126,12 @@ TEST(KytheVFSTest, RelativeFilesCreatesParentDirectories) {
   }
 }
 
-TEST(KytheVFSTest, DetectStyleFromAbsoluteWorkingDirectoryDoes) {
-  EXPECT_THAT(
-      IndexVFS::DetectStyleFromAbsoluteWorkingDirectory("/posix/style/path"),
-      Optional(llvm::sys::path::Style::posix));
-  EXPECT_THAT(IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
-                  "C:/funky/windows/path"),
-              Optional(llvm::sys::path::Style::windows));
+TEST(KytheVFSTest, DetectRootStyleDoes) {
+  EXPECT_THAT(IndexVFS::DetectRootStyle("/posix/style/path"),
+              FieldsAre("/posix/style/path", llvm::sys::path::Style::posix));
+  EXPECT_THAT(IndexVFS::DetectRootStyle("C:/funky/windows/path"),
+              FieldsAre("/C:/funky/windows/path",
+                        llvm::sys::path::Style::windows_slash));
 }
 
 TEST(KytheVFSTest, DirBeginReportsErrorForMissingEntry) {
