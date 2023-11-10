@@ -1001,6 +1001,7 @@ verifier_test(
         "basic/pragma_once.cc",
         "basic/pragma_once.h",
     ],
+    opts = ["--ignore_dups"],
     deps = [":pragma_once_entries"],
 )
 
