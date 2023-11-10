@@ -122,8 +122,6 @@ int main(int argc, char* argv[]) {
   NullOutputStream null_stream;
 
   context.EnumerateCompilations([&](IndexerJob& job) {
-    options.EffectiveWorkingDirectory = job.unit.working_directory();
-
     kythe::MetadataSupports meta_supports;
     auto proto = std::make_unique<ProtobufMetadataSupport>();
     proto->SetAliasesAsWrites(
