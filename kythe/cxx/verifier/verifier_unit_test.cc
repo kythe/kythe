@@ -519,6 +519,30 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, AnchorKind) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @text.node/kind anchor
+##text (line 3 column 2 offset 38-42)
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "38"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "42"
+}
+)",
+                                    "", "1"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST_P(VerifierTest, GenerateAnchorEvar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
