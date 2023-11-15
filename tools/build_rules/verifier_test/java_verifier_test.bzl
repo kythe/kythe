@@ -127,7 +127,6 @@ java_extract_kzip = rule(
     },
     toolchains = ["@bazel_tools//tools/jdk:toolchain_type"],
     fragments = ["java"],
-    host_fragments = ["java"],
     outputs = {"kzip": "%{name}.kzip"},
     implementation = _java_extract_kzip_impl,
 )
