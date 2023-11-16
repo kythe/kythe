@@ -248,7 +248,7 @@ class Verifier {
 
   /// \return a new vname with its corpus filled with the default file corpus
   /// if `node` is a vname without a corpus set; otherwise `node`.
-  AstNode* CorrectFileVName(AstNode* node);
+  AstNode* FixFileVName(AstNode* node);
 
   /// \brief Generate a VName that will not conflict with any other VName.
   AstNode* NewUniqueVName(const yy::location& loc);

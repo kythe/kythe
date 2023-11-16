@@ -1140,7 +1140,7 @@ Verifier::InternedVName Verifier::InternVName(AstNode* node) {
           tuple->element(4)->AsIdentifier()->symbol()};
 }
 
-AstNode* Verifier::CorrectFileVName(AstNode* node) {
+AstNode* Verifier::FixFileVName(AstNode* node) {
   if (auto* app = node->AsApp()) {
     if (auto* tuple = app->rhs()->AsTuple(); tuple->size() == 5) {
       if (auto* corpus_id = tuple->element(1)->AsIdentifier()) {
@@ -1176,11 +1176,11 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
         auto sym = fast_solver_files_.insert({vname, known_file_sym_});
         if (!sym.second && sym.first->second != known_not_file_sym_) {
           if (assertions_from_file_nodes_) {
-            return LoadInMemoryRuleFile("", CorrectFileVName(tuple->element(0)),
+            return LoadInMemoryRuleFile("", FixFileVName(tuple->element(0)),
                                         sym.first->second);
           } else {
             content_to_vname_[sym.first->second] =
-                CorrectFileVName(tuple->element(0));
+                FixFileVName(tuple->element(0));
           }
         }
       } else {
@@ -1192,10 +1192,10 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
       auto file = fast_solver_files_.insert({vname, content});
       if (!file.second && file.first->second == known_file_sym_) {
         if (assertions_from_file_nodes_) {
-          return LoadInMemoryRuleFile("", CorrectFileVName(tuple->element(0)),
+          return LoadInMemoryRuleFile("", FixFileVName(tuple->element(0)),
                                       content);
         } else {
-          content_to_vname_[content] = CorrectFileVName(tuple->element(0));
+          content_to_vname_[content] = FixFileVName(tuple->element(0));
         }
       }
     }
@@ -1252,13 +1252,13 @@ bool Verifier::PrepareDatabase() {
         if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
           if (assertions_from_file_nodes_) {
             if (!LoadInMemoryRuleFile(
-                    "", CorrectFileVName(tb->element(0)),
+                    "", FixFileVName(tb->element(0)),
                     tb->element(4)->AsIdentifier()->symbol())) {
               is_ok = false;
             }
           } else {
             content_to_vname_[tb->element(4)->AsIdentifier()->symbol()] =
-                CorrectFileVName(tb->element(0));
+                FixFileVName(tb->element(0));
           }
         }
         last_file_vname = nullptr;
