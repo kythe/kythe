@@ -2592,6 +2592,39 @@ fact_value: "//- A.node/kind file\n"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, ReadGoalsFromFileNodeEmptyCorpusSuccess) {
+  v.UseFileNodes();
+  v.UseDefaultFileCorpus("testcorpus");
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+source { path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "file"
+}
+entries {
+source { path:"test" }
+fact_name: "/kythe/text"
+fact_value: "//- @a.node/kind anchor\na"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/loc/start"
+fact_value: "24"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/loc/end"
+fact_value: "25"
+}
+)"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST_P(VerifierTest, ReadGoalsFromFileNodeFailParse) {
   v.UseFileNodes();
   bool parsed = v.LoadInlineProtoFile(R"(entries {
