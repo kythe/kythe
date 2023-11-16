@@ -632,7 +632,10 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   builtin_location_.initialize(&builtin_location_name_);
   builtin_location_.begin.column = 1;
   builtin_location_.end.column = 1;
-  empty_string_id_ = IdentifierFor(builtin_location_, "");
+  auto* empty_string = IdentifierFor(builtin_location_, "");
+  empty_string_id_ = empty_string;
+  empty_string_sym_ = empty_string->symbol();
+  default_file_corpus_ = empty_string;
   fact_id_ = IdentifierFor(builtin_location_, "fact");
   vname_id_ = IdentifierFor(builtin_location_, "vname");
   kind_id_ = IdentifierFor(builtin_location_, "/kythe/node/kind");
@@ -1137,6 +1140,32 @@ Verifier::InternedVName Verifier::InternVName(AstNode* node) {
           tuple->element(4)->AsIdentifier()->symbol()};
 }
 
+AstNode* Verifier::FixFileVName(AstNode* node) {
+  if (auto* app = node->AsApp()) {
+    if (auto* tuple = app->rhs()->AsTuple(); tuple->size() == 5) {
+      if (auto* corpus_id = tuple->element(1)->AsIdentifier()) {
+        if (corpus_id->symbol() == empty_string_sym_) {
+          if (auto* path_id = tuple->element(3)->AsIdentifier()) {
+            fprintf(stderr,
+                    "Warning: file '%s' is missing a corpus in its VName.\n",
+                    symbol_table_.text(path_id->symbol()).c_str());
+          }
+          AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
+          values[0] = tuple->element(0);
+          values[1] = default_file_corpus_;
+          values[2] = tuple->element(2);
+          values[3] = tuple->element(3);
+          values[4] = tuple->element(4);
+          AstNode* new_tuple =
+              new (&arena_) Tuple(builtin_location_, 5, values);
+          return new (&arena_) App(vname_id_, new_tuple);
+        }
+      }
+    }
+  }
+  return node;
+}
+
 bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
   // TODO(zarko): None of the text processing supports non-UTF8 encoded files.
   if (tuple->element(1) == empty_string_id_ &&
@@ -1147,10 +1176,11 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
         auto sym = fast_solver_files_.insert({vname, known_file_sym_});
         if (!sym.second && sym.first->second != known_not_file_sym_) {
           if (assertions_from_file_nodes_) {
-            return LoadInMemoryRuleFile("", tuple->element(0),
+            return LoadInMemoryRuleFile("", FixFileVName(tuple->element(0)),
                                         sym.first->second);
           } else {
-            content_to_vname_[sym.first->second] = tuple->element(0);
+            content_to_vname_[sym.first->second] =
+                FixFileVName(tuple->element(0));
           }
         }
       } else {
@@ -1162,9 +1192,10 @@ bool Verifier::ProcessFactTupleForFastSolver(Tuple* tuple) {
       auto file = fast_solver_files_.insert({vname, content});
       if (!file.second && file.first->second == known_file_sym_) {
         if (assertions_from_file_nodes_) {
-          return LoadInMemoryRuleFile("", tuple->element(0), content);
+          return LoadInMemoryRuleFile("", FixFileVName(tuple->element(0)),
+                                      content);
         } else {
-          content_to_vname_[content] = tuple->element(0);
+          content_to_vname_[content] = FixFileVName(tuple->element(0));
         }
       }
     }
@@ -1221,13 +1252,13 @@ bool Verifier::PrepareDatabase() {
         if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
           if (assertions_from_file_nodes_) {
             if (!LoadInMemoryRuleFile(
-                    "", tb->element(0),
+                    "", FixFileVName(tb->element(0)),
                     tb->element(4)->AsIdentifier()->symbol())) {
               is_ok = false;
             }
           } else {
             content_to_vname_[tb->element(4)->AsIdentifier()->symbol()] =
-                tb->element(0);
+                FixFileVName(tb->element(0));
           }
         }
         last_file_vname = nullptr;

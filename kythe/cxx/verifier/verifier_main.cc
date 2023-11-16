@@ -71,6 +71,10 @@ ABSL_FLAG(bool, use_fast_solver, false,
           "SUPPORTED.");
 ABSL_FLAG(bool, print_timing_information, false,
           "Print timing information for profiling.");
+ABSL_FLAG(std::string, default_file_corpus, "",
+          "Use this corpus for anchor goals for file nodes without a corpus "
+          "set. In the future, if this flag is left empty, these file nodes "
+          "will raise an error.");
 
 namespace {
 // The fast solver needs extra stack space for modest programs.
@@ -151,6 +155,10 @@ Example:
 
   if (absl::GetFlag(FLAGS_show_fact_prefix)) {
     v.ShowFactPrefix();
+  }
+
+  if (!absl::GetFlag(FLAGS_default_file_corpus).empty()) {
+    v.UseDefaultFileCorpus(absl::GetFlag(FLAGS_default_file_corpus));
   }
 
   v.UseFastSolver(absl::GetFlag(FLAGS_use_fast_solver));
