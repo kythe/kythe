@@ -312,7 +312,10 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
         inspections_.push_back(i.evar);
       }
     }
-    if (!result_tyspec.empty()) {
+    if (!result_spec.empty()) {
+      // result_ty has been defined and will always be a record with at least
+      // one element; we need to terminate both the type definition and the
+      // record expression.
       absl::StrAppend(&result_tyspec, "]");
       absl::StrAppend(&result_clause, "]");
     }
