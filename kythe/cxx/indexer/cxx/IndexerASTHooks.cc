@@ -65,8 +65,6 @@ ABSL_FLAG(bool, experimental_threaded_claiming, false,
           "Defer answering claims and submit them in bulk when possible.");
 ABSL_FLAG(bool, emit_anchors_on_builtins, true,
           "Emit anchors on builtin types like int and float.");
-ABSL_FLAG(bool, experimental_alias_ref_fix, true,
-          "Fix template references when aliasing is turned on.");
 ABSL_FLAG(bool, emit_anchor_scopes, false,
           "Emit childof edges to an anchor's semantic scope");
 
@@ -2075,7 +2073,6 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
             // we need to use the template name for primary templates.
             if (!absl::GetFlag(
                     FLAGS_experimental_alias_template_instantiations) ||
-                !absl::GetFlag(FLAGS_experimental_alias_ref_fix) ||
                 IsExplicitOrInstantiatedFromPartialSpecialization(Decl)) {
               return BuildNodeIdForDecl(Decl);
             }
