@@ -1906,6 +1906,47 @@ fact_value: ""
       v.VerifyAllGoals([](Verifier* cxt, const Inspection&) { return true; }));
 }
 
+TEST_P(VerifierTest, ManyInspectionsDontUpsetSolver) {
+  // Souffle ships with a default max arity of 20 and will abort if it hits a
+  // larger (output) relation. Check that we handle this.
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- I01? defines SomeNode
+#- I02? defines SomeNode
+#- I03? defines SomeNode
+#- I04? defines SomeNode
+#- I05? defines SomeNode
+#- I06? defines SomeNode
+#- I07? defines SomeNode
+#- I08? defines SomeNode
+#- I09? defines SomeNode
+#- I10? defines SomeNode
+#- I11? defines SomeNode
+#- I12? defines SomeNode
+#- I13? defines SomeNode
+#- I14? defines SomeNode
+#- I15? defines SomeNode
+#- I16? defines SomeNode
+#- I17? defines SomeNode
+#- I18? defines SomeNode
+#- I19? defines SomeNode
+#- I20? defines SomeNode
+#- I21? defines SomeNode
+
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  int inspection_count = 0;
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals([&](Verifier* cxt, const Inspection&) {
+    ++inspection_count;
+    return true;
+  }));
+  EXPECT_EQ(inspection_count, 21);
+}
+
 TEST(VerifierUnitTest, InspectionHappensMoreThanOnceAndThatsOk) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
