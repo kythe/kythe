@@ -47,8 +47,9 @@ sym(n + 1) :- sym(n), n >= 1.
 at(s, e, v) :- entry(v, $0, nil, $1, $2),
                entry(v, $0, nil, $3, s),
                entry(v, $0, nil, $4, e).
-.decl result($5)
-result($6) :- true
+$5
+.decl result($6)
+result($7) :- true$8
 )";
 }  // namespace
 
@@ -267,8 +268,11 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
   if (emit_prelude_) {
     std::string code;
     code_.swap(code);
-    std::string result_tyspec;
-    std::string result_spec;
+    std::string result_tyspec;  // ".type result_ty = ..." or ""
+    std::string result_spec;    // .decl result($result_spec)
+    std::string
+        result_argspec;  // result($result_argspec) :- true$result_clause
+    std::string result_clause;
     absl::flat_hash_set<size_t> inspected_vars;
     for (const auto& i : inspections) {
       auto type = evar_types_.find(i.evar);
@@ -294,19 +298,34 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
       }
       auto id = FindEVar(i.evar);
       if (inspected_vars.insert(id).second) {
-        absl::StrAppend(&result_spec, result_spec.empty() ? "" : ", ", "v", id);
-        absl::StrAppend(&result_tyspec, result_tyspec.empty() ? "" : ", ", "v",
-                        id, ":",
+        if (result_spec.empty()) {
+          result_spec = "rrec : result_ty";
+          result_argspec = "rrec";
+        }
+        absl::StrAppend(&result_clause,
+                        result_clause.empty() ? ", rrec=[" : ", ", "v", id);
+        absl::StrAppend(&result_tyspec,
+                        result_tyspec.empty() ? ".type result_ty = [" : ", ",
+                        "rv", id, ":",
                         type->second == EVarType::kVName ? "vname" : "number");
+
         inspections_.push_back(i.evar);
       }
+    }
+    if (!result_spec.empty()) {
+      // result_ty has been defined and will always be a record with at least
+      // one element; we need to terminate both the type definition and the
+      // record expression.
+      absl::StrAppend(&result_tyspec, "]");
+      absl::StrAppend(&result_clause, "]");
     }
     code_ = absl::Substitute(kGlobalDecls, symbol_table.MustIntern(""),
                              symbol_table.MustIntern("/kythe/node/kind"),
                              symbol_table.MustIntern("anchor"),
                              symbol_table.MustIntern("/kythe/loc/start"),
                              symbol_table.MustIntern("/kythe/loc/end"),
-                             result_tyspec, result_spec);
+                             result_tyspec, result_spec, result_argspec,
+                             result_clause);
     absl::StrAppend(&code_, code);
   }
   absl::StrAppend(&code_, ".\n");
