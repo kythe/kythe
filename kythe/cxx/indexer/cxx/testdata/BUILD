@@ -2737,6 +2737,15 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_using_name",
+    srcs = ["template/template_using_name.cc"],
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_var_decl",
     srcs = ["template/template_var_decl.cc"],
     ignore_dups = True,
