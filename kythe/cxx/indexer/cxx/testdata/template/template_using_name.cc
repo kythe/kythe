@@ -4,11 +4,10 @@ namespace ns {
 //- @S defines/binding TemplateS
 template <typename T> struct S {};
 }
-//- !{@S ref TemplateS}  // TODO(zrlk): Targets missing node.
+// NB: using declaration cannot refer to a template specialization
+//- @S ref TemplateS
 using ns::S;
-// This trips an unimplemented check (TN.UsingTemplate) in
-// BuildNodeIdForTemplateName
 //- @"S<int>" ref TemplateSInt
 //- TemplateSInt param.0 TemplateS
-//- !{@S ref TemplateS}  // TODO(zrlk): No anchor for S
+//- @S ref TemplateS
 S<int> s;
