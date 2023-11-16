@@ -190,6 +190,13 @@ class GraphObserver {
     }
     const std::string& getRawIdentity() const { return Identity; }
     const ClaimToken* getToken() const { return Token; }
+    /// \brief Create a derived NodeId from this one.
+    ///
+    /// This is meant for debugging. You'll likely want to disable
+    /// `ForceEncodeString` in GraphObserver.cc.
+    NodeId derive(const std::string& s) const {
+      return NodeId(Token, Identity + s);
+    }
 
    private:
     friend class GraphObserver;

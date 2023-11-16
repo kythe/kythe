@@ -2741,7 +2741,6 @@ cc_indexer_test(
     srcs = ["template/template_using_name.cc"],
     experimental_alias_template_instantiations = True,
     ignore_dups = True,
-    ignore_unimplemented = True,
     tags = ["template"],
 )
 
