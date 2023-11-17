@@ -1222,6 +1222,23 @@ fact_value: ""
   }
 }
 
+TEST_P(VerifierTest, FastSolverIgnoresInspectImplicitNegatedEvar) {
+  v.SaveEVarAssignments();
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{Implicit nottyped SomeType}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  // SaveEVarAssignments marks Implicit and SomeType as implicitly inspected
+  // EVars. These should not cause verification to fail even though they appear
+  // in a negated context.
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST_P(VerifierTest, DontCareInNegativeIsGroundedFail) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- !{X typed vname(_,"","2","","")}
