@@ -275,15 +275,6 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
     std::string result_clause;
     absl::flat_hash_set<size_t> inspected_vars;
     for (const auto& i : inspections) {
-      auto type = evar_types_.find(i.evar);
-      if (type == evar_types_.end()) {
-        LOG(ERROR) << "evar typing missing for v" << FindEVar(i.evar);
-        return false;
-      }
-      if (type->second == EVarType::kUnknown) {
-        LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
-        return false;
-      }
       if (negated_evars_.contains(i.evar)) {
         // TODO(zarko): If we intend to preserve this restriction, it would be
         // better to catch it earlier (possibly during goal parsing). It's
@@ -292,8 +283,21 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
         // witness for *why* that negative goal group failed), but this will
         // complicate error recovery. This message is still better than getting
         // a diagnostic from Souffle about a leaky witness.
+        if (i.kind == Inspection::Kind::IMPLICIT) {
+          // Ignore implicit inspections inside negated contexts.
+          continue;
+        }
         LOG(ERROR) << i.evar->location() << ": " << i.label
                    << ": can't inspect a negated evar";
+        return false;
+      }
+      auto type = evar_types_.find(i.evar);
+      if (type == evar_types_.end()) {
+        LOG(ERROR) << "evar typing missing for v" << FindEVar(i.evar);
+        return false;
+      }
+      if (type->second == EVarType::kUnknown) {
+        LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
         return false;
       }
       auto id = FindEVar(i.evar);
