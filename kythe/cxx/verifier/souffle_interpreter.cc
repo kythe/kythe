@@ -303,7 +303,7 @@ SouffleResult RunSouffle(
         if (!inspect(i, actual.outputs[ix->second])) {
           break;
         }
-      } else {
+      } else if (i.kind == Inspection::Kind::EXPLICIT) {
         LOG(ERROR) << "missing output index for inspection with label "
                    << i.label;
       }

@@ -183,20 +183,28 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
         // TODO(zarko): emit a warning here (if we're in a positive goal)?
         absl::StrAppend(&code_, ", false");
       } else {
+        auto fresh = FindFreshEVar(evar);
+        if (fresh.is_fresh && !positive_cxt) {
+          negated_evars_.insert(evar);
+        }
         // We need to name the elements of the range; otherwise the compiler
         // will complain that they are ungrounded in certain cases.
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[v", FindEVar(evar),
-                        "r1, ", range->corpus(), ", ", range->root(), ", ",
-                        range->path(), ", v", FindEVar(evar), "r2]");
+        absl::StrAppend(&code_, ", v", fresh.id, "=[v", fresh.id, "r1, ",
+                        range->corpus(), ", ", range->root(), ", ",
+                        range->path(), ", v", fresh.id, "r2]");
         // TODO(zarko): there might be a cleaner way to handle eq_sym; it would
         // need LowerSubexpression to be able to emit this as a side-clause.
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
-                        FindEVar(evar), ")");
+                        fresh.id, ")");
       }
       return AssignEVarType(evar, EVarType::kVName);
     };
     auto EqEvarSubexp = [&](EVar* evar, AstNode* subexp) {
-      absl::StrAppend(&code_, ", v", FindEVar(evar), "=");
+      auto fresh = FindFreshEVar(evar);
+      if (fresh.is_fresh && !positive_cxt) {
+        negated_evars_.insert(evar);
+      }
+      absl::StrAppend(&code_, ", v", fresh.id, "=");
       if (auto* app = subexp->AsApp()) {
         AssignEVarType(evar, EVarType::kVName);
         return LowerSubexpression(app, EVarType::kVName, positive_cxt);
@@ -204,7 +212,11 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
         AssignEVarType(evar, EVarType::kSymbol);
         return LowerSubexpression(ident, EVarType::kSymbol, positive_cxt);
       } else if (auto* oevar = subexp->AsEVar()) {
-        absl::StrAppend(&code_, "v", FindEVar(oevar));
+        auto ofresh = FindFreshEVar(oevar);
+        if (ofresh.is_fresh && !positive_cxt) {
+          negated_evars_.insert(oevar);
+        }
+        absl::StrAppend(&code_, "v", ofresh.id);
         return AssignEVarType(evar, oevar);
       } else {
         LOG(ERROR) << "expected equality on evar, app, ident, or range";
