@@ -779,9 +779,15 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
       return false;
     }
   }
-  kythe::proto::VName empty;
-  auto* vname = ConvertVName(yy::location{}, empty);
-  return LoadInMemoryRuleFile(filename, vname, content_sym);
+  AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
+  values[0] = empty_string_id_;
+  values[1] = default_file_corpus_;
+  values[2] = empty_string_id_;
+  values[3] = IdentifierFor(yy::location{}, filename);
+  values[4] = empty_string_id_;
+  AstNode* default_vname_tuple = new (&arena_) Tuple(yy::location{}, 5, values);
+  AstNode* default_vname = new (&arena_) App(vname_id_, default_vname_tuple);
+  return LoadInMemoryRuleFile(filename, default_vname, content_sym);
 }
 
 bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
