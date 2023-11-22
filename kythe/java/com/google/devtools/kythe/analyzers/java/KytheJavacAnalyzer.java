@@ -175,7 +175,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         } catch (Throwable e) {
           logger.atWarning().withCause(e).log("Error running plugins");
           // Get the plugin name without any spaces so it works as a counter name.
-          String pluginName = plugin.getName().replaceAll("\\s", "");
+          String pluginName = plugin.getName().replaceAll("\\s", "_");
           statsCollector.incrementCounter("failed_plugin_" + pluginName);
         }
       }
