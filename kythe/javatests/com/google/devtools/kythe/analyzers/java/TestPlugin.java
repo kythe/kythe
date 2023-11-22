@@ -44,6 +44,11 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
   private KytheNode specialAnnotationNode;
 
   @Override
+  public String getName() {
+    return "test_plugin";
+  }
+
+  @Override
   public Void visitTopLevel(JCCompilationUnit compilation, Void v) {
     Context context = kytheGraph.getJavaContext();
     Symtab symtab = Symtab.instance(context);

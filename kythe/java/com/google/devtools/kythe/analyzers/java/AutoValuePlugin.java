@@ -76,6 +76,11 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
   public AutoValuePlugin() {}
 
   @Override
+  public String getName() {
+    return "auto_value_plugin";
+  }
+
+  @Override
   public Void visitTopLevel(JCCompilationUnit compilation, Void v) {
     Context context = kytheGraph.getJavaContext();
     Symtab symtab = Symtab.instance(context);

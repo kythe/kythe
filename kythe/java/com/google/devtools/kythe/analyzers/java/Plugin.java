@@ -65,11 +65,14 @@ public interface Plugin {
     public VName getVName();
   }
 
+  /** Return a human-friendly name for this plugin to be used in debug outputs. */
+  public String getName();
+
   /** Execute the {@link Plugin}'s analysis over a {@link JCCompilationUnit}. */
   public void run(JCCompilationUnit compilation, KytheEntrySets entrySets, KytheGraph kytheGraph);
 
   /** {@link Plugin} that scans the entire {@link JCCompilationUnit} AST. */
-  public static class Scanner<R, P> extends JCTreeScanner<R, P> implements Plugin {
+  public abstract static class Scanner<R, P> extends JCTreeScanner<R, P> implements Plugin {
     protected KytheGraph kytheGraph;
     protected KytheEntrySets entrySets;
 
@@ -86,6 +89,11 @@ public interface Plugin {
    * Example {@link Plugin} that prints each {@link JCTree} tag with its associated {@link VName}.
    */
   public static final class PrintKytheNodes extends Scanner<Void, Void> {
+    @Override
+    public String getName() {
+      return "print_kythe_nodes";
+    }
+
     @Override
     public Void scan(JCTree tree, Void v) {
       if (tree != null) {

@@ -141,13 +141,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     JCCompilationUnit compilation = (JCCompilationUnit) ast;
     final Map<JCTree, Plugin.KytheNode> nodes = new HashMap<>();
     SourceText src = null;
+    var statsCollector = getStatisticsCollector();
     try {
       src = new SourceText(context, compilation, details.getEncoding());
       SignatureGenerator signatureGenerator =
           new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
       KytheTreeScanner.emitEntries(
           context,
-          getStatisticsCollector(),
+          statsCollector,
           entrySets,
           signatureGenerator,
           compilation,
@@ -168,11 +169,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           new KytheGraphImpl(
               context, entrySets, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
       for (Supplier<Plugin> p : plugins) {
+        Plugin plugin = p.get();
         try {
-          Plugin plugin = p.get();
           plugin.run(compilation, entrySets, graph);
         } catch (Throwable e) {
           logger.atWarning().withCause(e).log("Error running plugins");
+          // Get the plugin name without any spaces so it works as a counter name.
+          String pluginName = plugin.getName().replaceAll("\\s", "");
+          statsCollector.incrementCounter("failed_plugin_" + pluginName);
         }
       }
     }
