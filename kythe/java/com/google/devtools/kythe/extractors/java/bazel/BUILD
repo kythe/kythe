@@ -33,4 +33,5 @@ java_binary(
 bzl_library(
     name = "aspect_bzl",
     srcs = ["aspect.bzl"],
+    deps = ["@rules_java//java:utils"],
 )
