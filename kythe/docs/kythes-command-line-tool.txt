@@ -45,34 +45,32 @@ $ kythe help
 
 .Output
 ----
-Usage: kythe <global-flags> <command> <flags>
+Usage: kythe <flags> <subcommand> <subcommand args>
 
-Examples:
-  kythe ls --uris kythe://kythe?path=kythe/cxx/common
-  kythe search --path kythe/cxx/common/CommandLineUtils.h /kythe/node/kind file
-  kythe node kythe:?lang=java#java.util.List
+Subcommands:
+	identifier       list tickets associated with a given identifier
+	ls               list a directory's contents
 
-Commands:
-# Retrieve outward edges from a node
-edges [--count_only] [--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>
+Subcommands for graph:
+	edges            retrieve outward edges from a node
+	nodes            retrieve a node's facts
 
-# Print help information for the given command
-help [command]
+Subcommands for usage:
+	commands         list all command names
+	flags            describe all known top-level flags
+	help             describe subcommands and their syntax
 
-# List a directory's contents
-ls [--uris] [directory-uri]
+Subcommands for xrefs:
+	decor            list a file's decorations
+	diagnostics      list a file's diagnostics
+	docs             display documentation for a node
+	source           retrieve a file's source text
+	xrefs            retrieve cross-references for the given node
 
-# Retrieve a node's facts
-node [--filters factFilter1,factFilter2,...] [--max_fact_size] <ticket>
 
-# List a file's anchor references
-refs [--format spec] [--dirty file] [--span span] <file-ticket>
-
-# Search for nodes based on partial components and fact values.
-search [--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...
-
-# Retrieve a file's source text
-source [--span span] <file-ticket>
+Top-level flags (use "kythe flags" for a full list):
+  -json=false: Display results as JSON
+  -log_requests=false: Log all requests to stderr as JSON
 ----
 
 Even with these _basic_ commands, one can build sophisticated queries and gather
