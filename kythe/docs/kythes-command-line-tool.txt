@@ -40,7 +40,7 @@ command.
 $ bazel build //kythe/go/serving/tools:kythe
 $ alias kythe="$PWD/bazel-bin/kythe/go/serving/tools/kythe"
 
-$ kythe help --short
+$ kythe help
 ----
 
 .Output
