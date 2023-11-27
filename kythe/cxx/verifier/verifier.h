@@ -234,12 +234,21 @@ class Verifier {
   /// will no longer have access to the internal AST.
   std::string InspectionString(const Inspection& i);
 
+  /// \brief Use `corpus` for file nodes without a corpus set.
+  void UseDefaultFileCorpus(const std::string& corpus) {
+    default_file_corpus_ = IdentifierFor(builtin_location_, corpus);
+  }
+
  private:
   using InternedVName = std::tuple<Symbol, Symbol, Symbol, Symbol, Symbol>;
 
   /// \brief Interns an AST node known to be a VName.
   /// \param node the node to intern.
   InternedVName InternVName(AstNode* node);
+
+  /// \return a new vname with its corpus filled with the default file corpus
+  /// if `node` is a vname without a corpus set; otherwise `node`.
+  AstNode* FixFileVName(AstNode* node);
 
   /// \brief Generate a VName that will not conflict with any other VName.
   AstNode* NewUniqueVName(const yy::location& loc);
@@ -497,6 +506,12 @@ class Verifier {
 
   /// Maps VNames to known_file_sym_, known_not_file_sym_, or file text.
   absl::flat_hash_map<InternedVName, Symbol> fast_solver_files_;
+
+  /// File corpus to use if none is set on a file node.
+  AstNode* default_file_corpus_;
+
+  /// The symbol for the empty string.
+  Symbol empty_string_sym_;
 };
 
 }  // namespace verifier

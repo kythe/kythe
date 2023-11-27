@@ -173,7 +173,7 @@ stream can be processed by many of the accompanying binaries in the `tools/` dir
       /tmp/kythe/065c7a9a0789d09b73d74b0ca17cfcec6643d69a6218d095d19a770b10dffdf9.kzip \
       > java.entries
 
-    indexers/cxx_indexers \
+    indexers/cxx_indexer \
       /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kzip \
       > cxx.entries
 

@@ -437,6 +437,7 @@ cc_library(
     ],
     deps = [
         ":clang_utils",
+        ":stream_adapter",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_cc_proto",
@@ -447,10 +448,12 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
         "@llvm-project//clang:basic",
+        "@llvm-project//clang:tooling",
         "@llvm-project//llvm:Support",
     ],
 )
@@ -600,6 +603,7 @@ cc_library(
     hdrs = ["recursive_type_visitor.h"],
     deps = [
         "@llvm-project//clang:ast",
+        "@llvm-project//clang:tooling",
     ],
 )
 

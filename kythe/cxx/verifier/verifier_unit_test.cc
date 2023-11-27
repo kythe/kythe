@@ -519,6 +519,30 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST_P(VerifierTest, AnchorKind) {
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @text.node/kind anchor
+##text (line 3 column 2 offset 38-42)
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "38"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "42"
+}
+)",
+                                    "", "1"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST_P(VerifierTest, GenerateAnchorEvar) {
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
 #- @text defines SomeNode
@@ -1196,6 +1220,40 @@ fact_value: ""
   } else {
     ASSERT_TRUE(v.VerifyAllGoals());
   }
+}
+
+TEST_P(VerifierTest, FastSolverIgnoresInspectImplicitNegatedDontCareEvar) {
+  v.SaveEVarAssignments();
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{Var=_ nottyped SomeType}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  // SaveEVarAssignments marks Implicit and SomeType as implicitly inspected
+  // EVars. These should not cause verification to fail even though they appear
+  // in a negated context.
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST_P(VerifierTest, FastSolverIgnoresInspectImplicitNegatedEvar) {
+  v.SaveEVarAssignments();
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- !{Implicit nottyped SomeType}
+source { root:"1" }
+edge_kind: "/kythe/edge/typed"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  // SaveEVarAssignments marks Implicit and SomeType as implicitly inspected
+  // EVars. These should not cause verification to fail even though they appear
+  // in a negated context.
+  ASSERT_TRUE(v.VerifyAllGoals());
 }
 
 TEST_P(VerifierTest, DontCareInNegativeIsGroundedFail) {
@@ -1882,6 +1940,47 @@ fact_value: ""
       v.VerifyAllGoals([](Verifier* cxt, const Inspection&) { return true; }));
 }
 
+TEST_P(VerifierTest, ManyInspectionsDontUpsetSolver) {
+  // Souffle ships with a default max arity of 20 and will abort if it hits a
+  // larger (output) relation. Check that we handle this.
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- I01? defines SomeNode
+#- I02? defines SomeNode
+#- I03? defines SomeNode
+#- I04? defines SomeNode
+#- I05? defines SomeNode
+#- I06? defines SomeNode
+#- I07? defines SomeNode
+#- I08? defines SomeNode
+#- I09? defines SomeNode
+#- I10? defines SomeNode
+#- I11? defines SomeNode
+#- I12? defines SomeNode
+#- I13? defines SomeNode
+#- I14? defines SomeNode
+#- I15? defines SomeNode
+#- I16? defines SomeNode
+#- I17? defines SomeNode
+#- I18? defines SomeNode
+#- I19? defines SomeNode
+#- I20? defines SomeNode
+#- I21? defines SomeNode
+
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  int inspection_count = 0;
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals([&](Verifier* cxt, const Inspection&) {
+    ++inspection_count;
+    return true;
+  }));
+  EXPECT_EQ(inspection_count, 21);
+}
+
 TEST(VerifierUnitTest, InspectionHappensMoreThanOnceAndThatsOk) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -2564,6 +2663,39 @@ source { path:"test" }
 fact_name: "/kythe/text"
 fact_value: "//- A.node/kind file\n"
 })"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST_P(VerifierTest, ReadGoalsFromFileNodeEmptyCorpusSuccess) {
+  v.UseFileNodes();
+  v.UseDefaultFileCorpus("testcorpus");
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+source { path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "file"
+}
+entries {
+source { path:"test" }
+fact_name: "/kythe/text"
+fact_value: "//- @a.node/kind anchor\na"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/loc/start"
+fact_value: "24"
+}
+entries {
+source { signature: "a" corpus:"testcorpus" path:"test" }
+fact_name: "/kythe/loc/end"
+fact_value: "25"
+}
+)"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }

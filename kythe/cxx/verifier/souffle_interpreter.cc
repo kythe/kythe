@@ -168,11 +168,13 @@ class KytheWriteStream : public souffle::WriteStream {
  protected:
   void writeNullary() override { output_->outputs.push_back(""); }
 
-  void writeNextTuple(const souffle::RamDomain* tuple) override {
+  void writeNextTuple(const souffle::RamDomain* result_tuple) override {
     if (output_types_.empty()) {
       output_->outputs.push_back("");
       return;
     }
+    const auto* tuple =
+        recordTable.unpack(result_tuple[0], output_types_.size());
     for (size_t ox = 0; ox < output_types_.size(); ++ox) {
       output_->outputs.push_back("");
       auto* o = &output_->outputs.back();
@@ -301,7 +303,7 @@ SouffleResult RunSouffle(
         if (!inspect(i, actual.outputs[ix->second])) {
           break;
         }
-      } else {
+      } else if (i.kind == Inspection::Kind::EXPLICIT) {
         LOG(ERROR) << "missing output index for inspection with label "
                    << i.label;
       }

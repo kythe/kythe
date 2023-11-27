@@ -47,8 +47,9 @@ sym(n + 1) :- sym(n), n >= 1.
 at(s, e, v) :- entry(v, $0, nil, $1, $2),
                entry(v, $0, nil, $3, s),
                entry(v, $0, nil, $4, e).
-.decl result($5)
-result($6) :- true
+$5
+.decl result($6)
+result($7) :- true$8
 )";
 }  // namespace
 
@@ -182,20 +183,28 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
         // TODO(zarko): emit a warning here (if we're in a positive goal)?
         absl::StrAppend(&code_, ", false");
       } else {
+        auto fresh = FindFreshEVar(evar);
+        if (fresh.is_fresh && !positive_cxt) {
+          negated_evars_.insert(evar);
+        }
         // We need to name the elements of the range; otherwise the compiler
         // will complain that they are ungrounded in certain cases.
-        absl::StrAppend(&code_, ", v", FindEVar(evar), "=[v", FindEVar(evar),
-                        "r1, ", range->corpus(), ", ", range->root(), ", ",
-                        range->path(), ", v", FindEVar(evar), "r2]");
+        absl::StrAppend(&code_, ", v", fresh.id, "=[v", fresh.id, "r1, ",
+                        range->corpus(), ", ", range->root(), ", ",
+                        range->path(), ", v", fresh.id, "r2]");
         // TODO(zarko): there might be a cleaner way to handle eq_sym; it would
         // need LowerSubexpression to be able to emit this as a side-clause.
         absl::StrAppend(&code_, ", at(", *beginsym, ", ", *endsym, ", v",
-                        FindEVar(evar), ")");
+                        fresh.id, ")");
       }
       return AssignEVarType(evar, EVarType::kVName);
     };
     auto EqEvarSubexp = [&](EVar* evar, AstNode* subexp) {
-      absl::StrAppend(&code_, ", v", FindEVar(evar), "=");
+      auto fresh = FindFreshEVar(evar);
+      if (fresh.is_fresh && !positive_cxt) {
+        negated_evars_.insert(evar);
+      }
+      absl::StrAppend(&code_, ", v", fresh.id, "=");
       if (auto* app = subexp->AsApp()) {
         AssignEVarType(evar, EVarType::kVName);
         return LowerSubexpression(app, EVarType::kVName, positive_cxt);
@@ -203,7 +212,11 @@ bool SouffleProgram::LowerGoal(const SymbolTable& symbol_table, AstNode* goal,
         AssignEVarType(evar, EVarType::kSymbol);
         return LowerSubexpression(ident, EVarType::kSymbol, positive_cxt);
       } else if (auto* oevar = subexp->AsEVar()) {
-        absl::StrAppend(&code_, "v", FindEVar(oevar));
+        auto ofresh = FindFreshEVar(oevar);
+        if (ofresh.is_fresh && !positive_cxt) {
+          negated_evars_.insert(oevar);
+        }
+        absl::StrAppend(&code_, "v", ofresh.id);
         return AssignEVarType(evar, oevar);
       } else {
         LOG(ERROR) << "expected equality on evar, app, ident, or range";
@@ -267,10 +280,29 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
   if (emit_prelude_) {
     std::string code;
     code_.swap(code);
-    std::string result_tyspec;
-    std::string result_spec;
+    std::string result_tyspec;  // ".type result_ty = ..." or ""
+    std::string result_spec;    // .decl result($result_spec)
+    std::string
+        result_argspec;  // result($result_argspec) :- true$result_clause
+    std::string result_clause;
     absl::flat_hash_set<size_t> inspected_vars;
     for (const auto& i : inspections) {
+      if (negated_evars_.contains(i.evar)) {
+        // TODO(zarko): If we intend to preserve this restriction, it would be
+        // better to catch it earlier (possibly during goal parsing). It's
+        // possible to support it (e.g., an evar in a negative context with an
+        // inspection will be inspected if the negative context fails, giving a
+        // witness for *why* that negative goal group failed), but this will
+        // complicate error recovery. This message is still better than getting
+        // a diagnostic from Souffle about a leaky witness.
+        if (i.kind == Inspection::Kind::IMPLICIT) {
+          // Ignore implicit inspections inside negated contexts.
+          continue;
+        }
+        LOG(ERROR) << i.evar->location() << ": " << i.label
+                   << ": can't inspect a negated evar";
+        return false;
+      }
       auto type = evar_types_.find(i.evar);
       if (type == evar_types_.end()) {
         LOG(ERROR) << "evar typing missing for v" << FindEVar(i.evar);
@@ -280,33 +312,36 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
         LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
         return false;
       }
-      if (negated_evars_.contains(i.evar)) {
-        // TODO(zarko): If we intend to preserve this restriction, it would be
-        // better to catch it earlier (possibly during goal parsing). It's
-        // possible to support it (e.g., an evar in a negative context with an
-        // inspection will be inspected if the negative context fails, giving a
-        // witness for *why* that negative goal group failed), but this will
-        // complicate error recovery. This message is still better than getting
-        // a diagnostic from Souffle about a leaky witness.
-        LOG(ERROR) << i.evar->location() << ": " << i.label
-                   << ": can't inspect a negated evar";
-        return false;
-      }
       auto id = FindEVar(i.evar);
       if (inspected_vars.insert(id).second) {
-        absl::StrAppend(&result_spec, result_spec.empty() ? "" : ", ", "v", id);
-        absl::StrAppend(&result_tyspec, result_tyspec.empty() ? "" : ", ", "v",
-                        id, ":",
+        if (result_spec.empty()) {
+          result_spec = "rrec : result_ty";
+          result_argspec = "rrec";
+        }
+        absl::StrAppend(&result_clause,
+                        result_clause.empty() ? ", rrec=[" : ", ", "v", id);
+        absl::StrAppend(&result_tyspec,
+                        result_tyspec.empty() ? ".type result_ty = [" : ", ",
+                        "rv", id, ":",
                         type->second == EVarType::kVName ? "vname" : "number");
+
         inspections_.push_back(i.evar);
       }
+    }
+    if (!result_spec.empty()) {
+      // result_ty has been defined and will always be a record with at least
+      // one element; we need to terminate both the type definition and the
+      // record expression.
+      absl::StrAppend(&result_tyspec, "]");
+      absl::StrAppend(&result_clause, "]");
     }
     code_ = absl::Substitute(kGlobalDecls, symbol_table.MustIntern(""),
                              symbol_table.MustIntern("/kythe/node/kind"),
                              symbol_table.MustIntern("anchor"),
                              symbol_table.MustIntern("/kythe/loc/start"),
                              symbol_table.MustIntern("/kythe/loc/end"),
-                             result_tyspec, result_spec);
+                             result_tyspec, result_spec, result_argspec,
+                             result_clause);
     absl::StrAppend(&code_, code);
   }
   absl::StrAppend(&code_, ".\n");

@@ -65,8 +65,6 @@ ABSL_FLAG(bool, experimental_threaded_claiming, false,
           "Defer answering claims and submit them in bulk when possible.");
 ABSL_FLAG(bool, emit_anchors_on_builtins, true,
           "Emit anchors on builtin types like int and float.");
-ABSL_FLAG(bool, experimental_alias_ref_fix, true,
-          "Fix template references when aliasing is turned on.");
 ABSL_FLAG(bool, emit_anchor_scopes, false,
           "Emit childof edges to an anchor's semantic scope");
 
@@ -370,11 +368,11 @@ class NameEqClassDeclVisitor
 
   NameEqClass VisitTagDecl(const clang::TagDecl* decl) {
     switch (decl->getTagKind()) {
-      case clang::TTK_Struct:
+      case clang::TagTypeKind::Struct:
         return NameEqClass::Class;
-      case clang::TTK_Class:
+      case clang::TagTypeKind::Class:
         return NameEqClass::Class;
-      case clang::TTK_Union:
+      case clang::TagTypeKind::Union:
         return NameEqClass::Union;
       default:
         // TODO(zarko): Add classes for other tag kinds, like enums.
@@ -2075,7 +2073,6 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
             // we need to use the template name for primary templates.
             if (!absl::GetFlag(
                     FLAGS_experimental_alias_template_instantiations) ||
-                !absl::GetFlag(FLAGS_experimental_alias_ref_fix) ||
                 IsExplicitOrInstantiatedFromPartialSpecialization(Decl)) {
               return BuildNodeIdForDecl(Decl);
             }
@@ -3756,6 +3753,15 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
     const clang::UsingShadowDecl* Decl) {
   if (auto RCC =
           ExplicitRangeInCurrentContext(RangeForNameOfDeclaration(Decl))) {
+    if (auto* ctd = llvm::dyn_cast_or_null<clang::ClassTemplateDecl>(
+            Decl->getTargetDecl());
+        ctd != nullptr && ctd->getTemplatedDecl() != nullptr &&
+        absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
+      Observer.recordDeclUseLocation(
+          RCC.value(), BuildNodeIdForDecl(ctd->getTemplatedDecl()),
+          GraphObserver::Claimability::Claimable, IsImplicit(RCC.value()));
+      return true;
+    }
     Observer.recordDeclUseLocation(
         RCC.value(), BuildNodeIdForDecl(Decl->getTargetDecl()),
         GraphObserver::Claimability::Claimable, IsImplicit(RCC.value()));
@@ -4072,6 +4078,19 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
         LOG(FATAL) << "BuildNodeIdForTemplateName can't identify TemplateDecl";
       }
     }
+    case TemplateName::UsingTemplate: {
+      // UsingShadowDecl::getIntroducer() will return the specific
+      // using-declaration. We don't index UsingShadowDecls as definition sites,
+      // so it's not helpful to point at that declaration.
+      const clang::UsingShadowDecl* decl = Name.getAsUsingShadowDecl();
+      if (auto* ctd = llvm::dyn_cast_or_null<clang::ClassTemplateDecl>(
+              decl->getTargetDecl());
+          ctd != nullptr && ctd->getTemplatedDecl() != nullptr &&
+          absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
+        return BuildNodeIdForDecl(ctd->getTemplatedDecl());
+      }
+      return BuildNodeIdForDecl(decl);
+    }
     case TemplateName::OverloadedTemplate:
       CHECK(options_.IgnoreUnimplemented) << "TN.OverloadedTemplate";
       return std::nullopt;
@@ -4089,9 +4108,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
       return std::nullopt;
     case TemplateName::SubstTemplateTemplateParmPack:
       CHECK(options_.IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmPack";
-      return std::nullopt;
-    case TemplateName::UsingTemplate:
-      CHECK(options_.IgnoreUnimplemented) << "TN.UsingTemplate";
       return std::nullopt;
   }
   CHECK(options_.IgnoreUnimplemented)
