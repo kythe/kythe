@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+load("@rules_java//java:java_utils.bzl", _java_utils = "utils")
 
 _mnemonic = "Javac"
 
@@ -33,6 +34,9 @@ def _extract_java(target, ctx):
     info = target[JavaInfo]
     compilation = info.compilation_info
     annotations = info.annotation_processing
+
+    # compilation.javac_options may be a depset
+    javac_options = _java_utils.tokenize_javacopts(ctx, compilation.javac_options)
 
     source_files = []
     for src in ctx.rule.files.srcs:
@@ -61,7 +65,7 @@ def _extract_java(target, ctx):
             outputjar = output_jar,
             classpath = classpath,
             source_file = source_files,
-            javac_opt = compilation.javac_options,
+            javac_opt = javac_options,
             processor = processors,
             processorpath = processorpath,
             bootclasspath = bootclasspath,
