@@ -12,7 +12,10 @@ package(default_visibility = ["//visibility:public"])
     default_java_toolchain(
         name = "toolchain_jdk_{version}".format(version = version),
         configuration = dict(),
-        java_runtime = "@remotejdk{version}_linux//:jdk".format(version = version),
+        java_runtime = select({
+            ":platform_macos": "@remotejdk{version}_macos//:jdk".format(version = version),
+            ":platform_linux": "@remotejdk{version}_linux//:jdk".format(version = version),
+        }),
         source_version = version,
         target_version = version,
     )
@@ -94,3 +97,17 @@ config_setting(
         "21",
     )
 ]
+
+config_setting(
+    name = "platform_macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "platform_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
