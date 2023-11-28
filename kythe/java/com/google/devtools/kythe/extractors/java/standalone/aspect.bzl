@@ -13,6 +13,7 @@
 # limitations under the License.
 
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "extract")
+load("@rules_java//java:java_utils.bzl", _java_utils = "utils")
 
 def _extract_java_aspect(target, ctx):
     if JavaInfo not in target or not hasattr(ctx.rule.attr, "srcs"):
@@ -24,6 +25,9 @@ def _extract_java_aspect(target, ctx):
     compilation = info.compilation_info
     annotations = info.annotation_processing
 
+    # compilation.javac_options may be a depset
+    javac_options = _java_utils.tokenize_javacopts(ctx, compilation.javac_options)
+
     classpath = [j.path for j in compilation.compilation_classpath]
     bootclasspath = [j.path for j in compilation.boot_classpath]
 
@@ -34,7 +38,7 @@ def _extract_java_aspect(target, ctx):
         processors = annotations.processor_classnames
 
     # Skip --release options; -source/-target/-bootclasspath are already set
-    args = _remove_flags(compilation.javac_options, {"--release": 1}) + [
+    args = _remove_flags(javac_options, {"--release": 1}) + [
         "-cp",
         ":".join(classpath),
         "-bootclasspath",
