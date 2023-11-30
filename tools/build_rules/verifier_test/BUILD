@@ -34,6 +34,13 @@ bzl_library(
 bzl_library(
     name = "verifier_test_bzl",
     srcs = ["verifier_test.bzl"],
+    deps = [":verifier_test_impl_bzl"],
+)
+
+bzl_library(
+    name = "verifier_test_impl_bzl",
+    srcs = ["verifier_test_impl.bzl"],
+    visibility = ["//visibility:private"],
     deps = [
         "@bazel_skylib//lib:shell",
     ],
