@@ -364,13 +364,10 @@ cayley repl --dbpath kythe.nq.gz # or cayley http --dbpath kythe.nq.gz
     // Get the file(s) defining a particular node
     cayley> g.V("node_ticket").In("/kythe/edge/defines").Out("/kythe/edge/childof").Has("/kythe/node/kind", "file").All()
 
-## Visualizing Cross-References
+## Serving data over HTTP
 
-As part of Kythe's first release, a sample UI has been made to show Kythe's
-basic cross-reference capabilities.  The following command can be run over the
-serving table created with the `write_tables` binary (see above).
-
-Note: Version v0.0.30 is the latest version that includes the web UI. If you want a newer Kythe than this, you'll need to build from source.
+The `http_server` tool can be run over the serving table created with the 
+`write_tables` binary (see above).
 
 {% highlight bash %}
 # --listen localhost:8080 allows access from only this machine; change to

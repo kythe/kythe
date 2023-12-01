@@ -27,7 +27,7 @@ image:https://img.shields.io/github/license/kythe/kythe.svg[link=https://github.
 * Indexer implementations for C++, Go, and Java
 * Compilation extractors for javac, Maven, cmake, Go, and link:http://bazel.io/[Bazel]
 * Generic verifier for indexers
-* Sample cross-reference service and accompanying web UI
+* Sample cross-reference service
 * Many useful utility commands to work with Kythe artifacts
 
 == Getting Started
