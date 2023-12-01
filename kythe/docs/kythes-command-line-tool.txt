@@ -19,7 +19,7 @@ Every good interface deserves a good command-line tool.
 
 NOTE: This post has been edited 2015/05/19 to reflect changes in the way to build Kythe.
 
-Along with the sample cross-reference service, Kythe also provides a basic command-line 
+Along with the sample cross-reference service, Kythe also provides a basic command-line
 tool for the xrefs, filetree, and search interfaces.  The Kythe tool can use serving
 tables directly or communicate with a remote API service.
 
