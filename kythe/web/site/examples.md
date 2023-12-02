@@ -366,7 +366,7 @@ cayley repl --dbpath kythe.nq.gz # or cayley http --dbpath kythe.nq.gz
 
 ## Serving data over HTTP
 
-The `http_server` tool can be run over the serving table created with the 
+The `http_server` tool can be run over the serving table created with the
 `write_tables` binary (see above).
 
 {% highlight bash %}
