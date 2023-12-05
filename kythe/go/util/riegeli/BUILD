@@ -1,5 +1,6 @@
 # gazelle:go_test file
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//kythe/proto:genproto.bzl", "update_generated_protos")
 load("//kythe/proto:go.bzl", "go_proto_library")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
@@ -96,3 +97,5 @@ go_proto_library(
     proto = ":riegeli_test_proto",
     suggested_update_target = None,
 )
+
+update_generated_protos(name = "update")
