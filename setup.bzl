@@ -190,22 +190,21 @@ def kythe_rule_repositories():
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
+    # Note that if you update protobuf, you must also update some generated
+    # proto files:
+    #   bazel run //kythe/proto:update
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "39b52572da90ad54c883a828cb2ca68e5ac918aa75d36c3e55c9c76b94f0a4f7",
-        strip_prefix = "protobuf-24.2",
+        sha256 = "9bd87b8280ef720d3240514f884e56a712f2218f0d693b48050c836028940a42",
+        strip_prefix = "protobuf-25.1",
         urls = [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/releases/download/v24.2/protobuf-24.2.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/releases/download/v24.2/protobuf-24.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protobuf-25.1.tar.gz",
         ],
         patches = [
             # Use the rules_rust provided proto plugin, rather than the native one
             # which hijacks the --rust_out command line and is incompatible.
             "//third_party:protobuf-no-rust.patch",
-            # Patch https://github.com/protocolbuffers/protobuf/commit/5b6c2459b57c23669d6efc5a14a874c693004eec
-            # until it gets included in a release.
-            "//third_party:protobuf-nowkt.patch",
         ],
         patch_args = [
             "-p1",
