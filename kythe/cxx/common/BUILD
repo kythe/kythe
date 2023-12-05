@@ -600,6 +600,7 @@ cc_library(
     srcs = ["regex.cc"],
     hdrs = ["regex.h"],
     deps = [
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
