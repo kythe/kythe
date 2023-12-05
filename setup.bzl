@@ -192,9 +192,7 @@ def kythe_rule_repositories():
     # depend on @com_google_protobuf for protoc and proto runtimes.
     # Note that if you update protobuf, you must also update some generated
     # proto files:
-    #   ./third_party/bazel/update-protos.sh
     #   bazel run //kythe/proto:update
-    #   ./kythe/go/util/riegeli/update_protos.sh
     maybe(
         http_archive,
         name = "com_google_protobuf",
