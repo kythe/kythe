@@ -1753,6 +1753,7 @@ cc_indexer_test(
 # as such is a cc_extractor_test rather than hermetic cc_indexer_test.
 cc_extractor_test(
     name = "make_shared_factories",
+    size = "medium",
     srcs = ["libraries/make_shared_factories.cc"],
     tags = ["libraries"],
 )

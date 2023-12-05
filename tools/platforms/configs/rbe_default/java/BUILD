@@ -26,6 +26,6 @@ alias(
 
 local_java_runtime(
     name = "rbe_jdk",
-    java_home = "/usr/lib/jvm/11.29.3-ca-jdk11.0.2/reduced",
-    version = "11.0.2",
+    java_home = "/usr/lib/jvm/java-11-openjdk-amd64",
+    version = "11.0.21",
 )

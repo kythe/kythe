@@ -325,7 +325,7 @@ cc_extractor_test(
 
 cc_extractor_test(
     name = "extract_verify_iostream_test",
-    size = "small",
+    size = "medium",
     srcs = [
         "extract_verify_iostream_test.cc",
     ],
