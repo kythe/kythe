@@ -846,4 +846,11 @@ cc_proto_library(
 )
 
 # Uses native.existing_rules() to find rules to update; must come last.
-update_generated_protos(name = "update")
+update_generated_protos(
+    name = "update",
+    additional_update_targets = [
+        # Ensure this updates the protos which live elsewhere.
+        "//kythe/go/util/riegeli:riegeli_test_go_proto_sync",
+        "//third_party/bazel:update",
+    ],
+)
