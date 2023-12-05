@@ -2727,14 +2727,10 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   auto NameRangeInContext =
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange);
   for (const auto* NextDecl : Decl->redecls()) {
-    const clang::Decl* OuterTemplate = nullptr;
     // It's not useful to draw completion edges to implicit forward
     // declarations, nor is it useful to declare that a definition completes
     // itself.
     if (NextDecl != Decl && !NextDecl->isImplicit()) {
-      if (auto* VD = dyn_cast<const clang::VarDecl>(NextDecl)) {
-        OuterTemplate = VD->getDescribedVarTemplate();
-      }
       FileID NextDeclFile =
           Observer.getSourceManager()->getFileID(NextDecl->getLocation());
       // We should not point a completes edge from an abs node to a var node.
@@ -3276,14 +3272,10 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
   if (auto NameRangeInContext =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
     for (const auto* NextDecl : Decl->redecls()) {
-      const clang::Decl* OuterTemplate = nullptr;
       // It's not useful to draw completion edges to implicit forward
       // declarations, nor is it useful to declare that a definition completes
       // itself.
       if (NextDecl != Decl && !NextDecl->isImplicit()) {
-        if (auto* CRD = dyn_cast<const clang::CXXRecordDecl>(NextDecl)) {
-          OuterTemplate = CRD->getDescribedClassTemplate();
-        }
         FileID NextDeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         // We should not point a completes edge from an abs node to a record
@@ -3629,10 +3621,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     FileID DeclFile =
         Observer.getSourceManager()->getFileID(Decl->getLocation());
     for (const auto* NextDecl : Decl->redecls()) {
-      const clang::Decl* OuterTemplate = nullptr;
       if (NextDecl != Decl) {
-        const clang::Decl* OuterTemplate =
-            NextDecl->getDescribedFunctionTemplate();
         FileID NextDeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
