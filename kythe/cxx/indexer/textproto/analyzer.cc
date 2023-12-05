@@ -959,7 +959,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
       continue;
     }
 
-    DLOG(LEVEL(-1)) << "Added file to descriptor db: " << file.info().path();
+    VLOG(1) << "Added file to descriptor db: " << file.info().path();
     if (!file_reader.AddFile(file.info().path(), file.content())) {
       return absl::UnknownError("Unable to add file to SourceTree.");
     }
@@ -988,7 +988,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     if (!proto_importer.Import(relpath)) {
       return absl::UnknownError("Error importing proto file: " + relpath);
     }
-    DLOG(LEVEL(-1)) << "Added proto to descriptor pool: " << relpath;
+    VLOG(1) << "Added proto to descriptor pool: " << relpath;
   }
   const DescriptorPool* descriptor_pool = proto_importer.pool();
 

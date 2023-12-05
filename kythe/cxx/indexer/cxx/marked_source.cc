@@ -35,13 +35,6 @@
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
-// TODO(shahms): This is part of the Abseil logging migration.
-// Support for VLOG is planned, but not yet implemented.
-// Elsewhere, VLOG(1) maps to DLOG(LEVEL(-1)) until it is,
-// but VLOG_IS_ON is only used in this file, so just disable it entirely
-// until VLOG is supported properly, at which point this will be removed.
-#define VLOG_IS_ON(x) false
-
 ABSL_FLAG(bool, experimental_new_marked_source, false,
           "Use new signature generation.");
 
@@ -418,8 +411,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {
-      DLOG(LEVEL(-1)) << "Invalid return type range for "
-                      << decl->getNameAsString();
+      VLOG(1) << "Invalid return type range for " << decl->getNameAsString();
     }
   }
 
@@ -467,7 +459,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       // clogging log output.
       if (annotation.kind != Annotation::QualifiedName &&
           IsValidRange(cache_->source_manager(), original_range)) {
-        DLOG(LEVEL(-1))
+        VLOG(1)
             << "Invalid annotation range (" << annotation.kind << "): '"
             << original_range.getBegin().printToString(cache_->source_manager())
             << "' to '"
@@ -803,16 +795,15 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                             clang::SourceRange(start_loc, end_loc));
   if (range.empty()) {
     if (VLOG_IS_ON(1)) {
-      DLOG(LEVEL(-1)) << "GetTextRange failed for " << decl_->getDeclKindName()
-                      << " " << decl_->getQualifiedNameAsString() << "\n at "
-                      << start_loc.printToString(cache_->source_manager())
-                      << "\n to "
-                      << end_loc.printToString(cache_->source_manager())
-                      << "\n originally "
-                      << decl_->getSourceRange().getBegin().printToString(
-                             cache_->source_manager())
-                      << "\n         to "
-                      << end_loc_.printToString(cache_->source_manager());
+      VLOG(1) << "GetTextRange failed for " << decl_->getDeclKindName() << " "
+              << decl_->getQualifiedNameAsString() << "\n at "
+              << start_loc.printToString(cache_->source_manager()) << "\n to "
+              << end_loc.printToString(cache_->source_manager())
+              << "\n originally "
+              << decl_->getSourceRange().getBegin().printToString(
+                     cache_->source_manager())
+              << "\n         to "
+              << end_loc_.printToString(cache_->source_manager());
     }
     return std::nullopt;
   }

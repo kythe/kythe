@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -30,25 +31,19 @@
 namespace kythe {
 namespace {
 
-template <typename T>
-union NoDestructor {
-  T value;
-  ~NoDestructor() {}
-};
-
 std::shared_ptr<const RE2> DefaultRegex() {
-  static const NoDestructor<std::shared_ptr<const RE2>> kEmpty = {
+  static const absl::NoDestructor<std::shared_ptr<const RE2>> kEmpty{
       std::make_shared<RE2>("")};
-  return kEmpty.value;
+  return *kEmpty;
 }
 
 std::shared_ptr<const RE2::Set> DefaultSet() {
-  static const NoDestructor<std::shared_ptr<const RE2::Set>> kEmpty = {[] {
+  static const absl::NoDestructor<std::shared_ptr<const RE2::Set>> kEmpty{[] {
     auto set = std::make_shared<RE2::Set>(RE2::Options(), RE2::UNANCHORED);
     set->Compile();
     return set;
   }()};
-  return kEmpty.value;
+  return *kEmpty;
 }
 
 RE2::Set CheckCompiled(RE2::Set set) {

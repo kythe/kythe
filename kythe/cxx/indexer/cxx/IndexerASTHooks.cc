@@ -4796,16 +4796,14 @@ IndexerASTVisitor::FindTemplateTypeParmTypeDecl(
   if (auto* Decl = T.getDecl()) {
     return Decl;
   }
-  DLOG(LEVEL(-2))
-      << "Immediate TemplateTypeParmDecl not found, falling back to "
-         "TypeContext";
+  VLOG(2) << "Immediate TemplateTypeParmDecl not found, falling back to "
+             "TypeContext";
   if (T.getDepth() < Job->TypeContext.size() &&
       T.getIndex() < Job->TypeContext[T.getDepth()]->size()) {
     return clang::cast<clang::TemplateTypeParmDecl>(
         Job->TypeContext[T.getDepth()]->getParam(T.getIndex()));
   }
-  DLOG(LEVEL(-1))
-      << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
+  VLOG(1) << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
   return nullptr;
 }
 
