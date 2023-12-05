@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "absl/base/no_destructor.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -153,8 +154,8 @@ class KytheEntryStreamReadFactory : public souffle::ReadStreamFactory {
   }
 
   const std::string& getName() const override {
-    static const std::string name = "kythe_entrystream";
-    return name;
+    static absl::NoDestructor<std::string> name("kythe_entrystream");
+    return *name;
   }
 };
 

@@ -63,6 +63,7 @@ cc_library(
         ":assertions_to_souffle",
         ":lexparse",
         "//third_party/souffle:parse_transform",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
@@ -133,6 +134,7 @@ cc_library(
     deps = [
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_protobuf//:protobuf",
         "@com_google_protobuf//src/google/protobuf/io",
         "@souffle",

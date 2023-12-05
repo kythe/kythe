@@ -24,6 +24,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -138,8 +139,8 @@ class KytheReadStreamFactory : public souffle::ReadStreamFactory {
   }
 
   const std::string& getName() const override {
-    static const std::string name = "kythe";
-    return name;
+    static absl::NoDestructor<std::string> name("kythe");
+    return *name;
   }
 
  private:
@@ -225,8 +226,8 @@ class KytheWriteStreamFactory : public souffle::WriteStreamFactory {
   }
 
   const std::string& getName() const override {
-    static const std::string name = "kythe";
-    return name;
+    static absl::NoDestructor<std::string> name("kythe");
+    return *name;
   }
 
   size_t NewOutput() {
