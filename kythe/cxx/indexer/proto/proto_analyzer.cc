@@ -95,7 +95,7 @@ bool ProtoAnalyzer::AnalyzeFile(const std::string& rel_path,
 
 bool ProtoAnalyzer::Parse(const std::string& proto_file,
                           const std::string& content) {
-  DLOG(LEVEL(-1)) << "FILE : " << proto_file << std::endl;
+  VLOG(1) << "FILE : " << proto_file << std::endl;
   return AnalyzeFile(proto_file, VNameFromFullPath(proto_file), content);
 }
 

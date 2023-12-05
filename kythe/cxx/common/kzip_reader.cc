@@ -124,7 +124,7 @@ absl::StatusOr<KzipOptions> Validate(zip_t* archive) {
         absl::StrCat("Malformed kzip: invalid root: ", root));
   }
   root.remove_suffix(root.size() - slashpos);
-  DLOG(LEVEL(-1)) << "Using archive root: " << root;
+  VLOG(1) << "Using archive root: " << root;
   std::set<absl::string_view> proto_units;
   std::set<absl::string_view> json_units;
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {

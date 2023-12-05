@@ -702,8 +702,8 @@ std::string ExtractorPPCallbacks::AddFile(clang::FileEntryRef file,
                                      buffer.getBufferEnd());
     iter->second.vname =
         index_writer_->VNameForPath(FixStdinPath(file, iter->first));
-    DLOG(LEVEL(-1)) << "added content for " << iter->first << ": mapped to "
-                    << iter->second.vname << "\n";
+    VLOG(1) << "added content for " << iter->first << ": mapped to "
+            << iter->second.vname << "\n";
   }
   return iter->first;
 }
