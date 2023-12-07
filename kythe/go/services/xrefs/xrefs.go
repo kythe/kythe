@@ -180,6 +180,11 @@ func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind 
 	}
 }
 
+// IsSpeculative returns whether the edge kind is considered speculative.
+func IsSpeculative(edgeKind string) bool {
+	return edgeKind == internalCallerKindOverride || strings.HasSuffix(edgeKind, "/thunk")
+}
+
 // ConvertFilters converts each filter glob into an equivalent regexp.
 func ConvertFilters(filters []string) []*regexp.Regexp {
 	var patterns []*regexp.Regexp

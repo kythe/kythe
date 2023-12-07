@@ -2865,6 +2865,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 				Parent: "kythe:?path=someFile",
 			}},
 		}, {
+			Speculative: true,
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor1",
 				Parent: "kythe:?path=someFile",
@@ -2876,6 +2877,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 				Span:   arbitrarySpan,
 			}},
 		}, {
+			Speculative: true,
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor2",
 				Parent: "kythe:?path=someFile",

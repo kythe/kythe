@@ -345,7 +345,8 @@ message CrossReferencesRequest {
     // Callgraph information will be populated in the CrossReferencesReply.
     DIRECT_CALLERS = 1;
     // Callgraph information will be populated in the CrossReferencesReply.
-    // Calls to override-related functions will also be considered.
+    // Calls to override-related functions will also be considered and each
+    // RelatedAnchor will be marked as speculative.
     OVERRIDE_CALLERS = 2;
   }
 
@@ -538,6 +539,11 @@ message CrossReferencesReply {
     // The relevant semantic object. Populated for callers and scoped
     // references.
     string ticket = 4;
+
+    // Whether the anchor, and its sites, are speculative and may not be precise
+    // with respect to a program's execution.  Examples include callsites that
+    // may occur through dynamic dispatch or ref/writes/thunk locations.
+    bool speculative = 6;
 
     reserved 2;
   }
