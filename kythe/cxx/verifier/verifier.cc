@@ -1011,14 +1011,11 @@ bool Verifier::VerifyAllGoals(
 }
 
 bool Verifier::VerifyAllGoals() {
-  return VerifyAllGoals([this](Verifier* context,
-                               const Inspection& inspection) {
+  return VerifyAllGoals([this](Verifier* context, const Inspection& inspection,
+                               std::string_view str) {
     if (inspection.kind == Inspection::Kind::EXPLICIT) {
-      FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
-      printer.Print(inspection.label);
-      printer.Print(": ");
-      inspection.evar->Dump(symbol_table_, &printer);
-      printer.Print("\n");
+      absl::FPrintF(saving_assignments_ ? stderr : stdout, "%s: %s\n",
+                    inspection.label, str);
     }
     if (inspection.evar->current()) {
       saved_assignments_[inspection.label] = inspection.evar->current();
