@@ -1292,30 +1292,42 @@ SourceLocation GetImplicitlyInstantiatedTemplateLoc(const clang::Decl* Decl) {
   }
 }
 
+bool SpellingLocPathMatches(const clang::SourceManager& SM,
+                            clang::SourceLocation Loc,
+                            const re2::RE2& Pattern) {
+  if (Loc.isInvalid()) {
+    return false;
+  }
+  Loc = SM.getSpellingLoc(Loc);
+  if (Loc.isInvalid()) {
+    return false;
+  }
+  llvm::StringRef Path = SM.getFilename(Loc);
+  if (Path.empty()) {
+    return false;
+  }
+  return re2::RE2::FullMatch({Path.data(), Path.size()}, Pattern);
+}
+
 }  // anonymous namespace
 
 bool IndexerASTVisitor::ShouldIndex(const clang::Decl* Decl) {
-  // This function effectively returns true if:
+  const clang::SourceManager& SM = *Observer.getSourceManager();
+  if (options_.AnalysisExcludePathPattern != nullptr &&
+      SpellingLocPathMatches(SM, Decl->getLocation(),
+                             *options_.AnalysisExcludePathPattern)) {
+    return false;
+  }
+  // This clause effectively returns true if:
   //   - There is no options_.TemplateInstanceExcludePathPattern specified.
   //   - `Decl` is not a template instantiation or specialization.
   //   - `Decl` is an explicit template instantiation or partial specialization.
   //   - `Decl` is an implicit template instantiation that appears in a
   //     concrete location (not a macro) with a path that is not matched by
   //     options_.TemplateInstanceExcludePathPattern.
-  if (options_.TemplateInstanceExcludePathPattern == nullptr) {
-    return true;
-  }
-  auto loc = GetImplicitlyInstantiatedTemplateLoc(Decl);
-  loc = Observer.getSourceManager()->getSpellingLoc(loc);
-  if (loc.isInvalid()) {
-    return true;
-  }
-  auto file = Observer.getSourceManager()->getFilename(loc);
-  if (file.empty()) {
-    return true;
-  }
-  if (re2::RE2::FullMatch({file.data(), file.size()},
-                          *options_.TemplateInstanceExcludePathPattern)) {
+  if (options_.TemplateInstanceExcludePathPattern != nullptr &&
+      SpellingLocPathMatches(SM, GetImplicitlyInstantiatedTemplateLoc(Decl),
+                             *options_.TemplateInstanceExcludePathPattern)) {
     return false;
   }
   return true;

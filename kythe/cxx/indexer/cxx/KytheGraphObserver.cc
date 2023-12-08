@@ -1477,6 +1477,7 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         } else {
           state.claimed = false;
         }
+
         KytheClaimToken token;
         token.set_vname(state.vname);
         token.set_rough_claimed(state.claimed);

@@ -85,6 +85,7 @@ _INDEXER_FLAGS = {
     "ibuild_config": "",
     "use_compilation_corpus_as_default": False,
     "record_call_directness": False,
+    "experimental_analysis_exclude_path_pattern": "",
 }
 
 def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
