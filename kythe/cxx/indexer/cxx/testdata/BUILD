@@ -105,6 +105,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "bundle_skip_analysis_test",
+    srcs = ["bundle_skip_analysis_test.cc"],
+    bundled = True,
+    experimental_analysis_exclude_path_pattern = ".*/[^/]+.cc$",
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "bundle_self_test",
     srcs = ["bundle_self_test.cc"],
     bundled = True,

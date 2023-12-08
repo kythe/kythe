@@ -1,7 +1,0 @@
-// Assert that there exists a definition anchor from the protobuf header, but
-// none from the source file.
-// This file cannot itself be a source file which includes the header as we
-// need to test that indexing of the protobuf CU directly indexes transitive
-// dependencies.
-//- _DeclAnchor=vname(_, "kythe", "bazel-out/bin", "kythe/testdata/indexers/proto/testdata.pb.h", "c++") defines/binding _Decl
-//- !{ _DefnAnchor=vname(_, "kythe", "bazel-out/bin", "kythe/testdata/indexers/proto/testdata.pb.cc", "c++") defines/binding _Defn }
