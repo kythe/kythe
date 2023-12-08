@@ -59,15 +59,19 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc bison brotli flex go graphviz leveldb node openjdk parallel source-highlight wget ; do
+for pkg in asciidoc bison brotli flex gnu-sed go graphviz leveldb node openjdk parallel source-highlight wget ; do
    brew install $pkg
 done
 
 # Bison and Flex. The stock versions are too old, but these tools are keg-only
 # and Bazel uses a restricted PATH, so we need to tell Bazel where to find
 # them (see #3514, #4455).
-export BISON=/usr/local/opt/bison/bin/bison
-export FLEX=/usr/local/opt/flex/bin/flex
+export BISON=$(brew --prefix --installed bison)/bin/bison
+export FLEX=$(brew --prefix --installed flex)/bin/flex
+
+# GNU sed. The stock version is too old.
+export PATH="$(brew --prefix --installed gnu-sed)/libexec/gnubin:$PATH"
+
 
 # Java (OpenJDK). By default macOS does not have a JDK installed, so we use the
 # openjdk package from Homebrew.  We need to set JAVA_HOME so the command-line

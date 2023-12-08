@@ -19,18 +19,9 @@ Every good interface deserves a good command-line tool.
 
 NOTE: This post has been edited 2015/05/19 to reflect changes in the way to build Kythe.
 
-Along with the sample web UI, Kythe also provides a basic command-line tool for
-the xrefs, filetree, and search interfaces.  The Kythe tool can use serving
-tables directly or communicate with a remote API service.  By default, it talks
-to the API at https://xrefs-dot-kythe-repo.appspot.com/ which serves a
-recent index of Kythe's own sources. (The serving data for the sample web UI is
-currently updated manually which can lead to stale data over time.)
-
-All of the information surfaced by the sample web UI, and *more*, can be
-retrieved with the Kythe command-line tool.  It's simply a wrapper around the
-protobuf service APIs that exist in
-https://kythe.io/repo/kythe/go/services/[kythe/go/services] with some extra
-usability features.
+Along with the sample cross-reference service, Kythe also provides a basic command-line
+tool for the xrefs, filetree, and search interfaces.  The Kythe tool can use serving
+tables directly or communicate with a remote API service.
 
 So, what _exactly_ can the tool do?  Let's build it and then check its `help`
 command.
