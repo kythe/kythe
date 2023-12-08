@@ -108,7 +108,7 @@ struct IndexerOptions {
   bool EmitUsrCorpus = false;
   /// \brief if nonempty, the pattern to match a path against to see whether
   /// it should be excluded from template instance indexing.
-  std::shared_ptr<re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
+  std::shared_ptr<const re2::RE2> TemplateInstanceExcludePathPattern = nullptr;
   /// \param Worklist A function that generates a new worklist for the given
   /// visitor.
   std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
@@ -119,6 +119,9 @@ struct IndexerOptions {
   HashRecorder* HashRecorder = nullptr;
   /// \brief If true, record directness of calls.
   bool RecordCallDirectness = false;
+  /// \brief If nonempty, the pattern to match a declaration path against to
+  /// see whether it should be excluded from indexing entirely.
+  std::shared_ptr<const re2::RE2> AnalysisExcludePathPattern = nullptr;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

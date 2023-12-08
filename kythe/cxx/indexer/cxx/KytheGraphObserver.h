@@ -143,7 +143,7 @@ struct KytheGraphObserverOptions {
   // corpus.
   std::string default_corpus = "";
   // Associates a hash to its semantic signature.
-  HashRecorder* hash_recorder;
+  HashRecorder* hash_recorder = nullptr;
   // Use the default corpus for USRs?
   bool usr_default_corpus = false;
 };
@@ -161,7 +161,7 @@ class KytheGraphObserver : public GraphObserver {
                               const MetadataSupports* meta_supports,
                               const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                               ProfilingCallback ReportProfileEventCallback,
-                              Options& options)
+                              Options options)
       : recorder_(ABSL_DIE_IF_NULL(recorder)),
         client_(ABSL_DIE_IF_NULL(client)),
         meta_supports_(ABSL_DIE_IF_NULL(meta_supports)),
