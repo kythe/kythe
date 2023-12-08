@@ -1997,6 +1997,7 @@ class Visitor {
       case ts.SyntaxKind.StringLiteral:
       case ts.SyntaxKind.NumericLiteral:
       case ts.SyntaxKind.PrivateIdentifier:
+      case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
         return elem.text;
       case ts.SyntaxKind.ComputedPropertyName:
         const name = this.host.getSymbolAtLocation(elem)?.name;

@@ -1283,7 +1283,8 @@ fact_value: ""
   bool evar_unset = false;
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals(
-      [&call_count, &evar_unset](Verifier* cxt, const Inspection& inspection) {
+      [&call_count, &evar_unset](Verifier* cxt, const Inspection& inspection,
+                                 std::string_view) {
         ++call_count;
         if (inspection.label == "Root" && !inspection.evar->current()) {
           evar_unset = true;
@@ -1309,7 +1310,8 @@ fact_value: ""
   bool evar_unset = false;
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals(
-      [&call_count, &evar_unset](Verifier* cxt, const Inspection& inspection) {
+      [&call_count, &evar_unset](Verifier* cxt, const Inspection& inspection,
+                                 std::string_view) {
         ++call_count;
         if (inspection.label == "Root" && !inspection.evar->current()) {
           evar_unset = true;
@@ -1341,19 +1343,19 @@ fact_value: ""
   size_t call_count = 0;
   bool evar_set = false;
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(v.VerifyAllGoals(
-      [&call_count, &evar_set](Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        if (inspection.label == "Root" && inspection.evar->current()) {
-          if (Identifier* identifier =
-                  inspection.evar->current()->AsIdentifier()) {
-            if (cxt->symbol_table()->text(identifier->symbol()) == "3") {
-              evar_set = true;
-            }
-          }
+  ASSERT_FALSE(v.VerifyAllGoals([&call_count, &evar_set](
+                                    Verifier* cxt, const Inspection& inspection,
+                                    std::string_view) {
+    ++call_count;
+    if (inspection.label == "Root" && inspection.evar->current()) {
+      if (Identifier* identifier = inspection.evar->current()->AsIdentifier()) {
+        if (cxt->symbol_table()->text(identifier->symbol()) == "3") {
+          evar_set = true;
         }
-        return true;
-      }));
+      }
+    }
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
   EXPECT_TRUE(evar_set);
 }
@@ -1379,19 +1381,19 @@ fact_value: ""
   size_t call_count = 0;
   bool evar_set = false;
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(v.VerifyAllGoals(
-      [&call_count, &evar_set](Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        if (inspection.label == "Root" && inspection.evar->current()) {
-          if (Identifier* identifier =
-                  inspection.evar->current()->AsIdentifier()) {
-            if (cxt->symbol_table()->text(identifier->symbol()) == "3") {
-              evar_set = true;
-            }
-          }
+  ASSERT_FALSE(v.VerifyAllGoals([&call_count, &evar_set](
+                                    Verifier* cxt, const Inspection& inspection,
+                                    std::string_view) {
+    ++call_count;
+    if (inspection.label == "Root" && inspection.evar->current()) {
+      if (Identifier* identifier = inspection.evar->current()->AsIdentifier()) {
+        if (cxt->symbol_table()->text(identifier->symbol()) == "3") {
+          evar_set = true;
         }
-        return true;
-      }));
+      }
+    }
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
   EXPECT_TRUE(evar_set);
 }
@@ -1409,19 +1411,19 @@ fact_value: ""
   size_t call_count = 0;
   bool evar_set = false;
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(v.VerifyAllGoals(
-      [&call_count, &evar_set](Verifier* cxt, const Inspection& inspection) {
-        ++call_count;
-        if (inspection.label == "Root" && inspection.evar->current()) {
-          if (Identifier* identifier =
-                  inspection.evar->current()->AsIdentifier()) {
-            if (cxt->symbol_table()->text(identifier->symbol()) == "1") {
-              evar_set = true;
-            }
-          }
+  ASSERT_FALSE(v.VerifyAllGoals([&call_count, &evar_set](
+                                    Verifier* cxt, const Inspection& inspection,
+                                    std::string_view) {
+    ++call_count;
+    if (inspection.label == "Root" && inspection.evar->current()) {
+      if (Identifier* identifier = inspection.evar->current()->AsIdentifier()) {
+        if (cxt->symbol_table()->text(identifier->symbol()) == "1") {
+          evar_set = true;
         }
-        return true;
-      }));
+      }
+    }
+    return true;
+  }));
   EXPECT_EQ(1, call_count);
   EXPECT_TRUE(evar_set);
 }
@@ -1889,8 +1891,8 @@ fact_name: "/"
 fact_value: ""
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_FALSE(
-      v.VerifyAllGoals([](Verifier* cxt, const Inspection&) { return false; }));
+  ASSERT_FALSE(v.VerifyAllGoals([](Verifier* cxt, const Inspection&,
+                                   std::string_view) { return false; }));
 }
 
 TEST(VerifierUnitTest, EvarsAreSharedAcrossInputFiles) {
@@ -1910,7 +1912,8 @@ fact_value: ""
   EVar* seen_evar = nullptr;
   int seen_count = 0;
   ASSERT_TRUE(v.VerifyAllGoals(
-      [&seen_evar, &seen_count](Verifier* cxt, const Inspection& inspection) {
+      [&seen_evar, &seen_count](Verifier* cxt, const Inspection& inspection,
+                                std::string_view) {
         if (inspection.label == "SomeAnchor") {
           ++seen_count;
           if (seen_evar == nullptr) {
@@ -1936,8 +1939,8 @@ fact_name: "/"
 fact_value: ""
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(
-      v.VerifyAllGoals([](Verifier* cxt, const Inspection&) { return true; }));
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [](Verifier* cxt, const Inspection&, std::string_view) { return true; }));
 }
 
 TEST_P(VerifierTest, ManyInspectionsDontUpsetSolver) {
@@ -1974,10 +1977,11 @@ fact_value: ""
 })"));
   int inspection_count = 0;
   ASSERT_TRUE(v.PrepareDatabase());
-  ASSERT_TRUE(v.VerifyAllGoals([&](Verifier* cxt, const Inspection&) {
-    ++inspection_count;
-    return true;
-  }));
+  ASSERT_TRUE(
+      v.VerifyAllGoals([&](Verifier* cxt, const Inspection&, std::string_view) {
+        ++inspection_count;
+        return true;
+      }));
   EXPECT_EQ(inspection_count, 21);
 }
 
@@ -1994,8 +1998,8 @@ fact_value: ""
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
   size_t inspect_count = 0;
-  ASSERT_TRUE(
-      v.VerifyAllGoals([&inspect_count](Verifier* cxt, const Inspection&) {
+  ASSERT_TRUE(v.VerifyAllGoals(
+      [&inspect_count](Verifier* cxt, const Inspection&, std::string_view) {
         ++inspect_count;
         return true;
       }));
