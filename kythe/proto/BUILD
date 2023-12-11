@@ -55,7 +55,7 @@ java_proto_library(
 )
 
 cc_proto_library(
-    name "schema_cc_proto",
+    name = "schema_cc_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":schema_proto"],
 )
