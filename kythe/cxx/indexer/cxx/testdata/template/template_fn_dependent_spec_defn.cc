@@ -10,7 +10,7 @@ template <typename T> struct S {
   //- TAppAbsFT param.2 BuiltinShort
   //- @int ref BuiltinInt
   //- @short ref BuiltinShort
-  long f<int, short>(T t) { return 1; }
+  long f<int, short>(T t);
 
   //- @thing defines/binding AbsThing
   template<typename U=void> U thing();
