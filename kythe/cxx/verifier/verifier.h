@@ -373,7 +373,7 @@ class Verifier {
   /// it's important to disambiguate cases where this is likely
   /// (e.g., we add line and column information to labels we generate
   /// for anchors).
-  std::map<std::string, AstNode*> saved_assignments_;
+  absl::flat_hash_map<std::string, std::string> saved_assignments_;
 
   /// Maps from pretty-printed vnames to (parsed) file node text.
   std::map<std::string, Symbol> fake_files_;

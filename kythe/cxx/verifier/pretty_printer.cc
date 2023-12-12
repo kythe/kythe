@@ -18,6 +18,7 @@
 
 #include <bitset>
 
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 
@@ -50,17 +51,7 @@ void FileHandlePrettyPrinter::Print(const void* ptr) {
 }
 
 void QuoteEscapingPrettyPrinter::Print(absl::string_view string) {
-  for (char ch : string) {
-    if (ch == '\"') {
-      wrapped_.Print("\\\"");
-    } else if (ch == '\n') {
-      wrapped_.Print("\\n");
-    } else if (ch == '\'') {
-      wrapped_.Print("\\\'");
-    } else {
-      wrapped_.Print({&ch, 1});
-    }
-  }
+  wrapped_.Print(absl::CEscape(string));
 }
 
 void QuoteEscapingPrettyPrinter::Print(const char* string) {
