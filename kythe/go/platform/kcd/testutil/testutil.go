@@ -141,8 +141,11 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 		}
 	})
 
+	const missingDigest = "0000000000000000000000000000000000000000000000000000000000000000"
+	const badDigest = "bad digest"
+
 	check("missing units are not found", func(fail failer) {
-		if err := db.Units(ctx, []string{"none such"}, func(digest, key string, data []byte) error {
+		if err := db.Units(ctx, []string{missingDigest, badDigest}, func(digest, key string, data []byte) error {
 			fail("Units", fmt.Errorf("unexpected digest %q and key %q", digest, key))
 			return nil
 		}); err != nil {
@@ -151,14 +154,14 @@ func Run(t *testing.T, ctx context.Context, db kcd.ReadWriter) []error {
 	})
 
 	check("missing files are not found", func(fail failer) {
-		if err := db.Files(ctx, []string{"none such"}, func(digest string, data []byte) error {
+		if err := db.Files(ctx, []string{missingDigest, badDigest}, func(digest string, data []byte) error {
 			fail("Files", fmt.Errorf("unexpected digest %q and data %q", digest, string(data)))
 			return nil
 		}); err != nil {
 			fail("Files", err)
 		}
 
-		if err := db.FilesExist(ctx, []string{"none such"}, func(digest string) error {
+		if err := db.FilesExist(ctx, []string{missingDigest, badDigest}, func(digest string) error {
 			fail("FilesExist", fmt.Errorf("unexpected digest %q", digest))
 			return nil
 		}); err != nil {
