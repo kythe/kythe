@@ -18,6 +18,7 @@
 package mergecmd // import "kythe.io/kythe/go/platform/tools/kzip/mergecmd"
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -40,6 +41,7 @@ type mergeCommand struct {
 	cmdutil.Info
 
 	output             string
+	inputFileList      string
 	append             bool
 	encoding           flags.EncodingFlag
 	recursive          bool
@@ -61,6 +63,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
+	fs.StringVar(&c.inputFileList, "input_file_list", "", "Path to a newline-delimited text file containing a list of input kzip files")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
@@ -90,7 +93,15 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) 
 			vfs.Remove(ctx, tmpName)
 		}
 	}()
-	archives := fs.Args()
+	var archives []string
+	if c.inputFileList != "" {
+		archives, err = fileListFromTextFile(c.inputFileList)
+		if err != nil {
+			return c.Fail("Error reading input file list: %v", err)
+		}
+	} else {
+		archives = fs.Args()
+	}
 	if c.recursive {
 		archives, err = recurseDirectories(ctx, archives)
 		if err != nil {
@@ -235,4 +246,26 @@ func recurseDirectories(ctx context.Context, archives []string) ([]string, error
 	}
 	return files, nil
 
+}
+
+// fileListFromTextFile returns a list of entries from a newline-delimited text
+// file
+func fileListFromTextFile(filePath string) ([]string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+
+	var kzipPaths []string
+	for scanner.Scan() {
+		if scanner.Text() != "" {
+			kzipPaths = append(kzipPaths, scanner.Text())
+		}
+	}
+
+	f.Close()
+
+	return kzipPaths, nil
 }
