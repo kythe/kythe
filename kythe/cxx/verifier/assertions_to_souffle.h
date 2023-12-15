@@ -59,6 +59,8 @@ class SouffleErrorState {
   int GoalForGroup(int group) const {
     return group == target_group_ ? target_goal_ : -1;
   }
+  /// \return whether we're performing error recovery.
+  bool IsDoingErrorRecovery() const { return recovering_; }
 
  private:
   /// The goal groups being solved. Not owned.
@@ -67,6 +69,8 @@ class SouffleErrorState {
   int target_group_ = -1;
   /// The current highest goal to solve (ignored if target_group_ is invalid).
   int target_goal_ = -1;
+  /// Whether we know that we're doing recovery.
+  bool recovering_ = false;
 };
 
 /// \brief Packages together for a possibly multistage Souffle program.
