@@ -66,7 +66,8 @@ ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
 ABSL_FLAG(bool, allow_missing_file_vnames, false,
           "If file_vnames is set, treat missing file vnames as non-fatal.");
-ABSL_FLAG(bool, use_fast_solver, true, "Use the fast solver.");
+ABSL_FLAG(bool, use_fast_solver, false,
+          "Use the fast solver. This will be the default in the future.");
 ABSL_FLAG(bool, print_timing_information, false,
           "Print timing information for profiling.");
 ABSL_FLAG(std::string, default_file_corpus, "",
