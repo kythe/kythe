@@ -260,6 +260,9 @@ SouffleResult RunSouffle(
     if (!program.Lower(symbol_table, goal_groups, inspections, error_state)) {
       // If we fail to lower a program, exit immediately.
       result.success = false;
+      first_pass = false;
+      result.highest_goal_reached = error_state.target_goal();
+      result.highest_group_reached = error_state.target_group();
       return result;
     }
     std::vector<EVarType> output_types;
