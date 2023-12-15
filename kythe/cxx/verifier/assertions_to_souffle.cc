@@ -55,6 +55,9 @@ result($7) :- true$8
 
 bool SouffleErrorState::NextStep() {
   if (goal_groups_->empty()) return false;
+  if (target_group_ >= 0 && target_goal_ >= 0) {
+    recovering_ = true;
+  }
   if (target_group_ < 0) {
     target_group_ = static_cast<int>(goal_groups_->size()) - 1;
     target_goal_ = (*goal_groups_)[target_group_].goals.size();
@@ -305,11 +308,17 @@ bool SouffleProgram::Lower(const SymbolTable& symbol_table,
       }
       auto type = evar_types_.find(i.evar);
       if (type == evar_types_.end()) {
-        LOG(ERROR) << "evar typing missing for v" << FindEVar(i.evar);
+        LOG(ERROR) << (error_state.IsDoingErrorRecovery()
+                           ? "(during error recovery) "
+                           : "")
+                   << "evar typing missing for v" << FindEVar(i.evar);
         return false;
       }
       if (type->second == EVarType::kUnknown) {
-        LOG(ERROR) << "evar typing unknown for v" << FindEVar(i.evar);
+        LOG(ERROR) << (error_state.IsDoingErrorRecovery()
+                           ? "(during error recovery) "
+                           : "")
+                   << "evar typing unknown for v" << FindEVar(i.evar);
         return false;
       }
       auto id = FindEVar(i.evar);
