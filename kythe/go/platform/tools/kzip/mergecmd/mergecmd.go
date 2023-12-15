@@ -63,7 +63,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
-	fs.StringVar(&c.inputFileList, "input_file_list", "", "Path to a newline-delimited text file containing a list of input kzip files")
+	fs.StringVar(&c.inputFileList, "input_file_list", "", "Path to a newline-delimited text file containing a list of input kzip files. If '-' is specified, the file list is read from stdin")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
@@ -93,7 +93,11 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) 
 			vfs.Remove(ctx, tmpName)
 		}
 	}()
+
 	var archives []string
+	if c.inputFileList != "" && len(fs.Args()) > 0 {
+		return c.Fail("Specify *either* --input_file_list or positional arguments, but not both")
+	}
 	if c.inputFileList != "" {
 		archives, err = fileListFromTextFile(c.inputFileList)
 		if err != nil {
@@ -102,6 +106,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...any) 
 	} else {
 		archives = fs.Args()
 	}
+
 	if c.recursive {
 		archives, err = recurseDirectories(ctx, archives)
 		if err != nil {
@@ -251,9 +256,16 @@ func recurseDirectories(ctx context.Context, archives []string) ([]string, error
 // fileListFromTextFile returns a list of entries from a newline-delimited text
 // file
 func fileListFromTextFile(filePath string) ([]string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
+	var f *os.File
+	if filePath == "-" {
+		f = os.Stdin
+	} else {
+		var err error
+		f, err = os.Open(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
 	}
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
@@ -264,8 +276,6 @@ func fileListFromTextFile(filePath string) ([]string, error) {
 			kzipPaths = append(kzipPaths, scanner.Text())
 		}
 	}
-
-	f.Close()
 
 	return kzipPaths, nil
 }
