@@ -7,7 +7,7 @@ TEST_EXPECTED="$2"
 cd "$(dirname "$0")"
 "${VERIFIER}" --file_vnames=false --check_for_singletons=true \
     --use_fast_solver=true "${TEST_INPUT}" < /dev/null 2>&1 \
-    | sed '/0x[0-9a-fA-F]*/d;/E.*]/d' \
+    | sed '/0x[0-9a-fA-F]*/d;s/E.*]//' \
     | diff - "${TEST_EXPECTED}"
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[2]} )
 if [ ${RESULTS[0]} -ne 1 ]; then
