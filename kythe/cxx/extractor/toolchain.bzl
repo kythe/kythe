@@ -59,7 +59,6 @@ cxx_extractor_toolchain = rule(
         ),
     },
     fragments = ["cpp"],
-    incompatible_use_toolchain_transition = True,
     provides = [
         CxxExtractorToolchainInfo,
         platform_common.ToolchainInfo,
