@@ -137,7 +137,7 @@ func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
 			case 0: // No match.
 				continue
 			case 1: // No capturing groups.
-				break
+				// Use `arg` directly without logging.
 			case 2: // Exactly one capturing group.
 				arg = matches[1]
 			default: // More than one capturing group.
