@@ -1229,8 +1229,8 @@ void CompilationWriter::InsertExtraIncludes(
     std::string child_dir = find_child(status_checked_paths_, path);
     std::string path_slash = absl::StrCat(path, "/");
     if ((!child_file.empty() || !child_dir.empty()) &&
-        !llvm::StringRef(child_file).startswith(path_slash) &&
-        !llvm::StringRef(child_dir).startswith(path_slash)) {
+        !llvm::StringRef(child_file).starts_with(path_slash) &&
+        !llvm::StringRef(child_dir).starts_with(path_slash)) {
       details->add_stat_path()->set_path(path);
     }
   }
@@ -1245,13 +1245,13 @@ void CompilationWriter::CancelPreviouslyOpenedFiles() {
 }
 
 void CompilationWriter::OpenedForRead(const std::string& path) {
-  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+  if (!llvm::StringRef(path).starts_with(kBuiltinResourceDirectory)) {
     extra_includes_.insert(NormalizePath(path));
   }
 }
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
-  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+  if (!llvm::StringRef(path).starts_with(kBuiltinResourceDirectory)) {
     status_checked_paths_.insert(NormalizePath(path));
   }
 }
@@ -1263,7 +1263,7 @@ void CompilationWriter::ScrubIntermediateFiles(
   }
   for (auto set : {&extra_includes_, &status_checked_paths_}) {
     for (auto it = set->begin(); it != set->end();) {
-      if (llvm::StringRef(*it).startswith(options.ModuleCachePath)) {
+      if (llvm::StringRef(*it).starts_with(options.ModuleCachePath)) {
         it = set->erase(it);
       } else {
         ++it;
@@ -1453,7 +1453,7 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   // invent one. We need this to find stddef.h and friends.
   for (const auto& arg : final_args_) {
     // Handle both -resource-dir=foo and -resource-dir foo.
-    if (llvm::StringRef(arg).startswith("-resource-dir")) {
+    if (llvm::StringRef(arg).starts_with("-resource-dir")) {
       map_builtin_resources_ = false;
       break;
     }
