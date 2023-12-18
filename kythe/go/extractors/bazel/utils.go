@@ -122,6 +122,8 @@ func AddDetail(unit *apb.CompilationUnit, msg proto.Message) error {
 // FindSourceArgs returns a fixup that scans the argument list of a compilation
 // unit for strings matching r. Any that are found, and which also match the
 // names of required input files, are added to the source files of the unit.
+// If the pattern has a single capturing group, the contents of that group will
+// be used rather than the entire matchin.
 func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
 	return func(cu *apb.CompilationUnit) error {
 		var inputs stringset.Set
@@ -131,7 +133,17 @@ func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
 
 		srcs := stringset.New(cu.SourceFile...)
 		for _, arg := range cu.Argument {
-			if r.MatchString(arg) && inputs.Contains(arg) {
+			switch matches := r.FindStringSubmatch(arg); len(matches) {
+			case 0: // No match.
+				continue
+			case 1: // No capturing groups.
+				break
+			case 2: // Exactly one capturing group.
+				arg = matches[1]
+			default: // More than one capturing group.
+				log.Infof("%v contains multiple capturing groups; using full string %s", r, arg)
+			}
+			if inputs.Contains(arg) {
 				srcs.Add(arg)
 			}
 		}
