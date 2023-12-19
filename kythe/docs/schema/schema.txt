@@ -810,7 +810,7 @@ template <typename T> struct S {
   //- DepSpecFT instantiates/speculative TAppAbsF2T
   //- DepSpecFT specializes/speculative TAppAbsF2T
   //- TAppAbsF2T param.0 AbsF2
-  long f<int, short>(T t) { return 1; }
+  long f<int, short>(T t);
 };
 --------------------------------------------------------------------------------
 
