@@ -2658,7 +2658,6 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   const GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(Decl);
-  Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
