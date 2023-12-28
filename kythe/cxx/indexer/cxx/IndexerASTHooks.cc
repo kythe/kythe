@@ -4604,15 +4604,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(const clang::TypedefType& T) {
   // through the deduced type.
   if (auto AliasedTypeID =
           BuildNodeIdForType(T.getDecl()->getTypeSourceInfo()->getTypeLoc())) {
-    // TODO(shahms): Move caching here and use
-    // `Observer.nodeIdForTypeAliasNode()` when already built?
-    // Or is always using the cached id sufficient?
-    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
-    auto Marks = MarkedSources.Generate(T.getDecl());
-    AssignUSR(ID, T.getDecl());
-    return Observer.recordTypeAliasNode(
-        ID, *AliasedTypeID, BuildNodeIdForType(FollowAliasChain(T.getDecl())),
-        Marks.GenerateMarkedSource(ID));
+    return Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
   }
   return NodeSet::Empty();
 }
