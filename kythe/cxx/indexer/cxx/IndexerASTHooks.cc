@@ -3320,19 +3320,16 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   // definition is not, and a later use site uses the definition.
   (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
-  GraphObserver::NodeId DeclNode =
-      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(Decl);
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
   llvm::ArrayRef<clang::TemplateArgumentLoc> ArgsAsWritten;
   const clang::TemplateArgumentList* Args = nullptr;
-  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
+  std::vector<clang::TemplateName> TNs;
   bool TNsAreSpeculative = false;
   bool IsImplicit = false;
   SourceLocation TemplateKeywordLoc;
   if (auto* FTD = Decl->getDescribedFunctionTemplate()) {
-    // Function template (inc. overloads)
-    DeclNode = BuildNodeIdForDecl(Decl);
     RecordTemplate(FTD, DeclNode);
     TemplateKeywordLoc = FTD->getSourceRange().getBegin();
   } else if (auto* MSI = Decl->getMemberSpecializationInfo()) {
@@ -3346,7 +3343,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // add the type variables involve in this instantiation's particular
     // parent, but we don't currently do so. (#1879)
     IsImplicit = !MSI->isExplicitSpecialization();
-    DeclNode = BuildNodeIdForDecl(Decl);
     Observer.recordInstEdge(
         DeclNode,
         Observer.recordTappNode(BuildNodeIdForDecl(MSI->getInstantiatedFrom()),
@@ -3357,9 +3353,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
     Args = FTSI->TemplateArguments;
-    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
-                     FTSI->getPointOfInstantiation());
-    DeclNode = BuildNodeIdForDecl(Decl);
+    TNs.emplace_back(FTSI->getTemplate());
     IsImplicit = !FTSI->isExplicitSpecialization();
   } else if (auto* DFTSI = Decl->getDependentSpecializationInfo()) {
     // From Clang's documentation:
@@ -3384,60 +3378,29 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       ArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->arguments();
     }
     for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
-      TNs.emplace_back(
-          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
-          Decl->getLocation());
+      TNs.emplace_back(FTD->getTemplatedDecl()->getDescribedTemplate());
     }
-    DeclNode = BuildNodeIdForDecl(Decl);
-  } else {
-    // Nothing to do with templates.
-    DeclNode = BuildNodeIdForDecl(Decl);
   }
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                      IsImplicit);
   if (!ArgsAsWritten.empty() || Args) {
-    bool CouldGetAllTypes = true;
-    std::vector<GraphObserver::NodeId> NIDS;
-    if (!ArgsAsWritten.empty()) {
-      NIDS.reserve(ArgsAsWritten.size());
-      for (const auto& Arg : ArgsAsWritten) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Arg)) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    } else {
-      NIDS.reserve(Args->size());
-      for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    }
-    if (CouldGetAllTypes) {
+    std::optional<std::vector<GraphObserver::NodeId>> NIDS =
+        !ArgsAsWritten.empty() ? BuildTemplateArgumentList(ArgsAsWritten)
+                               : BuildTemplateArgumentList(Args->asArray());
+
+    if (NIDS.has_value()) {
       auto Confidence = TNsAreSpeculative
                             ? GraphObserver::Confidence::Speculative
                             : GraphObserver::Confidence::NonSpeculative;
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN)) {
           // Because partial specialization of function templates is forbidden,
           // instantiates edges will always choose the same type (a tapp with
           // the primary template as its first argument) as specializes edges.
-          Observer.recordInstEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      ArgsAsWritten.size()),
-              Confidence);
-          Observer.recordSpecEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      ArgsAsWritten.size()),
-              Confidence);
+          auto TappNode = Observer.recordTappNode(*SpecializedNode, *NIDS,
+                                                  ArgsAsWritten.size());
+          Observer.recordInstEdge(DeclNode, TappNode, Confidence);
+          Observer.recordSpecEdge(DeclNode, TappNode, Confidence);
         }
       }
     }
@@ -3531,15 +3494,13 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // The dyn_cast to CXXMethodDecl above is therefore not dropping
     // (impossible) free function incarnations of these operators from
     // consideration in the following.
-    if (MF->size_overridden_methods() != 0) {
-      for (auto O = MF->begin_overridden_methods(),
-                E = MF->end_overridden_methods();
-           O != E; ++O) {
+    if (!MF->overridden_methods().empty()) {
+      for (const auto* O : MF->overridden_methods()) {
         Observer.recordOverridesEdge(
             DeclNode,
             absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
-                ? BuildNodeIdForRefToDecl(*O)
-                : BuildNodeIdForDecl(*O));
+                ? BuildNodeIdForRefToDecl(O)
+                : BuildNodeIdForDecl(O));
       }
       MapOverrideRoots(MF, [&](const clang::CXXMethodDecl* R) {
         Observer.recordOverridesRootEdge(
@@ -3629,12 +3590,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     return true;
   }
   if (NameRangeInContext) {
-    FileID DeclFile =
-        Observer.getSourceManager()->getFileID(Decl->getLocation());
     for (const auto* NextDecl : Decl->redecls()) {
       if (NextDecl != Decl) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
 
         Observer.recordCompletion(TargetDecl, DeclNode);
