@@ -4619,34 +4619,14 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
   return BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
 }
 
-std::vector<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdsForTemplateArgs(
-    clang::ArrayRef<clang::TemplateArgument> args) {
-  std::vector<GraphObserver::NodeId> ids;
-  ids.reserve(args.size());
-  for (const auto& arg : args) {
-    if (std::optional<GraphObserver::NodeId> arg_id =
-            BuildNodeIdForTemplateArgument(arg)) {
-      ids.push_back(*arg_id);
-    } else {
-      // If we can't produce an ID for any template argument (e.g., because
-      // some argument kind was unimplemented and the indexer is being run with
-      // --ignore_unimplemented), return nothing.
-      return {};
-    }
-  }
-  return ids;
-}
-
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentTemplateSpecialization(
     const clang::DependentTemplateSpecializationType& T) {
   auto dep_name =
       BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
-  std::vector<GraphObserver::NodeId> arg_ids =
-      BuildNodeIdsForTemplateArgs(T.template_arguments());
-  return arg_ids.size() == T.template_arguments().size()
-             ? Observer.recordTappNode(dep_name, arg_ids)
-             : NodeSet::Empty();
+  if (auto arg_ids = BuildTemplateArgumentList(T.template_arguments())) {
+    return Observer.recordTappNode(dep_name, *arg_ids);
+  }
+  return NodeSet::Empty();
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
@@ -4655,11 +4635,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
   // or template template parameter. Non-dependent template
   // specializations appear as different types.
   if (auto template_name = BuildNodeIdForTemplateName(T.getTemplateName())) {
-    std::vector<GraphObserver::NodeId> arg_ids =
-        BuildNodeIdsForTemplateArgs(T.template_arguments());
-    return arg_ids.size() == T.template_arguments().size()
-               ? Observer.recordTappNode(*template_name, arg_ids)
-               : NodeSet::Empty();
+    if (auto arg_ids = BuildTemplateArgumentList(T.template_arguments())) {
+      return Observer.recordTappNode(*template_name, *arg_ids);
+    }
   }
   return NodeSet::Empty();
 }

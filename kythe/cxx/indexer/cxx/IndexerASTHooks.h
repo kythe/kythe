@@ -361,10 +361,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
       const clang::SubstTemplateTypeParmType& T);
   NodeSet BuildNodeSetForDependentName(const clang::DependentNameType& T);
-  // Builds node IDs for the provided list of template arguments. Returns an
-  // empty vector if any node ID could not be generated.
-  std::vector<GraphObserver::NodeId> BuildNodeIdsForTemplateArgs(
-      clang::ArrayRef<clang::TemplateArgument> args);
   NodeSet BuildNodeSetForDependentTemplateSpecialization(
       const clang::DependentTemplateSpecializationType& T);
   NodeSet BuildNodeSetForTemplateSpecialization(
