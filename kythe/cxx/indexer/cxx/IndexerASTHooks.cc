@@ -4359,17 +4359,12 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
   clang::RecordDecl* Decl = ABSL_DIE_IF_NULL(T.getDecl());
   if (const auto* Spec =
           dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
-    // TODO(shahms): Simplify building template argument lists.
-    const auto& TAL = Spec->getTemplateArgs();
-    std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(TAL.size());
-    for (const auto& Arg : TAL.asArray()) {
-      if (auto ArgA = BuildNodeIdForTemplateArgument(Arg)) {
-        TemplateArgs.push_back(ArgA.value());
-      } else {
-        return NodeSet::Empty();
-      }
+    std::optional<std::vector<GraphObserver::NodeId>> TemplateArgs =
+        BuildTemplateArgumentList(Spec->getTemplateArgs().asArray());
+    if (!TemplateArgs.has_value()) {
+      return NodeSet::Empty();
     }
+
     const auto* SpecDecl = Spec->getSpecializedTemplate();
     const clang::NamedDecl* SpecFocus = SpecDecl;
     if (SpecDecl->getTemplatedDecl()->getDefinition())
@@ -4377,12 +4372,12 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     else
       SpecFocus = SpecDecl->getTemplatedDecl();
     NodeId DeclId =
-        Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), TemplateArgs);
+        Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), *TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
       return {DeclId, Claimability::Unclaimable};
     } else {
       return {Observer.recordTappNode(BuildNominalNodeIdForDecl(SpecDecl),
-                                      TemplateArgs),
+                                      *TemplateArgs),
               DeclId};
     }
   } else {
