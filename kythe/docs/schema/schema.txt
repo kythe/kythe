@@ -1902,6 +1902,9 @@ Facts::
     The starting byte offset (from 0) in the <<file>> containing this anchor.
   loc/end:::
     The ending byte offset (exclusive) in the <<file>> containing this anchor.
+    If the `loc/start` and `loc/end` of an anchor are both 0, this anchor refers
+    to the whole file (for example, if a file is the `defines/binding` site for
+    a package or module).
   snippet/start:::
     The starting byte offset (from 0) of the snippet for this anchor (optional).
   snippet/end:::
