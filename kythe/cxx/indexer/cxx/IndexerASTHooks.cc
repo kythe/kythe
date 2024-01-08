@@ -1897,10 +1897,8 @@ IndexerASTVisitor::BuildNodeIdForImplicitClassTemplateInstantiation(
 std::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     const clang::FunctionDecl* FD) {
-  std::vector<GraphObserver::NodeId> NIDS;
-  const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
-  unsigned NumArgsAsWritten = 0;
-  const clang::TemplateArgumentList* Args = nullptr;
+  llvm::ArrayRef<clang::TemplateArgumentLoc> ArgsAsWritten;
+  llvm::ArrayRef<clang::TemplateArgument> Args;
   if (FD->getDescribedFunctionTemplate() != nullptr) {
     // This is the body of a function template.
     return std::nullopt;
@@ -1914,7 +1912,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     return Observer.recordTappNode(
         BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
   }
-  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
+  std::vector<clang::TemplateName> TNs;
   if (auto* FTSI = FD->getTemplateSpecializationInfo()) {
     if (FTSI->isExplicitSpecialization()) {
       // Refer to explicit specializations directly.
@@ -1922,51 +1920,29 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     }
     if (FTSI->TemplateArgumentsAsWritten) {
       // We have source locations for the template arguments.
-      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->getTemplateArgs();
-      NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
-    Args = FTSI->TemplateArguments;
-    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
-                     FTSI->getPointOfInstantiation());
+    if (FTSI->TemplateArguments) {
+      Args = FTSI->TemplateArguments->asArray();
+    }
+    TNs.emplace_back(FTSI->getTemplate());
   } else if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
     for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
-      TNs.emplace_back(
-          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
-          FD->getLocation());
+      TNs.emplace_back(FTD->getTemplatedDecl()->getDescribedTemplate());
     }
   }
   // We can't do anything useful if we don't have type arguments.
-  if (ArgsAsWritten || Args) {
-    bool CouldGetAllTypes = true;
-    if (ArgsAsWritten) {
-      // Prefer arguments as they were written in source files.
-      NIDS.reserve(NumArgsAsWritten);
-      for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    } else {
-      NIDS.reserve(Args->size());
-      for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    }
-    if (CouldGetAllTypes) {
+  if (!(ArgsAsWritten.empty() && Args.empty())) {
+    std::optional<std::vector<GraphObserver::NodeId>> NIDs =
+        !ArgsAsWritten.empty() ? BuildTemplateArgumentList(ArgsAsWritten)
+                               : BuildTemplateArgumentList(Args);
+    if (NIDs.has_value()) {
       // If there's more than one possible template name (e.g., this is
       // dependent), choose one arbitrarily.
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
-          return Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                         NumArgsAsWritten);
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN)) {
+          return Observer.recordTappNode(*SpecializedNode, *NIDs,
+                                         ArgsAsWritten.size());
         }
       }
     }
