@@ -21,10 +21,10 @@ common --workspace_status_command tools/buildstamp/get_workspace_status
 common --client_env=CC=clang
 # We require C++17, but bazel defaults to C++0x (pre-C++11).
 common --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
-# Don't warn on deprecations when compiling protobufs.
-# This generates a lot of spurious warnings when compiling the definitions of proto fields
-# which are marked deprecated.
-common --per_file_copt=.*\.pb\.cc@-Wno-deprecated-declarations
+# Enable -Wmissing-prototypes for Kythe code, but not external repositories.
+common --per_file_copt=//...@-Wmissing-prototypes
+# Disable diagnostics when compiling protobufs.
+common --per_file_copt=.*\.pb\.cc@-w
 # Disable diagnostics on external repositories as we don't control them.
 common --per_file_copt=external/.*@-w
 # Disable diagnostics in host mode. There is no host_per_file_copt and

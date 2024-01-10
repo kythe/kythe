@@ -101,12 +101,8 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":indexed_parent_map",
         "//third_party/llvm/src:clang_builtin_headers",
-        "@com_google_absl//absl/log",
         "@llvm-project//clang:ast",
-        "@llvm-project//clang:basic",
-        "@llvm-project//clang:lex",
         "@llvm-project//llvm:Support",
     ],
 )
