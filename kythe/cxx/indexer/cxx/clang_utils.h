@@ -20,9 +20,6 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclarationName.h"
-#include "clang/Basic/LangOptions.h"
-#include "clang/Basic/SourceManager.h"
-#include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 
 namespace kythe {
 /// \return true if `DN` is an Objective-C selector.
@@ -40,10 +37,7 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
 
 /// \brief Finds the root member template starting at `decl` (which can be
 /// any decl; if it's not a member template, returns `decl`).
-/// \param use_mts If false, always return `decl`. (This parameter is temporary
-/// and is used for the abs deprecation.)
-const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl,
-                                              bool use_mts);
+const clang::Decl* DereferenceMemberTemplates(const clang::Decl* decl);
 
 /// \return true if a reference to `decl` should be given blame context.
 bool ShouldHaveBlameContext(const clang::Decl* decl);

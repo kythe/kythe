@@ -1378,6 +1378,7 @@ std::unique_ptr<clang::FrontendAction> NewExtractor(
   return std::make_unique<ExtractorAction>(index_writer, std::move(callback));
 }
 
+namespace {
 llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> MapCompilerResources(
     llvm::StringRef map_directory) {
   llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> memory_fs(
@@ -1410,13 +1411,6 @@ llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> GetRootFileSystem(
   return llvm::vfs::getRealFileSystem();
 }
 
-void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
-  if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
-    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
-    exit(1);
-  }
-}
-
 bool IsCuda(const std::vector<std::string>& args) {
   for (int i = 0; i < args.size() - 1; i++) {
     if (args[i] == "-x" && args[i + 1] == "cuda") {
@@ -1424,6 +1418,15 @@ bool IsCuda(const std::vector<std::string>& args) {
     }
   }
   return false;
+}
+
+}  // namespace
+
+void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
+  if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
+    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
+    exit(1);
+  }
 }
 
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {

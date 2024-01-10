@@ -72,6 +72,7 @@ ABSL_FLAG(bool, experimental_set_aliases_as_writes, false,
           "Set protobuf aliases as writes.");
 
 namespace kythe {
+namespace {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -156,6 +157,7 @@ int main(int argc, char* argv[]) {
   return (had_errors ? 1 : 0);
 }
 
+}  // namespace
 }  // namespace kythe
 
 int main(int argc, char* argv[]) { return kythe::main(argc, argv); }

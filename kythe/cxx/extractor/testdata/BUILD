@@ -372,6 +372,7 @@ objc_bazel_extractor_test(
 cc_library(
     name = "cc_lib",
     srcs = ["cc_lib.cc"],
+    copts = ["-Wno-missing-prototypes"],
 )
 
 # Test that we can use the bazel extractor to extract a .xa file, index the
