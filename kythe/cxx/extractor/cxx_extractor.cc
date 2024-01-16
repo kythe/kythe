@@ -58,6 +58,7 @@
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
 #include "google/protobuf/any.pb.h"
+#include "google/protobuf/message.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/json_proto.h"
@@ -1093,7 +1094,8 @@ void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
   if (auto digest = writer_->WriteFile(file.content()); digest.ok()) {
     if (!file.info().digest().empty() && file.info().digest() != *digest) {
       LOG(WARNING) << "Wrote FileData with mismatched digests: "
-                   << file.info().ShortDebugString() << " != " << *digest;
+                   << google::protobuf::ShortFormat(file.info())
+                   << " != " << *digest;
     }
   } else {
     LOG(ERROR) << "Error writing filedata: " << digest.status();
