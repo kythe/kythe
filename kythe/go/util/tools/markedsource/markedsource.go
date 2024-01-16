@@ -44,10 +44,10 @@ import (
 var (
 	rewrite = flag.Bool("rewrite", false, "Rewrite all code facts to be fully resolved")
 
-	renderSignature         = flag.Bool("render_signatures", false, "Whether to emit /kythe/code/rendered/signature facts (requires --rewrite)")
-	renderCallsiteSignature = flag.Bool("render_callsite_signatures", false, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
-	renderQualifiedName     = flag.Bool("render_qualified_names", false, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
-	renderSimpleName        = flag.Bool("render_simple_names", false, "Whether to emit /kythe/code/rendered/simple_name facts (requires --rewrite)")
+	renderSignature         = flag.Bool("render_signatures", true, "Whether to emit /kythe/code/rendered/signature facts (requires --rewrite)")
+	renderCallsiteSignature = flag.Bool("render_callsite_signatures", true, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
+	renderQualifiedName     = flag.Bool("render_qualified_names", true, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
+	renderSimpleName        = flag.Bool("render_simple_names", true, "Whether to emit /kythe/code/rendered/simple_name facts (requires --rewrite)")
 )
 
 const renderFactPrefix = facts.Code + "/rendered/"
