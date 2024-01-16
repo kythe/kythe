@@ -36,6 +36,11 @@ enum class UriEscapeMode {
 /// \param string The string to escape.
 std::string UriEscape(UriEscapeMode mode, absl::string_view uri);
 
+/// \brief URI-unescapes a string.
+/// \param string The string to unescape.
+/// \return A pair of (success, error-or-unescaped-string).
+std::pair<bool, std::string> UriUnescape(absl::string_view string);
+
 /// \brief A Kythe URI.
 ///
 /// URIs are not in 1:1 correspondence with VNames--particularly because
