@@ -64,8 +64,6 @@ IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
   return std::move(*writer);
 }
 
-}  // namespace
-
 int main(int argc, char* argv[]) {
   kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
@@ -195,6 +193,7 @@ Examples:
   return 0;
 }
 
+}  // namespace
 }  // namespace lang_textproto
 }  // namespace kythe
 
