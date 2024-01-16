@@ -480,7 +480,6 @@ const clang::Decl* FindDisambiguationParent(const IndexedParentMap& parents,
 
   return nullptr;
 }
-}  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
   // Operationally, we'll define this as any decl that causes
@@ -507,6 +506,7 @@ bool IsClaimableForTraverse(const clang::Decl* decl) {
   }
   return false;
 }
+}  // anonymous namespace
 
 enum class Prunability {
   kNone,
