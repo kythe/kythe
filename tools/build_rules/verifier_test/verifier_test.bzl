@@ -14,6 +14,7 @@
 # limitations under the License.
 """Rules and macros related to Kythe verifier-based tests."""
 
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
     ":verifier_test_impl.bzl",
     _KytheEntries = "KytheEntries",
@@ -188,6 +189,8 @@ def extract(
 def _index_compilation_impl(ctx):
     sources = []
     intermediates = []
+    test_runners = []
+    kzips = []
     for dep in ctx.attr.deps:
         if KytheVerifierSources in dep:
             sources.append(dep[KytheVerifierSources].files)
@@ -197,6 +200,13 @@ def _index_compilation_impl(ctx):
                 sibling = ctx.outputs.entries,
             )
             intermediates.append(entries)
+
+            if ctx.attr.target_indexer:
+                iargs = []
+                iargs += ctx.attr.opts
+                iargs.append(input.short_path)
+                test_runners.append(_make_test_runner(ctx, {}, arguments = iargs))
+                kzips.append(input)
 
             args = ctx.actions.args()
             args.add(ctx.executable.indexer)
@@ -223,10 +233,43 @@ def _index_compilation_impl(ctx):
         mnemonic = "CompressEntries",
         arguments = [args],
     )
-    return [
+    providers = [
         KytheVerifierSources(files = depset(transitive = sources)),
-        KytheEntries(compressed = depset([ctx.outputs.entries]), files = depset(intermediates)),
     ]
+    if test_runners:
+        providers.append(
+            KytheEntryProducerInfo(
+                executables = test_runners,
+                runfiles = ctx.runfiles(
+                    files = (test_runners + kzips + ctx.files.tools),
+                ).merge(ctx.attr.target_indexer[DefaultInfo].default_runfiles),
+            ),
+        )
+    else:
+        providers.append(
+            KytheEntries(compressed = depset([ctx.outputs.entries]), files = depset(intermediates)),
+        )
+    return providers
+
+def _make_test_runner(ctx, env, arguments):
+    output = ctx.actions.declare_file(ctx.label.name + "_test_runner")
+    ctx.actions.expand_template(
+        output = output,
+        is_executable = True,
+        template = ctx.file._test_template,
+        substitutions = {
+            "@INDEXER@": shell.quote(ctx.executable.target_indexer.short_path),
+            "@ENV@": "\n".join([
+                shell.quote("{key}={value}".format(key = key, value = value))
+                for key, value in env.items()
+            ]),
+            "@ARGS@": "\n".join([
+                shell.quote(ctx.expand_location(a.replace("$(location", "$(rootpath")))
+                for a in arguments
+            ]),
+        },
+    )
+    return output
 
 index_compilation = rule(
     attrs = {
@@ -234,6 +277,10 @@ index_compilation = rule(
             mandatory = True,
             executable = True,
             cfg = "exec",
+        ),
+        "target_indexer": attr.label(
+            executable = True,
+            cfg = "target",
         ),
         "opts": attr.string_list(),
         "tools": attr.label_list(
@@ -244,6 +291,10 @@ index_compilation = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = [".kzip"],
+        ),
+        "_test_template": attr.label(
+            default = Label("//tools/build_rules/verifier_test:indexer.sh.in"),
+            allow_single_file = True,
         ),
     },
     outputs = {
