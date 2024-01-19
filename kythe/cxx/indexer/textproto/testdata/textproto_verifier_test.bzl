@@ -130,8 +130,9 @@ def textproto_verifier_test(
             name = rule_prefix + "_entries",
             testonly = True,
             indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
+            target_indexer = "//kythe/cxx/indexer/textproto:textproto_indexer",
             opts = indexer_opts + ["--index_file"],
-            tags = tags,
+            tags = tags + ["manual"],
             visibility = visibility,
             deps = [textproto_kzip],
         )

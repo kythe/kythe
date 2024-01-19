@@ -68,6 +68,9 @@ public class JavaIndexer {
 
     List<Supplier<Plugin>> plugins = new ArrayList<>();
     if (!Strings.isNullOrEmpty(config.getPlugin())) {
+      if (!new File(config.getPlugin()).canRead()) {
+        throw new IllegalArgumentException("Cannot read plugin: " + config.getPlugin());
+      }
       URLClassLoader classLoader = new URLClassLoader(new URL[] {fileURL(config.getPlugin())});
       for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
         final Class<? extends Plugin> clazz = plugin.getClass();
@@ -99,7 +102,8 @@ public class JavaIndexer {
       // java_indexer compilation-file+
       for (String compilationPath : config.getCompilation()) {
         if (!compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
-          throw new IllegalArgumentException("Expected file to have .kzip extension");
+          throw new IllegalArgumentException(
+              "Expected file to have .kzip extension: " + compilationPath);
         }
         // java_indexer kzip-file
         boolean foundCompilation = false;
