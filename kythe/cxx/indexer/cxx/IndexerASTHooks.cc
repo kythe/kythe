@@ -4220,6 +4220,11 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
 }
 
 std::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForStructuralValue(const clang::APValue& value) {
+  return std::nullopt;
+}
+
+std::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
   return BuildNodeIdForTemplateName(Name);
 }
@@ -4271,6 +4276,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     case TemplateArgument::Integral:
       return BuildNodeIdForSpecialTemplateArgument(
           llvm::toString(Arg.getAsIntegral(), 10) + "i");
+    case TemplateArgument::StructuralValue:
+      return BuildNodeIdForStructuralValue(Arg.getAsStructuralValue());
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:

@@ -311,6 +311,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver::NodeId BuildNodeIdForSpecialTemplateArgument(
       llvm::StringRef Id);
 
+  /// \brief Builds a stable node ID for a structural value (stub).
+  std::optional<GraphObserver::NodeId> BuildNodeIdForStructuralValue(
+      const clang::APValue& value);
+
   /// \brief Builds a stable node ID for a template expansion template argument.
   /// \param Name The template pattern being expanded.
   std::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
