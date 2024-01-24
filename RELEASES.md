@@ -8,28 +8,21 @@
 *   ensure lookup kinds are correct for resolved MarkedSource (#5789) ([c220dc75](https://github.com/kythe/kythe/commit/c220dc75bd1c5cb9367e0973d30de3e3ffd87a9e))
 *   c++ should handle post_child_text correctly (#5783) ([a92f67cc](https://github.com/kythe/kythe/commit/a92f67cc76a095e40d091d40272d589d0cb064cc))
 *   render BOX post_child_text if child is rendered (#5782) ([9b571ec3](https://github.com/kythe/kythe/commit/9b571ec3d5bb96281eb502cafa9f55611f108720))
-* **build:**
-  *  explicitly specify some deps to fix the build (#5999) ([1818bfc1](https://github.com/kythe/kythe/commit/1818bfc13d2ff4ecf1aab878728d07e659f6aa3f))
-  *  disable layering check so textproto indexer compiles (#5998) ([0109f736](https://github.com/kythe/kythe/commit/0109f736d49b6ebc1b3f3a76bbe1df29ffa1602a))
-* **cxx:**  use correct definition anchor spans for lambdas (#5890) ([3d0a2d92](https://github.com/kythe/kythe/commit/3d0a2d92576cd24a72774f4e39c0c6317e8e1686))
 * **cxx_extractor:**
   *  remove inapplicable CUDA driver and LLVM flags (#5913) ([80d78947](https://github.com/kythe/kythe/commit/80d78947efb899a4f81bd6ce8e2118e925f8f05e))
   *  preserve order of exclusive action flags when munging args (#5912) ([5a765964](https://github.com/kythe/kythe/commit/5a76596426fbb0169af3843189bd7a4996eda439))
   *  fix cc proto_lang_toolchain in release.BUILD (#5853) ([259e26c1](https://github.com/kythe/kythe/commit/259e26c1f932a709bdb6695ca338a8984d0d2690))
   *  fix cc proto_lang_toolchain (#5843) ([44ffda5b](https://github.com/kythe/kythe/commit/44ffda5bd4711dd6629aa1f0a1ffc83c6c5867e4))
 * **cxx_indexer:**
-  *  prepare for a clang change (#5965) ([bf1917cd](https://github.com/kythe/kythe/commit/bf1917cd5700ca55425b4f2488c90f4426fac283))
+  *  use correct definition anchor spans for lambdas (#5890) ([3d0a2d92](https://github.com/kythe/kythe/commit/3d0a2d92576cd24a72774f4e39c0c6317e8e1686))
   *  address issue #5935 (when aliasing is on) (#5937) ([1ac7b163](https://github.com/kythe/kythe/commit/1ac7b163e87d03131c8dd52d7f24ac21ba21a7e7))
   *  document issue #5935 (using template-name) (#5936) ([7bb8054d](https://github.com/kythe/kythe/commit/7bb8054d7e117a6783dad2011cac5d9fa43f221e))
   *  refactor IndexVFS to handle pragma_once (#5927) ([321efb37](https://github.com/kythe/kythe/commit/321efb372bbac4afab8ef2a61a87f202e8356c9a))
   *  avoid crashing in dependent specialization w/o written arguments (#5903) ([205cb366](https://github.com/kythe/kythe/commit/205cb366451a892b70d04a1b8def084dd82a3b2b))
   *  use operator symbols for markedsource; add flag (#5823) ([5105aa0c](https://github.com/kythe/kythe/commit/5105aa0cfb42c7c1f53bd44f7405fbf7b8be3d19))
   *  properly handle dependent using decl names  (#5808) ([7864f66d](https://github.com/kythe/kythe/commit/7864f66db0c9cbb787b2cc97957f527bb1fb7658))
-  *  no header providing "uintptr_t" is directly included (#5804) ([7cbb2c55](https://github.com/kythe/kythe/commit/7cbb2c555adc4133861475461b618cc5606d7fbd))
-  *  always ref a decl regardless of alternate targets (#5779) ([12a7fe6c](https://github.com/kythe/kythe/commit/12a7fe6c801628ca02571d9dee696b3e5da9be89))
 * **extractor:**  fix Dockerfile and extraction script (#5774) ([18c44b66](https://github.com/kythe/kythe/commit/18c44b668a7f5ecf9d1795eefdcdde9a9958fc19))
 * **go_indexer:**
-  *  fix nil pointer panic (#5906) ([6d7a4ecf](https://github.com/kythe/kythe/commit/6d7a4ecf624fa43cd56c773fd026f17c27874336))
   *  ignore unresolved C imports (#5900) ([ff79ac58](https://github.com/kythe/kythe/commit/ff79ac5800c81a57dc3dfd3f96242624112c7be6))
   *  mark variadics in all contexts (#5845) ([b662dce7](https://github.com/kythe/kythe/commit/b662dce74c950be8022ae026cb00000571856f85))
   *  use simple type name for constraints (#5844) ([23ec6cb7](https://github.com/kythe/kythe/commit/23ec6cb7dd9da98c76db9a8e6a7f9d3adc2c6499))
@@ -40,13 +33,10 @@
   *  emit tbuiltin nodes for special builtin pkg (#5810) ([a0c5592f](https://github.com/kythe/kythe/commit/a0c5592f5ac755bb8da4ec215869a80f9e040ff8))
   *  restore parens to recv MarkedSource (#5786) ([9f328b2e](https://github.com/kythe/kythe/commit/9f328b2e1f62ae8bec8addeeea39e11a10320a76))
   *  use LOOKUP_BY_PARAM for method recv (#5781) ([69fb2aee](https://github.com/kythe/kythe/commit/69fb2aeefafaa9647c626557f2b0d03fcb02aa70))
-  *  avoid nil pointer panic (#5760) ([31bf5789](https://github.com/kythe/kythe/commit/31bf57899ea15ffd4d40e6db2a81bb603e4e1bc9))
 * **java_indexer:**
   *  add basic MarkedSource for wildcards (#5897) ([3ca64733](https://github.com/kythe/kythe/commit/3ca647331d10e622ab36467a02ff8c75f7b7ac61))
-  *  use extant JDK21 shim in one more place (#5868) ([d73d7e54](https://github.com/kythe/kythe/commit/d73d7e548891cced74824ef932ca2f19cdb36630))
   *  fix ctor/generic signatures (#5814) ([e03e06f3](https://github.com/kythe/kythe/commit/e03e06f391b22be817e4db4513bcb79dba0fbf98))
 * **proto_indexer:**
-  *  typo in anchor spec (#5878) ([e5999fb5](https://github.com/kythe/kythe/commit/e5999fb51ea3b84fa67e1501634a67398cfcd9ea))
   *  use modern presence check (#5856) ([9c7b2dd6](https://github.com/kythe/kythe/commit/9c7b2dd6b606f08e785c1b59a590f74fdd363686))
   *  handle proto3 presence in signatures (#5855) ([5a8aab9d](https://github.com/kythe/kythe/commit/5a8aab9dafb379a8c783b9651026a4498db3290c))
   *  handle map types in signatures (#5839) ([b3e3ff6e](https://github.com/kythe/kythe/commit/b3e3ff6e058d638824674a611c040fc8ccf7713b))
@@ -59,23 +49,12 @@
 * **typescript_indexer:**
   *  add ... to vararg parameters (#5842) ([608d1cb9](https://github.com/kythe/kythe/commit/608d1cb98249396694716a1a9087413e850b047e))
   *  improve handling of anonymous functions (#5795) ([26521394](https://github.com/kythe/kythe/commit/265213942771f05ef36b13b3cafae242edae23b8))
-  *  remove superfluous BOX (#5780) ([a47fcd42](https://github.com/kythe/kythe/commit/a47fcd42f5b593f44ef6a276bb79c6a2bb2589ab))
 * **verifier:**
   *  use the fast solver by default. (#5972) ([4261c854](https://github.com/kythe/kythe/commit/4261c85428b0ae64cb2e2875776e9b058bf44578))
   *  give more useful diagnostics during recovery (#5971) ([922b4d38](https://github.com/kythe/kythe/commit/922b4d382e8ce0c9339d624779e1b2f31aaa177a))
-  *  the fast solver is no longer experimental (#5949) ([7caaf873](https://github.com/kythe/kythe/commit/7caaf873e5dadb1373da479bc78aeff304edcdb1))
   *  provide reasonable default corpus/path values (#5943) ([f358c2e2](https://github.com/kythe/kythe/commit/f358c2e2a3a38acf50ac0286a176300e5b126fe6))
-  *  mark all fresh negative evars; don't diagnose missing implicits (#5941) ([9cf45f80](https://github.com/kythe/kythe/commit/9cf45f8074c22462e9563df1b30036c8723b5b1f))
-  *  don't complain about implicitly inspected negated evars (#5940) ([16a8454f](https://github.com/kythe/kythe/commit/16a8454fbeb58751fa288dac2902856a130e1281))
-  *  do not allow evars created in negative contexts to be inspected (#5916) ([a4489f56](https://github.com/kythe/kythe/commit/a4489f56478524d6bc338351c2cb361bea29dff1))
   *  request larger stack size for new solver (#5883) ([4708608b](https://github.com/kythe/kythe/commit/4708608bf77eba10fdc284e87d01e4955709a1b5))
-  *  work around issue in groundedness check (#5879) ([d9a5bc03](https://github.com/kythe/kythe/commit/d9a5bc032d9aed5e3a60dcd632f6bc4a848c5cc4))
-  *  enable more tests (#5834) ([cd83846f](https://github.com/kythe/kythe/commit/cd83846ff983d309e24748ac25f3bd26dc1a0655))
   *  various fixes for new solver (#5830) ([a40be3e3](https://github.com/kythe/kythe/commit/a40be3e3eac6411dfef97fc342cf09cdcc6be605))
-  *  more tests; support more flavors of = (#5825) ([02f29a4e](https://github.com/kythe/kythe/commit/02f29a4e331173752a95fe091b67eae0976eeaac))
-  *  more transitive includes (#5801) ([1e5f2438](https://github.com/kythe/kythe/commit/1e5f243833566ca546b5be79bc0566a2fe87a885))
-  *  clang-tidy include findings (#5799) ([fbdd4db4](https://github.com/kythe/kythe/commit/fbdd4db49f84720e1dcb251cfd3920bd4fb8d784))
-  *  support inspections using the new solver (#5794) ([cfdf3c53](https://github.com/kythe/kythe/commit/cfdf3c53a6063c92c8124019e55a19a0aaabc847))
   *  flush stdout before printing verifier results (#5788) ([8ca60068](https://github.com/kythe/kythe/commit/8ca60068bcb84833f402370655eceb69e7ab324a))
 
 #### Features
@@ -104,7 +83,6 @@
   *  add type args to return types (#5836) ([aca6a8af](https://github.com/kythe/kythe/commit/aca6a8afbf8647068f511124fc4c67c739aa2d38))
   *  add constraints to generic signatures (#5835) ([e07111f0](https://github.com/kythe/kythe/commit/e07111f0e9e942e06bab38679870051dfcd877f6))
   *  link return vars (#5821) ([8f5d2864](https://github.com/kythe/kythe/commit/8f5d2864b5454b812a6607c5d722e7d198f82eb9))
-* **java:**  log the CU digest at start of indexing (#5865) ([774ac20e](https://github.com/kythe/kythe/commit/774ac20ec24f18be691e539603555bab563a3f4b))
 * **java_indexer:**  add method type parameters to MarkedSource (#5882) ([dc4b0053](https://github.com/kythe/kythe/commit/dc4b00536e7a1b9e2f405a914350282c8b83f08f))
 * **proto_indexer:**
   *  link the rest of the MarkedSource (#5866) ([7835faa3](https://github.com/kythe/kythe/commit/7835faa3408fd21da8278160f6e07acc018ce78e))
@@ -124,11 +102,8 @@
 * **verifier:**
   *  support graphviz output with the fast solver (#5967) ([0f546f6e](https://github.com/kythe/kythe/commit/0f546f6e9416d1ecbb1a584c1c6e66bf480a3e3d))
   *  print inspections with fast solver (#5960) ([cf876c37](https://github.com/kythe/kythe/commit/cf876c376c95a7846c04c23f885e443e5db7532c))
-  *  avoid the arity ceiling in outputs (#5939) ([10228580](https://github.com/kythe/kythe/commit/102285806d5891adb177cfa88e755515292f5dcc))
   *  warn on and allow specifying default file corpora (#5933) ([3c922e0a](https://github.com/kythe/kythe/commit/3c922e0abe5c9a71ca482eddf878fcb9b2004415))
-  *  smoke test to show anchors keep kinds (#5930) ([dbd0877f](https://github.com/kythe/kythe/commit/dbd0877fedd1d7ea57ab0553826184c63a66d1b0))
   *  support error recovery with the fast solver (#5915) ([6584e2fc](https://github.com/kythe/kythe/commit/6584e2fcb5bfe11c4f38ff44a152f7120efc76d3))
-  *  allowlist tests for the fast solver (#5885) ([bb2590b5](https://github.com/kythe/kythe/commit/bb2590b536bfbf96ab2b54d633bb92519023918f))
   *  Print phase time information from the verifier. (#5859) ([4ec79a57](https://github.com/kythe/kythe/commit/4ec79a57c676ac07070d3008887363d96f4df776))
 
 ## [v0.0.63] - 2023-07-18
