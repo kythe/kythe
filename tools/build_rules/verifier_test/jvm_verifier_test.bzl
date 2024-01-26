@@ -94,8 +94,9 @@ def jvm_verifier_test(
         name = name + "_entries",
         testonly = True,
         indexer = indexer,
+        target_indexer = indexer,
         opts = indexer_opts,
-        tags = tags,
+        tags = tags + ["manual"],
         visibility = visibility,
         deps = [kzip],
     )

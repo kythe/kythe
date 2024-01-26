@@ -208,14 +208,15 @@ std::string IndexCompilationUnit(
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
       new IndexVFS(Root, Files, Dirs, Style));
   KytheGraphRecorder Recorder(&Output);
-  KytheGraphObserverOptions options;
-  options.build_config = ExtractBuildConfig(Unit);
-  options.default_corpus =
-      Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "";
-  options.usr_default_corpus = Options.EmitUsrCorpus;
-  options.hash_recorder = Options.HashRecorder;
+  KytheGraphObserverOptions options{
+      .build_config = ExtractBuildConfig(Unit),
+      .default_corpus =
+          Options.UseCompilationCorpusAsDefault ? Unit.v_name().corpus() : "",
+      .hash_recorder = Options.HashRecorder,
+      .usr_default_corpus = Options.EmitUsrCorpus,
+  };
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
-                              Options.ReportProfileEvent, options);
+                              Options.ReportProfileEvent, std::move(options));
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();

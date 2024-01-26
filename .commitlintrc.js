@@ -26,7 +26,8 @@ module.exports = {
                    [
                      'api',        // user-facing API (e.g. XRefService)
                      'dev',        // developer tooling/scripting (e.g. linting)
-                     'example',    // example tools or docs (e.g. sample web ui)
+                     'example',    // example tools or docs (e.g. sample proto
+                                   // indexer)
                      'extraction', // compilation extraction
                      'indexing',   // semantic analysis over compilations
                      'post_processing', // serving data construction

@@ -6,11 +6,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 # If you need to add / update dependencies:
 #
-# 0. Ensure you have a recent nodejs and pnpm installed.
-# 1. Edit package.json in this directory as appropriate
+# 0. Ensure you have a recent npm and pnpm. npm can come from apt.
+# 1. Edit //:package.json and //:WORKSPACE as appropriate
 # 2. From the *root dir* of the project, run
 #
-#       cp kythe/typescript/package.json .
+#       npm install
 #       pnpm import
 #
 # 3. Add the dependencies to the ts_project build rule below.

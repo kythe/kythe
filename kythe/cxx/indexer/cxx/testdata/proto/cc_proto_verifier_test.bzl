@@ -60,6 +60,8 @@ def cc_proto_verifier_test(
         index_compilation,
         name = name + "_proto_entries",
         indexer = "//kythe/cxx/indexer/proto:indexer",
+        target_indexer = "//kythe/cxx/indexer/proto:indexer",
+        tags = ["manual"],
         opts = ["--index_file"],
         deps = [proto_kzip],
     )

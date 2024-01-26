@@ -118,9 +118,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "aspect_rules_ts",
-        sha256 = "8aabb2055629a7becae2e77ae828950d3581d7fc3602fe0276e6e039b65092cb",
-        strip_prefix = "rules_ts-2.0.0",
-        url = "https://github.com/aspect-build/rules_ts/releases/download/v2.0.0/rules_ts-v2.0.0.tar.gz",
+        sha256 = "bd3e7b17e677d2b8ba1bac3862f0f238ab16edb3e43fb0f0b9308649ea58a2ad",
+        strip_prefix = "rules_ts-2.1.0",
+        url = "https://github.com/aspect-build/rules_ts/releases/download/v2.1.0/rules_ts-v2.1.0.tar.gz",
     )
 
     maybe(
@@ -174,7 +174,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "bcb685e11945946335c2dc6265779f0226491b49",
+        commit = "21830c913505b1fd2cf10e454253483180c7e10b",
         name = "llvm-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
@@ -196,10 +196,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "9bd87b8280ef720d3240514f884e56a712f2218f0d693b48050c836028940a42",
-        strip_prefix = "protobuf-25.1",
+        sha256 = "8ff511a64fc46ee792d3fe49a5a1bcad6f7dc50dfbba5a28b0e5b979c17f9871",
+        strip_prefix = "protobuf-25.2",
         urls = [
-            "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protobuf-25.1.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/protobuf-25.2.tar.gz",
         ],
         patches = [
             # Use the rules_rust provided proto plugin, rather than the native one

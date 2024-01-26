@@ -609,6 +609,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
         case clang::TemplateArgument::Declaration:
         case clang::TemplateArgument::NullPtr:
         case clang::TemplateArgument::Integral:
+        case clang::TemplateArgument::StructuralValue:
         case clang::TemplateArgument::Template:
         case clang::TemplateArgument::TemplateExpansion:
         case clang::TemplateArgument::Expression:

@@ -59,6 +59,10 @@ ABSL_FLAG(kythe::RE2Flag, template_instance_exclude_path_pattern,
           kythe::RE2Flag{},
           "If nonempty, a regex that matches files to be excluded from "
           "template instance indexing.");
+ABSL_FLAG(kythe::RE2Flag, experimental_analysis_exclude_path_pattern,
+          kythe::RE2Flag{},
+          "If nonempty, a regex that matches files whose declarations should "
+          "not be analyzed. Transitive headers may still be analyzed.");
 ABSL_FLAG(std::string, record_hashes_file, "", "Record hashes to this file.");
 ABSL_FLAG(bool, record_call_directness, false,
           "Record directness of function calls.");
@@ -68,6 +72,7 @@ ABSL_FLAG(bool, experimental_set_aliases_as_writes, false,
           "Set protobuf aliases as writes.");
 
 namespace kythe {
+namespace {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -97,6 +102,8 @@ int main(int argc, char* argv[]) {
   options.EmitUsrCorpus = absl::GetFlag(FLAGS_emit_usr_corpus);
   options.TemplateInstanceExcludePathPattern =
       absl::GetFlag(FLAGS_template_instance_exclude_path_pattern).value;
+  options.AnalysisExcludePathPattern =
+      absl::GetFlag(FLAGS_experimental_analysis_exclude_path_pattern).value;
   options.UseCompilationCorpusAsDefault =
       absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
@@ -150,6 +157,7 @@ int main(int argc, char* argv[]) {
   return (had_errors ? 1 : 0);
 }
 
+}  // namespace
 }  // namespace kythe
 
 int main(int argc, char* argv[]) { return kythe::main(argc, argv); }

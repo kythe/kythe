@@ -111,6 +111,7 @@ TEST(ErrorStateTest, SimpleStep) {
   std::vector<GoalGroup> groups{{.goals = {nullptr}}};
   SouffleErrorState error_state(&groups);
   ASSERT_TRUE(error_state.NextStep());
+  EXPECT_FALSE(error_state.IsDoingErrorRecovery());
   EXPECT_EQ(error_state.target_group(), 0);
   EXPECT_EQ(error_state.target_goal(), 0);
   EXPECT_EQ(error_state.GoalForGroup(0), 0);
@@ -121,10 +122,12 @@ TEST(ErrorStateTest, MultiStep) {
   std::vector<GoalGroup> groups{{.goals = {nullptr, nullptr}}};
   SouffleErrorState error_state(&groups);
   ASSERT_TRUE(error_state.NextStep());
+  EXPECT_FALSE(error_state.IsDoingErrorRecovery());
   EXPECT_EQ(error_state.target_group(), 0);
   EXPECT_EQ(error_state.target_goal(), 1);
   EXPECT_EQ(error_state.GoalForGroup(0), 1);
   ASSERT_TRUE(error_state.NextStep());
+  EXPECT_TRUE(error_state.IsDoingErrorRecovery());
   EXPECT_EQ(error_state.target_group(), 0);
   EXPECT_EQ(error_state.target_goal(), 0);
   EXPECT_EQ(error_state.GoalForGroup(0), 0);

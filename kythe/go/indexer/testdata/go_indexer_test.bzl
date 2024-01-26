@@ -16,6 +16,7 @@
 
 # Bazel rules to extract Go compilations from library targets for testing the
 # Go cross-reference indexer.
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "GoSource",
@@ -24,6 +25,7 @@ load(
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "KytheEntries",
+    "KytheEntryProducerInfo",
     "kythe_integration_test",
     "verifier_test",
 )
@@ -158,8 +160,7 @@ go_extract = rule(
 
 def _go_entries(ctx):
     kzip = ctx.attr.kzip.kzip
-    indexer = ctx.files._indexer[-1]
-    iargs = [indexer.path] + ctx.attr.extra_indexer_args
+    iargs = [] + ctx.attr.extra_indexer_args
     output = ctx.outputs.entries
 
     # If the test wants marked source, enable support for it in the indexer.
@@ -182,7 +183,11 @@ def _go_entries(ctx):
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
 
+    test_runners = []
+    test_runners.append(_make_test_runner(ctx, {}, arguments = iargs + [kzip.short_path]))
+
     iargs += [kzip.path, "| gzip >" + output.path]
+    iargs.insert(0, ctx.executable._exec_indexer.path)
 
     cmds = ["set -e", "set -o pipefail", " ".join(iargs), ""]
     ctx.actions.run_shell(
@@ -190,9 +195,17 @@ def _go_entries(ctx):
         command = "\n".join(cmds),
         outputs = [output],
         inputs = [kzip],
-        tools = [ctx.executable._indexer],
+        tools = [ctx.executable._exec_indexer],
     )
-    return [KytheEntries(compressed = depset([output]), files = depset())]
+
+    return [
+        KytheEntryProducerInfo(
+            executables = test_runners,
+            runfiles = ctx.runfiles(
+                files = (test_runners + [kzip]),
+            ).merge(ctx.attr._indexer[DefaultInfo].default_runfiles),
+        ),
+    ]
 
 # Run the Kythe indexer on the output that results from a go_extract rule.
 go_entries = rule(
@@ -221,11 +234,40 @@ go_entries = rule(
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
             executable = True,
+            cfg = "target",
+        ),
+        "_exec_indexer": attr.label(
+            default = Label("//kythe/go/indexer/cmd/go_indexer"),
+            executable = True,
             cfg = "exec",
+        ),
+        "_test_template": attr.label(
+            default = Label("//tools/build_rules/verifier_test:indexer.sh.in"),
+            allow_single_file = True,
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},
 )
+
+def _make_test_runner(ctx, env, arguments):
+    output = ctx.actions.declare_file(ctx.label.name + "_test_runner")
+    ctx.actions.expand_template(
+        output = output,
+        is_executable = True,
+        template = ctx.file._test_template,
+        substitutions = {
+            "@INDEXER@": shell.quote(ctx.executable._indexer.short_path),
+            "@ENV@": "\n".join([
+                shell.quote("{key}={value}".format(key = key, value = value))
+                for key, value in env.items()
+            ]),
+            "@ARGS@": "\n".join([
+                shell.quote(a)
+                for a in arguments
+            ]),
+        },
+    )
+    return output
 
 def go_verifier_test(
         name,
@@ -305,6 +347,7 @@ def _go_indexer(
         extra_indexer_args = extra_indexer_args,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
+        tags = ["manual"],
     )
     return entries
 

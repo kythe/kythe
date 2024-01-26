@@ -118,7 +118,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       }
       HeaderSearch.ClearFileInfo();
       HeaderSearch.SetSearchPaths(Lookups, HeaderConfig.angled_dir_idx,
-                                  HeaderConfig.system_dir_idx, false,
+                                  HeaderConfig.system_dir_idx,
                                   llvm::DenseMap<unsigned, unsigned>());
       HeaderSearch.SetSystemHeaderPrefixes(HeaderConfig.system_prefixes);
     }

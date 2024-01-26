@@ -134,7 +134,7 @@ const clang::CXXMethodDecl* FindAccessorDeclWithName(
       // underscore.
       if (MethodName == Name ||
           (MethodName.size() == Name.size() + 1 &&
-           MethodName.startswith(Name) && MethodName.endswith("_"))) {
+           MethodName.starts_with(Name) && MethodName.ends_with("_"))) {
         return Method;
       }
     }
