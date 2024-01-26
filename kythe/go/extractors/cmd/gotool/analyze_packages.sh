@@ -17,7 +17,7 @@
 # Download, build, and extract a set of Go packages.  Resulting compilations
 # will be merged into a single .kzip archive in the "$OUTPUT" directory.
 
-: "${TMPDIR:=/tmp}" "${OUTPUT:=/output}" "${KYTHE_KZIP_ENCODING:=JSON}"
+: "${TMPDIR:=/tmp}" "${OUTPUT:=/output}"
 
 if [[ -z "${GOPATH}" ]]; then
   echo "GOPATH environment variable is required" >&2
