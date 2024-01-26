@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "clang/AST/APValue.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"
 #include "clang/AST/CommentLexer.h"
