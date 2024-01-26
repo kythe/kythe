@@ -1363,6 +1363,8 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 			Anchor: converter.Convert(c.Caller).Anchor,
 			Ticket: c.SemanticCaller,
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
+
+			Speculative: xrefs.IsSpeculative(grp.GetKind()),
 		}
 		ra.MarkedSource = c.MarkedSource
 		for _, site := range c.Callsite {
@@ -1474,6 +1476,8 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 			Anchor: scope,
 			Ticket: sr.SemanticScope,
 			Site:   make([]*xpb.Anchor, 0, len(sr.Reference)),
+
+			Speculative: xrefs.IsSpeculative(grp.GetKind()),
 		}
 		ra.MarkedSource = sr.MarkedSource
 		refs := sr.GetReference()
@@ -1528,7 +1532,10 @@ func (c *anchorConverter) Convert(a *srvpb.ExpandedAnchor) *xpb.CrossReferencesR
 		SnippetSpan: a.SnippetSpan,
 		BuildConfig: a.BuildConfiguration,
 		Revision:    fileInfo.GetRevision(),
-	}}
+	},
+
+		Speculative: xrefs.IsSpeculative(a.GetKind()),
+	}
 }
 
 type documentConverter struct {

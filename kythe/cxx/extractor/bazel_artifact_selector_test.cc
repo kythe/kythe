@@ -737,7 +737,7 @@ TEST_P(AspectArtifactSelectorStressTest,
     AspectArtifactSelector selector(DefaultOptions());
     if (state.has_value()) {
       ASSERT_EQ(selector.DeserializeFrom(*state), absl::OkStatus())
-          << state->DebugString();
+          << absl::StrCat(*state);
     }
 
     if (auto artifact = selector.Select(event)) {
@@ -766,7 +766,7 @@ TEST_P(AspectArtifactSelectorStressTest,
   for (const auto& event : events) {
     if (state.has_value()) {
       ASSERT_EQ(selector.DeserializeFrom(*state), absl::OkStatus())
-          << state->DebugString();
+          << absl::StrCat(*state);
     }
 
     if (auto artifact = selector.Select(event)) {

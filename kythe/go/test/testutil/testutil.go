@@ -19,6 +19,7 @@ package testutil // import "kythe.io/kythe/go/test/testutil"
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -149,4 +150,14 @@ func TestFilePath(t *testing.T, path string) string {
 		t.Fatalf("Failed to resolve path %s: %v", path, err)
 	}
 	return filepath.Join(pwd, filepath.FromSlash(path))
+}
+
+// SetFlag sets a flag to a value for the duration of the test, resetting it
+// to the flag's default value during cleanup.
+func SetFlag(t testing.TB, flagName string, value string) {
+	f := flag.Lookup(flagName)
+	if err := f.Value.Set(value); err != nil {
+		t.Fatalf("Error setting --%s: %v", flagName, err)
+	}
+	t.Cleanup(func() { f.Value.Set(f.DefValue) })
 }

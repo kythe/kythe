@@ -47,6 +47,7 @@ var (
 	renderSignature         = flag.Bool("render_signatures", false, "Whether to emit /kythe/code/rendered/signature facts (requires --rewrite)")
 	renderCallsiteSignature = flag.Bool("render_callsite_signatures", false, "Whether to emit /kythe/code/rendered/callsite_signature facts (requires --rewrite)")
 	renderQualifiedName     = flag.Bool("render_qualified_names", false, "Whether to emit /kythe/code/rendered/qualified_name facts (requires --rewrite)")
+	renderSimpleName        = flag.Bool("render_simple_names", false, "Whether to emit /kythe/code/rendered/simple_name facts (requires --rewrite)")
 )
 
 const renderFactPrefix = facts.Code + "/rendered/"
@@ -82,6 +83,14 @@ func main() {
 				e.FactValue = rec
 				rewritten++
 
+				if *renderSimpleName {
+					val := markedsource.RenderSimpleIdentifier(resolved, markedsource.PlaintextContent, nil)
+					exitOnErr(wr.PutProto(&spb.Entry{
+						Source:    e.Source,
+						FactName:  renderFactPrefix + "simple_name",
+						FactValue: []byte(val),
+					}))
+				}
 				if *renderQualifiedName {
 					val := markedsource.RenderSimpleQualifiedName(resolved, true, markedsource.PlaintextContent, nil)
 					exitOnErr(wr.PutProto(&spb.Entry{

@@ -46,6 +46,7 @@ public enum NodeKind {
   SUM_ENUM_CLASS("sum", "enumClass"),
   VARIABLE_EXCEPTION("variable", "local/exception"),
   VARIABLE_FIELD("variable", "field"),
+  VARIABLE_IMPORT("variable", "import"),
   VARIABLE_LOCAL("variable", "local"),
   VARIABLE_PARAMETER("variable", "local/parameter"),
   VARIABLE_RESOURCE("variable", "local/resource");

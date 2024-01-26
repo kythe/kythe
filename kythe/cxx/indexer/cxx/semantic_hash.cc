@@ -81,6 +81,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateArgument& arg) const {
         return std::hash<std::string>()(llvm::toString(value, 10));
       }
     }
+    case TemplateArgument::StructuralValue:
+      CHECK(ignore_unimplemented_) << "SemanticHash(StructuralValue)";
+      return 0;
     case TemplateArgument::Template:
       return Hash(arg.getAsTemplate()) ^ 0x4040404004040404LL;
     case TemplateArgument::TemplateExpansion:

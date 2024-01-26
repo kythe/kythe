@@ -86,7 +86,7 @@ constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
 /// \return the input name stripped of its prefix if it's silent; an empty
 /// string otherwise.
 llvm::StringRef strip_silent_input_prefix(llvm::StringRef argument) {
-  if (absl::GetFlag(FLAGS_test_claim) && argument.startswith(kSilentPrefix)) {
+  if (absl::GetFlag(FLAGS_test_claim) && argument.starts_with(kSilentPrefix)) {
     return argument.drop_front(::strlen(kSilentPrefix));
   }
   return {};
@@ -197,7 +197,7 @@ Examples:)");
 bool IndexerContext::HasIndexArguments() {
   for (const auto& arg : args_) {
     auto path = llvm::StringRef(arg);
-    if (path.endswith(".kzip")) {
+    if (path.ends_with(".kzip")) {
       CHECK_EQ("-", absl::GetFlag(FLAGS_i))
           << "No other input is allowed when reading from a kzip file.";
       return true;
@@ -213,7 +213,7 @@ void IndexerContext::LoadDataFromKZip(const std::string& file_or_cu,
   if (name.empty()) {
     name = file_or_cu;
   }
-  CHECK(llvm::StringRef(file_or_cu).endswith(".kzip"));
+  CHECK(llvm::StringRef(file_or_cu).ends_with(".kzip"));
   DecodeKZipFile(name, silent, visit);
 }
 

@@ -62,6 +62,23 @@ sh_test(
 )
 
 sh_test(
+    name = "singleton_inspect_fs",
+    size = "small",
+    srcs = [
+        "test_singleton_fs.sh",
+    ],
+    args = [
+        "singleton_inspect_input_fs.txt",
+        "singleton_inspect_expected_error_fs.txt",
+    ],
+    data = [
+        "singleton_inspect_expected_error_fs.txt",
+        "singleton_inspect_input_fs.txt",
+        "//kythe/cxx/verifier",
+    ],
+)
+
+sh_test(
     name = "outputs",
     size = "small",
     srcs = [

@@ -57,7 +57,7 @@ static clang::SourceRange GetVarDeclFlagDeclLoc(
     const clang::LangOptions& LO, const clang::VarDecl* Decl,
     clang::SourceLocation RefLoc = clang::SourceLocation()) {
   // Quickly bail out if this isn't "FLAGS_foo":
-  if (!Decl->getName().startswith("FLAGS_")) {
+  if (!Decl->getName().starts_with("FLAGS_")) {
     return clang::SourceLocation();
   }
   clang::SourceLocation Loc = Decl->getLocation();
@@ -91,13 +91,13 @@ static clang::SourceRange GetVarDeclFlagDeclLoc(
     if (MaybeFlagsFileId.isInvalid()) {
       return false;
     }
-    const auto* MaybeFlagsFileEntry = SM.getFileEntryForID(MaybeFlagsFileId);
+    const auto MaybeFlagsFileEntry = SM.getFileEntryRefForID(MaybeFlagsFileId);
     if (!MaybeFlagsFileEntry) {
       return false;
     }
     llvm::StringRef MaybeFlagsFilename(MaybeFlagsFileEntry->getName());
-    return MaybeFlagsFilename.endswith("gflags.h") ||
-           MaybeFlagsFilename.endswith("gflags_declare.h");
+    return MaybeFlagsFilename.ends_with("gflags.h") ||
+           MaybeFlagsFilename.ends_with("gflags_declare.h");
   };
   auto SRBegin = Decl->getSourceRange().getBegin();
   if (!SRBegin.isValid() ||
@@ -129,8 +129,8 @@ static clang::SourceRange GetVarDeclFlagDeclLoc(
   auto DefTokText = llvm::StringRef(FileBuf.substr(
       FileIdOffset.second, FileIdEndOffset.second - FileIdOffset.second));
   bool IsFlagDef =
-      DefTokText.startswith("DEFINE_") || DefTokText.startswith("ABSL_FLAG");
-  if (!IsFlagDef && !DefTokText.startswith("DECLARE_")) {
+      DefTokText.starts_with("DEFINE_") || DefTokText.starts_with("ABSL_FLAG");
+  if (!IsFlagDef && !DefTokText.starts_with("DECLARE_")) {
     return clang::SourceLocation();
   }
   if (IsFlagDef && (Decl->getDefinition() != Decl)) {

@@ -49,7 +49,6 @@ IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
   CHECK(writer.ok()) << "Failed to open KzipWriter: " << writer.status();
   return std::move(*writer);
 }
-}  // namespace
 
 int main(int argc, char* argv[]) {
   kythe::InitializeProgram(argv[0]);
@@ -96,6 +95,7 @@ Examples:
   return 0;
 }
 
+}  // namespace
 }  // namespace lang_proto
 }  // namespace kythe
 

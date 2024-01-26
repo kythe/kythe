@@ -955,22 +955,20 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
     printer.Print(std::to_string(goal_end.line) + ":" +
                   std::to_string(goal_end.column));
   }
-  bool printed_goal = false;
   printer.Print(" ");
   if (goal_end.filename) {
     auto has_symbol = fake_files_.find(*goal_end.filename);
     if (has_symbol != fake_files_.end()) {
-      printed_goal = PrintInMemoryFileSection(
-          symbol_table_.text(has_symbol->second), goal_begin.line - 1,
-          goal_begin.column - 1, goal_end.line - 1, goal_end.column - 1,
-          &printer);
+      PrintInMemoryFileSection(symbol_table_.text(has_symbol->second),
+                               goal_begin.line - 1, goal_begin.column - 1,
+                               goal_end.line - 1, goal_end.column - 1,
+                               &printer);
     } else if (*goal_end.filename != *kStandardIn &&
                *goal_begin.filename == *goal_end.filename) {
       FILE* f = fopen(goal_end.filename->c_str(), "r");
       if (f != nullptr) {
-        printed_goal =
-            PrintFileSection(f, goal_begin.line - 1, goal_begin.column - 1,
-                             goal_end.line - 1, goal_end.column - 1, &printer);
+        PrintFileSection(f, goal_begin.line - 1, goal_begin.column - 1,
+                         goal_end.line - 1, goal_end.column - 1, &printer);
         fclose(f);
       }
     }
@@ -1011,17 +1009,18 @@ bool Verifier::VerifyAllGoals(
 }
 
 bool Verifier::VerifyAllGoals() {
-  return VerifyAllGoals([this](Verifier* context,
-                               const Inspection& inspection) {
+  return VerifyAllGoals([this](Verifier* context, const Inspection& inspection,
+                               std::string_view str) {
     if (inspection.kind == Inspection::Kind::EXPLICIT) {
-      FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
-      printer.Print(inspection.label);
-      printer.Print(": ");
-      inspection.evar->Dump(symbol_table_, &printer);
-      printer.Print("\n");
+      absl::FPrintF(saving_assignments_ ? stderr : stdout, "%s: %s\n",
+                    inspection.label, str);
     }
-    if (inspection.evar->current()) {
-      saved_assignments_[inspection.label] = inspection.evar->current();
+    if (!str.empty()) {
+      saved_assignments_[inspection.label] = str;
+    } else if (inspection.evar->current() != nullptr) {
+      StringPrettyPrinter printer;
+      inspection.evar->current()->Dump(symbol_table_, &printer);
+      saved_assignments_[inspection.label] = printer.str();
     }
     return true;
   });
@@ -1658,16 +1657,13 @@ void Verifier::DumpAsDot() {
     return;
   }
   std::map<std::string, std::string> vname_labels;
-  for (const auto& [label, vname] : saved_assignments_) {
-    if (!vname) {
+  for (const auto& [label, str] : saved_assignments_) {
+    if (str.empty()) {
       continue;
     }
-    StringPrettyPrinter printer;
-    QuoteEscapingPrettyPrinter quote_printer(printer);
-    vname->Dump(symbol_table_, &printer);
-    auto old_label = vname_labels.find(printer.str());
+    auto old_label = vname_labels.find(str);
     if (old_label == vname_labels.end()) {
-      vname_labels[printer.str()] = label;
+      vname_labels[str] = label;
     } else {
       old_label->second += ", " + label;
     }
@@ -1677,7 +1673,6 @@ void Verifier::DumpAsDot() {
       return std::string();
     }
     StringPrettyPrinter id_string;
-    QuoteEscapingPrettyPrinter id_quote(id_string);
     node->Dump(symbol_table_, &id_string);
     const auto& label = vname_labels.find(id_string.str());
     if (label != vname_labels.end()) {

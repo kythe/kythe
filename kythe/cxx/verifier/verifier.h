@@ -100,15 +100,6 @@ class Verifier {
                           inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
-  /// \param inspect function to call on any inspection request
-  /// \return true if all goals could be satisfied.
-  bool VerifyAllGoals(
-      std::function<bool(Verifier* context, const Inspection&)> inspect) {
-    return VerifyAllGoals([&](Verifier* v, const Inspection& i,
-                              std::string_view) { return inspect(v, i); });
-  }
-
-  /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.
   bool VerifyAllGoals();
 
@@ -382,7 +373,7 @@ class Verifier {
   /// it's important to disambiguate cases where this is likely
   /// (e.g., we add line and column information to labels we generate
   /// for anchors).
-  std::map<std::string, AstNode*> saved_assignments_;
+  absl::flat_hash_map<std::string, std::string> saved_assignments_;
 
   /// Maps from pretty-printed vnames to (parsed) file node text.
   std::map<std::string, Symbol> fake_files_;
