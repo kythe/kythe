@@ -102,5 +102,5 @@ kzip create_metadata \
   --commit_timestamp "$TIMESTAMP"
 
 echo "Merging compilations into $OUT" >&2
-kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR/out.kzip" "$OUTPUT/buildmetadata.kzip"
+kzip merge --output "$OUT" "$TMPDIR/out.kzip" "$OUTPUT/buildmetadata.kzip"
 fix_permissions.sh "$OUTPUT"
