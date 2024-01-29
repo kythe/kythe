@@ -284,6 +284,10 @@ DEF_TRAVERSE_TYPEPAIR(TypeOfType, {
 DEF_TRAVERSE_TYPEPAIR(DecltypeType, {
   return getDerived().TraverseStmt(TL.getUnderlyingExpr());
 });
+DEF_TRAVERSE_TYPEPAIR(PackIndexingType, {
+  if (!getDerived().TraverseType(T->getPattern())) return false;
+  getDerived().TraverseStmt(T->getIndexExpr());
+});
 DEF_TRAVERSE_TYPEPAIR(UnaryTransformType, {
   return getDerived().TraverseTypePair(TL.getUnderlyingTInfo()->getTypeLoc(),
                                        T->getUnderlyingType());
