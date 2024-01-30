@@ -81,7 +81,7 @@ public class JavaIndexerConfig extends IndexerConfig {
   private boolean emitRefCallOverIdentifier;
 
   @Parameter(names = "--additional_javac_flags", description = "Additional flags to pass to javac")
-  private List<String> additionalJavacFlags;
+  private List<String> additionalJavacFlags = new ArrayList<>();
 
   public JavaIndexerConfig(String programName) {
     super(programName);
@@ -124,9 +124,6 @@ public class JavaIndexerConfig extends IndexerConfig {
   }
 
   public List<String> getAdditionalJavacFlags() {
-    if (additionalJavacFlags == null) {
-      return new ArrayList<String>();
-    }
     return additionalJavacFlags;
   }
 
