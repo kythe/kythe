@@ -66,13 +66,15 @@ public class JavaCompilationDetails implements AutoCloseable {
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
       List<Processor> processors,
-      @Nullable Path temporaryDirectory) {
+      @Nullable Path temporaryDirectory,
+      List<String> additionalJavacFlags) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
 
     // Get the compilation options
     ImmutableList<String> options = optionsFromCompilationUnit(compilationUnit, processors);
+    options = ImmutableList.<String>builder().addAll(options).addAll(additionalJavacFlags).build();
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
     // Create a CompilationUnitPathFileManager that uses the fileDataProvider and
