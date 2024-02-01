@@ -174,7 +174,7 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "5c1f44193dd6a7d3453fc002130f5cbc7cb351c2",
+        commit = "4a39d08908942b2d415db405844cbe4af73e75d4",
         name = "llvm-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
@@ -196,10 +196,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "9bd87b8280ef720d3240514f884e56a712f2218f0d693b48050c836028940a42",
-        strip_prefix = "protobuf-25.1",
+        sha256 = "8ff511a64fc46ee792d3fe49a5a1bcad6f7dc50dfbba5a28b0e5b979c17f9871",
+        strip_prefix = "protobuf-25.2",
         urls = [
-            "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protobuf-25.1.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/protobuf-25.2.tar.gz",
         ],
         patches = [
             # Use the rules_rust provided proto plugin, rather than the native one

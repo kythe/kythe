@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "clang/AST/APValue.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"
 #include "clang/AST/CommentLexer.h"
@@ -4220,6 +4221,11 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
 }
 
 std::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForStructuralValue(const clang::APValue& value) {
+  return std::nullopt;
+}
+
+std::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
   return BuildNodeIdForTemplateName(Name);
 }
@@ -4271,6 +4277,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     case TemplateArgument::Integral:
       return BuildNodeIdForSpecialTemplateArgument(
           llvm::toString(Arg.getAsIntegral(), 10) + "i");
+    case TemplateArgument::StructuralValue:
+      return BuildNodeIdForStructuralValue(Arg.getAsStructuralValue());
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:
@@ -4868,6 +4876,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(MacroQualified);
     UNSUPPORTED_CLANG_TYPE(ConstantMatrix);
     UNSUPPORTED_CLANG_TYPE(DependentSizedMatrix);
+    UNSUPPORTED_CLANG_TYPE(PackIndexing);
   }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE

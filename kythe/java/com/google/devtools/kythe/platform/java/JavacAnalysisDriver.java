@@ -35,10 +35,15 @@ public class JavacAnalysisDriver {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
   private final @Nullable Path temporaryDirectory;
+  private final List<String> additionalJavacFlags;
 
-  public JavacAnalysisDriver(List<Processor> processors, @Nullable Path temporaryDirectory) {
+  public JavacAnalysisDriver(
+      List<Processor> processors,
+      @Nullable Path temporaryDirectory,
+      List<String> additionalJavacFlags) {
     this.processors = processors;
     this.temporaryDirectory = temporaryDirectory;
+    this.additionalJavacFlags = additionalJavacFlags;
   }
 
   /**
@@ -62,7 +67,11 @@ public class JavacAnalysisDriver {
 
     try (JavaCompilationDetails details =
         JavaCompilationDetails.createDetails(
-            compilationUnit, fileDataProvider, processors, temporaryDirectory)) {
+            compilationUnit,
+            fileDataProvider,
+            processors,
+            temporaryDirectory,
+            additionalJavacFlags)) {
       analyzer.analyzeCompilationUnit(details);
     }
   }

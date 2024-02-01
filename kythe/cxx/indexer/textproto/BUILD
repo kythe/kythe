@@ -94,6 +94,9 @@ cc_library(
     name = "recordio_textparser",
     srcs = ["recordio_textparser.cc"],
     hdrs = ["recordio_textparser.h"],
+    features = [
+        "-layering_check",  # TODO: protocolbuffers/protobuf#10889
+    ],
     deps = [
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/functional:function_ref",
