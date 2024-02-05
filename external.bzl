@@ -34,7 +34,7 @@ load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_regi
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.20")
+    go_register_toolchains(version = "1.21.6")
     gazelle_dependencies()
     rules_java_dependencies()
 
