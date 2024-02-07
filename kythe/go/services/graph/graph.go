@@ -160,7 +160,7 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("graph.Nodes:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "graph.Nodes:\t%s", time.Since(start))
 		}()
 
 		var req gpb.NodesRequest
@@ -174,13 +174,13 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Info(err)
+			log.InfoContext(ctx, err)
 		}
 	})
 	mux.HandleFunc("/edges", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("graph.Edges:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "graph.Edges:\t%s", time.Since(start))
 		}()
 
 		var req gpb.EdgesRequest
@@ -194,7 +194,7 @@ func RegisterHTTPHandlers(ctx context.Context, gs Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Info(err)
+			log.InfoContext(ctx, err)
 		}
 	})
 }

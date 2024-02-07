@@ -144,6 +144,6 @@ func EnsureGracefulExit(gs ...graphstore.Service) {
 // LogClose closes gs and logs any resulting error.
 func LogClose(ctx context.Context, gs graphstore.Service) {
 	if err := gs.Close(ctx); err != nil {
-		log.Infof("GraphStore failed to close: %v", err)
+		log.InfoContextf(ctx, "GraphStore failed to close: %v", err)
 	}
 }
