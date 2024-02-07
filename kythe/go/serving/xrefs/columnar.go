@@ -56,7 +56,7 @@ const ColumnarTableKeyMarker = "kythe:columnar"
 func NewService(ctx context.Context, t keyvalue.DB) xrefs.Service {
 	_, err := t.Get(ctx, []byte(ColumnarTableKeyMarker), nil)
 	if err == nil {
-		log.Warning("detected a experimental columnar xrefs table")
+		log.WarningContext(ctx, "detected a experimental columnar xrefs table")
 		return NewColumnarTable(t)
 	}
 	return NewCombinedTable(&table.KVProto{t})

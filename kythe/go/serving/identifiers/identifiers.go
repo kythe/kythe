@@ -152,7 +152,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 	mux.HandleFunc("/find_identifier", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("identifiers.Find:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "identifiers.Find:\t%s", time.Since(start))
 		}()
 		var req ipb.FindRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -166,7 +166,7 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Info(err)
+			log.InfoContext(ctx, err)
 		}
 	})
 }

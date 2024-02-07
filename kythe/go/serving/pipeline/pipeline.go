@@ -92,7 +92,7 @@ func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Optio
 		opts = new(Options)
 	}
 
-	log.Info("Starting serving pipeline")
+	log.InfoContext(ctx, "Starting serving pipeline")
 
 	out := &servingOutput{
 		xs: &table.KVProto{DB: db},
@@ -152,7 +152,7 @@ func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Optio
 }
 
 func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput, rdIn stream.EntryReader) (disksort.Interface, error) {
-	log.Info("Writing partial edges")
+	log.InfoContext(ctx, "Writing partial edges")
 
 	tree := filetree.NewMap()
 	rd := func(f func(*spb.Entry) error) error {
@@ -181,7 +181,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 	}
 	tree = nil
 
-	log.Info("Writing complete edges")
+	log.InfoContext(ctx, "Writing complete edges")
 
 	cSorter, err := opts.diskSorter(edgeLesser{}, edgeMarshaler{})
 	if err != nil {
@@ -195,7 +195,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 			n = e.Source
 			if e.Target != nil {
 				if opts.Verbose {
-					log.Warningf("missing node facts for: %q", e.Source.Ticket)
+					log.WarningContextf(ctx, "missing node facts for: %q", e.Source.Ticket)
 				}
 				// This is needed to satisfy later parts of the pipeline that look for targetless edges
 				// to signify new nodes.
@@ -298,7 +298,7 @@ func writeCompletedEdges(ctx context.Context, output disksort.Interface, e *srvp
 
 func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Proto, opts *Options) error {
 	buffer := out.Buffered()
-	log.Info("Writing EdgeSets")
+	log.InfoContext(ctx, "Writing EdgeSets")
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: opts.MaxPageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
@@ -397,12 +397,12 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		return err
 	}
 
-	log.Info("Writing decoration fragments")
+	log.InfoContext(ctx, "Writing decoration fragments")
 	if err := createDecorationFragments(ctx, edges, fragments); err != nil {
 		return err
 	}
 
-	log.Info("Writing completed FileDecorations")
+	log.InfoContext(ctx, "Writing completed FileDecorations")
 
 	// refSorter stores a *ipb.CrossReference for each Decoration from fragments
 	refSorter, err := opts.diskSorter(refLesser{}, refMarshaler{})
@@ -444,7 +444,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				targets[n.Ticket] = n
 			}
 			if file == nil {
-				log.Infof("Warning: no file set for anchor. fileTicket:[%v] curFile:[%v] fragment:[%v]", fileTicket, curFile, fragment)
+				log.InfoContextf(ctx, "Warning: no file set for anchor. fileTicket:[%v] curFile:[%v] fragment:[%v]", fileTicket, curFile, fragment)
 				return nil
 			}
 
@@ -453,7 +453,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				cr, err := assemble.CrossReference(file, norm, d, targets[d.Target])
 				if err != nil {
 					if opts.Verbose {
-						log.Warningf("error assembling cross-reference: %v", err)
+						log.WarningContextf(ctx, "error assembling cross-reference: %v", err)
 					}
 					continue
 				}
@@ -482,7 +482,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		}
 	}
 
-	log.Info("Writing CrossReferences")
+	log.InfoContext(ctx, "Writing CrossReferences")
 
 	xb := &assemble.CrossReferencesBuilder{
 		MaxPageSize: opts.MaxPageSize,

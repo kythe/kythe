@@ -154,7 +154,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		return err
 	}
 	if *verbose {
-		log.Infof("Finished resolving compilation: %s", pi.String())
+		log.InfoContextf(ctx, "Finished resolving compilation: %s", pi.String())
 	}
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs:               *doLibNodes,

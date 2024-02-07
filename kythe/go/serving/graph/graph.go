@@ -97,7 +97,7 @@ func lookupPagedEdgeSets(ctx context.Context, tbl table.Proto, keys [][]byte) (<
 		for _, key := range keys {
 			var pes srvpb.PagedEdgeSet
 			if err := tbl.Lookup(ctx, key, &pes); err == table.ErrNoSuchKey {
-				log.Warningf("Could not locate edges with key %q", key)
+				log.WarningContextf(ctx, "Could not locate edges with key %q", key)
 				ch <- edgeSetResult{Err: err}
 				continue
 			} else if err != nil {

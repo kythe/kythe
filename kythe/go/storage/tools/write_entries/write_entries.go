@@ -106,7 +106,7 @@ func main() {
 	}
 	wg.Wait()
 
-	log.Infof("Wrote %d entries", numEntries)
+	log.InfoContextf(ctx, "Wrote %d entries", numEntries)
 }
 
 func writeEntries(ctx context.Context, s graphstore.Service, reqs <-chan *spb.WriteRequest) (uint64, error) {

@@ -138,7 +138,7 @@ const (
 // number processed.
 func (w *writeManifest) ProcessElement(ctx context.Context, _ beam.T, e func(*tableMetadata) bool) (int, error) {
 	const manifestName = "MANIFEST-000000"
-	defer func(start time.Time) { log.Infof("Manifest written in %s", time.Since(start)) }(time.Now())
+	defer func(start time.Time) { log.InfoContextf(ctx, "Manifest written in %s", time.Since(start)) }(time.Now())
 
 	// Write the CURRENT manifest to the 0'th LevelDB file.
 	f, err := openWrite(ctx, schemePreservingPathJoin(w.Path, manifestName))
@@ -271,7 +271,7 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 
 	var totalElements int
 	defer func(start time.Time) {
-		log.Infof("Shard %04d: %s (size: %d)", shard, time.Since(start), totalElements)
+		log.InfoContextf(ctx, "Shard %04d: %s (size: %d)", shard, time.Since(start), totalElements)
 	}(time.Now())
 	md := tableMetadata{Shard: shard + 1}
 
