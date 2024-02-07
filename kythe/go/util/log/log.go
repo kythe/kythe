@@ -17,7 +17,11 @@
 // Package log provides semantic log functions.
 package log
 
-import "log"
+import (
+	"context"
+	"log"
+	"log/slog"
+)
 
 // Infof logs to the informational log.
 func Infof(msg string, args ...any) { log.Printf(msg, args...) }
@@ -51,3 +55,16 @@ func Exit(args ...any) { log.Fatal(args...) }
 
 // Exitf logs to the error log and panics.
 func Exitf(msg string, args ...any) { log.Fatalf(msg, args...) }
+
+// InfoContextf logs to the informational log with a Context.
+func InfoContextf(ctx context.Context, msg string, args ...any) { slog.InfoContext(ctx, msg, args...) }
+
+// ErrorContextf logs to the error log with a Context.
+func ErrorContextf(ctx context.Context, msg string, args ...any) {
+	slog.ErrorContext(ctx, msg, args...)
+}
+
+// WarningContextf logs to the warning log with a Context.
+func WarningContextf(ctx context.Context, msg string, args ...any) {
+	slog.WarnContext(ctx, msg, args...)
+}
