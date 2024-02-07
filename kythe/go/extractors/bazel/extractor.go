@@ -196,7 +196,7 @@ type fileReader func(*apb.CompilationUnit_FileInput, io.Reader) error
 
 // extract extracts a compilation from the specified extra action info.
 func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader) (*apb.CompilationUnit, error) {
-	log.Infof("Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
+	log.InfoContextf(ctx, "Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
 	if err := c.checkAction(ctx, info); err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 
 	// Capture the build system details.
 	if err := SetTarget(info.Target, info.Rule, cu); err != nil {
-		log.Errorf("Adding build details: %v", err)
+		log.ErrorContextf(ctx, "Adding build details: %v", err)
 	}
 
 	// Load and populate file contents and required inputs. First scan the
@@ -248,11 +248,11 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 	}); err != nil {
 		return nil, fmt.Errorf("reading input files failed: %v", err)
 	}
-	log.Infof("Finished reading required inputs [%v elapsed]", time.Since(start))
+	log.InfoContextf(ctx, "Finished reading required inputs [%v elapsed]", time.Since(start))
 	if err := c.fixup(cu); err != nil {
 		return nil, err
 	}
-	log.Infof("Found %d required inputs, %d source files", len(cu.RequiredInput), len(cu.SourceFile))
+	log.InfoContextf(ctx, "Found %d required inputs, %d source files", len(cu.RequiredInput), len(cu.SourceFile))
 	return cu, nil
 }
 
@@ -295,7 +295,7 @@ func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int,
 			defer func() { <-throttle }()
 			rc, err := c.openRead(gCtx, path)
 			if err != nil {
-				log.Errorf("Reading input file: %v", err)
+				log.ErrorContextf(ctx, "Reading input file: %v", err)
 				return err
 			}
 			select {

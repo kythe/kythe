@@ -93,7 +93,7 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 		case srvpb.FileDirectory_DIRECTORY:
 			re.Kind = ftpb.DirectoryReply_DIRECTORY
 		default:
-			log.Warningf("unknown directory entry type: %T", e)
+			log.WarningContextf(ctx, "unknown directory entry type: %T", e)
 			continue
 		}
 		entries = append(entries, re)

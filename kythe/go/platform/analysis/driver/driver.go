@@ -146,7 +146,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 				if err == nil {
 					return errors.WithMessage(terr, "driver: analysis teardown")
 				}
-				log.Warningf("analysis teardown failed: %v (analysis error: %v)", terr, err)
+				log.WarningContextf(ctx, "analysis teardown failed: %v (analysis error: %v)", terr, err)
 			}
 			return err
 		}); err == ErrEndOfQueue {

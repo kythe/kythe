@@ -85,7 +85,7 @@ func (it *Table) Find(ctx context.Context, req *ipb.FindRequest) (*ipb.FindReply
 				QualifiedName: match.GetQualifiedName(),
 			}
 			if n := allNodes[node.GetTicket()]; n != nil {
-				log.Errorf("Two matches found for the same ticket: %v, %v", n, node)
+				log.ErrorContextf(ctx, "Two matches found for the same ticket: %v, %v", n, node)
 			}
 			allNodes[node.GetTicket()] = &matchNode{
 				match:           replyMatch,

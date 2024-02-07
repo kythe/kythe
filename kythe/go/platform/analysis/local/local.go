@@ -102,7 +102,7 @@ func (q *FileQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
 			q.closer = f
 
 		default:
-			log.Warningf("Skipped unknown file kind: %q", path)
+			log.WarningContextf(ctx, "Skipped unknown file kind: %q", path)
 			continue
 		}
 	}
