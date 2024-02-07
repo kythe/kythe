@@ -109,7 +109,7 @@ func main() {
 		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 			err := indexGo(ctx, unit, f)
 			if err != nil && *contOnErr {
-				log.Errorf("Continuing after error: %v", err)
+				log.ErrorContextf(ctx, "Continuing after error: %v", err)
 				return nil
 			}
 			return err

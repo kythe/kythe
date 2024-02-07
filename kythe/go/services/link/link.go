@@ -91,7 +91,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		return nil, status.Errorf(codes.OutOfRange, "too many identifier matches (%d > %d)",
 			len(idMatches), maxMatches/2) // a comforting deceit
 	}
-	log.Infof("Found %d of %d matches for identifier %q",
+	log.InfoContextf(ctx, "Found %d of %d matches for identifier %q",
 		len(idMatches), len(ids.Matches), req.Identifier)
 
 	// Stage 2: Find definitions of the matching nodes.
@@ -109,14 +109,14 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		xreq.DefinitionKind = xpb.CrossReferencesRequest_ALL_DEFINITIONS
 	case linkpb.LinkRequest_BINDING:
 	default:
-		log.Warningf("Unknown definition kind %v (ignored)", req.DefinitionKind)
+		log.WarningContextf(ctx, "Unknown definition kind %v (ignored)", req.DefinitionKind)
 	}
 	log.Info("Cross-references request:\n", prototext.Format(xreq))
 	defs, err := s.crossRefs(ctx, xreq)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Found %d result sets", len(defs.CrossReferences))
+	log.InfoContextf(ctx, "Found %d result sets", len(defs.CrossReferences))
 
 	// Gather all the anchors matching each definition. Also check whether any
 	// of the tickets is a complete definition, since that is preferred.
@@ -125,7 +125,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	complete := stringset.New()
 	pref := false
 	for ticket, xrefs := range defs.CrossReferences {
-		log.Infof("Checking node %q...", ticket)
+		log.InfoContextf(ctx, "Checking node %q...", ticket)
 
 		if req.Params != nil {
 			// Count parameters, and filter based on that.
@@ -138,9 +138,9 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 					}
 				}
 			}
-			log.Infof("+ Node has %d parameters", nparams)
+			log.InfoContextf(ctx, "+ Node has %d parameters", nparams)
 			if n := int(req.Params.GetCount()); n != nparams {
-				log.Infof("- Wrong number of parameters (have %d, want %d)", nparams, n)
+				log.InfoContextf(ctx, "- Wrong number of parameters (have %d, want %d)", nparams, n)
 				continue
 			}
 		}
@@ -170,7 +170,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	if len(complete) != 0 {
 		for ticket := range anchors {
 			if !complete.Contains(ticket) {
-				log.Infof("- Discarding incomplete definition %q", ticket)
+				log.InfoContextf(ctx, "- Discarding incomplete definition %q", ticket)
 				delete(anchors, ticket)
 			}
 		}
@@ -213,7 +213,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 		}
 	}
 
-	log.Infof("After filtering %d anchor locations there are %d unique results",
+	log.InfoContextf(ctx, "After filtering %d anchor locations there are %d unique results",
 		numAnchors, len(seen))
 	if len(seen) == 0 {
 		return nil, status.Error(codes.NotFound, "no matching definitions")
@@ -233,7 +233,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 			}
 		}
 		rsp.Links = append(rsp.Links, res.link)
-		log.Infof("Result: %+v", res.link)
+		log.InfoContextf(ctx, "Result: %+v", res.link)
 	}
 	sort.Slice(rsp.Links, func(i, j int) bool {
 		return rsp.Links[i].FileTicket < rsp.Links[j].FileTicket
@@ -261,7 +261,7 @@ func kindMatches(m *ipb.FindReply_Match, kinds []string) bool {
 // tickets. The results are merged locally, which is safe.
 func (s *Resolver) crossRefs(ctx context.Context, req *xpb.CrossReferencesRequest) (_ *xpb.CrossReferencesReply, err error) {
 	start := time.Now()
-	defer func() { log.Infof("CrossReferences complete err=%v [%v elapsed]", err, time.Since(start)) }()
+	defer func() { log.InfoContextf(ctx, "CrossReferences complete err=%v [%v elapsed]", err, time.Since(start)) }()
 
 	reqs := make([]*xpb.CrossReferencesRequest, 0, len(req.Ticket))
 	for _, ticket := range req.Ticket {

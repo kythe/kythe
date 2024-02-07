@@ -74,7 +74,7 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...an
 		return c.Fail("Required --commit_timestamp missing")
 	}
 	if c.corpus == "" {
-		log.Warningf("No --corpus provided")
+		log.WarningContextf(ctx, "No --corpus provided")
 	}
 
 	t, err := time.Parse(c.timestampFormat, c.commitTimestamp)

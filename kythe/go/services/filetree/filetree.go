@@ -80,7 +80,7 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 		}); err != nil {
 		return fmt.Errorf("failed to Scan GraphStore for directory structure: %v", err)
 	}
-	log.Infof("Indexed %d files in %s", total, time.Since(start))
+	log.InfoContextf(ctx, "Indexed %d files in %s", total, time.Since(start))
 	return nil
 }
 

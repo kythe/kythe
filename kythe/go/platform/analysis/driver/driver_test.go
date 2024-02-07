@@ -69,7 +69,7 @@ const buildID = "aabbcc"
 // Analyze implements the analysis.CompilationAnalyzer interface.
 func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) (*apb.AnalysisResult, error) {
 	if m.AnalysisDuration != 0 {
-		log.Infof("Waiting %s for analysis request", m.AnalysisDuration)
+		log.InfoContextf(ctx, "Waiting %s for analysis request", m.AnalysisDuration)
 		time.Sleep(m.AnalysisDuration)
 	}
 	m.OutputIndex = 0

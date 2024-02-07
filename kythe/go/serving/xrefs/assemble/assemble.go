@@ -252,20 +252,20 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 			}
 			anchorStart, err := strconv.Atoi(string(srcFacts[facts.AnchorStart]))
 			if err != nil {
-				log.Errorf("parsing anchor start offset %q: %v",
+				log.ErrorContextf(ctx, "parsing anchor start offset %q: %v",
 					string(srcFacts[facts.AnchorStart]), err)
 				return nil
 			}
 			anchorEnd, err := strconv.Atoi(string(srcFacts[facts.AnchorEnd]))
 			if err != nil {
-				log.Errorf("parsing anchor end offset %q: %v",
+				log.ErrorContextf(ctx, "parsing anchor end offset %q: %v",
 					string(srcFacts[facts.AnchorEnd]), err)
 				return nil
 			}
 			// Record the parent file for the anchor.
 			parentFile, err := tickets.AnchorFile(e.Source.Ticket)
 			if err != nil {
-				log.Errorf("deriving anchor ticket for %q: %v", e.Source.Ticket, err)
+				log.ErrorContextf(ctx, "deriving anchor ticket for %q: %v", e.Source.Ticket, err)
 			} else {
 				b.parents = append(b.parents, parentFile)
 			}
