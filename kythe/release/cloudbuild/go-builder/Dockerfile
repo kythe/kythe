@@ -18,6 +18,7 @@
 FROM golang:1.21
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libleveldb-dev libbrotli-dev && \
+        libleveldb-dev libbrotli-dev \
+        clang-15 && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/*
