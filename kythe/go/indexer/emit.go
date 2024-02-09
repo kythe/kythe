@@ -223,7 +223,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	// TODO(fromberger): Add diagnostics for type-checker errors.
 	if opts.verbose() {
 		for _, err := range pi.Errors {
-			log.Warningf("Type resolution error: %v", err)
+			log.WarningContextf(ctx, "Type resolution error: %v", err)
 		}
 	}
 	return e.firstErr

@@ -21,6 +21,7 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"reflect"
 )
 
 // Infof logs to the informational log.
@@ -56,8 +57,25 @@ func Exit(args ...any) { log.Fatal(args...) }
 // Exitf logs to the error log and panics.
 func Exitf(msg string, args ...any) { log.Fatalf(msg, args...) }
 
+// InfoContext logs to the informational log with a Context.
+func InfoContext(ctx context.Context, args ...any) {
+	InfoContextf(ctx, defaultFormat(args), args...)
+}
+
+// WarningContext logs to the informational log with a Context.
+func WarningContext(ctx context.Context, args ...any) {
+	WarningContextf(ctx, defaultFormat(args), args...)
+}
+
+// ErrorContext logs to the informational log with a Context.
+func ErrorContext(ctx context.Context, args ...any) {
+	ErrorContextf(ctx, defaultFormat(args), args...)
+}
+
 // InfoContextf logs to the informational log with a Context.
-func InfoContextf(ctx context.Context, msg string, args ...any) { slog.InfoContext(ctx, msg, args...) }
+func InfoContextf(ctx context.Context, msg string, args ...any) {
+	slog.InfoContext(ctx, msg, args...)
+}
 
 // ErrorContextf logs to the error log with a Context.
 func ErrorContextf(ctx context.Context, msg string, args ...any) {
@@ -67,4 +85,29 @@ func ErrorContextf(ctx context.Context, msg string, args ...any) {
 // WarningContextf logs to the warning log with a Context.
 func WarningContextf(ctx context.Context, msg string, args ...any) {
 	slog.WarnContext(ctx, msg, args...)
+}
+
+// defaultFormat returns a fmt.Printf format specifier that formats its
+// arguments as if they were passed to fmt.Print.
+func defaultFormat(args []any) string {
+	n := len(args)
+	switch n {
+	case 0:
+		return ""
+	case 1:
+		return "%v"
+	}
+
+	b := make([]byte, 0, n*3-1)
+	wasString := true // Suppress leading space.
+	for _, arg := range args {
+		isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
+		if wasString || isString {
+			b = append(b, "%v"...)
+		} else {
+			b = append(b, " %v"...)
+		}
+		wasString = isString
+	}
+	return string(b)
 }

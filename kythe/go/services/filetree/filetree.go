@@ -80,7 +80,7 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 		}); err != nil {
 		return fmt.Errorf("failed to Scan GraphStore for directory structure: %v", err)
 	}
-	log.Infof("Indexed %d files in %s", total, time.Since(start))
+	log.InfoContextf(ctx, "Indexed %d files in %s", total, time.Since(start))
 	return nil
 }
 
@@ -210,7 +210,7 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 	mux.HandleFunc("/corpusRoots", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("filetree.CorpusRoots:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "filetree.CorpusRoots:\t%s", time.Since(start))
 		}()
 
 		var req ftpb.CorpusRootsRequest
@@ -224,13 +224,13 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, cr); err != nil {
-			log.Info(err)
+			log.InfoContext(ctx, err)
 		}
 	})
 	mux.HandleFunc("/dir", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("filetree.Dir:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "filetree.Dir:\t%s", time.Since(start))
 		}()
 
 		var req ftpb.DirectoryRequest
@@ -244,7 +244,7 @@ func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 			return
 		}
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Info(err)
+			log.InfoContext(ctx, err)
 		}
 	})
 }
