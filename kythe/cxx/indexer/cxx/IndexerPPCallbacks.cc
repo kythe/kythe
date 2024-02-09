@@ -240,7 +240,8 @@ void IndexerPPCallbacks::InclusionDirective(
     llvm::StringRef Filename, bool IsAngled,
     clang::CharSourceRange FilenameRange, clang::OptionalFileEntryRef FileRef,
     llvm::StringRef SearchPath, llvm::StringRef RelativePath,
-    const clang::Module* Imported, clang::SrcMgr::CharacteristicKind FileType) {
+    const clang::Module* Imported, bool is_module_imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   // TODO(zarko) (Modules): Check if `Imported` is non-null; if so, this
   // was transformed to a module import.
   if (FileRef) {
