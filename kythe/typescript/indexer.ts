@@ -373,6 +373,7 @@ class StandardIndexerContext implements IndexerHost {
           if (decl.name) {
             switch (decl.name.kind) {
               case ts.SyntaxKind.Identifier:
+              case ts.SyntaxKind.PrivateIdentifier:
               case ts.SyntaxKind.StringLiteral:
               case ts.SyntaxKind.NumericLiteral:
               case ts.SyntaxKind.ComputedPropertyName:
@@ -1598,6 +1599,7 @@ class Visitor {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.PrivateIdentifier:
       case ts.SyntaxKind.StringLiteral:
       case ts.SyntaxKind.NumericLiteral:
         const sym = this.host.getSymbolAtLocation(decl.name);
@@ -2651,6 +2653,7 @@ class Visitor {
         this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.PrivateIdentifier:
       case ts.SyntaxKind.StringLiteral:
       case ts.SyntaxKind.NumericLiteral:
         // Assume that this identifer is occurring as part of an
