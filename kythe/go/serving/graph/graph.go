@@ -97,7 +97,7 @@ func lookupPagedEdgeSets(ctx context.Context, tbl table.Proto, keys [][]byte) (<
 		for _, key := range keys {
 			var pes srvpb.PagedEdgeSet
 			if err := tbl.Lookup(ctx, key, &pes); err == table.ErrNoSuchKey {
-				log.Warningf("Could not locate edges with key %q", key)
+				log.WarningContextf(ctx, "Could not locate edges with key %q", key)
 				ch <- edgeSetResult{Err: err}
 				continue
 			} else if err != nil {
@@ -299,11 +299,11 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, e
 			for _, idx := range pes.PageIndex {
 				if req.Kinds == nil || req.Kinds(idx.EdgeKind) {
 					if stats.skipPage(idx) {
-						log.Warningf("Skipping EdgePage: %s", idx.PageKey)
+						log.WarningContextf(ctx, "Skipping EdgePage: %s", idx.PageKey)
 						continue
 					}
 
-					log.Infof("Retrieving EdgePage: %s", idx.PageKey)
+					log.InfoContextf(ctx, "Retrieving EdgePage: %s", idx.PageKey)
 					ep, err := t.edgePage(ctx, idx.PageKey)
 					if err == table.ErrNoSuchKey {
 						return nil, fmt.Errorf("internal error: missing edge page: %q", idx.PageKey)

@@ -16,11 +16,8 @@
 
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
-#include "absl/log/log.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclVisitor.h"
-#include "clang/Basic/CharInfo.h"
-#include "clang/Lex/Lexer.h"
 
 namespace kythe {
 bool isObjCSelector(const clang::DeclarationName& DN) {
@@ -32,18 +29,6 @@ bool isObjCSelector(const clang::DeclarationName& DN) {
     default:
       return false;
   }
-}
-
-clang::SourceLocation GetLocForEndOfToken(
-    const clang::SourceManager& source_manager,
-    const clang::LangOptions& lang_options,
-    clang::SourceLocation start_location) {
-  if (start_location.isMacroID()) {
-    start_location = source_manager.getExpansionLoc(start_location);
-  }
-  return clang::Lexer::getLocForEndOfToken(start_location,
-                                           0 /* offset from end of token */,
-                                           source_manager, lang_options);
 }
 
 namespace {

@@ -108,7 +108,7 @@ func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...a
 		return subcommands.ExitUsageError
 	}
 	if err := w.Run(ctx, f, api); err != nil {
-		log.Errorf("%v", err)
+		log.ErrorContextf(ctx, "%v", err)
 		return subcommands.ExitFailure
 	}
 	return subcommands.ExitSuccess

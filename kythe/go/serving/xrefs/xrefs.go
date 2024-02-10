@@ -316,14 +316,14 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		multiPatcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Errorf("creating patcher: %v", err)
+			log.ErrorContextf(ctx, "creating patcher: %v", err)
 		}
 
 		if multiPatcher != nil {
 			defer func() {
 				if err := multiPatcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Errorf("closing patcher: %v", err)
+					log.ErrorContextf(ctx, "closing patcher: %v", err)
 				}
 			}()
 		}
@@ -338,7 +338,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	if decor.File == nil {
 		if len(decor.Diagnostic) == 0 {
-			log.Errorf("FileDecorations.file is missing without related diagnostics: %q", req.Location.Ticket)
+			log.ErrorContextf(ctx, "FileDecorations.file is missing without related diagnostics: %q", req.Location.Ticket)
 			return nil, xrefs.ErrDecorationsNotFound
 		}
 
@@ -454,7 +454,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				if fileInfo != nil {
 					if err := multiPatcher.AddFile(ctx, fileInfo); isNonContextError(err) {
 						// Attempt to continue with the request, just log the error.
-						log.Errorf("adding file: %v", err)
+						log.ErrorContextf(ctx, "adding file: %v", err)
 					}
 				}
 			}
@@ -578,7 +578,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if multiPatcher != nil {
 		defs, err := patchDefLocations(ctx, multiPatcher, reply.GetDefinitionLocations())
 		if err != nil {
-			log.Errorf("patching definition locations: %v", err)
+			log.ErrorContextf(ctx, "patching definition locations: %v", err)
 		} else {
 			reply.DefinitionLocations = defs
 		}
@@ -810,21 +810,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Errorf("creating patcher: %v", err)
+			log.ErrorContextf(ctx, "creating patcher: %v", err)
 		}
 
 		if patcher != nil {
 			defer func() {
 				if err := patcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Errorf("closing patcher: %v", err)
+					log.ErrorContextf(ctx, "closing patcher: %v", err)
 				}
 			}()
 
 			stats.refOptions.patcherFunc = func(f *srvpb.FileInfo) {
 				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 					// Attempt to continue with the request, just log the error.
-					log.Errorf("adding file: %v", err)
+					log.ErrorContextf(ctx, "adding file: %v", err)
 				}
 			}
 		}
@@ -1017,7 +1017,7 @@ readLoop:
 
 		for _, idx := range cr.GetPageIndex()[firstUnskippedPage:] {
 			if !leewayTime.IsZero() && time.Now().After(leewayTime) {
-				log.Warningf("hit soft deadline; trying to return already read xrefs: %s", time.Now().Sub(leewayTime))
+				log.WarningContextf(ctx, "hit soft deadline; trying to return already read xrefs: %s", time.Now().Sub(leewayTime))
 				break readLoop
 			}
 
@@ -1131,7 +1131,7 @@ readLoop:
 	stopReadingPages()
 	go func() {
 		if err := pageReadGroup.Wait(); isNonContextError(err) {
-			log.Errorf("page read ahead error: %v", err)
+			log.ErrorContextf(ctx, "page read ahead error: %v", err)
 		}
 	}()
 
@@ -1592,7 +1592,7 @@ func (t *Table) lookupDocument(ctx context.Context, ticket string) (*srvpb.Docum
 	if d.DocumentedBy != "" {
 		doc, err := t.documentation(ctx, d.DocumentedBy)
 		if err != nil {
-			log.Errorf("looking up subsuming documentation for {%+v}: %v", d, err)
+			log.ErrorContextf(ctx, "looking up subsuming documentation for {%+v}: %v", d, err)
 			return nil, err
 		}
 
@@ -1640,21 +1640,21 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	if t.MakePatcher != nil && req.GetWorkspace() != nil && req.GetPatchAgainstWorkspace() {
 		patcher, err = t.MakePatcher(ctx, req.GetWorkspace())
 		if isNonContextError(err) {
-			log.Errorf("creating patcher: %v", err)
+			log.ErrorContextf(ctx, "creating patcher: %v", err)
 		}
 
 		if patcher != nil {
 			defer func() {
 				if err := patcher.Close(); isNonContextError(err) {
 					// No need to fail the request; just log the error.
-					log.Errorf("closing patcher: %v", err)
+					log.ErrorContextf(ctx, "closing patcher: %v", err)
 				}
 			}()
 
 			dc.anchorConverter.patcherFunc = func(f *srvpb.FileInfo) {
 				if err := patcher.AddFile(ctx, f); isNonContextError(err) {
 					// Attempt to continue with the request, just log the error.
-					log.Errorf("adding file: %v", err)
+					log.ErrorContextf(ctx, "adding file: %v", err)
 				}
 			}
 		}
@@ -1691,7 +1691,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	if patcher != nil {
 		defs, err := patchDefLocations(ctx, patcher, reply.GetDefinitionLocations())
 		if err != nil {
-			log.Errorf("patching definition locations: %v", err)
+			log.ErrorContextf(ctx, "patching definition locations: %v", err)
 		} else {
 			reply.DefinitionLocations = defs
 		}

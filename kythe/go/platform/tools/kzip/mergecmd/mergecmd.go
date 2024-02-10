@@ -165,7 +165,7 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Infof("Skipping empty .kzip: %s", path)
+		log.InfoContextf(ctx, "Skipping empty .kzip: %s", path)
 		return nil
 	}
 
@@ -207,7 +207,7 @@ func (c *mergeCommand) mergeUnitsInto(ctx context.Context, wr *kzip.Writer, rd *
 		// TODO(schroederc): duplicate compilations with different revisions
 		_, err := wr.AddUnit(u.Proto, u.Index)
 		if c.ignoreDuplicateCUs && err == kzip.ErrUnitExists {
-			log.Infof("Found duplicate CU: %v", u.Proto.GetDetails())
+			log.InfoContextf(ctx, "Found duplicate CU: %v", u.Proto.GetDetails())
 			return nil
 		}
 		return err

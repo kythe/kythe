@@ -306,7 +306,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/xrefs", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("xrefs.CrossReferences:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "xrefs.CrossReferences:\t%s", time.Since(start))
 		}()
 		var req xpb.CrossReferencesRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -320,13 +320,13 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Errorf("CrossReferences error: %v", err)
+			log.ErrorContextf(ctx, "CrossReferences error: %v", err)
 		}
 	})
 	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("xrefs.Decorations:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "xrefs.Decorations:\t%s", time.Since(start))
 		}()
 		var req xpb.DecorationsRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -340,13 +340,13 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Errorf("Decorations error: %v", err)
+			log.ErrorContextf(ctx, "Decorations error: %v", err)
 		}
 	})
 	mux.HandleFunc("/documentation", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Infof("xrefs.Documentation:\t%s", time.Since(start))
+			log.InfoContextf(ctx, "xrefs.Documentation:\t%s", time.Since(start))
 		}()
 		var req xpb.DocumentationRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
@@ -360,7 +360,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 		}
 
 		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Errorf("Documentation error: %v", err)
+			log.ErrorContextf(ctx, "Documentation error: %v", err)
 		}
 	})
 }

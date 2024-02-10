@@ -83,7 +83,7 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		return err
 	}
 	if reply.NextPageToken != "" {
-		defer log.Infof("Next page token: %s", reply.NextPageToken)
+		defer log.InfoContextf(ctx, "Next page token: %s", reply.NextPageToken)
 	}
 	if c.countOnly {
 		return c.displayEdgeCounts(reply)

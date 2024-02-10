@@ -20,5 +20,5 @@ ARGS=(
   @INDEXER@
   @ARGS@
 )
-export "${ENV[@]}"
+export "${ENV[@]}" >&2
 exec "${ARGS[@]}"

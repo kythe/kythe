@@ -89,7 +89,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...an
 
 	if m.verbose {
 		// Print diff to show changes made to pom.xml.
-		log.Infof("Modified pom.xml. Diff:")
+		log.InfoContextf(ctx, "Modified pom.xml. Diff:")
 		diff, err := tf.GetDiff()
 		if err != nil {
 			m.Fail("Error diffing pom.xml: %v", err)
@@ -102,7 +102,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...an
 		"-Dmaven.compiler.fork=true",
 		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper),
 	}
-	log.Infof("Running `mvn %v`", strings.Join(mvnArgs, " "))
+	log.InfoContextf(ctx, "Running `mvn %v`", strings.Join(mvnArgs, " "))
 	cmd := exec.Command("mvn", mvnArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

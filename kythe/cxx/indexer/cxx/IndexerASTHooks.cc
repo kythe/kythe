@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "clang/AST/APValue.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrVisitor.h"
 #include "clang/AST/CommentLexer.h"
@@ -480,7 +481,6 @@ const clang::Decl* FindDisambiguationParent(const IndexedParentMap& parents,
 
   return nullptr;
 }
-}  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
   // Operationally, we'll define this as any decl that causes
@@ -507,6 +507,7 @@ bool IsClaimableForTraverse(const clang::Decl* decl) {
   }
   return false;
 }
+}  // anonymous namespace
 
 enum class Prunability {
   kNone,
@@ -1897,10 +1898,8 @@ IndexerASTVisitor::BuildNodeIdForImplicitClassTemplateInstantiation(
 std::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     const clang::FunctionDecl* FD) {
-  std::vector<GraphObserver::NodeId> NIDS;
-  const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
-  unsigned NumArgsAsWritten = 0;
-  const clang::TemplateArgumentList* Args = nullptr;
+  llvm::ArrayRef<clang::TemplateArgumentLoc> ArgsAsWritten;
+  llvm::ArrayRef<clang::TemplateArgument> Args;
   if (FD->getDescribedFunctionTemplate() != nullptr) {
     // This is the body of a function template.
     return std::nullopt;
@@ -1914,7 +1913,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     return Observer.recordTappNode(
         BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
   }
-  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
+  std::vector<clang::TemplateName> TNs;
   if (auto* FTSI = FD->getTemplateSpecializationInfo()) {
     if (FTSI->isExplicitSpecialization()) {
       // Refer to explicit specializations directly.
@@ -1922,51 +1921,29 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     }
     if (FTSI->TemplateArgumentsAsWritten) {
       // We have source locations for the template arguments.
-      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->getTemplateArgs();
-      NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
-    Args = FTSI->TemplateArguments;
-    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
-                     FTSI->getPointOfInstantiation());
+    if (FTSI->TemplateArguments) {
+      Args = FTSI->TemplateArguments->asArray();
+    }
+    TNs.emplace_back(FTSI->getTemplate());
   } else if (auto* DFTSI = FD->getDependentSpecializationInfo()) {
     for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
-      TNs.emplace_back(
-          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
-          FD->getLocation());
+      TNs.emplace_back(FTD->getTemplatedDecl()->getDescribedTemplate());
     }
   }
   // We can't do anything useful if we don't have type arguments.
-  if (ArgsAsWritten || Args) {
-    bool CouldGetAllTypes = true;
-    if (ArgsAsWritten) {
-      // Prefer arguments as they were written in source files.
-      NIDS.reserve(NumArgsAsWritten);
-      for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    } else {
-      NIDS.reserve(Args->size());
-      for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    }
-    if (CouldGetAllTypes) {
+  if (!(ArgsAsWritten.empty() && Args.empty())) {
+    std::optional<std::vector<GraphObserver::NodeId>> NIDs =
+        !ArgsAsWritten.empty() ? BuildTemplateArgumentList(ArgsAsWritten)
+                               : BuildTemplateArgumentList(Args);
+    if (NIDs.has_value()) {
       // If there's more than one possible template name (e.g., this is
       // dependent), choose one arbitrarily.
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
-          return Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                         NumArgsAsWritten);
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN)) {
+          return Observer.recordTappNode(*SpecializedNode, *NIDs,
+                                         ArgsAsWritten.size());
         }
       }
     }
@@ -2658,7 +2635,6 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   const GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(Decl);
-  Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo* ArgsAsWritten = nullptr;
   if (const auto* VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
@@ -3321,19 +3297,16 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   // definition is not, and a later use site uses the definition.
   (void)AlternateSemanticForDecl(Decl);
   auto Marks = MarkedSources.Generate(Decl);
-  GraphObserver::NodeId DeclNode =
-      Observer.MakeNodeId(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(Decl);
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
   llvm::ArrayRef<clang::TemplateArgumentLoc> ArgsAsWritten;
   const clang::TemplateArgumentList* Args = nullptr;
-  std::vector<std::pair<clang::TemplateName, SourceLocation>> TNs;
+  std::vector<clang::TemplateName> TNs;
   bool TNsAreSpeculative = false;
   bool IsImplicit = false;
   SourceLocation TemplateKeywordLoc;
   if (auto* FTD = Decl->getDescribedFunctionTemplate()) {
-    // Function template (inc. overloads)
-    DeclNode = BuildNodeIdForDecl(Decl);
     RecordTemplate(FTD, DeclNode);
     TemplateKeywordLoc = FTD->getSourceRange().getBegin();
   } else if (auto* MSI = Decl->getMemberSpecializationInfo()) {
@@ -3347,7 +3320,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // add the type variables involve in this instantiation's particular
     // parent, but we don't currently do so. (#1879)
     IsImplicit = !MSI->isExplicitSpecialization();
-    DeclNode = BuildNodeIdForDecl(Decl);
     Observer.recordInstEdge(
         DeclNode,
         Observer.recordTappNode(BuildNodeIdForDecl(MSI->getInstantiatedFrom()),
@@ -3358,9 +3330,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
     Args = FTSI->TemplateArguments;
-    TNs.emplace_back(clang::TemplateName(FTSI->getTemplate()),
-                     FTSI->getPointOfInstantiation());
-    DeclNode = BuildNodeIdForDecl(Decl);
+    TNs.emplace_back(FTSI->getTemplate());
     IsImplicit = !FTSI->isExplicitSpecialization();
   } else if (auto* DFTSI = Decl->getDependentSpecializationInfo()) {
     // From Clang's documentation:
@@ -3385,60 +3355,29 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       ArgsAsWritten = DFTSI->TemplateArgumentsAsWritten->arguments();
     }
     for (clang::FunctionTemplateDecl* FTD : DFTSI->getCandidates()) {
-      TNs.emplace_back(
-          clang::TemplateName(FTD->getTemplatedDecl()->getDescribedTemplate()),
-          Decl->getLocation());
+      TNs.emplace_back(FTD->getTemplatedDecl()->getDescribedTemplate());
     }
-    DeclNode = BuildNodeIdForDecl(Decl);
-  } else {
-    // Nothing to do with templates.
-    DeclNode = BuildNodeIdForDecl(Decl);
   }
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                      IsImplicit);
   if (!ArgsAsWritten.empty() || Args) {
-    bool CouldGetAllTypes = true;
-    std::vector<GraphObserver::NodeId> NIDS;
-    if (!ArgsAsWritten.empty()) {
-      NIDS.reserve(ArgsAsWritten.size());
-      for (const auto& Arg : ArgsAsWritten) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Arg)) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    } else {
-      NIDS.reserve(Args->size());
-      for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
-          NIDS.push_back(ArgId.value());
-        } else {
-          CouldGetAllTypes = false;
-          break;
-        }
-      }
-    }
-    if (CouldGetAllTypes) {
+    std::optional<std::vector<GraphObserver::NodeId>> NIDS =
+        !ArgsAsWritten.empty() ? BuildTemplateArgumentList(ArgsAsWritten)
+                               : BuildTemplateArgumentList(Args->asArray());
+
+    if (NIDS.has_value()) {
       auto Confidence = TNsAreSpeculative
                             ? GraphObserver::Confidence::Speculative
                             : GraphObserver::Confidence::NonSpeculative;
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN)) {
           // Because partial specialization of function templates is forbidden,
           // instantiates edges will always choose the same type (a tapp with
           // the primary template as its first argument) as specializes edges.
-          Observer.recordInstEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      ArgsAsWritten.size()),
-              Confidence);
-          Observer.recordSpecEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDS,
-                                      ArgsAsWritten.size()),
-              Confidence);
+          auto TappNode = Observer.recordTappNode(*SpecializedNode, *NIDS,
+                                                  ArgsAsWritten.size());
+          Observer.recordInstEdge(DeclNode, TappNode, Confidence);
+          Observer.recordSpecEdge(DeclNode, TappNode, Confidence);
         }
       }
     }
@@ -3532,15 +3471,13 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // The dyn_cast to CXXMethodDecl above is therefore not dropping
     // (impossible) free function incarnations of these operators from
     // consideration in the following.
-    if (MF->size_overridden_methods() != 0) {
-      for (auto O = MF->begin_overridden_methods(),
-                E = MF->end_overridden_methods();
-           O != E; ++O) {
+    if (!MF->overridden_methods().empty()) {
+      for (const auto* O : MF->overridden_methods()) {
         Observer.recordOverridesEdge(
             DeclNode,
             absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
-                ? BuildNodeIdForRefToDecl(*O)
-                : BuildNodeIdForDecl(*O));
+                ? BuildNodeIdForRefToDecl(O)
+                : BuildNodeIdForDecl(O));
       }
       MapOverrideRoots(MF, [&](const clang::CXXMethodDecl* R) {
         Observer.recordOverridesRootEdge(
@@ -3630,12 +3567,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     return true;
   }
   if (NameRangeInContext) {
-    FileID DeclFile =
-        Observer.getSourceManager()->getFileID(Decl->getLocation());
     for (const auto* NextDecl : Decl->redecls()) {
       if (NextDecl != Decl) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
 
         Observer.recordCompletion(TargetDecl, DeclNode);
@@ -4288,6 +4221,11 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
 }
 
 std::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForStructuralValue(const clang::APValue& value) {
+  return std::nullopt;
+}
+
+std::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
   return BuildNodeIdForTemplateName(Name);
 }
@@ -4339,6 +4277,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     case TemplateArgument::Integral:
       return BuildNodeIdForSpecialTemplateArgument(
           llvm::toString(Arg.getAsIntegral(), 10) + "i");
+    case TemplateArgument::StructuralValue:
+      return BuildNodeIdForStructuralValue(Arg.getAsStructuralValue());
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:
@@ -4403,17 +4343,12 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
   clang::RecordDecl* Decl = ABSL_DIE_IF_NULL(T.getDecl());
   if (const auto* Spec =
           dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)) {
-    // TODO(shahms): Simplify building template argument lists.
-    const auto& TAL = Spec->getTemplateArgs();
-    std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(TAL.size());
-    for (const auto& Arg : TAL.asArray()) {
-      if (auto ArgA = BuildNodeIdForTemplateArgument(Arg)) {
-        TemplateArgs.push_back(ArgA.value());
-      } else {
-        return NodeSet::Empty();
-      }
+    std::optional<std::vector<GraphObserver::NodeId>> TemplateArgs =
+        BuildTemplateArgumentList(Spec->getTemplateArgs().asArray());
+    if (!TemplateArgs.has_value()) {
+      return NodeSet::Empty();
     }
+
     const auto* SpecDecl = Spec->getSpecializedTemplate();
     const clang::NamedDecl* SpecFocus = SpecDecl;
     if (SpecDecl->getTemplatedDecl()->getDefinition())
@@ -4421,12 +4356,12 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     else
       SpecFocus = SpecDecl->getTemplatedDecl();
     NodeId DeclId =
-        Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), TemplateArgs);
+        Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), *TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
       return {DeclId, Claimability::Unclaimable};
     } else {
       return {Observer.recordTappNode(BuildNominalNodeIdForDecl(SpecDecl),
-                                      TemplateArgs),
+                                      *TemplateArgs),
               DeclId};
     }
   } else {
@@ -4605,15 +4540,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(const clang::TypedefType& T) {
   // through the deduced type.
   if (auto AliasedTypeID =
           BuildNodeIdForType(T.getDecl()->getTypeSourceInfo()->getTypeLoc())) {
-    // TODO(shahms): Move caching here and use
-    // `Observer.nodeIdForTypeAliasNode()` when already built?
-    // Or is always using the cached id sufficient?
-    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
-    auto Marks = MarkedSources.Generate(T.getDecl());
-    AssignUSR(ID, T.getDecl());
-    return Observer.recordTypeAliasNode(
-        ID, *AliasedTypeID, BuildNodeIdForType(FollowAliasChain(T.getDecl())),
-        Marks.GenerateMarkedSource(ID));
+    return Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
   }
   return NodeSet::Empty();
 }
@@ -4628,34 +4555,14 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
   return BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
 }
 
-std::vector<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdsForTemplateArgs(
-    clang::ArrayRef<clang::TemplateArgument> args) {
-  std::vector<GraphObserver::NodeId> ids;
-  ids.reserve(args.size());
-  for (const auto& arg : args) {
-    if (std::optional<GraphObserver::NodeId> arg_id =
-            BuildNodeIdForTemplateArgument(arg)) {
-      ids.push_back(*arg_id);
-    } else {
-      // If we can't produce an ID for any template argument (e.g., because
-      // some argument kind was unimplemented and the indexer is being run with
-      // --ignore_unimplemented), return nothing.
-      return {};
-    }
-  }
-  return ids;
-}
-
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentTemplateSpecialization(
     const clang::DependentTemplateSpecializationType& T) {
   auto dep_name =
       BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
-  std::vector<GraphObserver::NodeId> arg_ids =
-      BuildNodeIdsForTemplateArgs(T.template_arguments());
-  return arg_ids.size() == T.template_arguments().size()
-             ? Observer.recordTappNode(dep_name, arg_ids)
-             : NodeSet::Empty();
+  if (auto arg_ids = BuildTemplateArgumentList(T.template_arguments())) {
+    return Observer.recordTappNode(dep_name, *arg_ids);
+  }
+  return NodeSet::Empty();
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
@@ -4664,11 +4571,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
   // or template template parameter. Non-dependent template
   // specializations appear as different types.
   if (auto template_name = BuildNodeIdForTemplateName(T.getTemplateName())) {
-    std::vector<GraphObserver::NodeId> arg_ids =
-        BuildNodeIdsForTemplateArgs(T.template_arguments());
-    return arg_ids.size() == T.template_arguments().size()
-               ? Observer.recordTappNode(*template_name, arg_ids)
-               : NodeSet::Empty();
+    if (auto arg_ids = BuildTemplateArgumentList(T.template_arguments())) {
+      return Observer.recordTappNode(*template_name, *arg_ids);
+    }
   }
   return NodeSet::Empty();
 }
@@ -4971,6 +4876,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(MacroQualified);
     UNSUPPORTED_CLANG_TYPE(ConstantMatrix);
     UNSUPPORTED_CLANG_TYPE(DependentSizedMatrix);
+    UNSUPPORTED_CLANG_TYPE(PackIndexing);
   }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE

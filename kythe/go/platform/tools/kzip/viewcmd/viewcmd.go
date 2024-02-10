@@ -74,7 +74,7 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcom
 
 		f, err := vfs.Open(ctx, path)
 		if err != nil {
-			log.Errorf("opening .kzip file: %v", err)
+			log.ErrorContextf(ctx, "opening .kzip file: %v", err)
 			hasErrors = true
 			continue
 		}
@@ -90,7 +90,7 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...any) subcom
 			}
 		})
 		if err != nil {
-			log.Errorf("scanning .kzip file: %v", err)
+			log.ErrorContextf(ctx, "scanning .kzip file: %v", err)
 			hasErrors = true
 		}
 	}

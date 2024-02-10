@@ -15,9 +15,10 @@
 # A minimal image for building Kythe using go.
 
 # docker build -t gcr.io/kythe-repo/go-builder
-FROM golang:1.20
+FROM golang:1.21
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libleveldb-dev libbrotli-dev && \
+        libleveldb-dev libbrotli-dev \
+        clang-15 && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/*

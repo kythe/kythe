@@ -43,6 +43,12 @@ class Class implements IFace {
     //- StaticMember childof Class
     static member: number;
 
+    //- @"#privateMember" defines/binding PrivateMember
+    //- PrivateMember.node/kind variable
+    //- PrivateMember.subkind field
+    //- PrivateMember childof Class
+    #privateMember: number;
+
     // This ctor declares a new member var named 'otherMember', and also
     // declares an ordinary parameter named 'member' (to ensure we don't get
     // confused about params to the ctor vs true member variables).
@@ -67,9 +73,21 @@ class Class implements IFace {
         //- @this ref Class
         //- @member ref Member
         this.member;
+
         //- @this ref Class
         //- @method ref Method
         this.method();
+    }
+
+    //- @"#privateMethod" defines/binding PrivateMethod
+    //- PrivateMethod.node/kind function
+    //- PrivateMethod childof Class
+    #privateMethod() {
+        //- @"#privateMember" ref PrivateMember
+        this.#privateMember;
+
+        //- @"#privateMethod" ref PrivateMethod
+        this.#privateMethod();
     }
 
     //- @ifaceMethod defines/binding ClassIFaceMethod

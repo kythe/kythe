@@ -144,8 +144,9 @@ def proto_verifier_test(
         name = name + "_entries",
         testonly = True,
         indexer = "//kythe/cxx/indexer/proto:indexer",
+        target_indexer = "//kythe/cxx/indexer/proto:indexer",
         opts = indexer_opts + ["--index_file"],
-        tags = tags,
+        tags = tags + ["manual"],
         visibility = visibility,
         deps = [kzip],
     )

@@ -94,7 +94,7 @@ func ExpandDirectories(ctx context.Context, paths []string) []string {
 	for _, root := range paths {
 		files, err := ListSources(ctx, root)
 		if err != nil {
-			log.Warningf("couldn't list files for %s: %s\n", root, err)
+			log.WarningContextf(ctx, "couldn't list files for %s: %s\n", root, err)
 			nps = append(nps, root)
 		} else {
 			nps = append(nps, files.Elements()...)

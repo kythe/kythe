@@ -18,6 +18,8 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JavaIndexerConfig extends IndexerConfig {
   @Parameter(
@@ -78,6 +80,9 @@ public class JavaIndexerConfig extends IndexerConfig {
       description = "If true, emit ref/call anchor spans over the function identifier")
   private boolean emitRefCallOverIdentifier;
 
+  @Parameter(names = "--additional_javac_flags", description = "Additional flags to pass to javac")
+  private List<String> additionalJavacFlags = new ArrayList<>();
+
   public JavaIndexerConfig(String programName) {
     super(programName);
   }
@@ -116,6 +121,10 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getEmitRefCallOverIdentifier() {
     return emitRefCallOverIdentifier;
+  }
+
+  public List<String> getAdditionalJavacFlags() {
+    return additionalJavacFlags;
   }
 
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
@@ -160,6 +169,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setRefCallOverIdentifier(boolean emitRefCallOverIdentifier) {
     this.emitRefCallOverIdentifier = emitRefCallOverIdentifier;
+    return this;
+  }
+
+  public JavaIndexerConfig setAdditionalJavacFlags(List<String> additionalFlags) {
+    this.additionalJavacFlags = additionalFlags;
     return this;
   }
 }

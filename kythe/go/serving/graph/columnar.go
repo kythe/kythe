@@ -52,7 +52,7 @@ const ColumnarTableKeyMarker = "kythe:columnar"
 func NewService(ctx context.Context, t keyvalue.DB) graph.Service {
 	_, err := t.Get(ctx, []byte(ColumnarTableKeyMarker), nil)
 	if err == nil {
-		log.Info("WARNING: detected a experimental columnar graph table")
+		log.InfoContext(ctx, "WARNING: detected a experimental columnar graph table")
 		return NewColumnarTable(t)
 	}
 	return NewCombinedTable(&table.KVProto{t})

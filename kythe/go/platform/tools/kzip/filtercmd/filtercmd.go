@@ -123,7 +123,7 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, filter
 	}
 	size := stat.Size()
 	if size == 0 {
-		log.Infof("Skipping empty .kzip: %s", input)
+		log.InfoContextf(ctx, "Skipping empty .kzip: %s", input)
 		return nil
 	}
 

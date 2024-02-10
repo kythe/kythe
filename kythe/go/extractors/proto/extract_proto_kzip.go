@@ -65,6 +65,7 @@ Options:
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 
 	// Verify that required flags are set.
 	switch {
@@ -82,7 +83,7 @@ func main() {
 		log.Fatalf("Loading extra action: %v", err)
 	}
 	pkg := bazel.PackageName(info.GetOwner())
-	log.Infof("Extra action for target %q (package %q)", info.GetOwner(), pkg)
+	log.InfoContextf(ctx, "Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
 	rules, err := vnameutil.LoadRules(*vnameRules)
 	if err != nil {
@@ -161,11 +162,10 @@ func main() {
 		log.Fatalf("Invalid extra action: %v", err)
 	}
 
-	ctx := context.Background()
 	if err := config.ExtractToKzip(ctx, ai, *outputPath); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
-	log.Infof("Finished extracting [%v elapsed]", time.Since(start))
+	log.InfoContextf(ctx, "Finished extracting [%v elapsed]", time.Since(start))
 }
 
 // expandParams expands any parameter files occurring in args into their

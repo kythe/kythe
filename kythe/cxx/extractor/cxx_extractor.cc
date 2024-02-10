@@ -58,6 +58,7 @@
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
 #include "google/protobuf/any.pb.h"
+#include "google/protobuf/message.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/json_proto.h"
@@ -482,6 +483,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
       llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
       clang::OptionalFileEntryRef File, llvm::StringRef SearchPath,
       llvm::StringRef RelativePath, const clang::Module* Imported,
+      bool is_module_imported,
       clang::SrcMgr::CharacteristicKind FileType) override;
 
   /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_claim` pragma.
@@ -895,7 +897,7 @@ void ExtractorPPCallbacks::InclusionDirective(
     llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
     clang::OptionalFileEntryRef File, llvm::StringRef SearchPath,
     llvm::StringRef RelativePath, const clang::Module* Imported,
-    clang::SrcMgr::CharacteristicKind FileType) {
+    bool is_module_imported, clang::SrcMgr::CharacteristicKind FileType) {
   if (!File) {
     LOG(WARNING) << "Found null file: " << FileName.str();
     LOG(WARNING) << "Search path was " << SearchPath.str();
@@ -1093,7 +1095,8 @@ void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
   if (auto digest = writer_->WriteFile(file.content()); digest.ok()) {
     if (!file.info().digest().empty() && file.info().digest() != *digest) {
       LOG(WARNING) << "Wrote FileData with mismatched digests: "
-                   << file.info().ShortDebugString() << " != " << *digest;
+                   << google::protobuf::ShortFormat(file.info())
+                   << " != " << *digest;
     }
   } else {
     LOG(ERROR) << "Error writing filedata: " << digest.status();
@@ -1229,8 +1232,8 @@ void CompilationWriter::InsertExtraIncludes(
     std::string child_dir = find_child(status_checked_paths_, path);
     std::string path_slash = absl::StrCat(path, "/");
     if ((!child_file.empty() || !child_dir.empty()) &&
-        !llvm::StringRef(child_file).startswith(path_slash) &&
-        !llvm::StringRef(child_dir).startswith(path_slash)) {
+        !llvm::StringRef(child_file).starts_with(path_slash) &&
+        !llvm::StringRef(child_dir).starts_with(path_slash)) {
       details->add_stat_path()->set_path(path);
     }
   }
@@ -1245,13 +1248,13 @@ void CompilationWriter::CancelPreviouslyOpenedFiles() {
 }
 
 void CompilationWriter::OpenedForRead(const std::string& path) {
-  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+  if (!llvm::StringRef(path).starts_with(kBuiltinResourceDirectory)) {
     extra_includes_.insert(NormalizePath(path));
   }
 }
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
-  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+  if (!llvm::StringRef(path).starts_with(kBuiltinResourceDirectory)) {
     status_checked_paths_.insert(NormalizePath(path));
   }
 }
@@ -1263,7 +1266,7 @@ void CompilationWriter::ScrubIntermediateFiles(
   }
   for (auto set : {&extra_includes_, &status_checked_paths_}) {
     for (auto it = set->begin(); it != set->end();) {
-      if (llvm::StringRef(*it).startswith(options.ModuleCachePath)) {
+      if (llvm::StringRef(*it).starts_with(options.ModuleCachePath)) {
         it = set->erase(it);
       } else {
         ++it;
@@ -1378,6 +1381,7 @@ std::unique_ptr<clang::FrontendAction> NewExtractor(
   return std::make_unique<ExtractorAction>(index_writer, std::move(callback));
 }
 
+namespace {
 llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> MapCompilerResources(
     llvm::StringRef map_directory) {
   llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> memory_fs(
@@ -1410,13 +1414,6 @@ llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> GetRootFileSystem(
   return llvm::vfs::getRealFileSystem();
 }
 
-void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
-  if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
-    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
-    exit(1);
-  }
-}
-
 bool IsCuda(const std::vector<std::string>& args) {
   for (int i = 0; i < args.size() - 1; i++) {
     if (args[i] == "-x" && args[i + 1] == "cuda") {
@@ -1424,6 +1421,15 @@ bool IsCuda(const std::vector<std::string>& args) {
     }
   }
   return false;
+}
+
+}  // namespace
+
+void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
+  if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
+    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
+    exit(1);
+  }
 }
 
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
@@ -1453,7 +1459,7 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   // invent one. We need this to find stddef.h and friends.
   for (const auto& arg : final_args_) {
     // Handle both -resource-dir=foo and -resource-dir foo.
-    if (llvm::StringRef(arg).startswith("-resource-dir")) {
+    if (llvm::StringRef(arg).starts_with("-resource-dir")) {
       map_builtin_resources_ = false;
       break;
     }

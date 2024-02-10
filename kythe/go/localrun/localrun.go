@@ -295,7 +295,7 @@ func (r *Runner) Extract(ctx context.Context) error {
 		"--",
 	},
 		r.Targets...)
-	log.Infof("Building with event file at: %s", r.besFile)
+	log.InfoContextf(ctx, "Building with event file at: %s", r.besFile)
 
 	cmd := exec.CommandContext(ctx,
 		"bazel",
@@ -343,7 +343,7 @@ func (r *Runner) Index(ctx context.Context) error {
 			continue
 		}
 		if !r.Languages.hasExtractor(action.Type) {
-			log.Warningf("Didn't find extractor for: %s", action.Type)
+			log.WarningContextf(ctx, "Didn't find extractor for: %s", action.Type)
 			continue
 		}
 
@@ -445,7 +445,7 @@ func (r *Runner) Serve(ctx context.Context) error {
 		args = append(args, "--public_resources")
 		args = append(args, r.PublicResources)
 	} else if r.PublicResources != "" {
-		log.Warningf("You requested serving public resources from %q, but it doesn't exist.", r.PublicResources)
+		log.WarningContextf(ctx, "You requested serving public resources from %q, but it doesn't exist.", r.PublicResources)
 	}
 
 	// Perform the work prescribed
@@ -454,7 +454,7 @@ func (r *Runner) Serve(ctx context.Context) error {
 	cmd.Stdout = os.Stdout
 	cmd.Dir = r.WorkingDir
 
-	log.Infof("Starting http server on http://%s", listen)
+	log.InfoContextf(ctx, "Starting http server on http://%s", listen)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error starting serve: %w", err)
 	}
@@ -478,7 +478,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 	for i, k := range kzips {
 		log := func(i int, m string, v ...any) {
 			den := len(kzips)
-			log.Infof("[%d/%d] %v", i, den, fmt.Sprintf(m, v...))
+			log.InfoContextf(ctx, "[%d/%d] %v", i, den, fmt.Sprintf(m, v...))
 		}
 
 		log(i, "Started indexing %q", k)
@@ -516,7 +516,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 			return indexedOut, fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
 		}
 	}
-	log.Infof("\n[%d/%d] Finished indexing", len(kzips), len(kzips))
+	log.InfoContextf(ctx, "\n[%d/%d] Finished indexing", len(kzips), len(kzips))
 
 	return indexedOut, nil
 }

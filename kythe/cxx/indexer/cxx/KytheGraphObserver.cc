@@ -212,7 +212,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
   if (!vfs_->GetVName(file_entry, out_name)) {
     std::string working_directory = vfs_->working_directory();
     llvm::StringRef file_name(file_entry.getName());
-    if (file_name.startswith(working_directory)) {
+    if (file_name.starts_with(working_directory)) {
       out_name.set_path(
           RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
@@ -1418,7 +1418,7 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         // `entry` is a textual header.
         if (in_header ||
             (has_previous_uid &&
-             !llvm::StringRef(entry->getName()).endswith(".inc"))) {
+             !llvm::StringRef(entry->getName()).ends_with(".inc"))) {
           transitively_reached_through_header_.insert(state.uid);
         }
         // Attempt to compute the state-amended VName using the state table.
