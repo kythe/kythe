@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.65] - 2024-02-09
+
+#### Features
+
+* **kzip:**  add option for providing input list via file (#5970) ([052a0bb5](https://github.com/kythe/kythe/commit/052a0bb544087abdb456f18f7abd1db44747c9d7))
+
 ## [v0.0.64] - 2024-01-24
 
 #### Bug Fixes
@@ -1707,7 +1713,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.64...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.65...HEAD
+[v0.0.65] https://github.com/kythe/kythe/compare/v0.0.64...v0.0.65
 [v0.0.64] https://github.com/kythe/kythe/compare/v0.0.63...v0.0.64
 [v0.0.63] https://github.com/kythe/kythe/compare/v0.0.62...v0.0.63
 [v0.0.62] https://github.com/kythe/kythe/compare/v0.0.61...v0.0.62
