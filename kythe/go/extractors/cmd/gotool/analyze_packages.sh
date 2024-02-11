@@ -92,7 +92,7 @@ fi
 # cd into the top-level git directory of our package and query git for the
 # commit timestamp.
 pushd "$(go env GOPATH)/src/${PACKAGE}"
-TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
+TIMESTAMP="$(git -c safe.directory='*' log --pretty='%ad' -n 1 HEAD)"
 popd
 
 # Record the timestamp of the git commit in a metadata kzip.
