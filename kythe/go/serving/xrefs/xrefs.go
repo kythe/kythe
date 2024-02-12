@@ -83,6 +83,8 @@ type staticLookupTables interface {
 	crossReferences(ctx context.Context, ticket string) (*srvpb.PagedCrossReferences, error)
 	crossReferencesPage(ctx context.Context, key string) (*srvpb.PagedCrossReferences_Page, error)
 	documentation(ctx context.Context, ticket string) (*srvpb.Document, error)
+
+	Close(context.Context) error
 }
 
 // SplitTable implements the xrefs Service interface using separate static
@@ -107,6 +109,16 @@ type SplitTable struct {
 	// It will be called once per request; the function it returns will then be
 	// called once per edge.
 	RewriteEdgeLabel func(context.Context) func(string) string
+}
+
+// Close closes each underlying table.Proto.
+func (s *SplitTable) Close(ctx context.Context) (err error) {
+	for _, t := range []table.Proto{s.Decorations, s.CrossReferences, s.CrossReferencePages, s.Documentation} {
+		if te := t.Close(ctx); te != nil {
+			err = te
+		}
+	}
+	return
 }
 
 func (s *SplitTable) rewriteFileDecorations(ctx context.Context, fd *srvpb.FileDecorations, err error) (*srvpb.FileDecorations, error) {

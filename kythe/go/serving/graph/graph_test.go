@@ -561,4 +561,4 @@ func (t testProtoTable) LookupValues(_ context.Context, key []byte, m proto.Mess
 
 func (t testProtoTable) Buffered() table.BufferedProto { panic("UNIMPLEMENTED") }
 
-func (t testProtoTable) Close(_ context.Context) error { return nil }
+func (t testProtoTable) Close(context.Context) error { return nil }
