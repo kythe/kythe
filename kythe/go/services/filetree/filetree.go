@@ -46,6 +46,9 @@ type Service interface {
 
 	// CorpusRoots returns a map from corpus to known roots.
 	CorpusRoots(context.Context, *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error)
+
+	// Close releases any underlying resources.
+	Close(context.Context) error
 }
 
 // CleanDirPath returns a clean, corpus root relative equivalent to path.
@@ -179,6 +182,8 @@ func addEntry(entries []*ftpb.DirectoryReply_Entry, e *ftpb.DirectoryReply_Entry
 }
 
 type webClient struct{ addr string }
+
+func (webClient) Close(context.Context) error { return nil }
 
 // CorpusRoots implements part of the Service interface.
 func (w *webClient) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {

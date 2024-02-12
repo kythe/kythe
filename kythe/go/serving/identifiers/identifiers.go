@@ -42,6 +42,9 @@ import (
 type Service interface {
 	// Find returns an index of nodes associated with a given identifier
 	Find(context.Context, *ipb.FindRequest) (*ipb.FindReply, error)
+
+	// Close releases any underlying resources.
+	Close(context.Context) error
 }
 
 // Table wraps around a table.Proto to provide the Service interface
@@ -172,6 +175,8 @@ func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
 }
 
 type webClient struct{ addr string }
+
+func (webClient) Close(context.Context) error { return nil }
 
 // Find implements part of the Service interface.
 func (w *webClient) Find(ctx context.Context, q *ipb.FindRequest) (*ipb.FindReply, error) {

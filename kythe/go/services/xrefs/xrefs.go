@@ -52,6 +52,9 @@ type Service interface {
 
 	// Documentation takes a set of tickets and returns documentation for them.
 	Documentation(context.Context, *xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
+
+	// Close releases any underlying resources.
+	Close(context.Context) error
 }
 
 var (
@@ -263,6 +266,8 @@ func (b BoundedRequests) Documentation(ctx context.Context, req *xpb.Documentati
 }
 
 type webClient struct{ addr string }
+
+func (webClient) Close(context.Context) error { return nil }
 
 // Decorations implements part of the Service interface.
 func (w *webClient) Decorations(ctx context.Context, q *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {

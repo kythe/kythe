@@ -48,6 +48,8 @@ type MockClient struct {
 	docRsp []mockDoc
 }
 
+func (MockClient) Close(context.Context) error { return nil }
+
 func (c MockClient) Decorations(_ context.Context, d *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	for _, r := range c.decRsp {
 		if r.ticket == d.Location.Ticket {
