@@ -147,7 +147,7 @@ public class JavaIndexer {
     metadataLoaders.addLoader(
         new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
     metadataLoaders.addLoader(new KytheMetadataLoader());
-    metadataLoaders.addLoader(new KytheInlineMetadataLoader());
+    metadataLoaders.addLoader(new KytheInlineMetadataLoader(emitter));
 
     KytheJavacAnalyzer analyzer =
         new KytheJavacAnalyzer(
