@@ -42,10 +42,12 @@ java_library(
         "ProtobufMetadataLoader.java",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:json",
+        "//kythe/java/com/google/devtools/kythe/util:span",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:metadata_java_proto",
         "//kythe/proto:storage_java_proto",
