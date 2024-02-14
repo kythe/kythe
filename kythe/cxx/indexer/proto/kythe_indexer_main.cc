@@ -135,8 +135,6 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
   return true;
 }
 
-}  // anonymous namespace
-
 int main(int argc, char* argv[]) {
   kythe::InitializeProgram(argv[0]);
   absl::SetProgramUsageMessage(
@@ -245,7 +243,7 @@ Examples:
 
   return had_error ? 1 : 0;
 }
-
+}  // anonymous namespace
 }  // namespace kythe
 
 int main(int argc, char* argv[]) { return kythe::main(argc, argv); }

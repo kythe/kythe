@@ -25,7 +25,7 @@ namespace kythe {
 absl::StatusCode ErrnoToStatusCode(int error_number);
 absl::StatusCode ErrnoToStatusCode();
 absl::Status ErrnoToStatus(int error_number);
-absl::Status ErrorToStatus();
+absl::Status ErrnoToStatus();
 
 }  // namespace kythe
 
