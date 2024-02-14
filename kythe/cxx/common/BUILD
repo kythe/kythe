@@ -159,7 +159,6 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:metadata_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
