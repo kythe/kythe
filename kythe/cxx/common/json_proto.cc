@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "json_proto.h"
+#include "kythe/cxx/common/json_proto.h"
 
 #include <memory>
 #include <string>
@@ -33,10 +33,6 @@
 #include "google/protobuf/util/json_util.h"
 #include "google/protobuf/util/type_resolver.h"
 #include "google/protobuf/util/type_resolver_util.h"
-#include "rapidjson/document.h"
-#include "rapidjson/rapidjson.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
 
 namespace kythe {
 namespace {
@@ -136,68 +132,6 @@ absl::StatusOr<std::string> WriteMessageAsJsonToString(
     return status;
   }
   return result;
-}
-
-bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
-                                const std::string& format_key,
-                                std::string* out) {
-  rapidjson::StringBuffer buffer;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-  writer.StartObject();
-  writer.Key("format");
-  writer.String(format_key.c_str());
-  writer.Key("content");
-  {
-    std::string content;
-    if (!WriteMessageAsJsonToString(message, &content)) {
-      return false;
-    }
-    writer.RawValue(content.data(), content.size(), rapidjson::kObjectType);
-  }
-  writer.EndObject();
-  *out = buffer.GetString();
-  return true;
-}
-
-bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
-                          google::protobuf::Message* message) {
-  rapidjson::Document document;
-  document.Parse(in.c_str());
-  if (document.HasParseError()) {
-    return false;
-  }
-  if (!document.IsObject() || !document.HasMember("format") ||
-      !document.HasMember("content") || !document["format"].IsString() ||
-      !document["content"].IsObject()) {
-    return false;
-  }
-  std::string in_format = document["format"].GetString();
-  if (format_key) {
-    *format_key = in_format;
-  }
-  if (in_format == "kythe") {
-    std::string content = [&] {
-      rapidjson::StringBuffer buffer;
-      rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-      CHECK(document["content"].Accept(writer));
-      return std::string(buffer.GetString());
-    }();
-    std::string binary;
-
-    auto resolver =
-        MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
-
-    auto status = google::protobuf::util::JsonToBinaryString(
-        resolver.get(), message->GetDescriptor()->full_name(), content, &binary,
-        DefaultParseOptions());
-
-    if (!status.ok()) {
-      LOG(ERROR) << status.ToString() << ": " << content;
-      return false;
-    }
-    return message->ParseFromString(binary);
-  }
-  return false;
 }
 
 absl::Status ParseFromJsonStream(
