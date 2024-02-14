@@ -376,6 +376,12 @@ go_indexer_test(
     use_compilation_corpus_for_all = True,
 )
 
+go_indexer_test(
+    name = "flags_test",
+    srcs = ["testdata/flags.go"],
+    extra_indexer_args = ["-emit_flag_nodes"],
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(
