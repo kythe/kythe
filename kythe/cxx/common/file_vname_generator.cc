@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "file_vname_generator.h"
+#include "kythe/cxx/common/file_vname_generator.h"
 
 #include <algorithm>
 #include <memory>
@@ -29,13 +29,19 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/io/zero_copy_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/storage.pb.h"
-#include "rapidjson/document.h"
-#include "rapidjson/error/en.h"
+#include "kythe/proto/vnames_config.pb.h"
 #include "re2/re2.h"
 
 namespace kythe {
 namespace {
+using ::google::protobuf::io::ArrayInputStream;
+using ::google::protobuf::io::ConcatenatingInputStream;
+using ::google::protobuf::io::ZeroCopyInputStream;
 
 const LazyRE2 kSubstitutionsPattern = {R"(@\w+@)"};
 
@@ -81,19 +87,25 @@ absl::StatusOr<std::string> ParseTemplate(const RE2& pattern,
   return result;
 }
 
-absl::StatusOr<std::string> ParseTemplateMember(const RE2& pattern,
-                                                const rapidjson::Value& parent,
-                                                absl::string_view name) {
-  const auto member =
-      parent.FindMember(rapidjson::Value(name.data(), name.size()));
-  if (member == parent.MemberEnd()) {
-    return "";
+absl::StatusOr<proto::VNamesConfiguration> ParseConfigurationFromRuleArray(
+    ZeroCopyInputStream& input) {
+  static constexpr absl::string_view kOpen = R"({ "rules": )";
+  ArrayInputStream open(kOpen.data(), kOpen.size());
+
+  static constexpr absl::string_view kClose = "}";
+  ArrayInputStream close(kClose.data(), kClose.size());
+
+  // The vnames.json format is as an array of Rules, so we need to enclose it
+  // in a top-level object and parse it as a field.
+  ZeroCopyInputStream* streams[] = {&open, &input, &close};
+  ConcatenatingInputStream stream(streams, std::size(streams));
+
+  proto::VNamesConfiguration config;
+  if (absl::Status status = ParseFromJsonStream(&stream, &config);
+      !status.ok()) {
+    return status;
   }
-  if (!member->value.IsString()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("VName template ", name, " is not a string."));
-  }
-  return ParseTemplate(pattern, member->value.GetString());
+  return config;
 }
 
 }  // namespace
@@ -144,61 +156,52 @@ bool FileVNameGenerator::LoadJsonString(absl::string_view data,
   return status.ok();
 }
 
-absl::Status FileVNameGenerator::LoadJsonString(absl::string_view data) {
-  using Value = rapidjson::Value;
-  rapidjson::Document document;
-  document.Parse(data.data(), data.size());
-  if (document.HasParseError()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat(rapidjson::GetParseError_En(document.GetParseError()),
-                     " near offset ", document.GetErrorOffset()));
+absl::Status FileVNameGenerator::LoadJsonStream(ZeroCopyInputStream& input) {
+  absl::StatusOr<proto::VNamesConfiguration> config =
+      ParseConfigurationFromRuleArray(input);
+  if (!config.ok()) {
+    return config.status();
   }
-  if (!document.IsArray()) {
-    return absl::InvalidArgumentError("Root element in JSON was not an array.");
-  }
-  for (Value::ConstValueIterator rule = document.Begin();
-       rule != document.End(); ++rule) {
-    if (!rule->IsObject()) {
-      return absl::InvalidArgumentError("Expected an array of objects.");
-    }
-    const auto regex = rule->FindMember("pattern");
-    if (regex == rule->MemberEnd() || !regex->value.IsString()) {
+  for (const auto& entry : config->rules()) {
+    if (entry.pattern().empty()) {
       return absl::InvalidArgumentError("VName rule is missing its pattern.");
     }
-    VNameRule next_rule;
-    // RE2s don't act like values. Just box them.
-    next_rule.pattern = std::make_shared<RE2>(regex->value.GetString());
-    if (next_rule.pattern->error_code() != RE2::NoError) {
-      return absl::InvalidArgumentError(next_rule.pattern->error());
+
+    auto pattern = std::make_shared<const RE2>(entry.pattern());
+    if (pattern->error_code() != RE2::NoError) {
+      return absl::InvalidArgumentError(pattern->error());
     }
-    const auto vname = rule->FindMember("vname");
-    if (vname == rule->MemberEnd() || !vname->value.IsObject()) {
+    if (!entry.has_vname()) {
       return absl::InvalidArgumentError("VName rule is missing its template.");
     }
 
-    absl::StatusOr<std::string> root =
-        ParseTemplateMember(*next_rule.pattern, vname->value, "root");
-    if (!root.ok()) {
-      return root.status();
-    }
-    next_rule.root = *std::move(root);
-
     absl::StatusOr<std::string> corpus =
-        ParseTemplateMember(*next_rule.pattern, vname->value, "corpus");
+        ParseTemplate(*pattern, entry.vname().corpus());
     if (!corpus.ok()) {
       return corpus.status();
     }
-    next_rule.corpus = *std::move(corpus);
-
+    absl::StatusOr<std::string> root =
+        ParseTemplate(*pattern, entry.vname().root());
+    if (!root.ok()) {
+      return root.status();
+    }
     absl::StatusOr<std::string> path =
-        ParseTemplateMember(*next_rule.pattern, vname->value, "path");
+        ParseTemplate(*pattern, entry.vname().path());
     if (!path.ok()) {
       return path.status();
     }
-    next_rule.path = *std::move(path);
-
-    rules_.push_back(next_rule);
+    rules_.push_back(VNameRule{
+        .pattern = std::move(pattern),
+        .corpus = *std::move(corpus),
+        .root = *std::move(root),
+        .path = *std::move(path),
+    });
   }
   return absl::OkStatus();
+}
+
+absl::Status FileVNameGenerator::LoadJsonString(absl::string_view data) {
+  ArrayInputStream stream(data.data(), data.size());
+  return LoadJsonStream(stream);
 }
 }  // namespace kythe
