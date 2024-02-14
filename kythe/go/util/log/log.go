@@ -20,7 +20,6 @@ package log
 import (
 	"context"
 	"log"
-	"log/slog"
 	"reflect"
 )
 
@@ -73,19 +72,13 @@ func ErrorContext(ctx context.Context, args ...any) {
 }
 
 // InfoContextf logs to the informational log with a Context.
-func InfoContextf(ctx context.Context, msg string, args ...any) {
-	slog.InfoContext(ctx, msg, args...)
-}
+func InfoContextf(ctx context.Context, msg string, args ...any) { Infof(msg, args...) }
 
 // ErrorContextf logs to the error log with a Context.
-func ErrorContextf(ctx context.Context, msg string, args ...any) {
-	slog.ErrorContext(ctx, msg, args...)
-}
+func ErrorContextf(ctx context.Context, msg string, args ...any) { Errorf(msg, args...) }
 
 // WarningContextf logs to the warning log with a Context.
-func WarningContextf(ctx context.Context, msg string, args ...any) {
-	slog.WarnContext(ctx, msg, args...)
-}
+func WarningContextf(ctx context.Context, msg string, args ...any) { Warningf(msg, args...) }
 
 // defaultFormat returns a fmt.Printf format specifier that formats its
 // arguments as if they were passed to fmt.Print.
