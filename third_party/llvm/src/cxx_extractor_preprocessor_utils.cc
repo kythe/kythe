@@ -19,23 +19,7 @@
 #include "clang/Lex/Preprocessor.h"
 
 namespace kythe {
-
-std::string getMacroUnexpandedString(clang::SourceRange Range,
-                                     clang::Preprocessor &PP,
-                                     llvm::StringRef MacroName,
-                                     const clang::MacroInfo *MI) {
-  clang::SourceLocation BeginLoc(Range.getBegin());
-  const char *BeginPtr = PP.getSourceManager().getCharacterData(BeginLoc);
-  size_t Length;
-  std::string Unexpanded;
-  if (MI->isFunctionLike()) {
-    clang::SourceLocation EndLoc(Range.getEnd());
-    const char *EndPtr = PP.getSourceManager().getCharacterData(EndLoc) + 1;
-    Length = (EndPtr - BeginPtr) + 1;  // +1 is ')' width.
-  } else
-    Length = MacroName.size();
-  return llvm::StringRef(BeginPtr, Length).trim().str();
-}
+namespace {
 
 // Changed vs. modularize: added Visited set.
 std::string getMacroExpandedStringInternal(
@@ -47,7 +31,7 @@ std::string getMacroExpandedStringInternal(
   }
   std::string Expanded;
   // Walk over the macro Tokens.
-  for (const auto& Tok : MI->tokens()) {
+  for (const auto &Tok : MI->tokens()) {
     clang::IdentifierInfo *II = Tok.getIdentifierInfo();
     int ArgNo = (II && Args ? MI->getParameterNum(II) : -1);
     if (ArgNo == -1) {
@@ -97,6 +81,24 @@ std::string getMacroExpandedStringInternal(
     }
   }
   return Expanded;
+}
+}  // namespace
+
+std::string getMacroUnexpandedString(clang::SourceRange Range,
+                                     clang::Preprocessor &PP,
+                                     llvm::StringRef MacroName,
+                                     const clang::MacroInfo *MI) {
+  clang::SourceLocation BeginLoc(Range.getBegin());
+  const char *BeginPtr = PP.getSourceManager().getCharacterData(BeginLoc);
+  size_t Length;
+  std::string Unexpanded;
+  if (MI->isFunctionLike()) {
+    clang::SourceLocation EndLoc(Range.getEnd());
+    const char *EndPtr = PP.getSourceManager().getCharacterData(EndLoc) + 1;
+    Length = (EndPtr - BeginPtr) + 1;  // +1 is ')' width.
+  } else
+    Length = MacroName.size();
+  return llvm::StringRef(BeginPtr, Length).trim().str();
 }
 
 std::string getMacroExpandedString(clang::Preprocessor &PP,

@@ -481,32 +481,6 @@ const clang::Decl* FindDisambiguationParent(const IndexedParentMap& parents,
 
   return nullptr;
 }
-
-bool IsClaimableForTraverse(const clang::Decl* decl) {
-  // Operationally, we'll define this as any decl that causes
-  // Job->UnderneathImplicitTemplateInstantiation to be set.
-  if (auto* VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(decl)) {
-    return !VTSD->isExplicitInstantiationOrSpecialization();
-  }
-  if (auto* CTSD =
-          dyn_cast<const clang::ClassTemplateSpecializationDecl>(decl)) {
-    return !CTSD->isExplicitInstantiationOrSpecialization();
-  }
-  if (auto* FD = dyn_cast<const clang::FunctionDecl>(decl)) {
-    if (const auto* MSI = FD->getMemberSpecializationInfo()) {
-      // The definitions of class template member functions are not necessarily
-      // dominated by the class template definition.
-      if (!MSI->isExplicitSpecialization()) {
-        return true;
-      }
-    } else if (const auto* FSI = FD->getTemplateSpecializationInfo()) {
-      if (!FSI->isExplicitInstantiationOrSpecialization()) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
 }  // anonymous namespace
 
 enum class Prunability {
