@@ -56,6 +56,7 @@ var (
 	useCompilationCorpusForAll     = flag.Bool("use_compilation_corpus_for_all", false, "If enabled, all Entry VNames are given the corpus of the compilation unit being indexed. This includes items in the go std library and builtin types.")
 	useFileAsTopLevelScope         = flag.Bool("use_file_as_top_level_scope", false, "If enabled, use the file node for top-level callsite scopes")
 	overrideStdlibCorpus           = flag.String("override_stdlib_corpus", "", "If set, all stdlib nodes are assigned this corpus. Note that this takes precedence over --use_compilation_corpus_for_all")
+	emitFlagNodes                  = flag.Bool("emit_flag_nodes", false, "If enabled, flag nodes will be emitted")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -167,6 +168,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
 		OverrideStdlibCorpus:           *overrideStdlibCorpus,
 		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
+		EmitFlagNodes:                  *emitFlagNodes,
 		Verbose:                        *verbose,
 	})
 }

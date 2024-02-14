@@ -28,12 +28,14 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/types/typeutil"
 
@@ -81,6 +83,9 @@ type EmitOptions struct {
 	// callsite).
 	EmitRefCallOverIdentifier bool
 
+	// EmitFlagNodes determines whether flag nodes will be emitted.
+	EmitFlagNodes bool
+
 	// Verbose determines whether verbose logging is enabled.
 	Verbose bool
 }
@@ -104,6 +109,13 @@ func (e *EmitOptions) emitRefCallOverIdentifier() bool {
 		return false
 	}
 	return e.EmitRefCallOverIdentifier
+}
+
+func (e *EmitOptions) emitFlagNodes() bool {
+	if e == nil {
+		return false
+	}
+	return e.EmitFlagNodes
 }
 
 func (e *EmitOptions) useFileAsTopLevelScope() bool {
@@ -211,6 +223,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				e.visitIndexListExpr(n, stack)
 			case *ast.ArrayType:
 				e.visitArrayType(n, stack)
+			case *ast.CallExpr:
+				e.visitCallExpr(n, stack)
 			}
 			return true
 		}), file)
@@ -876,6 +890,123 @@ func (e *emitter) visitIndexListExpr(expr *ast.IndexListExpr, stack stackFunc) {
 // visitArrayType handles references to array types.
 func (e *emitter) visitArrayType(expr *ast.ArrayType, stack stackFunc) {
 	e.emitAnonMembers(expr.Elt)
+}
+
+// visitCallExpr handles call expressions
+func (e *emitter) visitCallExpr(expr *ast.CallExpr, stack stackFunc) {
+	e.emitFlags(expr, stack)
+}
+
+var knownFlagConstructors = stringset.New(
+	"Bool",
+	"Duration",
+	"Float64",
+	"Int",
+	"Int64",
+	"String",
+	"Uint",
+	"Uint64",
+
+	// TODO: BoolFunc
+	// TODO: *Var variants
+)
+
+func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
+	if !e.opts.emitFlagNodes() {
+		return
+	}
+	fun, ok := expr.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	pkgID, ok := fun.X.(*ast.Ident)
+	if !ok || pkgID.Name != "flag" {
+		return
+	}
+	funObj, ok := e.pi.Info.Uses[fun.Sel].(*types.Func)
+	if !ok || !knownFlagConstructors.Contains(funObj.Name()) {
+		return
+	}
+	// Check for name, default value, and description arguments.
+	if len(expr.Args) < 3 {
+		return
+	}
+
+	// Parse the flag name
+	nameArg, ok := expr.Args[0].(*ast.BasicLit)
+	if !ok || nameArg.Kind != token.STRING {
+		return
+	}
+	flagName, err := strconv.Unquote(nameArg.Value)
+	if err != nil {
+		return
+	}
+
+	// Get the context of the flag to construct its VName.
+	fi := e.callContext(stack)
+	if fi == nil {
+		return
+	}
+
+	// Construct a node for the flag within the file
+	flagNode := proto.Clone(fi.vname).(*spb.VName)
+	flagNode.Language = "go"
+	flagNode.Signature = "flag " + flagName
+	e.writeFact(flagNode, facts.NodeKind, "google/gflag")
+	if e.opts.emitMarkedSource() {
+		// TODO: MarkedSource initializer
+		ms := &cpb.MarkedSource{
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: flagName,
+				Link:    []*cpb.Link{{Definition: []string{kytheuri.ToString(flagNode)}}},
+			}},
+		}
+		e.emitCode(flagNode, ms)
+	}
+
+	// Emit the documentation for the flag
+	if docArg, ok := expr.Args[2].(*ast.BasicLit); ok && docArg.Kind == token.STRING {
+		if doc, err := strconv.Unquote(docArg.Value); err == nil {
+			docNode := proto.Clone(flagNode).(*spb.VName)
+			docNode.Signature += " doc"
+			e.writeFact(docNode, facts.NodeKind, nodes.Doc)
+			e.writeFact(docNode, facts.Text, doc)
+			e.writeEdge(docNode, flagNode, edges.Documents)
+		}
+	}
+
+	// Write a defines/binding over the flag name string
+	file, start, end := e.pi.Span(nameArg)
+	anchor := e.pi.AnchorVName(file, start, end)
+	e.writeAnchor(nameArg, anchor, start, end)
+	e.writeEdge(anchor, flagNode, edges.DefinesBinding)
+
+	parent := stack(1)
+	var identDef types.Object
+	switch parent := parent.(type) {
+	case *ast.ValueSpec:
+		for i, name := range parent.Names {
+			if expr == parent.Values[i] {
+				identDef = e.pi.Info.Defs[name]
+				break
+			}
+		}
+	case *ast.AssignStmt:
+		for i, v := range parent.Lhs {
+			if name, ok := v.(*ast.Ident); ok && expr == parent.Rhs[i] {
+				identDef = e.pi.Info.Defs[name]
+				break
+			}
+		}
+	}
+	if identDef == nil {
+		return
+	}
+
+	// If we found the flag definition in an assignment, associate the variable
+	// node with the flag node.
+	e.writeEdge(flagNode, e.pi.ObjectVName(identDef), edges.Generates)
 }
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.
