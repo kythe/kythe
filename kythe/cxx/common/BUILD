@@ -55,7 +55,6 @@ cc_library(
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
