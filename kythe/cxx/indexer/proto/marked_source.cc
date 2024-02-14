@@ -105,7 +105,7 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
   return std::nullopt;
 }
 
-std::optional<MarkedSource> GenerateMarkedSourceForType(
+static std::optional<MarkedSource> GenerateMarkedSourceForType(
     const google::protobuf::FieldDescriptor* descriptor,
     ProtoGraphBuilder* builder) {
   MarkedSource type;
