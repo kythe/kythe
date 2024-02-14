@@ -64,15 +64,6 @@ absl::Status ParseFromJsonStream(
     const google::protobuf::util::JsonParseOptions& options,
     google::protobuf::Message* message);
 
-/// \brief Deserializes a protobuf from its JSON form, including the format
-/// wrapper.
-/// \param in The string to deserialize.
-/// \param format_key Set to the wrapper's format field.
-/// \param message Merged with the JSON data.
-/// \return true on success; false on failure.
-bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
-                          google::protobuf::Message* message);
-
 /// \brief Serializes a protobuf to JSON form, including the format wrapper.
 /// \param message The protobuf to serialize.
 /// \param format_key Specifies the format to declare in the wrapper.

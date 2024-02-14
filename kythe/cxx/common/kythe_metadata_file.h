@@ -24,7 +24,6 @@
 #include "absl/strings/string_view.h"
 #include "kythe/proto/metadata.pb.h"
 #include "kythe/proto/storage.pb.h"
-#include "rapidjson/document.h"
 
 namespace kythe {
 
