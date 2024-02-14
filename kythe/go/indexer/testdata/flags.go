@@ -5,10 +5,12 @@ import (
 	"fmt"
 )
 
+//- vname(_, Corpus, Root, Path, _).node/kind package
+
 var (
 	//- @flagVar defines/binding FlagVar
 	//- FlagVar.node/kind variable
-	//- @"\"flag_name\"" defines/binding Flag=vname("flag flag_name", _, _, _, _)
+	//- @"\"flag_name\"" defines/binding Flag=vname("flag flag_name", Corpus, Root, Path, _)
 	//- Flag.node/kind google/gflag
 	//- Flag generates FlagVar
 	flagVar = flag.String("flag_name", "default_value", "Flag description")
