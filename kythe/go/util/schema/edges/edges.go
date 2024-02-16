@@ -31,6 +31,7 @@ const Prefix = schema.Prefix + "edge/"
 // Edge kind labels
 const (
 	ChildOf                 = Prefix + "childof"
+	Denotes                 = Prefix + "denotes"
 	Extends                 = Prefix + "extends"
 	ExtendsPrivate          = Prefix + "extends/private"
 	ExtendsPrivateVirtual   = Prefix + "extends/private/virtual"

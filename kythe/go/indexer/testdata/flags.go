@@ -12,7 +12,7 @@ var (
 	//- FlagVar.node/kind variable
 	//- @"\"flag_name\"" defines/binding Flag=vname("flag flag_name", Corpus, Root, Path, _)
 	//- Flag.node/kind google/gflag
-	//- Flag generates FlagVar
+	//- FlagVar denotes Flag
 	flagVar = flag.String("flag_name", "default_value", "Flag description")
 
 	//- FlagDoc documents Flag
@@ -25,7 +25,7 @@ func init() {
 	//- LocalFlag.node/kind variable
 	//- @"\"bool_flag\"" defines/binding BoolFlag=vname("flag bool_flag", _, _, _, _)
 	//- BoolFlag.node/kind google/gflag
-	//- BoolFlag generates LocalFlag
+	//- LocalFlag denotes BoolFlag
 	localFlag := flag.Bool("bool_flag", false, "Bool flag")
 
 	args := flag.Args()

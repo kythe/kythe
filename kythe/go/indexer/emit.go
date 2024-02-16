@@ -1006,7 +1006,7 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 
 	// If we found the flag definition in an assignment, associate the variable
 	// node with the flag node.
-	e.writeEdge(flagNode, e.pi.ObjectVName(identDef), edges.Generates)
+	e.writeEdge(e.pi.ObjectVName(identDef), flagNode, edges.Denotes)
 }
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.
