@@ -126,6 +126,7 @@ enum EdgeKind {
   DEFINES = 10 [(metadata).label = "/kythe/edge/defines"];
   DEFINES_BINDING = 11 [(metadata).label = "/kythe/edge/defines/binding"];
   DEFINES_IMPLICIT = 50 [(metadata).label = "/kythe/edge/defines/implicit"];
+  DENOTES = 51 [(metadata).label = "/kythe/edge/denotes"];
   DEPENDS = 12 [(metadata).label = "/kythe/edge/depends"];
   DOCUMENTS = 13 [(metadata).label = "/kythe/edge/documents"];
   EXPORTS = 14 [(metadata).label = "/kythe/edge/exports"];
