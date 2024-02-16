@@ -1,5 +1,15 @@
 # Release Notes
 
+## [v0.0.66] - 2024-02-13
+
+#### Bug Fixes
+
+*   remove slog Context log calls (#6018) ([2589380b](https://github.com/kythe/kythe/commit/2589380b2cdf95da00d8030dd9605c3c15d500aa))
+
+#### Features
+
+* **java_indexer:**  support more metadata types (#6017) ([28cf6700](https://github.com/kythe/kythe/commit/28cf6700649bf4f98aa6b96a672e18b0192e8388))
+
 ## [v0.0.65] - 2024-02-09
 
 #### Features
@@ -1713,7 +1723,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.65...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.66...HEAD
+[v0.0.66] https://github.com/kythe/kythe/compare/v0.0.65...v0.0.66
 [v0.0.65] https://github.com/kythe/kythe/compare/v0.0.64...v0.0.65
 [v0.0.64] https://github.com/kythe/kythe/compare/v0.0.63...v0.0.64
 [v0.0.63] https://github.com/kythe/kythe/compare/v0.0.62...v0.0.63

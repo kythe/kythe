@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/proto/storage.pb.h"
 #include "re2/re2.h"
 
@@ -41,6 +42,11 @@ class FileVNameGenerator {
   bool LoadJsonString(absl::string_view data, std::string* error_text);
   absl::Status LoadJsonString(absl::string_view data);
 
+  /// \brief Adds configuration entries from the JSON-encoded list of entries.
+  /// \param input The input stream containing the JSON entries.
+  /// \return Non-OK status if the input was invalid.
+  absl::Status LoadJsonStream(google::protobuf::io::ZeroCopyInputStream& input);
+
   /// \brief Returns a base VName for a given file path (or an empty VName if
   /// no configuration rule matches the path).
   kythe::proto::VName LookupBaseVName(absl::string_view path) const;
@@ -57,7 +63,7 @@ class FileVNameGenerator {
   /// \brief A rule to apply to certain paths.
   struct VNameRule {
     /// The pattern used to match against a path.
-    std::shared_ptr<re2::RE2> pattern;
+    std::shared_ptr<const re2::RE2> pattern;
     /// Substitution pattern used to construct the corpus.
     std::string corpus;
     /// Substitution pattern used to construct the root.

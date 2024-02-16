@@ -1,0 +1,40 @@
+/*
+ * Copyright 2023 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+import "kythe/proto/storage.proto";
+
+option go_package = "kythe.io/kythe/proto/vnames_config_go_proto";
+option java_package = "com.google.devtools.kythe.proto";
+option cc_enable_arenas = true;
+
+// Top-level configuration for vnames.json file.
+message VNamesConfiguration {
+  // An individual pattern -> VName entry.
+  message Rule {
+    // The RE2-compatible pattern against which to match the build path.
+    // The match will be "unanchored" or "partial".
+    string pattern = 1;
+    // The VName substitution template to use. Capture groups can be
+    // referenced via @n@ where n is the number.
+    // Only corpus, root and path are relevant.
+    VName vname = 2;
+  }
+  repeated Rule rules = 1;
+}

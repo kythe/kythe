@@ -2755,7 +2755,7 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
     try {
       plugin.index(indexingContext);
     } catch (err) {
-      console.error(`Plugin ${plugin.name} errored: ${err}`);
+      console.error(`Plugin ${plugin.name} errored:`, err);
     }
   }
 

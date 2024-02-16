@@ -857,6 +857,17 @@ cc_proto_library(
     ],
 )
 
+proto_library(
+    name = "vnames_config_proto",
+    srcs = ["vnames_config.proto"],
+    deps = [":storage_proto"],
+)
+
+cc_proto_library(
+    name = "vnames_config_cc_proto",
+    deps = [":vnames_config_proto"],
+)
+
 # Uses native.existing_rules() to find rules to update; must come last.
 update_generated_protos(
     name = "update",
