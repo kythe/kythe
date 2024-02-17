@@ -456,6 +456,38 @@ class X {};
 ///- ModAnchor defines/implicit Mod
 --------------------------------------------------------------------------------
 
+[[denotes]]
+denotes
+~~~~~~~
+
+Brief description::
+  A *denotes* B if A is a concrete representation of B, an abstract
+  representation that may not be written down.
+Commonly arises from::
+  library support code (flags, database wrappers, etc)
+Points from::
+  semantic nodes with a definition
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<completedby>>, <<generates>>
+Notes::
+  In contrast to *generates*, where it is expected that both source
+  and target nodes have definition locations, only the source of a
+  *denotes* edge must have a definition location. The source (or
+  concrete representation) is used as the canonical definition of the
+  target (or abstract representation).
+
+  If the source of a *denotes* edge participates in a completion
+  relationship, that source should have completion type `definition`.
+  It is not necessary for the target to also participate in a
+  completion relationship or to have a completion fact set.
+
+  It is not necessary for the source and target to share the same
+  node kind.
+
 [[depends]]
 depends
 ~~~~~~~
@@ -626,7 +658,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<imputes>>, <<semanticgenerated>>
+  <<denotes>>, <<imputes>>, <<semanticgenerated>>
 
 Tools like RPC interface generators read specification languages and emit
 code in one or more target languages. Although the specification language
@@ -830,7 +862,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<generates>>
+  <<denotes>>, <<generates>>
 
 Mechanically, if A *defines/binding* A' and A *imputes* B, where A is an anchor
 and both A' and B are semantic nodes, the *imputes* edge has the same effect as
