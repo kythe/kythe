@@ -836,8 +836,10 @@ class GraphObserver {
   }
 
   /// \brief Records a denotes relationship as an edge in the graph.
-  /// \param DenoterId The identifier for the denoting node.
-  /// \param DenoteeId The identifier for the node being denoted.
+  /// \param DenoterId The identifier for the denoting node (i.e., the
+  /// concrete representation)
+  /// \param DenoteeId The identifier for the node being denoted (i.e.,
+  /// the abstract representation)
   virtual void recordDenotesEdge(const NodeId& DenoterId,
                                  const NodeId& DenoteeId) {}
 
