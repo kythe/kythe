@@ -750,6 +750,12 @@ void KytheGraphObserver::recordTParamEdge(const NodeId& param_of_id,
                      VNameRefFromNodeId(param_id), ordinal);
 }
 
+void KytheGraphObserver::recordDenotesEdge(const NodeId& denoter_id,
+                                           const NodeId& denotee_id) {
+  recorder_->AddEdge(VNameRefFromNodeId(denoter_id), EdgeKindID::kDenotes,
+                     VNameRefFromNodeId(denotee_id));
+}
+
 void KytheGraphObserver::recordChildOfEdge(const NodeId& child_id,
                                            const NodeId& parent_id) {
   recorder_->AddEdge(VNameRefFromNodeId(child_id), EdgeKindID::kChildOf,

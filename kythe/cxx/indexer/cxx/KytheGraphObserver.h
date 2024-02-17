@@ -327,6 +327,9 @@ class KytheGraphObserver : public GraphObserver {
                                     Claimability claimability,
                                     Implicit i) override;
 
+  void recordDenotesEdge(const NodeId& denoter_id,
+                         const NodeId& denotee_id) override;
+
   void recordChildOfEdge(const NodeId& child_id,
                          const NodeId& parent_id) override;
 
