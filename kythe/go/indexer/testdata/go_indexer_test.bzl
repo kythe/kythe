@@ -160,7 +160,7 @@ go_extract = rule(
 
 def _go_entries(ctx):
     kzip = ctx.attr.kzip.kzip
-    iargs = [] + ctx.attr.extra_indexer_args
+    iargs = []
     output = ctx.outputs.entries
 
     # If the test wants marked source, enable support for it in the indexer.
@@ -184,8 +184,10 @@ def _go_entries(ctx):
         iargs += ["-meta", ctx.attr.metadata_suffix]
 
     test_runners = []
-    test_runners.append(_make_test_runner(ctx, {}, arguments = iargs + [kzip.short_path]))
+    eargs = [ctx.expand_location(arg.replace("$(location", "$(rootpath"), ctx.attr.data) for arg in ctx.attr.extra_indexer_args]
+    test_runners.append(_make_test_runner(ctx, {}, arguments = iargs + eargs + [kzip.short_path]))
 
+    iargs += [ctx.expand_location(arg, ctx.attr.data) for arg in ctx.attr.extra_indexer_args]
     iargs += [kzip.path, "| gzip >" + output.path]
     iargs.insert(0, ctx.executable._exec_indexer.path)
 
@@ -194,7 +196,7 @@ def _go_entries(ctx):
         mnemonic = "GoIndexer",
         command = "\n".join(cmds),
         outputs = [output],
-        inputs = [kzip],
+        inputs = [kzip] + ctx.files.data,
         tools = [ctx.executable._exec_indexer],
     )
 
@@ -202,7 +204,7 @@ def _go_entries(ctx):
         KytheEntryProducerInfo(
             executables = test_runners,
             runfiles = ctx.runfiles(
-                files = (test_runners + [kzip]),
+                files = (test_runners + [kzip] + ctx.files.data),
             ).merge(ctx.attr._indexer[DefaultInfo].default_runfiles),
         ),
     ]
@@ -229,6 +231,12 @@ go_entries = rule(
         "use_file_as_top_level_scope": attr.bool(default = False),
         "override_stdlib_corpus": attr.string(default = ""),
         "extra_indexer_args": attr.string_list(),
+
+        # Extra files required by the indexer
+        "data": attr.label_list(
+            allow_empty = True,
+            allow_files = True,
+        ),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -339,6 +347,7 @@ def _go_indexer(
     entries = name + "_entries"
     go_entries(
         name = entries,
+        data = data,
         has_marked_source = has_marked_source,
         emit_anchor_scopes = emit_anchor_scopes,
         use_compilation_corpus_for_all = use_compilation_corpus_for_all,

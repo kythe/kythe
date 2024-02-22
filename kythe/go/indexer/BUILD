@@ -1,7 +1,8 @@
-load("//tools:build_rules/shims.bzl", "go_library", "go_test")
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+load(":flags.bzl", "flag_constructors")
+load(":testdata/go_indexer_test.bzl", "go_indexer_test")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -376,10 +377,39 @@ go_indexer_test(
     use_compilation_corpus_for_all = True,
 )
 
+standard_flags = {
+    # Standard func(name, default, desc) flags in the "flag" package.
+    "flag": [
+        "Bool",
+        "Duration",
+        "Float64",
+        "Int",
+        "Int64",
+        "String",
+        "Uint",
+        "Uint64",
+    ],
+}
+
+flag_constructors(
+    name = "standard_flags",
+    standard_flags = standard_flags,
+)
+
+flag_constructors(
+    name = "test_flags",
+    standard_flags = standard_flags | {
+        "flags": ["CustomFlag"],
+    },
+)
+
 go_indexer_test(
     name = "flags_test",
     srcs = ["testdata/flags.go"],
-    extra_indexer_args = ["-emit_flag_nodes"],
+    data = [":test_flags"],
+    extra_indexer_args = [
+        "-flag_constructors=$(location :test_flags)",
+    ],
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")

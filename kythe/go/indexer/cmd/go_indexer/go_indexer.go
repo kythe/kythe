@@ -32,13 +32,16 @@ import (
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/metadata"
 
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -56,10 +59,9 @@ var (
 	useCompilationCorpusForAll     = flag.Bool("use_compilation_corpus_for_all", false, "If enabled, all Entry VNames are given the corpus of the compilation unit being indexed. This includes items in the go std library and builtin types.")
 	useFileAsTopLevelScope         = flag.Bool("use_file_as_top_level_scope", false, "If enabled, use the file node for top-level callsite scopes")
 	overrideStdlibCorpus           = flag.String("override_stdlib_corpus", "", "If set, all stdlib nodes are assigned this corpus. Note that this takes precedence over --use_compilation_corpus_for_all")
-	emitFlagNodes                  = flag.Bool("emit_flag_nodes", false, "If enabled, flag nodes will be emitted")
+	flagConstructorsPath           = flag.String("flag_constructors", "", "Path to a textproto containing known FlagConstructors")
 
 	writeEntry func(context.Context, *spb.Entry) error
-	docURL     *url.URL
 )
 
 func init() {
@@ -97,6 +99,7 @@ func main() {
 			return rw.PutProto(entry)
 		}
 	}
+	var docURL *url.URL
 	if *docBase != "" {
 		u, err := url.Parse(*docBase)
 		if err != nil {
@@ -106,9 +109,36 @@ func main() {
 	}
 
 	ctx := context.Background()
+	var flagConstructors *gopb.FlagConstructors
+	if *flagConstructorsPath != "" {
+		rec, err := vfs.ReadFile(ctx, *flagConstructorsPath)
+		if err != nil {
+			log.Exitf("Error reading --flag_constructors=%q file: %v", *flagConstructorsPath, err)
+		}
+		flagConstructors = new(gopb.FlagConstructors)
+		if err := prototext.Unmarshal(rec, flagConstructors); err != nil {
+			log.Exitf("Error parsing --flag_constructors=%q file: %v", *flagConstructorsPath, err)
+		}
+	}
+
+	opts := &indexer.EmitOptions{
+		EmitStandardLibs:               *doLibNodes,
+		EmitMarkedSource:               *doCodeFacts,
+		EmitAnchorScopes:               *doAnchorScopes,
+		EmitLinkages:                   *metaSuffix != "",
+		DocBase:                        docURL,
+		OnlyEmitDocURIsForStandardLibs: *onlyEmitDocURIsForStandardLibs,
+		UseCompilationCorpusForAll:     *useCompilationCorpusForAll,
+		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
+		OverrideStdlibCorpus:           *overrideStdlibCorpus,
+		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
+		FlagConstructors:               flagConstructors,
+		Verbose:                        *verbose,
+	}
+
 	for _, path := range flag.Args() {
 		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
-			err := indexGo(ctx, unit, f)
+			err := indexGo(ctx, unit, f, opts)
 			if err != nil && *contOnErr {
 				log.ErrorContextf(ctx, "Continuing after error: %v", err)
 				return nil
@@ -146,7 +176,7 @@ func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*index
 }
 
 // indexGo is a visitFunc that invokes the Kythe Go indexer on unit.
-func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
+func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher, opts *indexer.EmitOptions) error {
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
 		Info:       indexer.XRefTypeInfo(),
 		CheckRules: checkMetadata,
@@ -157,20 +187,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	if *verbose {
 		log.InfoContextf(ctx, "Finished resolving compilation: %s", pi.String())
 	}
-	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
-		EmitStandardLibs:               *doLibNodes,
-		EmitMarkedSource:               *doCodeFacts,
-		EmitAnchorScopes:               *doAnchorScopes,
-		EmitLinkages:                   *metaSuffix != "",
-		DocBase:                        docURL,
-		OnlyEmitDocURIsForStandardLibs: *onlyEmitDocURIsForStandardLibs,
-		UseCompilationCorpusForAll:     *useCompilationCorpusForAll,
-		UseFileAsTopLevelScope:         *useFileAsTopLevelScope,
-		OverrideStdlibCorpus:           *overrideStdlibCorpus,
-		EmitRefCallOverIdentifier:      *emitRefCallOverIdentifier,
-		EmitFlagNodes:                  *emitFlagNodes,
-		Verbose:                        *verbose,
-	})
+	return pi.Emit(ctx, writeEntry, opts)
 }
 
 type visitFunc func(context.Context, *apb.CompilationUnit, indexer.Fetcher) error

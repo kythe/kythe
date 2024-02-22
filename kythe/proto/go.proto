@@ -43,3 +43,18 @@ message GoDetails {
 message GoPackageInfo {
   string import_path = 1;
 }
+
+message FlagConstructors {
+  repeated FlagConstructor flag = 1;
+}
+
+// FlagConstructor is a descriptor of a flag constructing function.
+message FlagConstructor {
+  string pkg_path = 1;
+  string func_name = 2;
+
+  // The 0-based position of the flag's name argument.
+  uint32 name_arg_position = 3;
+  // The 0-based position of the flag's description argument.
+  uint32 description_arg_position = 4;
+}

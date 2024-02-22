@@ -7,6 +7,8 @@ import (
 
 //- vname(_, Corpus, Root, Path, _).node/kind package
 
+func CustomFlag(name string, def struct{}, description string) *struct{} { return &def }
+
 var (
 	//- @flagVar defines/binding FlagVar
 	//- FlagVar.node/kind variable
@@ -18,6 +20,12 @@ var (
 	//- FlagDoc documents Flag
 	//- FlagDoc.node/kind doc
 	//- FlagDoc.text "Flag description"
+
+	//- @customFlag defines/binding CustomFlagVar
+	//- @"\"custom_flag\"" defines/binding CustomFlag=vname("flag custom_flag", Corpus, Root, Path, _)
+	//- CustomFlag.node/kind google/gflag
+	//- CustomFlagVar denotes CustomFlag
+	customFlag = CustomFlag("custom_flag", struct{}{}, "A custom flag desc")
 )
 
 func init() {

@@ -35,11 +35,11 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
-	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/types/typeutil"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -83,8 +83,8 @@ type EmitOptions struct {
 	// callsite).
 	EmitRefCallOverIdentifier bool
 
-	// EmitFlagNodes determines whether flag nodes will be emitted.
-	EmitFlagNodes bool
+	// FlagConstructors is a set of known flag constructor functions.
+	FlagConstructors *gopb.FlagConstructors
 
 	// Verbose determines whether verbose logging is enabled.
 	Verbose bool
@@ -115,7 +115,7 @@ func (e *EmitOptions) emitFlagNodes() bool {
 	if e == nil {
 		return false
 	}
-	return e.EmitFlagNodes
+	return e.FlagConstructors != nil
 }
 
 func (e *EmitOptions) useFileAsTopLevelScope() bool {
@@ -254,6 +254,9 @@ type emitter struct {
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
+
+	// lazily-initialized lookup table based on opts.FlagConstructors
+	flagConstructors map[string]map[string]*gopb.FlagConstructor
 
 	variadics map[*types.Slice]bool
 }
@@ -897,43 +900,37 @@ func (e *emitter) visitCallExpr(expr *ast.CallExpr, stack stackFunc) {
 	e.emitFlags(expr, stack)
 }
 
-var knownFlagConstructors = stringset.New(
-	"Bool",
-	"Duration",
-	"Float64",
-	"Int",
-	"Int64",
-	"String",
-	"Uint",
-	"Uint64",
-
-	// TODO: BoolFunc
-	// TODO: *Var variants
-)
-
 func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	if !e.opts.emitFlagNodes() {
 		return
 	}
-	fun, ok := expr.Fun.(*ast.SelectorExpr)
+	var funIdent *ast.Ident
+	switch expr := expr.Fun.(type) {
+	case *ast.SelectorExpr:
+		funIdent = expr.Sel
+	case *ast.Ident:
+		funIdent = expr
+	}
+	funObj, ok := e.pi.Info.Uses[funIdent].(*types.Func)
 	if !ok {
 		return
 	}
-	pkgID, ok := fun.X.(*ast.Ident)
-	if !ok || pkgID.Name != "flag" {
+
+	ctor := e.flagConstructor(funObj)
+	if ctor == nil {
 		return
 	}
-	funObj, ok := e.pi.Info.Uses[fun.Sel].(*types.Func)
-	if !ok || !knownFlagConstructors.Contains(funObj.Name()) {
-		return
-	}
-	// Check for name, default value, and description arguments.
-	if len(expr.Args) < 3 {
+	// Check for expected arguments.
+	if expected := int(max(ctor.NameArgPosition, ctor.DescriptionArgPosition)); len(expr.Args) <= expected {
+		log.Errorf("Expected at least %d arguments for call to %s.%s; found %d", expected, ctor.GetPkgPath(), ctor.GetFuncName(), len(expr.Args))
 		return
 	}
 
+	// TODO: handle *Var typed flag constructors
+	// TODO: handle BoolFunc
+
 	// Parse the flag name
-	nameArg, ok := expr.Args[0].(*ast.BasicLit)
+	nameArg, ok := expr.Args[ctor.NameArgPosition].(*ast.BasicLit)
 	if !ok || nameArg.Kind != token.STRING {
 		return
 	}
@@ -966,7 +963,7 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	}
 
 	// Emit the documentation for the flag
-	if docArg, ok := expr.Args[2].(*ast.BasicLit); ok && docArg.Kind == token.STRING {
+	if docArg, ok := expr.Args[ctor.DescriptionArgPosition].(*ast.BasicLit); ok && docArg.Kind == token.STRING {
 		if doc, err := strconv.Unquote(docArg.Value); err == nil {
 			docNode := proto.Clone(flagNode).(*spb.VName)
 			docNode.Signature += " doc"
@@ -1007,6 +1004,22 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	// If we found the flag definition in an assignment, associate the variable
 	// node with the flag node.
 	e.writeEdge(e.pi.ObjectVName(identDef), flagNode, edges.Denotes)
+}
+
+func (e *emitter) flagConstructor(f *types.Func) *gopb.FlagConstructor {
+	if e.flagConstructors == nil {
+		// Initial the flag constructor lookup table.
+		e.flagConstructors = map[string]map[string]*gopb.FlagConstructor{}
+		for _, ctor := range e.opts.FlagConstructors.GetFlag() {
+			pkg := e.flagConstructors[ctor.GetPkgPath()]
+			if pkg == nil {
+				pkg = map[string]*gopb.FlagConstructor{}
+				e.flagConstructors[ctor.GetPkgPath()] = pkg
+			}
+			pkg[ctor.GetFuncName()] = ctor
+		}
+	}
+	return e.flagConstructors[f.Pkg().Path()][f.Name()]
 }
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.
