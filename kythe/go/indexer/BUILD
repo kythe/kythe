@@ -402,6 +402,7 @@ standard_var_flags = {
         "StringVar",
         "TextVar",
         "Uint64Var",
+        "UintVar",
     ],
 }
 
