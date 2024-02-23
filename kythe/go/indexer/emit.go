@@ -926,9 +926,6 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 		return
 	}
 
-	// TODO: handle *Var typed flag constructors
-	// TODO: handle BoolFunc
-
 	// Parse the flag name
 	nameArg, ok := expr.Args[ctor.NameArgPosition].(*ast.BasicLit)
 	if !ok || nameArg.Kind != token.STRING {
@@ -979,6 +976,7 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	e.writeAnchor(nameArg, anchor, start, end)
 	e.writeEdge(anchor, flagNode, edges.DefinesBinding)
 
+	// TODO: handle *Var typed flag constructors
 	parent := stack(1)
 	var identDef types.Object
 	switch parent := parent.(type) {
