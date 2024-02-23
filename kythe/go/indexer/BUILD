@@ -1,6 +1,6 @@
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
-load(":flags.bzl", "flag_constructors")
+load(":flags.bzl", "flag_constructor", "flag_constructors")
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
@@ -391,16 +391,57 @@ standard_flags = {
     ],
 }
 
+standard_var_flags = {
+    # Standard func(var, name, default, desc) flags in the "flag" package.
+    "flag": [
+        "BoolVar",
+        "DurationVar",
+        "Float64Var",
+        "Int64Var",
+        "IntVar",
+        "StringVar",
+        "TextVar",
+        "Uint64Var",
+    ],
+}
+
+custom_flags = [
+    # Func flag constructors in the "flag" package.
+    flag_constructor(
+        description_arg_position = 1,
+        func_name = "Func",
+        name_arg_position = 0,
+        pkg_path = "flag",
+    ),
+    flag_constructor(
+        description_arg_position = 1,
+        func_name = "BoolFunc",
+        name_arg_position = 0,
+        pkg_path = "flag",
+    ),
+    # Var flag constructor w/o a default in the "flag" package.
+    flag_constructor(
+        description_arg_position = 2,
+        func_name = "Var",
+        name_arg_position = 1,
+        pkg_path = "flag",
+    ),
+]
+
 flag_constructors(
     name = "standard_flags",
+    custom_flags = custom_flags,
     standard_flags = standard_flags,
+    standard_var_flags = standard_var_flags,
 )
 
 flag_constructors(
     name = "test_flags",
+    custom_flags = custom_flags,
     standard_flags = standard_flags | {
         "flags": ["CustomFlag"],
     },
+    standard_var_flags = standard_var_flags,
 )
 
 go_indexer_test(

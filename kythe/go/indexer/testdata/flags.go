@@ -36,6 +36,21 @@ func init() {
 	//- LocalFlag denotes BoolFlag
 	localFlag := flag.Bool("bool_flag", false, "Bool flag")
 
+	var localVar bool
+	//- @"\"var_flag\"" defines/binding VarFlag=vname("flag var_flag", _, _, _, _)
+	//- VarFlag.node/kind google/gflag
+	//- VarFlagDoc documents VarFlag
+	//- VarFlagDoc.node/kind doc
+	//- VarFlagDoc.text "Var flag"
+	flag.BoolVar(&localVar, "var_flag", true, "Var flag")
+
+	//- @"\"func_flag\"" defines/binding FuncFlag=vname("flag func_flag", _, _, _, _)
+	//- FuncFlag.node/kind google/gflag
+	//- FuncFlagDoc documents FuncFlag
+	//- FuncFlagDoc.node/kind doc
+	//- FuncFlagDoc.text "Func flag"
+	flag.BoolFunc("func_flag", "Func flag", func(s string) error { return nil })
+
 	args := flag.Args()
 	fmt.Println(*flagVar, *localFlag, args)
 }
