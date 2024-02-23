@@ -1019,7 +1019,11 @@ func (e *emitter) flagConstructor(f *types.Func) *gopb.FlagConstructor {
 			pkg[ctor.GetFuncName()] = ctor
 		}
 	}
-	return e.flagConstructors[f.Pkg().Path()][f.Name()]
+	pkg := f.Pkg()
+	if pkg == nil {
+		return nil
+	}
+	return e.flagConstructors[pkg.Path()][f.Name()]
 }
 
 // emitPosRef emits an anchor spanning loc, pointing to obj.
