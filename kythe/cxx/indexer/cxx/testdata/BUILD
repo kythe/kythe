@@ -3596,6 +3596,13 @@ test_suite(
 )
 
 cc_indexer_test(
+    name = "df_array_var_rw",
+    srcs = ["df/df_array_var_rw.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
+cc_indexer_test(
     name = "df_binary",
     srcs = ["df/df_binary.cc"],
     ignore_dups = True,
