@@ -48,6 +48,16 @@ public class Writes {
     // - !{ @a ref/writes MemberA }
     b = sc.a;
 
+    // - @arr defines/binding Arr
+    int[] arr = {1};
+
+    // - @arr ref Arr
+    a = arr[0];
+
+    // - @arr ref Arr
+    // - !{ @arr ref/writes Arr }
+    arr[0] = 1;
+
     //
     // Test JCAssignOp
     //
