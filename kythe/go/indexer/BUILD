@@ -426,6 +426,7 @@ custom_flags = [
         func_name = "Var",
         name_arg_position = 1,
         pkg_path = "flag",
+        var_arg_position = 0,
     ),
 ]
 
