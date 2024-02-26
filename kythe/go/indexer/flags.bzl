@@ -12,13 +12,13 @@ def flag_constructor(func_name, pkg_path, name_arg_position, description_arg_pos
       description_arg_position: the 0-based position of the description string argument
       var_arg_position: the 0-based position of the variable pointer argument
     """
-    return proto.encode_text(struct(
-        func_name = func_name,
-        pkg_path = pkg_path,
-        name_arg_position = name_arg_position,
-        description_arg_position = description_arg_position,
-        var_arg_position = var_arg_position,
-    ))
+    return proto.encode_text(struct(**{
+        "func_name": func_name,
+        "pkg_path": pkg_path,
+        "name_arg_position": name_arg_position,
+        "description_arg_position": description_arg_position,
+        "var_arg_position": var_arg_position,
+    }))
 
 def _flag_constructors(ctx):
     textpb = "# proto-file: kythe/proto/go.proto\n# proto-message: kythe.proto.FlagConstructors\n\n"
