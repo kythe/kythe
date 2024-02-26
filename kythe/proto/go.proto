@@ -57,4 +57,6 @@ message FlagConstructor {
   uint32 name_arg_position = 3;
   // The 0-based position of the flag's description argument.
   uint32 description_arg_position = 4;
+  // The 0-based position of the flag's var argument.
+  optional uint32 var_arg_position = 5;
 }

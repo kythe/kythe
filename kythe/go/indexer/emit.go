@@ -921,7 +921,11 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 		return
 	}
 	// Check for expected arguments.
-	if expected := int(max(ctor.NameArgPosition, ctor.DescriptionArgPosition)); len(expr.Args) <= expected {
+	if expected := int(max(
+		ctor.NameArgPosition,
+		ctor.DescriptionArgPosition,
+		ctor.GetVarArgPosition(),
+	)); len(expr.Args) <= expected {
 		log.Errorf("Expected at least %d arguments for call to %s.%s; found %d", expected, ctor.GetPkgPath(), ctor.GetFuncName(), len(expr.Args))
 		return
 	}
@@ -976,22 +980,24 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	e.writeAnchor(nameArg, anchor, start, end)
 	e.writeEdge(anchor, flagNode, edges.DefinesBinding)
 
-	// TODO: handle *Var typed flag constructors
-	parent := stack(1)
 	var identDef types.Object
-	switch parent := parent.(type) {
-	case *ast.ValueSpec:
-		for i, name := range parent.Names {
-			if expr == parent.Values[i] {
-				identDef = e.pi.Info.Defs[name]
-				break
+	if ctor.VarArgPosition != nil {
+		identDef = e.pi.Info.Uses[findIdentifier(expr.Args[ctor.GetVarArgPosition()])]
+	} else {
+		switch parent := stack(1).(type) {
+		case *ast.ValueSpec:
+			for i, name := range parent.Names {
+				if expr == parent.Values[i] {
+					identDef = e.pi.Info.Defs[name]
+					break
+				}
 			}
-		}
-	case *ast.AssignStmt:
-		for i, v := range parent.Lhs {
-			if name, ok := v.(*ast.Ident); ok && expr == parent.Rhs[i] {
-				identDef = e.pi.Info.Defs[name]
-				break
+		case *ast.AssignStmt:
+			for i, v := range parent.Lhs {
+				if name, ok := v.(*ast.Ident); ok && expr == parent.Rhs[i] {
+					identDef = e.pi.Info.Defs[name]
+					break
+				}
 			}
 		}
 	}
@@ -1002,6 +1008,23 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	// If we found the flag definition in an assignment, associate the variable
 	// node with the flag node.
 	e.writeEdge(e.pi.ObjectVName(identDef), flagNode, edges.Denotes)
+}
+
+func findIdentifier(expr ast.Expr) *ast.Ident {
+	for expr != nil {
+		switch e := expr.(type) {
+		case *ast.UnaryExpr:
+			if e.Op != token.AND {
+				return nil
+			}
+			expr = e.X
+		case *ast.Ident:
+			return e
+		default:
+			return nil
+		}
+	}
+	return nil
 }
 
 func (e *emitter) flagConstructor(f *types.Func) *gopb.FlagConstructor {
