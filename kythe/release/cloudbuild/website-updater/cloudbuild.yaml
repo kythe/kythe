@@ -1,0 +1,16 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: make-image
+    args:
+      - build
+      - kythe/release/cloudbuild/website-updater
+      - -t
+      - website-builder-env
+
+  - name: website-builder-env
+    id: deploy-website
+    args:
+      - kythe/release/appengine/default/deploy.sh
+
+options:
+  logging: CLOUD_LOGGING_ONLY
