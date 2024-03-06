@@ -105,7 +105,6 @@ def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
         system_include_directories = cc_info.compilation_context.system_includes,
-        add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
