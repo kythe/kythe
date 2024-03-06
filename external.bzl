@@ -1815,24 +1815,6 @@ def _bindings():
         actual = "@maven//:com_google_errorprone_error_prone_annotations",
     )
 
-def _extractor_image_dependencies():
-    """Defines external repositories necessary for extractor images."""
-    go_repository(
-        name = "com_github_bazelbuild_bazelisk",
-        importpath = "github.com/bazelbuild/bazelisk",
-        tag = "v1.3.0",
-    )
-    go_repository(
-        name = "com_github_mitchellh_go_homedir",
-        importpath = "github.com/mitchellh/go-homedir",
-        tag = "v1.1.0",
-    )
-    go_repository(
-        name = "com_github_hashicorp_go_version",
-        importpath = "github.com/hashicorp/go-version",
-        tag = "v1.1.0",
-    )
-
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -1847,8 +1829,6 @@ def kythe_dependencies():
     _bindings()
     _rule_dependencies()
     hedron_compile_commands_setup()
-
-    _extractor_image_dependencies()
 
     maybe(
         http_file,
