@@ -1,0 +1,35 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: make-image
+    args:
+      - build
+      - kythe/release/cloudbuild/docker-updater
+      - -t
+      - docker-builder-env
+
+  - name: docker-builder-env
+    id: build-bazel-image
+    args:
+      - bazel
+      - build
+      - //kythe/extractors/bazel:docker
+  - name: gcr.io/cloud-builders/docker
+    id: push-bazel-image
+    args:
+      - push
+      - gcr.io/kythe-public/bazel-extractor
+
+  - name: docker-builder-env
+    id: build-go-image
+    args:
+      - bazel
+      - build
+      - //kythe/go/extractors/cmd/gotool:docker
+  - name: gcr.io/cloud-builders/docker
+    id: push-go-image
+    args:
+      - push
+      - gcr.io/kythe-public/golang-extractor
+
+options:
+  logging: CLOUD_LOGGING_ONLY
