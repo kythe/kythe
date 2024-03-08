@@ -150,8 +150,6 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     }
     for (VName vname : fileVNames) {
       Metadata.Rule rule = new Metadata.Rule();
-      rule.begin = -1;
-      rule.end = -1;
       rule.vname = vname;
       rule.reverseEdge = true;
       rule.edgeOut = EdgeKind.GENERATES;
