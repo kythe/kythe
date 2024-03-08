@@ -44,6 +44,9 @@ message MappingRule {
                          // range and source definition.
     ANCHOR_ANCHOR = 3;   // Rule describing an imputes edge between target range
                          // and source range.
+    FILE_DEFINES = 4;    // Rule describing a generates edge between
+                         // `source_vname` and the described file. Offsets are
+                         // ignored.
   }
 
   Type type = 1;
@@ -72,7 +75,7 @@ message MappingRule {
 
   Semantic semantic = 11;
 
-  // Fields only relevant if type == anchor_anchor.
+  // Fields only relevant if type == anchor_anchor or type == file_defines.
   kythe.proto.VName source_vname =
       6;                    // Anchor node in the generating source file.
                             // Note: the signature in this vname, if present,
