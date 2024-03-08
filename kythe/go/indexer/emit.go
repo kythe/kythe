@@ -918,6 +918,8 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 
 	ctor := e.flagConstructor(funObj)
 	if ctor == nil {
+		// Check for a flag lookup instead.
+		e.emitFlagLookup(expr, funObj, stack)
 		return
 	}
 	// Check for expected arguments.
@@ -962,6 +964,7 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 		}
 		e.emitCode(flagNode, ms)
 	}
+	e.writeEdge(flagNode, e.flagNameNode(fi, flagName), edges.Named)
 
 	// Emit the documentation for the flag
 	if docArg, ok := expr.Args[ctor.DescriptionArgPosition].(*ast.BasicLit); ok && docArg.Kind == token.STRING {
@@ -1010,6 +1013,41 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	e.writeEdge(e.pi.ObjectVName(identDef), flagNode, edges.Denotes)
 }
 
+func (e *emitter) emitFlagLookup(expr *ast.CallExpr, funObj *types.Func, stack stackFunc) {
+	if !e.flagLookup(funObj) {
+		return
+	}
+	// flag.Lookup(name) invocation
+	if len(expr.Args) != 1 {
+		return
+	}
+	nameArg, ok := expr.Args[0].(*ast.BasicLit)
+	if !ok || nameArg.Kind != token.STRING {
+		return
+	}
+	flagName, err := strconv.Unquote(nameArg.Value)
+	if err != nil {
+		return
+	}
+
+	fi := e.callContext(stack)
+	if fi == nil {
+		return
+	}
+
+	// Write a ref over the flag name string
+	file, start, end := e.pi.Span(nameArg)
+	anchor := e.pi.AnchorVName(file, start, end)
+	e.writeAnchor(nameArg, anchor, start, end)
+	e.writeEdge(anchor, e.flagNameNode(fi, flagName), edges.Ref)
+}
+
+func (e *emitter) flagNameNode(caller *funcInfo, flagName string) *spb.VName {
+	nameNode := &spb.VName{Corpus: caller.vname.Corpus, Signature: flagName}
+	e.writeFact(nameNode, facts.NodeKind, "name")
+	return nameNode
+}
+
 func findIdentifier(expr ast.Expr) *ast.Ident {
 	for expr != nil {
 		switch e := expr.(type) {
@@ -1025,6 +1063,14 @@ func findIdentifier(expr ast.Expr) *ast.Ident {
 		}
 	}
 	return nil
+}
+
+func (e *emitter) flagLookup(f *types.Func) bool {
+	pkg := f.Pkg()
+	if pkg == nil {
+		return false
+	}
+	return pkg.Name() == "flag" && f.Name() == "Lookup"
 }
 
 func (e *emitter) flagConstructor(f *types.Func) *gopb.FlagConstructor {
