@@ -14,6 +14,7 @@ var (
 	//- FlagVar.node/kind variable
 	//- @"\"flag_name\"" defines/binding Flag=vname("flag flag_name", Corpus, Root, Path, _)
 	//- Flag.node/kind google/gflag
+	//- Flag named FlagName
 	//- FlagVar denotes Flag
 	flagVar = flag.String("flag_name", "default_value", "Flag description")
 
@@ -53,6 +54,15 @@ func init() {
 	//- FuncFlagDoc.text "Func flag"
 	flag.BoolFunc("func_flag", "Func flag", func(s string) error { return nil })
 
-	args := flag.Args()
-	fmt.Println(*flagVar, *localFlag, args)
+	fmt.Println(*flagVar, *localFlag) // use flag vars
+}
+
+func main() {
+	flag.Parse()
+
+	//- @"\"flag_name\"" ref FlagName=vname("flag_name", Corpus, "", "", "")
+	//- FlagName.node/kind name
+	f := flag.Lookup("flag_name")
+
+	fmt.Println(flag.Args(), f)
 }
