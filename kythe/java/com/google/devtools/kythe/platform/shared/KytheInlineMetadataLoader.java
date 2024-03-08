@@ -178,7 +178,7 @@ public final class KytheInlineMetadataLoader implements MetadataLoader {
         rule.reverseEdge = true;
         rule.vname = anchor.getVName();
       } else if (mapping.getType() == MappingRule.Type.FILE_DEFINES) {
-        rule.vname = sourceVName.toBuilder().clearLanguage().clearSignature().build();
+        rule.vname = mapping.getSourceVname().toBuilder().clearLanguage().clearSignature().build();
         rule.reverseEdge = true;
         rule.edgeOut = EdgeKind.GENERATES;
         metadata.addFileScopeRule(rule);
