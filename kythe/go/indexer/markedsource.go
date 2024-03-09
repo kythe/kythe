@@ -180,7 +180,7 @@ func (e *emitter) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	case *types.TypeName:
 		switch tt := t.Type().(type) {
 		case *types.Named:
-			if tt.Obj().Pkg().Name() == "builtin" {
+			if pkg := tt.Obj().Pkg(); pkg != nil && pkg.Name() == "builtin" {
 				return ms
 			}
 			ms = &cpb.MarkedSource{
