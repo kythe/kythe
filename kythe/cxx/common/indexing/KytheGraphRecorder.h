@@ -44,7 +44,8 @@ enum class NodeKindID {
   kMeta,
   kDiagnostic,
   kClangUsr,
-  kTVar
+  kTVar,
+  kName
 };
 
 /// \brief Known properties of nodes. See the schema for details.
@@ -129,7 +130,8 @@ enum class EdgeKindID {
   kCompletedby,
   kRefCallDirect,
   kRefCallDirectImplicit,
-  kDenotes
+  kDenotes,
+  kNamed
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`
