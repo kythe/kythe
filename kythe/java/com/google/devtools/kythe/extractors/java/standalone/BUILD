@@ -9,18 +9,11 @@ exports_files(["javac-wrapper.sh"])
 java_binary(
     name = "javac_extractor",
     srcs = ["JavacWrapper.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-    ],
-    jvm_flags = [
-        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.file",
+        "jdk.compiler/com.sun.tools.javac.main",
+        "jdk.compiler/com.sun.tools.javac.util",
+        "jdk.internal.opt/jdk.internal.opt",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.JavacWrapper",
     visibility = ["//visibility:public"],
@@ -37,8 +30,8 @@ java_binary(
 java_library(
     name = "abstract_javac_wrapper",
     srcs = ["AbstractJavacWrapper.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
@@ -70,8 +63,8 @@ java_library(
 java_library(
     name = "jdk_compatibility_shims",
     srcs = ["JdkCompatibilityShims.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
     ],
     visibility = ["//visibility:private"],
     deps = ["//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service"],
@@ -80,8 +73,10 @@ java_library(
 java_library(
     name = "jdk9_compatibility_shims",
     srcs = ["9/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     target_compatible_with = select_with_or({
@@ -103,8 +98,10 @@ java_library(
 java_library(
     name = "jdk15_compatibility_shims",
     srcs = ["15/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
@@ -130,10 +127,12 @@ java_library(
 java_library(
     name = "jdk21_compatibility_shims",
     srcs = ["21/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
+        "jdk.compiler/com.sun.tools.javac.tree",
+        "jdk.internal.opt/jdk.internal.opt",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
@@ -157,12 +156,12 @@ java_library(
 java_library(
     name = "reflective_jdk_compatibility_shims",
     srcs = ["ReflectiveJdkCompatibilityShims.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.main",
     ] + select_with_or({
         (
             "//buildenv/java:language_version_21",
-        ): ["--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED"],
+        ): ["jdk.internal.opt/jdk.internal.opt"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:private"],
