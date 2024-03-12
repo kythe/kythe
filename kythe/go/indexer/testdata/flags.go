@@ -27,6 +27,12 @@ var (
 	//- CustomFlag.node/kind google/gflag
 	//- CustomFlagVar denotes CustomFlag
 	customFlag = CustomFlag("custom_flag", struct{}{}, "A custom flag desc")
+
+	//- @featureFlag defines/binding FeatureFlagVar
+	//- FeatureFlagVar denotes FeatureFlag
+	//- FeatureFlag.node/kind google/gflag
+	//- FeatureFlag.tag/deprecated ""
+	featureFlag = flag.Int("feature", 42, "DEPRECATED: don't use this")
 )
 
 func init() {
