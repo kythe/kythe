@@ -8,13 +8,6 @@ java_test(
         ":SillyProcessor_deploy.jar",
     ],
     javacopts = ["-Xlint:all"],
-    jvm_flags = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-    ],
     test_class = "com.google.devtools.kythe.extractors.java.JavaExtractorTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",

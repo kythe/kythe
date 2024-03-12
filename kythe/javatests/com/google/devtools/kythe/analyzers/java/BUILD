@@ -55,10 +55,10 @@ java_test(
 java_library(
     name = "test_plugin",
     srcs = ["TestPlugin.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.code",
+        "jdk.compiler/com.sun.tools.javac.tree",
+        "jdk.compiler/com.sun.tools.javac.util",
     ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java:__subpackages__"],
     deps = [
