@@ -26,6 +26,7 @@ echo "Current default version: $DEFAULT" >&2
 COMMIT="$(git rev-parse HEAD)"
 if [[ "$DEFAULT" == "$COMMIT" ]];
   echo "The website is already serving the latest version, skipping deployment..."
+  exit 0
 else
   echo "Deploying Kythe website version $COMMIT" >&2
 fi
