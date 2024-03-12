@@ -314,9 +314,6 @@ std::string JoinPath(absl::string_view a, absl::string_view b) {
 
 bool AbslParseFlag(absl::string_view text, PathCanonicalizer::PathEntry* entry,
                    std::string* error) {
-  if (text.empty()) {
-    return true;
-  }
   size_t pos = text.find('@');
   if (pos == text.npos) {
     *error = "missing @ delimiter between path and policy";
@@ -339,7 +336,7 @@ std::string AbslUnparseFlag(const PathCanonicalizer::PathEntry& entry) {
 bool AbslParseFlag(absl::string_view text,
                    std::vector<PathCanonicalizer::PathEntry>* entries,
                    std::string* error) {
-  for (const auto& entry : absl::StrSplit(text, ' ')) {
+  for (const auto& entry : absl::StrSplit(text, ' ', absl::SkipEmpty())) {
     if (!AbslParseFlag(entry, &entries->emplace_back(), error)) {
       entries->pop_back();
       return false;
