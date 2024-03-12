@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -900,6 +901,8 @@ func (e *emitter) visitCallExpr(expr *ast.CallExpr, stack stackFunc) {
 	e.emitFlags(expr, stack)
 }
 
+var deprecatedFlagRE = regexp.MustCompile(`(?i)\bdeprecated\b`)
+
 func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 	if !e.opts.emitFlagNodes() {
 		return
@@ -974,6 +977,10 @@ func (e *emitter) emitFlags(expr *ast.CallExpr, stack stackFunc) {
 			e.writeFact(docNode, facts.NodeKind, nodes.Doc)
 			e.writeFact(docNode, facts.Text, doc)
 			e.writeEdge(docNode, flagNode, edges.Documents)
+
+			if deprecatedFlagRE.MatchString(doc) {
+				e.writeFact(flagNode, facts.Deprecated, "")
+			}
 		}
 	}
 
