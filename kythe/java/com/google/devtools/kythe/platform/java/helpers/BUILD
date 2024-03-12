@@ -13,12 +13,12 @@ java_library(
         "SignatureGenerator.java",
         "SyntaxPreservingScanner.java",
     ],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.code",
+        "jdk.compiler/com.sun.tools.javac.model",
+        "jdk.compiler/com.sun.tools.javac.parser",
+        "jdk.compiler/com.sun.tools.javac.tree",
+        "jdk.compiler/com.sun.tools.javac.util",
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
@@ -50,9 +50,9 @@ java_library(
 java_library(
     name = "jdk_compatibility_shims",
     srcs = ["JdkCompatibilityShims.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.parser",
+        "jdk.compiler/com.sun.tools.javac.tree",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -63,9 +63,11 @@ java_library(
 java_library(
     name = "jdk9_compatibility_shims",
     srcs = ["9/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.parser",
+        "jdk.compiler/com.sun.tools.javac.tree",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     target_compatible_with = select_with_or({
@@ -87,8 +89,10 @@ java_library(
 java_library(
     name = "jdk15_compatibility_shims",
     srcs = ["15/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.tree",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     # This is incompatible with the default test configuration and
@@ -112,8 +116,10 @@ java_library(
 java_library(
     name = "jdk20_compatibility_shims",
     srcs = ["20/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.tree",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     tags = ["manual"],
@@ -134,8 +140,10 @@ java_library(
 java_library(
     name = "jdk21_compatibility_shims",
     srcs = ["21/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.tree",
+    ],
     javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "-Xep:PackageLocation:OFF",
     ],
     tags = ["manual"],
@@ -156,9 +164,9 @@ java_library(
 java_library(
     name = "reflective_jdk_compatibility_shims",
     srcs = ["ReflectiveJdkCompatibilityShimsImpl.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.parser",
+        "jdk.compiler/com.sun.tools.javac.tree",
     ],
     visibility = ["//visibility:private"],
     deps = [

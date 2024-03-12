@@ -5,18 +5,18 @@ package(default_visibility = ["//kythe:default_visibility"])
 java_library(
     name = "forwarding_standard_java_file_manager",
     srcs = ["ForwardingStandardJavaFileManager.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.api",
     ],
 )
 
 java_library(
     name = "filemanager",
     srcs = ["CompilationUnitPathFileManager.java"],
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.api",
+        "jdk.compiler/com.sun.tools.javac.main",
+        "jdk.compiler/com.sun.tools.javac.util",
     ],
     deps = [
         ":forwarding_standard_java_file_manager",
