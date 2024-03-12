@@ -24,7 +24,7 @@ DEFAULT="$(gcloud app versions list --format=json --hide-no-traffic --service "$
 echo "Current default version: $DEFAULT" >&2
 
 COMMIT="$(git rev-parse HEAD)"
-if [[ "$DEFAULT" == "$COMMIT" ]];
+if [[ "$DEFAULT" == "$COMMIT" ]]; then
   echo "The website is already serving the latest version, skipping deployment..."
   exit 0
 else
