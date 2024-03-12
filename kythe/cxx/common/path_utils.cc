@@ -336,7 +336,7 @@ std::string AbslUnparseFlag(const PathCanonicalizer::PathEntry& entry) {
 bool AbslParseFlag(absl::string_view text,
                    std::vector<PathCanonicalizer::PathEntry>* entries,
                    std::string* error) {
-  for (const auto& entry : absl::StrSplit(text, ' ')) {
+  for (const auto& entry : absl::StrSplit(text, ' ', absl::SkipEmpty())) {
     if (!AbslParseFlag(entry, &entries->emplace_back(), error)) {
       entries->pop_back();
       return false;
