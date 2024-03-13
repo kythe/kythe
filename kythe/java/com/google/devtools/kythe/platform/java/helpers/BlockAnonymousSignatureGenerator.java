@@ -95,7 +95,11 @@ public class BlockAnonymousSignatureGenerator
 
   /** Returns the block signature of the corresponding element */
   String getBlockSignature(Element element) {
-    return getBlockSignature(signatureGenerator.getPath(element));
+    TreePath path = signatureGenerator.getPath(element);
+    if (path == null) {
+      throw new IllegalStateException("path was null for element: " + element.toString());
+    }
+    return getBlockSignature(path);
   }
 
   /** Returns the block signature of the corresponding path */

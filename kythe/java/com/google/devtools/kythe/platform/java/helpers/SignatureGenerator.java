@@ -62,6 +62,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class is responsible for generating signatures for elements in a Java program. The class is
@@ -135,7 +136,7 @@ public class SignatureGenerator
   // specific array types.
   private Type arrayTypeContext = null;
 
-  public TreePath getPath(Element e) {
+  public @Nullable TreePath getPath(Element e) {
     return memoizedTreePathScanner.getPath(e);
   }
 
