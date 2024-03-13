@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"go/ast"
+	"go/doc/comment"
 	"go/token"
 	"go/types"
 	"net/url"
@@ -131,6 +132,13 @@ func (e *EmitOptions) useFileAsTopLevelScope() bool {
 // corresponding option is enabled.
 func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
 	return e != nil && e.EmitStandardLibs && govname.IsStandardLibrary(vname)
+}
+
+func (e *EmitOptions) docBase() string {
+	if e == nil || e.DocBase == nil {
+		return ""
+	}
+	return e.DocBase.String()
 }
 
 // docURL returns a documentation URL for the specified package, if one is
@@ -1380,7 +1388,9 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
-	e.anchored[node] = struct{}{}
+	if node != nil {
+		e.anchored[node] = struct{}{}
+	}
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
@@ -1503,16 +1513,171 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	if comments == nil || len(comments.List) == 0 || target == nil {
 		return
 	}
+
 	var lines []string
 	for _, comment := range comments.List {
 		lines = append(lines, trimComment(comment.Text))
 	}
+	trimmedComment := strings.Join(lines, "\n")
+
 	docNode := proto.Clone(target).(*spb.VName)
 	docNode.Signature += " doc"
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
-	e.writeFact(docNode, facts.Text, escComment.Replace(strings.Join(lines, "\n")))
+	e.writeFact(docNode, facts.Text, escComment.Replace(trimmedComment))
 	e.writeEdge(docNode, target, edges.Documents)
 	e.emitDeprecation(target, lines)
+
+	e.emitDocLinks(comments, trimmedComment)
+}
+
+func (e *emitter) emitDocLinks(comments *ast.CommentGroup, trimmedComment string) {
+	// Tree traversal functions for [*comment.Block]s
+	var visitBlock func(comment.Block)
+	var visitText func(comment.Text) string
+
+	// Simply visit each [comment.Block] to find all [comment.Text] nodes
+	visitBlock = func(b comment.Block) {
+		switch b := b.(type) {
+		case *comment.Paragraph:
+			for _, t := range b.Text {
+				visitText(t)
+			}
+		case *comment.List:
+			for _, item := range b.Items {
+				for _, sub := range item.Content {
+					visitBlock(sub)
+				}
+			}
+		case *comment.Heading:
+			for _, t := range b.Text {
+				visitText(t)
+			}
+		case *comment.Code:
+		// nothing to traverse
+		default:
+			log.Errorf("Unknown comment.Block type: %T", b)
+		}
+	}
+
+	// Keep track of last seen doc link offset so we can handle duplicates
+	lastOffset := -1
+	lastLine := 0
+
+	// Emit refs for DocLinks; returns the text string for the visited Text
+	visitText = func(t comment.Text) string {
+		switch t := t.(type) {
+		case comment.Plain:
+			return string(t)
+		case comment.Italic:
+			return string(t)
+		case *comment.Link:
+			var text string
+			for _, sub := range t.Text {
+				text += visitText(sub)
+			}
+			return text
+		case *comment.DocLink:
+			// Reconstruct the text of the DocLink to find its position.
+			text := "["
+			for _, sub := range t.Text {
+				text += visitText(sub)
+			}
+			text += "]"
+
+			target := e.resolveDocLink(t)
+			if target == nil {
+				log.Warningf("Cannot resolve DocLink: %s", t.DefaultURL(e.opts.docBase()))
+				return text
+			}
+
+			for i := lastLine; i < len(comments.List); i++ {
+				c := comments.List[i]
+				file, start, end := e.pi.Span(c)
+				lineOffset := 0
+				if lastOffset >= start && lastOffset <= end {
+					lineOffset = lastOffset - start
+				}
+
+				pos := strings.Index(c.Text[lineOffset:], text)
+				if pos < 0 {
+					continue
+				}
+				pos += lineOffset
+				lastOffset = start + pos + len(text)
+				lastLine = i
+
+				linkStart, linkEnd := pos+start, pos+start+len(text)
+				anchor := e.pi.AnchorVName(file, linkStart, linkEnd)
+				e.writeAnchor(nil, anchor, linkStart, linkEnd)
+				e.writeEdge(anchor, target, edges.RefDoc)
+
+				return text
+			}
+
+			log.Errorf("Failed to find DocLink: %q", text)
+			return text
+		default:
+			log.Errorf("Unknown comment.Text type: %T", t)
+			return ""
+		}
+	}
+
+	parser := &comment.Parser{
+		LookupPackage: func(name string) (string, bool) {
+			if e.pi.Name == name {
+				return e.pi.ImportPath, true
+			}
+			for _, d := range e.pi.Dependencies {
+				if d.Name() == name {
+					return d.Path(), true
+				}
+			}
+			return "", false
+		},
+		// Assume all symbols are valid; we'll check them in [visitText]
+		LookupSym: func(recv, name string) bool { return true },
+	}
+
+	doc := parser.Parse(trimmedComment)
+	for _, c := range doc.Content {
+		visitBlock(c)
+	}
+}
+
+func (e *emitter) resolveDocLink(link *comment.DocLink) *spb.VName {
+	scope := e.pi.Package.Scope()
+	if pkg := e.pi.Dependencies[link.ImportPath]; pkg != nil {
+		scope = pkg.Scope()
+	}
+
+	switch {
+	case link.Name == "" && link.Recv == "":
+		// Package reference
+		if pkg := e.pi.Dependencies[link.ImportPath]; pkg != nil {
+			return e.pi.PackageVName[pkg]
+		}
+		if e.pi.ImportPath == link.ImportPath {
+			return e.pi.PackageVName[e.pi.Package]
+		}
+	case link.Recv != "":
+		// Member reference
+		if recv := scope.Lookup(link.Recv); recv != nil && recv.Pkg() != nil {
+			if n, ok := deref(recv.Type()).(*types.Named); ok {
+				obj, _, _ := types.LookupFieldOrMethod(n.Origin(), true, recv.Pkg(), link.Name)
+				if obj != nil {
+					return e.pi.ObjectVName(obj)
+				}
+			}
+		}
+	case link.Name != "":
+		// Simple name reference
+		if obj := scope.Lookup(link.Name); obj != nil {
+			return e.pi.ObjectVName(obj)
+		}
+	default:
+		log.Errorf("Unknown DocLink shape: %+v", link)
+	}
+	return nil
 }
 
 // emitDeprecation emits a deprecated fact for the specified target if the

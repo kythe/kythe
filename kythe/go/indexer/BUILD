@@ -194,6 +194,11 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "doc_test",
+    srcs = ["testdata/basic/docs.go"],
+)
+
+go_indexer_test(
     name = "unsafe_test",
     srcs = ["testdata/unsafe.go"],
 )
