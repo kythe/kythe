@@ -93,6 +93,14 @@ filegroup(
 
 java_binary(
     name = "bazel_java_extractor",
+    jvm_flags = [
+        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+    ],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     runtime_deps = [
         "extractors/bazel_java_extractor.jar",
@@ -102,6 +110,14 @@ java_binary(
 
 java_binary(
     name = "bazel_jvm_extractor",
+    jvm_flags = [
+        "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+    ],
     main_class = "com.google.devtools.kythe.extractors.jvm.bazel.BazelJvmExtractor",
     runtime_deps = ["extractors/bazel_jvm_extractor.jar"],
 )
