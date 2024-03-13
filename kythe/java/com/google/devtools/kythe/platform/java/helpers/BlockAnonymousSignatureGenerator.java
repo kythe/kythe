@@ -97,7 +97,7 @@ public class BlockAnonymousSignatureGenerator
   String getBlockSignature(Element element) {
     TreePath path = signatureGenerator.getPath(element);
     if (path == null) {
-      throw new IllegalStateException("path was null for element: " + element.toString());
+      throw new IllegalStateException("path was null for element: " + element);
     }
     return getBlockSignature(path);
   }
