@@ -93,6 +93,9 @@ filegroup(
 
 java_binary(
     name = "bazel_java_extractor",
+    # If the code being run against does annotation processing, the extractor loads and executes those
+    # annotation processors during compilation, and that code could use internal APIs that require
+    # additional --add-exports.
     jvm_flags = [
         "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
@@ -110,6 +113,9 @@ java_binary(
 
 java_binary(
     name = "bazel_jvm_extractor",
+    # If the code being run against does annotation processing, the extractor loads and executes those
+    # annotation processors during compilation, and that code could use internal APIs that require
+    # additional --add-exports.
     jvm_flags = [
         "--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED",
         "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
