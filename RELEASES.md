@@ -1,5 +1,35 @@
 # Release Notes
 
+## [v0.0.67] - 2024-03-14
+
+#### Bug Fixes
+
+*   add jvm flag exports to release binaries (#6053) ([6f9d9886](https://github.com/kythe/kythe/commit/6f9d9886700003e5bdcced3a290678c080903692))
+*   don't use -1 for whole file offsets (#6043) ([ead8c9a4](https://github.com/kythe/kythe/commit/ead8c9a4230431998c20471cbd96daeaa0c02f52))
+* **bazel:**  alternate method of installing bazelisk in docker image (#6041) ([af62dcef](https://github.com/kythe/kythe/commit/af62dcef5b6bead597774c8868b6f11b8d4c3298))
+* **cxx_extractor:**  allow empty PathEntry flag values (#6050) ([923c25c1](https://github.com/kythe/kythe/commit/923c25c1b2aab72424cb64414ce7682fa3e4270a))
+* **go_indexer:**
+  *  avoid nil panic (#6046) ([6e140385](https://github.com/kythe/kythe/commit/6e140385b3e48f0d3f78c9b6572ad7549f618b03))
+  *  guard against missing package data (#6032) ([9772b080](https://github.com/kythe/kythe/commit/9772b0807ed88b40e606d667fff9a0a2589780b4))
+* **typescript_indexer:**  Fully log errors from plugins. (#6025) ([5c926f85](https://github.com/kythe/kythe/commit/5c926f855db0009530b13e66dc774ab915a69c8b))
+
+#### Features
+
+*   add FILE_DEFINES for files that generate files (#6044) ([9b672e45](https://github.com/kythe/kythe/commit/9b672e45b55654e13999928b4b0b74c72f9db12d))
+* **cxx_indexer:**
+  *  add an emit function for denotes edges (#6028) ([68170867](https://github.com/kythe/kythe/commit/681708671011b10c46090245f930d6cc3ba4bcdb))
+  *  add denotes edge kind (#6026) ([fbd57f81](https://github.com/kythe/kythe/commit/fbd57f8179eff73a2670ef5843b5bf177eb199f0))
+* **go_indexer:**
+  *  add doc link references (#6051) ([a40d6360](https://github.com/kythe/kythe/commit/a40d63601ae3db52303ef09ed513fb5d9ad51f65))
+  *  mark flag as deprecated if documented as such (#6048) ([b2e55a5f](https://github.com/kythe/kythe/commit/b2e55a5f5ae660b26513e23923308f53955e77c5))
+  *  add references to literal flag lookups (#6045) ([fb5addb7](https://github.com/kythe/kythe/commit/fb5addb7a8d70afc7362cae16b46a777c41b9239))
+  *  support vars denoting flags (#6037) ([02543b10](https://github.com/kythe/kythe/commit/02543b1070627e4bc123712a7ca5e9d7f84f267e))
+  *  add support for Func/Var flag constructors (#6033) ([01b4ba8d](https://github.com/kythe/kythe/commit/01b4ba8dbdfa473aaa8e1e685f7941d611dcf2e7))
+  *  extract flag constructors as config (#6031) ([043cd45f](https://github.com/kythe/kythe/commit/043cd45fd7f5126bbf9eb076c139f36230b15d32))
+  *  add experimental flag support (#6022) ([fecdc768](https://github.com/kythe/kythe/commit/fecdc768fcc2bd92e3ef18a8faf6b1fc6790b996))
+* **java:**  Switch to add_exports (#6049) ([f65a72d7](https://github.com/kythe/kythe/commit/f65a72d75bcf46fb90bba6a092208f8342623d01))
+* **schema:**  add denotes edge (#6030) ([bbf72650](https://github.com/kythe/kythe/commit/bbf72650dfa399b5fc7558244611b97d76d162ee))
+
 ## [v0.0.66] - 2024-02-13
 
 #### Bug Fixes
@@ -1723,7 +1753,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.66...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.67...HEAD
+[v0.0.67] https://github.com/kythe/kythe/compare/v0.0.66...v0.0.67
 [v0.0.66] https://github.com/kythe/kythe/compare/v0.0.65...v0.0.66
 [v0.0.65] https://github.com/kythe/kythe/compare/v0.0.64...v0.0.65
 [v0.0.64] https://github.com/kythe/kythe/compare/v0.0.63...v0.0.64
