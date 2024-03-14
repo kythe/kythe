@@ -782,7 +782,9 @@ func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
 	target := e.pi.PackageVName[pkg]
 	if target == nil {
 		if ipath != "C" {
-			log.Warningf("Unable to resolve import path %q", ipath)
+			if e.opts.verbose() {
+				log.Warningf("Unable to resolve import path %q", ipath)
+			}
 		}
 		return
 	}
@@ -847,7 +849,9 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 
 	tv, ok := e.pi.Info.Types[expr]
 	if !ok {
-		log.Warningf("Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
+		if e.opts.verbose() {
+			log.Warningf("Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
+		}
 		return
 	}
 	sv, ok := deref(tv.Type.Underlying()).(*types.Struct)
@@ -1586,7 +1590,9 @@ func (e *emitter) emitDocLinks(comments *ast.CommentGroup, trimmedComment string
 
 			target := e.resolveDocLink(t)
 			if target == nil {
-				log.Warningf("Cannot resolve DocLink: %s", t.DefaultURL(e.opts.docBase()))
+				if e.opts.verbose() {
+					log.Warningf("Cannot resolve DocLink: %s", t.DefaultURL(e.opts.docBase()))
+				}
 				return text
 			}
 
