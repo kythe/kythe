@@ -756,8 +756,19 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Parent edges were already added, so skip them here.
 		if it, ok := spec.Type.(*ast.InterfaceType); ok {
 			mapFields(it.Methods, func(i int, id *ast.Ident) {
+				field := it.Methods.List[i]
 				target := e.writeBinding(id, nodes.Function, nil)
-				e.writeDoc(firstNonEmptyComment(it.Methods.List[i].Doc, it.Methods.List[i].Comment), target)
+				e.writeDoc(firstNonEmptyComment(field.Doc, field.Comment), target)
+
+				obj := e.pi.Info.Defs[id]
+				if obj != nil {
+					sig := obj.Type().(*types.Signature)
+					if sig != nil {
+						if typ, ok := field.Type.(*ast.FuncType); ok {
+							e.emitParameters(typ, sig, &funcInfo{vname: target})
+						}
+					}
+				}
 			})
 		}
 

@@ -84,7 +84,9 @@ type Thinger interface {
 	//- @Thing defines/binding Thing
 	//- Thing.node/kind function
 	//- Thing childof Thinger
-	Thing()
+	//- @param defines/binding Param
+	//- Param childof Thing
+	Thing(param int)
 }
 
 // - @Extender defines/binding Extender
