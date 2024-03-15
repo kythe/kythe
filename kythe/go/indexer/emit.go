@@ -755,8 +755,9 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Add bindings for the explicitly-named methods in this declaration.
 		// Parent edges were already added, so skip them here.
 		if it, ok := spec.Type.(*ast.InterfaceType); ok {
-			mapFields(it.Methods, func(_ int, id *ast.Ident) {
-				e.writeBinding(id, nodes.Function, nil)
+			mapFields(it.Methods, func(i int, id *ast.Ident) {
+				target := e.writeBinding(id, nodes.Function, nil)
+				e.writeDoc(firstNonEmptyComment(it.Methods.List[i].Doc, it.Methods.List[i].Comment), target)
 			})
 		}
 

@@ -112,3 +112,23 @@ type widget struct {
 //- WidgetComment.node/kind doc
 //- WidgetComment.text "widget comment"
 //- WidgetComment documents Widget
+
+//- @+3I defines/binding I
+
+// interface comment
+type I interface {
+	//- I.node/kind interface
+	//- IDoc.node/kind doc
+	//- IDoc.text "interface comment"
+	//- IDoc documents I
+
+	//- @+3M defines/binding M
+
+	// A method comment
+	M() bool
+
+	//- M.node/kind function
+	//- MDoc.node/kind doc
+	//- MDoc.text "A method comment"
+	//- MDoc documents M
+}
