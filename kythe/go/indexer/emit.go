@@ -690,7 +690,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		return
 	}
 
-	mapFields(spec.TypeParams, func(i int, id *ast.Ident) {
+	mapNamedFields(spec.TypeParams, func(i int, id *ast.Ident) {
 		v := e.writeBinding(id, nodes.TVar, nil)
 		e.writeEdge(target, v, edges.TParamIndex(i))
 	})
@@ -708,7 +708,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Add bindings for the explicitly-named fields in this declaration.
 		// Parent edges were already added, so skip them here.
 		if st, ok := spec.Type.(*ast.StructType); ok {
-			mapFields(st.Fields, func(i int, id *ast.Ident) {
+			mapNamedFields(st.Fields, func(i int, id *ast.Ident) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				f := st.Fields.List[i]
 				e.writeDoc(firstNonEmptyComment(f.Doc, f.Comment), target)
@@ -755,17 +755,22 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Add bindings for the explicitly-named methods in this declaration.
 		// Parent edges were already added, so skip them here.
 		if it, ok := spec.Type.(*ast.InterfaceType); ok {
-			mapFields(it.Methods, func(i int, id *ast.Ident) {
+			mapNamedFields(it.Methods, func(i int, id *ast.Ident) {
 				field := it.Methods.List[i]
 				target := e.writeBinding(id, nodes.Function, nil)
 				e.writeDoc(firstNonEmptyComment(field.Doc, field.Comment), target)
+
+				info := &funcInfo{vname: target}
+
+				// The interface is the anonymous receiver (param 0)
+				e.emitAnonParameter(spec.Name, 0, info)
 
 				obj := e.pi.Info.Defs[id]
 				if obj != nil {
 					sig := obj.Type().(*types.Signature)
 					if sig != nil {
 						if typ, ok := field.Type.(*ast.FuncType); ok {
-							e.emitParameters(typ, sig, &funcInfo{vname: target})
+							e.emitParameters(typ, sig, info)
 						}
 					}
 				}
@@ -1145,30 +1150,52 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	}
 
 	// Emit bindings and parameter edges for the parameters.
-	mapFields(ftype.Params, func(i int, id *ast.Ident) {
+	mapAllFields(ftype.Params, func(i int, id *ast.Ident) {
 		if sig.Params().At(i) != nil {
+			field := ftype.Params.List[i]
+			e.emitAnonMembers(field.Type)
+
 			if param := e.writeVarBinding(id, nodes.LocalParameter, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
 
-				field := ftype.Params.List[i]
-				e.emitAnonMembers(field.Type)
-
 				// Field object does not associate any comments with the parameter; use CommentMap to find them
 				e.writeDoc(firstNonEmptyComment(e.cmap.Filter(field).Comments()...), param)
+			} else if typ, ok := field.Type.(*ast.Ident); ok {
+				// Unnamed function parameter
+				e.emitAnonParameter(typ, paramIndex, info)
 			}
 		}
 		paramIndex++
 	})
 	// Emit bindings for any named result variables.
 	// Results are not considered parameters.
-	mapFields(ftype.Results, func(i int, id *ast.Ident) {
+	mapNamedFields(ftype.Results, func(i int, id *ast.Ident) {
 		e.writeVarBinding(id, "", info.vname)
 	})
 	// Emit bindings for type parameters
-	mapFields(ftype.TypeParams, func(i int, id *ast.Ident) {
+	mapNamedFields(ftype.TypeParams, func(i int, id *ast.Ident) {
 		v := e.writeBinding(id, nodes.TVar, nil)
 		e.writeEdge(info.vname, v, edges.TParamIndex(i))
 	})
+}
+
+func (e *emitter) emitAnonParameter(typ *ast.Ident, paramIndex int, info *funcInfo) {
+	info.numAnons++
+	param := proto.Clone(info.vname).(*spb.VName)
+	param.Signature += "$" + strconv.Itoa(info.numAnons)
+	e.writeFact(param, facts.NodeKind, nodes.Variable)
+	e.writeFact(param, facts.Subkind, nodes.LocalParameter)
+	e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
+	if e.opts.emitMarkedSource() {
+		ms := &cpb.MarkedSource{
+			// An unnamed parameter will only have a MarkedSource.TYPE
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_TYPE,
+				PreText: typ.String(),
+			}},
+		}
+		e.emitCode(param, ms)
+	}
 }
 
 // emitAnonMembers checks whether expr denotes an anonymous struct or interface
@@ -1177,12 +1204,12 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 // we do capture documentation in the unlikely event someone wrote any.
 func (e *emitter) emitAnonMembers(expr ast.Expr) {
 	if st, ok := expr.(*ast.StructType); ok {
-		mapFields(st.Fields, func(i int, id *ast.Ident) {
+		mapNamedFields(st.Fields, func(i int, id *ast.Ident) {
 			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
 			e.writeDoc(firstNonEmptyComment(st.Fields.List[i].Doc, st.Fields.List[i].Comment), target)
 		})
 	} else if it, ok := expr.(*ast.InterfaceType); ok {
-		mapFields(it.Methods, func(i int, id *ast.Ident) {
+		mapNamedFields(it.Methods, func(i int, id *ast.Ident) {
 			target := e.writeBinding(id, nodes.Function, nil) // no parent
 			e.writeDoc(firstNonEmptyComment(it.Methods.List[i].Doc, it.Methods.List[i].Comment), target)
 		})
@@ -1489,6 +1516,9 @@ func (e *emitter) writeVarBinding(id *ast.Ident, subkind string, parent *spb.VNa
 // is also emitted at id. If parent != nil, the target is also recorded as its
 // child. The target vname is returned.
 func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
+	if id == nil {
+		return nil
+	}
 	obj := e.pi.Info.Defs[id]
 	if obj == nil {
 		loc := e.pi.FileSet.Position(id.Pos())
@@ -1863,13 +1893,30 @@ func deref(T types.Type) types.Type {
 	return T
 }
 
-// mapFields applies f to each identifier declared in fields.  Each call to f
-// is given the offset and the identifier.
-func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
+// mapNamedFields applies f to each identifier declared in fields.  Each call to
+// f is given the offset and the identifier.
+func mapNamedFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
+	mapFields(fields, f, false)
+}
+
+// mapAllFields applies f to each identifier declared in fields.  Each call to f
+// is given the offset and the identifier.  If a field has no names, nil is
+// passed to f as the Ident.
+func mapAllFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
+	mapFields(fields, f, true)
+}
+
+// mapFields applies f to each identifier declared in fields.  Each call to f is
+// given the offset and the identifier.  If a field has no names and
+// includeUnnamed is true, nil is passed to f as the Ident.
+func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident), includeUnnamed bool) {
 	if fields == nil {
 		return
 	}
 	for i, field := range fields.List {
+		if includeUnnamed && len(field.Names) == 0 {
+			f(i, nil)
+		}
 		for _, id := range field.Names {
 			f(i, id)
 		}

@@ -69,3 +69,11 @@ func Str[T fmt.Stringer](t T) string { return t.String() }
 // - VA.code/rendered/callsite_signature "VA(args)"
 // - VA.code/rendered/signature "func VA(args ...any)"
 func VA(args ...any) {}
+
+// - @I defines/binding I
+// - I.code/rendered/signature "type I"
+type I interface {
+	// - @M defines/binding IM
+	// - IM.code/rendered/signature "func (I) M(int) bool"
+	M(int) bool
+}
