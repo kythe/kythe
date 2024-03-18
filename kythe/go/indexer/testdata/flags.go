@@ -72,3 +72,8 @@ func main() {
 
 	fmt.Println(flag.Args(), f)
 }
+
+func configureFlags(flag *flag.FlagSet) {
+	//- !{ @"\"subflag\"" defines/binding _ }
+	flag.String("subflag", "", "Subflag")
+}

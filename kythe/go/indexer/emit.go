@@ -1126,6 +1126,11 @@ func (e *emitter) flagConstructor(f *types.Func) *gopb.FlagConstructor {
 	if pkg == nil {
 		return nil
 	}
+	sig, ok := f.Type().(*types.Signature)
+	if !ok || sig.Recv() != nil {
+		// We only handle top-level flags
+		return nil
+	}
 	return e.flagConstructors[pkg.Path()][f.Name()]
 }
 
