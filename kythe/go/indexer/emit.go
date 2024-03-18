@@ -1087,6 +1087,8 @@ func (e *emitter) flagNameNode(caller *funcInfo, flagName string) *spb.VName {
 func findIdentifier(expr ast.Expr) *ast.Ident {
 	for expr != nil {
 		switch e := expr.(type) {
+		case *ast.SelectorExpr:
+			return e.Sel
 		case *ast.UnaryExpr:
 			if e.Op != token.AND {
 				return nil
