@@ -35,6 +35,8 @@ var (
 	featureFlag = flag.Int("feature", 42, "DEPRECATED: don't use this")
 )
 
+type Options struct{ Option int }
+
 func init() {
 	//- @localFlag defines/binding LocalFlag
 	//- LocalFlag.node/kind variable
@@ -59,6 +61,13 @@ func init() {
 	//- FuncFlagDoc.node/kind doc
 	//- FuncFlagDoc.text "Func flag"
 	flag.BoolFunc("func_flag", "Func flag", func(s string) error { return nil })
+
+	opts := Options{}
+
+	//- @"\"field_flag\"" defines/binding FieldFlag
+	//- @Option ref OptField
+	//- OptField denotes FieldFlag
+	flag.IntVar(&opts.Option, "field_flag", 0, "Field flag")
 
 	fmt.Println(*flagVar, *localFlag) // use flag vars
 }
