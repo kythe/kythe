@@ -666,6 +666,7 @@ def _cc_index_impl(ctx):
                          ctx.files.srcs +
                          additional_kzips),
             ).merge(ctx.attr.test_indexer[DefaultInfo].default_runfiles),
+            name = "cc",
         ),
     ]
 

@@ -21,8 +21,45 @@ cd "${RUNFILES_DIR}/${WORKSPACE_NAME}"
 
 ENTRIES=(@ENTRIES@)
 ENTRIES_GZ=(@ENTRIES_GZ@)
+
+# Dir that will contain output files useful for debugging: logs, JSON entries.
+# It will use TEST_UNDECLARED_OUTPUTS_DIR if defined or TEST_TMPDIR otherwise.
+TEST_OUT_DIR="${TEST_UNDECLARED_OUTPUTS_DIR:-$TEST_TMPDIR}"
+echo $TEST_OUT_DIR
+
+# Copy logs passed in providers from other targets. INDEXER_LOGS is a list of
+# 'log:outputname' strings.
+for log in @INDEXER_LOGS@; do
+  parts=(${log//:/ })
+  echo Copying file "${parts[0]}" to "${parts[1]}" >&2
+  cat "${parts[0]}" > "${TEST_OUT_DIR}/${parts[1]}"
+done
+
+# Convert entries to JSON and store later for debugging.
+# ENTRIES_TO_LOG is a list of 'entryfile:outputname' strings.
+for entry in @ENTRIES_TO_LOG@; do
+  parts=(${entry//:/ })
+  @ENTRYSTREAM@ --write_format=json < "${parts[0]}" >> "${TEST_OUT_DIR}/${parts[1]}"
+done
+
+# Run indexer shell commands, if any. For each indexer we store its logs to
+# a separate file in TEST_OUT_DIR.
+ENTRIES_FROM_INLINE_INDEXERS=()
+for indexer in @INDEXERS@; do
+  parts=(${indexer//:/ })
+  log="${TEST_OUT_DIR}/${parts[1]}.log"
+  # Save entries to in tmp dir and not to TEST_OUT_DIR. Some indexers, e.g.
+  # C++ that runs inline, produce 800MB+ of entries. We don't want to log them
+  # in undeclared outputs which might be stored for a long time.
+  entries="${TEST_TMPDIR}/${parts[1]}.entries"
+  echo "Running indexer: ${parts[0]}. Log file ${parts[1]}.log" >&2
+  ${parts[0]} > "$entries" 2> "$log"
+  ENTRIES_FROM_INLINE_INDEXERS+=("$entries")
+done
+
+echo "Running verifier" >&2
 (
-  @INDEXERS@
+  if (( ${#ENTRIES_FROM_INLINE_INDEXERS[@]} )); then cat "${ENTRIES_FROM_INLINE_INDEXERS[@]}"; fi
   if (( ${#ENTRIES[@]} )); then cat "${ENTRIES[@]}"; fi
   if (( ${#ENTRIES_GZ[@]} )); then gunzip -c "${ENTRIES_GZ[@]}"; fi
 ) | (

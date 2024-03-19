@@ -24,7 +24,6 @@ load(
 )
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
-    "KytheEntries",
     "KytheEntryProducerInfo",
     "kythe_integration_test",
     "verifier_test",
@@ -206,6 +205,7 @@ def _go_entries(ctx):
             runfiles = ctx.runfiles(
                 files = (test_runners + [kzip] + ctx.files.data),
             ).merge(ctx.attr._indexer[DefaultInfo].default_runfiles),
+            name = "go",
         ),
     ]
 
