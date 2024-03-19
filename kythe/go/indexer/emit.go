@@ -1079,7 +1079,11 @@ func (e *emitter) emitFlagLookup(expr *ast.CallExpr, funObj *types.Func, stack s
 }
 
 func (e *emitter) flagNameNode(caller *funcInfo, flagName string) *spb.VName {
-	nameNode := &spb.VName{Corpus: caller.vname.Corpus, Signature: flagName}
+	nameNode := &spb.VName{
+		Corpus:    caller.vname.Corpus,
+		Language:  "flag",
+		Signature: flagName,
+	}
 	e.writeFact(nameNode, facts.NodeKind, "name")
 	return nameNode
 }

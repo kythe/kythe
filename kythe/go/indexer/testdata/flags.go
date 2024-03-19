@@ -75,7 +75,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	//- @"\"flag_name\"" ref FlagName=vname("flag_name", Corpus, "", "", "")
+	//- @"\"flag_name\"" ref FlagName=vname("flag_name", Corpus, "", "", "flag")
 	//- FlagName.node/kind name
 	f := flag.Lookup("flag_name")
 
