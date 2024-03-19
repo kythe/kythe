@@ -28,9 +28,6 @@ load("@rules_java//toolchains:remote_java_repository.bzl", "remote_java_reposito
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
-load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
-load("@rules_rust//proto/protobuf:repositories.bzl", "rust_proto_protobuf_dependencies")
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -60,10 +57,6 @@ def _rule_dependencies():
     protobuf_deps()
     rules_proto_dependencies()
     py_repositories()
-    rules_rust_dependencies()
-    rust_register_toolchains(versions = ["1.71.1"])
-    rust_proto_protobuf_dependencies()
-    crate_universe_dependencies()
     rules_ruby_dependencies()
     rules_ruby_select_sdk(version = "host")
     rules_foreign_cc_dependencies(register_built_tools = False)

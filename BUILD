@@ -1,7 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:version.bzl", "MAX_VERSION", "MIN_VERSION")
 load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@rules_rust//proto/protobuf:toolchain.bzl", "rust_proto_toolchain")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 package(default_visibility = ["//visibility:private"])
@@ -38,7 +37,6 @@ sh_test(
 # gazelle:exclude **/examples/
 # gazelle:exclude **/testdata/
 # gazelle:exclude **/*_go_proto/
-# gazelle:exclude **/*_rust_proto/
 # gazelle:prefix kythe.io
 # gazelle:map_kind go_binary go_binary //tools:build_rules/shims.bzl
 # gazelle:map_kind go_library go_library //tools:build_rules/shims.bzl
@@ -76,20 +74,6 @@ bzl_library(
 bzl_library(
     name = "setup_bzl",
     srcs = ["setup.bzl"],
-)
-
-# Create a Rust protobuf toolchain with protobuf version 2.8.2
-rust_proto_toolchain(
-    name = "rust_proto_toolchain_impl",
-    edition = "2021",
-    proto_compile_deps = ["@crate_index//:protobuf"],
-    proto_plugin = "@crate_index//:protobuf-codegen__protoc-gen-rust",
-)
-
-toolchain(
-    name = "rust_proto_toolchain",
-    toolchain = ":rust_proto_toolchain_impl",
-    toolchain_type = "@rules_rust//proto/protobuf:toolchain_type",
 )
 
 refresh_compile_commands(
