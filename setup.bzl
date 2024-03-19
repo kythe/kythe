@@ -201,13 +201,5 @@ def kythe_rule_repositories():
         urls = [
             "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/protobuf-25.2.tar.gz",
         ],
-        patches = [
-            # Use the rules_rust provided proto plugin, rather than the native one
-            # which hijacks the --rust_out command line and is incompatible.
-            "//third_party:protobuf-no-rust.patch",
-        ],
-        patch_args = [
-            "-p1",
-        ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )

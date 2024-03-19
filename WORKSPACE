@@ -87,38 +87,6 @@ ruby_bundle(
     gemfile_lock = "//kythe/web/site:Gemfile.lock",
 )
 
-load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository", "render_config")
-
-# Run `CARGO_BAZEL_REPIN=1 bazel sync --only=crate_index` after updating
-crates_repository(
-    name = "crate_index",
-    annotations = {
-        "protobuf-codegen": [crate.annotation(gen_binaries = True)],
-    },
-    cargo_lockfile = "//:Cargo.Bazel.lock",
-    lockfile = "//:cargo-bazel-lock.json",
-    packages = {
-        # Dependencies for our Rust protobuf toolchain
-        "protobuf": crate.spec(
-            features = ["with-bytes"],
-            version = "=2.28.0",
-        ),
-        "protobuf-codegen": crate.spec(
-            version = "=2.28.0",
-        ),
-    },
-    rust_version = "1.71.1",
-)
-
-load("@crate_index//:defs.bzl", "crate_repositories")
-
-crate_repositories()
-
-# Register our Rust protobuf toolchain from the BUILD file
-register_toolchains(
-    ":rust_proto_toolchain",
-)
-
 http_archive(
     name = "aspect_bazel_lib",
     sha256 = "d488d8ecca98a4042442a4ae5f1ab0b614f896c0ebf6e3eafff363bcc51c6e62",
