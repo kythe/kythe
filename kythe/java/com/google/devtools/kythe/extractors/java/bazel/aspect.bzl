@@ -74,7 +74,7 @@ def _extract_java(target, ctx):
     text_xa = ctx.actions.declare_file(ctx.label.name + ".xa.textproto")
     ctx.actions.write(
         output = text_xa,
-        content = xa.to_proto(),
+        content = proto.encode_text(xa),
     )
 
     xa = ctx.actions.declare_file(ctx.label.name + ".xa")
