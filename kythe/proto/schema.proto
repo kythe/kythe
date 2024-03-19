@@ -34,6 +34,21 @@ extend google.protobuf.EnumValueOptions {
   Metadata metadata = 69945;
 }
 
+enum Language {
+  UNKNOWN_LANGUAGE = 0;
+
+  CXX = 1 [(metadata).label = "c++"];
+  DART = 2 [(metadata).label = "dart"];
+  GO = 3 [(metadata).label = "go"];
+  HASKELL = 4 [(metadata).label = "haskell"];
+  JAVA = 5 [(metadata).label = "java"];
+  KOTLIN = 6 [(metadata).label = "kotlin"];
+  PROTOBUF = 7 [(metadata).label = "protobuf"];
+  TEXTPROTO = 8 [(metadata).label = "textproto"];
+  TYPESCRIPT = 9 [(metadata).label = "typescript"];
+  VERILOG = 10 [(metadata).label = "verilog"];
+}
+
 enum NodeKind {
   UNKNOWN_NODE_KIND = 0;
 
