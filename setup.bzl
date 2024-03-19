@@ -201,8 +201,5 @@ def kythe_rule_repositories():
         urls = [
             "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/protobuf-25.2.tar.gz",
         ],
-        patch_args = [
-            "-p1",
-        ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
