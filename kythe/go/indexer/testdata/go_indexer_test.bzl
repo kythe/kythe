@@ -24,7 +24,6 @@ load(
 )
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
-    "KytheEntries",
     "KytheEntryProducerInfo",
     "kythe_integration_test",
     "verifier_test",
