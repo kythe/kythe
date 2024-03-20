@@ -145,6 +145,7 @@ def _verifier_test_impl(ctx):
     tools = [
         ctx.outputs.executable,
         ctx.executable._verifier,
+        ctx.executable._markedsource,
         ctx.executable._entrystream,
     ]
     return [

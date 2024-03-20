@@ -205,7 +205,6 @@ def _go_entries(ctx):
             runfiles = ctx.runfiles(
                 files = (test_runners + [kzip] + ctx.files.data),
             ).merge(ctx.attr._indexer[DefaultInfo].default_runfiles),
-            name = "go",
         ),
     ]
 
