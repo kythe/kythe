@@ -19,4 +19,4 @@
 # Usage:
 #   chronic tools/git/update-generated-sources.sh
 
-bazel query -k 'kind("_write_source_file", //...)' | xargs bazel run
+bazel query -k 'kind("_write_source_file", //...)' | xargs bazel run --config=prepush
