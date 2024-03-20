@@ -300,6 +300,7 @@ DEF_TRAVERSE_TYPEPAIR(DeducedTemplateSpecializationType, {
              TL.getTypePtr()->getTemplateName()) &&
          getDerived().TraverseType(TL.getTypePtr()->getDeducedType());
 });
+DEF_TRAVERSE_TYPEPAIR(CountAttributedType, {});
 DEF_TRAVERSE_TYPEPAIR(BTFTagAttributedType, {});
 DEF_TRAVERSE_TYPEPAIR(RecordType, {});
 DEF_TRAVERSE_TYPEPAIR(EnumType, {});
