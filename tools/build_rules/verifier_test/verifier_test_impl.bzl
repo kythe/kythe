@@ -57,7 +57,6 @@ def _verifier_test_impl(ctx):
         else:
             sources.append(src.files)
 
-
     # Check that all deps have unique names.
     unique_names = {}
     for dep in ctx.attr.deps:
