@@ -25,7 +25,6 @@ ENTRIES_GZ=(@ENTRIES_GZ@)
 # Dir that will contain output files useful for debugging: logs, JSON entries.
 # It will use TEST_UNDECLARED_OUTPUTS_DIR if defined or TEST_TMPDIR otherwise.
 TEST_OUT_DIR="${TEST_UNDECLARED_OUTPUTS_DIR:-$TEST_TMPDIR}"
-echo $TEST_OUT_DIR
 
 # Copy logs passed in providers from other targets. INDEXER_LOGS is a list of
 # 'log:outputname' strings.
