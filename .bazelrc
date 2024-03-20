@@ -2,6 +2,8 @@
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 # Bazel commands in the GCB (google-cloud-build) configuration as remote
 common:gcb --config=remote
+# An no-op "remote" configuration for GCB-run commands which otherwise lack the config.
+common:remote --color=auto
 
 # Disable persistent workers for Typescript (#3816)
 common --strategy=TsProject=remote,sandboxed,local

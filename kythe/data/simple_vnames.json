@@ -1,5 +1,13 @@
 [
   {
+    "pattern": "bazel-out/[^/]+/bin/.*/_virtual_imports/[^/]+/(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/bin",
+      "path": "@1@"
+    }
+  },
+  {
     "pattern": "bazel-out/[^/]+/([^/]+/external/[^/]+)/(.*)\\.[xa]$",
     "vname": {
       "corpus": "CORPUS",

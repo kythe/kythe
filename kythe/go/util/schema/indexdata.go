@@ -22,6 +22,18 @@ package schema
 import scpb "kythe.io/kythe/proto/schema_go_proto"
 
 var (
+	langs = map[string]scpb.Language{
+		"c++":        1,
+		"dart":       2,
+		"go":         3,
+		"haskell":    4,
+		"java":       5,
+		"kotlin":     6,
+		"protobuf":   7,
+		"textproto":  8,
+		"typescript": 9,
+		"verilog":    10,
+	}
 	nodeKinds = map[string]scpb.NodeKind{
 		"anchor":       3,
 		"constant":     4,
@@ -143,6 +155,19 @@ var (
 		"/kythe/edge/tparam":                   48,
 		"/kythe/edge/typed":                    42,
 		"/kythe/edge/undefines":                43,
+	}
+
+	langsRev = map[scpb.Language]string{
+		1:  "c++",
+		2:  "dart",
+		3:  "go",
+		4:  "haskell",
+		5:  "java",
+		6:  "kotlin",
+		7:  "protobuf",
+		8:  "textproto",
+		9:  "typescript",
+		10: "verilog",
 	}
 
 	nodeKindsRev = map[scpb.NodeKind]string{
@@ -269,6 +294,9 @@ var (
 	}
 )
 
+// Language returns the schema enum for the given language.
+func Language(k string) scpb.Language { return langs[k] }
+
 // NodeKind returns the schema enum for the given node kind.
 func NodeKind(k string) scpb.NodeKind { return nodeKinds[k] }
 
@@ -280,6 +308,9 @@ func FactName(f string) scpb.FactName { return factNames[f] }
 
 // Subkind returns the schema enum for the given subkind.
 func Subkind(k string) scpb.Subkind { return subkinds[k] }
+
+// LanguageString returns the string representation of the given language.
+func LanguageString(k scpb.Language) string { return langsRev[k] }
 
 // NodeKindString returns the string representation of the given node kind.
 func NodeKindString(k scpb.NodeKind) string { return nodeKindsRev[k] }
