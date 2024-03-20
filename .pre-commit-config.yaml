@@ -7,7 +7,6 @@ repos:
     -   id: trailing-whitespace
         args: ['--markdown-linebreak-ext=md,txt']
     -   id: end-of-file-fixer
-        exclude: '^(kythe/proto/.*_rust_proto/)'
     -   id: check-yaml
     -   id: check-added-large-files
     -   id: check-case-conflict
@@ -40,8 +39,7 @@ repos:
             |(^|/)(\.[^/]*|go\.mod|go\.sum)$
             |^tools/|^third_party/|^kythe/web/site/
             |worker/info/(admin|host)$
-            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$
-            |^kythe/proto/.*_rust_proto/'
+            |/project\.clj$|/style\.css$|bazelrc$|/Doxyfile\.kythe$|/docs/llvm-2014/Makefile$'
     -   id: shellcheck
         name: shellcheck
         description: Runs `shellcheck` on shell files
@@ -93,4 +91,9 @@ repos:
         description: Clean build dependencies with gazelle
         language: system
         entry: bazel run //:gazelle
+    -   id: generate
+        name: Regenerate Files
+        description: Regenerate source tree artifacts
+        language: system
+        entry: tools/git/update-generated-sources.sh
 exclude: '(.*/testdata/.*|third_party/.*|tools/platforms/configs/rbe_default/.*)$'
