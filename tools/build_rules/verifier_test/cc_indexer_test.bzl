@@ -65,11 +65,6 @@ _VERIFIER_FLAGS = {
     "show_anchors": False,
 }
 
-_INDEXER_LOGGING_ENV = {
-    "GLOG_vmodule": "IndexerASTHooks=2,KytheGraphObserver=2,marked_source=2",
-    "GLOG_logtostderr": "1",
-}
-
 _INDEXER_FLAGS = {
     "experimental_alias_template_instantiations": False,
     "experimental_drop_cpp_fwd_decl_docs": False,
@@ -558,7 +553,7 @@ def _cc_index_source(ctx, src, test_runners):
     test_runners.append(_make_test_runner(
         ctx,
         src,
-        _INDEXER_LOGGING_ENV,
+        {},
         arguments = [_expand_as_rootpath(ctx, o) for o in ctx.attr.opts] + [
             "-i",
             src.short_path,
@@ -589,7 +584,7 @@ def _cc_index_compilation(ctx, compilation, test_runners):
     test_runners.append(_make_test_runner(
         ctx,
         compilation,
-        _INDEXER_LOGGING_ENV,
+        {},
         arguments = [_expand_as_rootpath(ctx, o) for o in ctx.attr.opts] + [
             compilation.short_path,
         ],
