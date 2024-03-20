@@ -1,5 +1,10 @@
 [
   {
+    "regex": "^\\s+bazel run (//.+_sync)$",
+    "command": "bazel",
+    "args": [ "run", "$1" ]
+  },
+  {
     "regex": "^buildozer '(.*)'\\s+(.*)$",
     "command": "buildozer",
     "args": [ "$1", "$2" ]
