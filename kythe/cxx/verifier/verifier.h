@@ -76,6 +76,9 @@ class Verifier {
   /// \brief Save results of verification keyed by inspection label.
   void SaveEVarAssignments();
 
+  /// \brief Emit verbose logging.
+  void Verbose();
+
   /// \brief Dump all goals to standard out.
   void ShowGoals();
 
@@ -300,6 +303,9 @@ class Verifier {
 
   /// Has the database been prepared?
   bool database_prepared_ = false;
+
+  /// Emit verbose logging?
+  bool verbose_ = false;
 
   /// Ignore duplicate facts during verification?
   bool ignore_dups_ = false;
