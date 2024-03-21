@@ -367,10 +367,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         && nestingKind != NestingKind.ANONYMOUS
         && !isErroneous(classDef.sym)) {
       // Emit corresponding JVM node
-      JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
-      VName jvmNode = jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
-      entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
-      entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
+      VName jvmNode = getJvmNode(classDef.sym);
+      if (jvmNode != null) {
+        entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
+        entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
+      }
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -1230,15 +1231,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (sym.getKind() == ElementKind.FIELD) {
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String fieldName = sym.getSimpleName().toString();
-        return JvmGraph.getFieldVName(corpusPath, parentClass, fieldName);
+        return jvmGraph.emitFieldNode(corpusPath, parentClass, fieldName);
       }
     } else if (type instanceof Type.MethodType) {
       JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
       ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
       String methodName = sym.getQualifiedName().toString();
-      return JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType);
+      return jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
     } else if (type instanceof Type.ClassType) {
-      return JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type));
+      ReferenceType refType = referenceType(sym.type);
+      switch (sym.getKind()) {
+        case CLASS:
+          return jvmGraph.emitClassNode(corpusPath, refType);
+        case INTERFACE:
+          return jvmGraph.emitInterfaceNode(corpusPath, refType);
+        case ENUM:
+          return jvmGraph.emitEnumNode(corpusPath, refType);
+        default:
+          return JvmGraph.getReferenceVName(corpusPath, refType);
+      }
     }
     return null;
   }

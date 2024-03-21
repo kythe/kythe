@@ -24,16 +24,23 @@ public class CrossFile {
   Files.Inner f2;
 
   //- @OtherDecl ref ODecl
+  //- ODecl named JVMODecl=vname(_, _, _, _, "jvm")
+  //- JVMODecl.node/kind sum
+  //- JVMODecl.subkind enumClass
   OtherDecl f3;
 
   //- @Inner ref InnerClass
   Inner in;
 
   //- @Inter ref Inter
+  //- Inter named JVMInter=vname(_, _, _, _, "jvm")
+  //- JVMInter.node/kind interface
   Inter i;
 
   //- @Exception ref Exception
-  //- Exception named _JVMException=vname(_, _, _, _, "jvm")
+  //- Exception named JVMException=vname(_, _, _, _, "jvm")
+  //- JVMException.node/kind record
+  //- JVMException.subkind class
   public static void main(String[] args) throws Exception {
     //- @staticMethod ref StaticMethod
     Files.staticMethod();
