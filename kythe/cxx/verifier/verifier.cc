@@ -825,6 +825,8 @@ void Verifier::SaveEVarAssignments() {
   parser_.InspectAllEVars();
 }
 
+void Verifier::Verbose() { verbose_ = true; }
+
 void Verifier::ShowGoals() {
   FileHandlePrettyPrinter printer(stdout);
   for (auto& group : parser_.groups()) {
@@ -1150,10 +1152,12 @@ AstNode* Verifier::FixFileVName(AstNode* node) {
     if (auto* tuple = app->rhs()->AsTuple(); tuple->size() == 5) {
       if (auto* corpus_id = tuple->element(1)->AsIdentifier()) {
         if (corpus_id->symbol() == empty_string_sym_) {
-          if (auto* path_id = tuple->element(3)->AsIdentifier()) {
-            fprintf(stderr,
-                    "Warning: file '%s' is missing a corpus in its VName.\n",
-                    symbol_table_.text(path_id->symbol()).c_str());
+          if (verbose_) {
+            if (auto* path_id = tuple->element(3)->AsIdentifier()) {
+              fprintf(stderr,
+                      "Warning: file '%s' is missing a corpus in its VName.\n",
+                      symbol_table_.text(path_id->symbol()).c_str());
+            }
           }
           AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
           values[0] = tuple->element(0);

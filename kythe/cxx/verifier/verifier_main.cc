@@ -66,6 +66,8 @@ ABSL_FLAG(bool, file_vnames, true,
           "Find file vnames by matching file content.");
 ABSL_FLAG(bool, allow_missing_file_vnames, false,
           "If file_vnames is set, treat missing file vnames as non-fatal.");
+ABSL_FLAG(bool, verbose, false,
+          "If verbose is set, more logging will be emitted.");
 ABSL_FLAG(bool, use_fast_solver, true, "Use the fast solver.");
 ABSL_FLAG(bool, print_timing_information, false,
           "Print timing information for profiling.");
@@ -149,6 +151,10 @@ Example:
       return 1;
     }
     v.AllowMissingFileVNames();
+  }
+
+  if (absl::GetFlag(FLAGS_verbose)) {
+    v.Verbose();
   }
 
   if (absl::GetFlag(FLAGS_show_fact_prefix)) {
