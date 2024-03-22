@@ -106,7 +106,7 @@ class GraphObserver {
   /// made (thus making the token active), and so on.
   class ClaimToken {
    public:
-    virtual ~ClaimToken() {};
+    virtual ~ClaimToken(){};
     /// \brief Returns a string representation of `Identity` stamped with this
     /// token.
     virtual std::string StampIdentity(const std::string& Identity) const = 0;
