@@ -82,17 +82,16 @@ export interface IndexingOptions {
   readFile?: (path: string) => Buffer;
 
   /**
-   * When enabled emits 0-0 spans at the beginning of each file that represent
-   * current module. By default 0-1 spans are emitted. Also this flag changes it
-   * to emit `defines/implicit` edges instead of `defines/binding`.
-   */
-  emitZeroWidthSpansForModuleNodes?: boolean;
-
-  /**
    * When enabled, ref/call source anchors span identifiers instead of full
    * call expressions when possible.
    */
   emitRefCallOverIdentifier?: boolean;
+
+  /**
+   * When enabled any error thrown from any plugin gets propagated to the caller.
+   * Currently errors from plugins are logged without interrupting analysis.
+   */
+  failAnalysisOnPluginError?: boolean;
 }
 
 
