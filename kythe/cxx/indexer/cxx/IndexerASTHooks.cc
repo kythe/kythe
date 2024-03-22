@@ -2671,6 +2671,17 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
     Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
+  if (options_.RecordVariableInitTypes && Decl->hasInit()) {
+    if (const auto* init = Decl->getInit(); init != nullptr) {
+      auto ty = init->getType();
+      if (!ty.isNull()) {
+        if (auto init_ty = BuildNodeIdForType(ty)) {
+          Observer.recordInitTypeEdge(DeclNode, *init_ty);
+          Observer.recordFlatSource(*init_ty, ty.getAsString());
+        }
+      }
+    }
+  }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
   if (!IsDefinition(Decl)) {

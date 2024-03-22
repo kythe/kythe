@@ -774,6 +774,12 @@ void KytheGraphObserver::recordTypeEdge(const NodeId& term_id,
                      VNameRefFromNodeId(type_id));
 }
 
+void KytheGraphObserver::recordInitTypeEdge(const NodeId& term_id,
+                                            const NodeId& type_id) {
+  recorder_->AddEdge(VNameRefFromNodeId(term_id), EdgeKindID::kTypedInit,
+                     VNameRefFromNodeId(type_id));
+}
+
 void KytheGraphObserver::recordInfluences(const NodeId& influencer,
                                           const NodeId& influenced) {
   recorder_->AddEdge(VNameRefFromNodeId(influencer), EdgeKindID::kInfluences,
@@ -1076,6 +1082,12 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
   usr_vname.set_language("usr");
   recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
   recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
+}
+
+void KytheGraphObserver::recordFlatSource(const NodeId& node_id,
+                                          std::string_view source) {
+  VNameRef node_vname = VNameRefFromNodeId(node_id);
+  recorder_->AddFlatSource(node_vname, source);
 }
 
 void KytheGraphObserver::recordMarkedSource(

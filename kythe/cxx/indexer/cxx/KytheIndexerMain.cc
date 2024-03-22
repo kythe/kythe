@@ -70,6 +70,8 @@ ABSL_FLAG(bool, emit_usr_corpus, false,
           "Use the default corpus when emitting USR nodes.");
 ABSL_FLAG(bool, experimental_set_aliases_as_writes, false,
           "Set protobuf aliases as writes.");
+ABSL_FLAG(bool, experimental_record_variable_init_types, false,
+          "Record the types of variable initializers.");
 
 namespace kythe {
 namespace {
@@ -119,6 +121,8 @@ int main(int argc, char* argv[]) {
   options.CreateWorklist = [](IndexerASTVisitor* indexer) {
     return IndexerWorklist::CreateDefaultWorklist(indexer);
   };
+  options.RecordVariableInitTypes =
+      absl::GetFlag(FLAGS_experimental_record_variable_init_types);
   std::optional<FileHashRecorder> recorder;
   if (!absl::GetFlag(FLAGS_record_hashes_file).empty()) {
     recorder.emplace(absl::GetFlag(FLAGS_record_hashes_file));

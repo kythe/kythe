@@ -94,7 +94,8 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/call/direct"),
     new std::string("/kythe/edge/ref/call/direct/implicit"),
     new std::string("/kythe/edge/denotes"),
-    new std::string("/kythe/edge/named")};
+    new std::string("/kythe/edge/named"),
+    new std::string("/kythe/edge/typed/init")};
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
   size_t edge_index = 0;
@@ -132,6 +133,7 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/doc/uri"),
     new std::string("/kythe/build/config"),
     new std::string("/kythe/visibility"),
+    new std::string("/kythe/code/flat"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");
@@ -163,6 +165,12 @@ void KytheGraphRecorder::AddProperty(const VNameRef& node_vname,
                                      PropertyID property_id,
                                      const size_t property_value) {
   AddProperty(node_vname, property_id, std::to_string(property_value));
+}
+
+void KytheGraphRecorder::AddFlatSource(const VNameRef& node_vname,
+                                       std::string_view source) {
+  stream_->Emit(
+      FactRef{&node_vname, spelling_of(PropertyID::kFlatCode), source});
 }
 
 void KytheGraphRecorder::AddMarkedSource(const VNameRef& node_vname,
