@@ -685,8 +685,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
     Worklist->EnqueueJob(std::make_unique<IndexJob>(InitialDecl));
-    while (!options_.ShouldStopIndexing() && Worklist->DoWork())
-      ;
+    while (!options_.ShouldStopIndexing() && Worklist->DoWork()) {}
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
