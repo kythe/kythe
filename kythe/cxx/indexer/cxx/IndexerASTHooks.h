@@ -122,6 +122,8 @@ struct IndexerOptions {
   /// \brief If nonempty, the pattern to match a declaration path against to
   /// see whether it should be excluded from indexing entirely.
   std::shared_ptr<const re2::RE2> AnalysisExcludePathPattern = nullptr;
+  /// \brief If true, record types of variable initializers.
+  bool RecordVariableInitTypes = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and
@@ -683,8 +685,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
     Worklist->EnqueueJob(std::make_unique<IndexJob>(InitialDecl));
-    while (!options_.ShouldStopIndexing() && Worklist->DoWork())
-      ;
+    while (!options_.ShouldStopIndexing() && Worklist->DoWork()) {
+    }
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
