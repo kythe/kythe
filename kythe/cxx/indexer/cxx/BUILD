@@ -265,7 +265,7 @@ cc_library(
     hdrs = ["type_map.h"],
     deps = [
         "@com_google_absl//absl/container:flat_hash_map",
-        "@llvm-project//clang:ast"
+        "@llvm-project//clang:ast",
     ],
 )
 
