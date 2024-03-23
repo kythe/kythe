@@ -2684,7 +2684,11 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
       if (!ty.isNull()) {
         if (auto init_ty = BuildNodeIdForType(ty)) {
           Observer.recordInitTypeEdge(DeclNode, *init_ty);
-          Observer.recordFlatSource(*init_ty, ty.getAsString());
+          auto [it, inserted] =
+              FlattenedTypes.insert(TypeKey(Context, ty, ty.getTypePtr()));
+          if (inserted) {
+            Observer.recordFlatSource(*init_ty, ty.getAsString());
+          }
         }
       }
     }
