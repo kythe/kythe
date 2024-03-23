@@ -18,8 +18,8 @@
 
 #include <cstdint>
 #include <functional>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Type.h"
 
@@ -55,7 +55,7 @@ class TypeKey {
 
 // An unordered map using the above as key.
 template <typename T>
-using TypeMap = std::unordered_map<TypeKey, T, TypeKey::Hash>;
+using TypeMap = absl::flat_hash_map<TypeKey, T, TypeKey::Hash>;
 
 }  // namespace kythe
 

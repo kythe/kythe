@@ -106,7 +106,7 @@ class GraphObserver {
   /// made (thus making the token active), and so on.
   class ClaimToken {
    public:
-    virtual ~ClaimToken(){};
+    virtual ~ClaimToken() = default;
     /// \brief Returns a string representation of `Identity` stamped with this
     /// token.
     virtual std::string StampIdentity(const std::string& Identity) const = 0;
@@ -158,11 +158,6 @@ class GraphObserver {
    public:
     NodeId() {}
     NodeId(const NodeId& C) { *this = C; }
-    NodeId& operator=(const NodeId* C) {
-      Token = C->Token;
-      Identity = C->Identity;
-      return *this;
-    }
     static NodeId CreateUncompressed(const ClaimToken* Token,
                                      const std::string& Identity) {
       NodeId NewId(Token, "");

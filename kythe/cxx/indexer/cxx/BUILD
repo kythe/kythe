@@ -263,7 +263,10 @@ cc_library(
     name = "type_map",
     srcs = ["type_map.cc"],
     hdrs = ["type_map.h"],
-    deps = ["@llvm-project//clang:ast"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@llvm-project//clang:ast"
+    ],
 )
 
 cc_library(
