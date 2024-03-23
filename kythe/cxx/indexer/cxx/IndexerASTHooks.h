@@ -29,6 +29,7 @@
 #include "IndexerLibrarySupport.h"
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
@@ -903,6 +904,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
   TypeMap<NodeSet> TypeNodes;
+
+  /// Used to keep track of which types for which we've already emitted
+  /// flattened code.
+  absl::flat_hash_set<TypeKey, TypeKey::Hash> FlattenedTypes;
 
   /// \brief Visit an Expr that refers to some NamedDecl.
   ///
