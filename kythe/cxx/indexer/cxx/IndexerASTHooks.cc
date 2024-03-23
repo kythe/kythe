@@ -4741,12 +4741,18 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
   CHECK(!QT.isNull());
   TypeKey Key(Context, QT, QT.getTypePtr());
   auto [iter, inserted] = TypeNodes.insert({Key, NodeSet::Empty()});
-  if (inserted) {
-    iter->second = QT.hasLocalQualifiers()
-                       ? BuildNodeSetForTypeInternal(QT)
-                       : BuildNodeSetForTypeInternal(*QT.getTypePtr());
+  if (!inserted) {
+    return iter->second;
   }
-  return iter->second;
+  // Note that `iter` may be invalidated if a recursive call causes TypeNodes to
+  // rehash. We'll still insert an empty set out of superstition about recursive
+  // types.
+  return TypeNodes
+      .insert_or_assign(Key,
+                        QT.hasLocalQualifiers()
+                            ? BuildNodeSetForTypeInternal(QT)
+                            : BuildNodeSetForTypeInternal(*QT.getTypePtr()))
+      .first->second;
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(
