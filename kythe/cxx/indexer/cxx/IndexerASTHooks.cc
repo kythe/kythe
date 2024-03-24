@@ -2673,6 +2673,13 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   }
   if (options_.RecordVariableInitTypes && Decl->hasInit()) {
     if (const auto* init = Decl->getInit(); init != nullptr) {
+      if (const auto* implicit_cast =
+              llvm::dyn_cast<clang::ImplicitCastExpr>(init)) {
+        const auto* sub_init = implicit_cast->getSubExprAsWritten();
+        if (sub_init != nullptr) {
+          init = sub_init;
+        }
+      }
       auto ty = init->getType();
       if (!ty.isNull()) {
         if (auto init_ty = BuildNodeIdForType(ty)) {

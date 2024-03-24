@@ -2897,6 +2897,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "fs_var_init_difftypes",
+    srcs = ["marked_source/fs_var_init_difftypes.cc"],
+    experimental_record_variable_init_types = True,
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
     name = "ms_tvar",
     srcs = ["marked_source/ms_tvar.cc"],
     convert_marked_source = True,
