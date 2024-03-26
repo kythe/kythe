@@ -48,6 +48,7 @@ import (
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/riegeli"
 
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -66,6 +67,7 @@ const (
 	delimitedFormat = "delimited"
 	jsonFormat      = "json"
 	riegeliFormat   = "riegeli"
+	textprotoFormat = "textproto"
 )
 
 var (
@@ -73,7 +75,7 @@ var (
 	writeJSON = flag.Bool("write_json", false, "Print JSON stream as output (deprecated: use --write_format)")
 
 	readFormat  = flag.String("read_format", delimitedFormat, "Format of the input stream (accepted formats: {delimited,json,riegeli})")
-	writeFormat = flag.String("write_format", delimitedFormat, "Format of the output stream (accepted formats: {delimited,json,riegeli})")
+	writeFormat = flag.String("write_format", delimitedFormat, "Format of the output stream (accepted formats: {delimited,json,riegeli,textproto})")
 
 	riegeliOptions = flag.String("riegeli_writer_options", "", "Riegeli writer options")
 
@@ -233,6 +235,14 @@ func main() {
 			failOnErr(rd(func(entry *spb.Entry) error {
 				return wr.PutProto(entry)
 			}))
+		case textprotoFormat:
+			entries := &spb.Entries{}
+			failOnErr(rd(func(entry *spb.Entry) error {
+				entries.Entries = append(entries.Entries, entry)
+				return nil
+			}))
+			out.WriteString(prototext.Format(entries))
+
 		default:
 			log.Fatalf("Unsupported --write_format=%s", *writeFormat)
 		}
