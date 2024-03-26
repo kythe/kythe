@@ -15,6 +15,7 @@ go_binary(
         "//kythe/go/util/log",
         "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
+        "@org_golang_google_protobuf//encoding/prototext",
         "@org_golang_google_protobuf//proto",
     ],
 )
