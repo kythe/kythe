@@ -73,6 +73,7 @@ enum class PropertyID {
   kDocUri,
   kBuildConfig,
   kVisibility,
+  kFlatCode,
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -131,7 +132,8 @@ enum class EdgeKindID {
   kRefCallDirect,
   kRefCallDirectImplicit,
   kDenotes,
-  kNamed
+  kNamed,
+  kTypedInit
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`
@@ -182,6 +184,12 @@ class KytheGraphRecorder {
   /// \param marked_source The marked source to set.
   void AddMarkedSource(const VNameRef& node_vname,
                        const MarkedSource& marked_source);
+
+  /// \brief Record a node's flat source.
+  ///
+  /// \param node_vname The vname of the node to modify.
+  /// \param flat_source The flat source to set.
+  void AddFlatSource(const VNameRef& node_vname, std::string_view source);
 
   /// \copydoc KytheGraphRecorder::AddProperty(const
   /// VNameRef&,PropertyID,std::string&)

@@ -79,6 +79,9 @@ func main() {
 	//- FlagName.node/kind name
 	f := flag.Lookup("flag_name")
 
+	//- @"\"flag_name\"" ref/writes FlagName
+	flag.Set("flag_name", "value")
+
 	fmt.Println(flag.Args(), f)
 }
 

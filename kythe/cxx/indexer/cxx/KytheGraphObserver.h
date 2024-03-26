@@ -227,6 +227,8 @@ class KytheGraphObserver : public GraphObserver {
       const NodeId& node,
       const std::optional<MarkedSource>& marked_source) override;
 
+  void recordFlatSource(const NodeId& node, std::string_view source) override;
+
   void recordMarkedSource(
       const NodeId& node,
       const std::optional<MarkedSource>& marked_source) override;
@@ -337,6 +339,9 @@ class KytheGraphObserver : public GraphObserver {
                          const NodeId& parent_id) override;
 
   void recordTypeEdge(const NodeId& term_id, const NodeId& type_id) override;
+
+  void recordInitTypeEdge(const NodeId& term_id,
+                          const NodeId& type_id) override;
 
   void recordInfluences(const NodeId& influencer,
                         const NodeId& influenced) override;

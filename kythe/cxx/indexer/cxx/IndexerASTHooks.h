@@ -29,6 +29,7 @@
 #include "IndexerLibrarySupport.h"
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
@@ -122,6 +123,8 @@ struct IndexerOptions {
   /// \brief If nonempty, the pattern to match a declaration path against to
   /// see whether it should be excluded from indexing entirely.
   std::shared_ptr<const re2::RE2> AnalysisExcludePathPattern = nullptr;
+  /// \brief If true, record types of variable initializers.
+  bool RecordVariableInitTypes = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and
@@ -683,8 +686,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
     Worklist->EnqueueJob(std::make_unique<IndexJob>(InitialDecl));
-    while (!options_.ShouldStopIndexing() && Worklist->DoWork())
-      ;
+    while (!options_.ShouldStopIndexing() && Worklist->DoWork()) {
+    }
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
@@ -901,6 +904,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
   TypeMap<NodeSet> TypeNodes;
+
+  /// Used to keep track of which types for which we've already emitted
+  /// flattened code.
+  absl::flat_hash_set<TypeKey, TypeKey::Hash> FlattenedTypes;
 
   /// \brief Visit an Expr that refers to some NamedDecl.
   ///

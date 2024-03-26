@@ -2671,6 +2671,21 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
     Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
+  if (options_.RecordVariableInitTypes && Decl->hasInit()) {
+    if (const auto* init = Decl->getInit(); init != nullptr) {
+      auto ty = init->IgnoreImpCasts()->getType();
+      if (!ty.isNull()) {
+        if (auto init_ty = BuildNodeIdForType(ty)) {
+          Observer.recordInitTypeEdge(DeclNode, *init_ty);
+          auto [it, inserted] =
+              FlattenedTypes.insert(TypeKey(Context, ty, ty.getTypePtr()));
+          if (inserted) {
+            Observer.recordFlatSource(*init_ty, ty.getAsString());
+          }
+        }
+      }
+    }
+  }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
   if (!IsDefinition(Decl)) {
@@ -4726,12 +4741,18 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
   CHECK(!QT.isNull());
   TypeKey Key(Context, QT, QT.getTypePtr());
   auto [iter, inserted] = TypeNodes.insert({Key, NodeSet::Empty()});
-  if (inserted) {
-    iter->second = QT.hasLocalQualifiers()
-                       ? BuildNodeSetForTypeInternal(QT)
-                       : BuildNodeSetForTypeInternal(*QT.getTypePtr());
+  if (!inserted) {
+    return iter->second;
   }
-  return iter->second;
+  // Note that `iter` may be invalidated if a recursive call causes TypeNodes to
+  // rehash. We'll still insert an empty set out of superstition about recursive
+  // types.
+  return TypeNodes
+      .insert_or_assign(Key,
+                        QT.hasLocalQualifiers()
+                            ? BuildNodeSetForTypeInternal(QT)
+                            : BuildNodeSetForTypeInternal(*QT.getTypePtr()))
+      .first->second;
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(

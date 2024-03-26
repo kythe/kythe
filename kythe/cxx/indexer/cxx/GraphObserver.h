@@ -106,7 +106,7 @@ class GraphObserver {
   /// made (thus making the token active), and so on.
   class ClaimToken {
    public:
-    virtual ~ClaimToken(){};
+    virtual ~ClaimToken() = default;
     /// \brief Returns a string representation of `Identity` stamped with this
     /// token.
     virtual std::string StampIdentity(const std::string& Identity) const = 0;
@@ -158,11 +158,6 @@ class GraphObserver {
    public:
     NodeId() {}
     NodeId(const NodeId& C) { *this = C; }
-    NodeId& operator=(const NodeId* C) {
-      Token = C->Token;
-      Identity = C->Identity;
-      return *this;
-    }
     static NodeId CreateUncompressed(const ClaimToken* Token,
                                      const std::string& Identity) {
       NodeId NewId(Token, "");
@@ -596,6 +591,9 @@ class GraphObserver {
     Unscoped  ///< This enum is unscoped (a plain `enum`).
   };
 
+  /// \brief Explicitly record flattened source for some `Node`.
+  virtual void recordFlatSource(const NodeId& node, std::string_view text) {}
+
   /// \brief Explicitly record marked source for some `Node`.
   virtual void recordMarkedSource(
       const NodeId& Node, const std::optional<MarkedSource>& MarkedSource) {}
@@ -760,6 +758,12 @@ class GraphObserver {
   /// \param TypeNodeId The identifier for the node representing the type.
   virtual void recordTypeEdge(const NodeId& TermNodeId,
                               const NodeId& TypeNodeId) {}
+
+  /// \brief Records the type of a node's initializer as an edge in the graph.
+  /// \param TermNodeId The identifier for the node to be given a type.
+  /// \param TypeNodeId The identifier for the node representing the type.
+  virtual void recordInitTypeEdge(const NodeId& TermNodeId,
+                                  const NodeId& TypeNodeId) {}
 
   /// \brief Records that `Influencer` influences `Influenced`.
   virtual void recordInfluences(const NodeId& Influencer,
