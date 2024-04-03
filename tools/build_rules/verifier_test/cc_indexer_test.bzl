@@ -35,7 +35,7 @@ load(
     "@io_kythe//kythe/cxx/extractor:toolchain.bzl",
     "CXX_EXTRACTOR_TOOLCHAINS",
     "CxxExtractorToolchainInfo",
-    "find_extractor_toolchain",
+    "find_extractor_toolchains",
 )
 
 UNSUPPORTED_FEATURES = [
@@ -296,11 +296,11 @@ cc_kythe_proto_library = rule(
 )
 
 def _cc_write_kzip_impl(ctx):
-    extractor_toolchain = find_extractor_toolchain(ctx)
+    extractor_toolchain, runtimes_deps = find_extractor_toolchains(ctx)
     cpp = extractor_toolchain.cc_toolchain
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
-        for src in ctx.attr.srcs + ctx.attr.deps
+        for src in ctx.attr.srcs + ctx.attr.deps + runtimes_deps
         if CcInfo in src
     ])
     opts, cc_env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
