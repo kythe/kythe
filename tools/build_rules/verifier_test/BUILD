@@ -49,7 +49,10 @@ bzl_library(
 bzl_library(
     name = "jvm_verifier_test_bzl",
     srcs = ["jvm_verifier_test.bzl"],
-    deps = [":verifier_test_bzl"],
+    deps = [
+        ":verifier_test_bzl",
+        "@rules_java//java:rules",
+    ],
 )
 
 bzl_library(

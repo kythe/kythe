@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_java//java:defs.bzl", "java_binary")
 load(
     ":verifier_test.bzl",
     "KytheVerifierSources",
@@ -195,7 +196,7 @@ def java_verifier_test(
     tools = []
     if load_plugin:
         # If loaded plugins have deps, those must be included in the loaded jar
-        native.java_binary(
+        java_binary(
             name = name + "_load_plugin",
             main_class = "not.Used",
             runtime_deps = [load_plugin],
