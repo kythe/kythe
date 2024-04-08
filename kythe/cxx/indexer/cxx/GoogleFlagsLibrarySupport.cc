@@ -193,6 +193,7 @@ static void RecordFlagName(GraphObserver& Observer,
                            const GraphObserver::NodeId& FlagNodeId,
                            const clang::VarDecl* Decl,
                            clang::SourceRange Range) {
+  // `Range` is assumed to be valid.
   const auto& Context = Decl->getASTContext();
   const auto& SM = Context.getSourceManager();
   const char* begin = SM.getCharacterData(Range.getBegin());
