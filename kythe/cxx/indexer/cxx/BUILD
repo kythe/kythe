@@ -124,6 +124,7 @@ cc_library(
         ":graph_observer",
         ":indexer_ast_hooks",
         ":indexer_library_support",
+        ":kythe_graph_observer",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_google_absl//absl/log",
         "@llvm-project//clang:ast",

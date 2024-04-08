@@ -18,7 +18,9 @@
 
 #include "GoogleFlagsLibrarySupport.h"
 
+#include "GraphObserver.h"
 #include "IndexerASTHooks.h"
+#include "KytheGraphObserver.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/FileManager.h"
 
@@ -172,6 +174,41 @@ static GraphObserver::NodeId NodeIdForFlag(GraphObserver& Observer,
                              "google/gflag#" + VarId.getRawIdentity());
 }
 
+static std::optional<GraphObserver::NodeId> NodeIdForFlagName(
+    GraphObserver& observer, const GraphObserver::NodeId& VarId,
+    const std::string_view flag_name) {
+  if (const KytheClaimToken* token =
+          clang::dyn_cast<KytheClaimToken>(VarId.getToken())) {
+    proto::VName vname;
+    vname.set_signature(flag_name);
+    vname.set_corpus(token->vname().corpus());
+    vname.set_language("flag");
+    return observer.MintNodeIdForVName(vname);
+  }
+  // Cannot determine the corpus.
+  return std::nullopt;
+}
+
+static void RecordFlagName(GraphObserver& Observer,
+                           const GraphObserver::NodeId& FlagNodeId,
+                           const clang::VarDecl* Decl,
+                           clang::SourceRange Range) {
+  const auto& Context = Decl->getASTContext();
+  const auto& SM = Context.getSourceManager();
+  const char* begin = SM.getCharacterData(Range.getBegin());
+  const char* end = SM.getCharacterData(Range.getEnd());
+  if (begin >= end) {
+    return;
+  }
+  llvm::StringRef FlagName(begin, end - begin);
+  if (auto FlagNameId =
+          NodeIdForFlagName(Observer, FlagNodeId, FlagName.str())) {
+    Observer.recordUserDefinedNode(*FlagNameId, "name",
+                                   /*Compl=*/std::nullopt);
+    Observer.recordNamedEdge(FlagNodeId, *FlagNameId);
+  }
+}
+
 void GoogleFlagsLibrarySupport::InspectVariable(
     IndexerASTVisitor& V, const GraphObserver::NodeId& NodeId,
     const clang::VarDecl* Decl, GraphObserver::Completeness Compl,
@@ -179,21 +216,13 @@ void GoogleFlagsLibrarySupport::InspectVariable(
   GraphObserver& GO = V.getGraphObserver();
   auto Range = GetVarDeclFlagDeclLoc(*GO.getLangOptions(), Decl);
   if (Range.isValid()) {
-    auto FlagName = clang::Lexer::getSourceText(
-        clang::Lexer::getAsCharRange(Range,
-                                     Decl->getASTContext().getSourceManager(),
-                                     *GO.getLangOptions()),
-        Decl->getASTContext().getSourceManager(), *GO.getLangOptions());
-    GraphObserver::NameId FlagNameId;
-    // NB: Flags are always global.
-    FlagNameId.Path = FlagName.str();
-    FlagNameId.EqClass = GraphObserver::NameId::NameEqClass::None;
     GraphObserver::NodeId FlagNodeId = NodeIdForFlag(GO, NodeId);
     GO.recordUserDefinedNode(FlagNodeId, "google/gflag", Compl);
     if (auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       GO.recordDefinitionBindingRange(*RCC, FlagNodeId);
-      clang::FileID DeclFile =
-          GO.getSourceManager()->getFileID(Range.getBegin());
+      if (Compl == GraphObserver::Completeness::Definition) {
+        RecordFlagName(GO, FlagNodeId, Decl, Range);
+      }
       // If there are any Completions, this must be a definition.
       for (const auto& C : Compls) {
         if (const auto* NextDecl = llvm::dyn_cast<clang::VarDecl>(C.Decl)) {
