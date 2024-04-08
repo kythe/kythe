@@ -852,7 +852,7 @@ class GraphObserver {
 
   /// \brief Records a named relationship as an edge in the graph.
   /// \param NamedId The identifier for the named node
-  /// \param NameId The identifier for the named node
+  /// \param NameId The identifier for the name node
   virtual void recordNamedEdge(const NodeId& NamedId, const NodeId& NameId) {}
 
   /// \brief Records a child-to-parent relationship as an edge in the graph.
