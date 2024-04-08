@@ -335,6 +335,8 @@ class KytheGraphObserver : public GraphObserver {
   void recordDenotesEdge(const NodeId& denoter_id,
                          const NodeId& denotee_id) override;
 
+  void recordNamedEdge(const NodeId& NamedId, const NodeId& NameId) override;
+
   void recordChildOfEdge(const NodeId& child_id,
                          const NodeId& parent_id) override;
 

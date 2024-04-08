@@ -1,3 +1,5 @@
+load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
+load("//tools/build_rules/extra_aspects/cxx:rules.bzl", "cc_extract_kzip")
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_extractor_test",
@@ -7,8 +9,6 @@ load(
     "objc_indexer_test",
 )
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "verifier_test")
-load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
-load("//tools/build_rules/extra_aspects/cxx:rules.bzl", "cc_extract_kzip")
 
 package(
     default_visibility = ["//kythe:default_visibility"],
@@ -1677,6 +1677,14 @@ cc_indexer_test(
 cc_indexer_test(
     name = "flags_decls",
     srcs = ["libraries/flags_decls.cc"],
+    ignore_dups = True,
+    tags = ["libraries"],
+    deps = glob(["libraries/gflags*.h"]),
+)
+
+cc_indexer_test(
+    name = "flags_named",
+    srcs = ["libraries/flags_named.cc"],
     ignore_dups = True,
     tags = ["libraries"],
     deps = glob(["libraries/gflags*.h"]),
