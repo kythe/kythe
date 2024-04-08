@@ -45,6 +45,9 @@ class KytheGraphRecorder;
 /// As an implementation detail, also contains a flag that determines whether
 /// the (file * transcript) pair it came from is statically claimed by the
 /// GraphObserver.
+///
+/// Note that it is safe to use llvm::dyn_cast to narrow a ClaimToken to a
+/// KytheClaimToken.
 class KytheClaimToken : public GraphObserver::ClaimToken {
  public:
   std::string StampIdentity(const std::string& identity) const override {
