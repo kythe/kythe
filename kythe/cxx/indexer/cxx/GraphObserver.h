@@ -104,6 +104,9 @@ class GraphObserver {
   /// to each `GraphObserver` implementation and may include the claimable
   /// object's representative source path, whether a claim has been successfully
   /// made (thus making the token active), and so on.
+  ///
+  /// Note that it is safe to use llvm::dyn_cast to narrow a ClaimToken to a
+  /// KytheClaimToken.
   class ClaimToken {
    public:
     virtual ~ClaimToken() = default;
