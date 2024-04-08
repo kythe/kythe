@@ -73,7 +73,8 @@ def register_toolchains():
         "@io_kythe//kythe/cxx/extractor:macos_toolchain",
     )
 
-def find_extractor_toolchain(ctx):
+def find_extractor_toolchains(ctx):
+    runtimes_deps = []  # The default toolchain has no runtime dependencies.
     if "@io_kythe//kythe/cxx/extractor:toolchain_type" in ctx.toolchains:
-        return ctx.toolchains["@io_kythe//kythe/cxx/extractor:toolchain_type"].cxx_extractor_info
-    return ctx.attr._cxx_extractor_toolchain[CxxExtractorToolchainInfo]
+        return ctx.toolchains["@io_kythe//kythe/cxx/extractor:toolchain_type"].cxx_extractor_info, runtimes_deps
+    return ctx.attr._cxx_extractor_toolchain[CxxExtractorToolchainInfo], runtimes_deps

@@ -4844,6 +4844,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(Adjusted);
     DELEGATE_TYPE_TO_BASE(Decayed, Adjusted);
     DELEGATE_TYPE(DependentTemplateSpecialization);
+    UNSUPPORTED_CLANG_TYPE(ArrayParameter);
     UNSUPPORTED_CLANG_TYPE(BTFTagAttributed);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(CountAttributed);
