@@ -13,6 +13,7 @@
 # limitations under the License.
 
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "extract")
+load("@rules_java//java:defs.bzl", "JavaInfo")
 load("@rules_java//java:java_utils.bzl", _java_utils = "utils")
 
 def _extract_java_aspect(target, ctx):
