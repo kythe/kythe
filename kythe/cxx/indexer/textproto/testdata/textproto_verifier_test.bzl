@@ -25,6 +25,7 @@ load(
     "index_compilation",
     "verifier_test",
 )
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "get_proto_files_and_proto_paths", "proto_extract_kzip")
 
 def _invoke(rulefn, name, **kwargs):
