@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["unencumbered"])  # Authored by Google, Apache 2.0
