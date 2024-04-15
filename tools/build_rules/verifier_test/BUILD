@@ -24,7 +24,6 @@ bzl_library(
         "//tools/cpp:toolchain_utils",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:shell",
-        "@bazel_tools//tools/build_defs/cc:action_names",
         "@rules_proto//proto:defs",
     ],
 )
