@@ -1,5 +1,5 @@
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_python//python:defs.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -22,6 +22,7 @@ bzl_library(
         ":verifier_test_bzl",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:shell",
+        "@rules_proto//proto:defs",
     ],
 )
 

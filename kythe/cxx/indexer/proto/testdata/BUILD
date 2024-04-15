@@ -1,5 +1,5 @@
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load(":proto_verifier_test.bzl", "proto_verifier_test")
 
 package(features = ["layering_check"])
@@ -156,6 +156,7 @@ test_suite(
 bzl_library(
     name = "proto_verifier_test_bzl",
     srcs = ["proto_verifier_test.bzl"],
+    deps = ["@rules_proto//proto:defs"],
 )
 
 proto_library(

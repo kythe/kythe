@@ -14,6 +14,7 @@
 
 """C++ extraction aspect definition."""
 
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(
     "//tools/build_rules/extra_aspects:config.bzl",
     "KytheExtractorConfigInfo",

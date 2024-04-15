@@ -33,6 +33,7 @@ bzl_library(
     srcs = ["aspect.bzl"],
     deps = [
         "//tools/build_rules/extra_aspects:config",
+        "@rules_proto//proto:defs",
     ],
 )
 
