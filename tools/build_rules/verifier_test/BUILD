@@ -20,6 +20,8 @@ bzl_library(
     srcs = ["cc_indexer_test.bzl"],
     deps = [
         ":verifier_test_bzl",
+        "//kythe/cxx/extractor:toolchain_bzl",
+        "//tools/cpp:toolchain_utils",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:shell",
         "@rules_proto//proto:defs",

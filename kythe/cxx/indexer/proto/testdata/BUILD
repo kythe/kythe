@@ -156,7 +156,11 @@ test_suite(
 bzl_library(
     name = "proto_verifier_test_bzl",
     srcs = ["proto_verifier_test.bzl"],
-    deps = ["@rules_proto//proto:defs"],
+    visibility = ["//kythe/cxx/indexer/textproto/testdata:__pkg__"],
+    deps = [
+        "//tools/build_rules/verifier_test:verifier_test_bzl",
+        "@rules_proto//proto:defs",
+    ],
 )
 
 proto_library(
