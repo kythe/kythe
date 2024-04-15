@@ -5,7 +5,7 @@ package pkg;
 import java.io.IOException;
 import java.io.OutputStream;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "ClosingStandardOutputStreams"})
 // - @Variables defines/binding Class
 public class Variables {
 
