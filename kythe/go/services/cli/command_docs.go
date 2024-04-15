@@ -109,14 +109,15 @@ func (c docsCommand) displayDoc(indent string, doc *xpb.DocumentationReply_Docum
 			}
 		}
 		if c.renderMarkedSource {
+			contentType := markedsource.PlaintextContent
 			fmt.Printf("%s    Identifier:         %q\n", indent,
-				markedsource.RenderSimpleIdentifier(doc.MarkedSource, markedsource.PlaintextContent, nil))
+				markedsource.RenderSimpleIdentifier(doc.MarkedSource, contentType, nil))
 			fmt.Printf("%s    Qualified Name:     %q\n", indent,
-				markedsource.RenderSimpleQualifiedName(doc.MarkedSource, true, markedsource.PlaintextContent, nil))
+				markedsource.RenderSimpleQualifiedName(doc.MarkedSource, true, contentType, nil))
 			fmt.Printf("%s    Callsite Signature: %q\n", indent,
 				markedsource.RenderCallSiteSignature(doc.MarkedSource))
 			fmt.Printf("%s    Signature:          %q\n", indent,
-				markedsource.RenderSignature(doc.MarkedSource, markedsource.PlaintextContent, nil))
+				markedsource.RenderSignature(doc.MarkedSource, contentType, nil))
 		}
 	}
 
