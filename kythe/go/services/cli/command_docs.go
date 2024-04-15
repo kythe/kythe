@@ -23,13 +23,16 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/util/log"
+	"kythe.io/kythe/go/util/markedsource"
+
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 type docsCommand struct {
 	baseKytheCommand
-	nodeFilters     string
-	includeChildren bool
+	nodeFilters        string
+	includeChildren    bool
+	renderMarkedSource bool
 }
 
 func (docsCommand) Name() string     { return "docs" }
@@ -37,6 +40,7 @@ func (docsCommand) Synopsis() string { return "display documentation for a node"
 func (c *docsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of node fact filters (default returns all)")
 	flag.BoolVar(&c.includeChildren, "include_children", false, "Include documentation for children of the given node")
+	flag.BoolVar(&c.renderMarkedSource, "render_marked_source", false, "Render each node's MarkedSource")
 }
 func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	req := &xpb.DocumentationRequest{
@@ -90,7 +94,7 @@ func findLinkText(rawText string) []string {
 	return linkText
 }
 
-func displayDoc(indent string, doc *xpb.DocumentationReply_Document) {
+func (c docsCommand) displayDoc(indent string, doc *xpb.DocumentationReply_Document) {
 	fmt.Println(indent + showSignature(doc.MarkedSource))
 	if len(doc.Text.GetRawText()) > 0 {
 		fmt.Println(indent + doc.Text.RawText)
@@ -104,11 +108,22 @@ func displayDoc(indent string, doc *xpb.DocumentationReply_Document) {
 				fmt.Printf("%s    %s: %s\n", indent, linkText[i], strings.Join(link.Definition, "\t"))
 			}
 		}
+		if c.renderMarkedSource {
+			contentType := markedsource.PlaintextContent
+			fmt.Printf("%s    Identifier:         %q\n", indent,
+				markedsource.RenderSimpleIdentifier(doc.MarkedSource, contentType, nil))
+			fmt.Printf("%s    Qualified Name:     %q\n", indent,
+				markedsource.RenderSimpleQualifiedName(doc.MarkedSource, true, contentType, nil))
+			fmt.Printf("%s    Callsite Signature: %q\n", indent,
+				markedsource.RenderCallSiteSignature(doc.MarkedSource))
+			fmt.Printf("%s    Signature:          %q\n", indent,
+				markedsource.RenderSignature(doc.MarkedSource, contentType, nil))
+		}
 	}
 
 	for _, child := range doc.Children {
 		fmt.Println()
-		displayDoc(indent+"  ", child)
+		c.displayDoc(indent+"  ", child)
 	}
 }
 
@@ -119,10 +134,10 @@ func (c docsCommand) displayDocumentation(reply *xpb.DocumentationReply) error {
 		return nil
 	}
 
-	displayDoc("", reply.Document[0])
+	c.displayDoc("", reply.Document[0])
 	for _, doc := range reply.Document[1:] {
 		fmt.Println()
-		displayDoc("", doc)
+		c.displayDoc("", doc)
 	}
 	return nil
 }

@@ -176,5 +176,8 @@ java_library(
 bzl_library(
     name = "aspect_bzl",
     srcs = ["aspect.bzl"],
-    deps = ["@rules_java//java:utils"],
+    deps = [
+        "@rules_java//java:rules",
+        "@rules_java//java:utils",
+    ],
 )
