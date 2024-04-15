@@ -109,7 +109,12 @@ textproto_verifier_test(
 bzl_library(
     name = "textproto_verifier_test_bzl",
     srcs = ["textproto_verifier_test.bzl"],
-    deps = ["@rules_proto//proto:defs"],
+    deps = [
+        "//kythe/cxx/indexer/proto/testdata:proto_verifier_test_bzl",
+        "//tools/build_rules/verifier_test:verifier_test_bzl",
+        "@bazel_skylib//lib:paths",
+        "@rules_proto//proto:defs",
+    ],
 )
 
 proto_library(

@@ -8,3 +8,8 @@ filegroup(
     name = "grep-includes",
     srcs = ["dummy.sh"],
 )
+
+bzl_library(
+    name = "toolchain_utils",
+    srcs = ["toolchain_utils.bzl"],
+)
