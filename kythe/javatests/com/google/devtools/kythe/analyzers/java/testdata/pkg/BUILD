@@ -1,7 +1,7 @@
 load("@rules_java//java:defs.bzl", "java_library")
-load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
-load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
+load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
+load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 
 java_library(
     name = "pkg",
@@ -426,7 +426,10 @@ java_verifier_test(
     name = "jvm_reference_tests",
     timeout = "long",
     srcs = ["JvmCrossFile.java"],
-    verifier_deps = [":files_tests"],
+    verifier_deps = [
+        ":files_tests",
+        ":jvm_tests",
+    ],
 )
 
 java_verifier_test(
