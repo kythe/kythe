@@ -195,8 +195,7 @@ bool IndexVFS::SetVName(const llvm::Twine& path, const proto::VName& vname) {
   return true;
 }
 
-bool IndexVFS::GetVName(clang::FileEntryRef entry,
-                        proto::VName& merge_with) const {
+bool IndexVFS::GetVName(clang::FileEntryRef entry, proto::VName& merge_with) {
   // VName's are mapped by path, but there may be multiple paths for the same
   // UniqueId. This can happen with symlinks/hardlinks. We need to have distinct
   // enrties for these to support `#pragma once` and accurately reflect builds
@@ -204,7 +203,7 @@ bool IndexVFS::GetVName(clang::FileEntryRef entry,
   return GetVName(entry.getNameAsRequested(), merge_with);
 }
 
-const proto::VName* IndexVFS::GetVName(const llvm::Twine& path) const {
+const proto::VName* IndexVFS::GetVName(const llvm::Twine& path) {
   PathString realized;
   if (fs_.getRealPath(path, realized)) {
     return nullptr;
@@ -228,7 +227,7 @@ const proto::VName* IndexVFS::GetVName(const llvm::Twine& path) const {
   return entry->vname.has_value() ? &*entry->vname : nullptr;
 }
 
-bool IndexVFS::GetVName(const llvm::Twine& path, proto::VName& result) const {
+bool IndexVFS::GetVName(const llvm::Twine& path, proto::VName& result) {
   const proto::VName* vname = GetVName(path);
   if (vname == nullptr) {
     return false;
@@ -237,8 +236,7 @@ bool IndexVFS::GetVName(const llvm::Twine& path, proto::VName& result) const {
   return true;
 }
 
-std::optional<std::string> IndexVFS::GetCanonicalPath(
-    const llvm::Twine& path) const {
+std::optional<std::string> IndexVFS::GetCanonicalPath(const llvm::Twine& path) {
   PathString result;
   if (!fs_.getRealPath(path, result)) {
     return std::nullopt;
@@ -246,8 +244,7 @@ std::optional<std::string> IndexVFS::GetCanonicalPath(
   return std::string{result};
 }
 
-std::optional<std::string> IndexVFS::GetRelativePath(
-    const llvm::Twine& path) const {
+std::optional<std::string> IndexVFS::GetRelativePath(const llvm::Twine& path) {
   PathString result;
   if (!fs_.getRealPath(path, result)) {
     return std::nullopt;

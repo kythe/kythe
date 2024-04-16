@@ -117,18 +117,18 @@ class IndexVFS : public llvm::vfs::FileSystem {
   /// \param entry The `FileEntry` to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool GetVName(clang::FileEntryRef entry, proto::VName& merge_with) const;
+  bool GetVName(clang::FileEntryRef entry, proto::VName& merge_with);
   /// \brief Returns the vname associated with some `path`.
   /// \param path The path to look up.
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
-  bool GetVName(const llvm::Twine& path, proto::VName& result) const;
-  const proto::VName* GetVName(const llvm::Twine& path) const;
+  bool GetVName(const llvm::Twine& path, proto::VName& result);
+  const proto::VName* GetVName(const llvm::Twine& path);
 
   /// \brief Returns a normalized, canonical root-relative path.
-  std::optional<std::string> GetRelativePath(const llvm::Twine& path) const;
+  std::optional<std::string> GetRelativePath(const llvm::Twine& path);
   /// \brief Returns a normalized, canonical absolute path.
-  std::optional<std::string> GetCanonicalPath(const llvm::Twine& path) const;
+  std::optional<std::string> GetCanonicalPath(const llvm::Twine& path);
 
   /// \brief Returns a string representation of `uid` for error messages.
   std::string get_debug_uid_string(const llvm::sys::fs::UniqueID& uid);
@@ -154,9 +154,8 @@ class IndexVFS : public llvm::vfs::FileSystem {
     return fs_.setCurrentWorkingDirectory(Path);
   }
   /// \brief Implements FileSystem::getRealPath
-  std::error_code getRealPath(
-      const llvm::Twine& Path,
-      llvm::SmallVectorImpl<char>& Output) const override {
+  std::error_code getRealPath(const llvm::Twine& Path,
+                              llvm::SmallVectorImpl<char>& Output) override {
     return fs_.getRealPath(Path, Output);
   }
 
