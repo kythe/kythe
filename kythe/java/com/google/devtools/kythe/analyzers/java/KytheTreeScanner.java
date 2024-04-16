@@ -1228,7 +1228,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Type type = externalType(sym);
     CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
     if (sym instanceof Symbol.VarSymbol) {
-      if (sym.getKind() == ElementKind.FIELD) {
+      if (sym.getKind() == ElementKind.FIELD || sym.getKind() == ElementKind.ENUM_CONSTANT) {
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String fieldName = sym.getSimpleName().toString();
         return jvmGraph.emitFieldNode(corpusPath, parentClass, fieldName);

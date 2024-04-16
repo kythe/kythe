@@ -63,5 +63,7 @@ public class JvmCrossFile {
     System.out.println(CONSTANT);
     //- @INSTANCE ref InstanceMember
     System.out.println(INSTANCE);
+    //- @UNKNOWN ref EnumValue
+    System.out.println(Jvm.E.UNKNOWN);
   }
 }
