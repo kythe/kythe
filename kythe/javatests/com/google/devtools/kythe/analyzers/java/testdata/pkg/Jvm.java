@@ -139,4 +139,12 @@ public class Jvm {
   // - VarArgsParamJava generates VarArgsParamJvm
   // - VarArgsParamJava named VarArgsParamJvm
   static void varargs(int... ints) {}
+
+  // - @E defines/binding Enum
+  // - Enum named vname("pkg.Jvm$E",_,_,_,"jvm")
+  public static enum E {
+    // - @UNKNOWN defines/binding EnumValue
+    // - EnumValue named vname("pkg.Jvm$E.UNKNOWN",_,_,_,"jvm")
+    UNKNOWN;
+  }
 }
