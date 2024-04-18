@@ -787,6 +787,7 @@ cc_indexer_test(
     name = "extern_c_symbol",
     srcs = [":extern_c_symbol_kzip"],
     check_for_singletons = True,
+    experimental_record_c_symbols = True,
     ignore_dups = True,
     ignore_unimplemented = True,
     tags = ["basic"],
@@ -796,6 +797,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "c_symbol",
     srcs = ["basic/c_symbol.c"],
+    experimental_record_c_symbols = True,
     std = "c99",
     tags = ["basic"],
 )

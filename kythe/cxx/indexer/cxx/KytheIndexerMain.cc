@@ -72,6 +72,8 @@ ABSL_FLAG(bool, experimental_set_aliases_as_writes, false,
           "Set protobuf aliases as writes.");
 ABSL_FLAG(bool, experimental_record_variable_init_types, false,
           "Record the types of variable initializers.");
+ABSL_FLAG(bool, experimental_record_c_symbols, false,
+          "Record csymbols for certain decls.");
 
 namespace kythe {
 namespace {
@@ -123,6 +125,7 @@ int main(int argc, char* argv[]) {
   };
   options.RecordVariableInitTypes =
       absl::GetFlag(FLAGS_experimental_record_variable_init_types);
+  options.RecordCSymbols = absl::GetFlag(FLAGS_experimental_record_c_symbols);
   std::optional<FileHashRecorder> recorder;
   if (!absl::GetFlag(FLAGS_record_hashes_file).empty()) {
     recorder.emplace(absl::GetFlag(FLAGS_record_hashes_file));

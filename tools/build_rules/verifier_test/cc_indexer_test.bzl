@@ -82,6 +82,7 @@ _INDEXER_FLAGS = {
     "record_call_directness": False,
     "experimental_analysis_exclude_path_pattern": "",
     "experimental_record_variable_init_types": False,
+    "experimental_record_c_symbols": False,
 }
 
 def _compiler_options(ctx, extractor_toolchain, copts, cc_info):

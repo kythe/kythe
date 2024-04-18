@@ -126,6 +126,8 @@ struct IndexerOptions {
   std::shared_ptr<const re2::RE2> AnalysisExcludePathPattern = nullptr;
   /// \brief If true, record types of variable initializers.
   bool RecordVariableInitTypes = false;
+  /// \brief If true, record csymbols for certain decls.
+  bool RecordCSymbols = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and

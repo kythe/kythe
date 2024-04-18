@@ -1094,7 +1094,7 @@ void KytheGraphObserver::assignLinkName(const NodeId& node,
                                         llvm::StringRef name) {
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef linkname_vname;
-  linkname_vname.set_language("symbol");
+  linkname_vname.set_language("csymbol");
   linkname_vname.set_corpus(node_vname.corpus());
   linkname_vname.set_signature(name);
   recorder_->AddProperty(linkname_vname, NodeKindID::kName);

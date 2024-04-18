@@ -3,7 +3,7 @@
 //- !{ FnF named _ }
 void f();
 //- @g defines/binding FnG
-//- FnG named vname("g","file","","","symbol")
+//- FnG named vname("g","file","","","csymbol")
 extern "C" void g() {}
 //- @h defines/binding FnH
 //- !{ FnH named _ }
