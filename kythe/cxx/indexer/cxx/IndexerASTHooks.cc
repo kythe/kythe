@@ -309,7 +309,7 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
   if (const auto* Decl = Type->getAsRecordDecl();
       Decl && (Decl = Decl->getDefinition())) {
     for (const auto* Field : Decl->fields()) {
-      if (!Field->isUnnamedBitfield()) {
+      if (!Field->isUnnamedBitField()) {
         result.push_back(Field);
       }
     }
