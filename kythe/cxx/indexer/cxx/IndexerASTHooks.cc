@@ -3582,6 +3582,11 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                               Subkind, std::nullopt);
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   Observer.recordVisibility(DeclNode, Decl->getAccess());
+  if (Decl->getLanguageLinkage() == clang::LanguageLinkage::CLanguageLinkage &&
+      !mangle_context_->shouldMangleDeclName(Decl)) {
+    // extern "C" symbols are undecorated.
+    Observer.assignLinkName(DeclNode, Decl->getNameAsString());
+  }
   AssignUSR(DeclNode, Decl);
   for (const auto& S : Supports) {
     S->InspectFunctionDecl(*this, DeclNode, Decl,

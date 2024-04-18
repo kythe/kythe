@@ -588,6 +588,11 @@ class GraphObserver {
   virtual void assignUsr(const NodeId& Node, llvm::StringRef Usr,
                          int ByteSize) {}
 
+  /// \brief Assigns a link name to node.
+  /// \param node The target node.
+  /// \param name The link name for the node.
+  virtual void assignLinkName(const NodeId& node, llvm::StringRef name) {}
+
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {
     Scoped,   ///< This enum is scoped (an `enum class`).

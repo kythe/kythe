@@ -776,6 +776,30 @@ cc_indexer_test(
     use_compilation_corpus_as_default = True,
 )
 
+cc_write_kzip(
+    name = "extern_c_symbol_kzip",
+    srcs = ["basic/extern_c_symbol.cc"],
+    corpus = "unit",
+    vnames_config = "basic/vname_corpus.json",
+)
+
+cc_indexer_test(
+    name = "extern_c_symbol",
+    srcs = [":extern_c_symbol_kzip"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+    use_compilation_corpus_as_default = True,
+)
+
+cc_indexer_test(
+    name = "c_symbol",
+    srcs = ["basic/c_symbol.c"],
+    std = "c99",
+    tags = ["basic"],
+)
+
 cc_indexer_test(
     name = "vardecl_double_shadowed_local_anchor",
     srcs = ["basic/vardecl_double_shadowed_local_anchor.cc"],
