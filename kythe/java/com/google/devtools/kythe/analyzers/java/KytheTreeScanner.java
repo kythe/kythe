@@ -564,6 +564,31 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
       entrySets.emitEdge(methodNode, EdgeKind.NAMED, jvmNode);
+      if (config.getEmitNativeMethodNames()
+          && methodDef.getModifiers().getFlags().contains(Modifier.NATIVE)) {
+        ClassSymbol enclClass = methodDef.sym.enclClass();
+        int nativeCount = 0;
+        for (Symbol s : enclClass.members().getSymbolsByName(methodDef.name)) {
+          if (s.getModifiers().contains(Modifier.NATIVE)) {
+            nativeCount++;
+            if (nativeCount == 2) {
+              break;
+            }
+          }
+        }
+        Optional<VName> nativeNode =
+            jvmGraph.emitNativeNode(corpusPath, parentClass, methodName, methodJvmType, true);
+        if (nativeNode.isPresent()) {
+          entrySets.emitEdge(methodNode, EdgeKind.NAMED, nativeNode.get());
+        }
+        if (nativeCount == 1) {
+          Optional<VName> singleNativeNode =
+              jvmGraph.emitNativeNode(corpusPath, parentClass, methodName, methodJvmType, false);
+          if (singleNativeNode.isPresent()) {
+            entrySets.emitEdge(methodNode, EdgeKind.NAMED, singleNativeNode.get());
+          }
+        }
+      }
 
       for (int i = 0; i < params.size(); i++) {
         JavaNode param = params.get(i);

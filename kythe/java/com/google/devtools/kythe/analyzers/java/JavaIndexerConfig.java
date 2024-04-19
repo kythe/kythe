@@ -80,6 +80,11 @@ public class JavaIndexerConfig extends IndexerConfig {
       description = "If true, emit ref/call anchor spans over the function identifier")
   private boolean emitRefCallOverIdentifier;
 
+  @Parameter(
+      names = "--emit_native_method_names",
+      description = "If true, emit csymbol nodes for native methods")
+  private boolean emitNativeMethodNames;
+
   @Parameter(names = "--additional_javac_flags", description = "Additional flags to pass to javac")
   private List<String> additionalJavacFlags = new ArrayList<>();
 
@@ -121,6 +126,10 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getEmitRefCallOverIdentifier() {
     return emitRefCallOverIdentifier;
+  }
+
+  public boolean getEmitNativeMethodNames() {
+    return emitNativeMethodNames;
   }
 
   public List<String> getAdditionalJavacFlags() {
@@ -169,6 +178,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setRefCallOverIdentifier(boolean emitRefCallOverIdentifier) {
     this.emitRefCallOverIdentifier = emitRefCallOverIdentifier;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitNativeMethodNames(boolean emitNativeMethodNames) {
+    this.emitNativeMethodNames = emitNativeMethodNames;
     return this;
   }
 
