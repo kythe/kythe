@@ -189,7 +189,6 @@ class ProtoGraphBuilder {
 
   // Whether the builtin rpc type node has been emitted.
   bool builtin_rpc_type_emitted = false;
-
 };
 
 }  // namespace kythe
