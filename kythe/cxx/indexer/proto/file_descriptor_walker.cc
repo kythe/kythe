@@ -923,6 +923,7 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
         builder_->AddMethodToService(v_name, method, method_location);
       }
 
+      VName input_sig;
       {
         // Add rpc method's input argument
         ScopedLookup input_num(&lookup_path,
@@ -933,10 +934,11 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
         // Only decorate the type name, not the full <package>.<type> span.
         TruncateLocationToTypeName(input_location, *input);
 
-        VName input_sig = builder_->VNameForDescriptor(input);
+        input_sig = builder_->VNameForDescriptor(input);
         builder_->AddArgumentToMethod(method, input_sig, input_location);
       }
 
+      VName output_sig;
       {
         // Add rpc method's output argument
         ScopedLookup output_num(&lookup_path,
@@ -947,9 +949,10 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
         // Only decorate the type name, not the full <package>.<type> span.
         TruncateLocationToTypeName(output_location, *output);
 
-        VName output_sig = builder_->VNameForDescriptor(output);
+        output_sig = builder_->VNameForDescriptor(output);
         builder_->AddArgumentToMethod(method, output_sig, output_location);
       }
+      builder_->AddMethodType(method, input_sig, output_sig);
     }
   }
 }
