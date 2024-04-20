@@ -119,7 +119,7 @@ void ProtoGraphBuilder::AddEdge(const VName& start, const VName& end,
                                 EdgeKindID start_to_end_kind, int ordinal) {
   VLOG(1) << "Writing edge: " << StringifyNode(start) << " >-->--["
           << StringifyKind(start_to_end_kind) << "]-->--> "
-          << StringifyNode(end);
+          << StringifyNode(end) << " : " << ordinal;
   recorder_->AddEdge(VNameRef(start), start_to_end_kind, VNameRef(end),
                      ordinal);
 }
