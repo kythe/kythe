@@ -43,10 +43,9 @@ std::string StringifyKind(EdgeKindID kind) {
 }  // anonymous namespace
 
 ProtoGraphBuilder::ProtoGraphBuilder(
-      KytheGraphRecorder* recorder,
-      std::function<proto::VName(const std::string&)> vname_for_rel_path)
-    : recorder_(recorder),
-      vname_for_rel_path_(std::move(vname_for_rel_path)) {
+    KytheGraphRecorder* recorder,
+    std::function<proto::VName(const std::string&)> vname_for_rel_path)
+    : recorder_(recorder), vname_for_rel_path_(std::move(vname_for_rel_path)) {
   builtin_rpc_type_constructor_.set_language(kLanguageName);
   builtin_rpc_type_constructor_.set_signature("rpc#builtin");
 }
