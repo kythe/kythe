@@ -16,8 +16,12 @@
 
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
 
+#include <functional>
+#include <utility>
+
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/cxx/indexer/proto/comments.h"
 
