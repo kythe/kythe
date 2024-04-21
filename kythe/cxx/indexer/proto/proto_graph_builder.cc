@@ -40,17 +40,16 @@ std::string StringifyKind(NodeKindID kind) {
 std::string StringifyKind(EdgeKindID kind) {
   return std::string(spelling_of(kind));
 }
-
-const VName& BuiltinRpcType() {
-  static VName* builtinRpcTypeNode = []() {
-    VName* builtinRpcTypeNode = new VName();
-    builtinRpcTypeNode->set_language(kLanguageName);
-    builtinRpcTypeNode->set_signature("rpc#builtin");
-    return builtinRpcTypeNode;
-  }();
-  return *builtinRpcTypeNode;
-}
 }  // anonymous namespace
+
+ProtoGraphBuilder::ProtoGraphBuilder(
+      KytheGraphRecorder* recorder,
+      std::function<proto::VName(const std::string&)> vname_for_rel_path)
+    : recorder_(recorder),
+      vname_for_rel_path_(std::move(vname_for_rel_path)) {
+  builtin_rpc_type_constructor_.set_language(kLanguageName);
+  builtin_rpc_type_constructor_.set_signature("rpc#builtin");
+}
 
 void ProtoGraphBuilder::SetText(const VName& node_name,
                                 const std::string& content) {
@@ -225,9 +224,9 @@ void ProtoGraphBuilder::AddMethodToService(const VName& service,
 
 void ProtoGraphBuilder::AddMethodType(const VName& method, const VName& input,
                                       const VName& output) {
-  if (!builtin_rpc_type_emitted) {
-    AddNode(BuiltinRpcType(), NodeKindID::kTBuiltin);
-    builtin_rpc_type_emitted = true;
+  if (!builtin_rpc_type_emitted_) {
+    AddNode(builtin_rpc_type_constructor_, NodeKindID::kTBuiltin);
+    builtin_rpc_type_emitted_ = true;
   }
 
   VName method_type = method;
@@ -235,7 +234,7 @@ void ProtoGraphBuilder::AddMethodType(const VName& method, const VName& input,
                                          "::", output.signature(),
                                          "::", input.signature()));
   AddNode(method_type, NodeKindID::kTApp);
-  AddEdge(method_type, BuiltinRpcType(), EdgeKindID::kParam, 0);
+  AddEdge(method_type, builtin_rpc_type_constructor_, EdgeKindID::kParam, 0);
   AddEdge(method_type, output, EdgeKindID::kParam, 1);
   AddEdge(method_type, input, EdgeKindID::kParam, 2);
 

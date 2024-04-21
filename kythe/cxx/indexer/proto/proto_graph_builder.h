@@ -58,9 +58,7 @@ class ProtoGraphBuilder {
   // relative (to the file under analysis) path.
   ProtoGraphBuilder(
       KytheGraphRecorder* recorder,
-      std::function<proto::VName(const std::string&)> vname_for_rel_path)
-      : recorder_(recorder),
-        vname_for_rel_path_(std::move(vname_for_rel_path)) {}
+      std::function<proto::VName(const std::string&)> vname_for_rel_path);
 
   // disallow copy and assign
   ProtoGraphBuilder(const ProtoGraphBuilder&) = delete;
@@ -188,7 +186,9 @@ class ProtoGraphBuilder {
   std::string current_file_contents_;
 
   // Whether the builtin rpc type node has been emitted.
-  bool builtin_rpc_type_emitted = false;
+  bool builtin_rpc_type_emitted_ = false;
+
+  proto::VName builtin_rpc_type_constructor_;
 };
 
 }  // namespace kythe
