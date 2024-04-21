@@ -58,9 +58,7 @@ class ProtoGraphBuilder {
   // relative (to the file under analysis) path.
   ProtoGraphBuilder(
       KytheGraphRecorder* recorder,
-      std::function<proto::VName(const std::string&)> vname_for_rel_path)
-      : recorder_(recorder),
-        vname_for_rel_path_(std::move(vname_for_rel_path)) {}
+      std::function<proto::VName(const std::string&)> vname_for_rel_path);
 
   // disallow copy and assign
   ProtoGraphBuilder(const ProtoGraphBuilder&) = delete;
@@ -92,6 +90,10 @@ class ProtoGraphBuilder {
   // Records an edge of the given kind between the named nodes in the graph.
   void AddEdge(const proto::VName& start, const proto::VName& end,
                EdgeKindID start_to_end_kind);
+
+  // Records an edge of the given kind between the named nodes in the graph.
+  void AddEdge(const proto::VName& start, const proto::VName& end,
+               EdgeKindID start_to_end_kind, int ordinal);
 
   // Creates and add to the graph a proto language-specific declaration node.
   proto::VName CreateAndAddAnchorNode(const Location& location);
@@ -142,6 +144,10 @@ class ProtoGraphBuilder {
     AddReference(type, location);
   }
 
+  // Adds typed edges for the given RPC method.
+  void AddMethodType(const proto::VName& method, const proto::VName& input,
+                     const proto::VName& output);
+
   // Adds an anchor for location and a Ref edge to referent
   void AddReference(const proto::VName& referent, const Location& location);
 
@@ -178,6 +184,11 @@ class ProtoGraphBuilder {
 
   // The text of the current file being analyzed.
   std::string current_file_contents_;
+
+  // Whether the builtin rpc type node has been emitted.
+  bool builtin_rpc_type_emitted_ = false;
+
+  proto::VName builtin_rpc_type_constructor_;
 };
 
 }  // namespace kythe

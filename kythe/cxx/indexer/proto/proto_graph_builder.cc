@@ -42,6 +42,14 @@ std::string StringifyKind(EdgeKindID kind) {
 }
 }  // anonymous namespace
 
+ProtoGraphBuilder::ProtoGraphBuilder(
+    KytheGraphRecorder* recorder,
+    std::function<proto::VName(const std::string&)> vname_for_rel_path)
+    : recorder_(recorder), vname_for_rel_path_(std::move(vname_for_rel_path)) {
+  builtin_rpc_type_constructor_.set_language(kLanguageName);
+  builtin_rpc_type_constructor_.set_signature("rpc#builtin");
+}
+
 void ProtoGraphBuilder::SetText(const VName& node_name,
                                 const std::string& content) {
   VLOG(1) << "Setting text (length = " << content.length()
@@ -103,6 +111,15 @@ void ProtoGraphBuilder::AddEdge(const VName& start, const VName& end,
           << StringifyKind(start_to_end_kind) << "]-->--> "
           << StringifyNode(end);
   recorder_->AddEdge(VNameRef(start), start_to_end_kind, VNameRef(end));
+}
+
+void ProtoGraphBuilder::AddEdge(const VName& start, const VName& end,
+                                EdgeKindID start_to_end_kind, int ordinal) {
+  VLOG(1) << "Writing edge: " << StringifyNode(start) << " >-->--["
+          << StringifyKind(start_to_end_kind) << "]-->--> "
+          << StringifyNode(end) << " : " << ordinal;
+  recorder_->AddEdge(VNameRef(start), start_to_end_kind, VNameRef(end),
+                     ordinal);
 }
 
 VName ProtoGraphBuilder::CreateAndAddAnchorNode(const Location& location) {
@@ -202,6 +219,25 @@ void ProtoGraphBuilder::AddMethodToService(const VName& service,
   AddEdge(anchor, method, EdgeKindID::kDefinesBinding);
   MaybeAddEdgeFromMetadata(location, method);
   AddEdge(method, service, EdgeKindID::kChildOf);
+}
+
+void ProtoGraphBuilder::AddMethodType(const VName& method, const VName& input,
+                                      const VName& output) {
+  if (!builtin_rpc_type_emitted_) {
+    AddNode(builtin_rpc_type_constructor_, NodeKindID::kTBuiltin);
+    builtin_rpc_type_emitted_ = true;
+  }
+
+  VName method_type = method;
+  method_type.set_signature(absl::StrCat("type::", method.signature(),
+                                         "::", output.signature(),
+                                         "::", input.signature()));
+  AddNode(method_type, NodeKindID::kTApp);
+  AddEdge(method_type, builtin_rpc_type_constructor_, EdgeKindID::kParam, 0);
+  AddEdge(method_type, output, EdgeKindID::kParam, 1);
+  AddEdge(method_type, input, EdgeKindID::kParam, 2);
+
+  AddEdge(method, method_type, EdgeKindID::kHasType);
 }
 
 void ProtoGraphBuilder::AddEnumType(const VName* parent, const VName& enum_type,
