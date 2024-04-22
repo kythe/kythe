@@ -1,0 +1,4 @@
+#!/bin/bash
+RESOURCES=(@RESOURCES@)
+RESOURCE_DIR="$(dirname "$(dirname "${RESOURCES[0]}")")"
+exec @CLANG_TIDY@ --extra-arg-before=-resource-dir="$RESOURCE_DIR" "$@"

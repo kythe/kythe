@@ -141,6 +141,9 @@ public final class KytheClassVisitor extends ClassVisitor {
     VName methodVName = jvmGraph.emitMethodNode(corpusPath, classType, methodName, methodType);
     entrySets.emitEdge(methodVName, EdgeKind.CHILDOF, classVName);
 
+    // TODO(zarko): access & Opcodes.ACC_NATIVE -- we need to know if the native method has
+    // at least one native overload.
+
     return new MethodVisitor(ASM_API_LEVEL) {
       private int parameterIndex = 0;
 

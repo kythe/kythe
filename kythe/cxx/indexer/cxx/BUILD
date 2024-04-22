@@ -225,6 +225,8 @@ cc_library(
         "@com_google_absl//absl/log:die_if_null",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
         "@com_googlesource_code_re2//:re2",
         "@llvm-project//clang:ast",
         "@llvm-project//clang:basic",

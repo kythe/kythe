@@ -3,6 +3,7 @@
 syntax = "proto2";
 
 package proto_kythe_test;
+
 option java_package = "io.kythe";
 
 //- @TestRequest defines/binding RequestNode
@@ -46,6 +47,12 @@ service TestService {
   //- MNContext child.1 MNContext1
   //- MNContext0.pre_text "proto_kythe_test"
   //- MNContext1.pre_text "TestService"
+  //- MethodNode typed MethodType
+  //- MethodType.node/kind tapp
+  //- MethodType param.0 RpcTypeBuiltin
+  //- MethodType param.1 ReplyNode
+  //- MethodType param.2 RequestNode
+  //- RpcTypeBuiltin.node/kind tbuiltin
   rpc TestMethod(TestRequest) returns (TestReply);
 
   //- @TestRequest ref RequestNode
