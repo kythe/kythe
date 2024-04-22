@@ -19,6 +19,7 @@
 #ifndef KYTHE_CXX_INDEXER_PROTO_PROTO_GRAPH_BUILDER_H_
 #define KYTHE_CXX_INDEXER_PROTO_PROTO_GRAPH_BUILDER_H_
 
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
