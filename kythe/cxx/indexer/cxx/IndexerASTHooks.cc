@@ -17,48 +17,77 @@
 #include "IndexerASTHooks.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <map>
 #include <optional>
+#include <ostream>
+#include <set>
+#include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include "GraphObserver.h"
+#include "absl/base/attributes.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "clang/AST/APValue.h"
 #include "clang/AST/Attr.h"
+#include "clang/AST/AttrIterator.h"
 #include "clang/AST/AttrVisitor.h"
+#include "clang/AST/Attrs.inc"
 #include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclVisitor.h"
+#include "clang/AST/DeclarationName.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/NestedNameSpecifier.h"
+#include "clang/AST/OperationKinds.h"
+#include "clang/AST/RawCommentList.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/Builtins.h"
+#include "clang/Basic/LLVM.h"
+#include "clang/Basic/OperatorKinds.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/Specifiers.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Index/USRGeneration.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
+#include "clang/Sema/Sema.h"
 #include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/decl_printer.h"
+#include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
 #include "kythe/cxx/indexer/cxx/stream_adapter.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringExtras.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
+#include "re2/re2.h"
 
 ABSL_FLAG(bool, experimental_alias_template_instantiations, false,
           "Ignore template instantation information when generating IDs.");
@@ -2700,7 +2729,6 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
     }
     return true;
   }
-  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   auto NameRangeInContext =
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange);
   for (const auto* NextDecl : Decl->redecls()) {
@@ -2708,8 +2736,6 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
     // declarations, nor is it useful to declare that a definition completes
     // itself.
     if (NextDecl != Decl && !NextDecl->isImplicit()) {
-      FileID NextDeclFile =
-          Observer.getSourceManager()->getFileID(NextDecl->getLocation());
       // We should not point a completes edge from an abs node to a var node.
       GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
       if (NameRangeInContext) {
@@ -2850,11 +2876,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
                          : GraphObserver::EnumKind::Unscoped);
     return true;
   }
-  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   for (const auto* NextDecl : Decl->redecls()) {
     if (NextDecl != Decl) {
-      FileID NextDeclFile =
-          Observer.getSourceManager()->getFileID(NextDecl->getLocation());
       if (auto RCC =
               RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
         Observer.recordCompletion(BuildNodeIdForDecl(NextDecl), DeclNode);
@@ -3245,7 +3268,6 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
     Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
     return true;
   }
-  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   if (auto NameRangeInContext =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
     for (const auto* NextDecl : Decl->redecls()) {
@@ -3253,8 +3275,6 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
       // declarations, nor is it useful to declare that a definition completes
       // itself.
       if (NextDecl != Decl && !NextDecl->isImplicit()) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         // We should not point a completes edge from an abs node to a record
         // node.
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
@@ -4345,11 +4365,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     }
 
     const auto* SpecDecl = Spec->getSpecializedTemplate();
-    const clang::NamedDecl* SpecFocus = SpecDecl;
-    if (SpecDecl->getTemplatedDecl()->getDefinition())
-      SpecFocus = SpecDecl->getTemplatedDecl()->getDefinition();
-    else
-      SpecFocus = SpecDecl->getTemplatedDecl();
+    const clang::NamedDecl* SpecFocus =
+        SpecDecl->getTemplatedDecl()->getDefinition()
+            ? SpecDecl->getTemplatedDecl()->getDefinition()
+            : SpecDecl->getTemplatedDecl();
     NodeId DeclId =
         Observer.recordTappNode(BuildNodeIdForDecl(SpecFocus), *TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
@@ -5027,15 +5046,11 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
       DeclNode, std::nullopt);
   AddChildOfEdgeToDeclContext(ImplDecl, DeclNode);
 
-  FileID DeclFile =
-      Observer.getSourceManager()->getFileID(ImplDecl->getLocation());
   if (auto Interface = ImplDecl->getClassInterface()) {
     if (auto NameRangeInContext = RangeInCurrentContext(ImplDecl->isImplicit(),
                                                         DeclNode, NameRange)) {
       // Draw the completion edge to this class's interface decl.
       if (!Interface->isImplicit()) {
-        FileID InterfaceFile =
-            Observer.getSourceManager()->getFileID(Interface->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(Interface);
         Observer.recordCompletion(TargetDecl, DeclNode);
       }
@@ -5067,9 +5082,6 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       ImplDeclNode, std::nullopt);
   AddChildOfEdgeToDeclContext(ImplDecl, ImplDeclNode);
 
-  FileID ImplDeclFile =
-      Observer.getSourceManager()->getFileID(ImplDecl->getCategoryNameLoc());
-
   AssignUSR(ImplDeclNode, ImplDecl);
   Observer.recordRecordNode(ImplDeclNode, GraphObserver::RecordKind::Category,
                             GraphObserver::Completeness::Definition,
@@ -5079,8 +5091,6 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     if (auto NameRangeInContext = ExplicitRangeInCurrentContext(NameRange)) {
       // Draw the completion edge to this category's decl.
       if (!CategoryDecl->isImplicit()) {
-        FileID DeclFile =
-            Observer.getSourceManager()->getFileID(CategoryDecl->getLocation());
         GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(CategoryDecl);
         Observer.recordCompletion(DeclNode, ImplDeclNode);
       }
@@ -5299,7 +5309,6 @@ void IndexerASTVisitor::RecordCompletesForRedecls(
     }
   }
 
-  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   if (auto NameRangeInContext =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
     for (const auto* NextDecl : Decl->redecls()) {
@@ -5307,8 +5316,6 @@ void IndexerASTVisitor::RecordCompletesForRedecls(
       // declarations, nor is it useful to declare that a definition completes
       // itself.
       if (NextDecl != Decl && !NextDecl->isImplicit()) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
         Observer.recordCompletion(TargetDecl, DeclNode);
       }
@@ -5414,10 +5421,6 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
         if (auto MethodImpl = ClassImpl->getMethod(Decl->getSelector(),
                                                    Decl->isInstanceMethod())) {
           if (MethodImpl != Decl) {
-            FileID DeclFile =
-                Observer.getSourceManager()->getFileID(Decl->getLocation());
-            FileID ImplFile = Observer.getSourceManager()->getFileID(
-                MethodImpl->getLocation());
             auto ImplNode = BuildNodeIdForDecl(MethodImpl);
             SourceRange ImplNameRange = RangeForNameOfDeclaration(MethodImpl);
             auto ImplNameRangeInContext(RangeInCurrentContext(
@@ -5434,8 +5437,6 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   }
 
   if (NameRangeInContext) {
-    FileID DefnFile =
-        Observer.getSourceManager()->getFileID(Decl->getLocation());
     const GraphObserver::Range& DeclNameRangeInContext =
         NameRangeInContext.value();
 
@@ -5460,8 +5461,6 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
       // Do not draw self-completion edges and do not draw an edge for the
       // canonical decl again.
       if (NextDecl != Decl && NextDecl != CD) {
-        FileID RedeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         Observer.recordCompletion(BuildNodeIdForDecl(NextDecl), Node);
       }
     }
@@ -5796,7 +5795,7 @@ IndexJob::SomeNodes IndexerASTVisitor::FindConstructorsForBlame(
   IndexJob::SomeNodes result;
   auto TryCtor = [&](const clang::CXXConstructorDecl& ctor) {
     if (!ConstructorOverridesInitializer(&ctor, &field)) {
-      if (const auto blame_id = BuildNodeIdForRefToDeclContext(&ctor)) {
+      if (auto blame_id = BuildNodeIdForRefToDeclContext(&ctor)) {
         result.push_back(*std::move(blame_id));
       }
     }
