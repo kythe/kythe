@@ -17,7 +17,11 @@
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "clang/AST/DeclBase.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 namespace kythe {
