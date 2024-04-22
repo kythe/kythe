@@ -23,10 +23,10 @@ require (
 	github.com/sourcegraph/go-langserver v2.0.0+incompatible
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	github.com/syndtr/goleveldb v1.0.0
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/sync v0.4.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	golang.org/x/tools v0.14.0
 	golang.org/x/tools/go/vcs v0.1.0-deprecated
@@ -39,7 +39,7 @@ require (
 require (
 	github.com/bazelbuild/buildtools v0.0.0-20231011133658-72c8ba35684c // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231009173412-8bfb1ae86b6c // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
