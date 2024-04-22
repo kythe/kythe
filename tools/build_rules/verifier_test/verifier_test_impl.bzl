@@ -169,7 +169,6 @@ verifier_test = rule(
         "deps": attr.label_list(
             doc = "Targets which produce graph entries to verify.",
             providers = [[KytheEntries], [KytheEntryProducerInfo]],
-            cfg = "exec",
         ),
         "_template": attr.label(
             default = Label("//tools/build_rules/verifier_test:verifier_test.sh.in"),
