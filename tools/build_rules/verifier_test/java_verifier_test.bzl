@@ -217,6 +217,7 @@ def java_verifier_test(
         opts = indexer_opts,
         tags = tags + ["manual"],
         tools = tools,
+        target_tools = tools,
         visibility = visibility,
         deps = [kzip],
     )
