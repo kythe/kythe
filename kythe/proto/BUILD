@@ -844,6 +844,13 @@ cc_proto_library(
     deps = [":vnames_config_proto"],
 )
 
+go_proto_library(
+    name = "vnames_config_go_proto",
+    importpath = "kythe.io/kythe/proto/vnames_config_go_proto",
+    proto = ":vnames_config_proto",
+    deps = [":storage_go_proto"],
+)
+
 # Uses native.existing_rules() to find rules to update; must come last.
 update_generated_protos(
     name = "update",

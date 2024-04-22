@@ -15,7 +15,7 @@ go_library(
         "//kythe/go/util/log",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@org_golang_x_tools//go/vcs",
+        "@org_golang_x_tools_go_vcs//:vcs",
     ],
 )
 
@@ -31,6 +31,6 @@ go_test(
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
         "@org_golang_google_protobuf//proto",
-        "@org_golang_x_tools//go/vcs",
+        "@org_golang_x_tools_go_vcs//:vcs",
     ],
 )
