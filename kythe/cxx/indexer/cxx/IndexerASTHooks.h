@@ -35,6 +35,7 @@
 #include "absl/strings/string_view.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
+#include "clang/AST/Mangle.h"
 #include "clang/Sema/SemaConsumer.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
@@ -125,6 +126,8 @@ struct IndexerOptions {
   std::shared_ptr<const re2::RE2> AnalysisExcludePathPattern = nullptr;
   /// \brief If true, record types of variable initializers.
   bool RecordVariableInitTypes = false;
+  /// \brief If true, record csymbols for certain decls.
+  bool RecordCSymbols = false;
 };
 
 /// \brief An AST visitor that extracts information for a translation unit and
@@ -149,7 +152,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
             },
             // These enums are intentionally compatible.
             static_cast<SemanticHash::OnUnimplemented>(
-                options_.IgnoreUnimplemented)) {}
+                options_.IgnoreUnimplemented)),
+        mangle_context_(C.createMangleContext()) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool TraverseFieldDecl(clang::FieldDecl* Decl);
@@ -1101,6 +1105,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   /// \brief Used for calculating semantic hashes.
   SemanticHash Hash;
+
+  /// A name-mangling context for the current AST context.
+  std::unique_ptr<clang::MangleContext> mangle_context_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

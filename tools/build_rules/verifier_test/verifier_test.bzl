@@ -241,7 +241,7 @@ def _index_compilation_impl(ctx):
             KytheEntryProducerInfo(
                 executables = test_runners,
                 runfiles = ctx.runfiles(
-                    files = (test_runners + kzips + ctx.files.tools),
+                    files = (test_runners + kzips + ctx.files.target_tools),
                 ).merge(ctx.attr.target_indexer[DefaultInfo].default_runfiles),
             ),
         )
@@ -285,6 +285,9 @@ index_compilation = rule(
         "opts": attr.string_list(),
         "tools": attr.label_list(
             cfg = "exec",
+            allow_files = True,
+        ),
+        "target_tools": attr.label_list(
             allow_files = True,
         ),
         "deps": attr.label_list(

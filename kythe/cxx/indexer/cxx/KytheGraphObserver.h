@@ -226,6 +226,8 @@ class KytheGraphObserver : public GraphObserver {
   void assignUsr(const NodeId& node, llvm::StringRef usr,
                  int byte_size) override;
 
+  void assignLinkName(const NodeId& node, llvm::StringRef name) override;
+
   void recordTVarNode(
       const NodeId& node,
       const std::optional<MarkedSource>& marked_source) override;
