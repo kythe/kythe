@@ -400,6 +400,15 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "native_methods_tests",
+    size = "small",
+    srcs = ["NativeMethods.java"],
+    indexer_opts = [
+        "--emit_native_method_names",
+    ],
+)
+
+java_verifier_test(
     name = "package_tests",
     size = "small",
     srcs = [

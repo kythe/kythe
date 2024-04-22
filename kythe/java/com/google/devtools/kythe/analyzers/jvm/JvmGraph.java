@@ -32,11 +32,16 @@ import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 /** Kythe JVM language graph. */
 public class JvmGraph {
   /** The language component for all JVM Kythe node {@link VName}s. */
   public static final String JVM_LANGUAGE = "jvm";
+
+  /** The language component for all C symbol Kythe node {@link VName}s. */
+  public static final String CSYMBOL_LANGUAGE = "csymbol";
 
   private final KytheEntrySets entrySets;
 
@@ -78,6 +83,34 @@ public class JvmGraph {
   }
 
   /**
+   * Returns the {@link VName} corresponding to the given native method type.
+   *
+   * <p>The jvm provides the option of using the name without the argument signature *if* the method
+   * is not overloaded by another native method. This means that methods with no (native) overrides
+   * can have two possible associated csymbols.
+   */
+  public static Optional<VName> getNativeMethodVName(
+      CorpusPath corpusPath,
+      Type.ReferenceType parentClass,
+      String name,
+      Type.MethodType methodType,
+      boolean hasNativeOverload) {
+    Optional<String> signature =
+        nativeMethodSignature(parentClass, name, methodType, hasNativeOverload);
+    if (signature.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        corpusPath
+            .toVNameBuilder()
+            .clearPath()
+            .clearRoot()
+            .setSignature(signature.get())
+            .setLanguage(CSYMBOL_LANGUAGE)
+            .build());
+  }
+
+  /**
    * Returns the {@link VName} corresponding to the given parameter of a method type.
    *
    * <p>Parameter indices are used because names are only optionally retained in class files and not
@@ -109,6 +142,61 @@ public class JvmGraph {
   private static String methodSignature(
       Type.ReferenceType parentClass, String methodName, Type.MethodType methodType) {
     return parentClass.qualifiedName + "." + methodName + methodType;
+  }
+
+  private static String jniMangle(String s) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < s.length(); ++i) {
+      char c = s.charAt(i);
+      if (c == '_') {
+        sb.append("_1");
+      } else if (c == '.' || c == '/') {
+        sb.append("_");
+      } else if (c == ';') {
+        sb.append("_2");
+      } else if (c == '[') {
+        sb.append("_3");
+      } else if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+        sb.append(c);
+      } else {
+        sb.append("_0");
+        sb.append(String.format("%04x", (int) c).toLowerCase(Locale.ENGLISH));
+      }
+    }
+    return sb.toString();
+  }
+
+  private static Optional<String> getNativeMethodParameters(Type.MethodType methodType) {
+    String type = methodType.toString();
+    if (!type.startsWith("(")) {
+      return Optional.empty();
+    }
+    int cparen = type.indexOf(")", 1);
+    if (cparen == -1) {
+      return Optional.empty();
+    }
+    return Optional.of(type.substring(1, cparen));
+  }
+
+  private static Optional<String> nativeMethodSignature(
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      boolean hasNativeOverload) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Java_");
+    sb.append(jniMangle(parentClass.qualifiedName));
+    sb.append("_");
+    sb.append(jniMangle(methodName));
+    if (hasNativeOverload) {
+      Optional<String> parameters = getNativeMethodParameters(methodType);
+      if (!parameters.isPresent()) {
+        return Optional.empty();
+      }
+      sb.append("__");
+      sb.append(jniMangle(parameters.get()));
+    }
+    return Optional.of(sb.toString());
   }
 
   private static String parameterSignature(
@@ -151,6 +239,21 @@ public class JvmGraph {
     return emitNode(
         methodName.equals("<init>") ? NodeKind.FUNCTION_CONSTRUCTOR : NodeKind.FUNCTION,
         getMethodVName(corpusPath, parentClass, methodName, type));
+  }
+
+  /** Emits and returns a Kythe {@code name} node for a native JVM method. */
+  public Optional<VName> emitNativeNode(
+      CorpusPath corpusPath,
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType type,
+      boolean hasNativeOverload) {
+    Optional<VName> vname =
+        getNativeMethodVName(corpusPath, parentClass, methodName, type, hasNativeOverload);
+    if (!vname.isPresent()) {
+      return Optional.empty();
+    }
+    return Optional.of(emitNode(NodeKind.NAME, vname.get()));
   }
 
   /**
