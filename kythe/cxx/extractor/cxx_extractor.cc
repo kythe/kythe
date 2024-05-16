@@ -358,7 +358,8 @@ class RunningHash {
 /// \brief Returns a kzip-based IndexWriter or dies.
 IndexWriter OpenKzipWriterOrDie(const std::string& path) {
   auto writer = KzipWriter::Create(path);
-  CHECK(writer.ok()) << "Failed to open KzipWriter: " << writer.status();
+  CHECK(writer.ok()) << "Failed to open KzipWriter '" << path
+                     << "': " << writer.status();
   return std::move(*writer);
 }
 
