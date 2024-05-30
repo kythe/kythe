@@ -127,13 +127,16 @@ func (p *pebbleDB) NewSnapshot(ctx context.Context) keyvalue.Snapshot {
 	return snap
 }
 
+// pebbleWriter wraps a pebble batch and makes it keyvalue.Writer compatible.
 type pebbleWriter struct {
 	*pebble.Batch
 }
+
 func (pw *pebbleWriter) Write(key, val []byte) error {
 	pw.Batch.Set(key, val, nil/*=ignored write options*/)
 	return nil
 }
+
 func (pw *pebbleWriter) Close() error {
 	defer pw.Batch.Close()
 	if err := pw.Batch.Commit(pebble.NoSync); err != nil {
@@ -146,9 +149,11 @@ func (p *pebbleDB) Writer(_ context.Context) (keyvalue.Writer, error) {
 	return &pebbleWriter{p.db.NewBatch()}, nil
 }
 
+// pebbleIter wraps a pebble iterator and makes it keyvalue.Iterator compatible.
 type pebbleIter struct {
 	*pebble.Iterator
 }
+
 func (pi *pebbleIter) Next() ([]byte, []byte, error) {
 	if pi.Iterator.Valid() {
 		key := make([]byte, len(pi.Iterator.Key()))
@@ -160,6 +165,7 @@ func (pi *pebbleIter) Next() ([]byte, []byte, error) {
 	}
 	return nil, nil, io.EOF	
 }
+
 func (pi *pebbleIter) Seek(key []byte) error {
 	if !pi.Iterator.SeekGE(key) {
 		return io.EOF
