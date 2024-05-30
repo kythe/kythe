@@ -17,7 +17,6 @@ import (
 
 func init() {
 	gsutil.Register("pebble", func(spec string) (graphstore.Service, error) { return OpenGraphStore(spec, nil) })
-	gsutil.RegisterDefault("pebble")
 }
 
 type pebbleDB struct {
@@ -45,29 +44,19 @@ func CompactRange(path string, r *keyvalue.Range) error {
 
 var DefaultOptions = &Options{
 	CacheCapacity:   512 * 1024 * 1024, // 512mb
-	WriteBufferSize: 60 * 1024 * 1024,  // 60mb
 }
 
-// Options for customizing a LevelDB backend.
+// Options for customizing a Pebble backend.
 type Options struct {
-	// CacheCapacity is the caching capacity (in bytes) used for the LevelDB.
+	// CacheCapacity is the caching capacity (in bytes) used for Pebble.
 	CacheCapacity int64
-
-	// CacheLargeReads determines whether to use the cache for large reads. This
-	// is usually discouraged but may be useful when the entire LevelDB is known
-	// to fit into the cache.
-	CacheLargeReads bool
-
-	// WriteBufferSize is the number of bytes the database will build up in memory
-	// (backed by a disk log) before writing to the on-disk table.
-	WriteBufferSize int
 
 	// MustExist ensures that the given database exists before opening it.  If
 	// false and the database does not exist, it will be created.
 	MustExist bool
 }
 
-// ValidDB determines if the given path could be a LevelDB database.
+// ValidDB determines if the given path could be a Pebble database.
 func ValidDB(path string) bool {
 	desc, err := pebble.Peek(path, vfs.Default)
         if err != nil {
@@ -76,10 +65,10 @@ func ValidDB(path string) bool {
 	return desc.Exists
 }
 
-// OpenGraphStore returns a graphstore.Service backed by a LevelDB database at
+// OpenGraphStore returns a graphstore.Service backed by a Pebble database at
 // the given filepath.  If opts==nil, the DefaultOptions are used.
 func OpenGraphStore(path string, opts *Options) (graphstore.Service, error) {
-	if opts.MustExist && !ValidDB(path) {
+	if opts != nil && opts.MustExist && !ValidDB(path) {
 		return nil, fmt.Errorf("database %q did not exist", path)
 	}
 	db, err := Open(path, opts)
