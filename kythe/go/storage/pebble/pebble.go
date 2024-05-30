@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	
+
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/keyvalue"
@@ -20,7 +20,7 @@ func init() {
 }
 
 type pebbleDB struct {
-	db *pebble.DB
+	db     *pebble.DB
 	dbOpts *Options
 }
 
@@ -39,11 +39,11 @@ func CompactRange(path string, r *keyvalue.Range) error {
 		start = r.Start
 		end = r.End
 	}
-	return db.Compact(start, end, true/*=parallelize*/)
+	return db.Compact(start, end, true /*=parallelize*/)
 }
 
 var DefaultOptions = &Options{
-	CacheCapacity:   512 * 1024 * 1024, // 512mb
+	CacheCapacity: 512 * 1024 * 1024, // 512mb
 }
 
 // Options for customizing a Pebble backend.
@@ -59,9 +59,9 @@ type Options struct {
 // ValidDB determines if the given path could be a Pebble database.
 func ValidDB(path string) bool {
 	desc, err := pebble.Peek(path, vfs.Default)
-        if err != nil {
+	if err != nil {
 		return false
-        }
+	}
 	return desc.Exists
 }
 
@@ -91,7 +91,7 @@ func Open(path string, opts *Options) (keyvalue.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &pebbleDB{
 		db: db,
 	}, nil
@@ -133,7 +133,7 @@ type pebbleWriter struct {
 }
 
 func (pw *pebbleWriter) Write(key, val []byte) error {
-	pw.Batch.Set(key, val, nil/*=ignored write options*/)
+	pw.Batch.Set(key, val, nil /*=ignored write options*/)
 	return nil
 }
 
@@ -159,11 +159,11 @@ func (pi *pebbleIter) Next() ([]byte, []byte, error) {
 		key := make([]byte, len(pi.Iterator.Key()))
 		val := make([]byte, len(pi.Iterator.Value()))
 		copy(key, pi.Iterator.Key())
-		copy(val, pi.Iterator.Value())		
+		copy(val, pi.Iterator.Value())
 		pi.Iterator.Next()
 		return key, val, nil
 	}
-	return nil, nil, io.EOF	
+	return nil, nil, io.EOF
 }
 
 func (pi *pebbleIter) Seek(key []byte) error {
