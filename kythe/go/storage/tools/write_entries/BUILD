@@ -10,6 +10,7 @@ go_binary(
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
+        "//kythe/go/storage/pebble",
         "//kythe/go/storage/stream",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/log",
