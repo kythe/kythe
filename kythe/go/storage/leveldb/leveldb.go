@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/storage/kvutil"
 
 	"github.com/jmhodges/levigo"
 )
@@ -35,6 +36,9 @@ import (
 func init() {
 	gsutil.Register("leveldb", func(spec string) (graphstore.Service, error) { return OpenGraphStore(spec, nil) })
 	gsutil.RegisterDefault("leveldb")
+
+	kvutil.Register("leveldb", func(spec string) (keyvalue.DB, error) { return Open(spec, nil) })
+	kvutil.RegisterDefault("leveldb")
 }
 
 // levelDB is a wrapper around a levigo.DB that implements keyvalue.DB
@@ -183,6 +187,16 @@ func (s *levelDB) Get(_ context.Context, key []byte, opts *keyvalue.Options) ([]
 		return nil, io.EOF
 	}
 	return v, nil
+}
+
+func (s *levelDB) CompactRange(r *keyvalue.Range) error {
+	lr := levigo.Range{}
+	if r != nil {
+		lr.Start = r.Start
+		lr.Limit = r.End
+	}
+	s.db.CompactRange(lr)
+	return nil
 }
 
 // ScanPrefix implements part of the keyvalue.DB interface.
