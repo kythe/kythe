@@ -141,6 +141,7 @@ func main() {
 
 	if *compactTable {
 		if dbc, ok := db.(keyvalue.Compactor); ok {
+			defer func(start time.Time) { log.Infof("Compaction completed in %s", time.Since(start)) }(time.Now())
 			dbc.CompactRange(nil)
 		} else {
 			log.Fatalf("Error: db does not support compaction")
