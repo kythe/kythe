@@ -36,7 +36,16 @@ func CompactRange(path string, r *keyvalue.Range) error {
 	defer db.Close()
 
 	start := []byte{byte(0)}
-	end := []byte{byte(255)}
+	end := []byte{byte(0)}
+
+	iter, err := db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	if iter.Last() {
+		end = iter.Value()
+	}
+
 	if r != nil {
 		start = r.Start
 		end = r.End
@@ -126,7 +135,16 @@ func (p *pebbleDB) Get(ctx context.Context, key []byte, opts *keyvalue.Options) 
 
 func (p *pebbleDB) CompactRange(r *keyvalue.Range) error {
 	start := []byte{byte(0)}
-	end := []byte{byte(255)}
+	end := []byte{byte(0)}
+
+	iter, err := p.db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	if iter.Last() {
+		end = iter.Value()
+	}
+
 	if r != nil {
 		start = r.Start
 		end = r.End
