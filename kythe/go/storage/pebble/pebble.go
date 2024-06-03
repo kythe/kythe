@@ -10,6 +10,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/storage/kvutil"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
@@ -17,6 +18,7 @@ import (
 
 func init() {
 	gsutil.Register("pebble", func(spec string) (graphstore.Service, error) { return OpenGraphStore(spec, nil) })
+	kvutil.Register("pebble", func(spec string) (keyvalue.DB, error) { return Open(spec, nil) })
 }
 
 type pebbleDB struct {
@@ -34,7 +36,16 @@ func CompactRange(path string, r *keyvalue.Range) error {
 	defer db.Close()
 
 	start := []byte{byte(0)}
-	end := []byte{byte(255)}
+	end := []byte{byte(0)}
+
+	iter, err := db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	if iter.Last() {
+		end = iter.Value()
+	}
+
 	if r != nil {
 		start = r.Start
 		end = r.End
@@ -120,6 +131,25 @@ func (p *pebbleDB) Get(ctx context.Context, key []byte, opts *keyvalue.Options) 
 	}
 	defer closer.Close()
 	return value, nil
+}
+
+func (p *pebbleDB) CompactRange(r *keyvalue.Range) error {
+	start := []byte{byte(0)}
+	end := []byte{byte(0)}
+
+	iter, err := p.db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	if iter.Last() {
+		end = iter.Value()
+	}
+
+	if r != nil {
+		start = r.Start
+		end = r.End
+	}
+	return p.db.Compact(start, end, true /*=parallelize*/)
 }
 
 func (p *pebbleDB) NewSnapshot(ctx context.Context) keyvalue.Snapshot {

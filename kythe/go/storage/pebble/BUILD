@@ -10,6 +10,7 @@ go_library(
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/keyvalue",
+        "//kythe/go/storage/kvutil",
         "@com_github_cockroachdb_pebble//:pebble",
         "@com_github_cockroachdb_pebble//vfs",
     ],
@@ -20,6 +21,7 @@ go_test(
     srcs = ["pebble_test.go"],
     library = ":pebble",
     deps = [
+        "//kythe/go/storage/keyvalue",
         "//kythe/go/test/services/graphstore",
         "//kythe/go/test/storage/keyvalue",
         "@com_github_google_go_cmp//cmp",

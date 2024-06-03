@@ -30,6 +30,8 @@ import (
 	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/storage/kvutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
@@ -43,6 +45,7 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/kythe/go/storage/pebble"
 	_ "kythe.io/third_party/beam/sdks/go/pkg/beam/runners/disksort"
 )
 
@@ -103,11 +106,9 @@ func main() {
 		flagutil.UsageError("missing required --out flag")
 	}
 
-	db, err := leveldb.Open(*tablePath, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close(ctx)
+	db := getDB(*tablePath)
+	defer kvutil.LogClose(ctx, db)
+	kvutil.EnsureGracefulExit(db)
 
 	if err := profile.Start(ctx); err != nil {
 		log.Fatal(err)
@@ -139,10 +140,21 @@ func main() {
 	}
 
 	if *compactTable {
-		if err := compactLevelDB(*tablePath); err != nil {
-			log.Fatalf("Error compacting LevelDB: %v", err)
+		if dbc, ok := db.(keyvalue.Compactor); ok {
+			defer func(start time.Time) { log.Infof("Compaction completed in %s", time.Since(start)) }(time.Now())
+			dbc.CompactRange(nil)
+		} else {
+			log.Fatalf("Error: db does not support compaction")
 		}
 	}
+}
+
+func getDB(path string) keyvalue.DB {
+	db, err := kvutil.ParseDB(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
 }
 
 func compactLevelDB(path string) error {

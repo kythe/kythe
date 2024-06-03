@@ -123,6 +123,10 @@ func (o *Options) GetSnapshot() Snapshot {
 	return o.Snapshot
 }
 
+type Compactor interface {
+	CompactRange(r *Range) error
+}
+
 // Iterator provides sequential access to a DB. Iterators must be Closed when
 // no longer used to ensure that resources are not leaked.
 type Iterator interface {

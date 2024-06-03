@@ -32,7 +32,7 @@ import (
 	gsrv "kythe.io/kythe/go/serving/graph"
 	"kythe.io/kythe/go/serving/identifiers"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
-	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/storage/kvutil"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/log"
@@ -40,10 +40,12 @@ import (
 	"golang.org/x/net/http2"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/kythe/go/storage/leveldb"
+	_ "kythe.io/kythe/go/storage/pebble"
 )
 
 var (
-	servingTable = flag.String("serving_table", "", "LevelDB serving table")
+	servingTable = flag.String("serving_table", "", "Path to serving table (pebble or leveldb)")
 
 	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server (\":<port>\" allows access from any machine)")
 	httpAllowOrigin   = flag.String("http_allow_origin", "", "If set, each HTTP response will contain a Access-Control-Allow-Origin header with the given value")
@@ -81,7 +83,7 @@ func main() {
 	)
 
 	ctx := context.Background()
-	db, err := leveldb.Open(*servingTable, &leveldb.Options{MustExist: true})
+	db, err := kvutil.ParseDB(*servingTable)
 	if err != nil {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
