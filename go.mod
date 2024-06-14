@@ -1,4 +1,4 @@
-module kythe.io
+module github.com/buildbuddy-io/kythe
 
 require (
 	bitbucket.org/creachadair/shell v0.0.7
