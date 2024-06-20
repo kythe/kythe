@@ -2,10 +2,9 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load(":genproto.bzl", "update_generated_protos")
 load(":go.bzl", "go_proto_library")
 
-package(default_visibility = ["//kythe:proto_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "public",
@@ -750,11 +749,6 @@ java_proto_library(
 )
 
 bzl_library(
-    name = "genproto_bzl",
-    srcs = ["genproto.bzl"],
-)
-
-bzl_library(
     name = "go_bzl",
     srcs = ["go.bzl"],
 )
@@ -849,14 +843,4 @@ go_proto_library(
     importpath = "kythe.io/kythe/proto/vnames_config_go_proto",
     proto = ":vnames_config_proto",
     deps = [":storage_go_proto"],
-)
-
-# Uses native.existing_rules() to find rules to update; must come last.
-update_generated_protos(
-    name = "update",
-    additional_update_targets = [
-        # Ensure this updates the protos which live elsewhere.
-        "//kythe/go/util/riegeli:riegeli_test_go_proto_sync",
-        "//third_party/bazel:update",
-    ],
 )

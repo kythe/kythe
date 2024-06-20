@@ -87,17 +87,6 @@ ruby_bundle(
     gemfile_lock = "//kythe/web/site:Gemfile.lock",
 )
 
-http_archive(
-    name = "aspect_bazel_lib",
-    sha256 = "d488d8ecca98a4042442a4ae5f1ab0b614f896c0ebf6e3eafff363bcc51c6e62",
-    strip_prefix = "bazel-lib-1.33.0",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.33.0/bazel-lib-v1.33.0.tar.gz",
-)
-
-load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
-
-aspect_bazel_lib_dependencies()
-
 # clang-tidy aspect wrapper
 load(
     "@bazel_tools//tools/build_defs/repo:git.bzl",

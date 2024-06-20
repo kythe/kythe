@@ -1,4 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "http_server",

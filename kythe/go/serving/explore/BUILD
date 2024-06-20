@@ -1,7 +1,7 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(
-    default_visibility = ["//kythe:default_visibility"],
+    default_visibility = ["//visibility:public"],
     licenses = ["notice"],
 )
 
