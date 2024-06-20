@@ -5,7 +5,7 @@ load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load(":genproto.bzl", "update_generated_protos")
 load(":go.bzl", "go_proto_library")
 
-package(default_visibility = ["//kythe:proto_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "public",

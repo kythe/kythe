@@ -1,6 +1,6 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 go_library(
     name = "identifiers",
