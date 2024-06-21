@@ -5,8 +5,10 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_file")
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("//kythe/proto:go.bzl", "go_proto_library")
+load("//kythe/proto:genproto.bzl", "update_generated_protos")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -31,6 +33,14 @@ copy_to_directory(
         "src/": "",
         "third_party/bazel/": "",
     },
+    visibility = ["//visibility:private"],
+)
+
+write_source_file(
+    name = "proto_srcs_sync",
+    in_file = ":proto_srcs",
+    out_file = "src",
+    tags = ["local"],  # Fails spuriously remotely.
     visibility = ["//visibility:private"],
 )
 
@@ -160,3 +170,5 @@ sh_binary(
     name = "get_sdkroot",
     srcs = ["get_sdkroot.sh"],
 )
+
+update_generated_protos(name = "update")
