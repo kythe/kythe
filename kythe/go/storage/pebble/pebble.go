@@ -34,7 +34,16 @@ func CompactRange(path string, r *keyvalue.Range) error {
 	defer db.Close()
 
 	start := []byte{byte(0)}
-	end := []byte{byte(255)}
+	end := []byte{byte(0)}
+
+	iter, err := db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	if iter.Last() {
+		end = iter.Value()
+	}
+
 	if r != nil {
 		start = r.Start
 		end = r.End
