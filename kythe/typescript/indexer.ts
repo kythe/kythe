@@ -824,9 +824,9 @@ class Visitor {
       // where return type of the function is a named type, e.g. Person.
       // This will connect 'name' property of the object literal to the
       // Person.name property.
-      if (node.expression && ts.isObjectLiteralExpression(node.expression)) {
+      if (node.expression && ts.isObjectLiteralExpression(node.expression) && containingFunction.type) {
         this.connectObjectLiteralToType(
-            node.expression, containingFunction.type);
+            node.expression, this.typeChecker.getTypeFromTypeNode(containingFunction.type));
       }
     }
     this.popInfluencers();
@@ -911,7 +911,7 @@ class Visitor {
         const signParameter = signature.parameters[i]?.valueDeclaration;
         if (ts.isObjectLiteralExpression(argument) && signParameter &&
             ts.isParameter(signParameter)) {
-          this.connectObjectLiteralToType(argument, signParameter.type);
+          this.connectObjectLiteralToType(argument, this.typeChecker.getTypeAtLocation(signParameter));
         }
       }
     }
@@ -1640,7 +1640,7 @@ class Visitor {
     if (decl.initializer) this.visit(decl.initializer);
     if (decl.type && decl.initializer &&
         ts.isObjectLiteralExpression(decl.initializer)) {
-      this.connectObjectLiteralToType(decl.initializer, decl.type);
+      this.connectObjectLiteralToType(decl.initializer, this.typeChecker.getTypeAtLocation(decl));
     }
     if (!vname) {
       return undefined;
@@ -1915,16 +1915,40 @@ class Visitor {
    * expected - adds refs from the literals properties to the type's properties.
    */
   connectObjectLiteralToType(
-      literal: ts.ObjectLiteralExpression, typeNode: ts.TypeNode|undefined) {
-    if (typeNode == null) return;
-    const type = this.typeChecker.getTypeFromTypeNode(typeNode);
+      literal: ts.ObjectLiteralExpression, type: ts.Type) {
     for (const prop of literal.properties) {
       if (ts.isPropertyAssignment(prop) ||
           ts.isShorthandPropertyAssignment(prop) ||
           ts.isMethodDeclaration(prop)) {
         this.emitPropertyRef(prop.name, type);
       }
+      // Nested object.
+      if (ts.isPropertyAssignment(prop) && ts.isObjectLiteralExpression(prop.initializer)) {
+        const typeOfProperty = this.getTypeOfProperty(type, this.getPropertyNameStr(prop.name));
+        if (typeOfProperty) {
+          this.connectObjectLiteralToType(prop.initializer, typeOfProperty);
+        }
+      }
     }
+  }
+
+  /**
+   * Given a property name and at type e.g. interface, looks up property on that type and returns
+   * its type.
+   *
+   * interface Address {
+   *   person: Person;
+   * }
+   *
+   * getTypeOfProperty(typeAddress, 'person') returns Person type.
+   */
+  getTypeOfProperty(type: ts.Type, property: string|undefined): ts.Type|undefined {
+    if (property == null) return;
+    const propertyOnType = type.getProperty(property);
+    if (propertyOnType == null || propertyOnType.valueDeclaration == null) return;
+    const decl = propertyOnType.valueDeclaration;
+    if (!ts.isPropertySignature(decl)) return;
+    return this.typeChecker.getTypeAtLocation(decl);
   }
 
   /**
@@ -2578,7 +2602,7 @@ class Visitor {
     // Handle case like `{name: 'Alice'} as Person` and connect `name` property
     // to Person.name.
     if (ts.isObjectLiteralExpression(node.expression)) {
-      this.connectObjectLiteralToType(node.expression, node.type);
+      this.connectObjectLiteralToType(node.expression, this.typeChecker.getTypeAtLocation(node));
     }
   }
 
