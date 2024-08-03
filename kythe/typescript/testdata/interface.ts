@@ -66,6 +66,7 @@ function returnPerson(): Person {
 }
 
 interface Address {
+  //- @person defines/binding Person
   person: Person;
   street: string;
 }
@@ -73,6 +74,7 @@ interface Address {
 // Test nested objects.
 {
   const address: Address = {
+    //- @person ref/id Person
     person: {
       //- @name ref/id Name
       name: 'Alice',
