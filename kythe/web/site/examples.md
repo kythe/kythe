@@ -262,8 +262,9 @@ bin: main.cc
 # cxx_wrapper.sh
 #!/bin/bash -e
 
-$KYTHE_RELEASE_DIR/extractors/cxx_extractor "$@" &
+$KYTHE_RELEASE_DIR/extractors/cxx_extractor "$@" & pid=$!
 /usr/bin/c++ "$@"
+wait "$pid"
 ```
 
 Extraction is done by setting the `CXX` make variable as well as some environment variables that configure `cxx_extractor`.
