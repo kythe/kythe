@@ -18,11 +18,11 @@ syntax = "proto3";
 
 package kythe.proto;
 
+import "kythe/proto/common.proto";
+
 option go_package = "kythe.io/kythe/proto/xref_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 option java_multiple_files = true;
-
-import "kythe/proto/common.proto";
 
 // This file defines a cross-reference service interface, based on Kythe data.
 //
@@ -595,7 +595,7 @@ message CrossReferencesReply {
   Total filtered = 12;
 
   // A map from ticket to cross-references for each ticket specified in the
-  // request message.
+  // request message unless there are no cross-references for that ticket.
   map<string, CrossReferenceSet> cross_references = 1;
 
   // A map from ticket to the facts provided based on the requested filters,
