@@ -171,6 +171,12 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                       absl::string_view sp) override;
 
+  proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                      absl::string_view sp, int pos,
+                                      int len) override;
+
+  proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                      absl::string_view sp, int pos) override;
   proto::VName VNameForRelPath(
       absl::string_view simplified_path) const override;
 
@@ -830,6 +836,26 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   const int begin = sp.begin() - textproto_content_.begin();
   const int end = begin + sp.size();
   return CreateAndAddAnchorNode(file_vname, begin, end);
+}
+
+// Adds an anchor node, using the string_view's offset relative to
+// `textproto_content_` (adding the given position offset) as the start
+// location, with the given length.
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, absl::string_view sp, int pos, int len) {
+  CHECK(pos >= 0) << "substring in range of source";
+  CHECK(pos + len <= sp.size()) << "substring in range of source";
+  const int begin = sp.begin() + pos - textproto_content_.begin();
+  const int end = begin + len;
+  return CreateAndAddAnchorNode(file_vname, begin, end);
+}
+
+// Adds an anchor node, using the string_view's offset relative to
+// `textproto_content_` (adding the given position offset) as the start
+// location.
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, absl::string_view sp, int pos) {
+  return CreateAndAddAnchorNode(file_vname, sp, pos, sp.size() - pos);
 }
 
 void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,

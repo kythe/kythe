@@ -21,6 +21,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -42,6 +43,16 @@ class PluginApi {
   // Adds an anchor for the text span and returns its VName.
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                               absl::string_view sp) = 0;
+
+  // Adds an anchor for a substring of the text span and returns its VName.
+  virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                              absl::string_view sp, int pos,
+                                              int len) = 0;
+
+  // Adds an anchor for a substring of the text span and returns its VName.
+  virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                              absl::string_view sp,
+                                              int pos) = 0;
 
   virtual KytheGraphRecorder* recorder() = 0;
 

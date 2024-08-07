@@ -2050,14 +2050,15 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
 // NB: This function is *not* used for definition/declaration sites.
 // Resolved is either a TemplateSpecializationType or a
 // DeducedTemplateSpecializationType.
-template <typename TypeLoc, typename Type>
+template <typename Type>
 bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
-    TypeLoc Written, const Type* Resolved) {
-  auto NameLocation = Written.getTemplateNameLoc();
+    SourceRange WrittenRange, clang::TemplateName ResolvedTemplateName,
+    const Type* Resolved) {
+  auto NameLocation = WrittenRange.getBegin();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
       if (auto TemplateName =
-              BuildNodeIdForTemplateName(Resolved->getTemplateName())) {
+              BuildNodeIdForTemplateName(ResolvedTemplateName)) {
         NodeId DeclNode = [&] {
           if (const auto* Decl = Resolved->getAsCXXRecordDecl()) {
             // When aliasing is on, we need to point at the decls of total
@@ -2077,19 +2078,21 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
       }
     }
   }
-  RecordTypeLocSpellingLocation(Written, Resolved);
+  RecordTypeSpellingLocation(Resolved, WrittenRange);
   return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
     clang::TemplateSpecializationTypeLoc TL) {
-  return VisitTemplateSpecializationTypePairHelper(TL, TL.getTypePtr());
+  return VisitTemplateSpecializationTypePairHelper(
+      TL.getSourceRange(), TL.getTypePtr()->getTemplateName(), TL.getTypePtr());
 }
 
 bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypePair(
     clang::DeducedTemplateSpecializationTypeLoc TL,
     const clang::DeducedTemplateSpecializationType* T) {
-  return VisitTemplateSpecializationTypePairHelper(TL, T);
+  return VisitTemplateSpecializationTypePairHelper(TL.getSourceRange(),
+                                                   T->getTemplateName(), T);
 }
 
 bool IndexerASTVisitor::VisitAutoTypePair(clang::AutoTypeLoc TL,
@@ -2904,13 +2907,24 @@ bool IndexerASTVisitor::TraverseClassTemplateDecl(
 // TraverseClassTemplate{Partial}SpecializationDecl will be called).
 bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
     clang::ClassTemplateSpecializationDecl* TD) {
-  // Differentiate between implicit instantiations and explicit instantiations
-  // based on the presence of TypeSourceInfo.
-  // See RecursiveASTVisitor::TraverseClassTemplateSpecializationDecl for more
-  // detail.
-  if (clang::TypeSourceInfo* TSI = TD->getTypeAsWritten()) {
-    if (!TraverseTypeLoc(TSI->getTypeLoc())) {
-      return false;
+  SourceRange RangeOfNameWithArgs;
+  if (const clang::ASTTemplateArgumentListInfo* ATALI =
+          TD->getTemplateArgsAsWritten()) {
+    RangeOfNameWithArgs =
+        clang::SourceRange(TD->getLocation(), ATALI->getRAngleLoc());
+  }
+  VisitTemplateSpecializationTypePairHelper(
+      RangeOfNameWithArgs, clang::TemplateName(TD->getSpecializedTemplate()),
+      TD->getTypeForDecl());
+
+  if (const clang::ASTTemplateArgumentListInfo* ATALI =
+          TD->getTemplateArgsAsWritten()) {
+    for (const clang::TemplateArgumentLoc& Loc : ATALI->arguments()) {
+      if (auto* SourceInfo = Loc.getTypeSourceInfo()) {
+        if (!TraverseTypeLoc(SourceInfo->getTypeLoc())) {
+          return false;
+        }
+      }
     }
   }
   if (!TraverseNestedNameSpecifierLoc(TD->getQualifierLoc())) {
@@ -3973,7 +3987,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
   // TODO(zarko): Do we need to canonicalize `Name`?
   // Maybe with Context.getCanonicalTemplateName()?
   switch (Name.getKind()) {
-    case TemplateName::Template: {
+    case TemplateName::Template: 
+    case TemplateName::QualifiedTemplate: {
       const clang::TemplateDecl* TD = Name.getAsTemplateDecl();
       if (const auto* TTPD = dyn_cast<clang::TemplateTemplateParmDecl>(TD)) {
         return BuildNodeIdForDecl(TTPD);
@@ -4045,9 +4060,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
       return std::nullopt;
     case TemplateName::AssumedTemplate:
       CHECK(options_.IgnoreUnimplemented) << "TN.AssumedTemplate";
-      return std::nullopt;
-    case TemplateName::QualifiedTemplate:
-      CHECK(options_.IgnoreUnimplemented) << "TN.QualifiedTemplate";
       return std::nullopt;
     case TemplateName::DependentTemplate:
       CHECK(options_.IgnoreUnimplemented) << "TN.DependentTemplate";
