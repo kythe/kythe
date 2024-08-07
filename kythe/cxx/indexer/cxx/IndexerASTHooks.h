@@ -197,9 +197,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
 
-  template <typename TypeLoc, typename Type>
-  bool VisitTemplateSpecializationTypePairHelper(TypeLoc Written,
-                                                 const Type* Resolved);
+  template <typename Type>
+  bool VisitTemplateSpecializationTypePairHelper(
+      clang::SourceRange WrittenRange, clang::TemplateName ResolvedTemplateName,
+      const Type* Resolved);
 
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
