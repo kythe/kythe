@@ -75,10 +75,10 @@ build:java19 --tool_java_language_version=19
 build:java19 --java_runtime_version=remotejdk_19
 build:java19 --tool_java_runtime_version=remotejdk_19
 
-build:java20 --java_language_version=20
-build:java20 --tool_java_language_version=20
-build:java20 --java_runtime_version=remotejdk_20
-build:java20 --tool_java_runtime_version=remotejdk_20
+#build:java20 --java_language_version=20
+#build:java20 --tool_java_language_version=20
+#build:java20 --java_runtime_version=remotejdk_20
+#build:java20 --tool_java_runtime_version=remotejdk_20
 
 build:java21 --java_language_version=21
 build:java21 --tool_java_language_version=21

@@ -21,6 +21,10 @@ limitations under the License.
 image:https://img.shields.io/github/release/kythe/kythe/all.svg[link=https://github.com/kythe/kythe/releases]
 image:https://img.shields.io/github/license/kythe/kythe.svg[link=https://github.com/kythe/kythe/blob/master/LICENSE]
 
+image:https://github.com/filmil/kythe/workflows/Test/badge.svg
+
+
+
 == Features
 
 * Extensive documentation of the Kythe schema

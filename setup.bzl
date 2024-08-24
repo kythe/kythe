@@ -1,4 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
 def github_archive(name, repo_name, commit, kind = "zip", strip_prefix = "", **kwargs):
@@ -66,14 +67,14 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        http_archive,
+        git_repository,
         name = "rules_java",
-        urls = [
-            # Note: when updating rules_java, please check if the ModuleName check in tools/javacopts.bazelrc can be re-enabled.
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/6.5.2/rules_java-6.5.2.tar.gz",
-            "https://github.com/bazelbuild/rules_java/releases/download/6.5.2/rules_java-6.5.2.tar.gz",
-        ],
-        sha256 = "16bc94b1a3c64f2c36ceecddc9e09a643e80937076b97e934b96a8f715ed1eaa",
+        remote = "https://github.com/bazelbuild/rules_java",
+        commit = "e1d74669d0d7d9a14beaf17236094712a7443967",
+        #urls = [
+            ## Note: when updating rules_java, please check if the ModuleName check in tools/javacopts.bazelrc can be re-enabled.
+            #"https://github.com/bazelbuild/rules_java/releases/download/7.9.0/rules_java-7.9.0.tar.gz",
+        #],
     )
 
     maybe(

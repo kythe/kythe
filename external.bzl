@@ -21,7 +21,7 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 load(
     "@rules_java//java:repositories.bzl",
     "remote_jdk17_repos",
-    "remote_jdk20_repos",
+    #"remote_jdk20_repos",
     "rules_java_dependencies",
 )
 load("@rules_java//toolchains:remote_java_repository.bzl", "remote_java_repository")
@@ -38,10 +38,10 @@ def _rule_dependencies():
     # Specifically define and register only Java toolchains we intend to support.
     remote_jdk17_repos()
     remote_jdk19_repos()
-    remote_jdk20_repos()
+    #remote_jdk20_repos()
     remote_jdk21_repos()
     native.register_toolchains("@local_jdk//:runtime_toolchain_definition")
-    for version in ("11", "17", "19", "20", "21"):
+    for version in ("11", "17", "19", "21"):
         for platform in ("linux", "macos", "win"):
             native.register_toolchains("@remotejdk{version}_{platform}_toolchain_config_repo//:toolchain".format(
                 version = version,

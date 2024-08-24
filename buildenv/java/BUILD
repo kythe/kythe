@@ -19,7 +19,7 @@ package(default_visibility = ["//visibility:public"])
         source_version = version,
         target_version = version,
     )
-    for version in ("11", "17", "19", "20", "21")
+    for version in ("11", "17", "19", "21")
 ]
 
 config_setting(
