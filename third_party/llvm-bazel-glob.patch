@@ -121,22 +121,6 @@ index be02c2270432..fc106de5df7e 100644
  load(
      ":libc_build_rules.bzl",
      "libc_function",
-diff --git a/utils/bazel/llvm-project-overlay/libc/test/UnitTest/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/UnitTest/BUILD.bazel
-index b1140a5a1609..dfd80c704527 100644
---- a/utils/bazel/llvm-project-overlay/libc/test/UnitTest/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/libc/test/UnitTest/BUILD.bazel
-@@ -85,9 +85,9 @@ libc_support_library(
-         "//libc:__support_fputil_fp_bits",
-         "//libc:__support_fputil_fpbits_str",
-         "//libc:__support_fputil_rounding_mode",
-+        "//libc:hdr_fenv_macros",
-         "//libc:hdr_math_macros",
--	"//libc:hdr_fenv_macros",
--	"//libc:types_fenv_t",
-+        "//libc:types_fenv_t",
-     ],
- )
- 
 diff --git a/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel
 index ff3b035f64ad..998fdfe7e005 100644
 --- a/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel
@@ -148,83 +132,6 @@ index ff3b035f64ad..998fdfe7e005 100644
 +        "//libc:hdr_fenv_macros",
          "//libc/utils/MPFRWrapper:mpfr_wrapper",
 -	"//libc:hdr_fenv_macros",
-     ],
- )
-diff --git a/utils/bazel/llvm-project-overlay/libc/test/src/fenv/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/src/fenv/BUILD.bazel
-index fc3ab3da3587..195185d5581e 100644
---- a/utils/bazel/llvm-project-overlay/libc/test/src/fenv/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/libc/test/src/fenv/BUILD.bazel
-@@ -21,7 +21,7 @@ libc_test(
-     ],
-     deps = [
-         "//libc:__support_fputil_fenv_impl",
--	"//libc:hdr_fenv_macros",
-+        "//libc:hdr_fenv_macros",
-     ],
- )
- 
-@@ -48,8 +48,8 @@ libc_test(
-         "//libc:__support_common",
-         "//libc:__support_fputil_fenv_impl",
-         "//libc:__support_macros_properties_architectures",
-+        "//libc:hdr_fenv_macros",
-         "//libc/test/UnitTest:fp_test_helpers",
--	"//libc:hdr_fenv_macros",
-     ],
- )
- 
-@@ -64,8 +64,8 @@ libc_test(
-         "//libc:__support_common",
-         "//libc:__support_fputil_fenv_impl",
-         "//libc:__support_macros_properties_architectures",
-+        "//libc:types_fenv_t",
-         "//libc/test/UnitTest:fp_test_helpers",
--	"//libc:types_fenv_t",
-     ],
- )
- 
-@@ -79,7 +79,7 @@ libc_test(
-     ],
-     deps = [
-         "//libc:__support_fputil_fenv_impl",
--	"//libc:types_fexcept_t",
-+        "//libc:types_fexcept_t",
-     ],
- )
- 
-@@ -91,7 +91,7 @@ libc_test(
-     ],
-     deps = [
-         "//libc:__support_fputil_fenv_impl",
--	"//libc:hdr_fenv_macros",
-+        "//libc:hdr_fenv_macros",
-     ],
- )
- 
-@@ -106,7 +106,7 @@ libc_test(
-     deps = [
-         "//libc:__support_common",
-         "//libc:__support_macros_properties_architectures",
--	"//libc:hdr_fenv_macros",
-+        "//libc:hdr_fenv_macros",
-     ],
- )
- 
-@@ -118,7 +118,7 @@ libc_test(
-     ],
-     deps = [
-         "//libc:__support_fputil_fenv_impl",
--	"//libc:types_fenv_t",
-+        "//libc:types_fenv_t",
-     ],
- )
- 
-@@ -133,6 +133,6 @@ libc_test(
-     ],
-     deps = [
-         "//libc:__support_fputil_fenv_impl",
--	"//libc:types_fenv_t",
-+        "//libc:types_fenv_t",
      ],
  )
 diff --git a/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel
@@ -260,9 +167,9 @@ index 7958c6024875..fe245355846e 100644
  load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
  load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
+ load("@build_bazel_apple_support//rules:apple_genrule.bzl", "apple_genrule")
  load("//:vars.bzl", "LLVM_VERSION_MAJOR", "LLVM_VERSION_MINOR", "LLVM_VERSION_PATCH", "LLVM_VERSION_SUFFIX", "PACKAGE_VERSION")
  load("//lldb/source/Plugins:plugin_config.bzl", "DEFAULT_PLUGINS", "DEFAULT_SCRIPT_PLUGINS", "OBJCPP_COPTS")
- load("//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
 diff --git a/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel b/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel
 index e0907a838148..18c2ed793912 100644
 --- a/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel
@@ -316,8 +223,8 @@ index 58538b66c5e0..b32ab40843f3 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
 @@ -6,6 +6,7 @@
- #   The MLIR "Multi-Level Intermediate Representation" Compiler Infrastructure
  
+ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
  load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
  load(
@@ -436,19 +343,8 @@ index dc5f4047c286..79b1cf855c1e 100644
  load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 +load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
  load("//llvm:lit_test.bzl", "package_path")
- load("//mlir:tblgen.bzl", "gentbl_cc_library", "td_library")
+ load("//mlir:tblgen.bzl", "gentbl_cc_library", "gentbl_sharded_ops", "td_library")
  
-@@ -418,9 +419,9 @@ cc_library(
-         "//mlir:SideEffectInterfaces",
-         "//mlir:Support",
-         "//mlir:TensorDialect",
--        "//mlir:TranslateLib",
-         "//mlir:TransformUtils",
-         "//mlir:Transforms",
-+        "//mlir:TranslateLib",
-         "//mlir:ValueBoundsOpInterface",
-         "//mlir:ViewLikeInterface",
-     ],
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel
 index b00e8f243c29..0bd0450c4690 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel

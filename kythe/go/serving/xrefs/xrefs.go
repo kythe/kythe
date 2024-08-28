@@ -61,7 +61,7 @@ import (
 )
 
 var (
-	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
+	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest. A node is merged into at most one other node even if it is related to multiple nodes in the request.")
 
 	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
 
