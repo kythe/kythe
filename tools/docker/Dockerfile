@@ -13,37 +13,26 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/kythe-builder .
-FROM ubuntu:xenial
+FROM ubuntu:24.04
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean
 
-RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-RUN curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
-      g++ gcc openjdk-8-jdk openjdk-8-source clang-3.6 flex asciidoc source-highlight graphviz \
-      zlib1g-dev libarchive-dev uuid-dev bazel \
+      g++ gcc openjdk-21-jdk openjdk-21-source clang-15 flex asciidoc source-highlight graphviz \
+      zlib1g-dev libarchive-dev uuid-dev golang bison \
       ca-certificates-java libsasl2-dev && \
     apt-get clean
 
-RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-ENV CC=/usr/bin/clang-3.6
-
-# Bison
-RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \
-    dpkg -i /tmp/bison_2.3.deb && \
-    rm -f /tmp/bison_2.3.deb
+RUN update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV CC=/usr/bin/clang-15
 
 # Go
-RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
-    tar xzf /tmp/go.tar.gz -C /usr/local/ && \
-    rm -f /tmp/go.tar.gz
-ENV PATH=/usr/local/go/bin:$PATH
+ENV PATH=/root/go/bin:$PATH

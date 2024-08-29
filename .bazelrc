@@ -94,18 +94,15 @@ build:release --stamp -c opt --copt=-gmlt
 # Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --bes_instance_name=kythe-repo
 
-build:remote --google_default_credentials=true
 build:remote --jobs=50
 build:remote --remote_timeout=3600
-build:remote --remote_cache=grpcs://remotebuildexecution.googleapis.com
-build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
+build:remote --remote_executor=grpcs://buildbuddy.buildbuddy.io
 # Avoid fetching unnecessary intermediate files locally.
 build:remote --remote_download_toplevel
 
-# TODO(schroederc): add buildeventservice
-# build:remote --bes_backend="buildeventservice.googleapis.com"
-# build:remote --bes_timeout=60s
-# build:remote --bes_results_url="https://source.cloud.google.com/results/invocations/"
+build:remote --bes_backend=grpcs://buildbuddy.buildbuddy.io
+build:remote --bes_timeout=60s
+build:remote --bes_results_url=https://app.buildbuddy.io/invocation/
 
 # Starting with Bazel 0.27.0 strategies do not need to be explicitly
 # # defined. See https://github.com/bazelbuild/bazel/issues/7480
