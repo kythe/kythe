@@ -15,7 +15,6 @@
 # This becomes the BUILD file for @local_config_cc// under non-BSD unixes.
 
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
-load(":armeabi_cc_toolchain_config.bzl", "armeabi_cc_toolchain_config")
 load("@rules_cc//cc:defs.bzl", "cc_toolchain", "cc_toolchain_suite")
 
 package(default_visibility = ["//visibility:public"])
@@ -41,19 +40,6 @@ filegroup(
     srcs = glob(["extra_tools/**"], allow_empty = True) + [":builtin_include_directory_paths"],
 )
 
-# This is the entry point for --crosstool_top.  Toolchains are found
-# by lopping off the name of --crosstool_top and searching for
-# the "${CPU}" entry in the toolchains attribute.
-cc_toolchain_suite(
-    name = "toolchain",
-    toolchains = {
-        "k8|clang": ":cc-compiler-k8",
-        "k8": ":cc-compiler-k8",
-        "armeabi-v7a|compiler": ":cc-compiler-armeabi-v7a",
-        "armeabi-v7a": ":cc-compiler-armeabi-v7a",
-    },
-)
-
 cc_toolchain(
     name = "cc-compiler-k8",
     toolchain_identifier = "linux_gnu_x86",
@@ -73,23 +59,24 @@ cc_toolchain(
 cc_toolchain_config(
     name = "linux_gnu_x86",
     cpu = "k8",
-    compiler = "clang",
+    compiler = "compiler",
     toolchain_identifier = "linux_gnu_x86",
     host_system_name = "i686-unknown-linux-gnu",
     target_system_name = "x86_64-unknown-linux-gnu",
-    target_libc = "glibc_2.19",
+    target_libc = "glibc_2.39",
     abi_version = "clang",
-    abi_libc_version = "glibc_2.19",
-    cxx_builtin_include_directories = ["/usr/lib/llvm-15/lib/clang/15.0.7/include",
-    "/usr/local/include",
-    "/usr/include/x86_64-linux-gnu",
-    "/usr/include",
-    "/usr/lib/llvm-15/lib/clang/15.0.7/share",
-    "/usr/include/c++/12",
-    "/usr/include/x86_64-linux-gnu/c++/12",
-    "/usr/include/c++/12/backward",
-    "/usr/lib/llvm-15/include/c++/v1"],
-    tool_paths = {"ar": "/usr/bin/ar",
+    abi_libc_version = "glibc_2.39",
+    cxx_builtin_include_directories = [
+        "/usr/include",
+        "/usr/include/c++/13",
+        "/usr/include/c++/13/backward",
+        "/usr/include/x86_64-linux-gnu",
+        "/usr/include/x86_64-linux-gnu/c++/13",
+        "/usr/lib/llvm-15/lib/clang/15.0.7/include",
+        "/usr/local/include",
+    ],
+    tool_paths = {
+        "ar": "/usr/bin/ar",
         "ld": "/usr/bin/ld",
         "llvm-cov": "None",
         "llvm-profdata": "None",
@@ -100,54 +87,44 @@ cc_toolchain_config(
         "nm": "/usr/bin/nm",
         "objcopy": "/usr/bin/objcopy",
         "objdump": "/usr/bin/objdump",
-        "strip": "/usr/bin/strip"},
-    compile_flags = ["-fstack-protector",
-    "-Wall",
-    "-Wthread-safety",
-    "-Wself-assign",
-    "-Wunused-but-set-parameter",
-    "-Wno-free-nonheap-object",
-    "-fcolor-diagnostics",
-    "-fno-omit-frame-pointer"],
-    opt_compile_flags = ["-g0",
-    "-O2",
-    "-D_FORTIFY_SOURCE=1",
-    "-DNDEBUG",
-    "-ffunction-sections",
-    "-fdata-sections"],
+        "strip": "/usr/bin/strip"
+    },
+    compile_flags = [
+        "-fstack-protector",
+        "-Wall",
+        "-Wthread-safety",
+        "-Wself-assign",
+        "-Wunused-but-set-parameter",
+        "-Wno-free-nonheap-object",
+        "-fcolor-diagnostics",
+        "-fno-omit-frame-pointer"
+    ],
+    opt_compile_flags = [
+        "-g0",
+        "-O2",
+        "-D_FORTIFY_SOURCE=1",
+        "-DNDEBUG",
+        "-ffunction-sections",
+        "-fdata-sections"
+    ],
     dbg_compile_flags = ["-g"],
     cxx_flags = ["-std=c++14"],
-    link_flags = ["-fuse-ld=/usr/bin/ld.gold",
-    "-Wl,-no-as-needed",
-    "-Wl,-z,relro,-z,now",
-    "-B/usr/lib/llvm-15/bin"],
-    link_libs = ["-lstdc++",
-    "-lm"],
+    link_flags = [
+        "-fuse-ld=/usr/bin/ld.gold",
+        "-Wl,-no-as-needed",
+        "-Wl,-z,relro,-z,now",
+        "-B/usr/lib/llvm-15/bin",
+    ],
+    link_libs = ["-lstdc++", "-lm"],
     opt_link_flags = ["-Wl,--gc-sections"],
-    unfiltered_compile_flags = ["-no-canonical-prefixes",
-    "-Wno-builtin-macro-redefined",
-    "-D__DATE__=\"redacted\"",
-    "-D__TIMESTAMP__=\"redacted\"",
-    "-D__TIME__=\"redacted\""],
+    unfiltered_compile_flags = [
+        "-no-canonical-prefixes",
+        "-Wno-builtin-macro-redefined",
+        "-D__DATE__=\"redacted\"",
+        "-D__TIMESTAMP__=\"redacted\"",
+        "-D__TIME__=\"redacted\""
+    ],
     coverage_compile_flags = ["--coverage"],
     coverage_link_flags = ["--coverage"],
     supports_start_end_lib = True,
 )
-
-# Android tooling requires a default toolchain for the armeabi-v7a cpu.
-cc_toolchain(
-    name = "cc-compiler-armeabi-v7a",
-    toolchain_identifier = "stub_armeabi-v7a",
-    toolchain_config = ":stub_armeabi-v7a",
-    all_files = ":empty",
-    ar_files = ":empty",
-    as_files = ":empty",
-    compiler_files = ":empty",
-    dwp_files = ":empty",
-    linker_files = ":empty",
-    objcopy_files = ":empty",
-    strip_files = ":empty",
-    supports_param_files = 1,
-)
-
-armeabi_cc_toolchain_config(name = "stub_armeabi-v7a")
