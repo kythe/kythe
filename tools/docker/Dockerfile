@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t gcr.io/kythe-repo/kythe-builder .
+# docker build -t ghcr.io/sluongng/kythe:24.04 .
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
