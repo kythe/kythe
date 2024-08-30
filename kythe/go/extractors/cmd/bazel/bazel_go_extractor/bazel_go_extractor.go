@@ -115,6 +115,8 @@ type extractor struct {
 
 func (e *extractor) checkAction(_ context.Context, info *bazel.ActionInfo) error {
 	e.compileArgs = parseCompileArgs(info.Arguments)
+	// rules_go may pass GOROOT as a flag instead of an environment variable.
+	e.goroot = e.compileArgs.goroot
 	for name, value := range info.Environment {
 		switch name {
 		case "GOOS":
@@ -196,6 +198,7 @@ type compileArgs struct {
 	include          []string          // additional include directories
 	importPath       string            // output package import path
 	trimPrefix       string            // prefix to trim from source paths
+	goroot           string            // goroot if passed via a flag
 }
 
 func parseCompileArgs(args []string) *compileArgs {
@@ -248,6 +251,8 @@ func parseCompileArgs(args []string) *compileArgs {
 			c.srcs = append(c.srcs, arg)
 		case "tags":
 			c.tags = append(c.tags, arg)
+		case "goroot":
+			c.goroot = arg
 		}
 		flag = "" // reset
 	}
