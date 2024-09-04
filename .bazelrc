@@ -16,6 +16,7 @@ common --incompatible_disallow_empty_glob
 # We can't support bzlmod until (at least) protobuf does
 # https://github.com/kythe/kythe/issues/5893
 common --noenable_bzlmod
+common --enable_workspace
 
 common --workspace_status_command tools/buildstamp/get_workspace_status
 
