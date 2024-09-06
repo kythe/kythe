@@ -19,19 +19,24 @@ a one-liner command.
 ## How is building Kythe hard?
 
 Building Kythe requires installing quite a few
-non-hermetic build prerequisites.  You can [check for yourself][yy].
+non-hermetic build prerequisites.  You can [check for yourself][yy]. In this
+day and age, this usually means throwing away quality time into figuring out
+a tangled web of inter-dependencies that sometimes conspire to make each
+other not work well.
 
 [yy]: https://kythe.io/contributing/
 
-This is annoying because it adds programs you might not need onto your machine.
-It is annoying if you want to move your dev environment between machines.
+System-wide installation is annoying, 
+because it adds programs to your machine that you migth not want installed.
+It may pollute your dev environment with conflicting versions of programs 
+and libraries. It is annoying if you want to move your dev environment between machines. 
 
-I also believe that you should be able to have your dev environment set up for you
-automatically.
-
-This is why I [bother with bazel][bb].
+I believe that you should be able to have your dev environment set up for you
+automatically. This is why I [bother with bazel][bb], and why I made
+[a number of tools that make bazel work for you][tt].
 
 [bb]: https://hdlfactory.com/post/2024/04/27/why-do-i-bother-with-bazel/
+[tt]: https://hdlfactory.com/tags/bazel/
 
 ## Why is Kythe important?
 
