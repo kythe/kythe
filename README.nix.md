@@ -27,9 +27,10 @@ other not work well.
 [yy]: https://kythe.io/contributing/
 
 System-wide installation is annoying, 
-because it adds programs to your machine that you migth not want installed.
+because it adds programs to your machine that you might not want installed.
 It may pollute your dev environment with conflicting versions of programs 
-and libraries. It is annoying if you want to move your dev environment between machines. 
+and libraries. It is annoying if you want to move your dev environment between machines.  If you dismantle your dev environment, the installed programs
+usually stay to linger around. Not ideal.
 
 I believe that you should be able to have your dev environment set up for you
 automatically. This is why I [bother with bazel][bb], and why I made
