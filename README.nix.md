@@ -52,9 +52,13 @@ made easier. This is what I am trying to do in this fork.
 
 ### One time setup
 
-* Install bazel via `bazelisk`. Install it under the name `bazel` into your `$PATH`.
+* [Install bazel via `bazelisk`][zz]. This is the easiest way to get
+ [`bazel`][dd] if you don't already have it.
 
 * Clone this repository.
+
+[zz]: https://hdlfactory.com/note/2024/08/24/bazel-installation-via-the-bazelisk-method/
+[dd]: https://bazel.build
 
 ### Build and test
 
