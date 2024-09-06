@@ -5,13 +5,11 @@
 **This is aspirational. I'm almost there but not quite just yet.**
 
 This file documents an effort to make the existing kythe fully [hermetic,
-ephemeral and reproducible][her].
-
-[her]: https://hdlfactory.com/note/2024/05/01/hermetic-ephemeral-reproducible-builds/
-
-If you are intersted how this is even possible, see [this article][aa].
+ephemeral and reproducible][her]. If you wonder how this is even possible,
+see [this article][aa].
 
 [aa]: https://hdlfactory.com/post/2024/04/20/nix-bazel-%EF%B8%8F/
+[her]: https://hdlfactory.com/note/2024/05/01/hermetic-ephemeral-reproducible-builds-her/
 
 ## The problem
 
@@ -79,4 +77,4 @@ If you want to build self-contained binaries, you can use a closure
 computer such as https://github.com/tweag/clodl. It will find all the
 libraries your binary uses and package them all together into a self-extracting
 archive. While this is a quick way to get somewhat portable binaries, if your
-needs are more elaborate, you may need to find a different solution, or make your.
+needs are more elaborate, you may need to find a different solution, or make your own.
