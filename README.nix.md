@@ -75,5 +75,8 @@ nix artifacts by their path in `/nix/store`. This makes such binaries
 not directoy runnable outside a nix shell. They are runnable from within
 a bazel context here, e.g. when using `bazel run`. 
 
-If you want to build self-contained binaries, one can use a closure
-computer such as https://github.com/tweag/clodl.
+If you want to build self-contained binaries, you can use a closure
+computer such as https://github.com/tweag/clodl. It will find all the
+libraries your binary uses and package them all together into a self-extracting
+archive. While this is a quick way to get somewhat portable binaries, if your
+needs are more elaborate, you may need to find a different solution, or make your.
