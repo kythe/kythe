@@ -57,7 +57,7 @@ made easier. This is what I am trying to do in this fork.
 * From the root directory of the cloned repository, type:
 
   ```
-  bazel teset --config=nix //... \
+  bazel test --config=nix //... \
               -- -//kythe/cxx/extractor/testdata/... -//kythe/cxx/indexer/cxx/testdata/... 
   ```
 
