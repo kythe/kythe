@@ -2037,6 +2037,7 @@ class Visitor {
         // case" is good enough for now.
         return name !== '__computed' ? name : undefined;
     }
+    return undefined;
   }
 
   /**
