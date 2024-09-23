@@ -24,8 +24,8 @@ var (
 )
 
 func init() {
-	flag.Usage = flagutil.SimpleUsage("Dump contents of a GraphStore to a single SSTable file",
-		"--graphstore spec --output /path/to/sstable")
+	flag.Usage = flagutil.SimpleUsage("Dump contents of a GraphStore db to a single SSTable file",
+		"--input spec --output /path/to/sstable")
 }
 
 func main() {
