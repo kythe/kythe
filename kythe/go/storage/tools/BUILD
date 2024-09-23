@@ -19,3 +19,8 @@ filegroup(
     name = "directory_indexer",
     srcs = ["//kythe/go/storage/tools/directory_indexer"],
 )
+
+filegroup(
+    name = "export_sstable",
+    srcs = ["//kythe/go/storage/tools/export_sstable"],
+)
