@@ -247,6 +247,7 @@ filegroup(
         "//kythe/go/serving/tools:kythe",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:directory_indexer",
+        "//kythe/go/storage/tools:export_sstable",
         "//kythe/go/storage/tools:read_entries",
         "//kythe/go/storage/tools:triples",
         "//kythe/go/storage/tools:write_entries",
