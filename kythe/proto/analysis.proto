@@ -117,6 +117,10 @@ message CompilationUnit {
   // All files that might be touched in the course of this compilation.
   // Consumers of the CompilationUnit may not assume anything about the order
   // of the elements of this field.
+  //
+  // This specifies a virtual file system to be exposed to the compiler.
+  // FileInputs with equal digests are the same file, with e.g. the same inode.
+  // (This can affect the behavior of `#pragma once` in C, among other things).
   repeated FileInput required_input = 3;
 
   // Set by the extractor to indicate that the original input had compile
