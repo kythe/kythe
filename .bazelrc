@@ -124,6 +124,10 @@ build:remote --repo_env=KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS=1
 build:remote --extra_toolchains=//tools/build_rules/lexyacc:lexyacc_remote_toolchain
 build:remote --extra_toolchains=//tools/build_rules/external_tools:external_tools_remote_toolchain
 
+# Build fully static binaries linked against musl on Linux.
+common:static --platforms=//platforms:linux_x86_64_musl
+common:static-arm64 --platforms=//platforms:linux_arm64_musl
+
 build:remote --action_env=LEIN_JAVA_CMD=
 
 build:prepush --verbose_failures --noshow_loading_progress --noshow_progress

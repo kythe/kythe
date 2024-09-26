@@ -109,3 +109,21 @@ git_repository(
     commit = "133d89a6069ce253a92d32a93fdb7db9ef100e9d",
     remote = "https://github.com/erenon/bazel_clang_tidy.git",
 )
+
+http_archive(
+    name = "musl_toolchains",
+    sha256 = "26cacffab74e10f0840c83b0be9193dc6deccfbc8ec1cf6f8362dc61d0057fa1",
+    url = "https://github.com/bazel-contrib/musl-toolchain/releases/download/v0.1.15/musl_toolchain-v0.1.15.tar.gz",
+)
+
+load("@musl_toolchains//:repositories.bzl", "load_musl_toolchains")
+
+load_musl_toolchains(
+    extra_target_compatible_with = [
+        "@//toolchains:musl_on",
+    ],
+)
+
+load("@musl_toolchains//:toolchains.bzl", "register_musl_toolchains")
+
+register_musl_toolchains()
