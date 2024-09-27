@@ -89,7 +89,7 @@ build:java21 --tool_java_runtime_version=remotejdk_21
 import %workspace%/tools/javacopts.bazelrc
 
 # For release, stamp binaries, use optimized mode w/ minimum line table debugging.
-build:release --stamp -c opt --copt=-gmlt
+build:release --stamp -c opt
 
 # Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --bes_instance_name=kythe-repo
@@ -123,6 +123,10 @@ build:remote --platforms=//tools/platforms:rbe
 build:remote --repo_env=KYTHE_DO_NOT_DETECT_BAZEL_TOOLCHAINS=1
 build:remote --extra_toolchains=//tools/build_rules/lexyacc:lexyacc_remote_toolchain
 build:remote --extra_toolchains=//tools/build_rules/external_tools:external_tools_remote_toolchain
+
+# Build fully static binaries linked against musl on Linux.
+common:static --platforms=//platforms:linux_x86_64_musl
+common:static-arm64 --platforms=//platforms:linux_arm64_musl
 
 build:remote --action_env=LEIN_JAVA_CMD=
 
