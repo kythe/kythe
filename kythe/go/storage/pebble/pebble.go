@@ -108,6 +108,11 @@ func Open(path string, opts *Options) (keyvalue.DB, error) {
 	}, nil
 }
 
+// OpenRaw returns a keyvalue DB backed by the provided pebble database.
+func OpenRaw(db *pebble.DB) keyvalue.DB {
+	return &pebbleDB{db: db}
+}
+
 // Close will close the underlying pebble database.
 func (p *pebbleDB) Close(_ context.Context) error {
 	return p.db.Close()
