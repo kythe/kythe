@@ -10,7 +10,7 @@ load(
 )
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
@@ -31,7 +31,48 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.21.6")
+    GO_SDK_VERSION = "1.21.6"
+    # Register multiple Go SDKs so that we can perform cross-compilation remotely.
+    # i.e. We might want to trigger a Linux AMD64 Go build remotely from a MacOS ARM64 laptop.
+    #
+    # Reference: https://github.com/bazelbuild/rules_go/issues/3540.
+    go_download_sdk(
+        name = "go_sdk_linux",
+        goarch = "amd64",
+        goos = "linux",
+        version = GO_SDK_VERSION,
+    )
+    go_download_sdk(
+        name = "go_sdk_linux_arm64",
+        goarch = "arm64",
+        goos = "linux",
+        version = GO_SDK_VERSION,
+    )
+    go_download_sdk(
+        name = "go_sdk_darwin",
+        goarch = "amd64",
+        goos = "darwin",
+        version = GO_SDK_VERSION,
+    )
+    go_download_sdk(
+        name = "go_sdk_darwin_arm64",
+        goarch = "arm64",
+        goos = "darwin",
+        version = GO_SDK_VERSION,
+    )
+    go_download_sdk(
+        name = "go_sdk_windows",
+        goarch = "amd64",
+        goos = "windows",
+        version = GO_SDK_VERSION,
+    )
+    go_download_sdk(
+        name = "go_sdk_windows_arm64",
+        goarch = "arm64",
+        goos = "windows",
+        version = GO_SDK_VERSION,
+    )
+    go_register_toolchains()
     gazelle_dependencies()
     rules_java_dependencies()
 

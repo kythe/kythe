@@ -13,7 +13,10 @@ def _impl(repository_ctx):
         if path.endswith(".proto"):
             # Hack to deal with the awkward lack of flexibility for proto includes and imports.
             script = r's/\(import[^"]*\)"src\//\1"third_party\/bazel\/src\//'
-            result = repository_ctx.execute(["sed", "--in-place", "-e", script, path])
+            if repository_ctx.os.name == "mac os x":
+                result = repository_ctx.execute(["gsed", "--in-place", "-e", script, path])
+            else:
+                result = repository_ctx.execute(["sed", "--in-place", "-e", script, path])
             if result.return_code != 0:
                 fail(result.stderr)
 
