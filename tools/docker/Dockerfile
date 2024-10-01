@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t ghcr.io/sluongng/kythe:24.04 .
-FROM ubuntu:24.04
+# docker build -t ghcr.io/sluongng/kythe:20.04 .
+FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,7 +25,7 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
-      g++ gcc openjdk-21-jdk openjdk-21-source clang-15 flex asciidoc source-highlight graphviz \
+      g++ gcc openjdk-21-jdk openjdk-21-source clang-12 flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev uuid-dev golang bison \
       ca-certificates-java libsasl2-dev && \
     apt-get clean
