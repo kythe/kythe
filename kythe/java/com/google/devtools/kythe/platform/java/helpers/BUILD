@@ -7,10 +7,10 @@ java_library(
     name = "helpers",
     srcs = [
         "21/BlockAnonymousSignatureGenerator.java",
+        "21/SignatureGenerator.java",
         "JCTreeScanner.java",
         "JavacUtil.java",
         "MemoizedTreePathScanner.java",
-        "21/SignatureGenerator.java",
         "SyntaxPreservingScanner.java",
     ],
     add_exports = [
