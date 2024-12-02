@@ -20,6 +20,9 @@ java_library(
         "jdk.compiler/com.sun.tools.javac.tree",
         "jdk.compiler/com.sun.tools.javac.util",
     ],
+    javacopts = [
+        "-Xep:PackageLocation:OFF",
+    ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
     ] + select_with_or({
