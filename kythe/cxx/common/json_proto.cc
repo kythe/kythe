@@ -98,7 +98,7 @@ absl::Status WriteMessageAsJsonToStringInternal(
   options.preserve_proto_field_names = true;
 
   auto status = google::protobuf::util::BinaryToJsonString(
-      resolver.get(), message.GetDescriptor()->full_name(),
+      resolver.get(), std::string(message.GetDescriptor()->full_name()),
       message.SerializeAsString(), out, options);
   if (!status.ok()) {
     return absl::Status(static_cast<absl::StatusCode>(status.code()),
@@ -143,8 +143,8 @@ absl::Status ParseFromJsonStream(
   std::string binary;
   google::protobuf::io::StringOutputStream output(&binary);
   auto status = google::protobuf::util::JsonToBinaryStream(
-      resolver.get(), message->GetDescriptor()->full_name(), input, &output,
-      options);
+      resolver.get(), std::string(message->GetDescriptor()->full_name()), input,
+      &output, options);
 
   if (!status.ok()) {
     return absl::Status(static_cast<absl::StatusCode>(status.code()),
