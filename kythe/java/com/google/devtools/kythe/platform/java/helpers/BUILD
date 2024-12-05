@@ -6,11 +6,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 java_library(
     name = "helpers",
     srcs = [
-        "BlockAnonymousSignatureGenerator.java",
+        "21/BlockAnonymousSignatureGenerator.java",
+        "21/SignatureGenerator.java",
         "JCTreeScanner.java",
         "JavacUtil.java",
         "MemoizedTreePathScanner.java",
-        "SignatureGenerator.java",
         "SyntaxPreservingScanner.java",
     ],
     add_exports = [
@@ -19,6 +19,9 @@ java_library(
         "jdk.compiler/com.sun.tools.javac.parser",
         "jdk.compiler/com.sun.tools.javac.tree",
         "jdk.compiler/com.sun.tools.javac.util",
+    ],
+    javacopts = [
+        "-Xep:PackageLocation:OFF",
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
