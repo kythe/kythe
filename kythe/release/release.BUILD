@@ -17,7 +17,6 @@ construct_vnames_config(
             "vnames.cxx.json",
             "vnames.go.json",
             "vnames.java.json",
-            "vnames.proto.json",
             "vnames.json",
         ],
 )
