@@ -2,36 +2,36 @@
 
 ## [v0.0.68] - 2025-01-06
 #### Bug Fixes
-* **go_indexer:**  
-  * emit docs nodes for interface methods (#6060) ([07be8602](https://github.com/kythe/kythe/commit/07be8602deb772705ed78c71fe5b74137c7fce09)) 
-  * emit bindings for named interface method params (#6061) ([e1713667](https://github.com/kythe/kythe/commit/e17136673a160d087e86ca0cab2ac43b7564cb36)) 
-  * emit nodes for anonymous interface params (#6062) ([1d7a58a1](https://github.com/kythe/kythe/commit/1d7a58a1797801462a2cd1a86128a2328c9256dd)) 
+* **go_indexer:**
+  * emit docs nodes for interface methods (#6060) ([07be8602](https://github.com/kythe/kythe/commit/07be8602deb772705ed78c71fe5b74137c7fce09))
+  * emit bindings for named interface method params (#6061) ([e1713667](https://github.com/kythe/kythe/commit/e17136673a160d087e86ca0cab2ac43b7564cb36))
+  * emit nodes for anonymous interface params (#6062) ([1d7a58a1](https://github.com/kythe/kythe/commit/1d7a58a1797801462a2cd1a86128a2328c9256dd))
   * only handle top-level flags (#6063) ([f6b2e265](https://github.com/kythe/kythe/commit/f6b2e265012974038c7bcbea2fa9c7677fc90185))
-* **bazel:** 
+* **bazel:**
   * remove cyclic dependency by removing usage of assign_external_projects_to_separate_corpora config_setting flag (#6146) ([46275ee6](https://github.com/kythe/kythe/commit/46275ee670cab83d0c86ed3a5fbcfe826d386dac))
-* **java_indexer:** 
-  * emit node kinds for jvm nodes (#6077) ([22726c4e](https://github.com/kythe/kythe/commit/22726c4ec9f911a2bb38c2284f2064eaff4641af)) 
+* **java_indexer:**
+  * emit node kinds for jvm nodes (#6077) ([22726c4e](https://github.com/kythe/kythe/commit/22726c4ec9f911a2bb38c2284f2064eaff4641af))
   * emit jvm refs for enum constants (#6103) ([b6c04946](https://github.com/kythe/kythe/commit/b6c049462ed9b8a5cca671c3d3e2a9b2fa9e71c3))
-* **cxx_indexer:** 
-  * use flat_hash_map, not unordered_map; fix rehashing (#6083) ([cba4452d](https://github.com/kythe/kythe/commit/cba4452dc97187e1172d412961d7da494fa32182)) 
+* **cxx_indexer:**
+  * use flat_hash_map, not unordered_map; fix rehashing (#6083) ([cba4452d](https://github.com/kythe/kythe/commit/cba4452dc97187e1172d412961d7da494fa32182))
   * clarify the use of llvm::dyn_cast on ClaimTokens (#6093) ([ae3434e7](https://github.com/kythe/kythe/commit/ae3434e763027ae747996ca2f6daaf0de71613fd))
 * **verifier_test:** ensure tools use the same configuration as indexer (#6113) ([d19f7f30](https://github.com/kythe/kythe/commit/d19f7f30d69c72bf673465a60c47d2303756cc40))
 * **extraction:** add proto rule to simple vnames config (#6068) ([28c16cff](https://github.com/kythe/kythe/commit/28c16cff1815c8980004d5192e02dcc07bd87762))
 
 #### Features
-* **go_indexer:** 
-  * support flag field vars (#6064) ([df747be8](https://github.com/kythe/kythe/commit/df747be8fb4b999d813e7a57eb0c270a32f6ebe5)) 
+* **go_indexer:**
+  * support flag field vars (#6064) ([df747be8](https://github.com/kythe/kythe/commit/df747be8fb4b999d813e7a57eb0c270a32f6ebe5))
   * ref/writes for flag.Set invocations (#6085) ([ae1f3644](https://github.com/kythe/kythe/commit/ae1f36447dc41e74a2ec6b23e703b62ebd349e51))
-* **cxx_indexer:** 
-  * experiment with variable initializer types (#6080) ([68671474](https://github.com/kythe/kythe/commit/68671474b72d5387f14fab7133cc29de75ebf86c)) 
-  * only emit flattened type representations once (#6082) ([a7f7af76](https://github.com/kythe/kythe/commit/a7f7af76587c9d9a0637ccdff9c5be90f62b3b62)) 
-  * look through the obvious casts for init types (#6081) ([49d98e25](https://github.com/kythe/kythe/commit/49d98e258bdaf930924d3b56ebd3ab77e467967c)) 
-  * emit symbols for extern C function defns (#6104) ([5b920720](https://github.com/kythe/kythe/commit/5b9207200c01371ddb29293cc3831d0b63f58faa)) 
+* **cxx_indexer:**
+  * experiment with variable initializer types (#6080) ([68671474](https://github.com/kythe/kythe/commit/68671474b72d5387f14fab7133cc29de75ebf86c))
+  * only emit flattened type representations once (#6082) ([a7f7af76](https://github.com/kythe/kythe/commit/a7f7af76587c9d9a0637ccdff9c5be90f62b3b62))
+  * look through the obvious casts for init types (#6081) ([49d98e25](https://github.com/kythe/kythe/commit/49d98e258bdaf930924d3b56ebd3ab77e467967c))
+  * emit symbols for extern C function defns (#6104) ([5b920720](https://github.com/kythe/kythe/commit/5b9207200c01371ddb29293cc3831d0b63f58faa))
   * emit name nodes for flags (#6094) ([b1cc57f6](https://github.com/kythe/kythe/commit/b1cc57f64ac7833be44aace759211a98baf15d8c))
-* **typescript_indexer:** 
-  * support xrefs in nested object literals (#6125) ([3a66d508](https://github.com/kythe/kythe/commit/3a66d508dbd7094139c14a745fc72058756dbb47)) 
+* **typescript_indexer:**
+  * support xrefs in nested object literals (#6125) ([3a66d508](https://github.com/kythe/kythe/commit/3a66d508dbd7094139c14a745fc72058756dbb47))
   * add flag to fail analysis on plugin error (#6079) ([65d37c97](https://github.com/kythe/kythe/commit/65d37c972697b201b8c6916811a7607a473ae568))
-* **java_indexer:** 
+* **java_indexer:**
   * add names for native methods (#6108) ([f13abd65](https://github.com/kythe/kythe/commit/f13abd65999cdbce234fb189cc1e48a70184fe61))
 * **protobuf:** add types for protobuf service RPCs (#6109) ([9cd1af59](https://github.com/kythe/kythe/commit/9cd1af596659580469c0aa6a060b4c4a526235aa))
 * **tools:** --render_marked_source added to kythe docs cli (#6097) ([cc445fd5](https://github.com/kythe/kythe/commit/cc445fd57ca2d99322e35a65dd723bf1c2398c65))
