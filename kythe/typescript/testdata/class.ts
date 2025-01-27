@@ -79,6 +79,13 @@ class Class implements IFace {
         this.method();
     }
 
+    //- @method defines/binding StaticMethod
+    //- StaticMethod.tag/static _
+    //- !{ @method defines/binding Method }
+    //- StaticMethod.node/kind function
+    //- StaticMethod childof Class
+    static method() {}
+
     //- @"#privateMethod" defines/binding PrivateMethod
     //- PrivateMethod.node/kind function
     //- PrivateMethod childof Class
