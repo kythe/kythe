@@ -71,7 +71,7 @@ function hasExpressionInitializer(node: ts.Node):
  * Determines if a node is a static member of a class.
  */
 function isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
-  return ts.isPropertyDeclaration(node) && node.parent === klass &&
+  return (ts.isPropertyDeclaration(node) || ts.isMethodDeclaration(node)) && node.parent === klass &&
       ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
 }
 
@@ -1655,11 +1655,8 @@ class Visitor {
       todo(this.sourceRoot, decl, 'Emit variable delaration code');
     }
 
-    if (ts.isPropertyDeclaration(decl)) {
-      const declNode = decl as ts.PropertyDeclaration;
-      if (isStaticMember(declNode, declNode.parent)) {
-        this.emitFact(vname, FactName.TAG_STATIC, '');
-      }
+    if (ts.isPropertyDeclaration(decl) && isStaticMember(decl, decl.parent)) {
+      this.emitFact(vname, FactName.TAG_STATIC, '');
     }
     if (ts.isPropertySignature(decl) ||
         ts.isPropertyDeclaration(decl) ||
@@ -2157,6 +2154,9 @@ class Visitor {
       this.emitFact(vname, FactName.COMPLETE, 'incomplete');
     }
     this.emitMarkedSourceForFunction(decl, vname);
+    if (ts.isMethodDeclaration(decl) && isStaticMember(decl, decl.parent)) {
+      this.emitFact(vname, FactName.TAG_STATIC, '');
+    }
   }
 
   /**
