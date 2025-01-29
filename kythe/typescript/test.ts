@@ -36,15 +36,14 @@ import {CompilationUnit, IndexerHost, Plugin} from './plugin_api';
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['TEST_SRCDIR'];
 
-const ENTRYSTREAM = RUNFILES
-  ? path.resolve('kythe/go/platform/tools/entrystream/entrystream')
-  : path.resolve(KYTHE_PATH, 'tools/entrystream');
-const VERIFIER = RUNFILES
-  ? path.resolve('kythe/cxx/verifier/verifier')
-  : path.resolve(KYTHE_PATH, 'tools/verifier');
-const MARKEDSOURCE = RUNFILES
-  ? path.resolve('kythe/go/util/tools/markedsource/markedsource')
-  : path.resolve(KYTHE_PATH, 'tools/markedsource');
+const ENTRYSTREAM = RUNFILES ?
+    path.resolve('kythe/go/platform/tools/entrystream/entrystream') :
+    path.resolve(KYTHE_PATH, 'tools/entrystream');
+const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
+                            path.resolve(KYTHE_PATH, 'tools/verifier');
+const MARKEDSOURCE = RUNFILES ?
+    path.resolve('kythe/go/util/tools/markedsource/markedsource') :
+    path.resolve(KYTHE_PATH, 'tools/markedsource');
 
 /** Record representing a single test case to run. */
 interface TestCase {
@@ -66,15 +65,15 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   const compilerHost = ts.createCompilerHost(options);
 
   // Map of path to parsed SourceFile for all TS builtin libraries.
-  const libs = new Map<string, ts.SourceFile | undefined>();
+  const libs = new Map<string, ts.SourceFile|undefined>();
   const libDir = compilerHost.getDefaultLibLocation!();
 
   const hostGetSourceFile = compilerHost.getSourceFile;
   compilerHost.getSourceFile = (
-    fileName: string,
-    languageVersion: ts.ScriptTarget,
-    onError?: (message: string) => void,
-  ): ts.SourceFile | undefined => {
+                                   fileName: string,
+                                   languageVersion: ts.ScriptTarget,
+                                   onError?: (message: string) => void,
+                                   ): ts.SourceFile|undefined => {
     let sourceFile = libs.get(fileName);
     if (!sourceFile) {
       sourceFile = hostGetSourceFile(fileName, languageVersion, onError);
@@ -95,13 +94,13 @@ function isTsFile(filename: string): boolean {
  * be run async; if there's an error, it will reject the promise.
  */
 function verify(
-  host: ts.CompilerHost,
-  options: ts.CompilerOptions,
-  testCase: TestCase,
-  plugins?: Plugin[],
-  emitRefCallOverIdentifier?: boolean,
-  resolveCodeFacts?: boolean,
-): Promise<void> {
+    host: ts.CompilerHost,
+    options: ts.CompilerOptions,
+    testCase: TestCase,
+    plugins?: Plugin[],
+    emitRefCallOverIdentifier?: boolean,
+    resolveCodeFacts?: boolean,
+    ): Promise<void> {
   const rootVName: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
@@ -112,16 +111,16 @@ function verify(
   const testFiles = testCase.files;
 
   const verifier = child_process.spawn(
-    `${ENTRYSTREAM} --read_format=json | ` +
-      (resolveCodeFacts
-        ? `${MARKEDSOURCE} --rewrite --render_callsite_signatures --render_qualified_names --render_signatures | `
-        : '') +
-      `${VERIFIER} --convert_marked_source ${testFiles.join(' ')}`,
-    [],
-    {
-      stdio: ['pipe', process.stdout, process.stderr],
-      shell: true,
-    },
+      `${ENTRYSTREAM} --read_format=json | ` +
+          (resolveCodeFacts ?
+               `${MARKEDSOURCE} --rewrite --render_callsite_signatures --render_qualified_names --render_signatures | ` :
+               '') +
+          `${VERIFIER} --convert_marked_source ${testFiles.join(' ')}`,
+      [],
+      {
+        stdio: ['pipe', process.stdout, process.stderr],
+        shell: true,
+      },
   );
   const fileVNames = new Map<string, kythe.VName>();
   for (const file of testFiles) {
@@ -143,6 +142,11 @@ function verify(
       },
       plugins,
       emitRefCallOverIdentifier,
+      typeWrappers: {
+        'Readonly': [{typeParameterIndex: 0}],
+        'Partial': [{typeParameterIndex: 0}],
+        'Required': [{typeParameterIndex: 0}],
+      },
     });
   } finally {
     // Ensure we close stdin on the verifier even on crashes, or otherwise
@@ -163,8 +167,8 @@ function verify(
 
 function testLoadTsConfig() {
   const config = indexer.loadTsConfig(
-    'testdata/tsconfig-files.for.tests.json',
-    'testdata',
+      'testdata/tsconfig-files.for.tests.json',
+      'testdata',
   );
   // We expect the paths that were loaded to be absolute.
   assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
@@ -235,8 +239,8 @@ function filterTestCases(testCases: TestCase[], filters: string[]): TestCase[] {
 
 async function testIndexer(filters: string[], plugins?: Plugin[]) {
   const config = indexer.loadTsConfig(
-    'testdata/tsconfig.for.tests.json',
-    'testdata',
+      'testdata/tsconfig.for.tests.json',
+      'testdata',
   );
   let testCases = getTestCases(config.options, 'testdata');
   if (filters.length !== 0) {
@@ -251,18 +255,18 @@ async function testIndexer(filters: string[], plugins?: Plugin[]) {
     }
     const emitRefCallOverIdentifier = testCase.name.endsWith('_id.ts');
     const resolveCodeFacts = testCase.name.startsWith(
-      'testdata/marked_source/rendered/',
+        'testdata/marked_source/rendered/',
     );
     const start = new Date().valueOf();
     process.stdout.write(`${testCase.name}: `);
     try {
       await verify(
-        host,
-        config.options,
-        testCase,
-        plugins,
-        emitRefCallOverIdentifier,
-        resolveCodeFacts,
+          host,
+          config.options,
+          testCase,
+          plugins,
+          emitRefCallOverIdentifier,
+          resolveCodeFacts,
       );
     } catch (e) {
       console.log('FAIL');
@@ -305,10 +309,10 @@ async function testMain(args: string[]) {
 }
 
 testMain(process.argv.slice(2))
-  .then(() => {
-    process.exitCode = 0;
-  })
-  .catch((e) => {
-    console.error(e);
-    process.exitCode = 1;
-  });
+    .then(() => {
+      process.exitCode = 0;
+    })
+    .catch((e) => {
+      console.error(e);
+      process.exitCode = 1;
+    });
