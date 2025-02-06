@@ -68,6 +68,7 @@ genrule(
         "$(locations misc)",
         "--cp $(location release.BUILD) BUILD",
         "--cp $(location release.WORKSPACE) WORKSPACE",
+        "--cp $(location release.MODULE.bazel) MODULE.bazel",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",

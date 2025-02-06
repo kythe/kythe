@@ -1,0 +1,7 @@
+module(
+    name = "kythe",
+    repo_name = "io_kythe",
+    version = "0.0.68",
+)
+
+bazel_dep(name = "protobuf", version = "3.19.6", repo_name = "com_google_protobuf")
