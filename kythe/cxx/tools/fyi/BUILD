@@ -39,6 +39,7 @@ cc_binary(
         "@llvm-project//clang:rewrite",
         "@llvm-project//clang:sema",
         "@llvm-project//clang:tooling",
+        "@llvm-project//llvm:ADT",
         "@llvm-project//llvm:Support",
     ],
 )
