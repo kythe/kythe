@@ -336,6 +336,7 @@ public class JvmGraph {
     private static final PrimitiveType LONG = new PrimitiveType("J");
     private static final PrimitiveType FLOAT = new PrimitiveType("F");
     private static final PrimitiveType DOUBLE = new PrimitiveType("D");
+    private static final Type OBJECT = referenceType("java.lang.Object");
 
     protected final String signature;
 
@@ -412,6 +413,11 @@ public class JvmGraph {
     /** Returns the JVM {@code double} type descriptor. */
     public static PrimitiveType doubleType() {
       return DOUBLE;
+    }
+
+    /** Returns the type for an Object. */
+    public static Type objectType() {
+      return OBJECT;
     }
 
     /** Returns a new JVM class/enum/interface type descriptor. */

@@ -302,6 +302,7 @@ DEF_TRAVERSE_TYPEPAIR(DeducedTemplateSpecializationType, {
 });
 DEF_TRAVERSE_TYPEPAIR(ArrayParameterType, {});
 DEF_TRAVERSE_TYPEPAIR(CountAttributedType, {});
+DEF_TRAVERSE_TYPEPAIR(HLSLAttributedResourceType, {});
 DEF_TRAVERSE_TYPEPAIR(BTFTagAttributedType, {});
 DEF_TRAVERSE_TYPEPAIR(RecordType, {});
 DEF_TRAVERSE_TYPEPAIR(EnumType, {});

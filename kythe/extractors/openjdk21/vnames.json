@@ -1,0 +1,24 @@
+[
+ {
+  "pattern": "(build/(?:[^/]*/)?support/gensrc)/(.*)",
+  "vname": {
+  "corpus": "openjdk21",
+  "path": "@2@",
+  "root": "@1@"
+  }
+ },
+ {
+  "pattern": "(?:srcs/)?src/(.*)",
+  "vname": {
+  "corpus": "openjdk21",
+  "path": "@1@"
+  }
+ },
+ {
+  "pattern": "/(.*[.]class)$",
+  "vname": {
+  "corpus": "openjdk21",
+  "path": "@2@"
+  }
+ }
+]

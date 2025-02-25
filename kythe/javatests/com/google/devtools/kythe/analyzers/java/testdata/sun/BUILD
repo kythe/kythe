@@ -1,3 +1,4 @@
+load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 

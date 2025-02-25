@@ -53,6 +53,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateName& name) const {
     case TemplateName::UsingTemplate:
       CHECK(ignore_unimplemented_) << "SemanticHash(UsingTemplate)";
       return 0;
+    case TemplateName::DeducedTemplate:
+      CHECK(ignore_unimplemented_) << "SemanticHash(DeducedTemplate)";
+      return 0;
   }
   CHECK(ignore_unimplemented_)
       << "Unexpected TemplateName Kind: " << name.getKind();

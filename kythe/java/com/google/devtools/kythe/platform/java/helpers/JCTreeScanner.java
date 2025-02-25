@@ -24,6 +24,7 @@ import com.sun.source.tree.ArrayTypeTree;
 import com.sun.source.tree.AssertTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BinaryTree;
+import com.sun.source.tree.BindingPatternTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.BreakTree;
 import com.sun.source.tree.CaseTree;
@@ -32,7 +33,10 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
+import com.sun.source.tree.ConstantCaseLabelTree;
 import com.sun.source.tree.ContinueTree;
+import com.sun.source.tree.DeconstructionPatternTree;
+import com.sun.source.tree.DefaultCaseLabelTree;
 import com.sun.source.tree.DoWhileLoopTree;
 import com.sun.source.tree.EmptyStatementTree;
 import com.sun.source.tree.EnhancedForLoopTree;
@@ -60,10 +64,12 @@ import com.sun.source.tree.OpensTree;
 import com.sun.source.tree.PackageTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ParenthesizedTree;
+import com.sun.source.tree.PatternCaseLabelTree;
 import com.sun.source.tree.PrimitiveTypeTree;
 import com.sun.source.tree.ProvidesTree;
 import com.sun.source.tree.RequiresTree;
 import com.sun.source.tree.ReturnTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
 import com.sun.source.tree.ThrowTree;
@@ -78,6 +84,7 @@ import com.sun.source.tree.UsesTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.tree.WildcardTree;
+import com.sun.source.tree.YieldTree;
 import com.sun.source.util.SimpleTreeVisitor;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
@@ -810,5 +817,72 @@ public class JCTreeScanner<R, P> extends SimpleTreeVisitor<R, P> {
 
   public final R visitUses(JCUses tree, P p) {
     return scan(tree.qualid, p);
+  }
+
+  @Override
+  public R visitSwitchExpression(SwitchExpressionTree tree, P p) {
+    return visitSwitchExpression((JCTree.JCSwitchExpression) tree, p);
+  }
+
+  public R visitSwitchExpression(JCTree.JCSwitchExpression tree, P p) {
+    R r = scan(tree.getExpression(), p);
+    r = scanAndReduce(tree.getCases(), p, r);
+    return r;
+  }
+
+  @Override
+  public R visitBindingPattern(BindingPatternTree tree, P p) {
+    return visitBindingPattern((JCTree.JCBindingPattern) tree, p);
+  }
+
+  public R visitBindingPattern(JCTree.JCBindingPattern tree, P p) {
+    return scan((JCVariableDecl) tree.getVariable(), p);
+  }
+
+  @Override
+  public R visitDefaultCaseLabel(DefaultCaseLabelTree tree, P p) {
+    return visitDefaultCaseLabel((JCTree.JCDefaultCaseLabel) tree, p);
+  }
+
+  public R visitDefaultCaseLabel(JCTree.JCDefaultCaseLabel tree, P p) {
+    return null;
+  }
+
+  @Override
+  public R visitConstantCaseLabel(ConstantCaseLabelTree tree, P p) {
+    return visitConstantCaseLabel((JCTree.JCConstantCaseLabel) tree, p);
+  }
+
+  public R visitConstantCaseLabel(JCTree.JCConstantCaseLabel tree, P p) {
+    return scan(tree.getConstantExpression(), p);
+  }
+
+  @Override
+  public R visitDeconstructionPattern(DeconstructionPatternTree tree, P p) {
+    return visitDeconstructionPattern((JCTree.JCRecordPattern) tree, p);
+  }
+
+  public R visitDeconstructionPattern(JCTree.JCRecordPattern tree, P p) {
+    R r = scan((JCTree.JCExpression) tree.getDeconstructor(), p);
+    r = scanAndReduce(tree.getNestedPatterns(), p, r);
+    return r;
+  }
+
+  @Override
+  public R visitPatternCaseLabel(PatternCaseLabelTree tree, P p) {
+    return visitPatternCaseLabel((JCTree.JCPatternCaseLabel) tree, p);
+  }
+
+  public R visitPatternCaseLabel(JCTree.JCPatternCaseLabel tree, P p) {
+    return scan(tree.getPattern(), p);
+  }
+
+  @Override
+  public R visitYield(YieldTree tree, P p) {
+    return visitYield((JCTree.JCYield) tree, p);
+  }
+
+  public R visitYield(JCTree.JCYield tree, P p) {
+    return scan(tree.getValue(), p);
   }
 }

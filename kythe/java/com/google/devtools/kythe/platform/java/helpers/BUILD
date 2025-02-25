@@ -4,21 +4,36 @@ load("//tools:build_rules/selects.bzl", select_with_or = "with_or")
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
+    name = "base",
+    srcs = [
+        "MemoizedTreePathScanner.java",
+    ],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.model",
+        "jdk.compiler/com.sun.tools.javac.tree",
+        "jdk.compiler/com.sun.tools.javac.util",
+    ],
+    deps = [
+       "@maven//:org_checkerframework_checker_qual",
+    ],
+)
+
+java_library(
     name = "helpers",
     srcs = [
-        "21/BlockAnonymousSignatureGenerator.java",
-        "21/SignatureGenerator.java",
         "JCTreeScanner.java",
         "JavacUtil.java",
-        "MemoizedTreePathScanner.java",
         "SyntaxPreservingScanner.java",
     ],
     add_exports = [
         "jdk.compiler/com.sun.tools.javac.code",
-        "jdk.compiler/com.sun.tools.javac.model",
         "jdk.compiler/com.sun.tools.javac.parser",
         "jdk.compiler/com.sun.tools.javac.tree",
         "jdk.compiler/com.sun.tools.javac.util",
+    ],
+    exports = [
+        ":base",
+        ":signature_generator",
     ],
     javacopts = [
         "-Xep:PackageLocation:OFF",
@@ -41,11 +56,9 @@ java_library(
     }),
     deps = [
         ":jdk_compatibility_shims",
-        "//kythe/java/com/google/devtools/kythe/common:flogger",
+        ":signature_generator",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/guava",
-        "@com_google_protobuf//:protobuf_java",
-        "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_checkerframework_checker_qual",
     ],
 )
@@ -153,6 +166,30 @@ java_library(
     target_compatible_with = select_with_or({
         (
             "//buildenv/java:language_version_21",
+        ): [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/util:ordered_compatibility_service",
+    ],
+)
+
+java_library(
+    name = "jdk24_compatibility_shims",
+    srcs = ["24/JdkCompatibilityShimsImpl.java"],
+    add_exports = [
+        "jdk.compiler/com.sun.tools.javac.tree",
+    ],
+    javacopts = [
+        "-Xep:PackageLocation:OFF",
+    ],
+    tags = ["manual"],
+    target_compatible_with = select_with_or({
+        (
+            "//buildenv/java:language_version_24",
         ): [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),

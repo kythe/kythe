@@ -414,6 +414,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           break;
         case INTERFACE:
           break; // Interfaces have no implicit superclass.
+        case RECORD:
+          superClassNode = getJavaLangRecordNode();
+          break;
         default:
           logger.atWarning().log("Unexpected JCClassDecl kind: %s", classDef.getKind());
           break;
@@ -1410,6 +1413,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode javaLangObjectNode;
   // Cached common java.lang.Enum node.
   private JavaNode javaLangEnumNode;
+  // Cached common java.lang.Record node.
+  private JavaNode javaLangRecordNode;
 
   // Returns a JavaNode representing java.lang.Object.
   private JavaNode getJavaLangObjectNode() {

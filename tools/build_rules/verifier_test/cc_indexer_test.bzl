@@ -261,10 +261,6 @@ _cc_kythe_proto_library_aspect = aspect(
             default = Label("@com_google_protobuf//:protobuf"),
             cfg = "target",
         ),
-        # Do not add references, temporary attribute for find_cpp_toolchain.
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-        ),
         "enable_proto_static_reflection": attr.bool(
             default = False,
             doc = "Emit and capture generated code for proto static reflection",

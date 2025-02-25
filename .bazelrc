@@ -56,10 +56,10 @@ query --@aspect_rules_ts//ts:default_to_tsc_transpiler
 common --incompatible_sandbox_hermetic_tmp
 
 # By default, compile for Java 11, run on Java 11
-common --java_language_version=11
-common --tool_java_language_version=11
-common --java_runtime_version=remotejdk_11
-common --tool_java_runtime_version=remotejdk_11
+common --java_language_version=21
+common --tool_java_language_version=21
+common --java_runtime_version=remotejdk_21
+common --tool_java_runtime_version=remotejdk_21
 
 build:java11 --java_language_version=11
 build:java11 --tool_java_language_version=11

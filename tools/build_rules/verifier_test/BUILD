@@ -11,8 +11,6 @@ exports_files([
 py_binary(
     name = "unbundle",
     srcs = ["unbundle.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
 )
 
 bzl_library(
