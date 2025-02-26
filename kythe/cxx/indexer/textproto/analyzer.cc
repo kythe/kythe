@@ -585,8 +585,8 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
 
     std::vector<StringToken> tokens = ReadStringTokens(input);
     if (tokens.empty()) {
-      return absl::UnknownError(absl::StrCat("Unable to find a string value for field: ",
-                                field.name()));
+      return absl::UnknownError(absl::StrCat(
+        "Unable to find a string value for field: ", field.name()));
     }
     for (auto& p : plugins_) {
       auto s = p->AnalyzeStringField(this, file_vname, field, tokens);
@@ -636,7 +636,7 @@ absl::Status TextprotoAnalyzer::AnalyzeIntegerValue(
     absl::string_view match;
     if (!re2::RE2::PartialMatch(input, R"(^([\d]+))", &match)) {
       return absl::UnknownError(absl::StrCat(
-        "Failed to find text span for enum value: ", field.full_name()));
+          "Failed to find text span for enum value: ", field.full_name()));
     }
     input = input.substr(match.size());
     for (auto& p : plugins_) {

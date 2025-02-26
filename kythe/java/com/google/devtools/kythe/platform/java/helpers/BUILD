@@ -14,7 +14,7 @@ java_library(
         "jdk.compiler/com.sun.tools.javac.util",
     ],
     deps = [
-       "@maven//:org_checkerframework_checker_qual",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -31,12 +31,12 @@ java_library(
         "jdk.compiler/com.sun.tools.javac.tree",
         "jdk.compiler/com.sun.tools.javac.util",
     ],
+    javacopts = [
+        "-Xep:PackageLocation:OFF",
+    ],
     exports = [
         ":base",
         ":signature_generator",
-    ],
-    javacopts = [
-        "-Xep:PackageLocation:OFF",
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",

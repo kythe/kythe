@@ -98,8 +98,8 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     const google::protobuf::EnumValueDescriptor* descriptor,
     ProtoGraphBuilder* builder) {
   // EnumValueDescriptor::full_name leaves off the parent enum's name.
-  std::string full_name = absl::StrCat(
-      descriptor->type()->full_name(), ".", descriptor->name());
+  std::string full_name =
+      absl::StrCat(descriptor->type()->full_name(), ".", descriptor->name());
   MarkedSource ms;
   if (GenerateMarkedSourceForDottedName(
           full_name, &ms, builder->VNameForDescriptor(descriptor))) {

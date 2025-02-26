@@ -4888,7 +4888,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(BTFTagAttributed);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(CountAttributed);
-    UNSUPPORTED_CLANG_TYPE(HLSLAttributedResource); 
+    UNSUPPORTED_CLANG_TYPE(HLSLAttributedResource);
     UNSUPPORTED_CLANG_TYPE(VariableArray);
     UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
     UNSUPPORTED_CLANG_TYPE(Vector);
