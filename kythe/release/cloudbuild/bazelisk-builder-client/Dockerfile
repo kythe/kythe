@@ -22,7 +22,7 @@ RUN apt-get update \
         && apt-get install -y --no-install-recommends \
                 clang-15 curl ca-certificates \
                 # Bazel's fallback @local_jdk and needed by rules_jvm_external
-                openjdk-11-jdk-headless \
+                openjdk-21-jdk-headless \
                 # Used to build the website; rules_ruby doesn't support alternate toolchains well.
                 ruby \
                 # Needed for io_bazel_rules_docker which is used by bazel_toolchains.
