@@ -586,7 +586,7 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     std::vector<StringToken> tokens = ReadStringTokens(input);
     if (tokens.empty()) {
       return absl::UnknownError(absl::StrCat(
-        "Unable to find a string value for field: ", field.name()));
+          "Unable to find a string value for field: ", field.name()));
     }
     for (auto& p : plugins_) {
       auto s = p->AnalyzeStringField(this, file_vname, field, tokens);

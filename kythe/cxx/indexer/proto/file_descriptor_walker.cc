@@ -297,7 +297,7 @@ void FileDescriptorWalker::VisitImports() {
       Location location;
       InitializeLocation(location_map_[path], &location);
       builder_->AddImport(
-        std::string(file_descriptor_->weak_dependency(i)->name()), location);
+          std::string(file_descriptor_->weak_dependency(i)->name()), location);
     }
   }
   {
@@ -308,8 +308,8 @@ void FileDescriptorWalker::VisitImports() {
       Location location;
       InitializeLocation(location_map_[path], &location);
       builder_->AddImport(
-        std::string(file_descriptor_->public_dependency(i)->name()),
-        location);
+          std::string(file_descriptor_->public_dependency(i)->name()),
+          location);
     }
   }
 }
