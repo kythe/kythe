@@ -57,8 +57,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update -y && \
     apt-get install -y \
       ca-certificates-java \
-      openjdk-11-jre-headless \
-      openjdk-11-jdk-headless && \
+      openjdk-21-jre-headless \
+      openjdk-21-jdk-headless && \
     apt-get clean
 
 # RBE Python packages
@@ -81,4 +81,4 @@ RUN DEBIAN_FRONTEND=noninteractive \
 ENV LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_ALL=C.UTF-8
 
 # Needed by rbe_config_gen
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
