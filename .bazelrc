@@ -55,7 +55,7 @@ query --@aspect_rules_ts//ts:default_to_tsc_transpiler
 # See: https://github.com/bazelbuild/bazel/issues/3236
 common --incompatible_sandbox_hermetic_tmp
 
-# By default, compile for Java 11, run on Java 11
+# By default, compile for Java 21, run on Java 21
 common --java_language_version=21
 common --tool_java_language_version=21
 common --java_runtime_version=remotejdk_21
