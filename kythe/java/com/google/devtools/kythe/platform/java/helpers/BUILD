@@ -36,7 +36,6 @@ java_library(
     ],
     exports = [
         ":base",
-        ":signature_generator",
     ],
     runtime_deps = [
         ":reflective_jdk_compatibility_shims",
@@ -56,7 +55,6 @@ java_library(
     }),
     deps = [
         ":jdk_compatibility_shims",
-        ":signature_generator",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/guava",
         "@maven//:org_checkerframework_checker_qual",
