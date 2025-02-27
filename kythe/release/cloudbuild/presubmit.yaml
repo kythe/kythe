@@ -8,6 +8,7 @@ steps:
       - bazel
       - test
       - '--config=remote'
+      - '--config=java21'
       - //...
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel
@@ -15,6 +16,7 @@ steps:
       - bazel
       - test
       - '--config=remote'
+      - '--config=java21'
       - //...
   - name: gcr.io/kythe-repo/bazelisk-builder-client
     id: bazel-java21
@@ -31,6 +33,7 @@ steps:
       - bazel
       - test
       - '--config=remote'
+      - '--config=java21'
       - '-c'
       - opt
       - '--stamp'
