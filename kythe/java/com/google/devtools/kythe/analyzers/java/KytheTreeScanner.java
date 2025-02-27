@@ -1438,6 +1438,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return new JavaNode(typeNode);
   }
 
+  // Returns a JavaNode representing java.lang.Record.
+  private JavaNode getJavaLangRecordNode() {
+    if (javaLangRecordNode == null) {
+      javaLangRecordNode = resolveJavaLangSymbol(getSymbols().recordType.asElement());
+    }
+    return javaLangRecordNode;
+  }
+
   private JavaNode resolveJavaLangSymbol(Symbol sym) {
     Optional<String> signature = signatureGenerator.getSignature(sym);
     if (!signature.isPresent()) {

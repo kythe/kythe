@@ -21,12 +21,16 @@ java_library(
 java_library(
     name = "helpers",
     srcs = [
+        "21/BlockAnonymousSignatureGenerator.java",
+        "21/SignatureGenerator.java",
         "JCTreeScanner.java",
         "JavacUtil.java",
+        "MemoizedTreePathScanner.java",
         "SyntaxPreservingScanner.java",
     ],
     add_exports = [
         "jdk.compiler/com.sun.tools.javac.code",
+        "jdk.compiler/com.sun.tools.javac.model",
         "jdk.compiler/com.sun.tools.javac.parser",
         "jdk.compiler/com.sun.tools.javac.tree",
         "jdk.compiler/com.sun.tools.javac.util",
@@ -55,6 +59,7 @@ java_library(
     }),
     deps = [
         ":jdk_compatibility_shims",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/guava",
         "@maven//:org_checkerframework_checker_qual",
