@@ -45,7 +45,7 @@ java_library(
             "//buildenv/java:language_version_19",
             "//buildenv/java:language_version_20",
             "//buildenv/java:language_version_21",
-        ): [":jdk15_compatibility_shims"],
+        ): [":jdk21_compatibility_shims"],
     }),
     deps = [
         ":jdk_compatibility_shims",
