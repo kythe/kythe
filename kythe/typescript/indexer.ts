@@ -2014,6 +2014,11 @@ class Visitor {
    * Returns the string content of a property name, if known.
    * The name of complex computed properties is often not known.
    */
+  // TODO: Fix after TS 5.6 upgrade. In this case, the fix will
+  // be to add `case ts.SyntaxKind.BigIntLiteral:` to the switch statement
+  // (probably to the first group of cases).
+  //  TS7030: Not all code paths return a value.
+  // @ts-ignore
   getPropertyNameStr(elem: ts.PropertyName): string|undefined {
     switch (elem.kind) {
       case ts.SyntaxKind.Identifier:
