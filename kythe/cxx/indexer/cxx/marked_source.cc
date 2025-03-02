@@ -630,8 +630,8 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     noprint = first_default;
     for (; noprint < template_args.size(); ++noprint) {
       bool was_ok = !cache_->sema()->CheckTemplateArgumentList(
-        template_decl, template_decl->getLocation(), list_prefix,
-        /*DefaultArgs=*/{}, false, CTAI);
+          template_decl, template_decl->getLocation(), list_prefix,
+          /*DefaultArgs=*/{}, false, CTAI);
       if (was_ok) {
         if (CTAI.SugaredConverted.size() != template_args.size()) {
           break;
