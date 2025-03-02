@@ -931,7 +931,7 @@ class MockArtifactSelector : public BazelArtifactSelector {
   MockArtifactSelector() = default;
   MOCK_METHOD(std::optional<BazelArtifact>, Select,
               (const build_event_stream::BuildEvent&), (override));
-  MOCK_METHOD(bool, SerializeInto, (google::protobuf::Any&), (const override));
+  MOCK_METHOD(bool, SerializeInto, (google::protobuf::Any&), (const, override));
   MOCK_METHOD(absl::Status, DeserializeFrom, (const google::protobuf::Any&),
               (override));
 };

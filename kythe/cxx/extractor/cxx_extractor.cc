@@ -865,9 +865,6 @@ std::string IncludeDirGroupToString(const clang::frontend::IncludeDirGroup& G) {
     ///< Paths for '\#include <>' added by '-I'.
     case clang::frontend::Angled:
       return "Angled";
-    ///< Like Angled, but marks header maps used when building frameworks.
-    case clang::frontend::IndexHeaderMap:
-      return "IndexHeaderMap";
     ///< Like Angled, but marks system directories.
     case clang::frontend::System:
       return "System";
