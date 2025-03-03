@@ -323,7 +323,7 @@ def kythe_integration_test(
         name = name + "_atomized_entries",
         testonly = True,
         srcs = [],
-        dfile_tickets = file_tickets,
+        file_tickets = file_tickets,
         tags = tags,
         deps = srcs,
     )
