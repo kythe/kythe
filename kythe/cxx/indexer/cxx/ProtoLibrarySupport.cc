@@ -59,7 +59,7 @@ using ParseCallback =
 
 // A proto tokenizer Error collector that outputs to LOG(ERROR).
 class LogErrors : public google::protobuf::io::ErrorCollector {
-  void AddError(int Line, int Column, const std::string& Message) override {
+  void RecordError(int Line, int Column, absl::string_view Message) override {
     LOG(ERROR) << "l. " << Line << " c. " << Column << ": " << Message;
   }
 };

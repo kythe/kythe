@@ -17,6 +17,7 @@ common --incompatible_disallow_empty_glob
 # https://github.com/kythe/kythe/issues/5893
 common --noenable_bzlmod
 common --enable_workspace
+common --lockfile_mode=update
 
 common --workspace_status_command tools/buildstamp/get_workspace_status
 
@@ -38,7 +39,7 @@ common --per_file_copt=external/.*@-w
 common --host_copt=-w
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
-common --experimental_strict_action_env
+common --incompatible_strict_action_env
 
 # aspect_rules_js configuration
 build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
@@ -75,11 +76,6 @@ build:java19 --java_language_version=19
 build:java19 --tool_java_language_version=19
 build:java19 --java_runtime_version=remotejdk_19
 build:java19 --tool_java_runtime_version=remotejdk_19
-
-build:java20 --java_language_version=20
-build:java20 --tool_java_language_version=20
-build:java20 --java_runtime_version=remotejdk_20
-build:java20 --tool_java_runtime_version=remotejdk_20
 
 build:java21 --java_language_version=21
 build:java21 --tool_java_language_version=21

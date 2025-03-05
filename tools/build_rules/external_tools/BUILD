@@ -12,7 +12,10 @@ exports_files([
 
 toolchain_type(name = "external_tools_toolchain_type")
 
-bzl_library(name = "external_tools_toolchain_bzl")
+bzl_library(
+    name = "external_tools_toolchain_bzl",
+    srcs = ["external_tools_toolchain.bzl"],
+)
 
 bzl_library(
     name = "external_tools_configure_bzl",

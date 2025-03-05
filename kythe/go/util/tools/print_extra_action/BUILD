@@ -28,6 +28,6 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//kythe/go/util/log",
         "//third_party/bazel:extra_actions_base_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
     ],
 )

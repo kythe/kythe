@@ -1,10 +1,10 @@
 # The checked-in generated files confuse gazelle.
-# gazelle:ignore
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_file")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
+# gazelle:ignore
 go_library(
     name = "schema",
     srcs = [
@@ -47,6 +47,6 @@ go_test(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:schema_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
     ],
 )

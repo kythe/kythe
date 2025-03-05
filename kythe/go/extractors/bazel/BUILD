@@ -24,7 +24,7 @@ go_library(
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:extra_actions_base_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
         "@org_bitbucket_creachadair_stringset//:stringset",
         "@org_golang_x_sync//errgroup",
     ],
@@ -46,7 +46,7 @@ go_test(
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:extra_actions_base_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
     ],
 )
 

@@ -52,13 +52,13 @@ func main() {
 
 	f, err := vfs.Default.Create(*output)
 	if err != nil {
-		log.Fatal("error opening output path: %s", err)
+		log.Fatalf("error opening output path: %s", err)
 	}
 	w := sstable.NewWriter(objstorageprovider.NewFileWritable(f), sstable.WriterOptions{})
 
 	iter, err := db.ScanPrefix(context.TODO(), nil, nil)
 	if err != nil {
-		log.Fatal("error opening iter: %s", err)
+		log.Fatalf("error opening iter: %s", err)
 	}
 	defer iter.Close()
 
@@ -68,10 +68,10 @@ func main() {
 			break
 		}
 		if err := w.Set(k, v); err != nil {
-			log.Fatal("Error writing to sstable: %s", err)
+			log.Fatalf("Error writing to sstable: %s", err)
 		}
 	}
 	if err := w.Close(); err != nil {
-		log.Fatal("Error closing sstable: %s", err)
+		log.Fatalf("Error closing sstable: %s", err)
 	}
 }

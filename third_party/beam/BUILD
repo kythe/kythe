@@ -29,7 +29,7 @@ go_library(
         "@com_github_apache_beam//sdks/go/pkg/beam/log:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/runners/direct:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_golang_protobuf//ptypes:go_default_library_gen",
+        "@com_github_golang_protobuf//ptypes:go_default_library",
     ],
 )
 
