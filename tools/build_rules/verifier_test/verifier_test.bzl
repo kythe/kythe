@@ -311,7 +311,13 @@ def _invoke(rulefn, name, **kwargs):
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
-def kythe_integration_test(name, srcs, file_tickets, tags = [], size = "small"):
+def kythe_integration_test(
+        name,
+        srcs,
+        file_tickets,
+        tags = [],
+        size = "small",
+        timeout = "moderate"):
     entries = _invoke(
         atomize_entries,
         name = name + "_atomized_entries",
@@ -325,6 +331,7 @@ def kythe_integration_test(name, srcs, file_tickets, tags = [], size = "small"):
         verifier_test,
         name = name,
         size = size,
+        timeout = timeout,
         opts = ["--ignore_dups"],
         tags = tags,
         deps = [entries],

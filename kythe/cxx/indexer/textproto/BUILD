@@ -38,7 +38,6 @@ cc_library(
     deps = [
         ":plugin",
         ":recordio_textparser",
-        "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/common:utf8_line_index",
         "//kythe/cxx/common/indexing:output",
@@ -50,8 +49,7 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/container:node_hash_map",
-        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/functional:function_ref",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

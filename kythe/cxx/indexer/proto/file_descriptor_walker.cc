@@ -285,7 +285,8 @@ void FileDescriptorWalker::VisitImports() {
       ScopedLookup import_lookup(&path, i);
       Location location;
       InitializeLocation(location_map_[path], &location);
-      builder_->AddImport(file_descriptor_->dependency(i)->name(), location);
+      builder_->AddImport(std::string(file_descriptor_->dependency(i)->name()),
+                          location);
     }
   }
   {
@@ -295,8 +296,8 @@ void FileDescriptorWalker::VisitImports() {
       ScopedLookup import_lookup(&path, i);
       Location location;
       InitializeLocation(location_map_[path], &location);
-      builder_->AddImport(file_descriptor_->weak_dependency(i)->name(),
-                          location);
+      builder_->AddImport(
+          std::string(file_descriptor_->weak_dependency(i)->name()), location);
     }
   }
   {
@@ -306,8 +307,9 @@ void FileDescriptorWalker::VisitImports() {
       ScopedLookup import_lookup(&path, i);
       Location location;
       InitializeLocation(location_map_[path], &location);
-      builder_->AddImport(file_descriptor_->public_dependency(i)->name(),
-                          location);
+      builder_->AddImport(
+          std::string(file_descriptor_->public_dependency(i)->name()),
+          location);
     }
   }
 }
@@ -665,7 +667,7 @@ void FileDescriptorWalker::VisitMessagesAndEnums(const std::string* ns_name,
 
     ScopedLookup message_index(&lookup_path, i);
 
-    std::string vname = dp->name();
+    std::string vname(dp->name());
     if (ns_name != nullptr) {
       vname = absl::StrCat(*ns_name, ".", vname);
     }
@@ -700,7 +702,7 @@ void FileDescriptorWalker::VisitMessagesAndEnums(const std::string* ns_name,
     const EnumDescriptor* dp = file_descriptor_->enum_type(i);
     ScopedLookup enum_index(&lookup_path, i);
 
-    std::string vname = dp->name();
+    std::string vname(dp->name());
     if (ns_name != nullptr) {
       vname = absl::StrCat(*ns_name, ".", vname);
     }
@@ -760,7 +762,7 @@ void FileDescriptorWalker::VisitAllFields(const std::string* ns_name,
     // For each top-level message in the file, add the field bindings
     for (int i = 0; i < file_descriptor_->message_type_count(); i++) {
       const Descriptor* dp = file_descriptor_->message_type(i);
-      std::string vname = dp->name();
+      std::string vname(dp->name());
       if (ns_name != nullptr) {
         vname = *ns_name + "." + vname;
       }
@@ -791,7 +793,7 @@ void FileDescriptorWalker::VisitExtension(const std::string* parent_name,
                                           const VName* parent,
                                           const FieldDescriptor* field,
                                           std::vector<int> lookup_path) {
-  std::string message_name = field->containing_type()->full_name();
+  std::string message_name(field->containing_type()->full_name());
   VName message = builder_->VNameForDescriptor(field->containing_type());
   {
     // In a block like this:
@@ -882,7 +884,7 @@ void FileDescriptorWalker::VisitRpcServices(const std::string* ns_name,
     const ServiceDescriptor* dp = file_descriptor_->service(i);
     ScopedLookup service_index(&lookup_path, i);
 
-    std::string service_vname = dp->name();
+    std::string service_vname(dp->name());
     if (ns_name != nullptr) {
       service_vname = absl::StrCat(*ns_name, ".", service_vname);
     }
@@ -965,7 +967,7 @@ void FileDescriptorWalker::PopulateCodeGraph() {
   const VName* ns = nullptr;
   const std::string* ns_name = nullptr;
   VName v_name;
-  const std::string& package = file_descriptor_->package();
+  const std::string package = std::string(file_descriptor_->package());
   if (!package.empty()) {
     std::vector<int> lookup_path;
     ScopedLookup package_num(&lookup_path,
