@@ -53,6 +53,7 @@ public enum EdgeKind {
   BOUNDED_UPPER("bounded/upper"),
   CHILDOF("childof"),
   CHILDOF_CONTEXT("childof/context"),
+  COMPLETEDBY("completedby"),
   DENOTES("denotes"),
   DEPENDS("depends"),
   EXPORTS("exports"),

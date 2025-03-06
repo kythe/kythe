@@ -1,17 +1,5 @@
-diff --git a/utils/bazel/llvm-project-overlay/bolt/BUILD.bazel b/utils/bazel/llvm-project-overlay/bolt/BUILD.bazel
-index 1c12c8167ba4..164fc17b104e 100644
---- a/utils/bazel/llvm-project-overlay/bolt/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/bolt/BUILD.bazel
-@@ -3,6 +3,7 @@
- # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
- load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- 
- package(
-     default_visibility = ["//visibility:public"],
 diff --git a/utils/bazel/llvm-project-overlay/clang-tools-extra/clang-tidy/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang-tools-extra/clang-tidy/BUILD.bazel
-index 317863de3b36..0222d7ff5999 100644
+index cd76d1ffa..5035b2396 100644
 --- a/utils/bazel/llvm-project-overlay/clang-tools-extra/clang-tidy/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/clang-tools-extra/clang-tidy/BUILD.bazel
 @@ -5,6 +5,7 @@
@@ -22,20 +10,8 @@ index 317863de3b36..0222d7ff5999 100644
  load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
  load("defs.bzl", "clang_tidy_library")
  
-diff --git a/utils/bazel/llvm-project-overlay/clang-tools-extra/include-cleaner/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang-tools-extra/include-cleaner/BUILD.bazel
-index 28f90efb3ba7..d5c02e3953bf 100644
---- a/utils/bazel/llvm-project-overlay/clang-tools-extra/include-cleaner/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/clang-tools-extra/include-cleaner/BUILD.bazel
-@@ -2,6 +2,7 @@
- # See https://llvm.org/LICENSE.txt for license information.
- # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
- 
- package(
 diff --git a/utils/bazel/llvm-project-overlay/clang-tools-extra/unittests/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang-tools-extra/unittests/BUILD.bazel
-index 12e87cec4b76..51c4d82e4906 100644
+index 47ec45528..be1ab0b5e 100644
 --- a/utils/bazel/llvm-project-overlay/clang-tools-extra/unittests/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/clang-tools-extra/unittests/BUILD.bazel
 @@ -2,6 +2,7 @@
@@ -46,32 +22,8 @@ index 12e87cec4b76..51c4d82e4906 100644
  load("@rules_cc//cc:defs.bzl", "cc_test")
  
  package(
-diff --git a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
-index 725ac6bb3812..e959a2a8e6f4 100644
---- a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
-@@ -2,6 +2,7 @@
- # See https://llvm.org/LICENSE.txt for license information.
- # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load(
-     "//:vars.bzl",
-     "LLVM_VERSION",
-@@ -2629,9 +2630,9 @@ cc_library(
-         "lib/ExtractAPI/**/*.cpp",
-     ]),
-     hdrs = glob([
--       "include/clang/ExtractAPI/**/*.h",
-+        "include/clang/ExtractAPI/**/*.h",
-     ]) + [
--       "include/clang/ExtractAPI/APIRecords.inc",
-+        "include/clang/ExtractAPI/APIRecords.inc",
-     ],
-     includes = ["include"],
-     deps = [
 diff --git a/utils/bazel/llvm-project-overlay/clang/unittests/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang/unittests/BUILD.bazel
-index 9823027b766c..d301d99cd5e2 100644
+index 4aa9d5621..b4c2f5c8d 100644
 --- a/utils/bazel/llvm-project-overlay/clang/unittests/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/clang/unittests/BUILD.bazel
 @@ -2,6 +2,8 @@
@@ -84,7 +36,7 @@ index 9823027b766c..d301d99cd5e2 100644
      default_visibility = ["//visibility:public"],
  )
 diff --git a/utils/bazel/llvm-project-overlay/compiler-rt/BUILD.bazel b/utils/bazel/llvm-project-overlay/compiler-rt/BUILD.bazel
-index 9a4e103be01e..9268fb327566 100644
+index 791bca34f..e49dfde02 100644
 --- a/utils/bazel/llvm-project-overlay/compiler-rt/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/compiler-rt/BUILD.bazel
 @@ -2,6 +2,8 @@
@@ -97,7 +49,7 @@ index 9a4e103be01e..9268fb327566 100644
      default_visibility = ["//visibility:public"],
      features = ["layering_check"],
 diff --git a/utils/bazel/llvm-project-overlay/compiler-rt/lib/orc/tests/unit/BUILD.bazel b/utils/bazel/llvm-project-overlay/compiler-rt/lib/orc/tests/unit/BUILD.bazel
-index 520bf2ab397a..988691314e94 100644
+index 520bf2ab3..988691314 100644
 --- a/utils/bazel/llvm-project-overlay/compiler-rt/lib/orc/tests/unit/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/compiler-rt/lib/orc/tests/unit/BUILD.bazel
 @@ -2,6 +2,8 @@
@@ -109,45 +61,8 @@ index 520bf2ab397a..988691314e94 100644
  package(
      default_visibility = ["//visibility:public"],
      features = ["layering_check"],
-diff --git a/utils/bazel/llvm-project-overlay/libc/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/BUILD.bazel
-index be02c2270432..fc106de5df7e 100644
---- a/utils/bazel/llvm-project-overlay/libc/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/libc/BUILD.bazel
-@@ -5,6 +5,7 @@
- # LLVM libc project.
- load("@bazel_skylib//lib:selects.bzl", "selects")
- load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load(
-     ":libc_build_rules.bzl",
-     "libc_function",
-diff --git a/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel
-index ff3b035f64ad..998fdfe7e005 100644
---- a/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/libc/test/src/__support/FPUtil/BUILD.bazel
-@@ -40,7 +40,7 @@ libc_test(
-     deps = [
-         "//libc:__support_fputil_rounding_mode",
-         "//libc:__support_uint128",
-+        "//libc:hdr_fenv_macros",
-         "//libc/utils/MPFRWrapper:mpfr_wrapper",
--	"//libc:hdr_fenv_macros",
-     ],
- )
-diff --git a/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel
-index 7d4b9978db3f..eccea8faeebc 100644
---- a/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/libc/test/src/math/smoke/BUILD.bazel
-@@ -117,6 +117,7 @@ math_test(
-     name = "llrintf128",
-     hdrs = ["RoundToIntegerTest.h"],
- )
-+
- math_test(
-     name = "lroundf128",
-     hdrs = ["RoundToIntegerTest.h"],
 diff --git a/utils/bazel/llvm-project-overlay/lld/BUILD.bazel b/utils/bazel/llvm-project-overlay/lld/BUILD.bazel
-index 2ccd6fcae635..a2a0478e5405 100644
+index 94bcf6889..ebb8c2269 100644
 --- a/utils/bazel/llvm-project-overlay/lld/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/lld/BUILD.bazel
 @@ -2,6 +2,7 @@
@@ -158,20 +73,8 @@ index 2ccd6fcae635..a2a0478e5405 100644
  load(
      "//:vars.bzl",
      "LLVM_VERSION",
-diff --git a/utils/bazel/llvm-project-overlay/lldb/BUILD.bazel b/utils/bazel/llvm-project-overlay/lldb/BUILD.bazel
-index 7958c6024875..fe245355846e 100644
---- a/utils/bazel/llvm-project-overlay/lldb/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/lldb/BUILD.bazel
-@@ -5,6 +5,7 @@
- load("@bazel_skylib//lib:selects.bzl", "selects")
- load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
- load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load("@build_bazel_apple_support//rules:apple_genrule.bzl", "apple_genrule")
- load("//:vars.bzl", "LLVM_VERSION_MAJOR", "LLVM_VERSION_MINOR", "LLVM_VERSION_PATCH", "LLVM_VERSION_SUFFIX", "PACKAGE_VERSION")
- load("//lldb/source/Plugins:plugin_config.bzl", "DEFAULT_PLUGINS", "DEFAULT_SCRIPT_PLUGINS", "OBJCPP_COPTS")
 diff --git a/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel b/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel
-index e0907a838148..18c2ed793912 100644
+index 31a61b3cf..7c68916ff 100644
 --- a/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/lldb/source/Plugins/BUILD.bazel
 @@ -2,6 +2,7 @@
@@ -182,32 +85,8 @@ index e0907a838148..18c2ed793912 100644
  load("//mlir:tblgen.bzl", "gentbl_cc_library")
  load(":plugin_config.bzl", "DEFAULT_PLUGINS", "DEFAULT_SCRIPT_PLUGINS", "OBJCPP_COPTS")
  
-diff --git a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-index af9dc26abec4..5bb0c731c633 100644
---- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-@@ -4,6 +4,7 @@
- 
- load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
- load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load("//mlir:tblgen.bzl", "td_library")
- load(":binary_alias.bzl", "binary_alias")
- load(":config.bzl", "llvm_config_defines")
-diff --git a/utils/bazel/llvm-project-overlay/llvm/unittests/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/unittests/BUILD.bazel
-index dd42f84d16dc..53964ed49855 100644
---- a/utils/bazel/llvm-project-overlay/llvm/unittests/BUILD.bazel
-+++ b/utils/bazel/llvm-project-overlay/llvm/unittests/BUILD.bazel
-@@ -2,6 +2,7 @@
- # See https://llvm.org/LICENSE.txt for license information.
- # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- 
-+load("@io_kythe//tools:build_rules/support.bzl", glob = "allow_empty_glob")
- load("//llvm:tblgen.bzl", "gentbl")
- 
- package(
 diff --git a/utils/bazel/llvm-project-overlay/llvm/utils/lit/tests/BUILD.bazel b/utils/bazel/llvm-project-overlay/llvm/utils/lit/tests/BUILD.bazel
-index b9e0a2e153ac..6c6ec2369b2c 100644
+index d89626a6e..b862314d0 100644
 --- a/utils/bazel/llvm-project-overlay/llvm/utils/lit/tests/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/llvm/utils/lit/tests/BUILD.bazel
 @@ -3,6 +3,7 @@
@@ -219,10 +98,10 @@ index b9e0a2e153ac..6c6ec2369b2c 100644
  
  expand_template(
 diff --git a/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
-index 58538b66c5e0..b32ab40843f3 100644
+index bd4f775ab..920aaf121 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/BUILD.bazel
-@@ -6,6 +6,7 @@
+@@ -7,6 +7,7 @@
  
  load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
  load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
@@ -231,7 +110,7 @@ index 58538b66c5e0..b32ab40843f3 100644
      ":build_defs.bzl",
      "cc_headers_only",
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch1/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch1/BUILD.bazel
-index 2d4e1b5d6986..a38e3e650079 100644
+index 2d4e1b5d6..a38e3e650 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch1/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch1/BUILD.bazel
 @@ -1,3 +1,5 @@
@@ -241,7 +120,7 @@ index 2d4e1b5d6986..a38e3e650079 100644
  #   MLIR Tutorial
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch2/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch2/BUILD.bazel
-index 321b8d7cb232..0e156f59d4b8 100644
+index 321b8d7cb..0e156f59d 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch2/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch2/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -253,7 +132,7 @@ index 321b8d7cb232..0e156f59d4b8 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch3/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch3/BUILD.bazel
-index b776bedab46f..46540a87a8c6 100644
+index b776bedab..46540a87a 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch3/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch3/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -265,7 +144,7 @@ index b776bedab46f..46540a87a8c6 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch4/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch4/BUILD.bazel
-index 68639df2aa2c..2ae76c3196e7 100644
+index 68639df2a..2ae76c319 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch4/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch4/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -277,7 +156,7 @@ index 68639df2aa2c..2ae76c3196e7 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch5/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch5/BUILD.bazel
-index 9ce23b5d9754..7a3ee311806c 100644
+index 9ce23b5d9..7a3ee3118 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch5/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch5/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -289,7 +168,7 @@ index 9ce23b5d9754..7a3ee311806c 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch6/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch6/BUILD.bazel
-index 86925aa0662c..25daf60ce03a 100644
+index 86925aa06..25daf60ce 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch6/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch6/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -301,7 +180,7 @@ index 86925aa0662c..25daf60ce03a 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch7/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch7/BUILD.bazel
-index bf9ab79529b8..218038241127 100644
+index bf9ab7952..218038241 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch7/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/examples/toy/Ch7/BUILD.bazel
 @@ -1,6 +1,7 @@
@@ -313,7 +192,7 @@ index bf9ab79529b8..218038241127 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/python/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/python/BUILD.bazel
-index d6b0832f4c1a..e7043a338ea9 100644
+index 3d7a6164a..7bb6b0601 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/python/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/python/BUILD.bazel
 @@ -8,6 +8,7 @@
@@ -325,7 +204,7 @@ index d6b0832f4c1a..e7043a338ea9 100644
  
  package(default_visibility = ["//visibility:public"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Analysis/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Analysis/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Analysis/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Analysis/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -334,7 +213,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/BUILD.bazel
-index dc5f4047c286..79b1cf855c1e 100644
+index 9b005b206..1c62ab1fd 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/BUILD.bazel
 @@ -3,6 +3,7 @@
@@ -346,7 +225,7 @@ index dc5f4047c286..79b1cf855c1e 100644
  load("//mlir:tblgen.bzl", "gentbl_cc_library", "gentbl_sharded_ops", "td_library")
  
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel
-index b00e8f243c29..0bd0450c4690 100644
+index b00e8f243..0bd0450c4 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Conversion/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -355,7 +234,7 @@ index b00e8f243c29..0bd0450c4690 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Dialect/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Dialect/BUILD.bazel
-index 1fd6885db8bc..125fa671b787 100644
+index 285e67c7c..72025a26f 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Dialect/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Dialect/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -364,7 +243,7 @@ index 1fd6885db8bc..125fa671b787 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/IR/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/IR/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/IR/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/IR/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -373,7 +252,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Pass/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Pass/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Pass/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Pass/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -382,7 +261,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Rewrite/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Rewrite/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Rewrite/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Rewrite/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -391,7 +270,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Target/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Target/BUILD.bazel
-index 5dd22ea50e8d..fa678b389627 100644
+index 7fab1ea1d..071bfbcff 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Target/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Target/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -400,7 +279,7 @@ index 5dd22ea50e8d..fa678b389627 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/Transforms/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/Transforms/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/Transforms/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/Transforms/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -409,7 +288,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/mlir-linalg-ods-gen/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/mlir-linalg-ods-gen/BUILD.bazel
-index 70d6bbcda7cd..d96592b4d889 100644
+index 70d6bbcda..d96592b4d 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/mlir-linalg-ods-gen/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/mlir-linalg-ods-gen/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -418,7 +297,7 @@ index 70d6bbcda7cd..d96592b4d889 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/mlir-lsp-server/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/mlir-lsp-server/BUILD.bazel
-index 409e44ebab6a..173772582b6a 100644
+index 409e44eba..173772582 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/mlir-lsp-server/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/mlir-lsp-server/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -427,7 +306,7 @@ index 409e44ebab6a..173772582b6a 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/mlir-opt/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/mlir-opt/BUILD.bazel
-index 83a17efbbd66..487d89999cc4 100644
+index 83a17efbb..487d89999 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/mlir-opt/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/mlir-opt/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -436,7 +315,7 @@ index 83a17efbbd66..487d89999cc4 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/mlir-pdll/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/mlir-pdll/BUILD.bazel
-index 6d0580d803f6..fcba0941da44 100644
+index 6d0580d80..fcba0941d 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/mlir-pdll/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/mlir-pdll/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -445,7 +324,7 @@ index 6d0580d803f6..fcba0941da44 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/test/mlir-tblgen/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/test/mlir-tblgen/BUILD.bazel
-index 07d2e29fc24c..27de6c76bb4c 100644
+index 1dd418c75..d6e18cf05 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/test/mlir-tblgen/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/test/mlir-tblgen/BUILD.bazel
 @@ -1,3 +1,4 @@
@@ -454,7 +333,7 @@ index 07d2e29fc24c..27de6c76bb4c 100644
  
  licenses(["notice"])
 diff --git a/utils/bazel/llvm-project-overlay/mlir/unittests/BUILD.bazel b/utils/bazel/llvm-project-overlay/mlir/unittests/BUILD.bazel
-index 7172beb4de9a..2e3cdb515469 100644
+index a55c6f501..e3af521ab 100644
 --- a/utils/bazel/llvm-project-overlay/mlir/unittests/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/mlir/unittests/BUILD.bazel
 @@ -2,6 +2,7 @@
@@ -466,7 +345,7 @@ index 7172beb4de9a..2e3cdb515469 100644
  
  package(
 diff --git a/utils/bazel/llvm-project-overlay/third-party/unittest/BUILD.bazel b/utils/bazel/llvm-project-overlay/third-party/unittest/BUILD.bazel
-index 0b5c084086ed..0d2f3127d698 100644
+index 0b5c08408..0d2f3127d 100644
 --- a/utils/bazel/llvm-project-overlay/third-party/unittest/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/third-party/unittest/BUILD.bazel
 @@ -2,6 +2,8 @@

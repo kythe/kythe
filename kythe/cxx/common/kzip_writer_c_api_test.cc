@@ -40,7 +40,8 @@ using ::testing::ElementsAre;
 using ::testing::Values;
 
 absl::string_view TestTmpdir() {
-  return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
+  return absl::StripSuffix(absl::NullSafeStringView(std::getenv("TEST_TMPDIR")),
+                           "/");
 }
 
 std::string TestOutputFile(absl::string_view basename) {

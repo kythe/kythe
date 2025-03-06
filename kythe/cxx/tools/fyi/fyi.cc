@@ -31,6 +31,7 @@
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/common/schema/facts.h"
+#include "llvm/ADT/RewriteBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -135,7 +136,7 @@ class FileTracker {
     can_undo_ = true;
     active_buffer_ = 1 - active_buffer_;
     auto* store = &memory_buffer_backing_store_[active_buffer_];
-    const clang::RewriteBuffer* buffer = rewriter->getRewriteBufferFor(file_id);
+    const llvm::RewriteBuffer* buffer = rewriter->getRewriteBufferFor(file_id);
     store->clear();
     llvm::raw_svector_ostream buffer_stream(*store);
     buffer->write(buffer_stream);
