@@ -500,6 +500,9 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
 			e.emitBuiltinMarkedSource(v)
 		}
+	case *types.Alias:
+		// Treat type alias as transparent; emit the underlying type.
+		v = e.emitType(typ.Underlying())
 	case *types.Array:
 		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
 	case *types.Slice:
