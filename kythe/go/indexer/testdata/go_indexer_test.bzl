@@ -19,7 +19,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
     "@io_bazel_rules_go//go:def.bzl",
-    "GoSource",
+    "GoInfo",
     "go_library",
 )
 load(
@@ -46,8 +46,8 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data, e
         for src in srcs
     ]
     for dep in deps:
-        gosrc = dep[GoSource]
-        path = gosrc.library.importpath
+        gosrc = dep.source
+        path = gosrc.importpath
         fullpath = "/".join([srcroot, path])
         tups = fullpath.count("/") + 1
         cmds += ["mkdir -p " + fullpath]
@@ -88,8 +88,10 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data, e
     ctx.actions.write(output = f, content = "\n".join(cmds), is_executable = True)
     return f
 
+KZipProvider = provider()
+
 def _go_extract(ctx):
-    gosrc = ctx.attr.library[GoSource]
+    gosrc = ctx.attr.library[GoInfo]
     mode = gosrc.mode
     srcs = gosrc.srcs
 
@@ -97,9 +99,9 @@ def _go_extract(ctx):
     deps = gosrc.deps
     depsrcs = []
     for dep in deps:
-        depsrcs += dep[GoSource].srcs
+        depsrcs += dep.source.srcs
 
-    ipath = gosrc.library.importpath
+    ipath = gosrc.importpath
     data = ctx.attr.data
     output = ctx.outputs.kzip
     script = _emit_extractor_script(
@@ -126,7 +128,7 @@ def _go_extract(ctx):
         inputs = srcs + extras + depsrcs,
         tools = tools,
     )
-    return struct(kzip = output)
+    return [KZipProvider(kzip = output)]
 
 # Generate a kzip with the compilations captured from a single Go library or
 # binary rule.
@@ -139,7 +141,7 @@ go_extract = rule(
             allow_files = True,
         ),
         "library": attr.label(
-            providers = [GoSource],
+            providers = [GoInfo],
             mandatory = True,
         ),
         "_extractor": attr.label(
@@ -158,7 +160,7 @@ go_extract = rule(
 )
 
 def _go_entries(ctx):
-    kzip = ctx.attr.kzip.kzip
+    kzip = ctx.attr.kzip[KZipProvider].kzip
     iargs = []
     output = ctx.outputs.entries
 
@@ -220,7 +222,7 @@ go_entries = rule(
 
         # The go_extract output to pass to the indexer.
         "kzip": attr.label(
-            providers = ["kzip"],
+            providers = [KZipProvider],
             mandatory = True,
         ),
 
