@@ -24,7 +24,7 @@ RUN apt-get update && \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
+      file diffstat git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-21-jdk openjdk-21-source clang-12 flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev uuid-dev golang bison \
       ca-certificates-java libsasl2-dev && \
