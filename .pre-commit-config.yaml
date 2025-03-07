@@ -35,7 +35,7 @@ repos:
             ^(AUTHORS|CONTRIBUTORS|WORKSPACE|LICENSE)$
             |(^|/)BUILD([^*/]*\.bazel)?$
             |(^|/)requirements\.[^.]+$
-            |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|kzip|tex|tac|bazelproject)$
+            |\.(pb\.go|md|yaml|yml|json|html|bzl|lock|patch|BUILD|WORKSPACE|MODULE.bazel|kzip|tex|tac|bazelproject)$
             |(^|/)(\.[^/]*|go\.mod|go\.sum)$
             |^tools/|^third_party/|^kythe/web/site/
             |worker/info/(admin|host)$
