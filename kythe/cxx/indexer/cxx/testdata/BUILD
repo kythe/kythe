@@ -2369,6 +2369,9 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_depname_implicit",
     srcs = ["template/template_depname_implicit.cc"],
+    # TODO(varunmahajan): Fix this test.
+    # Root cause: https://github.com/llvm/llvm-project/pull/92318.
+    expect_fail_verify = True,
     ignore_dups = True,
     tags = ["template"],
 )

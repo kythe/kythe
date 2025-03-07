@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <set>
+#include <stack>
 #include <string>
 #include <utility>
 

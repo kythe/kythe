@@ -17,8 +17,11 @@
 #include "kythe/cxx/indexer/proto/marked_source.h"
 
 #include <optional>
+#include <string>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/kythe_uri.h"
@@ -96,7 +99,7 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
     ProtoGraphBuilder* builder) {
   // EnumValueDescriptor::full_name leaves off the parent enum's name.
   std::string full_name =
-      descriptor->type()->full_name() + "." + descriptor->name();
+      absl::StrCat(descriptor->type()->full_name(), ".", descriptor->name());
   MarkedSource ms;
   if (GenerateMarkedSourceForDottedName(
           full_name, &ms, builder->VNameForDescriptor(descriptor))) {
@@ -153,7 +156,7 @@ std::optional<MarkedSource> GenerateMarkedSourceForDescriptor(
   std::string full_name;
   if (const google::protobuf::OneofDescriptor* oneof =
           descriptor->real_containing_oneof()) {
-    full_name = oneof->full_name() + "." + descriptor->name();
+    full_name = absl::StrCat(oneof->full_name(), ".", descriptor->name());
   } else {
     full_name = descriptor->full_name();
   }

@@ -17,6 +17,7 @@
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 
 #include <optional>
+#include <stack>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -625,19 +626,18 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
         break;
       }
     }
-    llvm::SmallVector<clang::TemplateArgument, 4> out_arguments;
-    llvm::SmallVector<clang::TemplateArgument, 4> sugared_arguments;
+    clang::Sema::CheckTemplateArgumentInfo CTAI;
     noprint = first_default;
     for (; noprint < template_args.size(); ++noprint) {
       bool was_ok = !cache_->sema()->CheckTemplateArgumentList(
-          template_decl, template_decl->getLocation(), list_prefix, false,
-          out_arguments, sugared_arguments);
+          template_decl, template_decl->getLocation(), list_prefix,
+          /*DefaultArgs=*/{}, false, CTAI);
       if (was_ok) {
-        if (out_arguments.size() != template_args.size()) {
+        if (CTAI.SugaredConverted.size() != template_args.size()) {
           break;
         }
         unsigned arg_index = 0;
-        for (const auto& arg : out_arguments) {
+        for (const auto& arg : CTAI.SugaredConverted) {
           // TODO(zarko): for certain kinds of declarations, source_arg may be
           // a tyvar reference ('type-parameter-0-0'). Can we thread through
           // the type context in those cases?

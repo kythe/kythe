@@ -3353,7 +3353,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->arguments();
     }
     Args = FTSI->TemplateArguments;
-    TNs.emplace_back(FTSI->getTemplate());
+    TNs.emplace_back(FTSI->getTemplate()->getCanonicalDecl());
     IsImplicit = !FTSI->isExplicitSpecialization();
   } else if (auto* DFTSI = Decl->getDependentSpecializationInfo()) {
     // From Clang's documentation:
@@ -4069,6 +4069,9 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
       return std::nullopt;
     case TemplateName::SubstTemplateTemplateParmPack:
       CHECK(options_.IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmPack";
+      return std::nullopt;
+    case TemplateName::DeducedTemplate:
+      CHECK(options_.IgnoreUnimplemented) << "TN.DeducedTemplate";
       return std::nullopt;
   }
   CHECK(options_.IgnoreUnimplemented)
@@ -4885,6 +4888,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(BTFTagAttributed);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(CountAttributed);
+    UNSUPPORTED_CLANG_TYPE(HLSLAttributedResource);
     UNSUPPORTED_CLANG_TYPE(VariableArray);
     UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
     UNSUPPORTED_CLANG_TYPE(Vector);

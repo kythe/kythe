@@ -54,9 +54,6 @@ cxx_extractor_toolchain = rule(
             cfg = "exec",
         ),
         "compiler_executable": attr.string(),
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-        ),
     },
     fragments = ["cpp"],
     provides = [

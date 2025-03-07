@@ -170,12 +170,12 @@ def kythe_rule_repositories():
     maybe(
         github_archive,
         repo_name = "llvm/llvm-project",
-        commit = "45726c1a3a3d89ff9f6ebe657c3cb7bcd59b88db",
+        commit = "cc46d00a86f89b57008ca878e89538d724b7df90",
         name = "llvm-raw",
         build_file_content = "#empty",
         patch_args = ["-p1"],
         patches = ["@io_kythe//third_party:llvm-bazel-glob.patch"],
-        integrity = "sha256-bt8XNPQbixKOYOBAACm+LrLvg42JEkO8kE7zYj5BiG8=",
+        integrity = "sha256-eDavYz6rzf56ip8jl5Ag6c62oz0+eQh1Ac6Hb8wy2sw=",
     )
 
     maybe(
