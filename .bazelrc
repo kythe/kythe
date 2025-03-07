@@ -40,6 +40,10 @@ common --host_copt=-w
 # Ensure environment variables are static across machines; allows for cross-user caching.
 common --experimental_strict_action_env
 
+# Write build outputs in a platform-specific directory,
+# avoid outputs being wiped and rewritten when switching between platforms.
+common --experimental_platform_in_output_dir
+
 # aspect_rules_js configuration
 build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
 fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
