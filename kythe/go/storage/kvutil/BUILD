@@ -7,7 +7,6 @@ go_library(
     srcs = ["kvutil.go"],
     importpath = "kythe.io/kythe/go/storage/kvutil",
     deps = [
-        "//kythe/go/storage/inmemory",
         "//kythe/go/storage/keyvalue",
         "//kythe/go/util/log",
     ],

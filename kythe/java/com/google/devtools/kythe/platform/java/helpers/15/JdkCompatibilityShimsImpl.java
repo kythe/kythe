@@ -28,7 +28,7 @@ import java.util.List;
 @AutoService(JdkCompatibilityShims.class)
 public final class JdkCompatibilityShimsImpl implements JdkCompatibilityShims {
   private static final Runtime.Version minVersion = Runtime.Version.parse("15");
-  private static final Runtime.Version maxVersion = Runtime.Version.parse("20");
+  private static final Runtime.Version maxVersion = Runtime.Version.parse("21");
 
   public JdkCompatibilityShimsImpl() {}
 

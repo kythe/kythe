@@ -7,8 +7,8 @@ go_library(
     srcs = ["ptypes.go"],
     importpath = "kythe.io/kythe/go/util/ptypes",
     deps = [
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_golang_protobuf//ptypes:go_default_library_gen",
+        "@com_github_golang_protobuf//proto",
+        "@com_github_golang_protobuf//ptypes",
         "@com_github_golang_protobuf//ptypes/any",
     ],
 )
@@ -20,7 +20,7 @@ go_test(
     library = ":ptypes",
     visibility = ["//visibility:private"],
     deps = [
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
         "@com_github_golang_protobuf//ptypes/any",
     ],
 )

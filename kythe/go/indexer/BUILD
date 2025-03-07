@@ -29,7 +29,7 @@ go_library(
         "//kythe/proto:go_go_proto",
         "//kythe/proto:metadata_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
         "@org_bitbucket_creachadair_stringset//:stringset",
         "@org_golang_x_tools//go/gcexportdata",
         "@org_golang_x_tools//go/types/typeutil",
@@ -53,7 +53,7 @@ go_test(
         "//kythe/proto:go_go_proto",
         "//kythe/proto:metadata_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
     ],
 )
 

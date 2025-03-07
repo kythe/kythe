@@ -17,7 +17,7 @@ go_library(
         "//kythe/proto:go_go_proto",
         "//kythe/proto:java_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//proto",
         "@org_bitbucket_creachadair_stringset//:stringset",
         "@org_golang_google_protobuf//encoding/protojson",
         "@org_golang_x_sync//errgroup",

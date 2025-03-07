@@ -104,8 +104,6 @@ jasmine_test(
         "utf8_test.js",
         ":utf8_test_ts",
     ],
-    include_declarations = True,
-    include_npm_linked_packages = True,
     include_transitive_sources = True,
     log_level = "debug",
     node_modules = "//:node_modules",

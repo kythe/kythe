@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "go_example",
     srcs = ["go_example.go"],
-    data = ["@go_sdk//:files"],
+    data = ["@go_sdk_linux//:files"],
     deps = [
         "//kythe/go/extractors/golang",
         "//kythe/go/indexer",
