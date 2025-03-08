@@ -157,8 +157,9 @@ class TextprotoAnalyzer : public PluginApi {
                                    const Message& proto,
                                    const FieldDescriptor& field,
                                    int start_offset);
-  absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
-                                     const Descriptor& msg_descriptor);
+  absl::StatusOr<TextprotoSchema> AnalyzeSchemaComments(
+      const proto::VName& file_vname, const DescriptorPool& descriptor_pool,
+      absl::string_view default_message_name);
 
   KytheGraphRecorder* recorder() override { return recorder_; }
 
@@ -780,8 +781,9 @@ absl::Status TextprotoAnalyzer::AnalyzeField(const proto::VName& file_vname,
   return absl::OkStatus();
 }
 
-absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
-    const proto::VName& file_vname, const Descriptor& msg_descriptor) {
+absl::StatusOr<TextprotoSchema> TextprotoAnalyzer::AnalyzeSchemaComments(
+    const proto::VName& file_vname, const DescriptorPool& descriptor_pool,
+    absl::string_view default_message_name) {
   TextprotoSchema schema = ParseTextprotoSchemaComments(textproto_content_);
 
   // Handle 'proto-message' comment if present.
@@ -790,8 +792,18 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
     size_t end = begin + schema.proto_message.size();
     proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
 
+    absl::string_view message_name = default_message_name.empty()
+                                         ? schema.proto_message
+                                         : default_message_name;
+    const Descriptor* msg_descriptor =
+        descriptor_pool.FindMessageTypeByName(message_name);
+    if (msg_descriptor == nullptr) {
+      return absl::NotFoundError(absl::StrCat(
+          "Unable to find proto message in descriptor pool: ", message_name));
+    }
+
     // Add ref edge to proto message.
-    auto msg_vname = VNameForDescriptor(&msg_descriptor);
+    auto msg_vname = VNameForDescriptor(msg_descriptor);
     recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(msg_vname));
   }
 
@@ -810,7 +822,7 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
     recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRefFile, VNameRef(v));
   }
 
-  return absl::OkStatus();
+  return schema;
 }
 
 proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
@@ -965,12 +977,9 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                               &path_substitutions, &args);
 
   // Find --proto_message in args.
-  std::string message_name = FindArg(&args, "--proto_message").value_or("");
-  if (message_name.empty()) {
-    return absl::UnknownError(
-        "Compilation unit arguments must specify --proto_message");
-  }
-  LOG(INFO) << "Proto message name: " << message_name;
+  std::string default_message_name =
+      FindArg(&args, "--proto_message").value_or("");
+  LOG(INFO) << "Default proto message name: " << default_message_name;
 
   absl::flat_hash_map<std::string, const proto::FileData*> file_data_by_path;
 
@@ -1019,14 +1028,6 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   }
   const DescriptorPool* descriptor_pool = proto_importer.pool();
 
-  // Get a descriptor for the top-level Message.
-  const Descriptor* descriptor =
-      descriptor_pool->FindMessageTypeByName(message_name);
-  if (descriptor == nullptr) {
-    return absl::NotFoundError(absl::StrCat(
-        "Unable to find proto message in descriptor pool: ", message_name));
-  }
-
   // Only recordio format specifies record_separator.
   // Presense of record_separator flag indicates it's recordio file format.
   std::optional<std::string> record_separator =
@@ -1035,7 +1036,6 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     // Use reflection to create an instance of the top-level proto message.
     // note: msg_factory must outlive any protos created from it.
     google::protobuf::DynamicMessageFactory msg_factory;
-    std::unique_ptr<Message> proto(msg_factory.GetPrototype(descriptor)->New());
 
     // Emit file node.
     proto::VName file_vname = LookupVNameForFullPath(filepath, unit);
@@ -1048,17 +1048,32 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                &file_substitution_cache, recorder,
                                descriptor_pool);
 
-    // Load plugins
-    analyzer.SetPlugins(plugin_loader(*proto));
-
-    absl::Status status =
-        analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
-    if (!status.ok()) {
-      std::string msg =
-          absl::StrCat("Error analyzing schema comments: ", status.ToString());
-      LOG(ERROR) << msg << status;
+    auto schema = analyzer.AnalyzeSchemaComments(file_vname, *descriptor_pool,
+                                                 default_message_name);
+    if (!schema.ok()) {
+      std::string msg = absl::StrCat("Error analyzing schema comments: ",
+                                     schema.status().ToString());
+      LOG(ERROR) << msg << schema.status();
       analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
     }
+
+    absl::string_view message_name = default_message_name.empty()
+                                         ? schema->proto_message
+                                         : default_message_name;
+    LOG(INFO) << "Proto message name: " << message_name;
+
+    // Get a descriptor for the top-level Message.
+    const Descriptor* descriptor =
+        descriptor_pool->FindMessageTypeByName(message_name);
+    if (descriptor == nullptr) {
+      return absl::NotFoundError(absl::StrCat(
+          "Unable to find proto message in descriptor pool: ", message_name));
+    }
+
+    std::unique_ptr<Message> proto(msg_factory.GetPrototype(descriptor)->New());
+
+    // Load plugins
+    analyzer.SetPlugins(plugin_loader(*proto));
 
     TextFormat::Parser parser;
     // Relax parser restrictions - even if the proto is partially ill-defined,
