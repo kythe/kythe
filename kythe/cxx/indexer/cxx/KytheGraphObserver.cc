@@ -102,7 +102,8 @@ constexpr absl::string_view kUniformClangBuiltins[] = {
     "__SVFloat16_t",
     "__SVFloat32_t",
     "__SVFloat64_t",
-    "__SVBFloat16_t",
+    "__SVBfloat16_t",
+    "__SVMfloat8_t",
     "__clang_svint8x2_t",
     "__clang_svint16x2_t",
     "__clang_svint32x2_t",
@@ -115,6 +116,7 @@ constexpr absl::string_view kUniformClangBuiltins[] = {
     "__clang_svfloat32x2_t",
     "__clang_svfloat64x2_t",
     "__clang_svbfloat16x2_t",
+    "__clang_svmfloat8x2_t",
     "__clang_svint8x3_t",
     "__clang_svint16x3_t",
     "__clang_svint32x3_t",
@@ -127,6 +129,7 @@ constexpr absl::string_view kUniformClangBuiltins[] = {
     "__clang_svfloat32x3_t",
     "__clang_svfloat64x3_t",
     "__clang_svbfloat16x3_t",
+    "__clang_svmfloat8x3_t",
     "__clang_svint8x4_t",
     "__clang_svint16x4_t",
     "__clang_svint32x4_t",
@@ -139,10 +142,12 @@ constexpr absl::string_view kUniformClangBuiltins[] = {
     "__clang_svfloat32x4_t",
     "__clang_svfloat64x4_t",
     "__clang_svbfloat16x4_t",
+    "__clang_svmfloat8x4_t",
     "__SVBool_t",
     "__clang_svboolx2_t",
     "__clang_svboolx4_t",
     "__SVCount_t",
+    "__mfp8",
 };
 
 struct ClaimedStringFormatter {
