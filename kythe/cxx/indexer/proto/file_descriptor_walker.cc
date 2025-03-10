@@ -631,7 +631,7 @@ void FileDescriptorWalker::VisitOneofs(const std::string& message_name,
   ScopedLookup nested_type_num(&lookup_path,
                                DescriptorProto::kOneofDeclFieldNumber);
 
-  for (int i = 0; i < dp->oneof_decl_count(); i++) {
+  for (int i = 0; i < dp->real_oneof_decl_count(); i++) {
     ScopedLookup nested_index(&lookup_path, i);
     const OneofDescriptor* oneof = dp->oneof_decl(i);
     std::string vname = absl::StrCat(message_name, ".", oneof->name());
