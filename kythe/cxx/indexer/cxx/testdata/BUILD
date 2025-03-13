@@ -1770,6 +1770,7 @@ cc_indexer_test(
     deps = [
         "libraries/message.proto.h",
         "libraries/parsetextproto.h",
+        "libraries/proto_extension.h",
     ],
 )
 
@@ -1781,6 +1782,7 @@ cc_indexer_test(
     deps = [
         "libraries/message.proto.h",
         "libraries/parsetextproto.h",
+        "libraries/proto_extension.h",
     ],
 )
 
