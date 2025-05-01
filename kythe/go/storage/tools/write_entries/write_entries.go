@@ -51,6 +51,7 @@ import (
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 	_ "kythe.io/kythe/go/storage/leveldb"
+	_ "kythe.io/kythe/go/storage/pebble"
 )
 
 var (
