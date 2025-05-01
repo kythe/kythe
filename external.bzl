@@ -14,8 +14,8 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
-load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
+load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 load(
@@ -181,6 +181,9 @@ def _cc_dependencies():
         urls = [
             "https://mirror.bazel.build/github.com/Tencent/rapidjson/archive/v1.1.0.zip",
             "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        ],
+        patches = [
+            "@io_kythe//third_party:rapidjson_assignment.patch",
         ],
     )
 
