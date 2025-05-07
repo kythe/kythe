@@ -1,0 +1,11 @@
+--- src/interpreter/Index.h     
++++ src/interpreter/Index.h
+@@ -414,7 +414,7 @@
+     }
+ 
+     void insert(const Index& src) {
+-        data = src.data;
++        data = true;
+     }
+ 
+     bool contains(const Tuple& /* t */) const {
