@@ -92,8 +92,9 @@ EOF
 } > RELEASES.md.new
 mv -f RELEASES.md.new RELEASES.md
 
-# Update release_version stamp for binaries
+# Update release_version stamp for binaries and BCR releases
 sed -ri "s/^release_version = .+/release_version = \"$version\"/" kythe/release/BUILD
+sed -ri "s/^    version = .+/    version = \"$version\",/" kythe/release/release.MODULE.bazel
 
 if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUILD) >/dev/null; then
   if [[ -z "$(git diff --name-only -- RELEASES.md)" ]]; then
