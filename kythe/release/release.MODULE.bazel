@@ -1,6 +1,6 @@
 module(
     name = "kythe",
-    version = "0.0.68",
+    version = "v0.0.69",
     repo_name = "io_kythe",
 )
 
