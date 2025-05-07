@@ -2,6 +2,34 @@
 
 ## [v0.0.69] - 2025-05-07
 
+#### Bug Fixes
+* **typescript_indexer:**
+  * emit correct vnames for static methods (#6151) ([ede6dfb](https://github.com/kythe/kythe/commit/ede6dfb6d44a4b6de4cd40690096f75da6e32e93))
+
+
+* **typescript_indexer:**
+  * emit correct vnames for static methods (#6151) ([ede6dfb](https://github.com/kythe/kythe/commit/ede6dfb6d44a4b6de4cd40690096f75da6e32e93))
+
+* **protobuf:**
+  * correctly visit oneof (#6161) ([d8c532d](https://github.com/kythe/kythe/commit/d8c532d93b633b3dc69b3ba63be614c33621cbb3))
+
+* **bazel:**
+  * Fix build with Clang 19 (#6172) ([656254b](https://github.com/kythe/kythe/commit/656254b2ad23645561c3329eb4cbe480ea9f77e5))
+
+#### Features
+* **rust extractor:**
+  * Add an extractor for rust-project.json (#6168) ([383ee9b](https://github.com/kythe/kythe/commit/383ee9b2fc2992de113bf9f2e47adc1ed9da437f))
+
+
+* **cxx_indexer:**
+  * update arm builtin types (#6162) ([231df20](https://github.com/kythe/kythe/commit/231df200562b2a55d2174985faa7eb952ade8767))
+
+
+* **Misc:**
+  * Many changes upstreamed from internal repo (#6159) ([77d0cca](https://github.com/kythe/kythe/commit/77d0cca1bf2e0b6a92c55480ab1c568fd9a3448e))
+  * Add support for Bzlmod (#6154) ([412a5ba](https://github.com/kythe/kythe/commit/412a5ba66a911b5fb34c4aadbd571339efc4f93a))
+
+
 ## [v0.0.68] - 2025-01-06
 #### Bug Fixes
 * **go_indexer:**
