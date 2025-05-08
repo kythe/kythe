@@ -22,7 +22,7 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.68"
+release_version = "v0.0.70"
 
 genrule(
     name = "release",
@@ -46,6 +46,7 @@ genrule(
         ":cxx_indexer",
         ":go_indexer",
         ":proto_extractor",
+        ":rustproject_extractor",
         "@maven//:org_apache_tomcat_tomcat_annotations_api",
         ":proto_indexer",
         ":textproto_extractor",
@@ -87,6 +88,7 @@ genrule(
         "--cp $(location @maven//:org_apache_tomcat_tomcat_annotations_api) jsr250-api-1.0.jar",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location rustproject_extractor) extractors/rustproject_extractor",
         "--cp $(location proto_extractor) extractors/proto_extractor",
         "--cp $(location textproto_extractor) extractors/textproto_extractor",
         "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
@@ -210,6 +212,11 @@ filegroup(
 filegroup(
     name = "go_indexer",
     srcs = ["//kythe/go/indexer/cmd/go_indexer"],
+)
+
+filegroup(
+    name = "rustproject_extractor",
+    srcs = ["//kythe/go/extractors/cmd/rust:rust_project_to_kzip"],
 )
 
 filegroup(
