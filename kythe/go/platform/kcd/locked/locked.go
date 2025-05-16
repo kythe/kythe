@@ -87,6 +87,13 @@ func (db *locker) FilesExist(ctx context.Context, fileDigests []string, f func(s
 	return db.rd.FilesExist(ctx, fileDigests, f)
 }
 
+// FetchCUForAnalysis implements a method of kcd.Reader.
+func (db *locker) FetchCUSelector(ctx context.Context, filter *kcd.FetchCUSelectorFilter, f func(digest string, target string) error) error {
+	db.μ.Lock()
+	defer db.μ.Unlock()
+	return db.rd.FetchCUSelector(ctx, filter, f)
+}
+
 // WriteRevision implements a method of kcd.Writer.
 func (db *locker) WriteRevision(ctx context.Context, rev kcd.Revision, replace bool) error {
 	if db.wr == nil {
