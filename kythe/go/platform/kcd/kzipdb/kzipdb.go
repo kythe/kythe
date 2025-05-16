@@ -25,6 +25,7 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 	"kythe.io/kythe/go/platform/kzip"
+	"google3/util/task/go/status"
 )
 
 // DB implements kcd.Reader using a kzip.Reader as its backing store.
@@ -124,4 +125,9 @@ func (db DB) FilesExist(ctx context.Context, fileDigests []string, f func(string
 		return f(digest)
 	}
 	return nil
+}
+
+// FetchCUSelector implements a method of kcd.Reader. This method is not supported for kzipdb.
+func (db DB) FetchCUSelector(ctx context.Context, filter *kcd.FetchCUSelectorFilter, f func(digest string, target string) error) error {
+	return status.ErrUnimplemented
 }
