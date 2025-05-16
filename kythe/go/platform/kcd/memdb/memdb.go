@@ -132,6 +132,12 @@ func (db DB) Units(_ context.Context, unitDigests []string, f func(digest, key s
 	return nil
 }
 
+// FetchCUForAnalysis implements a method of kcd.Reader.
+// TODO(b/393964694): Implement this method for the membdb.
+func (db DB) FetchCUSelector(_ context.Context, filter *kcd.FetchCUSelectorFilter, f func(digest string, target string) error) error {
+	return nil
+}
+
 // Files implements a method of kcd.Reader.
 func (db DB) Files(_ context.Context, fileDigests []string, f func(string, []byte) error) error {
 	for _, fd := range fileDigests {
