@@ -1,8 +1,8 @@
 # Release Notes
 
-## [v0.0.70] - 2025-05-08
+## [v0.0.71] - 2025-05-21
 
-## [v0.0.69] - 2025-05-08
+Adds a rust-project.json extractor and fixes various bugs in it.
 
 ## [v0.0.68] - 2025-01-06
 #### Bug Fixes
@@ -1797,7 +1797,7 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.70...HEAD
+[v0.0.71] https://github.com/kythe/kythe/compare/v0.0.70...v0.0.71
 [v0.0.70] https://github.com/kythe/kythe/compare/v0.0.69...v0.0.70
 [v0.0.69] https://github.com/kythe/kythe/compare/v0.0.68...v0.0.69
 [v0.0.68] https://github.com/kythe/kythe/compare/v0.0.67...v0.0.68
