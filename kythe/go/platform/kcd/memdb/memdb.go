@@ -134,7 +134,7 @@ func (db DB) Units(_ context.Context, unitDigests []string, f func(digest, key s
 
 // FindCUMetadatas implements a method of kcd.Reader.
 // TODO(b/393964694): Implement this method for the membdb.
-func (db DB) FetchCUSelector(_ context.Context, filter *kcd.FindCUMetadatasFilter, f func(cuMetaData *kcd.cuMetadata) error) error {
+func (db DB) FindCUMetadatas(_ context.Context, filter *kcd.FindCUMetadatasFilter, f func(cuMetaData *kcd.cuMetadata) error) error {
 	return nil
 }
 
