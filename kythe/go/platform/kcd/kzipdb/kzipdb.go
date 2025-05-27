@@ -126,8 +126,7 @@ func (db DB) FilesExist(ctx context.Context, fileDigests []string, f func(string
 	}
 	return nil
 }
-
-// FetchCUSelector implements a method of kcd.Reader. This method is not supported for kzipdb.
-func (db DB) FetchCUSelector(ctx context.Context, filter *kcd.FetchCUSelectorFilter, f func(digest string, target string) error) error {
+// FindCUMetadatas implements a method of kcd.Reader. This method is not supported for kzipdb.
+func (db DB) FindCUMetadatas(ctx context.Context, filter *kcd.FindCUMetadatasFilter, f func(cuMetadata *kcd.CUMetaData) error) error {
 	return status.ErrUnimplemented
 }

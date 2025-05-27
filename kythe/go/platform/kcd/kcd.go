@@ -64,10 +64,10 @@ type Reader interface {
 	// If f returns an error, that error is returned from FilesExist.
 	FilesExist(_ context.Context, fileDigests []string, f func(string) error) error
 
-	// FetchCUSelector calls f with the digest of each known compilation matching filter.
+	// FindCUMetadatas calls f with the digest of each known compilation matching filter.
 	// If filter == nil or is empty, no compilations are reported.
-	// If f returns an error, that error is returned from FetchCUSelector.
-	FetchCUSelector(_ context.Context, filter *FetchCUSelectorFilter, f func(digest string, target string) error) error
+	// If f returns an error, that error is returned from FindCUMetadatas.
+	FindCUMetadatas(_ context.Context, filter *FindCUMetadatasFilter, f func(cuMetaData *CUMetaData) error) error
 }
 
 // Writer represents write access to an underlying storage layer used to
@@ -193,13 +193,19 @@ type FindFilter struct {
 	Outputs []*regexp.Regexp // include only compilations for these outputs.
 }
 
-// FetchCUSelectorFilter gives constraints on which compilations units are matched by a call to
-// the FetchCUSelector method of compdb.Reader.
-type FetchCUSelectorFilter struct {
+// FindCUMetadatasFilter gives constraints on which compilations units are matched by a call to
+// the FindCUMetadatas method of compdb.Reader.
+type FindCUMetadatasFilter struct {
 	UnitCorpus string
 	Revision   string
 	Language   string
 	Targets    []string
+}
+
+// CUMetaData represents the metadata of a compilation unit.
+type CUMetaData struct {
+	Target     string
+	UnitDigest string
 }
 
 // Compile returns a compiled filter that matches index terms based on ff.
