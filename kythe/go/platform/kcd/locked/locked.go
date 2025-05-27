@@ -88,7 +88,7 @@ func (db *locker) FilesExist(ctx context.Context, fileDigests []string, f func(s
 }
 
 // FetchCUForAnalysis implements a method of kcd.Reader.
-func (db *locker) FindCUMetadatas(ctx context.Context, filter *kcd.FetchCUSelectorFilter, f func(cuMetaData *kcd.CUMetaData) error) error {
+func (db *locker) FindCUMetadatas(ctx context.Context, filter *kcd.FindCUMetadatasFilter, f func(cuMetaData *kcd.CUMetaData) error) error {
 	db.μ.Lock()
 	defer db.μ.Unlock()
 	return db.rd.FindCUMetadatas(ctx, filter, f)
