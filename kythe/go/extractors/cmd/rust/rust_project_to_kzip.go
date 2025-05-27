@@ -338,6 +338,7 @@ func collectCrateSourcesImpl(ctx context.Context, e *extractor, sourceDirs sourc
 			continue
 		}
 
+		dirSourceFiles := []string{}
 		dirRequiredInputs := []*apb.CompilationUnit_FileInput{}
 		err := vfs.Walk(ctx, abspath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -375,7 +376,7 @@ func collectCrateSourcesImpl(ctx context.Context, e *extractor, sourceDirs sourc
 				vname.Corpus = e.corpus
 			}
 
-			sourceFiles = append(sourceFiles, relativePath)
+			dirSourceFiles = append(dirSourceFiles, relativePath)
 			dirRequiredInputs = append(dirRequiredInputs, &apb.CompilationUnit_FileInput{
 				VName: vname,
 				Info: &apb.FileInfo{
@@ -393,10 +394,11 @@ func collectCrateSourcesImpl(ctx context.Context, e *extractor, sourceDirs sourc
 		}
 
 		requiredInputs = append(requiredInputs, dirRequiredInputs...)
+		sourceFiles = append(sourceFiles, dirSourceFiles...)
 
 		e.requiredInputsCache.cache[mapKey] = &requiredInputValue{
 			requiredInputs: dirRequiredInputs,
-			sourceFiles:    sourceFiles,
+			sourceFiles:    dirSourceFiles,
 		}
 	}
 
