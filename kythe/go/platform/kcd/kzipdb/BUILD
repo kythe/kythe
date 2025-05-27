@@ -10,7 +10,6 @@ go_library(
         "//kythe/go/platform/kcd",
         "//kythe/go/platform/kcd/kythe",
         "//kythe/go/platform/kzip",
-        "//util/task/go:status",
         "@org_golang_google_protobuf//proto",
     ],
 )
