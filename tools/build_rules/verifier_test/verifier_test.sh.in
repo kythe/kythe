@@ -22,6 +22,8 @@ cd "${RUNFILES_DIR}/${WORKSPACE_NAME}"
 ENTRIES=(@ENTRIES@)
 ENTRIES_GZ=(@ENTRIES_GZ@)
 
+echo "1" >&2
+
 # Dir that will contain output files useful for debugging: logs, JSON entries.
 # It will use TEST_UNDECLARED_OUTPUTS_DIR if defined or TEST_TMPDIR otherwise.
 TEST_OUT_DIR="${TEST_UNDECLARED_OUTPUTS_DIR:-$TEST_TMPDIR}"
@@ -30,14 +32,16 @@ TEST_OUT_DIR="${TEST_UNDECLARED_OUTPUTS_DIR:-$TEST_TMPDIR}"
 # 'log:outputname' strings.
 for log in @INDEXER_LOGS@; do
   parts=(${log//:/ })
-  echo Copying file "${parts[0]}" to "${parts[1]}" >&2
+  echo "Indexer logs? ${parts[0]} ${parts[1]}" >&2
   cat "${parts[0]}" > "${TEST_OUT_DIR}/${parts[1]}"
 done
 
+echo "2" >&2
 # Convert entries to JSON and store later for debugging.
 # ENTRIES_TO_LOG is a list of 'entryfile:outputname' strings.
 for entry in @ENTRIES_TO_LOG@; do
   parts=(${entry//:/ })
+  echo "Converting entry ${entry} to JSON, writing to ${parts[1]}" >&2
   @ENTRYSTREAM@ --write_format=json < "${parts[0]}" >> "${TEST_OUT_DIR}/${parts[1]}"
 done
 
@@ -61,12 +65,13 @@ echo "Running verifier" >&2
   if (( ${#ENTRIES_FROM_INLINE_INDEXERS[@]} )); then cat "${ENTRIES_FROM_INLINE_INDEXERS[@]}"; fi
   if (( ${#ENTRIES[@]} )); then cat "${ENTRIES[@]}"; fi
   if (( ${#ENTRIES_GZ[@]} )); then gunzip -c "${ENTRIES_GZ[@]}"; fi
-) | (
+) | tee "${TEST_OUT_DIR}/entries_output.txt" | (
   if [[ -z "@REWRITE@" ]]; then
     @MARKEDSOURCE@ --rewrite
   else
     cat
   fi
-) | (
+) | tee "${TEST_OUT_DIR}/markedsource_output.txt" | (
+  echo "Running verifier: @VERIFIER@" >&2
   if @INVERT@ @VERIFIER@ @ARGS@ "$@"; then exit 0; else exit 1; fi
 )

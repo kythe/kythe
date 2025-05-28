@@ -71,6 +71,7 @@ go_indexer_test(
     import_path = "builtin",
     resolve_code_facts = True,
     use_file_as_top_level_scope = True,
+    use_file_nodes = False,
 )
 
 go_indexer_test(
@@ -318,6 +319,7 @@ go_indexer_test(
     name = "types_test",
     srcs = ["testdata/types.go"],
     has_marked_source = True,
+    use_file_nodes = False,
 )
 
 go_indexer_test(
