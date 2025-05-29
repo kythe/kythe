@@ -66,10 +66,10 @@ bzl_library(
 go_indexer_test(
     name = "builtin_test",
     srcs = ["testdata/builtin.go"],
+    extra_goals = ["testdata/builtin.go"],
     has_marked_source = True,
     import_path = "builtin",
     resolve_code_facts = True,
-    use_fast_solver = False,
     use_file_as_top_level_scope = True,
 )
 
