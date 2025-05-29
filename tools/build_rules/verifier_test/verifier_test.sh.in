@@ -72,6 +72,6 @@ echo "Running verifier" >&2
     cat
   fi
 ) | tee "${TEST_OUT_DIR}/markedsource_output.txt" | (
-  echo "Running verifier: @VERIFIER@" >&2
+  echo "Running verifier: @VERIFIER@ @ARGS@" >&2
   if @INVERT@ @VERIFIER@ @ARGS@ "$@"; then exit 0; else exit 1; fi
 )

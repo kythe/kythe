@@ -304,8 +304,8 @@ def go_verifier_test(
     # If the test wants marked source, enable support for it in the verifier.
     if has_marked_source:
         opts.append("--convert_marked_source")
-    if use_fast_solver:
-        opts.append("--use_fast_solver")
+    if not use_fast_solver:
+        opts.append("--use_fast_solver=false")
     return verifier_test(
         name = name,
         size = size,
