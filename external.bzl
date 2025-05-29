@@ -108,9 +108,9 @@ def _cc_dependencies():
         http_archive,
         name = "org_sourceware_libffi",
         build_file = "@io_kythe//third_party:libffi.BUILD",
-        sha256 = "653ffdfc67fbb865f39c7e5df2a071c0beb17206ebfb0a9ecb18a18f63f6b263",  # 2019-11-02
-        strip_prefix = "libffi-3.3-rc2",
-        urls = ["https://github.com/libffi/libffi/releases/download/v3.3-rc2/libffi-3.3-rc2.tar.gz"],
+        sha256 = "bc9842a18898bfacb0ed1252c4febcc7e78fa139fd27fdc7a3e30d9d9356119b",  # 2025-10-04
+        strip_prefix = "libffi-3.4.8",
+        urls = ["https://github.com/libffi/libffi/releases/download/v3.4.8/libffi-3.4.8.tar.gz"],
     )
 
     maybe(
