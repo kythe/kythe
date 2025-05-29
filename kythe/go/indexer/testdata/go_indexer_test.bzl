@@ -289,15 +289,12 @@ def go_verifier_test(
         has_marked_source = False,
         resolve_code_facts = False,
         allow_duplicates = False,
-        use_fast_solver = False,
-        use_file_nodes = True):
-    opts = ["--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
+        use_fast_solver = False):
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s?-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
         opts.append("--ignore_dups")
-    if use_file_nodes:
-        opts.append("--use_file_nodes")
     if len(srcs) > 0:
         opts.append("--nofile_vnames")
 
@@ -386,8 +383,7 @@ def go_indexer_test(
         extra_goals = [],
         extra_indexer_args = [],
         extra_extractor_args = [],
-        use_fast_solver = False,
-        use_file_nodes = True):
+        use_fast_solver = False):
     entries = _go_indexer(
         name = name,
         srcs = srcs,
@@ -415,7 +411,6 @@ def go_indexer_test(
         log_entries = log_entries,
         tags = tags,
         use_fast_solver = use_fast_solver,
-        use_file_nodes = use_file_nodes,
     )
 
 # A convenience macro to generate a test library, pass it to the Go indexer,

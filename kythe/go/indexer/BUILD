@@ -66,13 +66,11 @@ bzl_library(
 go_indexer_test(
     name = "builtin_test",
     srcs = ["testdata/builtin.go"],
-    extra_goals = ["testdata/builtin.go"],
     has_marked_source = True,
     import_path = "builtin",
     resolve_code_facts = True,
-    use_file_as_top_level_scope = True,
     use_fast_solver = False,
-    use_file_nodes = False,
+    use_file_as_top_level_scope = True,
 )
 
 go_indexer_test(
@@ -224,12 +222,10 @@ go_indexer_test(
 go_indexer_test(
     name = "code_rendered_test",
     srcs = ["testdata/code/rendered.go"],
-    extra_goals = ["testdata/code/rendered.go"],
     has_marked_source = True,
     import_path = "rendered",
     resolve_code_facts = True,
     deps = [":builtin_test"],
-    use_file_nodes = False,
 )
 
 go_indexer_test(
@@ -321,18 +317,14 @@ go_indexer_test(
 go_indexer_test(
     name = "types_test",
     srcs = ["testdata/types.go"],
-    extra_goals = ["testdata/types.go"],
     has_marked_source = True,
-    use_file_nodes = False,
 )
 
 go_indexer_test(
     name = "types_test_fs",
     srcs = ["testdata/types.go"],
-    extra_goals = ["testdata/types.go"],
     has_marked_source = True,
     use_fast_solver = True,
-    use_file_nodes = False,
 )
 
 go_indexer_test(
@@ -462,11 +454,11 @@ flag_constructors(
 go_indexer_test(
     name = "flags_test",
     srcs = ["testdata/flags.go"],
+    allow_duplicates = True,
     data = [":test_flags"],
     extra_indexer_args = [
         "-flag_constructors=$(location :test_flags)",
     ],
-    allow_duplicates = True,
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
