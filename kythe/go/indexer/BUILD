@@ -323,17 +323,16 @@ go_indexer_test(
     srcs = ["testdata/types.go"],
     extra_goals = ["testdata/types.go"],
     has_marked_source = True,
-    use_fast_solver = False,
     use_file_nodes = False,
 )
 
 go_indexer_test(
     name = "types_test_fs",
     srcs = ["testdata/types.go"],
-    #extra_goals = ["testdata/types.go"],
+    extra_goals = ["testdata/types.go"],
     has_marked_source = True,
     use_fast_solver = True,
-    #use_file_nodes = False,
+    use_file_nodes = False,
 )
 
 go_indexer_test(
@@ -468,7 +467,6 @@ go_indexer_test(
         "-flag_constructors=$(location :test_flags)",
     ],
     allow_duplicates = True,
-    #use_file_nodes = False,
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
