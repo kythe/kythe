@@ -1,8 +1,8 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//kythe/go/test/tools/empty_corpus_checker:empty_corpus_test.bzl", "empty_corpus_test")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 load(":flags.bzl", "flag_constructor", "flag_constructors")
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
