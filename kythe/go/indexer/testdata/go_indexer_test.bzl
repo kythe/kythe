@@ -290,7 +290,7 @@ def go_verifier_test(
         resolve_code_facts = False,
         allow_duplicates = False,
         use_fast_solver = False):
-    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s?-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
@@ -301,8 +301,8 @@ def go_verifier_test(
     # If the test wants marked source, enable support for it in the verifier.
     if has_marked_source:
         opts.append("--convert_marked_source")
-    if use_fast_solver:
-        opts.append("--use_fast_solver")
+    if not use_fast_solver:
+        opts.append("--use_fast_solver=false")
     return verifier_test(
         name = name,
         size = size,

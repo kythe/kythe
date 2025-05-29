@@ -454,6 +454,7 @@ flag_constructors(
 go_indexer_test(
     name = "flags_test",
     srcs = ["testdata/flags.go"],
+    allow_duplicates = True,
     data = [":test_flags"],
     extra_indexer_args = [
         "-flag_constructors=$(location :test_flags)",
