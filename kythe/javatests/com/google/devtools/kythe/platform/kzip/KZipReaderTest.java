@@ -17,6 +17,7 @@ package com.google.devtools.kythe.platform.kzip;
 
 import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.devtools.kythe.platform.shared.TestDataUtil;
@@ -47,59 +48,42 @@ public final class KZipReaderTest {
   }
 
   @Test
-  public void testOpenFailsForMissingFile() throws KZipException {
-    try {
-      new KZipReader(TestDataUtil.getTestFile("MISSING.kzip"));
-      fail();
-    } catch (IOException expected) {
-    }
+  public void testOpenFailsForMissingFile() {
+    assertThrows(IOException.class, () -> new KZipReader(TestDataUtil.getTestFile("MISSING.kzip")));
   }
 
   @Test
-  public void testOpenFailsForMissingPbUnit() throws IOException {
-    try {
-      new KZipReader(TestDataUtil.getTestFile("missing-pbunit.kzip"));
-      fail();
-    } catch (KZipException expected) {
-    }
+  public void testOpenFailsForMissingPbUnit() {
+    assertThrows(
+        KZipException.class, () -> new KZipReader(TestDataUtil.getTestFile("missing-pbunit.kzip")));
   }
 
   @Test
-  public void testOpenFailsForMissingJsonUnit() throws IOException {
-    try {
-      new KZipReader(TestDataUtil.getTestFile("missing-unit.kzip"));
-      fail();
-    } catch (KZipException expected) {
-    }
+  public void testOpenFailsForMissingJsonUnit() {
+    assertThrows(
+        KZipException.class, () -> new KZipReader(TestDataUtil.getTestFile("missing-unit.kzip")));
   }
 
   @Test
-  public void testOpenFailsForEmptyFile() throws KZipException {
-    try {
-      new KZipReader(TestDataUtil.getTestFile("empty.kzip"));
-      fail();
-    } catch (IOException expected) {
-    }
+  public void testOpenFailsForEmptyFile() {
+    assertThrows(IOException.class, () -> new KZipReader(TestDataUtil.getTestFile("empty.kzip")));
   }
 
   @Test
-  public void testOpenFailsForMissingRoot() throws IOException {
-    try {
-      new KZipReader(TestDataUtil.getTestFile("malformed.kzip"));
-      fail();
-    } catch (KZipException expected) {
-    }
+  public void testOpenFailsForMissingRoot() {
+    assertThrows(
+        KZipException.class, () -> new KZipReader(TestDataUtil.getTestFile("malformed.kzip")));
   }
 
   @Test
-  public void testOpenFailsForGarbageUnit() throws IOException {
-    try {
-      KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
-      // Iterate over the units so we try to read in the garbage.
-      for (IndexedCompilation unused : reader.scan()) {}
-      fail();
-    } catch (JsonParseException expected) {
-    }
+  public void testOpenFailsForGarbageUnit() {
+    assertThrows(
+        JsonParseException.class,
+        () -> {
+          KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
+          // Iterate over the units so we try to read in the garbage.
+          for (IndexedCompilation unused : reader.scan()) {}
+        });
   }
 
   @Test
