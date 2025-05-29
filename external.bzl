@@ -124,6 +124,7 @@ def _cc_dependencies():
         patches = [
             "@io_kythe//third_party:souffle_remove_config.patch",
             "@io_kythe//third_party:souffle_filesystem.patch",
+            "@io_kythe//third_party:souffle_atomic.patch",
         ],
     )
 
@@ -175,6 +176,9 @@ def _cc_dependencies():
         urls = [
             "https://mirror.bazel.build/github.com/Tencent/rapidjson/archive/v1.1.0.zip",
             "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        ],
+        patches = [
+            "@io_kythe//third_party:rapidjson_assignment.patch",
         ],
     )
 
