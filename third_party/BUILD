@@ -68,3 +68,12 @@ alias(
     name = "gmock_main",
     actual = "@com_google_googletest//:gtest_main",
 )
+
+alias(
+    name = "go_sdk_files",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin":  "@go_sdk_darwin_arm64//:files",
+        "//conditions:default": "@go_sdk_linux//:files",
+    }),
+    visibility = ["//visibility:public"],
+)

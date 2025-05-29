@@ -151,7 +151,7 @@ go_extract = rule(
         ),
         "_sdk_files": attr.label(
             allow_files = True,
-            default = "@go_sdk_linux//:files",
+            default = "//third_party:go_sdk_files",
         ),
         "extra_extractor_args": attr.string_list(),
     },
