@@ -33,6 +33,11 @@
 
 namespace kythe {
 
+// Computes a relative path from base_path to target_path.
+// Both paths must be absolute and cleaned.
+std::string ComputeRelativePath(absl::string_view target_path,
+                                absl::string_view base_path);
+
 /// \brief PathCleaner relativizes paths against a root using CleanPath.
 class PathCleaner {
  public:

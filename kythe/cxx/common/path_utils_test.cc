@@ -89,26 +89,70 @@ TEST(PathUtilsTest, JoinPath) {
 }
 
 TEST(PathUtilsTest, RelativizePath) {
-  absl::StatusOr<std::string> current_dir = GetCurrentDirectory();
-  ASSERT_TRUE(current_dir.ok());
+  absl::StatusOr<std::string> current_dir_status = GetCurrentDirectory();
+  ASSERT_TRUE(current_dir_status.ok());
+  const std::string& current_dir = *current_dir_status;
 
-  std::string cwd_foo = JoinPath(*current_dir, "foo");
+  std::string cwd_foo = JoinPath(current_dir, "foo");
 
   EXPECT_EQ("foo", RelativizePath("foo", "."));
-  EXPECT_EQ("foo", RelativizePath("foo", *current_dir));
+  EXPECT_EQ("foo", RelativizePath("foo", current_dir));
   EXPECT_EQ("foo", RelativizePath("./foo", "."));
-  EXPECT_EQ("foo", RelativizePath("./foo", *current_dir));
+  EXPECT_EQ("foo", RelativizePath("./foo", current_dir));
   EXPECT_EQ("bar", RelativizePath("foo/bar", "foo"));
   EXPECT_EQ("bar", RelativizePath("foo/bar", cwd_foo));
   EXPECT_EQ("foo", RelativizePath(cwd_foo, "."));
-  EXPECT_EQ(cwd_foo, RelativizePath(cwd_foo, "bar"));
+  EXPECT_EQ("../foo", RelativizePath(cwd_foo, "bar"));
 
   // If all paths are absolute, then relativizing is unaffected by current_dir.
   EXPECT_EQ("bar", RelativizePath("/foo/bar", "/foo"));
   EXPECT_EQ("foo", RelativizePath("/foo", "/"));
 
   // Test that we only accept proper path prefixes as parent.
-  EXPECT_EQ("/foooo/bar", RelativizePath("/foooo/bar", "/foo"));
+  EXPECT_EQ("../foooo/bar", RelativizePath("/foooo/bar", "/foo"));
+
+  // Identical paths
+  EXPECT_EQ(".", RelativizePath("/a/b", "/a/b"));
+  EXPECT_EQ(".", RelativizePath("/", "/"));
+  EXPECT_EQ(".", RelativizePath(current_dir, "."));
+  EXPECT_EQ(".", RelativizePath(current_dir, current_dir));
+
+  // Target is child of base
+  EXPECT_EQ("c", RelativizePath("/a/b/c", "/a/b"));
+  EXPECT_EQ("foo/bar", RelativizePath("/foo/bar", "/"));
+  EXPECT_EQ("bar", RelativizePath(JoinPath(current_dir, "foo/bar"),
+                                JoinPath(current_dir, "foo")));
+
+  // Base is child of target (target is parent of base)
+  EXPECT_EQ("..", RelativizePath("/a", "/a/b"));
+  EXPECT_EQ("../..", RelativizePath("/a", "/a/b/c"));
+  EXPECT_EQ("../../..", RelativizePath("/a", "/a/b/c/d"));
+  EXPECT_EQ("..", RelativizePath(current_dir, JoinPath(current_dir, "foo")));
+  EXPECT_EQ("../..",
+            RelativizePath(current_dir, JoinPath(current_dir, "foo/bar")));
+
+  // Common ancestor cases
+  EXPECT_EQ("../c", RelativizePath("/a/c", "/a/b"));
+  EXPECT_EQ("../../d/e", RelativizePath("/a/b/d/e", "/a/b/c/f"));
+  EXPECT_EQ("../../../x/y/z", RelativizePath("/x/y/z", "/a/b/c"));
+  EXPECT_EQ("../../c/d",
+            RelativizePath("/a/b/c/d", "/a/b/out/default"));  // From issue
+
+  // Root path involvement
+  EXPECT_EQ("..", RelativizePath("/", "/foo"));
+  EXPECT_EQ("../..", RelativizePath("/", "/foo/bar"));
+
+  // More complex cases with current_dir
+  EXPECT_EQ("../../target", RelativizePath(JoinPath(current_dir, "target"),
+                                          JoinPath(current_dir, "elsewhere/base")));
+  EXPECT_EQ(
+      "../../../outside",
+      RelativizePath(JoinPath(current_dir, "outside"),
+                     JoinPath(current_dir, "some/deep/structure")));
+  EXPECT_EQ("../../home/user/a", RelativizePath("/home/user/a", "/abs/path"));
+
+  // Ensure MakeCleanAbsolutePath is working as expected by RelativizePath for relative second arg
+  EXPECT_EQ("../foo", RelativizePath(JoinPath(current_dir, "foo"), "someotherdir"));
 }
 
 TEST(PathUtilsTest, MakeCleanAbsolutePath) {

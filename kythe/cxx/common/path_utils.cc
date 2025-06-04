@@ -19,12 +19,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <optional>
-#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -138,6 +138,57 @@ constexpr struct VisitPattern {
 
 }  // namespace
 
+std::string ComputeRelativePath(absl::string_view target_path_sv,
+                                absl::string_view base_path_sv) {
+  // Pre-condition: Paths are absolute and cleaned.
+  if (target_path_sv.empty() || target_path_sv[0] != '/') {
+    return std::string(target_path_sv);
+  }
+  if (base_path_sv.empty() || base_path_sv[0] != '/') {
+    return std::string(target_path_sv);
+  }
+
+  if (target_path_sv == base_path_sv) {
+    return ".";
+  }
+
+  std::vector<absl::string_view> target_components = absl::StrSplit(
+      absl::StripPrefix(target_path_sv, "/"), '/', absl::SkipEmpty());
+  std::vector<absl::string_view> base_components = absl::StrSplit(
+      absl::StripPrefix(base_path_sv, "/"), '/', absl::SkipEmpty());
+
+  if (target_path_sv == "/") {
+    target_components.clear();
+  }
+  if (base_path_sv == "/") {
+    base_components.clear();
+  }
+
+  size_t common_prefix_len = 0;
+  size_t min_len = std::min(target_components.size(), base_components.size());
+  while (common_prefix_len < min_len &&
+         target_components[common_prefix_len] ==
+             base_components[common_prefix_len]) {
+    common_prefix_len++;
+  }
+
+  std::vector<std::string> relative_parts;
+
+  for (size_t i = common_prefix_len; i < base_components.size(); ++i) {
+    relative_parts.push_back("..");
+  }
+
+  for (size_t i = common_prefix_len; i < target_components.size(); ++i) {
+    relative_parts.push_back(std::string(target_components[i]));
+  }
+
+  if (relative_parts.empty()) {
+    return ".";
+  }
+
+  return absl::StrJoin(relative_parts, "/");
+}
+
 absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
   if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(root);
       resolved.ok()) {
@@ -149,12 +200,13 @@ absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
 
 absl::StatusOr<std::string> PathCleaner::Relativize(
     absl::string_view path) const {
-  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(path);
-      resolved.ok()) {
-    return std::string(TrimPathPrefix(*std::move(resolved), root_));
-  } else {
-    return resolved.status();
+  absl::StatusOr<std::string> resolved_path = MakeCleanAbsolutePath(path);
+  if (!resolved_path.ok()) {
+    return resolved_path.status();
   }
+  // root_ is already cleaned and absolute from PathCleaner::Create.
+  // resolved_path is now also cleaned and absolute.
+  return ComputeRelativePath(*resolved_path, root_);
 }
 
 absl::StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
