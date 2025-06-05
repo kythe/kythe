@@ -63,6 +63,11 @@ type Reader interface {
 	// the store.
 	// If f returns an error, that error is returned from FilesExist.
 	FilesExist(_ context.Context, fileDigests []string, f func(string) error) error
+
+	// FindCUMetadatas calls f with the digest of each known compilation matching filter.
+	// If filter == nil or is empty, no compilations are reported.
+	// If f returns an error, that error is returned from FindCUMetadatas.
+	FindCUMetadatas(_ context.Context, filter *FindCUMetadatasFilter, f func(cuMetaData *CUMetaData) error) error
 }
 
 // Writer represents write access to an underlying storage layer used to
@@ -186,6 +191,21 @@ type FindFilter struct {
 	Targets []*regexp.Regexp // Include only compilations for these targets.
 	Sources []*regexp.Regexp // Include only compilations for these sources.
 	Outputs []*regexp.Regexp // include only compilations for these outputs.
+}
+
+// FindCUMetadatasFilter gives constraints on which compilations units are matched by a call to
+// the FindCUMetadatas method of compdb.Reader.
+type FindCUMetadatasFilter struct {
+	UnitCorpus string
+	Revision   string
+	Language   string
+	Targets    []string
+}
+
+// CUMetaData represents the metadata of a compilation unit.
+type CUMetaData struct {
+	Target     string
+	UnitDigest string
 }
 
 // Compile returns a compiled filter that matches index terms based on ff.
