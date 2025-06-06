@@ -44,6 +44,20 @@
 #include "llvm/Support/Path.h"
 
 namespace kythe {
+
+// Forward declaration of FindStableRoot to avoid modifying cxx_extractor.h.
+// The function is defined in cxx_extractor.cc.
+// The types used in its signature (absl::string_view,
+// google::protobuf::RepeatedPtrField, kythe::proto::CompilationUnit::FileInput,
+// and kythe::proto::CxxCompilationUnitDetails) are expected to be visible
+// from the existing #include directives in this file or via cxx_extractor.h.
+std::string FindStableRoot(
+    absl::string_view working_directory,
+    const google::protobuf::RepeatedPtrField<std::string>& arguments,
+    const google::protobuf::RepeatedPtrField<proto::CompilationUnit::FileInput>&
+        required_input,
+    const proto::CxxCompilationUnitDetails& details);
+
 namespace {
 
 class CxxExtractorTest : public testing::Test {
@@ -374,7 +388,64 @@ TEST_F(CxxExtractorTest, DoesNotBreakForMissingIncludes) {
   FillAndVerifyCompilationUnit("b.cc", {}, {"./b.h", "b.cc"});
 }
 
-}  // anonymous namespace
+class FindStableRootTest : public ::testing::Test {
+ protected:
+  std::string CallFindStableRoot(
+      const std::string& working_dir, const std::vector<std::string>& args,
+      const std::vector<std::string>& required_inputs) {
+    google::protobuf::RepeatedPtrField<std::string> arguments;
+    for (const auto& arg : args) {
+      arguments.Add(std::string(arg));
+    }
+    google::protobuf::RepeatedPtrField<proto::CompilationUnit::FileInput>
+        required_input;
+    for (const auto& input : required_inputs) {
+      required_input.Add()->mutable_info()->set_path(input);
+    }
+    proto::CxxCompilationUnitDetails details;
+    return kythe::FindStableRoot(working_dir, arguments, required_input,
+                                 details);
+  }
+};
+
+TEST_F(FindStableRootTest, ReturnsWorkingDirectoryIfArgStartsWithDotDotSlash) {
+  EXPECT_EQ("my/work/dir",
+            CallFindStableRoot(
+                "my/work/dir",
+                {"normal/path", "../some/path/file.cc", "-o", "foo"}, {}));
+}
+
+TEST_F(FindStableRootTest,
+       ReturnsWorkingDirectoryIfArgContainsEqualsDotDotSlash) {
+  EXPECT_EQ("my/work/dir",
+            CallFindStableRoot(
+                "my/work/dir",
+                {"normal/path", "arg=../some/path/file.cc", "-o", "foo"}, {}));
+}
+
+TEST_F(FindStableRootTest, ReturnsStableRootIfNoArgStartsWithDotDotSlash) {
+  EXPECT_EQ("/root",
+            CallFindStableRoot("my/work/dir",
+                               {"some/path/file.cc", "-o", "foo"}, {}));
+}
+
+TEST_F(FindStableRootTest, ReturnsStableRootIfArgumentsListIsEmpty) {
+  EXPECT_EQ("/root", CallFindStableRoot("my/work/dir", {}, {}));
+}
+
+TEST_F(FindStableRootTest, ReturnsWorkingDirectoryIfItIsInArg) {
+  EXPECT_EQ("my/work/dir",
+            CallFindStableRoot("my/work/dir", {"-Imy/work/dir/include"}, {}));
+}
+
+TEST_F(FindStableRootTest,
+       ReturnsWorkingDirectoryIfRequiredInputStartsWithDotDotSlash) {
+  EXPECT_EQ("my/work/dir",
+            CallFindStableRoot("my/work/dir", {"normal/path", "-o", "foo"},
+                               {"../some/path/file.cc"}));
+}
+
+}  // namespace
 }  // namespace kythe
 
 int main(int argc, char** argv) {

@@ -149,12 +149,22 @@ absl::StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
 
 absl::StatusOr<std::string> PathCleaner::Relativize(
     absl::string_view path) const {
-  if (absl::StatusOr<std::string> resolved = MakeCleanAbsolutePath(path);
-      resolved.ok()) {
-    return std::string(TrimPathPrefix(*std::move(resolved), root_));
-  } else {
-    return resolved.status();
+  absl::StatusOr<std::string> clean_absolute_path = MakeCleanAbsolutePath(path);
+  if (!clean_absolute_path.ok()) {
+    // If we can't even make it a clean absolute path, return the error.
+    return clean_absolute_path.status();
   }
+
+  if (!kythe::IsAbsolutePath(path) &&
+      !absl::StartsWith(*clean_absolute_path, root_)) {
+    // If we were given a relative path, and its absolute version doesn't share
+    // a prefix with the root, we can't relativize it simply by trimming off the
+    // prefix. Return the original path.
+    return std::string(path);
+  }
+
+  // Proceed with original logic, using the already computed clean_absolute_path
+  return std::string(TrimPathPrefix(*clean_absolute_path, root_));
 }
 
 absl::StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {

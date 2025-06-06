@@ -365,7 +365,6 @@ class ExtractorConfiguration {
   /// If nonempty, the name of the build config targeted by this compilation.
   std::string build_config_;
 };
-
 }  // namespace kythe
 
 #endif
