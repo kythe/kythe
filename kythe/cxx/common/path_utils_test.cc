@@ -319,5 +319,42 @@ TEST_F(CanonicalizerTest, CanonicalizerRealOverrideClean) {
                 .value_or(""));
 }
 
+TEST_F(CanonicalizerTest,
+       PathCleanerRelativizeNonAbsoluteNoPrefix_Relativizes) {
+  // Original path "some/other/path" is relative.
+  // Cleaner root is `root()` (e.g. /tmp/test_fixture/test_name)
+  // Cleaned absolute path of input will be `root()` + "some/other/path".
+  // This cleaned absolute path *does* start with `root()`.
+  // Thus, it should proceed to relativize.
+  PathCleaner cleaner = PathCleaner::Create(root()).value();
+  EXPECT_EQ("some/other/path",  // Relativized form of root() +
+                                // "some/other/path" against root()
+            cleaner.Relativize("some/other/path").value_or(""));
+}
+
+TEST_F(CanonicalizerTest,
+       PathCleanerRelativizeNonAbsoluteWithAbsolutePrefixInCleanerRoot) {
+  // Input path is absolute and shares a prefix with root().
+  // This should be relativized.
+  PathCleaner cleaner = PathCleaner::Create(root()).value();
+  std::string path_inside_root =
+      JoinPath(root(), "some/path");  // Creates an absolute path
+  EXPECT_EQ("some/path", cleaner.Relativize(path_inside_root).value_or(""));
+}
+
+TEST_F(CanonicalizerTest, PathCleanerRelativizeAbsoluteDifferentRootNoPrefix) {
+  PathCleaner cleaner = PathCleaner::Create(root()).value();
+  // Input path is absolute "/other/root/file". Cleaner root is `root()`.
+  // They do not share a prefix.
+  // We should see the original path returned.
+  EXPECT_EQ("/other/root/file",
+            cleaner.Relativize("/other/root/file").value_or(""));
+}
+
+TEST_F(CanonicalizerTest, PathCleanerDoesntCleanRelativePaths) {
+  PathCleaner cleaner = PathCleaner::Create(root()).value();
+  EXPECT_EQ("../../foo.cc", cleaner.Relativize("../../foo.cc").value_or(""));
+}
+
 }  // namespace
 }  // namespace kythe
