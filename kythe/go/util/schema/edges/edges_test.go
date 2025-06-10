@@ -129,7 +129,7 @@ func TestIsVariant(t *testing.T) {
 }
 
 func TestIsSimilarToReference(t *testing.T) {
-	tests = []struct {
+	tests := []struct {
 		kind string
 		want bool
 	}{
