@@ -1,5 +1,8 @@
 # Release Notes
 
+## [v0.0.72] - 2025-06-09
+changelog written. (took 17 ms)
+
 ## [v0.0.71] - 2025-05-21
 
 Adds a rust-project.json extractor and fixes various bugs in it.
