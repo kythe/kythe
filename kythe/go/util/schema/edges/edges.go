@@ -65,6 +65,7 @@ const (
 	RefInitImplicit = Prefix + "ref/init/implicit"
 	RefWrites       = Prefix + "ref/writes"
 	Tagged          = Prefix + "tagged"
+	Provides        = Prefix + "provides"
 )
 
 // ParamIndex returns an edge label of the form "param.i" for the i given.
@@ -108,6 +109,12 @@ func IsAnchorEdge(kind string) bool {
 	return IsVariant(canon, Defines) || IsVariant(canon, DefinesBinding) ||
 		IsVariant(canon, Documents) ||
 		IsVariant(canon, Ref) || IsVariant(canon, RefCall)
+}
+
+// IsSimilarToReference reports whether kind is similar to a defines edge, this is used to group
+// edges that act like defines for the purpose of documentation.
+func IsSimilarToReference(kind string) bool {
+	return kind == Provides
 }
 
 var ordinalKind = regexp.MustCompile(`^(.+)\.(\d+)$`)

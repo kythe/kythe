@@ -138,7 +138,7 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	case xpb.CrossReferencesRequest_CALL_REFERENCES:
 		return edges.IsVariant(edgeKind, edges.RefCall)
 	case xpb.CrossReferencesRequest_NON_CALL_REFERENCES:
-		return !edges.IsVariant(edgeKind, edges.RefCall) && edges.IsVariant(edgeKind, edges.Ref)
+		return !edges.IsVariant(edgeKind, edges.RefCall) && edges.IsVariant(edgeKind, edges.Ref) || edges.IsSimilarToReference(edgeKind)
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
 		return edges.IsVariant(edgeKind, edges.Ref)
 	default:

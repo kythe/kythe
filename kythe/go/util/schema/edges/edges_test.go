@@ -128,6 +128,23 @@ func TestIsVariant(t *testing.T) {
 	}
 }
 
+func TestIsSimilarToReference(t *testing.T) {
+	tests := []struct {
+		kind string
+		want bool
+	}{
+		{"/kythe/edge/provides", true},
+		{"something/else", false},
+	}
+
+	for _, tc := range tests {
+		got := IsSimilarToReference(tc.kind)
+		if got != tc.want {
+			t.Errorf("IsSimilartoReference(%q) = %v, want: %v", tc.kind, got, tc.want)
+		}
+	}
+}
+
 func TestParamIndex(t *testing.T) {
 	tests := []string{"param.0", "param.1", "param.2", "param.3"}
 	for i, test := range tests {
