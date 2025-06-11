@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "balanced-match": "^3.0.1",
-    "brace-expansion": "^3.0.0",
+    "brace-expansion": "^3.0.1",
     "fs.realpath": "^1.0.0",
     "glob": "^10.3.10",
     "inflight": "^1.0.6",
