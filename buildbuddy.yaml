@@ -5,5 +5,6 @@ actions:
         branches:
           - "master"
     steps:
+      - run: "sudo ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime"
       - run: "sudo apt-get update && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y asciidoc asciidoctor source-highlight graphviz gcc uuid-dev libncurses-dev flex clang bison openjdk-8-jdk parallel wget"
       - run: "bazel test //kythe/go/indexer:indexer_test"
