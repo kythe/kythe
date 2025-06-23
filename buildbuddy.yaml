@@ -1,0 +1,8 @@
+actions:
+  - name: "Test all targets"
+    triggers:
+      push:
+        branches:
+          - "master"
+    steps:
+      - run: "bazel test //kythe/go/indexer:indexer_test"
