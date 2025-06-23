@@ -5,5 +5,5 @@ actions:
         branches:
           - "master"
     steps:
-      - run: "sudo apt-get install asciidoc asciidoctor source-highlight graphviz gcc uuid-dev libncurses-dev flex clang bison openjdk-8-jdk parallel wget"
+      - run: "sudo apt-get update && sudo apt-get install asciidoc asciidoctor source-highlight graphviz gcc uuid-dev libncurses-dev flex clang bison openjdk-8-jdk parallel wget"
       - run: "bazel test //kythe/go/indexer:indexer_test"
