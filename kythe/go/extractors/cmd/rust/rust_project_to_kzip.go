@@ -31,8 +31,10 @@ import (
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -41,6 +43,7 @@ type extractor struct {
 	project             rustProject
 	projectRoot         string
 	corpus              string
+	buildConfig         string
 	rules               vnameutil.Rules
 	kzipWriter          kzipWriterInterface
 	requiredInputsCache *requiredInputsCache
@@ -376,14 +379,27 @@ func collectCrateSourcesImpl(ctx context.Context, e *extractor, sourceDirs sourc
 				vname.Corpus = e.corpus
 			}
 
-			dirSourceFiles = append(dirSourceFiles, relativePath)
-			dirRequiredInputs = append(dirRequiredInputs, &apb.CompilationUnit_FileInput{
+			inputPb := &apb.CompilationUnit_FileInput{
 				VName: vname,
 				Info: &apb.FileInfo{
 					Path:   relativePath,
 					Digest: digest,
 				},
-			})
+			}
+
+			if e.buildConfig != "" {
+				details := &bipb.BuildDetails{
+					BuildConfig: e.buildConfig,
+				}
+				asAny, err := ptypes.MarshalAny(details)
+				if err != nil {
+					log.Fatalf("marshaling details: %v", err)
+				}
+				inputPb.Details = []*ptypes.Any{asAny}
+			}
+
+			dirSourceFiles = append(dirSourceFiles, relativePath)
+			dirRequiredInputs = append(dirRequiredInputs, inputPb)
 			return nil
 		})
 
@@ -521,6 +537,7 @@ func main() {
 	outputZipPath := flag.String("output", "", "Path for the output kzip file (required)")
 	projectRoot := flag.String("root", "", "Directory to which all paths to source files are relative; the root directory to all possible source files. (required)")
 	corpus := flag.String("corpus", "", "Corpus name for VNames (required)")
+	buildConfig := flag.String("build_config", "", "Build config to use in the unit file (optional)")
 	vnamesJsonPath := flag.String("vnames_json_path", "", "Path to vnames.json (required)")
 	crateFilter := flag.String("crate_filter", "", "optional, the module path for a specific crate to extract and output. All other crates will be ignored")
 
@@ -565,6 +582,7 @@ func main() {
 		project:             projectJson,
 		projectRoot:         *projectRoot,
 		corpus:              *corpus,
+		buildConfig:         *buildConfig,
 		rules:               rules,
 		kzipWriter:          kzipWriter,
 		requiredInputsCache: &requiredInputsCache,

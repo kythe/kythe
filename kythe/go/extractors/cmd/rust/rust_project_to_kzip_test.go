@@ -30,11 +30,14 @@ import (
 	"testing"
 	"time"
 
+	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"kythe.io/kythe/go/util/ptypes"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -778,6 +781,142 @@ func TestWriteCrate(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.expectedUnit.SourceFile, mockWriter.AddedUnit.SourceFile, cmp.Comparer(proto.Equal)); diff != "" {
 				t.Errorf("writeCrate() produced unexpected RequiredInput diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestCollectCrateSources tests the concrete collector implementation.
+func TestCollectCrateSources(t *testing.T) {
+	ctx := context.Background()
+
+	// Temporary project structure
+	projectRoot := t.TempDir()
+	createFile := func(t *testing.T, path, content string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create parent dirs for %s: %v", path, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to write file %s: %v", path, err)
+		}
+	}
+	createFile(t, filepath.Join(projectRoot, "src/lib.rs"), "fn main() {}")
+	createFile(t, filepath.Join(projectRoot, "src/mod.rs"), "mod other;")
+	createFile(t, filepath.Join(projectRoot, "src/README.md"), "This is a readme.")
+	createFile(t, filepath.Join(projectRoot, "src/tests/test1.rs"), "// test 1")
+
+	corpus := "testcorpus"
+	buildDetailsAny, err := ptypes.MarshalAny(&bipb.BuildDetails{
+		BuildConfig: "fake_build_config",
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal build details: %v", err)
+	}
+
+	// Mock kzip writer with counter to test caching
+	type trackedKzipWriter struct {
+		MockKzipWriter
+		addFileCount int
+	}
+
+	tests := []struct {
+		name               string
+		sourceDirs         source
+		buildConfig        string
+		wantSourceFiles    []string
+		wantRequiredInputs []*apb.CompilationUnit_FileInput
+	}{
+		{
+			name:       "Basic include",
+			sourceDirs: source{IncludeDirs: []string{"src"}},
+			wantSourceFiles: []string{
+				"src/lib.rs",
+				"src/mod.rs",
+				"src/tests/test1.rs",
+			},
+			wantRequiredInputs: []*apb.CompilationUnit_FileInput{
+				{
+					VName: &spb.VName{Corpus: corpus, Path: "src/lib.rs"},
+					Info:  &apb.FileInfo{Path: "src/lib.rs", Digest: "fake_digest_for:fn main() {}"},
+				},
+				{
+					VName: &spb.VName{Corpus: corpus, Path: "src/mod.rs"},
+					Info:  &apb.FileInfo{Path: "src/mod.rs", Digest: "fake_digest_for:mod other;"},
+				},
+				{
+					VName: &spb.VName{Corpus: corpus, Path: "src/tests/test1.rs"},
+					Info:  &apb.FileInfo{Path: "src/tests/test1.rs", Digest: "fake_digest_for:// test 1"},
+				},
+			},
+		},
+		{
+			name:        "Basic include with build config",
+			sourceDirs:  source{IncludeDirs: []string{"src"}},
+			buildConfig: "fake_build_config",
+			wantSourceFiles: []string{
+				"src/lib.rs",
+				"src/mod.rs",
+				"src/tests/test1.rs",
+			},
+			wantRequiredInputs: []*apb.CompilationUnit_FileInput{
+				{
+					VName:   &spb.VName{Corpus: corpus, Path: "src/lib.rs"},
+					Info:    &apb.FileInfo{Path: "src/lib.rs", Digest: "fake_digest_for:fn main() {}"},
+					Details: []*anypb.Any{buildDetailsAny},
+				},
+				{
+					VName:   &spb.VName{Corpus: corpus, Path: "src/mod.rs"},
+					Info:    &apb.FileInfo{Path: "src/mod.rs", Digest: "fake_digest_for:mod other;"},
+					Details: []*anypb.Any{buildDetailsAny},
+				},
+				{
+					VName:   &spb.VName{Corpus: corpus, Path: "src/tests/test1.rs"},
+					Info:    &apb.FileInfo{Path: "src/tests/test1.rs", Digest: "fake_digest_for:// test 1"},
+					Details: []*anypb.Any{buildDetailsAny},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := newRequiredInputsCache()
+			kzipWriter := &trackedKzipWriter{}
+			kzipWriter.AddFileFunc = func(r io.Reader) (string, error) {
+				kzipWriter.addFileCount++
+				b, _ := io.ReadAll(r)
+				return fmt.Sprintf("fake_digest_for:%s", string(b)), nil
+			}
+
+			e := &extractor{
+				projectRoot:         projectRoot,
+				corpus:              corpus,
+				buildConfig:         tt.buildConfig,
+				kzipWriter:          kzipWriter,
+				requiredInputsCache: &cache,
+			}
+
+			gotSourceFiles, gotRequiredInputs, err := collectCrateSourcesImpl(ctx, e, tt.sourceDirs)
+			if err != nil {
+				t.Fatalf("collectCrateSourcesImpl() unexpected error: %v", err)
+			}
+
+			if diff := cmp.Diff(tt.wantSourceFiles, gotSourceFiles); diff != "" {
+				t.Errorf("collectCrateSourcesImpl() sourceFiles mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.wantRequiredInputs, gotRequiredInputs, cmp.Comparer(proto.Equal)); diff != "" {
+				t.Errorf("collectCrateSourcesImpl() requiredInputs mismatch (-want +got):\n%s", diff)
+			}
+
+			// Test caching: second call should not add any new files to the kzip
+			kzipWriter.addFileCount = 0
+			_, _, err = collectCrateSourcesImpl(ctx, e, tt.sourceDirs)
+			if err != nil {
+				t.Fatalf("second call to collectCrateSourcesImpl() failed: %v", err)
+			}
+			if kzipWriter.addFileCount > 0 {
+				t.Errorf("expected 0 file additions on cached call, but got %d", kzipWriter.addFileCount)
 			}
 		})
 	}
