@@ -29,6 +29,14 @@
     }
   },
   {
+    "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar.files/(.+)?\\.java",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/bin/java",
+      "path": "@1@.java"
+    }
+  },
+  {
     "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "CORPUS",
