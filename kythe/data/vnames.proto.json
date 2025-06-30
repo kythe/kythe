@@ -2,7 +2,7 @@
   {
     "pattern": "bazel-out/[^/]+/bin/external/([^/]+)/_virtual_imports/[^/]+/(.*)",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "@1@",
       "path": "@2@"
     }

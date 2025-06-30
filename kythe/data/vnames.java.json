@@ -17,21 +17,21 @@
   {
     "pattern": "bazel-out/[^/]+/bin/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "path": "@1@/@2@.java"
     }
   },
   {
     "pattern": "bazel-out/[^/]+/bin/(.*?/java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "path": "@1@/@2@.java"
     }
   },
   {
     "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar.files/(.+)?\\.java",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/bin/java",
       "path": "@1@.java"
     }
@@ -39,7 +39,7 @@
   {
     "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/bin/java",
       "path": "@1@.java"
     }

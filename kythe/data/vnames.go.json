@@ -39,7 +39,7 @@
   {
     "pattern": "bazel-out/[^/]+/([^/]+)/(.*\\.go)$",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/@1@",
       "path": "@2@"
     }
@@ -47,7 +47,7 @@
   {
     "pattern": "bazel-out/[^/]+/([^/]+)/(.*)\\.[xa]$",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/@1@",
       "path": "@2@"
     }

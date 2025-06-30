@@ -2,7 +2,7 @@
   {
     "pattern": "bazel-out/[^/]+/bin/.*/_virtual_imports/[^/]+/(.*)",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/bin",
       "path": "@1@"
     }
@@ -25,7 +25,7 @@
   {
     "pattern": "bazel-out/[^/]+/(\\w+)/(.*)",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "path": "@2@",
       "root": "bazel-out/@1@"
     }
@@ -33,7 +33,7 @@
   {
     "pattern": "(.+).gen.proto",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "root": "bazel-out/bin",
       "path": "@1@.gen.proto"
     }
@@ -41,7 +41,7 @@
   {
     "pattern": "(.*)",
     "vname": {
-      "corpus": "CORPUS",
+      "corpus": "buildbuddy",
       "path": "@1@"
     }
   }
