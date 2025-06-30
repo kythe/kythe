@@ -31,7 +31,7 @@ load("@rules_python//python:repositories.bzl", "py_repositories")
 
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.21.6")
+    go_register_toolchains(version = "1.24.4")
     gazelle_dependencies()
     rules_java_dependencies()
 
