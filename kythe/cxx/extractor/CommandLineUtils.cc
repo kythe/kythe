@@ -207,13 +207,8 @@ std::vector<std::string> GCCArgsToClangArgs(
   // support without issuing ugly warnings, and cannot otherwise be suppressed.
   const FullMatchRegex unsupported_args_re(
       "-W(no-)?(error=)?coverage-mismatch"
-      "|-W(no-)?(error=)?frame-larger-than.*"
       "|-W(no-)?(error=)?maybe-uninitialized"
-      "|-W(no-)?(error=)?thread-safety"
       "|-W(no-)?(error=)?thread-unsupported-lock-name"
-      "|-W(no-)?(error=)?unused-but-set-parameter"
-      "|-W(no-)?(error=)?unused-but-set-variable"
-      "|-W(no-)?(error=)?unused-local-typedefs"
       "|-enable-libstdcxx-debug"
       "|-f(no-)?align-functions.*"
       "|-f(no-)?asynchronous-unwind-tables"

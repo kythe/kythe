@@ -17,11 +17,15 @@
 // This file uses the Clang style conventions.
 
 #include "CommandLineUtils.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace {
 
+using ::kythe::common::GCCArgsToClangArgs;
 using ::kythe::common::HasCxxInputInCommandLineOrArgs;
+using ::testing::ElementsAreArray;
+using ::testing::IsEmpty;
 
 TEST(HasCxxInputInCommandLineOrArgs, GoodInputs) {
   EXPECT_TRUE(HasCxxInputInCommandLineOrArgs({"-c", "a.c"}));
@@ -59,6 +63,23 @@ TEST(HasCxxInputInCommandLineOrArgs, BadInputs) {
       HasCxxInputInCommandLineOrArgs({"-Wl,@foo", "base/timestamp.cc"}));
   EXPECT_FALSE(
       HasCxxInputInCommandLineOrArgs({"base/timestamp.cc", "-Wl,@foo"}));
+}
+
+TEST(GCCArgsToClangArgs, RetainedArgs) {
+  EXPECT_THAT(
+      GCCArgsToClangArgs({"-Wthread-safety, -Wno-unused-but-set-variable",
+                          "-Werror=unused-but-set-parameter",
+                          "-Wno-error=unused-local-typedefs"}),
+      ElementsAreArray({"-Wthread-safety, -Wno-unused-but-set-variable",
+                        "-Werror=unused-but-set-parameter",
+                        "-Wno-error=unused-local-typedefs"}));
+}
+
+TEST(GCCAargsToClangArgs, DiscardedArgs) {
+  EXPECT_THAT(GCCArgsToClangArgs({"-Wmaybe-uninitialized", "-fno-float-store",
+                                  "-Werror=thread-unsupported-lock-name",
+                                  "-Wno-error=coverage-mismatch"}),
+              IsEmpty());
 }
 
 // TODO(zarko): Port additional tests.
