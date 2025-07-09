@@ -77,6 +77,7 @@ type crate struct {
 	Target            string   `json:"target"`
 	Source            source   `json:"source,omitempty"`
 	IsWorkspaceMember bool     `json:"is_workspace_member"`
+	CompilerArgs      []string `json:"compiler_args,omitempty"`
 }
 
 type crateId uint32
@@ -505,6 +506,7 @@ func (e *extractor) writeCrate(ctx context.Context, crate crate, transitiveDeps 
 		},
 		RequiredInput: requiredInputs,
 		SourceFile:    crateFiles,
+		Argument:      crate.CompilerArgs,
 	}
 
 	digest, err := e.kzipWriter.AddUnit(compilationUnit, nil)
