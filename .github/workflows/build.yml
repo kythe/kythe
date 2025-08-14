@@ -1,0 +1,26 @@
+name: Test
+on:
+  push:
+    branches: [ main, nix ]
+  pull_request:
+    branches: [ main, nix ]
+  schedule:
+    - cron: "43 7 * * 0"
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup bazel
+        uses: abhinavsingh/setup-bazel@v3
+        with:
+          version: 7.1.0
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test Almost Everything
+        run: |
+          bazel build --config=nix //... \
+            -- -//kythe/cxx/extractor/testdata/... -//kythe/cxx/indexer/cxx/testdata/...
