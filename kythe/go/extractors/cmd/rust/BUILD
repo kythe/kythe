@@ -33,10 +33,10 @@ go_test(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//ptypes/any",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@org_golang_google_protobuf//proto",
-        "@com_github_golang_protobuf//ptypes/any",
         "@org_golang_google_protobuf//testing/protocmp",
     ],
 )
