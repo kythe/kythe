@@ -9,8 +9,10 @@ go_binary(
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/log",
+        "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
     ],
 )
@@ -26,9 +28,12 @@ go_test(
     deps = [
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//ptypes/any",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@org_golang_google_protobuf//proto",
