@@ -95,6 +95,12 @@ func (db DB) Units(ctx context.Context, unitDigests []string, f func(digest, key
 	return nil
 }
 
+// FindCUMetadatas implements a method of kcd.Reader. This method is not supported for kzipdb.
+func (db DB) FindCUMetadatas(ctx context.Context, filter *kcd.FindCUMetadatasFilter,
+	f func(cuMetadata *kcd.CUMetaData) error) error {
+	return nil
+}
+
 // Files implements a method of kcd.Reader.
 func (db DB) Files(ctx context.Context, fileDigests []string, f func(string, []byte) error) error {
 	for _, digest := range fileDigests {

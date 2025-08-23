@@ -1,5 +1,23 @@
 # Release Notes
 
+## [v0.0.73] - 2025-08-22
+
+#### Bug Fixes
+
+* **cxx_extractor:** Remove some warning options that Clang now supports from the unsupported_args_re. (#6191) ([be219f8d](https://github.com/kythe/kythe/commit/be219f8def800cae9672b3b0743d0544077e0659))
+
+#### Features
+
+* **go_indexer:** add provides edge (#6184) ([53011f2d](https://github.com/kythe/kythe/commit/53011f2d889787980322bb7ff574f0be8a7fdbce))
+* **rust_extractor:** add flag to set build config (#6186) ([ad6063bd](https://github.com/kythe/kythe/commit/ad6063bd065d8904c44805c9dce1c6df921db1d0))
+
+## [v0.0.72] - 2025-06-09
+changelog written. (took 17 ms)
+
+## [v0.0.71] - 2025-05-21
+
+Adds a rust-project.json extractor and fixes various bugs in it.
+
 ## [v0.0.68] - 2025-01-06
 #### Bug Fixes
 * **go_indexer:**
@@ -1793,7 +1811,12 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.68...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.73...HEAD
+[v0.0.73] https://github.com/kythe/kythe/compare/v0.0.72...v0.0.73
+[v0.0.72] https://github.com/kythe/kythe/compare/v0.0.71...v0.0.72
+[v0.0.71] https://github.com/kythe/kythe/compare/v0.0.70...v0.0.71
+[v0.0.70] https://github.com/kythe/kythe/compare/v0.0.69...v0.0.70
+[v0.0.69] https://github.com/kythe/kythe/compare/v0.0.68...v0.0.69
 [v0.0.68] https://github.com/kythe/kythe/compare/v0.0.67...v0.0.68
 [v0.0.67] https://github.com/kythe/kythe/compare/v0.0.66...v0.0.67
 [v0.0.66] https://github.com/kythe/kythe/compare/v0.0.65...v0.0.66

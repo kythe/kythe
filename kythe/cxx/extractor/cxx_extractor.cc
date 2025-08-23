@@ -205,30 +205,6 @@ class RequiredRoots {
   bool success_ = true;
 };
 
-/// \brief Finds a suitable stable root directory, if possible.
-/// Otherwise falls back to using the provided root.
-std::string FindStableRoot(
-    absl::string_view working_directory,
-    const RepeatedPtrField<std::string>& arguments,
-    const RepeatedPtrField<proto::CompilationUnit::FileInput>& required_input,
-    const proto::CxxCompilationUnitDetails& details) {
-  absl::ConsumeSuffix(&working_directory, "/");
-  for (absl::string_view arg : arguments) {
-    if (arg.find(working_directory) != arg.npos) {
-      LOG(WARNING) << "Using real working directory (" << working_directory
-                   << ") due to its inclusion in compiler argument: " << arg;
-      return std::string(working_directory);
-    }
-  }
-
-  RequiredRoots roots(working_directory);
-  roots.Update("required_input", required_input) &&
-      roots.Update("header_search_info", details.header_search_info().dir()) &&
-      roots.Update("system_header_prefix", details.system_header_prefix()) &&
-      roots.Update("stat_path", details.stat_path());
-  return roots.GetStableRoot();
-}
-
 google::protobuf::Any* FindMutableContext(
     kythe::proto::CompilationUnit::FileInput* file_input,
     kythe::proto::ContextDependentVersion* context) {
@@ -1066,6 +1042,48 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
 };
 
 }  // anonymous namespace
+
+/// \brief Finds a suitable stable root directory, if possible.
+/// Otherwise falls back to using the provided root.
+std::string FindStableRoot(
+    absl::string_view working_directory,
+    const google::protobuf::RepeatedPtrField<std::string>& arguments,
+    const google::protobuf::RepeatedPtrField<proto::CompilationUnit::FileInput>&
+        required_input,
+    const proto::CxxCompilationUnitDetails& details) {
+  for (const std::string& arg : arguments) {
+    if (absl::StartsWith(arg, "../") || arg.find("=../") != std::string::npos) {
+      LOG(WARNING) << "Using real working directory (" << working_directory
+                   << ") due to '..' prefix in argument: " << arg;
+      return std::string(working_directory);
+    }
+  }
+
+  for (const auto& input : required_input) {
+    if (absl::StartsWith(input.info().path(), "../")) {
+      LOG(WARNING) << "Using real working directory (" << working_directory
+                   << ") due to '..' prefix in required input: "
+                   << input.info().path();
+      return std::string(working_directory);
+    }
+  }
+
+  absl::ConsumeSuffix(&working_directory, "/");
+  for (absl::string_view arg : arguments) {
+    if (arg.find(working_directory) != arg.npos) {
+      LOG(WARNING) << "Using real working directory (" << working_directory
+                   << ") due to its inclusion in compiler argument: " << arg;
+      return std::string(working_directory);
+    }
+  }
+
+  RequiredRoots roots(working_directory);
+  roots.Update("required_input", required_input) &&
+      roots.Update("header_search_info", details.header_search_info().dir()) &&
+      roots.Update("system_header_prefix", details.system_header_prefix()) &&
+      roots.Update("stat_path", details.stat_path());
+  return roots.GetStableRoot();
+}
 
 KzipWriterSink::KzipWriterSink(const std::string& path,
                                OutputPathType path_type)
