@@ -55,7 +55,7 @@ namespace {
 using google::protobuf::io::Tokenizer;
 
 using ParseCallback =
-    std::function<void(const clang::CXXMethodDecl&, const clang::SourceRange&)>;
+    std::function<void(const clang::Decl&, const clang::SourceRange&)>;
 
 // A proto tokenizer Error collector that outputs to LOG(ERROR).
 class LogErrors : public google::protobuf::io::ErrorCollector {
@@ -64,62 +64,142 @@ class LogErrors : public google::protobuf::io::ErrorCollector {
   }
 };
 
-// A class that parses a text proto without checking for field existence. The
-// big difference between this and text_format.h is that this parser knows
-// nothing about the proto being parsed.
-class ParseTextProtoHandler {
- public:
-  // Parses the message and returns true on success.
-  static bool Parse(const ParseCallback& FoundField,
-                    const clang::StringLiteral* Literal,
-                    const clang::CXXRecordDecl& MsgDecl,
-                    const clang::ASTContext& Context,
-                    const clang::LangOptions& LangOpts);
-
- private:
-  struct LineColumnPair {
-    LineColumnPair(int Line, int Column) : Line(Line), Column(Column) {}
-    bool operator<(const LineColumnPair& O) const {
-      return std::tie(Line, Column) < std::tie(O.Line, O.Column);
-    }
-    int Line = 0;
-    int Column = 0;
-  };
-
-  // Creates a ParseTextProtoHandler that parses the given value and calls
-  // found_field on findings. All objects should remain valid for the
-  // lifetime of the handler.
-  ParseTextProtoHandler(const ParseCallback& FoundField,
-                        const clang::StringLiteral* Literal,
-                        const clang::ASTContext& Context,
-                        const clang::LangOptions& LangOpts);
-
-  // Parses fields of a message with the given decl. Returns false on error. If
-  // nested is true, then hitting a '}' token will return without error.
-  bool ParseMsg(const clang::CXXRecordDecl& MsgDecl, bool Nested);
-
-  // Parses a field value, including the separator, e.g.
-  //    ": 'literal'"
-  // or
-  //    "{ field1: 3 field2: 'value' }"
-  bool ParseFieldValue(const clang::CXXMethodDecl& accessor_decl);
-
-  // Returns the source location/range of a given position/token.
-  clang::SourceLocation GetSourceLocation(
-      const LineColumnPair& LineColumn) const;
-  clang::SourceRange GetTokenSourceRange(const Tokenizer::Token& Token) const;
-
-  const clang::StringLiteral* const Literal;
-  const clang::ASTContext& Context;
-  const clang::LangOptions& LangOpts;
-  const ParseCallback FoundField;
-  google::protobuf::io::ArrayInputStream IStream;
-  LogErrors Errors;
-  Tokenizer TextTokenizer;
-  // Index of token (line,column) to byte offset in the string literal. See
-  // comment in constructor.
-  std::map<LineColumnPair, int> LineColumnToOffset;
+struct LineColumnPair {
+  LineColumnPair() = default;
+  LineColumnPair(int Line, int Column) : Line(Line), Column(Column) {}
+  bool operator<(const LineColumnPair& O) const {
+    return std::tie(Line, Column) < std::tie(O.Line, O.Column);
+  }
+  int Line = 0;
+  int Column = 0;
 };
+
+// Gets full name of proto extension type or google.protobuf.Any type.
+// Assuming that Tokenizer has already consumed the leading '['.
+// e.g.
+//   [my.pkg.Msg.msg_ext] -> "my::pkg::Msg::msg_ext"
+//   [my.pkg.global_ext] -> "my::pkg::global_ext"
+//   [my.pkg.Msg.message_set_extension] -> "my::pkg::Msg::message_set_extension"
+//   [type.googleapis.com/my.pkg.Msg.msg_ext] -> "my::pkg::Msg::msg_ext"
+bool GetExtensionOrAnyTypeName(Tokenizer& Tz, std::string& Name, bool& IsAny,
+                               LineColumnPair& RangeBegin,
+                               LineColumnPair& RangeEnd) {
+  bool FoundRangeBegin = false;
+  while (Tz.Next()) {
+    const Tokenizer::Token& Token = Tz.current();
+    switch (Token.type) {
+      case Tokenizer::TYPE_IDENTIFIER:
+        Name += Token.text;
+        if (!FoundRangeBegin) {
+          FoundRangeBegin = true;
+          RangeBegin = {Token.line, Token.column};
+        }
+        RangeEnd = {Token.line, Token.end_column};
+        break;
+      case Tokenizer::TYPE_INTEGER:
+      case Tokenizer::TYPE_FLOAT:
+      case Tokenizer::TYPE_STRING:
+        LOG(ERROR) << "Expected field, got literal " << Token.text;
+        return false;
+      case Tokenizer::TYPE_SYMBOL:
+        if (Token.text == "]") {
+          return !Name.empty();
+        }
+        if (Token.text == ".") {
+          Name += "::";
+          break;
+        }
+        // Ending of the google.protobuf.Any URL prefix.
+        if (Token.text == "/") {
+          Name.clear();
+          IsAny = true;
+          FoundRangeBegin = false;
+          break;
+        }
+        LOG(ERROR) << "Expected ending ']', got symbol " << Token.text;
+        return false;
+      case Tokenizer::TYPE_START:
+      case Tokenizer::TYPE_END:
+        LOG(FATAL) << "cannot happen";
+        break;
+      default:
+        break;
+    }
+  }
+  return false;
+}
+
+const clang::Decl* LookupDecl(const clang::ASTContext& ASTContext,
+                              const clang::DeclContext* Context,
+                              llvm::StringRef FullName) {
+  while (Context && !FullName.empty()) {
+    const std::pair<llvm::StringRef, llvm::StringRef> Parts =
+        FullName.split("::");
+    clang::IdentifierInfo& Identifier = ASTContext.Idents.get(Parts.first);
+    const auto result = Context->lookup(&Identifier);
+    if (result.empty() || result.front()->isInvalidDecl()) {
+      return nullptr;
+    }
+    if (Parts.second.empty()) {
+      return result.front()->getCanonicalDecl();
+    }
+    Context =
+        clang::dyn_cast<clang::DeclContext>(result.front()->getCanonicalDecl());
+    FullName = Parts.second;
+  }
+  return nullptr;
+}
+
+// Get the extender type from ExtensionIdentifier declaration.
+const clang::Type* GetExtenderType(const clang::VarDecl& ext_id) {
+  // ExtensionIdentifier<ExtendeeType, Traits<ExtenderType>, ...>
+  const clang::TemplateSpecializationType* ExtIdTemp =
+      ext_id.getType()->getAs<clang::TemplateSpecializationType>();
+  if (ExtIdTemp == nullptr || ExtIdTemp->template_arguments().size() < 2)
+    return nullptr;
+
+  // Traits<ExtenderType>
+  const clang::TemplateArgument& Traits =
+      *(std::next(ExtIdTemp->template_arguments().begin()));
+  if (Traits.getKind() != clang::TemplateArgument::Type) return nullptr;
+
+  const clang::TemplateSpecializationType* TraitsTemp =
+      Traits.getAsType()->getAs<clang::TemplateSpecializationType>();
+  if (TraitsTemp == nullptr || TraitsTemp->template_arguments().empty())
+    return nullptr;
+
+  // ExtenderType
+  return TraitsTemp->template_arguments()
+      .front()
+      .getAsType()
+      .getTypePtrOrNull();
+}
+
+// Find the ExtensionIdentifier declaration. e.g.
+//   ExtensionIdentifier<ExtendeeType, Traits<ExtenderType>, ...>
+const clang::VarDecl* LookupExtensionIdentifier(
+    const clang::ASTContext& ASTContext, const clang::DeclContext* Context,
+    const std::string& name) {
+  const clang::Decl* Decl = LookupDecl(ASTContext, Context, name);
+  if (Decl == nullptr) {
+    LOG(ERROR) << "Cannot find Decl of Extension " << name;
+    return nullptr;
+  }
+  // If Decl points to a class, it is an abbreviation like:
+  //   [my::pkg::Extender]
+  // that actually means
+  //   [my::pkg::Extender::message_set_extension]
+  if (const clang::CXXRecordDecl* Msg =
+          clang::dyn_cast<clang::CXXRecordDecl>(Decl);
+      Msg != nullptr) {
+    Decl = LookupDecl(ASTContext, Msg, "message_set_extension");
+    if (Decl == nullptr) {
+      LOG(ERROR) << "Cannot find message_set_extension inside " << name;
+      return nullptr;
+    }
+  }
+  return clang::dyn_cast<clang::VarDecl>(Decl);
+}
 
 const clang::CXXMethodDecl* FindAccessorDeclWithName(
     const clang::CXXRecordDecl& MsgDecl, llvm::StringRef Name) {
@@ -141,6 +221,71 @@ const clang::CXXMethodDecl* FindAccessorDeclWithName(
   }
   return nullptr;
 }
+
+// A class that parses a text proto without checking for field existence. The
+// big difference between this and text_format.h is that this parser knows
+// nothing about the proto being parsed.
+class ParseTextProtoHandler {
+ public:
+  // Parses the message and returns true on success.
+  static bool Parse(const ParseCallback& FoundField,
+                    const clang::StringLiteral* Literal,
+                    const clang::CXXRecordDecl& MsgDecl,
+                    const clang::ASTContext& Context,
+                    const clang::LangOptions& LangOpts);
+
+ private:
+  // Creates a ParseTextProtoHandler that parses the given value and calls
+  // found_field on findings. All objects should remain valid for the
+  // lifetime of the handler.
+  ParseTextProtoHandler(const ParseCallback& FoundField,
+                        const clang::StringLiteral* Literal,
+                        const clang::ASTContext& Context,
+                        const clang::LangOptions& LangOpts);
+
+  // Parses fields of a message with the given decl. Returns false on error. If
+  // nested is true, then hitting a '}' token will return without error.
+  bool ParseMsg(const clang::CXXRecordDecl& MsgDecl, bool Nested);
+
+  // Parses an extension or google.protobuf.Any, e.g.
+  //   [my.package.global_int_ext]: 123
+  //   [my.package.Msg.msg_ext] { msg_field: 456 }
+  //   [type.googleapis.com/my.package.Msg] { msg_field: 456 }
+  bool ParseExtensionOrAny();
+
+  // Parses a field value, including the separator, e.g.
+  //    ": 'literal'"
+  // or
+  //    "{ field1: 3 field2: 'value' }"
+  //
+  // SubMsgDecl is the potential Message type inferred from the field name or
+  // extension/Any expression. Notice that if the field is a string, then
+  // SubMsgDecl points to the std::string class. Therefore we should always
+  // respect the textproto over SubMsgDecl:
+  //   1. If it says ':', always consume a literal value regardless of
+  //      SubMsgDecl.
+  //   2. If it says '{', try using SubMsgDecl as the nested Message type.
+  bool ParseFieldValue(const clang::CXXRecordDecl* SubSubMsgDecl);
+
+  // Returns the source location/range of a given position/token.
+  clang::SourceLocation GetSourceLocation(
+      const LineColumnPair& LineColumn) const;
+  clang::SourceRange GetTokenSourceRange(const Tokenizer::Token& Token) const;
+  clang::SourceRange GetSourceRange(const LineColumnPair& RangeBegin,
+                                    const LineColumnPair& RangeEnd) const;
+
+  const clang::StringLiteral* const Literal;
+  const clang::ASTContext& Context;
+  const clang::LangOptions& LangOpts;
+  const ParseCallback FoundField;
+  google::protobuf::io::ArrayInputStream IStream;
+  LogErrors Errors;
+  Tokenizer TextTokenizer;
+  // Index of token (line,column) to byte offset in the string literal. See
+  // comment in constructor.
+  std::map<LineColumnPair, int> LineColumnToOffset;
+  // const clang::DeclContext* TranslationUnitContext;
+};
 
 ParseTextProtoHandler::ParseTextProtoHandler(
     const ParseCallback& FoundField, const clang::StringLiteral* Literal,
@@ -202,7 +347,10 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
           return false;
         }
         FoundField(*AccessorDecl, GetTokenSourceRange(Token));
-        if (!ParseFieldValue(*AccessorDecl)) {
+        // In case the value is a nested Message, try using this method's return
+        // type as the Message type.
+        if (!ParseFieldValue(
+                AccessorDecl->getReturnType()->getPointeeCXXRecordDecl())) {
           return false;
         }
         break;
@@ -213,6 +361,10 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
         LOG(ERROR) << "Expected field, got literal " << Token.text;
         return false;
       case Tokenizer::TYPE_SYMBOL:
+        if (Token.text == "[") {
+          if (!ParseExtensionOrAny()) return false;
+          break;
+        }
         if (nested && Token.text == "}") {
           // Exit current message.
           return true;
@@ -230,8 +382,45 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
   return true;
 }
 
+bool ParseTextProtoHandler::ParseExtensionOrAny() {
+  std::string TypeName;
+  bool IsAny = false;
+  LineColumnPair RangeBegin, RangeEnd;
+  if (!GetExtensionOrAnyTypeName(TextTokenizer, TypeName, IsAny, RangeBegin,
+                                 RangeEnd)) {
+    return false;
+  }
+
+  const clang::CXXRecordDecl* MsgDecl = nullptr;
+  if (IsAny) {
+    const clang::Decl* AnyType =
+        LookupDecl(Context, Context.getTranslationUnitDecl(), TypeName);
+    if (AnyType == nullptr) {
+      LOG(ERROR) << "Cannot find declaration of Any type " << TypeName;
+      return false;
+    }
+    MsgDecl = clang::dyn_cast<clang::CXXRecordDecl>(AnyType);
+    // google.protobuf.Any ref points to the Message type.
+    if (MsgDecl != nullptr) {
+      FoundField(*AnyType, GetSourceRange(RangeBegin, RangeEnd));
+    }
+  } else {
+    const clang::VarDecl* ExtId = LookupExtensionIdentifier(
+        Context, Context.getTranslationUnitDecl(), TypeName);
+    if (ExtId != nullptr) {
+      // Proto extension ref points to the ExtensionIdentifier.
+      FoundField(*ExtId, GetSourceRange(RangeBegin, RangeEnd));
+      const clang::Type* ExtType = GetExtenderType(*ExtId);
+      if (ExtType != nullptr) {
+        MsgDecl = ExtType->getAsCXXRecordDecl();
+      }
+    }
+  }
+  return ParseFieldValue(MsgDecl);
+}
+
 bool ParseTextProtoHandler::ParseFieldValue(
-    const clang::CXXMethodDecl& accessor_decl) {
+    const clang::CXXRecordDecl* SubMsgDecl) {
   if (!TextTokenizer.Next()) {
     LOG(ERROR) << "Expected field value, got EOF";
     return false;
@@ -248,17 +437,13 @@ bool ParseTextProtoHandler::ParseFieldValue(
       return false;
     case Tokenizer::TYPE_SYMBOL:
       if (Token.text == "{") {
-        // Enter message: Use the accessor's return type as new base.
-        const auto* SubMsgDecl =
-            accessor_decl.getReturnType()->getPointeeCXXRecordDecl();
-        if (!SubMsgDecl) {
-          LOG(ERROR) << "Expected msg subfield, got "
-                     << accessor_decl.getName().str();
+        if (SubMsgDecl == nullptr) {
+          LOG(ERROR) << "Expected a message, but cannot infer its type";
           return false;
         }
         return ParseMsg(*SubMsgDecl, true);
       } else if (Token.text == ":") {
-        // Parse one literal.
+        // DO NOT early return, ignore MsgDecl and consume one literal.
         TextTokenizer.Next();
         const Tokenizer::Token& LiteralToken = TextTokenizer.current();
         if (!(LiteralToken.type == Tokenizer::TYPE_INTEGER ||
@@ -299,22 +484,10 @@ clang::SourceRange ParseTextProtoHandler::GetTokenSourceRange(
                             GetSourceLocation({Token.line, Token.end_column}));
 }
 
-const clang::RecordDecl* LookupRecordDecl(const clang::ASTContext& ASTContext,
-                                          const clang::DeclContext* Context,
-                                          llvm::StringRef FullName) {
-  while (Context && !FullName.empty()) {
-    const std::pair<llvm::StringRef, llvm::StringRef> Parts =
-        FullName.split("::");
-    clang::IdentifierInfo& Identifier = ASTContext.Idents.get(Parts.first);
-    const auto result = Context->lookup(&Identifier);
-    if (result.empty() || result.front()->isInvalidDecl()) {
-      return nullptr;
-    }
-    Context =
-        clang::dyn_cast<clang::DeclContext>(result.front()->getCanonicalDecl());
-    FullName = Parts.second;
-  }
-  return clang::dyn_cast<clang::RecordDecl>(Context);
+clang::SourceRange ParseTextProtoHandler::GetSourceRange(
+    const LineColumnPair& RangeBegin, const LineColumnPair& RangeEnd) const {
+  return clang::SourceRange(GetSourceLocation(RangeBegin),
+                            GetSourceLocation(RangeEnd));
 }
 
 }  // namespace
@@ -327,9 +500,12 @@ bool GoogleProtoLibrarySupport::CompilationUnitHasParseProtoHelperDecl(
     const clang::DeclContext* const TranslationUnitContext =
         Expr.getCalleeDecl()->getTranslationUnitDecl();
     // Look for ParseProtoHelper.
-    ParseProtoHelperDecl =
-        LookupRecordDecl(ASTContext, TranslationUnitContext,
-                         absl::GetFlag(FLAGS_parseprotohelper_full_name));
+    const clang::Decl* Decl =
+        LookupDecl(ASTContext, TranslationUnitContext,
+                   absl::GetFlag(FLAGS_parseprotohelper_full_name));
+    if (Decl != nullptr) {
+      ParseProtoHelperDecl = clang::dyn_cast<clang::RecordDecl>(Decl);
+    }
   }
   return ParseProtoHelperDecl != nullptr;
 }
@@ -417,10 +593,10 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     return;
   }
 
-  const auto Callback = [&V](const clang::CXXMethodDecl& AccessorDecl,
+  const auto Callback = [&V](const clang::Decl& Decl,
                              const clang::SourceRange& Range) {
     if (const auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
-      const auto NodeId = V.BuildNodeIdForDecl(&AccessorDecl);
+      const auto NodeId = V.BuildNodeIdForDecl(&Decl);
       V.getGraphObserver().recordDeclUseLocation(
           *RCC, NodeId, GraphObserver::Claimability::Unclaimable,
           V.IsImplicit(*RCC));
