@@ -80,7 +80,8 @@ export PATH="$(brew --prefix --installed gnu-sed)/libexec/gnubin:$PATH"
 # Without this, running `java -version` reports an error:
 #    No Java runtime present, requesting install.
 #
-export JAVA_HOME=/usr/local/opt/openjdk
+export JAVA_HOME=/opt/homebrew/opt/openjdk  # on arm64
+# export JAVA_HOME=/usr/local/opt/openjdk  # on x86
 
 # Docker: See the instructions below.
 # DO NOT use brew install docker (or if you did: brew uninstall docker).
