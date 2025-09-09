@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
-import static com.google.errorprone.util.ASTHelpers.isStatic;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
@@ -800,7 +799,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.DEFINES, recordComponent);
     entrySets.emitEdge(recordComponent, EdgeKind.ALIASES, varNode);
   }
-
 
   @Override
   public JavaNode visitTypeApply(JCTypeApply tApply, TreeContext owner) {
