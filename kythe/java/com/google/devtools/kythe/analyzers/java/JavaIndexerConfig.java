@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -136,56 +137,67 @@ public class JavaIndexerConfig extends IndexerConfig {
     return additionalJavacFlags;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setIgnoreVNameRoots(boolean ignoreVNameRoots) {
     this.ignoreVNameRoots = ignoreVNameRoots;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setOverrideJdkCorpus(String overrideJdkCorpus) {
     this.overrideJdkCorpus = overrideJdkCorpus;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setEmitAnchorScopes(boolean emitAnchorScopes) {
     this.emitAnchorScopes = emitAnchorScopes;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setEmitDocForNonJavadoc(boolean emitDocForNonJavadoc) {
     this.emitDocForNonJavadoc = emitDocForNonJavadoc;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setEmitJvmSignatures(boolean emitJvmSignatures) {
     this.emitJvmSignatures = emitJvmSignatures;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setTemporaryDirectory(String temporaryDirectory) {
     this.temporaryDirectory = temporaryDirectory;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setUseCompilationCorpusAsDefault(boolean useCompilationCorpusAsDefault) {
     this.useCompilationCorpusAsDefault = useCompilationCorpusAsDefault;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setRefCallOverIdentifier(boolean emitRefCallOverIdentifier) {
     this.emitRefCallOverIdentifier = emitRefCallOverIdentifier;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setEmitNativeMethodNames(boolean emitNativeMethodNames) {
     this.emitNativeMethodNames = emitNativeMethodNames;
     return this;
   }
 
+  @CanIgnoreReturnValue
   public JavaIndexerConfig setAdditionalJavacFlags(List<String> additionalFlags) {
     this.additionalJavacFlags = additionalFlags;
     return this;

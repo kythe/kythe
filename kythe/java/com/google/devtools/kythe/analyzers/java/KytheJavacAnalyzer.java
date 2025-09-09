@@ -32,6 +32,7 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol;
@@ -86,6 +87,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
    * executed in the same order they are registered and a new {@link Plugin} instance will be
    * requested from the given {@link Supplier} for each {@link JCCompilationUnit} to be analyzed.
    */
+  @CanIgnoreReturnValue
   public KytheJavacAnalyzer registerPlugin(Supplier<Plugin> plugin) {
     plugins.add(plugin);
     return this;
