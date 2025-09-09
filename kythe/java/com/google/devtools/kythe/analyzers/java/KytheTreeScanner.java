@@ -730,7 +730,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (isRecordField(varDef, owner)) {
       emitRecordComponentAliasEdge(ctx, varDef, varNode);
     }
-  
+
     boolean documented = visitDocComment(varNode, varDef.getModifiers());
     emitDefinesBindingAnchorEdge(ctx, varDef.name, varDef.getPreferredPosition(), varNode);
     emitAnchor(ctx, EdgeKind.DEFINES, varNode);
