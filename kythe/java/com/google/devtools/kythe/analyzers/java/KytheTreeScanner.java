@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static com.google.errorprone.util.ASTHelpers.isStatic;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Ascii;
@@ -54,6 +56,7 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
@@ -109,6 +112,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
@@ -723,6 +727,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName varNode =
         entrySets.getNode(
             signatureGenerator, varDef.sym, signature.get(), null, markedSourceChildren);
+
+    if (isRecordField(varDef, owner)) {
+      emitRecordComponentAliasEdge(ctx, varDef, varNode);
+    }
+    
     boolean documented = visitDocComment(varNode, varDef.getModifiers());
     emitDefinesBindingAnchorEdge(ctx, varDef.name, varDef.getPreferredPosition(), varNode);
     emitAnchor(ctx, EdgeKind.DEFINES, varNode);
@@ -764,6 +773,34 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     return new JavaNode(varNode);
   }
+
+  // Returns true if the given variable is a field of a RECORD type.
+  private boolean isRecordField(JCVariableDecl varDef, TreeContext owner) {
+    return varDef.sym.getKind() == ElementKind.FIELD
+        && owner.getTree() instanceof JCClassDecl
+        && ((JCClassDecl) owner.getTree()).sym.getKind() == ElementKind.RECORD
+        && getRecordComponentMatchingName(varDef.sym).count() == 1;
+  }
+
+  /**
+   * Emits an ALIASES edge for the record component node to the given record FIELD node. To generate
+   * the record component anchor, we find the record component with the same name as the FIELD. Then
+   * we create an anchor for the record component and emit the ALIASES edge for it.
+   */
+  private void emitRecordComponentAliasEdge(TreeContext ctx, JCVariableDecl varDef, VName varNode) {
+    Symbol sym = getRecordComponentMatchingName(varDef.sym).collect(onlyElement());
+
+    Optional<String> signature = signatureGenerator.getSignature(sym);
+    if (signature.isEmpty()) {
+      var unused = emitDiagnostic(ctx, "missing record component signature", null, null);
+      return;
+    }
+
+    VName recordComponent = entrySets.getNode(signatureGenerator, sym, signature.get(), null, null);
+    emitAnchor(ctx, EdgeKind.DEFINES, recordComponent);
+    entrySets.emitEdge(recordComponent, EdgeKind.ALIASES, varNode);
+  }
+
 
   @Override
   public JavaNode visitTypeApply(JCTypeApply tApply, TreeContext owner) {
@@ -1228,21 +1265,52 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           .setSymbol(sym);
     }
 
-    VName jvmNode = getJvmNode(sym);
+    Symbol resolvedSym = getResolvedSymbol(sym);
+    VName jvmNode = getJvmNode(resolvedSym);
 
     JavaNode node =
         signatureGenerator
-            .getSignature(sym)
+            .getSignature(resolvedSym)
             .map(
                 sig ->
-                    new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null))
-                        .setSymbol(sym))
+                    new JavaNode(entrySets.getNode(signatureGenerator, resolvedSym, sig, null))
+                        .setSymbol(resolvedSym))
             .orElse(null);
     if (node != null && jvmNode != null) {
       entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
     }
 
     return node;
+  }
+
+  /**
+   * Returns the resolved symbol for a given symbol. This is necessary because javac sometimes uses
+   * symbols that don't correspond to visible elements in code. For example, accessing a record
+   * field is done via a MethodSymbol (accessor method). However, when emitting a node for that
+   * accessor method, the record component is the correct symbol because there is no visible
+   * accessor method.
+   */
+  private Symbol getResolvedSymbol(Symbol sym) {
+    if (isRecordFieldAccessor(sym)) {
+      return getRecordComponentMatchingName(sym).collect(onlyElement());
+    }
+    return sym;
+  }
+
+  // Returns true if the given symbol is an accessor method for a record field.
+  private boolean isRecordFieldAccessor(Symbol sym) {
+    return sym.getKind() == ElementKind.METHOD
+        && sym.enclClass().isRecord()
+        && ((MethodSymbol) sym).getParameters().isEmpty()
+        && getRecordComponentMatchingName(sym).count() == 1;
+  }
+
+  // Returns record components from enclosing record that match the name of the given symbol.
+  private Stream<Symbol> getRecordComponentMatchingName(Symbol sym) {
+    return sym.enclClass().getRecordComponents().stream()
+        .filter(s -> s.getSimpleName().contentEquals(sym.name.toString()))
+        .filter(s -> s.getKind() == ElementKind.RECORD_COMPONENT)
+        .map(s -> s);
   }
 
   private @Nullable VName getJvmNode(Symbol sym) {

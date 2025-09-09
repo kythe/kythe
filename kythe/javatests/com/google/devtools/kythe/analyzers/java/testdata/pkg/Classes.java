@@ -98,6 +98,64 @@ public class Classes {
     // - LCISI childof ClassInit
     class LocalClassInStaticInitializer {}
   }
+
+  // - @TestRecord defines/binding TR
+  private static record TestRecord(
+      // - @name defines/binding TRCName
+      // - TRMName aliases TRCName
+      String name,
+      // - @value defines/binding TRCValue
+      // - TRMValue aliases TRCValue
+      int value) {}
+
+  // - @TestRecordOverridenConstructor defines/binding TROC
+  private static record TestRecordOverridenConstructor(
+      // - @name defines/binding TROCCName
+      // - TROCMName aliases TROCCName
+      String name,
+      // - @value defines/binding TROCCValue
+      // - TROCMValue aliases TROCCValue
+      int value) {
+    TestRecordOverridenConstructor(String name, int value) {
+      this.name = name;
+      this.value = value;
+    }
+  }
+
+  // - @TestRecordCompactConstructor defines/binding TRCC
+  private static record TestRecordCompactConstructor(
+      // - @name defines/binding TRCCCName
+      // - TRCCMName aliases TRCCCName
+      String name,
+      // - @value defines/binding TRCCCValue
+      // - TRCCMValue aliases TRCCCValue
+      int value) {
+    TestRecordCompactConstructor {}
+  }
+
+  private void testMethod() {
+    // - @tr defines/binding TRInstance
+    // - TRInstance typed TR
+    TestRecord tr = new TestRecord("test", 123);
+    // - @name ref TRMName
+    tr.name();
+    // - @value ref TRMValue
+    tr.value();
+    // - @troc defines/binding TROCInstance
+    // - TROCInstance typed TROC
+    TestRecordOverridenConstructor troc = new TestRecordOverridenConstructor("test", 123);
+    // - @name ref TROCMName
+    troc.name();
+    // - @value ref TROCMValue
+    troc.value();
+    // - @trcc defines/binding TRCCInstance
+    // - TRCCInstance typed TRCC
+    TestRecordCompactConstructor trcc = new TestRecordCompactConstructor("test", 123);
+    // - @name ref TRCCMName
+    trcc.name();
+    // - @value ref TRCCMValue
+    trcc.value();
+  }
 }
 
 // - SubclassOne.tag/static _
