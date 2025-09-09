@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.sun.tools.javac.code.Symbol;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -79,6 +80,7 @@ abstract class ResolvedAutoValue {
 
     abstract ImmutableSet.Builder<Property> propertiesBuilder();
 
+    @CanIgnoreReturnValue
     Builder addProperty(Property p) {
       propertiesBuilder().add(p);
       return this;
