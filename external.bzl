@@ -113,9 +113,9 @@ def _cc_dependencies():
         http_archive,
         name = "org_sourceware_libffi",
         build_file = "@io_kythe//third_party:libffi.BUILD",
-        sha256 = "653ffdfc67fbb865f39c7e5df2a071c0beb17206ebfb0a9ecb18a18f63f6b263",  # 2019-11-02
-        strip_prefix = "libffi-3.3-rc2",
-        urls = ["https://github.com/libffi/libffi/releases/download/v3.3-rc2/libffi-3.3-rc2.tar.gz"],
+        sha256 = "f3a3082a23b37c293a4fcd1053147b371f2ff91fa7ea1b2a52e335676bac82dc",  # 2025-08-02
+        strip_prefix = "libffi-3.5.2",
+        urls = ["https://github.com/libffi/libffi/releases/download/v3.5.2/libffi-3.5.2.tar.gz"],
     )
 
     maybe(
@@ -137,11 +137,11 @@ def _cc_dependencies():
         http_archive,
         name = "net_zlib",
         build_file = "@io_kythe//third_party:zlib.BUILD",
-        sha256 = "d14c38e313afc35a9a8760dadf26042f51ea0f5d154b0630a31da0540107fb98",
-        strip_prefix = "zlib-1.2.13",
+        integrity = "sha256-OO+WuN/lENQnB9nHgYd5FHklQRM+GHCEFGO/pz+IPjI=",
+        strip_prefix = "zlib-1.3.1",
         urls = [
-            "https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.xz",
-            "https://zlib.net/zlib-1.2.13.tar.xz",
+            "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz",
+            "https://zlib.net/zlib-1.3.1.tar.xz",
         ],
     )
 
