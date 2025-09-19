@@ -10,7 +10,6 @@ load(
 )
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
@@ -30,8 +29,6 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 
 def _rule_dependencies():
-    go_rules_dependencies()
-    go_register_toolchains(version = "1.21.6")
     gazelle_dependencies()
     rules_java_dependencies()
 
@@ -503,17 +500,6 @@ def _go_dependencies():
         importpath = "github.com/golang/mock",
         sum = "h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=",
         version = "v1.6.0",
-    )
-    go_repository(
-        name = "com_github_golang_protobuf",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/golang/protobuf",
-        patch_args = ["-p1"],
-        patches = [
-            "@io_kythe//third_party/go:new_export_license.patch",
-        ],
-        sum = "h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=",
-        version = "v1.5.3",
     )
 
     go_repository(
@@ -1711,17 +1697,6 @@ def _go_dependencies():
     )
 
     go_repository(
-        name = "org_golang_x_sys",
-        importpath = "golang.org/x/sys",
-        patch_args = ["-p1"],
-        patches = [
-            "@io_kythe//third_party/go:add_export_license.patch",
-        ],
-        sum = "h1:DBdB3niSjOA/O0blCZBqDefyWNYveAYMNF1Wum0DYQ4=",
-        version = "v0.18.0",
-    )
-
-    go_repository(
         name = "org_golang_x_term",
         importpath = "golang.org/x/term",
         sum = "h1:FcHjZXDMxI8mM3nwhX9HlKop4C0YQvCVCdwYl2wOtE8=",
@@ -1750,29 +1725,6 @@ def _go_dependencies():
         importpath = "golang.org/x/xerrors",
         sum = "h1:+cNy6SZtPcJQH3LJVLOSmiC7MMxXNOb3PU/VUEz+EhU=",
         version = "v0.0.0-20231012003039-104605ab7028",
-    )
-
-    # gazelle:repository go_repository name=org_golang_x_tools importpath=golang.org/x/tools
-    http_archive(
-        name = "org_golang_x_tools",
-        # Must be kept in sync with rules_go or the patches may fail.
-        # v0.15.0, latest as of 2024-02-27
-        urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
-            "https://github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
-        ],
-        sha256 = "e76a03b11719138502c7fef44d5e1dc4469f8c2fcb2ee4a1d96fb09aaea13362",
-        strip_prefix = "tools-0.15.0",
-        patches = [
-            "@io_kythe//third_party/go:add_export_license.patch",
-            # deletegopls removes the gopls subdirectory. It contains a nested
-            # module with additional dependencies. It's not needed by rules_go.
-            # releaser:patch-cmd rm -rf gopls
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
-            # releaser:patch-cmd gazelle -repo_root . -go_prefix golang.org/x/tools -go_naming_convention import_alias
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
-        ],
-        patch_args = ["-p1"],
     )
 
 def _bindings():

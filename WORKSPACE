@@ -58,6 +58,96 @@ npm_repositories()
 # END rules_ts setup
 ###
 
+###
+# BEGIN rules_go setup
+# must happen before any go_repository calls, otherwise after rules_go 0.44.0
+# this error will be thrown:
+#
+#     ERROR: Failed to load Starlark extension '@@io_bazel_rules_nogo//:scope.bzl'.
+#     Cycle in the workspace file detected. This indicates that a repository is used prior to being defined.
+#     The following chain of repository dependencies lead to the missing definition.
+#      - @@io_bazel_rules_nogo
+#     This could either mean you have to add the '@@io_bazel_rules_nogo' repository with a statement like
+#     `http_archive` in your WORKSPACE file (note that transitive dependencies are not added automatically),
+#     or move an existing definition earlier in your WORKSPACE file.
+#     ERROR: Error computing the main repository mapping: cycles detected during computation of main repo mapping
+#
+# also note that go modules that rules_go requires are imported here first so
+# that they take precedence over the version rules_go registers. this is for
+# kythe-specific patches to work.
+#
+# this is fairly brittle, version bumps of rules_go need to be simultaneously
+# performed with bumping versions of packages here.
+# migrating kythe to bzlmod should make this much easier:
+# https://github.com/bazel-contrib/rules_go/blob/42a97e95154170f6be04cbbdbe87808016e4470f/docs/go/core/bzlmod.md?plain=1#L312-L322
+# however would be a separate undertaking.
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+# gazelle:repository go_repository name=org_golang_x_sys importpath=golang.org/x/sys
+http_archive(
+    name = "org_golang_x_sys",
+    urls = [
+        "https://mirror.bazel.build/github.com/golang/sys/archive/refs/tags/v0.18.0.zip",
+        "https://github.com/golang/sys/archive/refs/tags/v0.18.0.zip",
+    ],
+    sha256 = "d5ffb367cf0b672a6b97e2e0cf775dbae36276986485cf665cef5fd677563651",
+    strip_prefix = "sys-0.18.0",
+    patches = [
+        "@io_kythe//third_party/go:add_export_license.patch",
+        # releaser:patch-cmd gazelle -repo_root . -go_prefix golang.org/x/sys -go_naming_convention import_alias
+        "@io_bazel_rules_go//third_party:org_golang_x_sys-gazelle.patch",
+    ],
+    patch_args = ["-p1"],
+)
+
+# gazelle:repository go_repository name=org_golang_x_tools importpath=golang.org/x/tools
+http_archive(
+    name = "org_golang_x_tools",
+    # Must be kept in sync with rules_go or the patches may fail.
+    # v0.15.0, latest as of 2024-02-27
+    urls = [
+        "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
+        "https://github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
+    ],
+    sha256 = "e76a03b11719138502c7fef44d5e1dc4469f8c2fcb2ee4a1d96fb09aaea13362",
+    strip_prefix = "tools-0.15.0",
+    patches = [
+        "@io_kythe//third_party/go:add_export_license.patch",
+        # deletegopls removes the gopls subdirectory. It contains a nested
+        # module with additional dependencies. It's not needed by rules_go.
+        # releaser:patch-cmd rm -rf gopls
+        "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
+        # releaser:patch-cmd gazelle -repo_root . -go_prefix golang.org/x/tools -go_naming_convention import_alias
+        "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
+    ],
+    patch_args = ["-p1"],
+)
+
+# gazelle:repository go_repository name=com_github_golang_protobuf importpath=github.com/golang/protobuf
+http_archive(
+    name = "com_github_golang_protobuf",
+    # Must be kept in sync with rules_go or the patches may fail.
+    # v1.5.3, latest as of 2023-12-15
+    urls = [
+        "https://mirror.bazel.build/github.com/golang/protobuf/archive/refs/tags/v1.5.3.zip",
+        "https://github.com/golang/protobuf/archive/refs/tags/v1.5.3.zip",
+    ],
+    sha256 = "2dced4544ae5372281e20f1e48ca76368355a01b31353724718c4d6e3dcbb430",
+    strip_prefix = "protobuf-1.5.3",
+    patches = [
+        "@io_kythe//third_party/go:new_export_license.patch",
+        # releaser:patch-cmd gazelle -repo_root . -go_prefix github.com/golang/protobuf -go_naming_convention import_alias -proto disable_global
+        "@io_bazel_rules_go//third_party:com_github_golang_protobuf-gazelle.patch",
+    ],
+    patch_args = ["-p1"],
+)
+
+go_rules_dependencies()
+go_register_toolchains(version = "1.21.6")
+
+# END rules_go setup
+###
+
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
