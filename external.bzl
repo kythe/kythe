@@ -385,8 +385,8 @@ def _go_dependencies():
     go_repository(
         name = "com_github_bazelbuild_bazel_gazelle",
         importpath = "github.com/bazelbuild/bazel-gazelle",
-        sum = "h1:YHkwssgvCXDRU7sLCq1kGqaGYO9pKNR1Wku7UT2LhoY=",
-        version = "v0.34.0",
+        sum = "h1:WnJGYk1bMIjw8FCYA/UxKBK/Y6hUnOItrtR+vjFIIKo=",
+        version = "v0.33.0",
     )
     go_repository(
         name = "com_github_bazelbuild_buildtools",
@@ -1756,13 +1756,13 @@ def _go_dependencies():
     http_archive(
         name = "org_golang_x_tools",
         # Must be kept in sync with rules_go or the patches may fail.
-        # v0.15.0, latest as of 2024-02-27
+        # v0.7.0, latest as of 2023-03-27
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
-            "https://github.com/golang/tools/archive/refs/tags/v0.15.0.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
+            "https://github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
         ],
-        sha256 = "e76a03b11719138502c7fef44d5e1dc4469f8c2fcb2ee4a1d96fb09aaea13362",
-        strip_prefix = "tools-0.15.0",
+        sha256 = "9f20a20f29f4008d797a8be882ef82b69cf8f7f2b96dbdfe3814c57d8280fa4b",
+        strip_prefix = "tools-0.7.0",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested
