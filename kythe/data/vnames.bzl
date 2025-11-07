@@ -15,12 +15,18 @@
 def _construct_vnames_config_impl(ctx):
     corpus = ctx.attr.corpus
     if "kythe_corpus" in ctx.var:
-        # Use --define kythe_corpus=... override
         corpus = ctx.var["kythe_corpus"]
     elif corpus == "":
-        # Use workspace name as default
         corpus = ctx.workspace_name
     srcs = ctx.files.srcs
+    print("VIVEK")
+
+    # Detect kythe_assign_external_projects_to_separate_corpora here directly,
+    # instead of using select() in the BUILD file. This avoids creating a graph
+    # edge to a config_setting rule.
+    if ctx.var.get("kythe_assign_external_projects_to_separate_corpora") == "true":
+        srcs = ctx.files.external_project_srcs
+
     merged = ctx.actions.declare_file(ctx.label.name + "_merged.json")
     ctx.actions.run_shell(
         outputs = [merged],
@@ -47,6 +53,7 @@ construct_vnames_config = rule(
             allow_empty = False,
             allow_files = True,
         ),
+        "external_project_srcs": attr.label_list(allow_files = True),
         "corpus": attr.string(),
     },
     outputs = {"vnames": "%{name}.json"},

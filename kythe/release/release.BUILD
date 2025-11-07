@@ -14,11 +14,14 @@ exports_files(glob([
 construct_vnames_config(
     name = "vnames_config",
     srcs = [
-            "vnames.cxx.json",
-            "vnames.go.json",
-            "vnames.java.json",
-            "vnames.json",
-        ],
+        "simple_vnames.json",
+    ],
+    external_project_srcs = [
+        "vnames.cxx.json",
+        "vnames.go.json",
+        "vnames.java.json",
+        "vnames.json",
+    ],
 )
 
 # Clone of default Java proto toolchain with "annotate_code" enabled for
