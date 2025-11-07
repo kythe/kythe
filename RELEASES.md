@@ -2,6 +2,10 @@
 
 ## [v0.0.74] - 2025-11-07
 
+#### Bug Fixes
+
+* **bazel:** Fix multiple corpora issue by defaulting to simple_vnames.json (#6207) ([a182743](https://github.com/kythe/kythe/commit/a182743b6a2315c3ffdd43ed6f008434948f2adc))
+
 ## [v0.0.73] - 2025-08-22
 
 #### Bug Fixes
