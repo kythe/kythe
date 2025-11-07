@@ -21,6 +21,11 @@ def _construct_vnames_config_impl(ctx):
         # Use workspace name as default
         corpus = ctx.workspace_name
     srcs = ctx.files.srcs
+
+    # Detect kythe_assign_external_projects_to_separate_corpora here and change
+    # srcs to external_project_srcs.
+    if ctx.var.get("kythe_assign_external_projects_to_separate_corpora") == "true":
+        srcs = ctx.files.external_project_srcs
     merged = ctx.actions.declare_file(ctx.label.name + "_merged.json")
     ctx.actions.run_shell(
         outputs = [merged],
@@ -48,6 +53,7 @@ construct_vnames_config = rule(
             allow_files = True,
         ),
         "corpus": attr.string(),
+        "external_project_srcs": attr.label_list(allow_files = True),
     },
     outputs = {"vnames": "%{name}.json"},
     implementation = _construct_vnames_config_impl,
