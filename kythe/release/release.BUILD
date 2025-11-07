@@ -14,13 +14,13 @@ exports_files(glob([
 construct_vnames_config(
     name = "vnames_config",
     srcs = [
-        # by default, the simple vname rules are used, which map everything
+        # By default, the simple vname rules are used, which map everything
         # to the corpus set via `--define kythe_corpus=<my corpus>`.
         "simple_vnames.json",
     ],
     external_project_srcs = [
         # If `--define kythe_assign_external_projects_to_separate_corpora=true`
-        # is provided below vname rules are used.
+        # is provided, below vname rules are used.
         "vnames.cxx.json",
         "vnames.go.json",
         "vnames.java.json",
