@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.74] - 2025-11-07
+
+#### Bug Fixes
+
+* **bazel:** Fix multiple corpora issue by defaulting to simple_vnames.json (#6207) ([a182743](https://github.com/kythe/kythe/commit/a182743b6a2315c3ffdd43ed6f008434948f2adc))
+
 ## [v0.0.73] - 2025-08-22
 
 #### Bug Fixes
@@ -1811,7 +1817,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.73...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.74...HEAD
+[v0.0.74] https://github.com/kythe/kythe/compare/v0.0.73...v0.0.74
 [v0.0.73] https://github.com/kythe/kythe/compare/v0.0.72...v0.0.73
 [v0.0.72] https://github.com/kythe/kythe/compare/v0.0.71...v0.0.72
 [v0.0.71] https://github.com/kythe/kythe/compare/v0.0.70...v0.0.71
