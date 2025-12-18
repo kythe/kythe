@@ -12,15 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:stable-slim
+FROM ubuntu:24.04
 
 # Install C++ compilers and other deps
 # note that openjdk-11-jdk-headless is a dependency of the java extractor
 RUN apt-get update -y && \
-    # This is temporary until Debian starts shipping merged /usr directories in their images
-    apt-mark hold usrmerge usr-is-merged && \
     apt-get upgrade -y && \
-    apt-get install -y git clang-15 build-essential zip python3 openjdk-17-jdk-headless curl && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    git \
+    clang-15 \
+    build-essential \
+    zip \
+    python3 \
+    openjdk-17-jdk-headless \
+    curl && \
     apt-get clean
 
 # Create clang symlinks
