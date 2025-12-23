@@ -37,7 +37,7 @@ RUN apt-get update -y && \
     uuid-dev && \
     apt-get clean
 
-# Create clang symlinks (Trixie has newer clang, map it to 15)
+# Create clang symlinks
 RUN ln -s /usr/bin/clang /usr/bin/clang-15 && \
     ln -s /usr/bin/clang++ /usr/bin/clang++-15
 
