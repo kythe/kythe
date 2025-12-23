@@ -15,17 +15,31 @@
 FROM debian:stable-slim
 
 # Install C++ compilers and other deps
-# note that openjdk-11-jdk-headless is a dependency of the java extractor
+# note that default-jdk-headless is a dependency of the java extractor
 RUN apt-get update -y && \
-    # This is temporary until Debian starts shipping merged /usr directories in their images
-    apt-mark hold usrmerge usr-is-merged && \
     apt-get upgrade -y && \
-    apt-get install -y git clang-15 build-essential zip python3 openjdk-17-jdk-headless curl && \
+    apt-get install -y \
+    git \
+    clang \
+    build-essential \
+    zip \
+    unzip \
+    python3 \
+    default-jdk-headless \
+    curl \
+    ca-certificates \
+    ruby \
+    asciidoc \
+    bison \
+    flex \
+    graphviz \
+    source-highlight \
+    uuid-dev && \
     apt-get clean
 
 # Create clang symlinks
-RUN ln -s /usr/bin/clang-15 /usr/bin/clang && \
-    ln -s /usr/bin/clang++-15 /usr/bin/clang++
+RUN ln -s /usr/bin/clang /usr/bin/clang-15 && \
+    ln -s /usr/bin/clang++ /usr/bin/clang++-15
 
 RUN echo 'build --client_env=CC=/usr/bin/clang' >> ~/.bazelrc
 RUN echo 'build --client_env=CXX=/usr/bin/clang++' >> ~/.bazelrc
@@ -46,7 +60,7 @@ RUN curl -s https://api.github.com/repos/bazelbuild/bazelisk/releases/latest \
         | sed -n '/browser_download_url/s/[^:]*:[^"]*\("[^"]*"\).*/url = \1/p' \
         | grep bazelisk-linux-amd64 \
         | curl -L -o /kythe/bazelisk -K - \
-        && chmod +x /kythe/bazelisk
+    && chmod +x /kythe/bazelisk
 
 RUN mkdir -p /workspace
 WORKDIR /workspace
