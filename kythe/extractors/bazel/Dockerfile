@@ -12,25 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:24.04
+FROM debian:trixie
 
 # Install C++ compilers and other deps
-# note that openjdk-11-jdk-headless is a dependency of the java extractor
+# note that default-jdk-headless is a dependency of the java extractor
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    apt-get install -y \
     git \
-    clang-15 \
+    clang \
     build-essential \
     zip \
+    unzip \
     python3 \
-    openjdk-17-jdk-headless \
-    curl && \
+    default-jdk-headless \
+    curl \
+    ca-certificates \
+    ruby \
+    asciidoc \
+    bison \
+    flex \
+    graphviz \
+    source-highlight \
+    uuid-dev && \
     apt-get clean
 
-# Create clang symlinks
-RUN ln -s /usr/bin/clang-15 /usr/bin/clang && \
-    ln -s /usr/bin/clang++-15 /usr/bin/clang++
+# 3. Create clang symlinks (Trixie has newer clang, map it to 15)
+RUN ln -s /usr/bin/clang /usr/bin/clang-15 && \
+    ln -s /usr/bin/clang++ /usr/bin/clang++-15
 
 RUN echo 'build --client_env=CC=/usr/bin/clang' >> ~/.bazelrc
 RUN echo 'build --client_env=CXX=/usr/bin/clang++' >> ~/.bazelrc
@@ -51,14 +60,10 @@ RUN curl -s https://api.github.com/repos/bazelbuild/bazelisk/releases/latest \
         | sed -n '/browser_download_url/s/[^:]*:[^"]*\("[^"]*"\).*/url = \1/p' \
         | grep bazelisk-linux-amd64 \
         | curl -L -o /kythe/bazelisk -K - \
-        && chmod +x /kythe/bazelisk
+    && chmod +x /kythe/bazelisk
 
 RUN mkdir -p /workspace
 WORKDIR /workspace
-
-# copied from gcr.io bazel image
-# Store the Bazel outputs under /workspace so that the symlinks under bazel-bin
-# (et al) are accessible to downstream build steps.
 RUN echo 'startup --output_base=/workspace/.bazel' >> ~/.bazelrc
 
 ENTRYPOINT ["/kythe/extract.sh"]
