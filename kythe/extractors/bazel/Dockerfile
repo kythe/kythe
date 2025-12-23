@@ -64,6 +64,10 @@ RUN curl -s https://api.github.com/repos/bazelbuild/bazelisk/releases/latest \
 
 RUN mkdir -p /workspace
 WORKDIR /workspace
+
+# copied from gcr.io bazel image
+# Store the Bazel outputs under /workspace so that the symlinks under bazel-bin
+# (et al) are accessible to downstream build steps.
 RUN echo 'startup --output_base=/workspace/.bazel' >> ~/.bazelrc
 
 ENTRYPOINT ["/kythe/extract.sh"]
