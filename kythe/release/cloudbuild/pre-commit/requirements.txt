@@ -8,13 +8,13 @@ cfgv==3.3.1 \
     --hash=sha256:c6a0883f3917a037485059700b9e75da2464e6c27051014ad85ba6aaa5884426 \
     --hash=sha256:f5a830efb9ce7a445376bb66ec94c638a9787422f96264c98edc6bdeed8ab736
     # via pre-commit
-distlib==0.3.6 \
-    --hash=sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46 \
-    --hash=sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e
+distlib==0.3.9 \
+    --hash=sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87 \
+    --hash=sha256:a60f20dea646b8a33f3e7772f74dc0b2d0772d2837ee1342a00645c81edf9403
     # via virtualenv
-filelock==3.8.0 \
-    --hash=sha256:55447caa666f2198c5b6b13a26d2084d26fa5b115c00d065664b2124680c4edc \
-    --hash=sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4
+filelock==3.16.1 \
+    --hash=sha256:2082e5703d51fbf98ea75855d9d5527e33d8ff23099bec374a134febee6946b0 \
+    --hash=sha256:c249fbfcd5db47e5e2d6d62198e565475ee65e4831e2561c8e313fa7eb961435
     # via virtualenv
 identify==2.5.9 \
     --hash=sha256:906036344ca769539610436e40a684e170c3648b552194980bb7b617a8daeb9f \
@@ -24,9 +24,9 @@ nodeenv==1.7.0 \
     --hash=sha256:27083a7b96a25f2f5e1d8cb4b6317ee8aeda3bdd121394e5ac54e498028a042e \
     --hash=sha256:e0e7f7dfb85fc5394c6fe1e8fa98131a2473e04311a45afb6508f7cf1836fa2b
     # via pre-commit
-platformdirs==2.5.4 \
-    --hash=sha256:1006647646d80f16130f052404c6b901e80ee4ed6bef6792e1f238a8969106f7 \
-    --hash=sha256:af0276409f9a02373d540bf8480021a048711d572745aef4b7842dad245eba10
+platformdirs==4.3.6 \
+    --hash=sha256:357fb2acbc885b0419afd3ce3ed34564c13c9b95c89360cd9563f73aa5e2b907 \
+    --hash=sha256:73e575e1408ab8103900836b97580d5307456908a03e92031bab39e4554cc3fb
     # via virtualenv
 pre-commit==2.20.0 \
     --hash=sha256:51a5ba7c480ae8072ecdb6933df22d2f812dc897d5fe848778116129a681aac7 \
@@ -78,11 +78,12 @@ toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
     # via pre-commit
-virtualenv==20.17.0 \
-    --hash=sha256:40a7e06a98728fd5769e1af6fd1a706005b4bb7e16176a272ed4292473180389 \
-    --hash=sha256:7d6a8d55b2f73b617f684ee40fd85740f062e1f2e379412cb1879c7136f05902
+virtualenv==20.26.6 \
+    --hash=sha256:280aede09a2a5c317e409a00102e7077c6432c5a38f0ef938e643805a7ad2c48 \
+    --hash=sha256:7345cc5b25405607a624d8418154577459c3e0277f5466dd79c49d5e492995f2
     # via pre-commit
 
 # WARNING: The following packages were not pinned, but pip requires them to be
-# pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
+# pinned when the requirements file includes hashes and the requirement is not
+# satisfied by a package already installed. Consider using the --allow-unsafe flag.
 # setuptools
