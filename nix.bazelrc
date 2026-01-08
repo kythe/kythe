@@ -1,0 +1,22 @@
+# Define the host platform through nix.
+
+# rules_nixpkgs introduce added platform constraints that allow us
+# to select nix-provided toolchains, and not to mix them with
+# other toolchains.
+build:nix --host_platform=@rules_nixpkgs_core//platforms:host
+
+# Use the Java toolchain provided by nix.
+common:nix --java_runtime_version=nixpkgs_java_20
+common:nix --tool_java_runtime_version=nixpkgs_java_20
+common:nix --java_language_version=20
+common:nix --tool_java_language_version=20
+common:nix --incompatible_enable_cc_toolchain_resolution
+
+# For installation select local config.
+# bazel build --confg=nix-install ...
+common:nix-install --java_language_version=11
+common:nix-install --tool_java_language_version=11
+common:nix-install --java_runtime_version=local_jdk
+common:nix-install --tool_java_runtime_version=local_jdk
+common:nix-install --incompatible_enable_cc_toolchain_resolution
+

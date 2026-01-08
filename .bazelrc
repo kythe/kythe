@@ -158,5 +158,9 @@ build:clang-tidy-from-source --noincompatible_disallow_empty_glob
 build:clang-tidy-from-source --@bazel_clang_tidy//:clang_tidy_executable=@//tools/cpp:clang_tidy
 build:clang-tidy-from-source --@bazel_clang_tidy//:clang_tidy_additional_deps=@//tools/cpp:clang_tidy_deps
 
+# Hermetic build via nix.
+try-import %workspace%/nix.bazelrc
+
 # Support user-provided user.bazelrc
 try-import %workspace%/user.bazelrc
+
