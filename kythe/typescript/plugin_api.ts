@@ -88,8 +88,9 @@ export interface IndexingOptions {
   emitRefCallOverIdentifier?: boolean;
 
   /**
-   * When enabled any error thrown from any plugin gets propagated to the caller.
-   * Currently errors from plugins are logged without interrupting analysis.
+   * When enabled any error thrown from any plugin gets propagated to the
+   * caller. Currently errors from plugins are logged without interrupting
+   * analysis.
    */
   failAnalysisOnPluginError?: boolean;
 }
@@ -200,7 +201,28 @@ export interface IndexerHost {
    * TypeScript program.
    */
   program: ts.Program;
+
+  /**
+   * A set of type names for which we should use (some function of) an argument
+   * type for xrefs.
+   *
+   * A good example of this is `Readonly<T>`, which should use `T` to
+   * cross-reference its fields. The value is an object indicating type argument
+   * to use. For `Readonly` or `Partial` this would be {typeParameterIndex: 0}.
+   *
+   * Multiple values are supported for the case of type wrappers which are
+   * effectively unions and should reference both types.
+   */
+  typeWrappers?: Record<string, readonly ArgumentTypeExtractor[]>;
 }
+
+type ArgumentTypeExtractor = {
+  /** The index of the type parameter we are effectively referencing. */
+  typeParameterIndex: number;
+
+  /** An optional transformer for ts.Type instances. */
+  transformType?: (typeChecker: ts.TypeChecker, type: ts.Type) => ts.Type;
+};
 
 /**
  * A indexer plugin adds extra functionality with the same inputs as the base

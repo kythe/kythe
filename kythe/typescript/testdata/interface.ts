@@ -79,7 +79,7 @@ interface Address {
       //- @name ref/id Name
       name: 'Alice',
       //- @getAge ref/id GetAge
-      getAge() { }
+      getAge() {}
     },
     street: '1600 Amphitheater Park',
   }
@@ -89,4 +89,26 @@ interface Address {
 
   //- @name ref/id Name
   function takesAddress({person: {name}}: Address) {}
+}
+
+{
+  // Test properties with a type wrapper
+  const p: Readonly<Person> = {
+    //- @name ref/id Name
+    name: 'Alice',
+    //- @getAge ref/id GetAge
+    getAge() {}
+  };
+
+  // test property shorthands with a type wrapper
+  {
+    const name = 'Alice';
+    const getAge = () => {};
+    //- @name ref/id Name
+    //- @getAge ref/id GetAge
+    const p3: Readonly<Person> = {name, getAge};
+  }
+
+  //- @getAge ref/id GetAge
+  const {getAge} = p;
 }
