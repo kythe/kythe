@@ -537,25 +537,29 @@ func TestWriteCrate(t *testing.T) {
 			IncludeDirs: []string{"crate0/src"},
 			ExcludeDirs: []string{},
 		},
-		Deps: []dep{{CrateId: 1, Name: "crate1"}},
+		Deps:         []dep{{CrateId: 1, Name: "crate1"}},
+		CompilerArgs: []string{"--sysroot", "/fake/sysroot"},
 	} // crate0 will be modified in the multi-dep test case
 	crate1 := crate{
 		Source: source{
 			IncludeDirs: []string{"vendor/crate1/src", "out/gen"},
 			ExcludeDirs: []string{},
 		},
+		CompilerArgs: []string{"--edition=2018"},
 	}
 	crate2 := crate{
 		Source: source{
 			IncludeDirs: []string{"vendor/crate2"},
 			ExcludeDirs: []string{""},
 		},
+		CompilerArgs: []string{"--cfg=feature=\"test_feature\""},
 	}
 	crate3 := crate{
 		Source: source{
 			IncludeDirs: []string{"vendor/crate3"},
 			ExcludeDirs: []string{"out/gen"}, // the same directory INCLUDED by crate1
 		},
+		CompilerArgs: []string{"-L", "dependency=/some/path"},
 	}
 
 	sourceDirs := map[crateId]source{
@@ -618,7 +622,7 @@ func TestWriteCrate(t *testing.T) {
 				VName:         &spb.VName{Corpus: corpus, Language: "rust"},
 				RequiredInput: append(append(slices.Clone(crate1FileInputs), projectJsonFileInput), crate0FileInputs...), // Clone dep inputs + project.json
 				SourceFile:    []string{"crate0/src/lib.rs", "crate0/src/mod.rs"},                                        // Only crate0 files
-
+				Argument:      crate0.CompilerArgs,
 			},
 			expectWriteCrateErr: false,
 		},
@@ -648,7 +652,8 @@ func TestWriteCrate(t *testing.T) {
 					IncludeDirs: []string{"crate0/src"},
 					ExcludeDirs: []string{},
 				},
-				Deps: []dep{{CrateId: 1, Name: "crate1"}, {CrateId: 2, Name: "crate2"}}, // Depends on 1 and 2
+				Deps:         []dep{{CrateId: 1, Name: "crate1"}, {CrateId: 2, Name: "crate2"}}, // Depends on 1 and 2
+				CompilerArgs: []string{"--crate-type=lib"},
 			},
 			mockCollector: &MockCollectCrateSources{
 				Results: map[string]struct {
@@ -667,6 +672,7 @@ func TestWriteCrate(t *testing.T) {
 				// Required inputs should include both dependencies + project.json
 				RequiredInput: append(append(append(slices.Clone(crate1FileInputs), crate2FileInputs...), crate0FileInputs...), projectJsonFileInput),
 				SourceFile:    []string{"crate0/src/lib.rs", "crate0/src/mod.rs"}, // Only crate0 files
+				Argument:      tt.crateToTest.CompilerArgs,
 			},
 			expectWriteCrateErr: false,
 		},
@@ -680,7 +686,8 @@ func TestWriteCrate(t *testing.T) {
 					IncludeDirs: []string{"crate0/src"},
 					ExcludeDirs: []string{},
 				},
-				Deps: []dep{{CrateId: 1, Name: "crate1"}, {CrateId: 3, Name: "crate3"}},
+				Deps:         []dep{{CrateId: 1, Name: "crate1"}, {CrateId: 3, Name: "crate3"}},
+				CompilerArgs: []string{"--verbose"},
 			},
 			mockCollector: &MockCollectCrateSources{
 				Results: map[string]struct {
@@ -698,6 +705,7 @@ func TestWriteCrate(t *testing.T) {
 				VName:         &spb.VName{Corpus: corpus, Language: "rust"},
 				RequiredInput: append(append(append(slices.Clone(crate1FileInputs), crate3FileInputs...), crate0FileInputs...), projectJsonFileInput),
 				SourceFile:    []string{"crate0/src/lib.rs", "crate0/src/mod.rs"}, // Only crate0 files
+				Argument:      tt.crateToTest.CompilerArgs,
 			},
 			expectWriteCrateErr: false,
 		},
@@ -780,7 +788,10 @@ func TestWriteCrate(t *testing.T) {
 				t.Errorf("writeCrate() produced unexpected RequiredInput diff (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.expectedUnit.SourceFile, mockWriter.AddedUnit.SourceFile, cmp.Comparer(proto.Equal)); diff != "" {
-				t.Errorf("writeCrate() produced unexpected RequiredInput diff (-want +got):\n%s", diff)
+				t.Errorf("writeCrate() produced unexpected SourceFile diff (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.expectedUnit.Argument, mockWriter.AddedUnit.Argument, cmp.Comparer(proto.Equal)); diff != "" {
+				t.Errorf("writeCrate() produced unexpected Argument diff (-want +got):\n%s", diff)
 			}
 		})
 	}
