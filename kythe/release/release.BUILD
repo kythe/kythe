@@ -71,7 +71,7 @@ proto_lang_toolchain(
 #   --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
 toolchain(
     name = "proto_toolchain_cc",
-    toolchain_type = "@com_google_protobuf//bazel/private:cc_toolchain_type", 
+    toolchain_type = "@com_google_protobuf//bazel/private:cc_toolchain_type",
     toolchain = ":cc_native_proto_toolchain",
 )
 
