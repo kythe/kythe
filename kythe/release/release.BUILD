@@ -1,5 +1,7 @@
 load(":extractors.bzl", "extractor_action")
 load(":vnames.bzl", "construct_vnames_config")
+load("@com_google_protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
+load("@rules_java//java:defs.bzl", "java_binary", "java_import", "java_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -65,8 +67,14 @@ proto_lang_toolchain(
 # to output the metadata into a separate file.  This needs to be invoked with:
 #
 # bazel build \
-#   --proto_toolchain_for_cc=@io_kythe//kythe/extractor:cc_native_proto_toolchain \
+#   --extra_toolchains=@io_kythe//kythe/extractor:proto_toolchain_cc \
 #   --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
+toolchain(
+    name = "proto_toolchain_cc",
+    toolchain_type = "@com_google_protobuf//bazel/private:cc_toolchain_type",
+    toolchain = ":cc_native_proto_toolchain",
+)
+
 proto_lang_toolchain(
     name = "cc_native_proto_toolchain",
     command_line = "--cpp_out=annotate_headers,annotation_pragma_name=kythe_metadata,annotation_guard_name=KYTHE_IS_RUNNING:$(OUT)",
