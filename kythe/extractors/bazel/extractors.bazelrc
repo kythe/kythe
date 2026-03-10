@@ -17,8 +17,11 @@ build --experimental_extra_action_top_level_only
 
 # Generate metadata for generated protocol buffer code.
 build --cc_proto_library_header_suffixes=.pb.h,.pb.h.meta
-build --proto_toolchain_for_cc=@kythe_release//:cc_native_proto_toolchain
+build --extra_toolchains=@kythe_release//:proto_toolchain_cc
 build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
+
+# Flag is true by default in newer versions of Bazel, but keeping it for backward compatibility.
+build --incompatible_enable_proto_toolchain_resolution
 
 # Enable all supported Kythe extractors.
 build --experimental_action_listener=@kythe_release//:extract_kzip_cxx
