@@ -1,5 +1,16 @@
 # Release Notes
 
+## [v0.0.75] - 2026-03-12
+
+#### Bug Fixes
+
+* **tooling:** Update BUILD and bazelrc for Bazel 9 based clients (#6218) ([94abb1b](https://github.com/kythe/kythe/commit/94abb1b50e71c88d03db4a78c53bb5f32cff83e0))
+
+* **bazel_extractor:** Upgrade bazel-extractor - add new packages (#6215) ([9a1038d](https://github.com/kythe/kythe/commit/9a1038daf8bba05bf777dee208ef06700e98487f))
+
+* **go_extractor:** Update Go extractor Docker image to use Go 1.25 (#6213) ([32e4787](https://github.com/kythe/kythe/commit/32e478752e518b1bfd0dc998a3b5cee50399dbf2))
+
+
 ## [v0.0.74] - 2025-11-07
 
 #### Bug Fixes
@@ -1817,7 +1828,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.74...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.75...HEAD
+[v0.0.75] https://github.com/kythe/kythe/compare/v0.0.74...v0.0.75
 [v0.0.74] https://github.com/kythe/kythe/compare/v0.0.73...v0.0.74
 [v0.0.73] https://github.com/kythe/kythe/compare/v0.0.72...v0.0.73
 [v0.0.72] https://github.com/kythe/kythe/compare/v0.0.71...v0.0.72
