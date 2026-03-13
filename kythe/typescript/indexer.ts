@@ -21,8 +21,8 @@ import * as path from 'path';
 import * as ts from 'typescript';
 
 import {EdgeKind, FactName, JSONEdge, JSONFact, JSONMarkedSource, makeOrdinalEdge, MarkedSourceKind, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
-import * as utf8 from './utf8';
 import {CompilationUnit, Context, IndexerHost, IndexingOptions, Plugin, TSNamespace} from './plugin_api';
+import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
 
@@ -193,12 +193,14 @@ class StandardIndexerContext implements IndexerHost {
   private typeChecker: ts.TypeChecker;
 
   constructor(
-    public readonly program: ts.Program,
-    public readonly compilationUnit: CompilationUnit,
-    public readonly options: IndexingOptions,
+      public readonly program: ts.Program,
+      public readonly compilationUnit: CompilationUnit,
+      public readonly options: IndexingOptions,
   ) {
-    this.sourceRoot = this.program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    this.sourceRoot =
+        this.program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs =
+        this.program.getCompilerOptions().rootDirs || [this.sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
@@ -216,14 +218,14 @@ class StandardIndexerContext implements IndexerHost {
   }
 
   getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
-    // Practically any interesting node has a Symbol: variables, classes, functions.
-    // Both named and anonymous have Symbols. We tie Symbols to Vnames so its
-    // important to get Symbol object for as many nodes as possible. Unfortunately
-    // Typescript doesn't provide good API for extracting Symbol from Nodes.
-    // It is supported well for named nodes, probably logic being that if you can't
-    // refer to a node then no need to have Symbol. But for Kythe we need to handle
-    // anonymous nodes as well. So we do hacks here.
-    // See similar bugs that haven't been resolved properly:
+    // Practically any interesting node has a Symbol: variables, classes,
+    // functions. Both named and anonymous have Symbols. We tie Symbols to
+    // Vnames so its important to get Symbol object for as many nodes as
+    // possible. Unfortunately Typescript doesn't provide good API for
+    // extracting Symbol from Nodes. It is supported well for named nodes,
+    // probably logic being that if you can't refer to a node then no need to
+    // have Symbol. But for Kythe we need to handle anonymous nodes as well. So
+    // we do hacks here. See similar bugs that haven't been resolved properly:
     // https://github.com/microsoft/TypeScript/issues/26511
     //
     // Open FR: https://github.com/microsoft/TypeScript/issues/55433
@@ -231,12 +233,13 @@ class StandardIndexerContext implements IndexerHost {
     if (sym) return sym;
     // Check if it's named node.
     if ('name' in node) {
-      sym = this.typeChecker.getSymbolAtLocation((node as ts.NamedDeclaration).name!);
+      sym = this.typeChecker.getSymbolAtLocation(
+          (node as ts.NamedDeclaration).name!);
       if (sym) return sym;
     }
     // Sad hack. Nodes have symbol property but it's not exposed in the API.
-    // We could create our own Symbol instance to avoid depending on non-public API.
-    // But it's not clear whether it will be less maintainance.
+    // We could create our own Symbol instance to avoid depending on non-public
+    // API. But it's not clear whether it will be less maintainance.
     return (node as any).symbol;
   }
 
@@ -380,7 +383,8 @@ class StandardIndexerContext implements IndexerHost {
               case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 let part;
                 if (ts.isComputedPropertyName(decl.name)) {
-                  const sym = this.getSymbolAtLocationFollowingAliases(decl.name);
+                  const sym =
+                      this.getSymbolAtLocationFollowingAliases(decl.name);
                   part = sym ? sym.name : this.anonName(decl.name);
                 } else {
                   part = decl.name.text;
@@ -594,7 +598,8 @@ class StandardIndexerContext implements IndexerHost {
       language: '',
       corpus: vname && vname.corpus ? vname.corpus :
                                       this.compilationUnit.rootVName.corpus,
-      root: vname && vname.corpus ? vname.root : this.compilationUnit.rootVName.root,
+      root: vname && vname.corpus ? vname.root :
+                                    this.compilationUnit.rootVName.root,
       path: vname && vname.path ? vname.path : path,
     };
   }
@@ -824,15 +829,17 @@ class Visitor {
       // where return type of the function is a named type, e.g. Person.
       // This will connect 'name' property of the object literal to the
       // Person.name property.
-      if (node.expression && ts.isObjectLiteralExpression(node.expression) && containingFunction.type) {
+      if (node.expression && ts.isObjectLiteralExpression(node.expression) &&
+          containingFunction.type) {
         this.connectObjectLiteralToType(
-            node.expression, this.typeChecker.getTypeFromTypeNode(containingFunction.type));
+            node.expression,
+            this.typeChecker.getTypeFromTypeNode(containingFunction.type));
       }
     }
     this.popInfluencers();
   }
 
-  getCallAnchor(callee:any) {
+  getCallAnchor(callee: any) {
     if (!this.host.options.emitRefCallOverIdentifier) {
       return undefined;
     }
@@ -864,7 +871,8 @@ class Visitor {
     // Special case dynamic imports as they are represendted as CallExpressions.
     // We don't want to emit ref/call as we don't have anything to point it at:
     // there is no import() function
-    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    if (ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword) {
       this.visitDynamicImportCall(node);
       return;
     }
@@ -882,7 +890,8 @@ class Visitor {
     if (!name) {
       return;
     }
-    const callAnchor = this.getCallAnchor(node.expression) ?? this.newAnchor(node);
+    const callAnchor =
+        this.getCallAnchor(node.expression) ?? this.newAnchor(node);
     this.emitEdge(callAnchor, EdgeKind.REF_CALL, name);
 
     // Each call should have a childof edge to its containing function
@@ -911,7 +920,8 @@ class Visitor {
         const signParameter = signature.parameters[i]?.valueDeclaration;
         if (ts.isObjectLiteralExpression(argument) && signParameter &&
             ts.isParameter(signParameter)) {
-          this.connectObjectLiteralToType(argument, this.typeChecker.getTypeAtLocation(signParameter));
+          this.connectObjectLiteralToType(
+              argument, this.typeChecker.getTypeAtLocation(signParameter));
         }
       }
     }
@@ -1233,7 +1243,8 @@ class Visitor {
         this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
         this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
       }
-      // Emit edges from the referencing anchor to the import's remote definition.
+      // Emit edges from the referencing anchor to the import's remote
+      // definition.
       this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
     }
     if (remoteSym.flags & ts.SymbolFlags.Type) {
@@ -1249,7 +1260,8 @@ class Visitor {
         this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
         this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
       }
-      // Emit edges from the referencing anchor to the import's remote definition.
+      // Emit edges from the referencing anchor to the import's remote
+      // definition.
       this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
     }
   }
@@ -1424,7 +1436,8 @@ class Visitor {
    *
    * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
    *
-   * @param node import() statement. TS represents dynamic imports as CallExpressions.
+   * @param node import() statement. TS represents dynamic imports as
+   *     CallExpressions.
    */
   visitDynamicImportCall(node: ts.CallExpression) {
     const moduleRef = node.arguments[0];
@@ -1640,7 +1653,8 @@ class Visitor {
     if (decl.initializer) this.visit(decl.initializer);
     if (decl.type && decl.initializer &&
         ts.isObjectLiteralExpression(decl.initializer)) {
-      this.connectObjectLiteralToType(decl.initializer, this.typeChecker.getTypeAtLocation(decl));
+      this.connectObjectLiteralToType(
+          decl.initializer, this.typeChecker.getTypeAtLocation(decl));
     }
     if (!vname) {
       return undefined;
@@ -1658,8 +1672,7 @@ class Visitor {
     if (ts.isPropertyDeclaration(decl) && isStaticMember(decl, decl.parent)) {
       this.emitFact(vname, FactName.TAG_STATIC, '');
     }
-    if (ts.isPropertySignature(decl) ||
-        ts.isPropertyDeclaration(decl) ||
+    if (ts.isPropertySignature(decl) || ts.isPropertyDeclaration(decl) ||
         ts.isPropertyAssignment(decl) ||
         ts.isShorthandPropertyAssignment(decl)) {
       this.emitSubkind(vname, Subkind.FIELD);
@@ -1699,41 +1712,43 @@ class Visitor {
         return [this.getIdentifierForMarkedSourceNode(node.parent)];
       case ts.SyntaxKind.Parameter:
         const method = node.parent;
-        if (!ts.isMethodSignature(method)
-            && !ts.isMethodDeclaration(method)
-            && !ts.isConstructorDeclaration(method)
-            && !ts.isFunctionDeclaration(method)) {
+        if (!ts.isMethodSignature(method) && !ts.isMethodDeclaration(method) &&
+            !ts.isConstructorDeclaration(method) &&
+            !ts.isFunctionDeclaration(method)) {
           // We expect that parent of parameter is always a method. If it is not
           // then return undefined so no context will be emitted.
           return [];
         }
         // If method has parent (class) then add it to context. So it looks like
-        // 'ClassName.methodName'. Otherwise if it's a standalone function - just
-        // return function name.
+        // 'ClassName.methodName'. Otherwise if it's a standalone function -
+        // just return function name.
         const methodContext = this.collectContextPartsForMarkedSource(method);
         methodContext.push(this.getIdentifierForMarkedSourceNode(method));
         return methodContext;
     }
     // For all other nodes like variables, functions, classes don't use context
-    // for now. Other languages use namespace or filename as context for those but
-    // it doesn't provide much information.
+    // for now. Other languages use namespace or filename as context for those
+    // but it doesn't provide much information.
     return [];
   }
 
   /**
-   * This function builds CONTEXT node for marked source for a node. Context is what
-   * the given node belongs to. For example for class method context is the name of the class.
+   * This function builds CONTEXT node for marked source for a node. Context is
+   * what the given node belongs to. For example for class method context is the
+   * name of the class.
    *
-   * When the provided node doesn't have a context, e.g. variable, then this method returns null.
+   * When the provided node doesn't have a context, e.g. variable, then this
+   * method returns null.
    *
-   * Compared to other languages (Java, Go) context calculation here is simpler. We
-   * don't produce fully qualified class name including package (as TS doesn't have a concept of
-   * qualified name). Though we could add filename as namespace in future.
+   * Compared to other languages (Java, Go) context calculation here is simpler.
+   * We don't produce fully qualified class name including package (as TS
+   * doesn't have a concept of qualified name). Though we could add filename as
+   * namespace in future.
    *
-   * We also don't handle nesting. In TS one can have class within a method within a class
-   * within a method. It is possible to fully calculate such name (similar to what we do in
-   * scopedSignature) but given that it's user-visible string - keep it simple.
-   * Even though it's incomplete.
+   * We also don't handle nesting. In TS one can have class within a method
+   * within a class within a method. It is possible to fully calculate such name
+   * (similar to what we do in scopedSignature) but given that it's user-visible
+   * string - keep it simple. Even though it's incomplete.
    */
   buildMarkedSourceContextNode(node: ts.Node): JSONMarkedSource|null {
     const parts = this.collectContextPartsForMarkedSource(node);
@@ -1744,7 +1759,8 @@ class Visitor {
         kind: MarkedSourceKind.CONTEXT,
         post_child_text: '.',
         add_final_list_token: true,
-        child: parts.map(c => ({kind: MarkedSourceKind.IDENTIFIER, pre_text: c})),
+        child:
+            parts.map(c => ({kind: MarkedSourceKind.IDENTIFIER, pre_text: c})),
       };
     }
   }
@@ -1760,7 +1776,8 @@ class Visitor {
   emitMarkedSourceForVariable(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
       ts.PropertyDeclaration|ts.BindingElement|ts.ShorthandPropertyAssignment|
-      ts.PropertySignature|ts.JsxAttribute|ts.ParameterDeclaration|ts.EnumMember,
+      ts.PropertySignature|ts.JsxAttribute|ts.ParameterDeclaration|
+      ts.EnumMember,
       declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     let varDecl;
@@ -1805,9 +1822,11 @@ class Visitor {
     if (!ts.isEnumMember(varDecl)) {
       const ty = this.typeChecker.getTypeAtLocation(decl);
       const tyStr = this.typeChecker.typeToString(ty, decl);
-      codeParts.push(
-        {kind: MarkedSourceKind.TYPE, pre_text: ': ', post_text: fmtMarkedSource(tyStr)});
-
+      codeParts.push({
+        kind: MarkedSourceKind.TYPE,
+        pre_text: ': ',
+        post_text: fmtMarkedSource(tyStr)
+      });
     }
     if ('initializer' in varDecl && varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
@@ -1819,8 +1838,10 @@ class Visitor {
         init = narrowedInit || init;
       }
 
-      codeParts.push(
-        {kind: MarkedSourceKind.INITIALIZER, pre_text: fmtMarkedSource(init.getText())});
+      codeParts.push({
+        kind: MarkedSourceKind.INITIALIZER,
+        pre_text: fmtMarkedSource(init.getText())
+      });
     }
 
     const markedSource = {kind: MarkedSourceKind.BOX, child: codeParts};
@@ -1828,19 +1849,25 @@ class Visitor {
   }
 
   /**
-   * Emits a code fact for a class specifying how the declaration should be presented to users.
+   * Emits a code fact for a class specifying how the declaration should be
+   * presented to users.
    */
   emitMarkedSourceForClasslikeDeclaration(
-    decl: ts.ClassLikeDeclaration|ts.InterfaceDeclaration|ts.EnumDeclaration, declVName: VName) {
-    const markedSource: JSONMarkedSource =
-      {kind: MarkedSourceKind.IDENTIFIER, pre_text: this.getIdentifierForMarkedSourceNode(decl)};
+      decl: ts.ClassLikeDeclaration|ts.InterfaceDeclaration|ts.EnumDeclaration,
+      declVName: VName) {
+    const markedSource: JSONMarkedSource = {
+      kind: MarkedSourceKind.IDENTIFIER,
+      pre_text: this.getIdentifierForMarkedSourceNode(decl)
+    };
     this.emitFact(declVName, FactName.CODE_JSON, JSON.stringify(markedSource));
   }
 
   /**
-   * Emits a code fact for a function specifying how the declaration should be presented to users.
+   * Emits a code fact for a function specifying how the declaration should be
+   * presented to users.
    */
-  emitMarkedSourceForFunction(decl: ts.FunctionLikeDeclaration, declVName: VName) {
+  emitMarkedSourceForFunction(
+      decl: ts.FunctionLikeDeclaration, declVName: VName) {
     const codeParts: JSONMarkedSource[] = [];
     const context = this.buildMarkedSourceContextNode(decl);
     if (context != null) {
@@ -1856,7 +1883,8 @@ class Visitor {
       post_child_text: ', ',
       post_text: ')'
     });
-    const signature = this.typeChecker.getTypeAtLocation(decl).getCallSignatures()[0];
+    const signature =
+        this.typeChecker.getTypeAtLocation(decl).getCallSignatures()[0];
     if (signature) {
       const returnType = signature.getReturnType();
       const returnTypeStr = this.typeChecker.typeToString(returnType, decl);
@@ -1912,26 +1940,28 @@ class Visitor {
    * expected - adds refs from the literals properties to the type's properties.
    */
   connectObjectLiteralToType(
-      literal: ts.ObjectLiteralExpression, type: ts.Type) {
-    for (const prop of literal.properties) {
-      if (ts.isPropertyAssignment(prop) ||
+    literal: ts.ObjectLiteralExpression, type: ts.Type) {
+    for (const t of this.maybeUnwrapTypeWithArgs(type)) {
+      for (const prop of literal.properties) {
+        if (ts.isPropertyAssignment(prop) ||
           ts.isShorthandPropertyAssignment(prop) ||
           ts.isMethodDeclaration(prop)) {
-        this.emitPropertyRef(prop.name, type);
-      }
-      // Nested object.
-      if (ts.isPropertyAssignment(prop) && ts.isObjectLiteralExpression(prop.initializer)) {
-        const typeOfProperty = this.getTypeOfProperty(type, this.getPropertyNameStr(prop.name));
-        if (typeOfProperty) {
-          this.connectObjectLiteralToType(prop.initializer, typeOfProperty);
+          this.emitPropertyRef(prop.name, t);
+        }
+        // Nested object.
+        if (ts.isPropertyAssignment(prop) && ts.isObjectLiteralExpression(prop.initializer)) {
+          const typeOfProperty = this.getTypeOfProperty(t, this.getPropertyNameStr(prop.name));
+          if (typeOfProperty) {
+            this.connectObjectLiteralToType(prop.initializer, typeOfProperty);
+          }
         }
       }
     }
   }
 
   /**
-   * Given a property name and at type e.g. interface, looks up property on that type and returns
-   * its type.
+   * Given a property name and at type e.g. interface, looks up property on that
+   * type and returns its type.
    *
    * interface Address {
    *   person: Person;
@@ -1939,10 +1969,12 @@ class Visitor {
    *
    * getTypeOfProperty(typeAddress, 'person') returns Person type.
    */
-  getTypeOfProperty(type: ts.Type, property: string|undefined): ts.Type|undefined {
+  getTypeOfProperty(type: ts.Type, property: string|undefined): ts.Type
+      |undefined {
     if (property == null) return;
     const propertyOnType = type.getProperty(property);
-    if (propertyOnType == null || propertyOnType.valueDeclaration == null) return;
+    if (propertyOnType == null || propertyOnType.valueDeclaration == null)
+      return;
     const decl = propertyOnType.valueDeclaration;
     if (!ts.isPropertySignature(decl)) return;
     return this.typeChecker.getTypeAtLocation(decl);
@@ -1953,15 +1985,38 @@ class Visitor {
    * add refs from binding variables to the propeties of the type. Like `name`
    * is connected to `Person.name`.
    */
-  connectObjectBindingPatternToType(binding: ts.ObjectBindingPattern) {
-    const type = this.typeChecker.getTypeAtLocation(binding);
-    for (const prop of binding.elements) {
-      if (prop.propertyName) {
-        this.emitPropertyRef(prop.propertyName, type);
-      } else if (ts.isIdentifier(prop.name)) {
-        this.emitPropertyRef(prop.name, type);
+  connectObjectBindingPatternToType(
+      binding: ts.ObjectBindingPattern,
+      knownType?: ts.Type,
+  ) {
+    const type = knownType ?? this.typeChecker.getTypeAtLocation(binding);
+    for (const t of this.maybeUnwrapTypeWithArgs(type)) {
+      for (const prop of binding.elements) {
+        if (prop.propertyName) {
+          this.emitPropertyRef(prop.propertyName, t);
+        } else if (ts.isIdentifier(prop.name)) {
+          this.emitPropertyRef(prop.name, t);
+        }
       }
     }
+  }
+
+  private *maybeUnwrapTypeWithArgs(type: ts.Type): ts.Type {
+    if (type.aliasSymbol && type.aliasTypeArguments) {
+      const argumentExtractors =
+          this.host.options.typeWrappers?.[type.aliasSymbol.name];
+      if (argumentExtractors !== undefined) {
+        for (const extractor of argumentExtractors) {
+          let typeArg = type.aliasTypeArguments[extractor.typeParameterIndex];
+          if (!typeArg) continue;
+          if (extractor.transformType) {
+            typeArg = extractor.transformType(this.typeChecker, typeArg);
+          }
+          yield typeArg;
+        }
+      }
+    }
+    yield type;
   }
 
   /**
@@ -1975,9 +2030,10 @@ class Visitor {
     const propertyOnType = type.getProperty(propName);
     if (propertyOnType == null) return;
     const propFlags = propertyOnType.flags;
-    const isType = (propFlags &
-                    (ts.SymbolFlags.Class | ts.SymbolFlags.Interface |
-                     ts.SymbolFlags.RegularEnum | ts.SymbolFlags.TypeAlias)) > 0;
+    const isType =
+        (propFlags &
+         (ts.SymbolFlags.Class | ts.SymbolFlags.Interface |
+          ts.SymbolFlags.RegularEnum | ts.SymbolFlags.TypeAlias)) > 0;
     const vname = this.host.getSymbolName(
         propertyOnType, isType ? TSNamespace.TYPE : TSNamespace.VALUE);
     if (vname == null) return;
@@ -2073,18 +2129,19 @@ class Visitor {
             Boolean(sym.flags & funcFlags) && sym.name === funcName;
 
         const overridden = toArray<ts.Symbol>(type.symbol.members.values())
-            .find(overriddenCondition);
+                               .find(overriddenCondition);
         if (overridden) {
           const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
           if (base) {
             this.emitEdge(funcVName, EdgeKind.OVERRIDES, base);
           }
         } else {
-          // If parent class or interface doesn't have this method - it's possible
-          // that parent's parent might. To check for that recurse to the parent's parent
-          // classes/interfaces.
+          // If parent class or interface doesn't have this method - it's
+          // possible that parent's parent might. To check for that recurse to
+          // the parent's parent classes/interfaces.
           const decl = type.symbol.declarations?.[0];
-          if (decl && (ts.isClassLike(decl) || ts.isInterfaceDeclaration(decl))) {
+          if (decl &&
+              (ts.isClassLike(decl) || ts.isInterfaceDeclaration(decl))) {
             this.emitOverridesEdgeForFunction(funcSym, funcVName, decl);
           }
         }
@@ -2093,7 +2150,8 @@ class Visitor {
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
-    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
+    this.visitDecorators(
+        ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     const {sym, vname} = this.getSymbolAndVNameForFunctionDeclaration(decl);
     if (!vname) {
       todo(
@@ -2165,8 +2223,8 @@ class Visitor {
   }
 
   /**
-   * Emits childof edge from member to their parents. Parent can be class/interface/enum.
-   * See https://kythe.io/docs/schema/#childof
+   * Emits childof edge from member to their parents. Parent can be
+   * class/interface/enum. See https://kythe.io/docs/schema/#childof
    */
   emitChildofEdge(vname: VName, parent: ts.Node) {
     if (!ts.isClassLike(parent) && !ts.isInterfaceDeclaration(parent) &&
@@ -2200,11 +2258,13 @@ class Visitor {
     let paramNum = 0;
     const recurseVisit =
         (param: ts.ParameterDeclaration|ts.BindingElement) => {
-          this.visitDecorators(ts.canHaveDecorators(param) ? ts.getDecorators(param) : []);
+          this.visitDecorators(
+              ts.canHaveDecorators(param) ? ts.getDecorators(param) : []);
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
-              const sym = this.host.getSymbolAtLocationFollowingAliases(param.name);
+              const sym =
+                  this.host.getSymbolAtLocationFollowingAliases(param.name);
               if (!sym) {
                 todo(
                     this.sourceRoot, param.name,
@@ -2224,7 +2284,8 @@ class Visitor {
                 // children of the class type.
                 const parentName = param.parent.parent.name;
                 if (parentName !== undefined) {
-                  const parentSym = this.host.getSymbolAtLocationFollowingAliases(parentName);
+                  const parentSym =
+                      this.host.getSymbolAtLocationFollowingAliases(parentName);
                   if (parentSym !== undefined) {
                     const kClass =
                         this.host.getSymbolName(parentSym, TSNamespace.TYPE);
@@ -2268,7 +2329,7 @@ class Visitor {
     }
   }
 
-  visitDecorators(decors: ReadonlyArray<ts.Decorator> | undefined) {
+  visitDecorators(decors: ReadonlyArray<ts.Decorator>|undefined) {
     if (decors) {
       for (const decor of decors) {
         this.visit(decor);
@@ -2318,12 +2379,14 @@ class Visitor {
     // The entire module declaration defines the created namespace.
     this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
 
-    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
+    this.visitDecorators(
+        ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     if (decl.body) this.visit(decl.body);
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
-    this.visitDecorators(ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
+    this.visitDecorators(
+        ts.canHaveDecorators(decl) ? ts.getDecorators(decl) : []);
     let kClass: VName|undefined;
     if (decl.name) {
       const sym = this.host.getSymbolAtLocation(decl.name);
@@ -2410,7 +2473,8 @@ class Visitor {
     }
     const isClass = (sym.flags & ts.SymbolFlags.Class) > 0;
     const isConstructorCall = ts.isNewExpression(node.parent);
-    const ns = isClass && !isConstructorCall ? TSNamespace.TYPE : TSNamespace.VALUE;
+    const ns =
+        isClass && !isConstructorCall ? TSNamespace.TYPE : TSNamespace.VALUE;
     const name = this.host.getSymbolName(sym, ns);
     if (!name) return;
     const anchor = this.newAnchor(node);
@@ -2607,7 +2671,8 @@ class Visitor {
     // Handle case like `{name: 'Alice'} as Person` and connect `name` property
     // to Person.name.
     if (ts.isObjectLiteralExpression(node.expression)) {
-      this.connectObjectLiteralToType(node.expression, this.typeChecker.getTypeAtLocation(node));
+      this.connectObjectLiteralToType(
+          node.expression, this.typeChecker.getTypeAtLocation(node));
     }
   }
 
@@ -2677,7 +2742,12 @@ class Visitor {
         return;
       case ts.SyntaxKind.JsxAttribute:
         // TODO: go/ts51upgrade - Auto-added to unblock TS5.1 migration.
-        //   TS2345: Argument of type 'JsxAttribute' is not assignable to parameter of type '{ name: ObjectBindingPattern | ArrayBindingPattern | Identifier | StringLiteral | NumericLiteral | ComputedPropertyName | PrivateIdentifier; type?: TypeNode | undefined; initializer?: Expression | undefined; kind: SyntaxKind; } & Node'.
+        //   TS2345: Argument of type 'JsxAttribute' is not assignable to
+        //   parameter of type '{ name: ObjectBindingPattern |
+        //   ArrayBindingPattern | Identifier | StringLiteral | NumericLiteral |
+        //   ComputedPropertyName | PrivateIdentifier; type?: TypeNode |
+        //   undefined; initializer?: Expression | undefined; kind: SyntaxKind;
+        //   } & Node'.
         // @ts-ignore
         this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
@@ -2759,7 +2829,9 @@ class TypescriptIndexer implements Plugin {
  *
  * @param paths Files to index
  */
-export function index(compilationUnit: CompilationUnit, options: IndexingOptions): ts.Diagnostic[] {
+export function index(
+    compilationUnit: CompilationUnit,
+    options: IndexingOptions): ts.Diagnostic[] {
   const program = ts.createProgram({
     rootNames: compilationUnit.rootFiles,
     options: options.compilerOptions,
@@ -2770,7 +2842,8 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
   // e.g. type-check the standard library unless we were explicitly told to.
   const diags: ts.Diagnostic[] = [];
   for (const path of compilationUnit.srcs) {
-    for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
+    for (const diag of ts.getPreEmitDiagnostics(
+             program, program.getSourceFile(path))) {
       diags.push(diag);
     }
   }
@@ -2778,7 +2851,8 @@ export function index(compilationUnit: CompilationUnit, options: IndexingOptions
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const indexingContext =  new StandardIndexerContext(program, compilationUnit, options);
+  const indexingContext =
+      new StandardIndexerContext(program, compilationUnit, options);
   const plugins = [new TypescriptIndexer(), ...(options.plugins ?? [])];
   for (const plugin of plugins) {
     try {
@@ -2843,12 +2917,25 @@ function main(argv: string[]) {
   index(compilationUnit, {
     compilerOptions: config.options,
     compilerHost: ts.createCompilerHost(config.options),
-    emit(obj: JSONFact | JSONEdge) {
+    typeWrappers: DEFAULT_TYPE_WRAPPERS,
+    emit(obj: JSONFact|JSONEdge) {
       console.log(JSON.stringify(obj));
     }
   });
   return 0;
 }
+
+/**
+ * A set of wrapper types known to have the same properties as a type argument.
+ *
+ * The value of this mapping is the index of the type argument to use.
+ */
+const DEFAULT_TYPE_WRAPPERS:
+    Record<string, Array<{typeParameterIndex: number}>> = {
+      'Readonly': [{typeParameterIndex: 0}],
+      'Partial': [{typeParameterIndex: 0}],
+      'Required': [{typeParameterIndex: 0}],
+    };
 
 if (require.main === module) {
   // Note: do not use process.exit(), because that does not ensure that
