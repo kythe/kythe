@@ -485,6 +485,29 @@ func (e *extractor) writeCrate(ctx context.Context, crate crate, transitiveDeps 
 		return err
 	}
 
+	// De-dupe the source files list
+	var filteredCrateFiles []string
+	for _, file := range crateFiles {
+			// Never filter out the crate's own root module
+			if file == crate.RootModule {
+					filteredCrateFiles = append(filteredCrateFiles, file)
+					continue
+			}
+
+			isOtherRoot := false
+			for _, otherCrate := range e.project.Crates {
+					// If this file is the root module of another distinct crate, skip it
+					if otherCrate.RootModule == file {
+							isOtherRoot = true
+							break
+					}
+			}
+			if !isOtherRoot {
+					filteredCrateFiles = append(filteredCrateFiles, file)
+			}
+	}
+	crateFiles = filteredCrateFiles
+
 	// Get the set of depended-on files for the entire crate, not just direct source files
 	var requiredInputs []*apb.CompilationUnit_FileInput = make([]*apb.CompilationUnit_FileInput, 0)
 	for _, dep := range transitiveDeps[crate.CrateId] {
