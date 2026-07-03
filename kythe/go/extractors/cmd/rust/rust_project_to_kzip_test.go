@@ -1142,3 +1142,111 @@ func TestSynthesizeProjectJson(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteCrate_RootModuleFiltering(t *testing.T) {
+			ctx := context.Background()
+			projectRoot := "/test/root"
+			corpus := "testcorpus"
+	
+			// Crate 0 (main_lib) and Crate 1 (helper_lib) share the same source directory
+			crate0 := crate{
+					CrateId:    0,
+					Label:      "//pkg/foo:main_lib",
+					RootModule: "pkg/foo/lib.rs",
+					Source: source{
+							IncludeDirs: []string{"pkg/foo"},
+					},
+			}
+			crate1 := crate{
+					CrateId:    1,
+					Label:      "//pkg/foo:helper_lib",
+					RootModule: "pkg/foo/helper.rs",
+					Source: source{
+							IncludeDirs: []string{"pkg/foo"},
+					},
+			}
+	
+			sourceDirs := map[crateId]source{
+					0: crate0.Source,
+					1: crate1.Source,
+			}
+			transitiveDeps := [][]crateId{
+					0: {0},
+					1: {1},
+			}
+	
+			// When collectCrateSources runs for the directory "pkg/foo",
+			// it returns lib.rs, helper.rs, and submodule.rs (since all 3 reside in that folder).
+			mockFileInputs := []*apb.CompilationUnit_FileInput{
+					{VName: &spb.VName{Corpus: corpus, Path: "pkg/foo/lib.rs"}, Info: &apb.FileInfo{Path: "pkg/foo/lib.rs", Digest: "digest-lib"}},
+					{VName: &spb.VName{Corpus: corpus, Path: "pkg/foo/helper.rs"}, Info: &apb.FileInfo{Path: "pkg/foo/helper.rs", Digest: "digest-helper"}},
+					{VName: &spb.VName{Corpus: corpus, Path: "pkg/foo/submodule.rs"}, Info: &apb.FileInfo{Path: "pkg/foo/submodule.rs", Digest: "digest-submodule"}},
+			}
+	
+			mockCollector := &MockCollectCrateSources{
+					Results: map[string]struct {
+							Files  []string
+							Inputs []*apb.CompilationUnit_FileInput
+							Err    error
+					}{
+							"pkg/foo": {
+									Files: []string{
+											"pkg/foo/lib.rs",
+											"pkg/foo/helper.rs",
+											"pkg/foo/submodule.rs",
+									},
+									Inputs: mockFileInputs,
+									Err:    nil,
+							},
+					},
+			}
+	
+			mockWriter := &MockKzipWriter{}
+			cache := newRequiredInputsCache()
+	
+			extractor := extractor{
+					project: rustProject{
+							Crates: []crate{crate0, crate1},
+					},
+					projectRoot:         projectRoot,
+					corpus:              corpus,
+					requiredInputsCache: &cache,
+					kzipWriter:          mockWriter,
+			}
+
+			// Test writing crate0 (main_lib). We expect helper.rs to be filtered out of SourceFile
+			// because helper.rs is the RootModule of crate1.
+			err := extractor.writeCrate(ctx, crate0, transitiveDeps, sourceDirs, mockCollector.collectCrateSources)
+			if err != nil {
+					t.Fatalf("writeCrate() unexpected error: %v", err)
+			}
+
+			if mockWriter.AddedUnit == nil {
+					t.Fatalf("mockKzipWriter.AddUnit was not called")
+			}
+
+			wantSourceFiles := []string{
+					"pkg/foo/lib.rs",
+					"pkg/foo/submodule.rs",
+			}
+
+			gotSourceFiles := slices.Clone(mockWriter.AddedUnit.SourceFile)
+			sort.Strings(gotSourceFiles)
+			sort.Strings(wantSourceFiles)
+
+			if diff := cmp.Diff(wantSourceFiles, gotSourceFiles); diff != "" {
+					t.Errorf("writeCrate() SourceFile mismatch (-want +got):\n%s", diff)
+			}
+
+			// Ensure RequiredInput still contains helper.rs (dependency inputs remain intact)
+			hasHelperInput := false
+			for _, req := range mockWriter.AddedUnit.RequiredInput {
+					if req.Info.Path == "pkg/foo/helper.rs" {
+							hasHelperInput = true
+							break
+					}
+			}
+			if !hasHelperInput {
+					t.Errorf("writeCrate() unexpectedly removed helper.rs from RequiredInput")
+			}
+	}
