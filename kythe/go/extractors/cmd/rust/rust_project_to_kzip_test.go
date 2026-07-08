@@ -701,6 +701,39 @@ func TestWriteCrate(t *testing.T) {
 			},
 			expectWriteCrateErr: false,
 		},
+		{
+			name:        "Root module not at front and others unsorted",
+			crateToTest: crate0,
+			mockCollector: &MockCollectCrateSources{
+				Results: map[string]struct {
+					Files  []string
+					Inputs []*apb.CompilationUnit_FileInput
+					Err    error
+				}{
+					"crate0/src": {
+						Files: []string{"crate0/src/z.rs", "crate0/src/lib.rs", "crate0/src/a.rs"},
+						Inputs: []*apb.CompilationUnit_FileInput{
+							{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/z.rs"}, Info: &apb.FileInfo{Path: "crate0/src/z.rs", Digest: "digest-z0"}},
+							{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/lib.rs"}, Info: &apb.FileInfo{Path: "crate0/src/lib.rs", Digest: "digest-lib0"}},
+							{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/a.rs"}, Info: &apb.FileInfo{Path: "crate0/src/a.rs", Digest: "digest-a0"}},
+						},
+						Err: nil,
+					},
+					"vendor/crate1/src": {Files: []string{"vendor/crate1/src/lib.rs"}, Inputs: crate1FileInputs, Err: nil},
+				},
+			},
+			mockKzipWriter: &MockKzipWriter{},
+			expectedUnit: &apb.CompilationUnit{
+				VName: &spb.VName{Corpus: corpus, Language: "rust"},
+				RequiredInput: append(append(slices.Clone(crate1FileInputs), projectJsonFileInput),
+					&apb.CompilationUnit_FileInput{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/z.rs"}, Info: &apb.FileInfo{Path: "crate0/src/z.rs", Digest: "digest-z0"}},
+					&apb.CompilationUnit_FileInput{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/lib.rs"}, Info: &apb.FileInfo{Path: "crate0/src/lib.rs", Digest: "digest-lib0"}},
+					&apb.CompilationUnit_FileInput{VName: &spb.VName{Corpus: corpus, Path: "crate0/src/a.rs"}, Info: &apb.FileInfo{Path: "crate0/src/a.rs", Digest: "digest-a0"}},
+				),
+				SourceFile: []string{"crate0/src/lib.rs", "crate0/src/a.rs", "crate0/src/z.rs"},
+			},
+			expectWriteCrateErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -763,8 +796,6 @@ func TestWriteCrate(t *testing.T) {
 			fmt.Printf("added unit: %v\n", mockWriter.AddedUnit)
 
 			// Sort slices for consistent comparison
-			sort.Strings(mockWriter.AddedUnit.SourceFile)
-			sort.Strings(tt.expectedUnit.SourceFile)
 			sort.Slice(mockWriter.AddedUnit.RequiredInput, func(i, j int) bool {
 				pathI := mockWriter.AddedUnit.RequiredInput[i].Info.Path
 				pathJ := mockWriter.AddedUnit.RequiredInput[j].Info.Path

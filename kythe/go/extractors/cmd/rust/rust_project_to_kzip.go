@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -483,6 +484,21 @@ func (e *extractor) writeCrate(ctx context.Context, crate crate, transitiveDeps 
 	if crateFiles, _, err = collectCrateSources(ctx, e, sourceDirs[crate.CrateId]); err != nil {
 		log.Printf("Error getting source files for crate %s: %v\n", crate.Label, err)
 		return err
+	}
+
+	// Place the root module at the start of source_files, followed by all others alphabetically.
+	//
+	// Our scanned sources are an overapproximation: two libraries may share source dirs.
+	// The only one we're *sure* is part of the crate we're interested in is the root module.
+	// Placing first it ensures the indexer can reliably pick the right crate.
+	// (Making source files precise is intractable, it involves parsing and macro expansion).
+	slices.Sort(crateFiles)
+	if rootIdx := slices.Index(crateFiles, crate.RootModule); rootIdx > 0 {
+		newFiles := make([]string, len(crateFiles))
+		newFiles[0] = crate.RootModule
+		copy(newFiles[1:rootIdx+1], crateFiles[:rootIdx])
+		copy(newFiles[rootIdx+1:], crateFiles[rootIdx+1:])
+		crateFiles = newFiles
 	}
 
 	// Get the set of depended-on files for the entire crate, not just direct source files
