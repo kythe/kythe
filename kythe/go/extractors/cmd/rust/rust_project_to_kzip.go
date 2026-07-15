@@ -441,7 +441,7 @@ func synthesizeProjectJson(id crateId, crates []crate, transitiveDeps [][]crateI
 
 	for _, dep := range transitiveDeps[id] {
 		crate := deepCopyCrate(crates[dep])
-		crate.IsWorkspaceMember = true
+		crate.IsWorkspaceMember = (dep == id)
 		newCrateIds[crate.CrateId] = crateId(len(project.Crates))
 		project.Crates = append(project.Crates, crate)
 	}

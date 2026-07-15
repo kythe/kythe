@@ -1098,7 +1098,7 @@ func TestSynthesizeProjectJson(t *testing.T) {
 					// Crate 1 (index 0), depends on crate 3 (new index 1)
 					makeTestCrate(1, "crate1", []dep{{CrateId: 1, Name: "crate3"}}, true), // Dep ID updated to 1
 					// Crate 3 (index 1)
-					makeTestCrate(3, "crate3", []dep{}, true),
+					makeTestCrate(3, "crate3", []dep{}, false),
 				},
 			},
 		},
@@ -1119,11 +1119,11 @@ func TestSynthesizeProjectJson(t *testing.T) {
 					// Crate 0 (index 0), depends on 1 (new index 1), 2 (new index 2)
 					makeTestCrate(0, "crate0", []dep{{CrateId: 1, Name: "crate1"}, {CrateId: 2, Name: "crate2"}}, true),
 					// Crate 1 (index 1), depends on 3 (new index 3)
-					makeTestCrate(1, "crate1", []dep{{CrateId: 3, Name: "crate3"}}, true),
+					makeTestCrate(1, "crate1", []dep{{CrateId: 3, Name: "crate3"}}, false),
 					// Crate 2 (index 2), depends on 3 (new index 3)
-					makeTestCrate(2, "crate2", []dep{{CrateId: 3, Name: "crate3"}}, true),
+					makeTestCrate(2, "crate2", []dep{{CrateId: 3, Name: "crate3"}}, false),
 					// Crate 3 (index 3)
-					makeTestCrate(3, "crate3", []dep{}, true),
+					makeTestCrate(3, "crate3", []dep{}, false),
 				},
 			},
 		},
@@ -1145,7 +1145,7 @@ func TestSynthesizeProjectJson(t *testing.T) {
 					// crate0 depends on crate2, which is now the 1st crate in the array (0-indexed)
 					makeTestCrate(0, "crate0", []dep{{CrateId: 1, Name: "crate2"}}, true),
 					// Crate 2
-					makeTestCrate(1, "crate2", []dep{}, true),
+					makeTestCrate(1, "crate2", []dep{}, false),
 				},
 			},
 		},
