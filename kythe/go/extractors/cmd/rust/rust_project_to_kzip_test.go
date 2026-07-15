@@ -35,6 +35,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/util/ptypes"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
@@ -462,7 +463,7 @@ type MockKzipWriter struct {
 	AddedUnit   *apb.CompilationUnit // Stores the unit passed to AddUnit
 }
 
-func (m *MockKzipWriter) AddUnit(unit *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
+func (m *MockKzipWriter) AddUnit(unit *apb.CompilationUnit, index *apb.IndexedCompilation_Index, opts ...kcd.CanonicalizeOption) (string, error) {
 	m.AddedUnit = unit
 	if m.AddUnitFunc != nil {
 		return m.AddUnitFunc(unit, index)

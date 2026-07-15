@@ -255,6 +255,20 @@ func (ff *FindFilter) IsEmpty() bool {
 			len(ff.Targets) == 0 && len(ff.Sources) == 0 && len(ff.Outputs) == 0) && len(ff.UnitCorpus) == 0
 }
 
+// Options to canonicalize compilation units.
+type CanonicalizeOption func(*CanonicalizeConfig)
+
+type CanonicalizeConfig struct {
+	SkipSortSourceFiles bool
+}
+
+// SkipSortSourceFiles disables sorting pb.SourceFile during canonicalization.
+func SkipSortSourceFiles() CanonicalizeOption {
+	return func(c *CanonicalizeConfig) {
+		c.SkipSortSourceFiles = true
+	}
+}
+
 // The Unit interface expresses the capabilities required to represent a
 // compilation unit in a data store.
 type Unit interface {
@@ -266,7 +280,7 @@ type Unit interface {
 
 	// Canonicalize organizes the unit into a canonical form.  The meaning of
 	// canonicalization is unit-dependent, and may safely be a no-op.
-	Canonicalize()
+	Canonicalize(opts ...CanonicalizeOption)
 
 	// Digest produces a unique string representation of a unit sufficient to
 	// serve as a content-addressable digest.

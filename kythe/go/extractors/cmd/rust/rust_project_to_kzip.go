@@ -30,6 +30,7 @@ import (
 	"sort"
 	"strings"
 
+	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
@@ -52,7 +53,7 @@ type extractor struct {
 
 // kzipWriterInterface defines the methods needed from a kzip writer.
 type kzipWriterInterface interface {
-	AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error)
+	AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index, opts ...kcd.CanonicalizeOption) (string, error)
 	AddFile(r io.Reader) (string, error)
 	Close() error // Add if Close is needed by the caller of writeCrate, though not writeCrate itself
 }
@@ -539,7 +540,7 @@ func (e *extractor) writeCrate(ctx context.Context, crate crate, transitiveDeps 
 		SourceFile:    crateFiles,
 	}
 
-	digest, err := e.kzipWriter.AddUnit(compilationUnit, nil)
+	digest, err := e.kzipWriter.AddUnit(compilationUnit, nil, kcd.SkipSortSourceFiles())
 	if err != nil {
 		log.Printf("Error adding compilation unit to kzip: %v, crate %s, digest: %s\n", err, crate.Label, digest)
 		return err
