@@ -6,6 +6,7 @@ go_binary(
     name = "rust_project_to_kzip",
     srcs = ["rust_project_to_kzip.go"],
     deps = [
+        "//kythe/go/platform/kcd",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/log",
@@ -26,6 +27,7 @@ go_test(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//kythe/go/platform/kcd",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/ptypes",
