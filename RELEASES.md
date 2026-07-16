@@ -1,5 +1,13 @@
 # Release Notes
 
+## [v0.0.76] - 2026-07-16
+
+#### Bug Fixes
+
+* **rust_extractor:** place root module at the start of source_file ([fb5a743](https://github.com/kythe/kythe/commit/fb5a7437ffcd2634e87d3ee7339256480a5fde77))
+* **rust_extractor:** set is_workspace_member to indicate the crate being indexed ([8d2d48f](https://github.com/kythe/kythe/pull/6234/changes/8d2d48f40f9089461a85286fd187b95fb0064d58))
+
+
 ## [v0.0.75] - 2026-03-12
 
 #### Bug Fixes
@@ -1828,7 +1836,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.75...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.76...HEAD
+[v0.0.76] https://github.com/kythe/kythe/compare/v0.0.75...v0.0.76
 [v0.0.75] https://github.com/kythe/kythe/compare/v0.0.74...v0.0.75
 [v0.0.74] https://github.com/kythe/kythe/compare/v0.0.73...v0.0.74
 [v0.0.73] https://github.com/kythe/kythe/compare/v0.0.72...v0.0.73
