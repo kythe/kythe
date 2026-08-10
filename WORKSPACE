@@ -12,6 +12,54 @@ load("//:setup.bzl", "kythe_rule_repositories")
 
 kythe_rule_repositories()
 
+# Tweag Nix Support
+######################
+
+# Replace with http_archive: https://github.com/tweag/rules_nixpkgs/#setup
+_commit = "c061458ec4c0e2bfc373b3aa7c804708ebee5474"
+http_archive(
+    name = "io_tweag_rules_nixpkgs",
+    strip_prefix = "rules_nixpkgs-{}".format(_commit),
+    urls = ["https://github.com/tweag/rules_nixpkgs/archive/{}.tar.gz".format(_commit)],
+    sha256 = "2e39a8d0b373b0427c85bc20f144fcf1f4b0f9d1504d0d0455e00192c0cb2c27",
+)
+
+load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_dependencies")
+rules_nixpkgs_dependencies()
+
+# Define nixpkgs version using the flakes lock file.
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_local_repository")
+nixpkgs_local_repository(
+    name = "nixpkgs",
+    nix_flake_lock_file = "//:flake.lock",
+    nix_file_deps = ["//:flake.lock"],
+)
+
+# Configure the C++ toolchain for nix.
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_cc_configure")
+nixpkgs_cc_configure(
+    name = "nixpkgs_config_cc",
+    repository = "@nixpkgs",
+    attribute_path = "clang_14",
+)
+
+# Configure Java toolchain for nix.
+# Also see hermetic.bazelrc when changing the nix toolchain version.
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_java_configure")
+nixpkgs_java_configure(
+    attribute_path = "jdk20.home",
+    repository = "@nixpkgs",
+    toolchain = True,
+    toolchain_name = "nixpkgs_java",
+    toolchain_version = "20",
+    register = True,
+)
+
+load("@rules_cc//cc:repositories.bzl", "rules_cc_dependencies", "rules_cc_toolchains")
+rules_cc_dependencies()
+rules_cc_toolchains()
+
+
 ###
 # BEGIN rules_ts setup
 # loads are sensitive to intervening calls, so they need to happen at the
@@ -109,3 +157,46 @@ git_repository(
     commit = "133d89a6069ce253a92d32a93fdb7db9ef100e9d",
     remote = "https://github.com/erenon/bazel_clang_tidy.git",
 )
+
+
+## Libraries brought in via nixpkgs.
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_package")
+
+nixpkgs_package(
+    name = "libossp_uuid.dev",
+    attribute_path = "libossp_uuid",
+    build_file_content = """\
+load("@rules_cc//cc:defs.bzl", "cc_library")
+filegroup(
+    name = "include",
+    srcs = glob(["include/**/*.h"]),
+    visibility = ["//visibility:public"],
+)
+filegroup(
+    name = "libs",
+    srcs = glob(["lib/**/*"]),
+    visibility = ["//visibility:public"],
+)
+cc_library(
+    name = "lib",
+    srcs = [":libs"],
+    hdrs = [":include"],
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)
+""",
+    repository = "@nixpkgs",
+)
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "bazel_local_nix",
+    remote = "https://github.com/filmil/bazel_local_nix",
+    commit = "c59d7d26222b9df22d92ea7699bb51480be31db7",
+)
+
+# Installation.
+load("@bazel_local_nix//:repositories.bzl", "bazel_local_nix_dependencies")
+bazel_local_nix_dependencies()
+

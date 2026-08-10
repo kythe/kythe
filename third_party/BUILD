@@ -45,6 +45,7 @@ cc_library(
         "@bazel_tools//src/conditions:darwin": [],
         "//conditions:default": ["-luuid"],
     }),
+    deps = [ "@libossp_uuid.dev//:lib" ],
 )
 
 exports_files(["libmemcached.mem_config.h"])
