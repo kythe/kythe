@@ -17,7 +17,7 @@
     "inflight": "^1.0.6",
     "inherits": "^2.0.4",
     "jasmine-reporters": "^2.5.2",
-    "minimatch": "^9.0.3",
+    "minimatch": "^9.0.7",
     "once": "^1.4.0",
     "source-map": "^0.7.4",
     "source-map-support": "^0.5.21",
