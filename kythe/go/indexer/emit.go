@@ -481,6 +481,8 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	}
 
 	switch typ := typ.(type) {
+	case *types.Alias:
+		v = e.emitType(types.Unalias(typ))
 	case *types.Named:
 		if typ.TypeArgs().Len() == 0 {
 			v = e.pi.ObjectVName(typ.Obj())
@@ -1458,6 +1460,9 @@ func (e *emitter) writeFact(src *spb.VName, name, value string) {
 }
 
 func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
+	if src == nil || tgt == nil {
+		return
+	}
 	if corpus := e.rewrittenCorpusForVName(src); corpus != src.GetCorpus() {
 		src = proto.Clone(src).(*spb.VName)
 		src.Corpus = corpus
@@ -1933,8 +1938,12 @@ func (w *astVisitor) parent(i int) ast.Node {
 
 // deref returns the base type of T if it is a pointer, otherwise T itself.
 func deref(T types.Type) types.Type {
+	if T == nil {
+		return nil
+	}
+	T = types.Unalias(T)
 	if U, ok := T.Underlying().(*types.Pointer); ok {
-		return U.Elem()
+		return types.Unalias(U.Elem())
 	}
 	return T
 }

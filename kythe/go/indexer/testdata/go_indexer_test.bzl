@@ -29,6 +29,15 @@ load(
     "verifier_test",
 )
 
+def _get_go_source(dep):
+    if hasattr(dep, "source"):
+        return dep.source
+    if hasattr(dep, "srcs"):
+        return dep
+    if type(dep) == "Target" and GoSource in dep:
+        return dep[GoSource]
+    return dep
+
 # Emit a shell script that sets up the environment needed by the extractor to
 # capture dependencies and runs the extractor.
 def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data, extra_extractor_args):
@@ -46,12 +55,12 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data, e
         for src in srcs
     ]
     for dep in deps:
-        gosrc = dep[GoSource]
-        path = gosrc.library.importpath
+        gosrc = _get_go_source(dep)
+        path = getattr(gosrc, "importpath", getattr(getattr(gosrc, "library", None), "importpath", None))
         fullpath = "/".join([srcroot, path])
         tups = fullpath.count("/") + 1
         cmds += ["mkdir -p " + fullpath]
-        for src in gosrc.srcs:
+        for src in getattr(gosrc, "srcs", []):
             cmds += ["ln -s '%s%s' '%s'" % ("../" * tups, src.path, fullpath + "/" + src.basename)]
 
     # Gather any extra data dependencies.
@@ -97,9 +106,10 @@ def _go_extract(ctx):
     deps = gosrc.deps
     depsrcs = []
     for dep in deps:
-        depsrcs += dep[GoSource].srcs
+        gosrc_dep = _get_go_source(dep)
+        depsrcs += getattr(gosrc_dep, "srcs", [])
 
-    ipath = gosrc.library.importpath
+    ipath = getattr(gosrc, "importpath", getattr(getattr(gosrc, "library", None), "importpath", None))
     data = ctx.attr.data
     output = ctx.outputs.kzip
     script = _emit_extractor_script(
@@ -288,7 +298,7 @@ def go_verifier_test(
         resolve_code_facts = False,
         allow_duplicates = False,
         use_fast_solver = False):
-    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*// ?-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
