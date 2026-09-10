@@ -28,11 +28,11 @@ import (
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
-// https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
-var fileSignatureChunk = &chunk{Header: chunkHeader{ChunkType: fileSignatureChunkType}}
-
-func init() {
-	binary.LittleEndian.PutUint64(fileSignatureChunk.Header.DataHash[:], hashBytes(fileSignatureChunk.Data))
+func fileSignatureChunk() *chunk {
+	// https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
+	c := &chunk{Header: chunkHeader{ChunkType: fileSignatureChunkType}}
+	binary.LittleEndian.PutUint64(c.Header.DataHash[:], hashBytes(c.Data))
+	return c
 }
 
 func (w *Writer) ensureFileHeader() error {
@@ -40,7 +40,7 @@ func (w *Writer) ensureFileHeader() error {
 		return nil
 	}
 
-	_, err := fileSignatureChunk.WriteTo(w.w, w.w.pos)
+	_, err := fileSignatureChunk().WriteTo(w.w, w.w.pos)
 	if err != nil {
 		return err
 	}
