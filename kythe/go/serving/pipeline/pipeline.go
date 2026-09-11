@@ -607,6 +607,13 @@ func (refLesser) Less(a, b any) bool {
 		} else if x.TargetAnchor.Kind == y.TargetAnchor.Kind {
 			if x.TargetAnchor.Span.Start.ByteOffset == y.TargetAnchor.Span.Start.ByteOffset {
 				if x.TargetAnchor.Span.End.ByteOffset == y.TargetAnchor.Span.End.ByteOffset {
+					if x.TargetAnchor.SnippetSpan.End.ByteOffset == y.TargetAnchor.SnippetSpan.End.ByteOffset {
+						// Anchors in different files can share a kind and have
+						// identical offsets, so everything compared above can
+						// tie. Fall back to the anchor ticket to keep the
+						// ordering deterministic.
+						return x.TargetAnchor.Ticket < y.TargetAnchor.Ticket
+					}
 					return x.TargetAnchor.SnippetSpan.End.ByteOffset < y.TargetAnchor.SnippetSpan.End.ByteOffset
 				}
 				return x.TargetAnchor.Span.End.ByteOffset < y.TargetAnchor.Span.End.ByteOffset
