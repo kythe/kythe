@@ -31,10 +31,10 @@ def kythe_rule_repositories():
         http_archive,
         name = "platforms",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz",
-            "https://github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/1.1.0/platforms-1.1.0.tar.gz",
+            "https://github.com/bazelbuild/platforms/releases/download/1.1.0/platforms-1.1.0.tar.gz",
         ],
-        sha256 = "8150406605389ececb6da07cbcb509d5637a3ab9a24bc69b1101531367d89d74",
+        sha256 = "dbad4a23abcca6171e47b79edc53bd6a41067a3b75f9e8b104656b459ff25046",
     )
 
     maybe(
@@ -50,10 +50,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "278b7ff5a826f3dc10f04feaf0b70d48b68748ccd512d7f98bf442077f043fe3",
+        sha256 = "5f05dbf4a8cfcf91f99139ad0ff2bedb7bc4fcf1b503ebf6fe8dfe7894efd117",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.41.0/rules_go-v0.41.0.zip",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.41.0/rules_go-v0.41.0.zip",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.61.0/rules_go-v0.61.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.61.0/rules_go-v0.61.0.zip",
         ],
     )
 
@@ -87,15 +87,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "29218f8e0cebe583643cbf93cae6f971be8a2484cdcfa1e45057658df8d54002",
+        sha256 = "6549aff70998217292406776024d6da91b4e764c679d180ea072c557c70dacf2",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.32.0/bazel-gazelle-v0.32.0.tar.gz",
-        ],
-        patch_args = ["-p1"],
-        patches = [
-            # Add support for per-file go_test targets.
-            "//third_party:gazelle-0.32.0-go_test_mode.patch",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.48.0/bazel-gazelle-v0.48.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.48.0/bazel-gazelle-v0.48.0.tar.gz",
         ],
     )
 

@@ -1,4 +1,4 @@
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", _go_repository = "go_repository")
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
@@ -14,7 +14,6 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 load("@io_kythe//:setup.bzl", "github_archive")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@io_kythe//third_party/bazel:bazel_repository_files.bzl", "bazel_repository_files")
-load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure")
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
@@ -29,9 +28,26 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 
+# Defined here rather than in //tools:build_rules/shims.bzl because that file
+# loads @io_bazel_rules_go//go:def.bzl, which transitively loads
+# @io_bazel_rules_nogo. That repository is created by go_rules_dependencies()
+# below, so loading it from here would use it before it is defined.
+def go_repository(name, **kwargs):
+    """Macro wrapping the Gazelle go_repository rule.
+
+    This conditionally defines the repository if it hasn't already been.
+
+    Args:
+      name: the name of the repository to define.
+      **kwargs: arguments forwarded to the underlying go_repository rule.
+    """
+    if name in native.existing_rules():
+        return
+    _go_repository(name = name, **kwargs)
+
 def _rule_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = "1.21.6")
+    go_register_toolchains(version = "1.25.1")
     gazelle_dependencies()
     rules_java_dependencies()
 
@@ -410,8 +426,8 @@ def _go_dependencies():
     go_repository(
         name = "com_github_bmatcuk_doublestar_v4",
         importpath = "github.com/bmatcuk/doublestar/v4",
-        sum = "h1:HTuxyug8GyFbRkrffIpzNCSK4luc0TY3wzXvzIZhEXc=",
-        version = "v4.6.0",
+        sum = "h1:X8jg9rRZmJd4yRy7ZeNDRnM+T3ZfHv15JiBJ/avrEXE=",
+        version = "v4.9.1",
     )
 
     go_repository(
@@ -514,8 +530,8 @@ def _go_dependencies():
         patches = [
             "@io_kythe//third_party/go:new_export_license.patch",
         ],
-        sum = "h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=",
-        version = "v1.5.3",
+        sum = "h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=",
+        version = "v1.5.4",
     )
 
     go_repository(
@@ -1649,9 +1665,13 @@ def _go_dependencies():
 
     go_repository(
         name = "org_golang_google_protobuf",
+        # Generating proto rules here would be circular: protoc-gen-go would
+        # depend on the go_proto_library for gofeaturespb, which can only be
+        # built by protoc-gen-go. The checked-in .pb.go files are used instead.
+        build_file_proto_mode = "disable_global",
         importpath = "google.golang.org/protobuf",
-        sum = "h1:g0LDEJHgrBl9N9r17Ru3sqWhkIx2NB67okBHPwC7hs8=",
-        version = "v1.31.0",
+        sum = "h1:82DV7MYdb8anAVi3qge1wSnMDrnKK7ebr+I0hHRN1BU=",
+        version = "v1.36.3",
     )
     go_repository(
         name = "org_golang_x_crypto",
@@ -1758,13 +1778,12 @@ def _go_dependencies():
     http_archive(
         name = "org_golang_x_tools",
         # Must be kept in sync with rules_go or the patches may fail.
-        # v0.7.0, latest as of 2023-03-27
         urls = [
-            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
-            "https://github.com/golang/tools/archive/refs/tags/v0.7.0.zip",
+            "https://mirror.bazel.build/github.com/golang/tools/archive/refs/tags/v0.30.0.zip",
+            "https://github.com/golang/tools/archive/refs/tags/v0.30.0.zip",
         ],
-        sha256 = "9f20a20f29f4008d797a8be882ef82b69cf8f7f2b96dbdfe3814c57d8280fa4b",
-        strip_prefix = "tools-0.7.0",
+        sha256 = "0736b1a0aa28f48074891a0f93cef5396575dbd73b9b5cdc4de54b2a3bfa4b4b",
+        strip_prefix = "tools-0.30.0",
         patches = [
             "@io_kythe//third_party/go:add_export_license.patch",
             # deletegopls removes the gopls subdirectory. It contains a nested

@@ -481,6 +481,11 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	}
 
 	switch typ := typ.(type) {
+	case *types.Alias:
+		// Go 1.22 and later materialize alias declarations as *types.Alias
+		// instead of resolving them eagerly.  Index the type the alias
+		// denotes; the alias name itself is bound by visitTypeSpec.
+		v = e.emitType(types.Unalias(typ))
 	case *types.Named:
 		if typ.TypeArgs().Len() == 0 {
 			v = e.pi.ObjectVName(typ.Obj())
