@@ -187,12 +187,14 @@ def _cc_dependencies():
         ],
     )
 
-    # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
+    # Abseil LTS release. Must stay compatible with @com_google_protobuf, which
+    # references absl/utility:if_constexpr (removed after LTS 20250127).
     maybe(
-        github_archive,
+        http_archive,
         name = "com_google_absl",
-        repo_name = "abseil/abseil-cpp",
-        commit = "71d553b12397ef81e9111b4fa21c68af3c0bf8b9",
+        sha256 = "b396401fd29e2e679cace77867481d388c807671dc2acc602a0259eeb79b7811",
+        strip_prefix = "abseil-cpp-20250127.1",
+        urls = ["https://github.com/abseil/abseil-cpp/releases/download/20250127.1/abseil-cpp-20250127.1.tar.gz"],
     )
 
     maybe(
@@ -295,7 +297,7 @@ def _cc_dependencies():
         github_archive,
         name = "com_github_inazarenko_protobuf_matchers",
         repo_name = "inazarenko/protobuf-matchers",
-        commit = "8edcd4f7cad4f35e9bd304ff9d45a035c50c9290",
+        commit = "793247783c7d9e6322c2b40f85ceb775a7f29f49",
     )
 
     lexyacc_configure()

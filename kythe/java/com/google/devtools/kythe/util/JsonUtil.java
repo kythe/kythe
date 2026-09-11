@@ -31,7 +31,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.LazyStringArrayList;
 import com.google.protobuf.LazyStringList;
@@ -68,10 +68,10 @@ public class JsonUtil {
     if (registry.equals(JsonUtil.registry)) {
       return;
     }
-    GeneratedMessageV3TypeAdapter.parser =
-        GeneratedMessageV3TypeAdapter.parser.usingTypeRegistry(registry);
-    GeneratedMessageV3TypeAdapter.printer =
-        GeneratedMessageV3TypeAdapter.printer.usingTypeRegistry(registry);
+    GeneratedMessageTypeAdapter.parser =
+        GeneratedMessageTypeAdapter.parser.usingTypeRegistry(registry);
+    GeneratedMessageTypeAdapter.printer =
+        GeneratedMessageTypeAdapter.printer.usingTypeRegistry(registry);
     JsonUtil.registry = registry;
   }
 
@@ -81,21 +81,21 @@ public class JsonUtil {
    */
   public static GsonBuilder registerProtoTypes(GsonBuilder builder) {
     return builder
-        .registerTypeHierarchyAdapter(GeneratedMessageV3.class, new GeneratedMessageV3TypeAdapter())
+        .registerTypeHierarchyAdapter(GeneratedMessage.class, new GeneratedMessageTypeAdapter())
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
         .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
         .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());
   }
 
-  private static class GeneratedMessageV3TypeAdapter
-      implements JsonSerializer<GeneratedMessageV3>, JsonDeserializer<GeneratedMessageV3> {
+  private static class GeneratedMessageTypeAdapter
+      implements JsonSerializer<GeneratedMessage>, JsonDeserializer<GeneratedMessage> {
     private static JsonFormat.Parser parser = JsonFormat.parser();
     private static JsonFormat.Printer printer =
         JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();
 
     @Override
-    public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
+    public JsonElement serialize(GeneratedMessage msg, Type t, JsonSerializationContext ctx) {
       try {
         return JsonParser.parseString(printer.print(msg));
       } catch (InvalidProtocolBufferException e) {
@@ -104,17 +104,16 @@ public class JsonUtil {
     }
 
     @Override
-    public GeneratedMessageV3 deserialize(
+    public GeneratedMessage deserialize(
         JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       try {
-        Class<? extends GeneratedMessageV3> protoClass =
-            (Class<? extends GeneratedMessageV3>) typeOfT;
-        GeneratedMessageV3.Builder<?> protoBuilder =
-            (GeneratedMessageV3.Builder<?>) protoClass.getMethod("newBuilder").invoke(null);
+        Class<? extends GeneratedMessage> protoClass = (Class<? extends GeneratedMessage>) typeOfT;
+        GeneratedMessage.Builder<?> protoBuilder =
+            (GeneratedMessage.Builder<?>) protoClass.getMethod("newBuilder").invoke(null);
         String msg = json instanceof JsonPrimitive ? json.getAsString() : json.toString();
         parser.merge(msg, protoBuilder);
-        return (GeneratedMessageV3) protoBuilder.build();
+        return (GeneratedMessage) protoBuilder.build();
       } catch (ReflectiveOperationException e) {
         throw new JsonParseException(
             "failed to retrieve Message.Builder while parsing proto3 message", e);

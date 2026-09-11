@@ -60,9 +60,9 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "rules_cc",
-        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.9/rules_cc-0.0.9.tar.gz"],
-        sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",
-        strip_prefix = "rules_cc-0.0.9",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.1.1/rules_cc-0.1.1.tar.gz"],
+        sha256 = "712d77868b3152dd618c4d64faaddefcc5965f90f5de6e6dd1d5ddcd0be82d42",
+        strip_prefix = "rules_cc-0.1.1",
     )
 
     maybe(
@@ -196,10 +196,10 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "8ff511a64fc46ee792d3fe49a5a1bcad6f7dc50dfbba5a28b0e5b979c17f9871",
-        strip_prefix = "protobuf-25.2",
+        sha256 = "7c3ebd7aaedd86fa5dc479a0fda803f602caaf78d8aff7ce83b89e1b8ae7442a",
+        strip_prefix = "protobuf-28.3",
         urls = [
-            "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/protobuf-25.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protobuf-28.3.tar.gz",
         ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
