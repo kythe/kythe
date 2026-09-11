@@ -199,7 +199,7 @@ func PlainText(nodes ...*html.Node) string {
 				fmt.Fprint(&text, PlainText(child))
 			}
 		case html.TextNode:
-			fmt.Fprintf(&text, n.Data)
+			fmt.Fprintf(&text, "%s", n.Data)
 		}
 	}
 	return text.String()
