@@ -8,7 +8,7 @@ require (
 	github.com/bazelbuild/bazel-gazelle v0.33.0
 	github.com/bazelbuild/rules_go v0.42.0
 	github.com/beevik/etree v1.2.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/golang/snappy v0.0.4
 	github.com/google/brotli/go/cbrotli v0.0.0-20230919092154-53947c15f577
 	github.com/google/codesearch v1.2.0
@@ -32,7 +32,7 @@ require (
 	golang.org/x/tools/go/vcs v0.1.0-deprecated
 	google.golang.org/api v0.146.0
 	google.golang.org/grpc v1.58.3
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.36.3
 	sigs.k8s.io/yaml v1.3.0
 )
 
