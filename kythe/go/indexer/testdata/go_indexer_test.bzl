@@ -46,8 +46,8 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data, e
         for src in srcs
     ]
     for dep in deps:
-        gosrc = dep[GoSource]
-        path = gosrc.library.importpath
+        gosrc = dep.source
+        path = gosrc.importpath
         fullpath = "/".join([srcroot, path])
         tups = fullpath.count("/") + 1
         cmds += ["mkdir -p " + fullpath]
@@ -97,9 +97,9 @@ def _go_extract(ctx):
     deps = gosrc.deps
     depsrcs = []
     for dep in deps:
-        depsrcs += dep[GoSource].srcs
+        depsrcs += dep.source.srcs
 
-    ipath = gosrc.library.importpath
+    ipath = gosrc.importpath
     data = ctx.attr.data
     output = ctx.outputs.kzip
     script = _emit_extractor_script(
@@ -288,7 +288,9 @@ def go_verifier_test(
         resolve_code_facts = False,
         allow_duplicates = False,
         use_fast_solver = False):
-    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*//\\s*-(.*)'"]
+    # The separator allows at most one space so that gofmt list bullets in doc
+    # comments ("//   - Array: ...") are not mistaken for verifier goals.
+    opts = ["--use_file_nodes", "--show_goals", "--check_for_singletons", "--goal_regex='\\s*// ?-(.*)'"]
     if log_entries:
         opts.append("--show_protos")
     if allow_duplicates or len(deps) > 0:
