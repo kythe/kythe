@@ -186,7 +186,7 @@ func (r *reader) ensureRecordReader() error {
 }
 
 func verifySignature(c *chunk) error {
-	if c.Header != fileSignatureChunk.Header {
+	if c.Header != (fileSignatureChunk()).Header {
 		return fmt.Errorf("invalid file signature: %+v", c)
 	} else if len(c.Data) != 0 {
 		return fmt.Errorf("extraneous data with file signature: %q", c.Data)
