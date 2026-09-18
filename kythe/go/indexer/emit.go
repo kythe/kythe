@@ -480,7 +480,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		return v
 	}
 
-	switch typ := typ.(type) {
+	switch typ := types.Unalias(typ).(type) {
 	case *types.Named:
 		if typ.TypeArgs().Len() == 0 {
 			v = e.pi.ObjectVName(typ.Obj())

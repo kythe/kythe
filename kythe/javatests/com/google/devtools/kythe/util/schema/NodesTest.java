@@ -291,7 +291,10 @@ public final class NodesTest extends TestCase {
         input.stream().map(protoParser(protoInput)),
         expected.stream().map(protoParser(protoOutput)),
         (in, ex) ->
-            assertWithMessage(String.format("%s(`%s`)", name, TextFormat.shortDebugString(in)))
+            assertWithMessage(
+                    String.format(
+                        "%s(`%s`)",
+                        name, TextFormat.printer().emittingSingleLine(true).printToString(in)))
                 .that(f.apply(in))
                 .isEqualTo(ex));
   }
