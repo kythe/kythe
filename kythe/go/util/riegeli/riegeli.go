@@ -333,6 +333,20 @@ func (w *Writer) Flush() error {
 	return w.flushRecord()
 }
 
+// FlushAndAlign writes any buffered records to the underlying io.Writer followed by padding to align with the next block boundary.
+func (w *Writer) FlushAndAlign() error {
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	padding := blockSize - (w.w.pos % blockSize)
+	buf := make([]byte, padding, padding)
+	_, err := w.w.WriteChunk(buf)
+	if err != nil {
+		return fmt.Errorf("WriteChunk: %v", err)
+	}
+	return nil
+}
+
 // Close releases all resources associated with Writer.  Any buffered records
 // will be flushed before releasing any resources.
 func (w *Writer) Close() error {
