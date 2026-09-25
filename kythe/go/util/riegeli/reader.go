@@ -296,6 +296,14 @@ type blockReader struct {
 
 	header   *blockHeader
 	position int64
+
+	// Provenance of buf: bufBlockStart is the block start offset buf was
+	// read from (-1 when unknown, e.g. buf was filled by a sequential read
+	// that did not begin on a block boundary). bufShort records that the
+	// read hit EOF before a full block, so the buffer must not be reused
+	// for seeks: the underlying file may since have grown.
+	bufBlockStart int64
+	bufShort      bool
 }
 
 // Read implements the io.Reader interface by skipping over the interleaven
@@ -315,6 +323,9 @@ func (b *blockReader) Read(bs []byte) (int, error) {
 
 // Next reads the next full block of data.
 func (b *blockReader) Next() ([]byte, error) {
+	// Remember where this block was read from so readBlock can tell
+	// whether a later seek targets the block actually buffered.
+	start := b.position
 	var block [blockSize]byte
 	if n, err := io.ReadFull(b.r, block[:]); err == io.EOF {
 		return nil, io.EOF
@@ -328,6 +339,15 @@ func (b *blockReader) Next() ([]byte, error) {
 	} else {
 		b.header = hdr
 		b.position += blockHeaderSize
+		if start%blockSize == 0 {
+			b.bufBlockStart = start
+		} else {
+			// Sequential continuation that did not start on a block
+			// boundary (possible after a short read at a growing file's
+			// EOF): provenance unknown, never reuse for seeks.
+			b.bufBlockStart = -1
+		}
+		b.bufShort = n < blockSize
 		return block[blockHeaderSize:n], nil
 	}
 }
@@ -361,7 +381,16 @@ func (b *blockReader) Seek(pos int64) error {
 }
 
 func (b *blockReader) readBlock(blockStart int64) error {
-	if b.buf != nil && b.position >= blockStart && b.position < blockStart+blockSize {
+	// Reuse the buffer only when it provably holds the full requested
+	// block. The previous condition (b.position >= blockStart &&
+	// b.position < blockStart+blockSize) also matched the state right
+	// after sequentially consuming a chunk ending exactly at blockStart:
+	// position sits on the boundary while the buffer still holds the
+	// PREVIOUS block, so a seek to a chunk starting exactly at that
+	// boundary decoded stale bytes (wrong record or "bad chunkHeader
+	// hash"). A short buffer (bufShort) is never reused: the file may
+	// have grown past the remembered EOF since it was read.
+	if b.buf != nil && !b.bufShort && b.bufBlockStart == blockStart {
 		return nil
 	}
 	_, err := b.r.Seek(blockStart, io.SeekStart)

@@ -192,6 +192,43 @@ func TestBlockWriter_multipleChunks(t *testing.T) {
 	}
 }
 
+func TestBlockReader_seekAfterSequentialReadToBoundary(t *testing.T) {
+	var buf bytes.Buffer
+	w := &blockWriter{w: &buf}
+
+	// Fill block 0 exactly with one chunk; a second chunk starts block 1.
+	first := bytes.Repeat([]byte{0xaa}, usableBlockSize)
+	second := bytes.Repeat([]byte{0xbb}, usableBlockSize)
+	if _, err := w.WriteChunk(first); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.WriteChunk(second); err != nil {
+		t.Fatal(err)
+	}
+
+	r := &blockReader{r: bytes.NewReader(buf.Bytes())}
+
+	// Sequentially consume the first chunk. The reader's position now rests
+	// exactly on the block boundary while its buffer still holds block 0.
+	got := make([]byte, usableBlockSize)
+	if _, err := io.ReadFull(r, got); err != nil {
+		t.Fatal(err)
+	} else if !bytes.Equal(got, first) {
+		t.Fatal("Unexpected first chunk bytes")
+	}
+
+	// Seek to the second chunk, which begins exactly on the block boundary.
+	// The stale block 0 buffer must not be reused.
+	if err := r.Seek(blockSize); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.ReadFull(r, got); err != nil {
+		t.Fatal(err)
+	} else if !bytes.Equal(got, second) {
+		t.Fatalf("Stale block buffer reused: found: %x...; expected: %x...", got[:4], second[:4])
+	}
+}
+
 func TestBlockReader_sequential(t *testing.T) {
 	var buf bytes.Buffer
 	w := &blockWriter{w: &buf}

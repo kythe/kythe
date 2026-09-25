@@ -266,6 +266,62 @@ func TestWriterSeek(t *testing.T) {
 	}
 }
 
+// TestReaderSeekBoundaryAlignedChunk is a regression test for stale
+// block-buffer reuse: a chunk beginning exactly on a 64KiB block boundary was
+// undecodable ("bad chunkHeader hash") — or silently decoded as the wrong
+// record — by a reader that had sequentially consumed the preceding chunk,
+// because readBlock's fast path treated "position exactly at the requested
+// block's start" as "that block is already buffered". With no compression the
+// file layout grows by one byte per extra record byte, so scanning a window
+// of first-record sizes guarantees some iteration places the second chunk
+// exactly on the block boundary.
+func TestReaderSeekBoundaryAlignedChunk(t *testing.T) {
+	second := []byte("second record")
+	var aligned bool
+	for size := usableBlockSize - 256; size <= usableBlockSize+32; size++ {
+		buf := bytes.NewBuffer(nil)
+		wr := NewWriter(buf, &WriterOptions{Compression: NoCompression})
+		first := make([]byte, size)
+		for i := range first {
+			first[i] = byte(i)
+		}
+		if err := wr.Put(first); err != nil {
+			t.Fatalf("size %d: error Put: %v", size, err)
+		} else if err := wr.Flush(); err != nil {
+			t.Fatalf("size %d: error Flush: %v", size, err)
+		}
+		pos := wr.Position()
+		if err := wr.Put(second); err != nil {
+			t.Fatalf("size %d: error Put: %v", size, err)
+		} else if err := wr.Close(); err != nil {
+			t.Fatalf("size %d: error Close: %v", size, err)
+		}
+		if pos.ChunkBegin%blockSize == 0 {
+			aligned = true
+		}
+
+		// Read the first record sequentially so the reader's block state
+		// mirrors a sequential scan, then seek to the second record.
+		rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+		if rec, err := rd.Next(); err != nil {
+			t.Fatalf("size %d: error reading first record: %v", size, err)
+		} else if !bytes.Equal(rec, first) {
+			t.Fatalf("size %d: unexpected first record", size)
+		}
+		if err := rd.SeekToRecord(pos); err != nil {
+			t.Fatalf("size %d (chunk aligned=%v): error seeking to %v: %v", size, pos.ChunkBegin%blockSize == 0, pos, err)
+		}
+		if rec, err := rd.Next(); err != nil {
+			t.Fatalf("size %d (chunk aligned=%v): error reading second record: %v", size, pos.ChunkBegin%blockSize == 0, err)
+		} else if !bytes.Equal(rec, second) {
+			t.Fatalf("size %d (chunk aligned=%v): found: %q; expected: %q", size, pos.ChunkBegin%blockSize == 0, rec, second)
+		}
+	}
+	if !aligned {
+		t.Fatal("Test window never produced a block-boundary-aligned chunk")
+	}
+}
+
 func TestReaderSeekRecords(t *testing.T) {
 	const N = 1e4
 	buf := writeStrings(t, &WriterOptions{}, N)
