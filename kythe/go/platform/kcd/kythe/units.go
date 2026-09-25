@@ -110,12 +110,21 @@ func (u Unit) LookupVName(inputPath string) *spb.VName {
 // Canonicalize satisfies part of the kcd.Unit interface.  It orders required
 // inputs by the digest of their contents, orders environment variables and
 // source paths by name, and orders compilation details by their type URL.
-func (u Unit) Canonicalize() {
+func (u Unit) Canonicalize(opts ...kcd.CanonicalizeOption) {
+	var cfg kcd.CanonicalizeConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	pb := u.Proto
 
 	pb.RequiredInput = sortAndDedup(pb.RequiredInput)
 	sort.Sort(byName(pb.Environment))
-	sort.Strings(pb.SourceFile)
+
+	if !cfg.SkipSortSourceFiles {
+		sort.Strings(pb.SourceFile)
+	}
+
 	ptypes.SortByTypeURL(pb.Details)
 }
 

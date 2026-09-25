@@ -7,6 +7,7 @@ go_library(
     srcs = ["kzip.go"],
     importpath = "kythe.io/kythe/go/platform/kzip",
     deps = [
+        "//kythe/go/platform/kcd",
         "//kythe/go/platform/kcd/kythe",
         "//kythe/go/util/log",
         "//kythe/go/util/ptypes",

@@ -78,6 +78,7 @@ import (
 	"sync"
 	"time"
 
+	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 	"kythe.io/kythe/go/util/log"
 	"kythe.io/kythe/go/util/ptypes"
@@ -533,9 +534,9 @@ var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 // If the same compilation is added multiple times, AddUnit returns the digest
 // of the duplicated compilation along with ErrUnitExists to all callers after
 // the first. The existing unit is not modified.
-func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
+func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index, opts ...kcd.CanonicalizeOption) (string, error) {
 	unit := kythe.Unit{Proto: cu}
-	unit.Canonicalize()
+	unit.Canonicalize(opts...)
 	digest := unit.Digest()
 
 	w.mu.Lock()
